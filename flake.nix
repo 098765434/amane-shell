@@ -8,6 +8,15 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # The amane library fork, referenced by local path (mirrors how the umbrella
+    # and nixos-config pin their sibling components). Used only to materialise the
+    # `../amane-fork` path-dependency inside the package build sandbox; the devShell
+    # keeps using the relative path on disk.
+    amane-fork = {
+      url = "git+file:///home/ocbk/Projects/desktop/amane-fork";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -15,6 +24,7 @@
       self,
       nixpkgs,
       rust-overlay,
+      amane-fork,
     }:
     let
       inherit (nixpkgs) lib;
@@ -28,30 +38,108 @@
           overlays = [ rust-overlay.overlays.default ];
         }
       );
+
+      # Stable toolchain; edition 2024 requires rustc >= 1.85.
+      toolchainFor =
+        pkgs:
+        pkgs.rust-bin.stable.latest.default.override {
+          extensions = [
+            "rust-analyzer"
+            "rust-src"
+          ];
+        };
+
+      # Native libraries the bar links against at build time (via pkg-config)
+      # and dlopens at run time. Shared by the devShell and the package.
+      runtimeLibsFor =
+        pkgs: with pkgs; [
+          wayland
+          libxkbcommon
+          libpulseaudio
+          fontconfig
+          freetype
+          seatd
+          vulkan-loader
+          pam # amane links -lpam (session/seat); host-provided in the devShell
+        ];
+
+      # The system GPU driver dir goes first so wgpu's Vulkan loader finds the
+      # system ICDs and the driver's own libwayland.
+      ldLibraryPath = pkgs: "/run/opengl-driver/lib:${lib.makeLibraryPath (runtimeLibsFor pkgs)}";
     in
     {
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgsFor.${system};
+          rustToolchain = toolchainFor pkgs;
+          runtimeLibs = runtimeLibsFor pkgs;
+          rustPlatform = pkgs.makeRustPlatform {
+            cargo = rustToolchain;
+            rustc = rustToolchain;
+          };
+
+          # The crate depends on amane by relative path (`../amane-fork`), which
+          # escapes the shell source tree. Lay both out as siblings so the path
+          # dep resolves inside the (sandboxed) build.
+          combinedSrc = pkgs.runCommand "amane-shell-src" { } ''
+            mkdir -p "$out/shell" "$out/amane-fork"
+            cp -r ${./.}/. "$out/shell/"
+            cp -r ${amane-fork}/. "$out/amane-fork/"
+            # The build is governed by shell/Cargo.lock only; amane-fork's own
+            # lockfile in the tree makes cargo try to reconcile a second
+            # workspace against the vendor dir and fail. The path dep needs
+            # amane-fork's Cargo.toml + sources, not its lockfile.
+            chmod -R u+w "$out/amane-fork"
+            rm -f "$out/amane-fork/Cargo.lock"
+          '';
+
+          amane-shell = rustPlatform.buildRustPackage {
+            pname = "amane-shell";
+            version = "0.1.0";
+
+            src = combinedSrc;
+            sourceRoot = "amane-shell-src/shell";
+
+            # Path deps need no registry vendoring — just the directory present,
+            # which combinedSrc guarantees.
+            cargoLock.lockFile = ./Cargo.lock;
+
+            nativeBuildInputs = [
+              pkgs.pkg-config
+              pkgs.makeWrapper
+            ];
+            buildInputs = runtimeLibs;
+
+            # Reproduce the devShell's runtime wiring in the installed binary
+            # (LD_LIBRARY_PATH + a Vulkan ICD fallback), with no hardcoded
+            # /nix/store hashes beyond what makeLibraryPath computes.
+            postFixup = ''
+              wrapProgram $out/bin/amane-shell \
+                --prefix LD_LIBRARY_PATH : "${ldLibraryPath pkgs}" \
+                --run '[ -z "''${VK_ICD_FILENAMES:-}" ] && [ -d /run/opengl-driver/share/vulkan/icd.d ] && { VK_ICD_FILENAMES="$(printf "%s:" /run/opengl-driver/share/vulkan/icd.d/*.json)"; export VK_ICD_FILENAMES="''${VK_ICD_FILENAMES%:}"; } || true'
+            '';
+
+            meta = {
+              description = "A Wayland desktop bar for niri, built on the amane library fork";
+              mainProgram = "amane-shell";
+              license = lib.licenses.mit;
+              platforms = lib.platforms.linux;
+            };
+          };
+        in
+        {
+          default = amane-shell;
+          amane-shell = amane-shell;
+        }
+      );
+
       devShells = forAllSystems (
         system:
         let
           pkgs = nixpkgsFor.${system};
-          # Stable toolchain; edition 2024 requires rustc >= 1.85.
-          rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-            extensions = [
-              "rust-analyzer"
-              "rust-src"
-            ];
-          };
-          # Native libraries the bar links against at build time (via pkg-config)
-          # and dlopens at run time.
-          runtimeLibs = with pkgs; [
-            wayland
-            libxkbcommon
-            libpulseaudio
-            fontconfig
-            freetype
-            seatd
-            vulkan-loader
-          ];
+          rustToolchain = toolchainFor pkgs;
+          runtimeLibs = runtimeLibsFor pkgs;
         in
         {
           default = pkgs.mkShell {
@@ -63,7 +151,7 @@
             # hashes. The system GPU driver dir goes first so wgpu's Vulkan loader
             # finds the system ICDs and the driver's own libwayland.
             shellHook = ''
-              export LD_LIBRARY_PATH="/run/opengl-driver/lib:${lib.makeLibraryPath runtimeLibs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+              export LD_LIBRARY_PATH="${ldLibraryPath pkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
               if [ -z "''${VK_ICD_FILENAMES:-}" ] && [ -d /run/opengl-driver/share/vulkan/icd.d ]; then
                 VK_ICD_FILENAMES="$(printf '%s:' /run/opengl-driver/share/vulkan/icd.d/*.json)"
                 export VK_ICD_FILENAMES="''${VK_ICD_FILENAMES%:}"
