@@ -25,27 +25,31 @@ This is the user shell instance. It lives in the desktop workspace at
 
 ## Build & run
 
-Uses `run.sh`, a wrapper that puts the Nix toolchain + the required wayland/vulkan/pulse libraries
-on `PATH`/`PKG_CONFIG_PATH`/`LD_LIBRARY_PATH` so `cargo` works outside a nix shell:
+A Nix flake (`flake.nix`) provides a devShell with the Rust toolchain and the required
+wayland/vulkan/pulse/fontconfig libraries wired up (no hardcoded store paths), so plain `cargo`
+works inside it:
 
 ```sh
-./run.sh build      # cargo build
-./run.sh            # cargo run  (default theme: dark)
-./run.sh light      # AMANE_THEME=light cargo run
+nix develop -c cargo build          # compile
+nix develop -c cargo run            # run  (default theme: dark)
+nix develop -c env AMANE_THEME=light cargo run   # light theme
 ```
 
-The bar depends on the amane library fork by relative path (`amane = { path = "../amane-fork" }`
-in `Cargo.toml`), so the two are developed together. See [../docs/runbooks/build-shell.md](../docs/runbooks/build-shell.md).
+Or `nix develop` once to drop into the environment, then use `cargo` directly. The bar depends on
+the amane library fork by relative path (`amane = { path = "../amane-fork" }` in `Cargo.toml`), so
+the two are developed together as siblings. See [../runbooks/build-shell.md](../runbooks/build-shell.md).
 
-> The `amane` CLI (`amane dev`/`compile`) installed via nixos-config builds against its own bundled
-> library copy in `~/.cache/amane/library`, **not** this fork — use `run.sh` for this shell.
+> **Do not** build this shell with the `amane` CLI (`amane dev`/`compile`) installed via
+> nixos-config: that CLI compiles against its own bundled library copy in `~/.cache/amane/library`,
+> **not** this fork (so it lacks `Gestures` and won't compile the bar). `nix develop` is the one
+> canonical build path.
 
 ## niri layer-rules (required)
 
 The bar's surfaces need matching `layer-rule` blocks in the niri config (blur + corner rounding).
-`niri-layer-rule.kdl` is the **source of truth** for those rules and their surface namespaces; the
-same blocks are mirrored into `~/nixos-config/niri/config.kdl`. See
-[docs/layer-rules.md](docs/layer-rules.md) — these namespaces must stay in sync with the Rust
+`niri-layer-rule.kdl` is the **source of truth**; `./gen-layer-rules.sh` injects those blocks into
+`~/nixos-config/niri/config.kdl` between its markers, so the two never drift (no hand-copying). See
+[docs/layer-rules.md](docs/layer-rules.md) — the namespaces must still match the Rust
 `LayerWindow::namespace(...)` calls.
 
 ## Layout
@@ -58,7 +62,8 @@ src/
     context_menu/               reusable nested context menu on xdg-popups
 design-tokens/                  bar.tokens.json, menu.tokens.json
 niri-layer-rule.kdl             layer-rule source of truth (see docs/layer-rules.md)
-run.sh                          build/run wrapper (Nix toolchain + lib paths)
+gen-layer-rules.sh              injects those rules into the niri config
+flake.nix                       devShell (Rust toolchain + wayland/vulkan/pulse libs)
 ```
 
 ## License

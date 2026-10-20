@@ -1,15 +1,18 @@
-// Layer-rules the amane shell wants in ~/.config/niri/config.kdl, so niri
-// applies compositor-side blur / rounding to its surfaces.
+// Source of truth for the amane shell's niri layer-rules (compositor-side blur
+// / rounding on its surfaces). Each rule matches an anchored regex on a
+// layer-surface namespace that a component sets via LayerWindow::namespace(...).
 //
-// Matches use anchored regex on the layer-surface namespace, which each
-// component sets via LayerWindow::namespace(...).
+// DO NOT hand-copy these into the niri config. Run the generator, which injects
+// everything below the sentinel into ~/nixos-config/niri/config.kdl between its
+// `>>> amane layer-rules` / `<<<` markers, then reload niri:
 //
-// After editing, validate and reload:
-//     niri validate -c ~/.config/niri/config.kdl
+//     ./gen-layer-rules.sh
+//     niri validate -c ~/nixos-config/niri/config.kdl
 //     niri msg action reload-config
 //
-// Verify the surfaces are up:
-//     niri msg layers | grep amane
+// Verify the surfaces are up:  niri msg layers | grep amane
+
+//<<<GENERATED-RULES-BELOW>>>  (gen-layer-rules.sh injects everything past this line)
 
 // Context menu. The anchor is an invisible 1×1 layer-surface; the visible
 // cards (menu + nested submenus) are xdg-popups of it, so the `popups {}`
