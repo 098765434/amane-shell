@@ -1,0 +1,101 @@
+{
+  "$description": "amane taskbar design tokens (W3C Design Tokens Format 2025.10)",
+
+  "color": {
+    "$type": "color",
+    "accent": {
+      "blue": { "$value": { "colorSpace": "srgb", "components": [0.039, 0.517, 1.000] } }
+    },
+    "urgent": {
+      "red": { "$value": { "colorSpace": "srgb", "components": [1.000, 0.270, 0.227] } }
+    }
+  },
+
+  "size": {
+    "$type": "dimension",
+    "height-compact":  { "$value": { "value": 18, "unit": "px" } },
+    "height-overview": { "$value": { "value": 64, "unit": "px" } }
+  },
+
+  "radius": {
+    "$type": "dimension",
+    "panel": { "$value": { "value": 0,  "unit": "px" } },
+    "pill":  { "$value": { "value": 6,  "unit": "px" } },
+    "tile":  { "$value": { "value": 10, "unit": "px" } }
+  },
+
+  "space": {
+    "$type": "dimension",
+    "panel-pad-x":    { "$value": { "value": 8,   "unit": "px" } },
+    "panel-pad-y":    { "$value": { "value": 2,   "unit": "px" } },
+    "section-gap":    { "$value": { "value": 12,  "unit": "px" } },
+    "item-gap":       { "$value": { "value": 6,   "unit": "px" } },
+    "pill-pad-x":     { "$value": { "value": 8,   "unit": "px" } },
+    "pill-pad-y":     { "$value": { "value": 3,   "unit": "px" } },
+    "dot-size":       { "$value": { "value": 8,   "unit": "px" } },
+    "dot-active":     { "$value": { "value": 18,  "unit": "px" } },
+    "icon-size":      { "$value": { "value": 16,  "unit": "px" } },
+    "window-max":     { "$value": { "value": 180, "unit": "px" } },
+    "tile-pad":       { "$value": { "value": 8,   "unit": "px" } },
+    "panel-w":        { "$value": { "value": 320, "unit": "px" } },
+    "panel-h":        { "$value": { "value": 380, "unit": "px" } },
+    "list-h":         { "$value": { "value": 260, "unit": "px" } },
+    "row-h":          { "$value": { "value": 40,  "unit": "px" } },
+    "panel-gap":      { "$value": { "value": 8,   "unit": "px" } }
+  },
+
+  "effect": {
+    "$type": "number",
+    "blur": { "$value": 24 }
+  },
+
+  "font": {
+    "ui": {
+      "family": {
+        "$type": "fontFamily",
+        "$value": ["SF Pro Text", "Inter", "Atkinson Hyperlegible", "sans-serif"]
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "regular": { "$value": 400 },
+        "medium":  { "$value": 510 }
+      }
+    },
+    "icon": {
+      "family": {
+        "$type": "fontFamily",
+        "$value": ["Material Symbols Rounded", "Material Icons Round", "sans-serif"]
+      }
+    }
+  },
+
+  "type": {
+    "label":  { "$type": "number", "size": { "$value": 13 } },
+    "clock":  { "$type": "number", "size": { "$value": 13 } },
+    "window": { "$type": "number", "size": { "$value": 12 } }
+  },
+
+  "theme": {
+    "$type": "color",
+    "light": {
+      "surface":      { "$value": { "colorSpace": "srgb", "components": [0.965, 0.965, 0.965], "alpha": 0.60 } },
+      "fg":           { "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.55 } },
+      "fg-strong":    { "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.90 } },
+      "pill":         { "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.06 } },
+      "pill-focused": { "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.14 } },
+      "accent":       { "$value": "{color.accent.blue}" },
+      "urgent":       { "$value": "{color.urgent.red}" },
+      "separator":    { "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.10 } }
+    },
+    "dark": {
+      "surface":      { "$value": { "colorSpace": "srgb", "components": [0, 0, 0], "alpha": 0.55 } },
+      "fg":           { "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.40 } },
+      "fg-strong":    { "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 1.00 } },
+      "pill":         { "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.08 } },
+      "pill-focused": { "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.18 } },
+      "accent":       { "$value": "{color.accent.blue}" },
+      "urgent":       { "$value": "{color.urgent.red}" },
+      "separator":    { "$value": { "colorSpace": "srgb", "components": [1, 1, 1], "alpha": 0.12 } }
+    }
+  }
+}

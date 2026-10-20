@@ -1,0 +1,109 @@
+mod components;
+
+use amane::App;
+
+use components::context_menu::{self, ContextMenu, Icon, MenuItem, Theme};
+use components::taskbar;
+
+fn main() {
+    let share = ContextMenu::new(Theme::auto())
+        .item(
+            MenuItem::label("AirDrop")
+                .icon(Icon::glyph("\u{E2BD}"))
+                .on_select(|| eprintln!("airdrop")),
+        )
+        .item(
+            MenuItem::label("Messages")
+                .icon(Icon::glyph("\u{F8E3}"))
+                .on_select(|| eprintln!("messages")),
+        )
+        .separator()
+        .item(
+            MenuItem::label("Mail")
+                .icon(Icon::glyph("\u{2709}"))
+                .on_select(|| eprintln!("mail")),
+        );
+
+    // "Code" carries a third-level submenu to exercise arbitrary nesting.
+    let open_with = ContextMenu::new(Theme::auto())
+        .item(
+            MenuItem::label("Code").submenu(
+                ContextMenu::new(Theme::auto())
+                    .item(MenuItem::label("New Window").on_select(|| eprintln!("code: new window")))
+                    .item(MenuItem::label("New Workspace").on_select(|| eprintln!("code: workspace"))),
+            ),
+        )
+        .item(MenuItem::label("Firefox").on_select(|| eprintln!("firefox")))
+        .item(MenuItem::label("Preview").on_select(|| eprintln!("preview")));
+
+    let menu = ContextMenu::new(Theme::auto())
+        .item(
+            MenuItem::label("Open")
+                .icon(Icon::glyph("\u{1F4C2}"))
+                .shortcut("\u{2318}O")
+                .on_select(|| eprintln!("open")),
+        )
+        .item(
+            MenuItem::label("Open With")
+                .icon(Icon::glyph("\u{2026}"))
+                .submenu(open_with),
+        )
+        .separator()
+        .item(
+            MenuItem::label("Rename")
+                .icon(Icon::glyph("\u{270F}"))
+                .shortcut("\u{21B5}")
+                .on_select(|| eprintln!("rename")),
+        )
+        .item(
+            MenuItem::label("Duplicate")
+                .icon(Icon::glyph("\u{2398}"))
+                .shortcut("\u{2318}D")
+                .disabled(),
+        )
+        .separator()
+        .item(
+            MenuItem::label("Share")
+                .icon(Icon::glyph("\u{2BAD}"))
+                .submenu(share),
+        )
+        .separator()
+        .item(
+            MenuItem::label("Move to Trash")
+                .icon(Icon::glyph("\u{1F5D1}"))
+                .shortcut("\u{2318}\u{232B}")
+                .destructive()
+                .on_select(|| eprintln!("trash")),
+        );
+
+    context_menu::register("file", menu);
+
+    let mut app = App::new()
+        .window(taskbar::bar)
+        .window(taskbar::wifi_panel)
+        .window(context_menu::anchor);
+    for level in context_menu::LEVELS {
+        app = app.popup(level);
+    }
+
+    app.ipc("arm", |args| {
+        // Expand the anchor fullscreen so the next right-click captures a
+        // fresh input serial and opens the menu with a working grab.
+        // Call: `printf 'arm\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+        let name = args.first().map(String::as_str).unwrap_or("file");
+        context_menu::arm(name);
+        String::from("ok")
+    })
+    .ipc("open", |args| {
+        let name = args.first().map(String::as_str).unwrap_or("file");
+        let x = args.get(1).and_then(|s| s.parse::<i32>().ok()).unwrap_or(240);
+        let y = args.get(2).and_then(|s| s.parse::<i32>().ok()).unwrap_or(180);
+        context_menu::open_named(name, x, y);
+        String::from("ok")
+    })
+    .ipc("close", |_| {
+        context_menu::close();
+        String::from("ok")
+    })
+    .run();
+}

@@ -1,0 +1,46 @@
+// Layer-rules the amane shell wants in ~/.config/niri/config.kdl, so niri
+// applies compositor-side blur / rounding to its surfaces.
+//
+// Matches use anchored regex on the layer-surface namespace, which each
+// component sets via LayerWindow::namespace(...).
+//
+// After editing, validate and reload:
+//     niri validate -c ~/.config/niri/config.kdl
+//     niri msg action reload-config
+//
+// Verify the surfaces are up:
+//     niri msg layers | grep amane
+
+// Context menu. The anchor is an invisible 1×1 layer-surface; the visible
+// cards (menu + nested submenus) are xdg-popups of it, so the `popups {}`
+// block styles every level uniformly. Namespaces: the anchor is
+// `amane.context-menu-anchor`; each depth level is `amane.context-menu.0`..`7`.
+layer-rule {
+    match namespace="^amane\\.context-menu-anchor$"
+
+    popups {
+        geometry-corner-radius 10
+        background-effect {
+            blur true
+        }
+    }
+}
+
+// Taskbar: a full-width bottom bar. Its surface is semi-transparent; the
+// compositor blur behind it gives the frosted macOS material.
+layer-rule {
+    match namespace="^amane\\.taskbar$"
+    background-effect {
+        blur true
+    }
+}
+
+// WiFi panel: a rounded frosted card anchored bottom-right, toggled by the
+// taskbar's network indicator.
+layer-rule {
+    match namespace="^amane\\.taskbar\\.wifi$"
+    geometry-corner-radius 14
+    background-effect {
+        blur true
+    }
+}

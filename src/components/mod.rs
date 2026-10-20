@@ -1,0 +1,10 @@
+//! Reusable shell components, each self-contained and driven by its own
+//! design-token file under `design-tokens/`:
+//!
+//! - [`context_menu`] — a macOS-style, arbitrarily-nested context menu built
+//!   on the fork's xdg-popup support.
+//! - [`taskbar`] — a bottom taskbar that is compact in normal use and
+//!   expands into an interactive dock while niri's overview is open.
+
+pub mod context_menu;
+pub mod taskbar;
