@@ -8,15 +8,6 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # The amane library fork, referenced by local path (mirrors how the umbrella
-    # and nixos-config pin their sibling components). Used only to materialise the
-    # `../amane-fork` path-dependency inside the package build sandbox; the devShell
-    # keeps using the relative path on disk.
-    amane-fork = {
-      url = "git+file:///home/ocbk/Projects/desktop/amane-fork";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =
@@ -24,7 +15,6 @@
       self,
       nixpkgs,
       rust-overlay,
-      amane-fork,
     }:
     let
       inherit (nixpkgs) lib;
@@ -79,31 +69,21 @@
             rustc = rustToolchain;
           };
 
-          # The crate depends on amane by relative path (`../amane-fork`), which
-          # escapes the shell source tree. Lay both out as siblings so the path
-          # dep resolves inside the (sandboxed) build.
-          combinedSrc = pkgs.runCommand "amane-shell-src" { } ''
-            mkdir -p "$out/shell" "$out/amane-fork"
-            cp -r ${./.}/. "$out/shell/"
-            cp -r ${amane-fork}/. "$out/amane-fork/"
-            # The build is governed by shell/Cargo.lock only; amane-fork's own
-            # lockfile in the tree makes cargo try to reconcile a second
-            # workspace against the vendor dir and fail. The path dep needs
-            # amane-fork's Cargo.toml + sources, not its lockfile.
-            chmod -R u+w "$out/amane-fork"
-            rm -f "$out/amane-fork/Cargo.lock"
-          '';
-
           amane-shell = rustPlatform.buildRustPackage {
             pname = "amane-shell";
             version = "0.1.0";
 
-            src = combinedSrc;
-            sourceRoot = "amane-shell-src/shell";
+            src = ./.;
 
-            # Path deps need no registry vendoring — just the directory present,
-            # which combinedSrc guarantees.
-            cargoLock.lockFile = ./Cargo.lock;
+            # amane is a git-dependency (see Cargo.toml); Nix needs its content
+            # hash to fetch it reproducibly. After a rev bump, update this — the
+            # first build prints the expected `sha256-…` on mismatch.
+            cargoLock = {
+              lockFile = ./Cargo.lock;
+              outputHashes = {
+                "amane-0.1.2" = "sha256-6sa1P8AaIkI0m+1kgClx5Jmjr3x+l4wDOI6hmBEZI1Q=";
+              };
+            };
 
             nativeBuildInputs = [
               pkgs.pkg-config
