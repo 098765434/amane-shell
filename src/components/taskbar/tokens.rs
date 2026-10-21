@@ -203,3 +203,39 @@ fn channel(v: &Value) -> Option<u8> {
 fn dimension_value(v: &Value) -> Option<f32> {
     v.get("value")?.as_f64().map(|n| n as f32)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bundled_tokens_parse() {
+        // The embedded bar.tokens.json must be complete and well-shaped; this
+        // catches a renamed/missing token or a wrong-typed value at test time
+        // rather than as a runtime panic in tokens().
+        let t = parse(SOURCE).expect("bundled bar.tokens.json must parse");
+        assert!(t.height_overview >= t.height_compact);
+        assert!(t.weight_medium > 0);
+        assert!(!t.font_family.is_empty());
+        assert!(!t.font_icon.is_empty());
+        assert!(t.radius_pill >= 0.0);
+    }
+
+    #[test]
+    fn invalid_json_is_err() {
+        assert!(parse("definitely not json").is_err());
+    }
+
+    #[test]
+    fn missing_tokens_are_err() {
+        // Valid JSON but missing the required token tree.
+        assert!(parse("{}").is_err());
+    }
+
+    #[test]
+    fn alias_resolution_terminates() {
+        // A self-referential alias must not loop forever (resolve() is capped).
+        let root: Value = serde_json::from_str(r#"{"a":{"$value":"{a}"}}"#).unwrap();
+        assert!(resolve(&root, &Value::String("{a}".to_string())).is_none());
+    }
+}

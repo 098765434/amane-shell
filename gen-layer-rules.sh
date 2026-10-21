@@ -8,17 +8,17 @@
 # in the target config and leaves everything else untouched, so it is safe to
 # re-run after editing niri-layer-rule.kdl. Reload niri afterwards:
 #
-#     ./gen-layer-rules.sh
-#     niri validate -c ~/nixos-config/niri/config.kdl
+#     ./gen-layer-rules.sh ~/.config/niri/config.kdl
+#     niri validate -c ~/.config/niri/config.kdl
 #     niri msg action reload-config
 #
 # Usage: ./gen-layer-rules.sh [path-to-config.kdl]
-#        (default target: ~/nixos-config/niri/config.kdl)
+#        (default target: ~/.config/niri/config.kdl)
 set -euo pipefail
 cd "$(dirname "$0")"
 
 SRC="niri-layer-rule.kdl"
-TARGET="${1:-$HOME/nixos-config/niri/config.kdl}"
+TARGET="${1:-$HOME/.config/niri/config.kdl}"
 SENTINEL="//<<<GENERATED-RULES-BELOW>>>"
 BEGIN="// >>> amane layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)"
 END="// <<< amane layer-rules"

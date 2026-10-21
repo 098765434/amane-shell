@@ -556,11 +556,12 @@ fn set_focus(level: usize, index: usize, inside: bool, has_submenu: bool) {
     if !inside {
         with_mut(|r| {
             let is_deepest = r.stack.len() == level + 1;
-            if let Some(l) = r.stack.get_mut(level) {
-                if l.focus == Some(index) && is_deepest {
-                    l.focus = None;
-                    l.focus_source = None;
-                }
+            if let Some(l) = r.stack.get_mut(level)
+                && l.focus == Some(index)
+                && is_deepest
+            {
+                l.focus = None;
+                l.focus_source = None;
             }
         });
         request_frame();
@@ -603,10 +604,8 @@ fn handle_key(level: usize, key: Key) {
                 runtime::pop_to(level - 1);
             }
         }
-        Key::Enter => {
-            if !descend(level) {
-                invoke_focused(level);
-            }
+        Key::Enter if !descend(level) => {
+            invoke_focused(level);
         }
         _ => {}
     }
@@ -619,9 +618,10 @@ fn descend(level: usize) -> bool {
     let Some(i) = focus else {
         return false;
     };
-    let has = runtime::level(level, |l| {
-        matches!(l.entries.get(i), Some(Entry::Item(it)) if it.has_submenu())
-    })
+    let has = runtime::level(
+        level,
+        |l| matches!(l.entries.get(i), Some(Entry::Item(it)) if it.has_submenu()),
+    )
     .unwrap_or(false);
 
     if has {
@@ -648,7 +648,10 @@ fn step_focus(level: usize, delta: isize) {
             return;
         }
 
-        let next = match l.focus.and_then(|c| selectable.iter().position(|&i| i == c)) {
+        let next = match l
+            .focus
+            .and_then(|c| selectable.iter().position(|&i| i == c))
+        {
             Some(pos) => {
                 let n = selectable.len() as isize;
                 selectable[(((pos as isize + delta) % n + n) % n) as usize]

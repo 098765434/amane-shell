@@ -15,9 +15,7 @@ use amane::{
 
 use super::theme::Theme;
 use super::tokens::{Tokens, tokens};
-use super::{
-    ICON_CHECK, ICON_LOCK, ICON_REFRESH, ICON_WIFI, boxed, icon, pad,
-};
+use super::{ICON_CHECK, ICON_LOCK, ICON_REFRESH, ICON_WIFI, boxed, icon, pad};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
 pub const WIFI_NS: &str = "amane.taskbar.wifi";
@@ -168,9 +166,12 @@ fn header(theme: Theme, t: &Tokens) -> Row {
     .gap(6.0)
     .align(Center);
 
-    let right = Row::new(vec![boxed(wifi_toggle(theme, t)), boxed(scan_button(theme, t))])
-        .gap(6.0)
-        .align(Center);
+    let right = Row::new(vec![
+        boxed(wifi_toggle(theme, t)),
+        boxed(scan_button(theme, t)),
+    ])
+    .gap(6.0)
+    .align(Center);
 
     Row::new(vec![boxed(left), boxed(right)])
         .width(Parent)
@@ -280,7 +281,11 @@ fn ap_row(ap: &AccessPoint, theme: Theme, t: &Tokens) -> Rectangle {
         .justify(SpaceBetween)
         .align(Center);
 
-    let fill = if active { theme.pill_focused } else { theme.pill };
+    let fill = if active {
+        theme.pill_focused
+    } else {
+        theme.pill
+    };
 
     Rectangle::new()
         .width(Parent)

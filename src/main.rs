@@ -30,7 +30,9 @@ fn main() {
             MenuItem::label("Code").submenu(
                 ContextMenu::new(Theme::auto())
                     .item(MenuItem::label("New Window").on_select(|| eprintln!("code: new window")))
-                    .item(MenuItem::label("New Workspace").on_select(|| eprintln!("code: workspace"))),
+                    .item(
+                        MenuItem::label("New Workspace").on_select(|| eprintln!("code: workspace")),
+                    ),
             ),
         )
         .item(MenuItem::label("Firefox").on_select(|| eprintln!("firefox")))
@@ -96,8 +98,14 @@ fn main() {
     })
     .ipc("open", |args| {
         let name = args.first().map(String::as_str).unwrap_or("file");
-        let x = args.get(1).and_then(|s| s.parse::<i32>().ok()).unwrap_or(240);
-        let y = args.get(2).and_then(|s| s.parse::<i32>().ok()).unwrap_or(180);
+        let x = args
+            .get(1)
+            .and_then(|s| s.parse::<i32>().ok())
+            .unwrap_or(240);
+        let y = args
+            .get(2)
+            .and_then(|s| s.parse::<i32>().ok())
+            .unwrap_or(180);
         context_menu::open_named(name, x, y);
         String::from("ok")
     })

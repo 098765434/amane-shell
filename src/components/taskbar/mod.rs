@@ -297,9 +297,12 @@ fn window_tile(win: &WindowInfo, theme: Theme, t: &Tokens) -> Rectangle {
     .gap(2.0)
     .width(Size::Fixed(text_w));
 
-    let row = Row::new(vec![boxed(app_icon_tile(&app, &title, side, theme, t)), boxed(label)])
-        .gap(t.item_gap)
-        .align(Center);
+    let row = Row::new(vec![
+        boxed(app_icon_tile(&app, &title, side, theme, t)),
+        boxed(label),
+    ])
+    .gap(t.item_gap)
+    .align(Center);
 
     Rectangle::new()
         .width(Size::Fixed(t.window_max))
@@ -381,7 +384,11 @@ fn icon_for(app_id: &str) -> Option<PathBuf> {
 }
 
 fn first_letter(app: &str, title: &str) -> String {
-    let base = app.rsplit('.').next().filter(|s| !s.is_empty()).unwrap_or(app);
+    let base = app
+        .rsplit('.')
+        .next()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(app);
     let source = if base.is_empty() { title } else { base };
 
     source
@@ -423,7 +430,11 @@ fn open_window_menu(id: u64, floating: bool) {
         .item(MenuItem::label(float_label).on_select(move || Windows::toggle_floating(id)))
         .item(MenuItem::label("Move to Workspace").submenu(move_to))
         .separator()
-        .item(MenuItem::label("Close").destructive().on_select(move || Windows::close(id)));
+        .item(
+            MenuItem::label("Close")
+                .destructive()
+                .on_select(move || Windows::close(id)),
+        );
 
     context_menu::register(WINDOW_MENU_KEY, menu);
     context_menu::open_under(WINDOW_MENU_KEY, BAR_NS, cursor_x(), 0, 1, 1);
@@ -437,7 +448,11 @@ fn volume_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     let volume = audio.volume();
     drop(audio);
 
-    let glyph = if muted { ICON_VOLUME_OFF } else { ICON_VOLUME_UP };
+    let glyph = if muted {
+        ICON_VOLUME_OFF
+    } else {
+        ICON_VOLUME_UP
+    };
 
     let content = Row::new(vec![
         boxed(icon(glyph, t.icon_size, theme.fg, t)),

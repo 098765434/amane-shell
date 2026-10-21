@@ -78,8 +78,7 @@ fn parse(source: &str) -> Result<Tokens, String> {
         min_width: dim("space.min-width")?,
         max_width: dim("space.max-width")?,
         submenu_offset: dim("space.submenu-offset")?,
-        font_family: font_family(&root, "font.ui.family")
-            .ok_or("bad token font.ui.family")?,
+        font_family: font_family(&root, "font.ui.family").ok_or("bad token font.ui.family")?,
         font_regular: weight("font.ui.weight.regular")?,
         label_size: num("type.label.size")?,
         shortcut_size: num("type.shortcut.size")?,
