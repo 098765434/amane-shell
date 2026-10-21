@@ -14,7 +14,7 @@ so it can't drift.
 
 | Namespace | Surface |
 |---|---|
-| `amane.taskbar` | the bar |
+| `amane.taskbar` | the bar (opaque — intentionally has **no** blur rule) |
 | `amane.taskbar.wifi` | the Wi‑Fi panel |
 | `amane.context-menu-anchor` | the context-menu anchor window |
 | `amane.context-menu.0` … `.7` | nested context-menu levels |

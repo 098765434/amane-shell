@@ -1,9 +1,10 @@
 # amane-shell
 
 A custom Wayland desktop bar for the [niri](https://github.com/YaLTeR/niri) compositor, built on the
-[amane](https://github.com/098765434/amane) shell library (a fork). macOS-flavoured: a
-translucent frosted panel, rounded pills, generous spacing — compact and ambient in normal use,
-expanding into an interactive dock while niri's overview is open.
+[amane](https://github.com/098765434/amane) shell library (a fork). macOS-flavoured: a clean
+opaque bar with rounded pills and generous spacing — compact and ambient in normal use, expanding
+into an interactive dock while niri's overview is open. Its floating surfaces (context menus and the
+Wi-Fi panel) are the frosted, compositor-blurred ones — the bar itself is not.
 
 > **Requires a forked niri** for its signature feature (the overview smooth-expand needs live
 > gesture-IPC events): [098765434/niri](https://github.com/098765434/niri). It runs on
@@ -47,10 +48,11 @@ the library together, check `amane` out beside this repo and add a git-ignored
 > against its own bundled library copy, **not** this fork (so it lacks `Gestures` and won't compile
 > the bar). The flake is the one canonical build path.
 
-## niri layer-rules (required)
+## niri layer-rules (for the frosted popups)
 
-The bar's surfaces need matching `layer-rule` blocks in your niri config (blur + corner rounding).
-`niri-layer-rule.kdl` is the **source of truth**; `./gen-layer-rules.sh` injects those blocks into a
+The shell's **floating** surfaces (context menus and the Wi-Fi panel) get their blur + corner
+rounding from matching `layer-rule` blocks in your niri config. The bar itself is opaque and needs
+no rule. `niri-layer-rule.kdl` is the **source of truth**; `./gen-layer-rules.sh` injects those blocks into a
 target niri config between marker comments, so the two never drift (no hand-copying):
 
 ```sh

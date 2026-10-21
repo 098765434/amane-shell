@@ -1,8 +1,9 @@
 # Taskbar
 
 A bottom layer-shell bar (`src/components/taskbar/mod.rs`), full-width, anchored to the bottom on
-the `Top` layer with `Zone::Reserve`. Namespace `amane.taskbar`. The root is a frosted rounded
-`Rectangle` (backdrop blur) holding a three-zone `Stack`.
+the `Top` layer with `Zone::Reserve`. Namespace `amane.taskbar`. The root is an opaque rounded
+`Rectangle` holding a three-zone `Stack` — the bar is intentionally **not** blurred (no layer-rule
+for its namespace); only the floating surfaces (popups, Wi-Fi panel) are frosted.
 
 ## Height & the overview smooth-expand
 

@@ -29,14 +29,9 @@ layer-rule {
     }
 }
 
-// Taskbar: a full-width bottom bar. Its surface is semi-transparent; the
-// compositor blur behind it gives the frosted macOS material.
-layer-rule {
-    match namespace="^amane\\.taskbar$"
-    background-effect {
-        blur true
-    }
-}
+// Taskbar: a full-width bottom bar. It is deliberately NOT blurred — the bar
+// is opaque; only the floating surfaces (popups + the Wi-Fi card) are frosted.
+// (No layer-rule for `amane.taskbar` on purpose.)
 
 // WiFi panel: a rounded frosted card anchored bottom-right, toggled by the
 // taskbar's network indicator.
