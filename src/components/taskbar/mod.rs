@@ -12,6 +12,7 @@
 //! driven by `design-tokens/bar.tokens.json` via [`tokens`].
 
 mod clock;
+mod power;
 mod theme;
 mod tokens;
 mod wifi;
@@ -22,7 +23,8 @@ use std::path::PathBuf;
 use amane::{
     Apps, Audio, Battery, Button, Center, Color, Column, End, Full, Gestures, Image, Keyboard,
     Layer, LayerWindow, Network, Padding, Parent, Point, Pointer, Rectangle, Row, Scroll, Service,
-    Size, Stack, Start, Text, Vertical, Widget, WindowInfo, Windows, Workspace, Workspaces, Zone,
+    Size, Stack, Start, Text, Vertical, WarningLevel, Widget, WindowInfo, Windows, Workspace,
+    Workspaces, Zone,
 };
 
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
@@ -31,6 +33,7 @@ use clock::Clock;
 use theme::Theme;
 use tokens::{Tokens, tokens};
 
+pub use power::panel as power_panel;
 pub use wifi::panel as wifi_panel;
 
 // Material Symbols codepoints (see design-tokens/bar.tokens.json font.icon).
@@ -42,6 +45,12 @@ pub(crate) const ICON_WIFI_OFF: char = '\u{e648}';
 pub(crate) const ICON_LOCK: char = '\u{e897}';
 pub(crate) const ICON_CHECK: char = '\u{e5ca}';
 pub(crate) const ICON_REFRESH: char = '\u{e5d5}';
+pub(crate) const ICON_BATTERY: char = '\u{e1a4}';
+pub(crate) const ICON_BATTERY_CHARGING: char = '\u{e1a3}';
+pub(crate) const ICON_MOUSE: char = '\u{e323}';
+pub(crate) const ICON_KEYBOARD: char = '\u{e312}';
+pub(crate) const ICON_HEADSET: char = '\u{e310}';
+pub(crate) const ICON_GAMEPAD: char = '\u{ea28}';
 
 /// A Material-Symbols glyph as a `Text` widget (centered on its ink).
 pub(crate) fn icon(glyph: char, size: f32, color: Color, t: &Tokens) -> Text {
@@ -516,6 +525,7 @@ fn network_indicator(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
             .cursor(Pointer)
             .on_click(|button| {
                 if button == Button::Left {
+                    power::close();
                     wifi::toggle();
                 }
             })
@@ -531,19 +541,45 @@ fn battery_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     }
 
     let pct = battery.percent();
-    let color = if battery.charging() {
+    let on_ac = battery.on_ac();
+    // UPower's warning level; the sysfs fallback has none, so keep a threshold there
+    let low = battery.warning() >= WarningLevel::Low || (pct <= 15 && !on_ac);
+    drop(battery);
+
+    let color = if on_ac {
         theme.accent
-    } else if pct <= 15 {
+    } else if low {
         theme.urgent
     } else {
         theme.fg
     };
 
-    boxed(
+    let mut content: Vec<Box<dyn Widget>> = Vec::new();
+    if on_ac {
+        content.push(boxed(icon(ICON_BATTERY_CHARGING, t.icon_size, color, t)));
+    }
+    content.push(boxed(
         Text::new(format!("{pct}%"))
             .size(t.label_size)
             .color(color)
             .font(&t.font_family),
+    ));
+
+    boxed(
+        Rectangle::new()
+            // room for the AC glyph and "100%"
+            .width(Size::Fixed(t.icon_size + t.label_size * 2.8))
+            .height(Parent)
+            .fill(Color::TRANSPARENT)
+            .align_child(Center, Center)
+            .cursor(Pointer)
+            .on_click(|button| {
+                if button == Button::Left {
+                    wifi::close();
+                    power::toggle();
+                }
+            })
+            .child(Row::new(content).gap(2.0).align(Center)),
     )
 }
 

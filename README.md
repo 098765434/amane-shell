@@ -84,7 +84,7 @@ dark; set `AMANE_THEME=light` to switch.
 src/
   main.rs                       App builder: windows, popups, IPC handlers
   components/
-    taskbar/                    the bar (mod.rs) + clock, wifi, theme, tokens
+    taskbar/                    the bar (mod.rs) + clock, wifi, power, theme, tokens
     context_menu/               reusable nested context menu on xdg-popups
 design-tokens/                  bar.tokens.json, menu.tokens.json
 niri-layer-rule.kdl             layer-rule source of truth (see docs/layer-rules.md)

@@ -83,6 +83,7 @@ fn main() {
     let mut app = App::new()
         .window(taskbar::bar)
         .window(taskbar::wifi_panel)
+        .window(taskbar::power_panel)
         .window(context_menu::anchor);
     for level in context_menu::LEVELS {
         app = app.popup(level);
