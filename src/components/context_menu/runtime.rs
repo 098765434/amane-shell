@@ -87,23 +87,7 @@ pub fn register(key: &'static str, menu: ContextMenu) {
 
 /// Open a registered menu at the given screen coordinates.
 pub fn open_at(key: &'static str, x: i32, y: i32) {
-    with_mut(|r| {
-        let Some(menu) = r.registry.get(key) else {
-            return;
-        };
-        let level = Level {
-            entries: menu.entries.clone(),
-            focus: None,
-            focus_source: None,
-            anchor_rect: (x, y, 1, 1),
-        };
-        r.stack.clear();
-        r.stack.push(level);
-        r.pending = Some(key);
-        r.root_parent = None;
-        r.phase = Phase::Open;
-    });
-    request_frame();
+    open_root(key, (x, y, 1, 1), None);
 }
 
 /// Open a registered menu hung under a specific parent surface (namespace),
@@ -112,6 +96,28 @@ pub fn open_at(key: &'static str, x: i32, y: i32) {
 /// constraint makes the menu open upward automatically. The parent surface
 /// must have non-`None` keyboard interactivity for keyboard nav to work.
 pub fn open_under(key: &'static str, parent_ns: &'static str, x: i32, y: i32, w: i32, h: i32) {
+    open_root(key, (x, y, w, h), Some(parent_ns));
+}
+
+/// Register `menu` under `key` and open it hung under `parent_ns` at the
+/// point `(x, y)` of that surface: a menu built fresh for what was clicked.
+pub fn show_under(
+    key: &'static str,
+    menu: ContextMenu,
+    parent_ns: &'static str,
+    (x, y): (i32, i32),
+) {
+    register(key, menu);
+    open_under(key, parent_ns, x, y, 1, 1);
+}
+
+/// Opens `key` as the only level, at `anchor_rect` in its parent surface
+/// (`None` is the desktop anchor).
+fn open_root(
+    key: &'static str,
+    anchor_rect: (i32, i32, i32, i32),
+    root_parent: Option<&'static str>,
+) {
     with_mut(|r| {
         let Some(menu) = r.registry.get(key) else {
             return;
@@ -120,12 +126,12 @@ pub fn open_under(key: &'static str, parent_ns: &'static str, x: i32, y: i32, w:
             entries: menu.entries.clone(),
             focus: None,
             focus_source: None,
-            anchor_rect: (x, y, w, h),
+            anchor_rect,
         };
         r.stack.clear();
         r.stack.push(level);
         r.pending = Some(key);
-        r.root_parent = Some(parent_ns);
+        r.root_parent = root_parent;
         r.phase = Phase::Open;
     });
     request_frame();

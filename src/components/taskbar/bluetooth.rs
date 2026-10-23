@@ -8,22 +8,23 @@
 //! PIN: the fork has no BlueZ agent to show or type one.
 
 use std::cell::{Cell, RefCell};
-use std::thread;
 use std::time::{Duration, Instant};
 
 use amane::{
-    Bluetooth, BluetoothDevice, Button, Column, LayerWindow, Parent, Pointer, Rectangle,
-    ScrollArea, Service, Size, Text, Widget, mark_all,
+    Bluetooth, BluetoothDevice, Column, LayerWindow, Parent, Rectangle, ScrollArea, Service, Size,
+    Widget, mark_all,
 };
 
+use super::battery_color;
 use super::panel::{self, Panel};
-use super::{
-    ICON_BLUETOOTH, ICON_COMPUTER, ICON_DEVICE_OTHER, ICON_GAMEPAD, ICON_HEADPHONES, ICON_KEYBOARD,
-    ICON_MOUSE, ICON_PHONE, ICON_SPEAKER, boxed,
-};
+use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::Switch;
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
-use crate::tokens::{Styled, sys};
+use crate::components::icons::{ICON_BLUETOOTH, device_glyph};
+use crate::components::layout::{boxed, caption, cursor};
+use crate::components::list::{self, List, ListItem};
+use crate::components::motion::redraw_after;
+use crate::tokens::sys;
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
 pub const BLUETOOTH_NS: &str = "amane.taskbar.bluetooth";
@@ -79,10 +80,7 @@ fn act(device: &BluetoothDevice) {
         })
     });
     // redraw once the wait is over, so a call that never answers stops saying so
-    thread::spawn(|| {
-        thread::sleep(PENDING_FOR);
-        mark_all();
-    });
+    redraw_after(PENDING_FOR);
     mark_all();
 }
 
@@ -120,9 +118,7 @@ fn open_device_menu(device: &BluetoothDevice) {
                 .on_select(move || Bluetooth::forget(&path)),
         );
 
-    context_menu::register(DEVICE_MENU_KEY, menu);
-    let (x, y) = panel::cursor();
-    context_menu::open_under(DEVICE_MENU_KEY, BLUETOOTH_NS, x, y, 1, 1);
+    context_menu::show_under(DEVICE_MENU_KEY, menu, BLUETOOTH_NS, cursor());
 }
 
 // ───── view ──────────────────────────────────────────────────────────────────
@@ -151,22 +147,20 @@ fn card() -> Rectangle {
         Bluetooth::start_scan();
     }
 
-    let header = panel::header(
-        ICON_BLUETOOTH,
-        "Bluetooth",
-        sys::color::surface::panel::fg(),
-        vec![boxed(
+    let header = TopAppBar::new("Bluetooth")
+        .navigation_icon(ICON_BLUETOOTH)
+        .actions(vec![boxed(
             Switch::new("amane.bluetooth.powered", powered)
                 .on_toggle(Bluetooth::set_powered)
                 .build(),
-        )],
-    );
+        )])
+        .build();
 
     let mut body = vec![boxed(header)];
     if powered {
         body.push(device_list(mine, others, scanning));
     } else {
-        body.push(boxed(panel::caption("Bluetooth is off")));
+        body.push(boxed(caption("Bluetooth is off")));
     }
 
     panel::card(body, sys::space::gap::l())
@@ -186,7 +180,7 @@ fn device_list(
     let mut sections: Vec<Box<dyn Widget>> = Vec::new();
 
     if !mine.is_empty() {
-        sections.push(section("My Devices", &mine, None));
+        sections.push(boxed(device_section("My Devices", &mine).build()));
     }
 
     let empty_note = if scanning {
@@ -194,7 +188,11 @@ fn device_list(
     } else {
         "No devices found"
     };
-    sections.push(section("Other Devices", &others, Some(empty_note)));
+    sections.push(boxed(
+        device_section("Other Devices", &others)
+            .empty(empty_note)
+            .build(),
+    ));
 
     let column = Column::new(sections)
         .gap(sys::space::gap::xl())
@@ -206,83 +204,39 @@ fn device_list(
     )
 }
 
-fn section(title: &str, devices: &[BluetoothDevice], empty: Option<&str>) -> Box<dyn Widget> {
-    let mut rows: Vec<Box<dyn Widget>> = vec![boxed(panel::caption(title))];
-    for device in devices {
-        rows.push(boxed(device_row(device)));
-    }
-    if let (true, Some(note)) = (devices.is_empty(), empty) {
-        rows.push(boxed(panel::caption(note)));
-    }
-
-    boxed(Column::new(rows).gap(sys::space::gap::xs()).width(Parent))
+fn device_section(title: &str, devices: &[BluetoothDevice]) -> List {
+    List::new(devices.iter().map(device_item).collect()).header(title)
 }
 
-fn device_row(device: &BluetoothDevice) -> Rectangle {
-    let mut trailing: Vec<Box<dyn Widget>> = Vec::new();
+fn device_item(device: &BluetoothDevice) -> ListItem {
+    let mut item = ListItem::new(
+        format!("amane.bluetooth.device.{}", device.path()),
+        device.name(),
+    )
+    .leading(device_glyph(device.icon()))
+    .selected(device.connected());
 
     if let Some(label) = pending_label(device) {
-        trailing.push(boxed(panel::caption(label)));
+        item = item.trailing(caption(label));
     } else {
         if let Some(percent) = device.battery() {
-            let color = if percent <= 15 {
-                sys::color::status::critical::bg()
-            } else {
-                sys::color::content::secondary()
-            };
-            trailing.push(boxed(
-                Text::new(format!("{percent}%"))
-                    .style(sys::r#type::caption())
-                    .color(color),
+            // a caption, smaller than the bar's numeric percentages (manual §11.4)
+            item = item.trailing(list::trailing_text(
+                format!("{percent}%"),
+                battery_color(percent, false, sys::color::content::secondary()),
             ));
         }
         if device.connected() {
-            trailing.push(panel::check());
+            item = item.trailing(list::check());
         }
     }
 
-    let clicked = device.clone();
-
-    panel::list_row(
-        device_glyph(device.icon()),
-        device.name(),
-        trailing,
-        device.connected(),
-    )
-    .cursor(Pointer)
-    .on_click(move |button| match button {
-        Button::Left => act(&clicked),
-        // only a paired device has anything to forget
-        Button::Right if clicked.paired() => open_device_menu(&clicked),
-        _ => {}
-    })
-}
-
-/// The glyph for BlueZ's freedesktop icon name (`audio-headset`, `input-mouse` …).
-fn device_glyph(icon: &str) -> char {
-    match icon {
-        i if i.starts_with("audio-head") => ICON_HEADPHONES,
-        i if i.starts_with("audio") => ICON_SPEAKER,
-        "input-mouse" | "input-tablet" => ICON_MOUSE,
-        "input-keyboard" => ICON_KEYBOARD,
-        "input-gaming" => ICON_GAMEPAD,
-        "phone" => ICON_PHONE,
-        "computer" => ICON_COMPUTER,
-        _ => ICON_DEVICE_OTHER,
+    let pressed = device.clone();
+    item = item.on_press(move || act(&pressed));
+    // only a paired device has anything to forget
+    if device.paired() {
+        let clicked = device.clone();
+        item = item.on_secondary(move || open_device_menu(&clicked));
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn device_glyph_follows_the_bluez_icon() {
-        assert_eq!(device_glyph("audio-headset"), ICON_HEADPHONES);
-        assert_eq!(device_glyph("audio-headphones"), ICON_HEADPHONES);
-        assert_eq!(device_glyph("audio-card"), ICON_SPEAKER);
-        assert_eq!(device_glyph("input-mouse"), ICON_MOUSE);
-        assert_eq!(device_glyph("phone"), ICON_PHONE);
-        assert_eq!(device_glyph(""), ICON_DEVICE_OTHER);
-    }
+    item
 }

@@ -18,14 +18,15 @@ use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant, SystemTime};
 
 use amane::{
-    Button, Color, Horizontal, Keyboard, Layer, LayerWindow, Margin, Notification, Notifications,
-    Parent, Point, Pointer, Rectangle, Service, Timeout, Urgency, Vertical, Zone,
+    Horizontal, Keyboard, LayerWindow, Margin, Notification, Notifications, Point, Service,
+    Timeout, Urgency, Vertical,
 };
 
-use super::card::{self, Place};
+use super::card::{self, Measured, Place, critical};
 use super::dnd::DoNotDisturb;
-use super::motion::{self, Arrive, Item, Pose, Shown};
-use crate::components::taskbar::{Panel, is_open};
+use crate::components::layout::blank;
+use crate::components::motion::{self, Arrive, Item, Pose, Shown};
+use crate::components::taskbar::{Panel, is_open, overlay};
 use crate::tokens::{notification, sys};
 
 /// Layer-surface namespace of every toast; the niri `layer-rule` matches it.
@@ -94,13 +95,13 @@ impl Service for Toasts {
             let list = notifications.list();
 
             // forget what belongs to notifications that are gone
-            self.hidden
-                .retain(|(id, _)| list.iter().any(|n| n.id() == *id));
-            self.held.retain(|id, _| list.iter().any(|n| n.id() == *id));
+            let ids: HashSet<u32> = list.iter().map(Notification::id).collect();
+            self.hidden.retain(|(id, _)| ids.contains(id));
+            self.held.retain(|id, _| ids.contains(id));
 
             let shown: Vec<u32> = list
                 .iter()
-                .filter(|n| self.alive(n, now) && (!dnd || urgent(n)))
+                .filter(|n| self.shows(n, now, dnd))
                 .map(Notification::id)
                 .collect();
             // a transient notification is done once its toast is
@@ -126,16 +127,12 @@ impl Service for Toasts {
 
 impl Toasts {
     fn alive(&self, n: &Notification, now: SystemTime) -> bool {
-        alive(
-            Toast {
-                id: n.id(),
-                received: n.received(),
-                timeout: n.timeout(),
-                urgency: n.urgency(),
-            },
-            now,
-            self,
-        )
+        alive(Toast::from(n), now, self)
+    }
+
+    /// Whether `n`'s toast is up: alive, and let through Do Not Disturb.
+    fn shows(&self, n: &Notification, now: SystemTime, dnd: bool) -> bool {
+        self.alive(n, now) && (!dnd || critical(n))
     }
 
     /// The pointer came onto a toast (`true`) or left them.
@@ -180,8 +177,15 @@ struct Toast {
     urgency: Urgency,
 }
 
-fn urgent(n: &Notification) -> bool {
-    n.urgency() == Urgency::Critical
+impl From<&Notification> for Toast {
+    fn from(n: &Notification) -> Self {
+        Self {
+            id: n.id(),
+            received: n.received(),
+            timeout: n.timeout(),
+            urgency: n.urgency(),
+        }
+    }
 }
 
 /// How long a toast shows: what the sender asked for, the shell's default,
@@ -217,19 +221,25 @@ fn alive(toast: Toast, now: SystemTime, state: &Toasts) -> bool {
 
 /// The toasts to draw this frame: the newest few, top to bottom, and any
 /// still sliding out, each with its surface slot.
-fn frame(now: SystemTime) -> Vec<(usize, Shown<Notification>)> {
+fn frame(now: SystemTime) -> Vec<(usize, Shown<Measured>)> {
     let dnd = DoNotDisturb::read().on();
     let center = is_open(Panel::Notifications);
 
     // one service lock at a time: the Toasts tick holds its own while it
     // reads and expires notifications
     let all: Vec<Notification> = Notifications::read().list().to_vec();
+    let max_visible = notification::toast::max_visible() as usize;
+    // the rest of the slots are for toasts still sliding out
+    debug_assert!(
+        max_visible < SLOTS,
+        "notification.toast.max-visible needs a spare slot"
+    );
     let list: Vec<Notification> = {
         let toasts = Toasts::read();
         all.into_iter()
             .rev()
-            .filter(|n| !center && toasts.alive(n, now) && (!dnd || urgent(n)))
-            .take(notification::toast::max_visible() as usize)
+            .filter(|n| !center && toasts.shows(n, now, dnd))
+            .take(max_visible)
             .collect()
     };
 
@@ -238,12 +248,13 @@ fn frame(now: SystemTime) -> Vec<(usize, Shown<Notification>)> {
     let items = list
         .into_iter()
         .map(|n| {
-            let height = card::height(&n, Place::Toast);
+            let m = Measured::new(n, Place::Toast);
+            let height = m.layout.height;
             let pose = Pose::at(y);
             y += height + sys::space::gap::s();
             Item {
-                key: u64::from(n.id()),
-                value: n,
+                key: u64::from(m.notification.id()),
+                value: m,
                 height,
                 pose,
                 enter: pose.moved(off),
@@ -261,7 +272,7 @@ thread_local! {
     static SLOT_KEYS: RefCell<[Option<u64>; SLOTS]> = const { RefCell::new([None; SLOTS]) };
 }
 
-fn assign(shown: Vec<Shown<Notification>>) -> Vec<(usize, Shown<Notification>)> {
+fn assign(shown: Vec<Shown<Measured>>) -> Vec<(usize, Shown<Measured>)> {
     SLOT_KEYS.with_borrow_mut(|slots| {
         for slot in slots.iter_mut() {
             if slot.is_some_and(|key| !shown.iter().any(|s| s.key == key)) {
@@ -353,63 +364,50 @@ fn slot(index: usize) -> LayerWindow {
 
     let base = LayerWindow::new().width(Place::Toast.width());
     let Some((_, toast)) = shown else {
-        return base
-            .height(1.0)
-            .anchor_vertical(Vertical::Top)
-            .anchor_horizontal(Horizontal::Right)
-            .layer(Layer::Overlay)
-            .namespace(TOAST_NS)
-            .visible(false)
-            .child(
-                Rectangle::new()
-                    .width(Parent)
-                    .height(Parent)
-                    .fill(Color::TRANSPARENT),
-            );
+        let base = base.height(1.0).visible(false);
+        return overlay(base, TOAST_NS, Vertical::Top, Horizontal::Right).child(blank());
     };
 
-    let n = toast.value;
+    let m = toast.value;
+    let n = &m.notification;
     let id = n.id();
     let received = n.received();
     let pose = toast.pose;
     let gap = sys::space::gap::m();
     let offset = swipe_offset(id);
 
-    let mut view = card::card(&n, Place::Toast, now, 1.0);
+    let mut view = card::card(&m, Place::Toast, now, 1.0);
     if !toast.leaving {
-        view = view
-            .cursor(Pointer)
-            .on_hover(move |inside| {
-                card::hover(id, inside);
+        view = card::interactive(
+            view,
+            id,
+            move |inside| {
                 Toasts::hover(inside);
                 if !inside {
                     let_go(id, pose, received);
                 }
-            })
-            .on_drag(move |point| drag(id, point))
-            .on_click(move |button| {
-                if button == Button::Left && !let_go(id, pose, received) {
+            },
+            move || {
+                if !let_go(id, pose, received) {
                     Notifications::click(id);
                 }
-            });
+            },
+        )
+        .on_drag(move |point| drag(id, point));
     }
 
-    base.height(toast.height)
-        .anchor_vertical(Vertical::Top)
-        .anchor_horizontal(Horizontal::Right)
+    let base = base
+        .height(toast.height)
         .margin(Margin {
             top: (gap + pose.y).round() as i32,
             right: (gap - pose.x - offset).round() as i32,
             bottom: 0,
             left: 0,
         })
-        .layer(Layer::Overlay)
-        .space(Zone::Respect)
         // None so a toast never takes focus from the app being typed in
         .keyboard(Keyboard::None)
-        .namespace(TOAST_NS)
-        .visible(true)
-        .child(view)
+        .visible(true);
+    overlay(base, TOAST_NS, Vertical::Top, Horizontal::Right).child(view)
 }
 
 #[cfg(test)]

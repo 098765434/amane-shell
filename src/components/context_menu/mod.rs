@@ -1,6 +1,6 @@
 // This module is a reusable context-menu component (docs/context-menu.md). Its
-// public API (icon constructors, extra builder methods) is intentionally broader
-// than the bundled demo exercises, so dead_code is allowed module-wide.
+// public API (icon constructors, `open_at`, `open_under` …) is intentionally
+// broader than the shell uses, so dead_code is allowed module-wide.
 // `unused_imports` is deliberately NOT allowed — imports must stay honest.
 #![allow(dead_code)]
 
@@ -10,16 +10,17 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use amane::{
-    Button, Center, Color, Column, ConstraintAdjustment, Gravity, Horizontal, Image, Key, Keyboard,
-    Layer, LayerWindow, Padding, Parent, Point, Pointer, Popup, Rectangle, Row, SpaceBetween, Text,
-    Vertical, Widget, WindowSize, request_frame,
+    Button, Center, Color, ConstraintAdjustment, Gravity, Horizontal, Image, Key, Keyboard, Layer,
+    LayerWindow, Parent, Point, Pointer, Popup, Rectangle, Row, Text, Vertical, Widget, WindowSize,
+    request_frame,
 };
 
-// Full public API of the component. Some entry points aren't exercised by
-// the bundled demo, so this re-export block allows unused imports.
-#[allow(unused_imports)]
-pub use runtime::{arm, close, open_at, open_named, open_under, register, set_cursor};
+pub use runtime::{arm, close, open_named, register, show_under};
 
+use crate::components::card::{Card, Surface, Variant};
+use crate::components::color::with_alpha;
+use crate::components::divider::Divider;
+use crate::components::layout::{blank, boxed, pad, slot, split_row, text_width};
 use crate::tokens::{Styled, menu, sys};
 use runtime::{FocusSource, with, with_mut};
 
@@ -210,10 +211,7 @@ pub fn anchor() -> LayerWindow {
             .input_region(Vec::new());
     }
 
-    let mut rect = Rectangle::new()
-        .width(Parent)
-        .height(Parent)
-        .fill(Color::TRANSPARENT);
+    let mut rect = blank();
 
     if arming {
         rect = rect
@@ -307,45 +305,17 @@ fn card_widget(entries: &[Entry], level: usize) -> Rectangle {
         .map(|(i, entry)| build_entry(i, entry, level, any_icon))
         .collect();
 
-    Rectangle::new()
-        .width(Parent)
-        .height(Parent)
-        .fill(sys::color::surface::popover::bg())
-        .radius(sys::radius::popover())
-        .border(
-            sys::border::hairline(),
-            sys::color::surface::popover::stroke(),
-        )
-        .padding(Padding {
-            top: menu::card::padding(),
-            right: menu::card::padding(),
-            bottom: menu::card::padding(),
-            left: menu::card::padding(),
-        })
-        .child(Column::new(rows).width(Parent))
+    Card::new(rows)
+        .surface(Surface::Popover)
+        .variant(Variant::Outlined)
+        .padding(menu::card::padding())
+        .build()
 }
 
 fn build_entry(index: usize, entry: &Entry, level: usize, any_icon: bool) -> Box<dyn Widget> {
     match entry {
-        Entry::Separator => Box::new(
-            Rectangle::new()
-                .width(Parent)
-                .height(sys::border::hairline() + 2.0 * sys::space::gap::xs())
-                .fill(Color::TRANSPARENT)
-                .padding(Padding {
-                    top: sys::space::gap::xs(),
-                    right: 0.0,
-                    bottom: sys::space::gap::xs(),
-                    left: 0.0,
-                })
-                .child(
-                    Rectangle::new()
-                        .width(Parent)
-                        .height(sys::border::hairline())
-                        .fill(sys::color::separator()),
-                ),
-        ),
-        Entry::Item(item) => Box::new(row(index, item, level, any_icon)),
+        Entry::Separator => boxed(Divider::build()),
+        Entry::Item(item) => boxed(row(index, item, level, any_icon)),
     }
 }
 
@@ -355,38 +325,9 @@ fn row(index: usize, item: &MenuItem, level: usize, any_icon: bool) -> Rectangle
     let focused = focused && item.enabled;
     let keyboard = focused && source == Some(FocusSource::Keyboard);
 
-    let fill = if !focused {
-        Color::TRANSPARENT
-    } else if keyboard && !item.destructive {
-        sys::color::accent::bg()
-    } else if item.destructive {
-        sys::color::status::critical::hover()
-    } else {
-        sys::color::state::hover()
-    };
+    let (fill, fg, shortcut_color) = row_colors(item, focused, keyboard);
 
-    let fg = if !item.enabled {
-        sys::color::surface::popover::fg_secondary()
-    } else if keyboard && !item.destructive {
-        sys::color::accent::fg()
-    } else if item.destructive {
-        sys::color::status::critical::text()
-    } else {
-        sys::color::surface::popover::fg()
-    };
-
-    let shortcut_color = if keyboard && !item.destructive {
-        with_alpha_f(sys::color::accent::fg(), menu::shortcut::hover_opacity())
-    } else if focused {
-        with_alpha_f(
-            sys::color::surface::popover::fg(),
-            menu::shortcut::hover_opacity(),
-        )
-    } else {
-        sys::color::surface::popover::fg_secondary()
-    };
-
-    let label_widget: Box<dyn Widget> = Box::new(
+    let label_widget: Box<dyn Widget> = boxed(
         Text::new(item.label.clone())
             .style(sys::r#type::label())
             .color(fg)
@@ -394,54 +335,38 @@ fn row(index: usize, item: &MenuItem, level: usize, any_icon: bool) -> Rectangle
     );
 
     let shortcut_widget: Box<dyn Widget> = match &item.shortcut {
-        Some(s) => Box::new(
+        Some(s) => boxed(
             Text::new(s.clone())
                 .style(sys::r#type::label())
                 .color(shortcut_color),
         ),
-        None => Box::new(empty()),
+        None => boxed(empty()),
     };
 
     let chevron_widget: Box<dyn Widget> = if item.has_submenu() {
-        Box::new(
-            Rectangle::new()
-                .width(menu::chevron_slot::width())
-                .height(menu::chevron_slot::width())
-                .fill(Color::TRANSPARENT)
-                .align_child(Center, Center)
-                .child(
-                    Text::new("\u{203A}")
-                        .style(sys::r#type::label())
-                        .color(fg)
-                        .tight(),
-                ),
+        boxed(
+            slot(menu::chevron_slot::width()).child(
+                Text::new("\u{203A}")
+                    .style(sys::r#type::label())
+                    .color(fg)
+                    .tight(),
+            ),
         )
     } else {
-        Box::new(empty())
+        boxed(empty())
     };
 
     // When no row in this menu has an icon, drop the leading icon column
     // entirely so the label hugs the left padding.
     let leading = if any_icon {
-        Row::new(vec![icon_widget(item.icon.as_ref(), fg), label_widget])
+        Row::new(vec![leading_icon(item.icon.as_ref(), fg), label_widget])
             .gap(sys::space::gap::m())
             .align(Center)
             .height(Parent)
     } else {
         Row::new(vec![label_widget]).align(Center).height(Parent)
     };
-    let trailing = Row::new(vec![shortcut_widget, chevron_widget])
-        .gap(sys::space::gap::s())
-        .align(Center);
-
-    let inner = Row::new(vec![
-        Box::new(leading) as Box<dyn Widget>,
-        Box::new(trailing) as Box<dyn Widget>,
-    ])
-    .width(Parent)
-    .height(Parent)
-    .justify(SpaceBetween)
-    .align(Center);
+    let inner = split_row(leading, vec![shortcut_widget, chevron_widget]).height(Parent);
 
     let has_submenu = item.has_submenu();
     let on_select = item.on_select.clone();
@@ -452,12 +377,7 @@ fn row(index: usize, item: &MenuItem, level: usize, any_icon: bool) -> Rectangle
         .height(menu::row::height())
         .fill(fill)
         .radius(menu::row::radius())
-        .padding(Padding {
-            top: 0.0,
-            right: sys::space::inset::l(),
-            bottom: 0.0,
-            left: sys::space::inset::l(),
-        })
+        .padding(pad(sys::space::inset::l(), 0.0))
         .child(inner);
 
     if enabled {
@@ -479,7 +399,46 @@ fn row(index: usize, item: &MenuItem, level: usize, any_icon: bool) -> Rectangle
     rect
 }
 
-fn icon_widget(icon: Option<&Icon>, fg: Color) -> Box<dyn Widget> {
+/// A row's fill, label colour and shortcut colour. A keyboard-focused row is
+/// selected (accent, like macOS); a pointer-focused one only hovered.
+fn row_colors(item: &MenuItem, focused: bool, keyboard: bool) -> (Color, Color, Color) {
+    let fill = if !focused {
+        Color::TRANSPARENT
+    } else if keyboard && !item.destructive {
+        sys::color::accent::bg()
+    } else if item.destructive {
+        sys::color::status::critical::hover()
+    } else {
+        sys::color::state::hover()
+    };
+
+    let fg = if !item.enabled {
+        sys::color::surface::popover::fg_secondary()
+    } else if keyboard && !item.destructive {
+        sys::color::accent::fg()
+    } else if item.destructive {
+        sys::color::status::critical::text()
+    } else {
+        sys::color::surface::popover::fg()
+    };
+
+    let shortcut_color = if keyboard && !item.destructive {
+        with_alpha(sys::color::accent::fg(), menu::shortcut::hover_opacity())
+    } else if focused {
+        with_alpha(
+            sys::color::surface::popover::fg(),
+            menu::shortcut::hover_opacity(),
+        )
+    } else {
+        sys::color::surface::popover::fg_secondary()
+    };
+
+    (fill, fg, shortcut_color)
+}
+
+/// The row's leading icon slot: a glyph, an image, or blank.
+fn leading_icon(icon: Option<&Icon>, fg: Color) -> Box<dyn Widget> {
+    let side = menu::icon_slot::width();
     match icon {
         Some(Icon::Glyph { ch, font }) => {
             let text = Text::new(ch.clone())
@@ -490,30 +449,14 @@ fn icon_widget(icon: Option<&Icon>, fg: Color) -> Box<dyn Widget> {
                 Some(f) => text.font(f),
                 None => text.font(sys::r#type::label().family),
             };
-            Box::new(
-                Rectangle::new()
-                    .width(menu::icon_slot::width())
-                    .height(menu::icon_slot::width())
-                    .fill(Color::TRANSPARENT)
-                    .align_child(Center, Center)
-                    .child(text),
-            )
+            boxed(slot(side).child(text))
         }
-        Some(Icon::Image(path)) => Box::new(
-            Rectangle::new()
-                .width(menu::icon_slot::width())
-                .height(menu::icon_slot::width())
-                .fill(Image::contain(path.clone())),
-        ),
-        None => Box::new(
-            Rectangle::new()
-                .width(menu::icon_slot::width())
-                .height(menu::icon_slot::width())
-                .fill(Color::TRANSPARENT),
-        ),
+        Some(Icon::Image(path)) => boxed(slot(side).fill(Image::contain(path.clone()))),
+        None => boxed(slot(side)),
     }
 }
 
+/// A zero-size placeholder for a slot a row leaves out.
 fn empty() -> Rectangle {
     Rectangle::new()
         .width(0.0)
@@ -671,17 +614,12 @@ fn invoke_focused(level: usize) {
 
 // ───── Measurement ───────────────────────────────────────────────────────
 
-/// An estimate: amane doesn't expose text measurement.
-fn text_width(s: &str, size: f32) -> f32 {
-    s.chars().count() as f32 * size * menu::label::advance_ratio()
-}
-
 fn item_width(item: &MenuItem, any_icon: bool) -> f32 {
-    let label = text_width(&item.label, sys::r#type::label().size);
+    let label = text_width(&item.label, sys::r#type::label());
     let shortcut = item
         .shortcut
         .as_ref()
-        .map(|s| text_width(s, sys::r#type::label().size) + sys::space::gap::xl())
+        .map(|s| text_width(s, sys::r#type::label()) + sys::space::gap::xl())
         .unwrap_or(0.0);
     let chevron = if item.has_submenu() {
         menu::chevron_slot::width() + sys::space::gap::s()
@@ -715,32 +653,19 @@ pub(crate) fn size_for(entries: &[Entry]) -> (f32, f32) {
 
     let width = (widest + 2.0 * menu::card::padding()).clamp(menu::min_width(), menu::max_width());
 
-    let mut h = 2.0 * menu::card::padding();
-    for e in entries {
-        match e {
-            Entry::Item(_) => h += menu::row::height(),
-            Entry::Separator => h += sys::border::hairline() + 2.0 * sys::space::gap::xs(),
-        }
-    }
+    let height = 2.0 * menu::card::padding() + entries.iter().map(entry_height).sum::<f32>();
 
-    (width, h)
+    (width, height)
 }
 
+/// How far down the card's content entry `index` starts.
 pub(crate) fn row_offset(entries: &[Entry], index: usize) -> f32 {
-    let mut y = 0.0;
-    for (i, e) in entries.iter().enumerate() {
-        if i == index {
-            break;
-        }
-        match e {
-            Entry::Item(_) => y += menu::row::height(),
-            Entry::Separator => y += sys::border::hairline() + 2.0 * sys::space::gap::xs(),
-        }
-    }
-    y
+    entries.iter().take(index).map(entry_height).sum()
 }
 
-fn with_alpha_f(color: Color, alpha: f32) -> Color {
-    let a = (alpha.clamp(0.0, 1.0) * 255.0).round() as u8;
-    Color::rgba(color.red(), color.green(), color.blue(), a)
+fn entry_height(entry: &Entry) -> f32 {
+    match entry {
+        Entry::Item(_) => menu::row::height(),
+        Entry::Separator => Divider::height(),
+    }
 }

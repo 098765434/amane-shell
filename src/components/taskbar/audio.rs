@@ -7,13 +7,17 @@
 //! Read from the fork's `Audio` service, which follows the sound server live.
 
 use amane::{
-    Audio, AudioDevice, Button, Center, Color, Column, End, LayerWindow, Parent, Pointer,
-    Rectangle, Row, ScrollArea, Service, Size, Text, Widget,
+    Audio, AudioDevice, Center, Color, Column, End, LayerWindow, Parent, Rectangle, Row,
+    ScrollArea, Service, Size, Text, Widget,
 };
 
 use super::panel::{self, Panel};
-use super::{ICON_MIC_OFF, ICON_VOLUME_OFF, audio_glyph, boxed};
+use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::{IconButton, Shape, Style};
+use crate::components::icons::{ICON_MIC_OFF, ICON_VOLUME_OFF, audio_glyph};
+use crate::components::layout::{boxed, caption, inner_width, text_width};
+use crate::components::list::{self, List, ListItem};
+use crate::components::slider::Slider;
 use crate::tokens::{Styled, sys};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
@@ -63,12 +67,9 @@ fn card() -> Rectangle {
     };
     drop(audio);
 
-    let header = panel::header(
-        audio_glyph(output_kind, false),
-        "Sound",
-        sys::color::surface::panel::fg(),
-        Vec::new(),
-    );
+    let header = TopAppBar::new("Sound")
+        .navigation_icon(audio_glyph(output_kind, false))
+        .build();
 
     let mut halves = vec![half(output)];
     // a machine without a microphone has nothing to pick
@@ -99,8 +100,14 @@ fn half(half: Half) -> Box<dyn Widget> {
         .map(AudioDevice::kind)
         .unwrap_or_default();
 
-    let mut rows: Vec<Box<dyn Widget>> = vec![
-        boxed(panel::caption(half.title)),
+    let devices: Vec<ListItem> = half
+        .devices
+        .iter()
+        .map(|device| device_item(device, half.input, half.set_default))
+        .collect();
+
+    let mut rows = vec![
+        boxed(caption(half.title)),
         boxed(level(
             audio_glyph(default_kind, half.input),
             half.input,
@@ -110,9 +117,8 @@ fn half(half: Half) -> Box<dyn Widget> {
             half.set_volume,
         )),
     ];
-
-    for device in &half.devices {
-        rows.push(boxed(device_row(device, half.input, half.set_default)));
+    if !half.devices.is_empty() {
+        rows.push(boxed(List::new(devices).build()));
     }
 
     boxed(Column::new(rows).gap(sys::space::gap::xs()).width(Parent))
@@ -134,9 +140,10 @@ fn level(
     };
 
     let button_w = sys::size::control::height();
-    // room for "100%", like the bar's battery module
-    let percent_w = sys::r#type::label().size * 2.8;
-    let inner = sys::size::popover::width() - sys::space::inset::l() * 2.0;
+    // percentages are numeric (manual §11.4), with room for "100%"
+    let text = sys::r#type::numeric();
+    let percent_w = text_width("100%", text);
+    let inner = inner_width(sys::size::popover::width());
     let slider_w = (inner - button_w - percent_w - sys::space::gap::s() * 2.0).max(1.0);
 
     let id = if input {
@@ -158,13 +165,18 @@ fn level(
         .align_child(End, Center)
         .child(
             Text::new(format!("{volume}%"))
-                .style(sys::r#type::label())
+                .style(text)
                 .color(sys::color::content::secondary()),
         );
 
     Row::new(vec![
         boxed(mute),
-        boxed(panel::slider(volume, !muted, slider_w, set_volume)),
+        boxed(
+            Slider::new(volume, slider_w)
+                .dimmed(muted)
+                .on_value_change(set_volume)
+                .build(),
+        ),
         boxed(percent),
     ])
     .gap(sys::space::gap::s())
@@ -172,24 +184,20 @@ fn level(
     .align(Center)
 }
 
-fn device_row(device: &AudioDevice, input: bool, set_default: fn(&str)) -> Rectangle {
+fn device_item(device: &AudioDevice, input: bool, set_default: fn(&str)) -> ListItem {
     let selected = device.default();
-    let trailing = if selected {
-        vec![panel::check()]
-    } else {
-        Vec::new()
-    };
     let name = device.name().to_string();
+    let side = if input { "input" } else { "output" };
 
-    panel::list_row(
-        audio_glyph(device.kind(), input),
-        device.description(),
-        trailing,
-        selected,
-    )
-    .cursor(Pointer)
-    .on_click(move |button| {
-        if button == Button::Left && !selected {
+    let mut item = ListItem::new(format!("amane.audio.{side}.{name}"), device.description())
+        .leading(audio_glyph(device.kind(), input))
+        .selected(selected);
+    if selected {
+        item = item.trailing(list::check());
+    }
+
+    item.on_press(move || {
+        if !selected {
             set_default(&name);
         }
     })

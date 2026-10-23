@@ -38,7 +38,7 @@ impl Service for DoNotDisturb {
         Self { until }
     }
 
-    // only a timed one changes by itself, and a minute late is fine
+    // only a timed one changes by itself, and half a minute late is fine
     fn interval() -> Duration {
         Duration::from_secs(30)
     }
@@ -79,8 +79,8 @@ impl DoNotDisturb {
         Self::set(if on { None } else { Some(Until::Forever) });
     }
 
-    /// The menu of timed choices, hung under `parent_ns` at `(x, y)`.
-    pub fn open_menu(parent_ns: &'static str, x: i32, y: i32) {
+    /// The menu of timed choices, hung under `parent_ns` at `point`.
+    pub fn open_menu(parent_ns: &'static str, point: (i32, i32)) {
         let now = Local::now().naive_local();
         let on = Self::read().on();
 
@@ -106,8 +106,7 @@ impl DoNotDisturb {
             menu.item(MenuItem::label("Turn On").on_select(|| Self::set(Some(Until::Forever))))
         };
 
-        context_menu::register(MENU_KEY, menu);
-        context_menu::open_under(MENU_KEY, parent_ns, x, y, 1, 1);
+        context_menu::show_under(MENU_KEY, menu, parent_ns, point);
     }
 }
 

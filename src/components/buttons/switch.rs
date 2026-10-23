@@ -9,45 +9,39 @@
 //! Like the other controls it reflects state: a click moves the knob at
 //! once, and if the service doesn't follow within [`PENDING_TIMEOUT`] it
 //! goes back to what the service says.
+//!
+//! [`PENDING_TIMEOUT`]: super::PENDING_TIMEOUT
 
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Instant;
 
-use amane::{
-    Animation, Blend, Center, Color, Easing, Radius, Rectangle, Size, Start, request_frame,
-};
+use amane::{Animation, Blend, Center, Color, Radius, Rectangle, Size, Start, request_frame};
 
-use super::{Actions, PENDING_TIMEOUT, SLIDE, SLIDE_BOUNCE, interactive, state_fill};
-use crate::components::taskbar::pad;
+use super::{Actions, Pending, interactive, state_fill, with_existing, with_state};
+use crate::components::layout::pad;
+use crate::components::motion;
 use crate::tokens::sys;
 
 /// One switch's motion, kept across rebuilds under its id.
 struct Motion {
     // 0.0 off … 1.0 on
     knob: Animation,
-    // what a click asked for, until the service agrees or it times out
-    pending: Option<(bool, Instant)>,
-}
-
-thread_local! {
-    static MOTION: RefCell<HashMap<&'static str, Motion>> = RefCell::new(HashMap::new());
+    pending: Pending<bool>,
 }
 
 /// An on/off switch. `id` keys its motion and hover, so it must be unique
 /// and stable.
 pub struct Switch {
-    id: &'static str,
+    id: String,
     on: bool,
     disabled: bool,
     on_toggle: Rc<dyn Fn(bool)>,
 }
 
 impl Switch {
-    pub fn new(id: &'static str, on: bool) -> Self {
+    pub fn new(id: impl Into<String>, on: bool) -> Self {
         Self {
-            id,
+            id: id.into(),
             on,
             disabled: false,
             on_toggle: Rc::new(|_| {}),
@@ -90,48 +84,36 @@ impl Switch {
             .width(Size::Fixed(width))
             .height(Size::Fixed(height))
             .radius(Radius::Full)
-            .fill(state_fill(self.id, track, self.disabled))
+            .fill(state_fill(&self.id, track, self.disabled))
             .padding(pad(inset, inset))
             .align_child(Start, Center)
             .child(knob);
 
-        let id = self.id;
+        let id = self.id.clone();
         let toggle = self.on_toggle;
         let next = !shown;
         let actions = Actions {
             press: Some(Rc::new(move || {
-                clicked(id, next);
+                clicked(&id, next);
                 toggle(next);
             })),
             secondary: None,
         };
 
-        interactive(base, id.to_string(), self.disabled, actions)
+        interactive(base, self.id, self.disabled, actions)
     }
 
     /// Steps the knob towards what should show: the state, or a pending
     /// click laid over it. Gives that state and the knob's position.
     fn animate(&self) -> (bool, f32) {
-        let now = Instant::now();
+        let init = || Motion {
+            // at rest on the current state, so opening a panel doesn't animate
+            knob: motion::spring(if self.on { 1.0 } else { 0.0 }),
+            pending: Pending::NONE,
+        };
 
-        MOTION.with_borrow_mut(|motions| {
-            let motion = motions.entry(self.id).or_insert_with(|| Motion {
-                // at rest on the current state, so opening a panel doesn't animate
-                knob: Animation::new(if self.on { 1.0 } else { 0.0 })
-                    .duration(SLIDE)
-                    .easing(Easing::Spring {
-                        bounce: SLIDE_BOUNCE,
-                    }),
-                pending: None,
-            });
-
-            if let Some((on, at)) = motion.pending
-                && (self.on == on || now - at > PENDING_TIMEOUT)
-            {
-                motion.pending = None;
-            }
-            let shown = motion.pending.map_or(self.on, |(on, _)| on);
-
+        with_state(&self.id, init, |motion: &mut Motion| {
+            let shown = motion.pending.shown(self.on, Instant::now());
             motion.knob.to(if shown { 1.0 } else { 0.0 });
             // an overshoot past either end stays inside the track
             (shown, motion.knob.value().clamp(0.0, 1.0))
@@ -140,12 +122,9 @@ impl Switch {
 }
 
 /// Shows a click before the service answers it.
-fn clicked(id: &'static str, on: bool) {
-    MOTION.with_borrow_mut(|motions| {
-        if let Some(motion) = motions.get_mut(id) {
-            motion.pending = Some((on, Instant::now()));
-        }
+fn clicked(id: &str, on: bool) {
+    with_existing(id, |motion: &mut Motion| {
+        motion.pending.set(on, Instant::now())
     });
-
     request_frame();
 }

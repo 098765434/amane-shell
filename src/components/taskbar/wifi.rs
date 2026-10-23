@@ -8,13 +8,16 @@
 use std::cell::RefCell;
 
 use amane::{
-    AccessPoint, Button, Center, Column, LayerWindow, Network, Parent, Pointer, Rectangle, Row,
-    ScrollArea, Service, Size, TextInput, Widget, mark_all,
+    AccessPoint, Center, Column, LayerWindow, Network, Parent, Rectangle, Row, ScrollArea, Service,
+    Size, TextInput, Widget, mark_all,
 };
 
 use super::panel::{self, Panel};
-use super::{ICON_LOCK, ICON_REFRESH, ICON_WIFI, boxed, icon, wifi_glyph};
+use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::{IconButton, PushButton, Shape, Style, Switch};
+use crate::components::icons::{ICON_LOCK, ICON_REFRESH, ICON_WIFI, wifi_glyph};
+use crate::components::layout::{boxed, caption, icon, inner_width, nothing};
+use crate::components::list::{self, List, ListItem};
 use crate::tokens::{sys, wifi};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
@@ -85,19 +88,17 @@ fn card() -> Rectangle {
 fn header() -> Row {
     let enabled = Network::read().wifi_enabled();
 
-    panel::header(
-        ICON_WIFI,
-        "Wi-Fi",
-        sys::color::surface::panel::fg(),
-        vec![
+    TopAppBar::new("Wi-Fi")
+        .navigation_icon(ICON_WIFI)
+        .actions(vec![
             boxed(
                 Switch::new("amane.wifi.enabled", enabled)
                     .on_toggle(Network::set_wifi)
                     .build(),
             ),
             boxed(scan_button()),
-        ],
-    )
+        ])
+        .build()
 }
 
 fn scan_button() -> Rectangle {
@@ -112,57 +113,49 @@ fn scan_button() -> Rectangle {
 
 fn ap_list() -> ScrollArea {
     let net = Network::read();
-    let rows: Vec<Box<dyn Widget>> = net
-        .access_points()
-        .iter()
-        .map(|ap| boxed(ap_row(ap)))
-        .collect();
+    let items = net.access_points().iter().map(ap_item).collect();
     drop(net);
 
-    let column = Column::new(rows).gap(sys::space::gap::xs()).width(Parent);
-
-    ScrollArea::new("amane.wifi.aps", column).height(Size::Fixed(sys::size::list::max_height()))
+    ScrollArea::new("amane.wifi.aps", List::new(items).build())
+        .height(Size::Fixed(sys::size::list::max_height()))
 }
 
-fn ap_row(ap: &AccessPoint) -> Rectangle {
+fn ap_item(ap: &AccessPoint) -> ListItem {
     let ssid = ap.ssid().to_string();
     let secured = ap.secured();
     let active = ap.active();
     let saved = ap.saved();
 
-    let mut trailing: Vec<Box<dyn Widget>> = Vec::new();
+    let mut item = ListItem::new(format!("amane.wifi.ap.{ssid}"), ssid.clone())
+        .leading(wifi_glyph(ap.strength()))
+        .selected(active);
     if secured {
-        trailing.push(boxed(icon(
+        item = item.trailing(icon(
             ICON_LOCK,
             sys::size::icon::s(),
             sys::color::content::secondary(),
-        )));
+        ));
     }
     if active {
-        trailing.push(panel::check());
+        item = item.trailing(list::check());
     }
 
-    panel::list_row(wifi_glyph(ap.strength()), ssid.clone(), trailing, active)
-        .cursor(Pointer)
-        .on_click(move |button| {
-            if button != Button::Left {
-                return;
-            }
-            if secured && !saved {
-                begin_password(ssid.clone());
-            } else {
-                Network::connect(&ssid, None);
-                panel::close();
-            }
-        })
+    item.on_press(move || {
+        if secured && !saved {
+            begin_password(ssid.clone());
+        } else {
+            Network::connect(&ssid, None);
+            panel::close();
+        }
+    })
 }
 
 fn password_section() -> Box<dyn Widget> {
     let Some(ssid) = password_target() else {
-        return boxed(Row::new(Vec::new()));
+        return nothing();
     };
 
-    let inner = sys::size::popover::width() - sys::space::inset::l() * 2.0;
+    let inner = inner_width(sys::size::popover::width());
     let connect_w = wifi::button::width();
     let input_w = (inner - connect_w - sys::space::gap::s()).max(1.0);
 
@@ -197,7 +190,7 @@ fn password_section() -> Box<dyn Widget> {
 
     boxed(
         Column::new(vec![
-            boxed(panel::caption(format!("Password for {ssid}"))),
+            boxed(caption(format!("Password for {ssid}"))),
             boxed(field),
         ])
         .gap(sys::space::gap::s())

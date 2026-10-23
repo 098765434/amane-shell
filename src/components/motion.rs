@@ -1,6 +1,8 @@
-//! Keyed motion for lists of cards — the toasts and the center's stacks.
+//! The shell's motion: the springs and fades every control moves with
+//! ([`spring`], [`sheet`], [`fade`]), and keyed motion for lists of cards —
+//! the toasts and the center's stacks ([`animate`]).
 //!
-//! The view says where each item should be (a [`Pose`]) every time it
+//! For a list, the view says where each item should be (a [`Pose`]) every time it
 //! runs; this springs each item there from wherever it is, keeping its
 //! `Animation` across rebuilds under its key, like the segmented button's
 //! thumb. An item that drops out of the list isn't gone yet: it keeps its
@@ -13,12 +15,53 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
-use amane::{Animation, Blend, Easing};
+use amane::{Animation, Blend, Easing, mark_all};
 
-// iOS-like motion; become `sys.motion.*` tokens once they exist in Penpot
-const MOVE: Duration = Duration::from_millis(450);
-const MOVE_BOUNCE: f32 = 0.15;
-const EXIT: Duration = Duration::from_millis(300);
+// iOS-like motion. TODO(token): these become `sys.motion.*` tokens once
+// Penpot has them (manual §1.1: no style literals in component code).
+/// How long a spring takes to settle: a knob, a thumb, a card moving.
+const SPRING: Duration = Duration::from_millis(450);
+const SPRING_BOUNCE: f32 = 0.15;
+/// A whole sheet sliding in: longer, and calmer.
+const SHEET: Duration = Duration::from_millis(500);
+const SHEET_BOUNCE: f32 = 0.1;
+/// A selection fading in or out.
+pub const FADE: Duration = Duration::from_millis(200);
+/// A card on its way out.
+pub const EXIT: Duration = Duration::from_millis(300);
+
+/// The spring things move on, starting at rest at `value`.
+pub fn spring<T: Blend>(value: T) -> Animation<T> {
+    Animation::new(value)
+        .duration(SPRING)
+        .easing(Easing::Spring {
+            bounce: SPRING_BOUNCE,
+        })
+}
+
+/// The spring a whole sheet slides in on.
+pub fn sheet<T: Blend>(value: T) -> Animation<T> {
+    Animation::new(value)
+        .duration(SHEET)
+        .easing(Easing::Spring {
+            bounce: SHEET_BOUNCE,
+        })
+}
+
+/// An ease-out over `duration`, for fades and exits.
+pub fn fade<T: Blend>(value: T, duration: Duration) -> Animation<T> {
+    Animation::new(value).duration(duration).easing(Easing::Out)
+}
+
+/// Redraws every window once `delay` has passed, for a view whose output
+/// changes with time alone (a wait running out). amane has no timers, so a
+/// thread sleeps it.
+pub fn redraw_after(delay: Duration) {
+    std::thread::spawn(move || {
+        std::thread::sleep(delay);
+        mark_all();
+    });
+}
 
 /// Where one card is and how it looks: moved by `x`/`y`, scaled about its
 /// center, the whole card at `opacity` and its content at `content` (a
@@ -119,12 +162,6 @@ thread_local! {
     static LISTS: RefCell<HashMap<String, Vec<Track>>> = RefCell::new(HashMap::new());
 }
 
-fn moving(pose: Pose) -> Animation<Pose> {
-    Animation::new(pose).duration(MOVE).easing(Easing::Spring {
-        bounce: MOVE_BOUNCE,
-    })
-}
-
 /// Steps the list `scope` towards `items` and gives what to draw: the items
 /// that are leaving first (so they pass under the rest), then `items` in
 /// order.
@@ -141,7 +178,7 @@ pub fn animate<T: Clone + 'static>(
         for track in tracks.iter_mut() {
             if track.left.is_none() && !items.iter().any(|item| item.key == track.key) {
                 let from = track.motion.value();
-                track.motion = Animation::new(from).duration(EXIT).easing(Easing::Out);
+                track.motion = fade(from, EXIT);
                 track.motion.to(track.exit);
                 track.left = Some(Instant::now());
             }
@@ -173,7 +210,7 @@ pub fn animate<T: Clone + 'static>(
                     };
                     tracks.push(Track {
                         key: item.key,
-                        motion: moving(start),
+                        motion: spring(start),
                         exit: item.exit,
                         left: None,
                         height: item.height,
@@ -185,7 +222,7 @@ pub fn animate<T: Clone + 'static>(
 
             // back before it finished leaving: spring from where it got to
             if track.left.take().is_some() {
-                track.motion = moving(track.motion.value());
+                track.motion = spring(track.motion.value());
             }
             track.motion.to(item.pose);
             track.exit = item.exit;
@@ -217,7 +254,7 @@ pub fn jump(scope: &str, key: u64, pose: Pose) {
             return;
         };
         let target = track.motion.value();
-        track.motion = moving(pose);
+        track.motion = spring(pose);
         track.motion.to(target);
     });
 }

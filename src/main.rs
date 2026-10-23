@@ -136,7 +136,7 @@ fn main() -> ExitCode {
         .window(taskbar::bluetooth_panel)
         .window(taskbar::wifi_panel)
         .window(taskbar::power_panel)
-        .window(notifications::center)
+        .window(notifications::side_sheet)
         .window(context_menu::anchor);
     for toast in notifications::TOASTS {
         app = app.window(toast);

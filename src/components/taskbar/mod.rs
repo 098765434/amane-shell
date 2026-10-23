@@ -18,126 +18,37 @@ mod panel;
 mod power;
 mod wifi;
 
-use std::cell::Cell;
 use std::path::PathBuf;
 
 use amane::{
-    Apps, Audio, AudioKind, Battery, Bluetooth, BluetoothDevice, Button, Center, Color, Column,
-    End, Full, Gestures, Image, Keyboard, Layer, LayerWindow, Link, Network, Padding, Parent,
-    Point, Pointer, Rectangle, Row, Scroll, Service, Size, Stack, Start, Text, Vertical,
-    WarningLevel, Widget, WindowInfo, Windows, Workspace, Workspaces, Zone,
+    Apps, Audio, Battery, Bluetooth, BluetoothDevice, Button, Center, Color, Column, End, Full,
+    Gestures, Image, Justify, Keyboard, Layer, LayerWindow, Link, Network, Parent, Pointer,
+    Rectangle, Row, Scroll, Service, Size, Stack, Start, Text, Vertical, WarningLevel, Widget,
+    WindowInfo, Windows, Workspace, Workspaces, Zone,
 };
 
 use crate::components::buttons::{IconButton, PushButton, Shape, Style};
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
+use crate::components::icons::{
+    ICON_APPS, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE, ICON_DND,
+    ICON_NOTIFICATIONS, ICON_VOLUME_OFF, ICON_WIFI, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
+    battery_glyph, wifi_glyph,
+};
+use crate::components::layout::{
+    boxed, clipped_label, cursor, icon, nothing, pad, text_width, track_cursor,
+};
 use crate::components::notifications::{self, DoNotDisturb};
+use crate::components::slider;
 
 use crate::tokens::{Styled, bar, sys};
 
 pub(crate) use clock::Clock;
-pub(crate) use panel::{Panel, close, is_open, toggle};
+pub(crate) use panel::{Panel, dismissable, is_open, overlay, toggle};
 
 pub use audio::{AUDIO_NS, panel as audio_panel};
 pub use bluetooth::{BLUETOOTH_NS, panel as bluetooth_panel};
 pub use power::{POWER_NS, panel as power_panel};
 pub use wifi::{WIFI_NS, panel as wifi_panel};
-
-// Material Symbols codepoints (the font stack is token `sys.type.icon`).
-pub(crate) const ICON_APPS: char = '\u{e5c3}';
-pub(crate) const ICON_VOLUME_UP: char = '\u{e050}';
-pub(crate) const ICON_VOLUME_OFF: char = '\u{e04f}';
-pub(crate) const ICON_LOCK: char = '\u{e897}';
-pub(crate) const ICON_CHECK: char = '\u{e5ca}';
-pub(crate) const ICON_REFRESH: char = '\u{e5d5}';
-pub(crate) const ICON_MOUSE: char = '\u{e323}';
-pub(crate) const ICON_KEYBOARD: char = '\u{e312}';
-pub(crate) const ICON_HEADPHONES: char = '\u{e310}';
-pub(crate) const ICON_GAMEPAD: char = '\u{ea28}';
-pub(crate) const ICON_MIC_OFF: char = '\u{e02b}';
-pub(crate) const ICON_SPEAKER: char = '\u{e32d}';
-pub(crate) const ICON_PHONE: char = '\u{e32c}';
-pub(crate) const ICON_COMPUTER: char = '\u{e30a}';
-pub(crate) const ICON_DEVICE_OTHER: char = '\u{e337}';
-pub(crate) const ICON_BLUETOOTH: char = '\u{e1a7}';
-const ICON_BLUETOOTH_CONNECTED: char = '\u{e1a8}';
-const ICON_BLUETOOTH_OFF: char = '\u{e1a9}';
-const ICON_MIC: char = '\u{e029}';
-const ICON_MIC_EXTERNAL: char = '\u{ef5a}';
-const ICON_HEADSET_MIC: char = '\u{e311}';
-const ICON_TV: char = '\u{e333}';
-const ICON_CAR: char = '\u{e531}';
-const ICON_WEBCAM: char = '\u{e04b}';
-const ICON_NOTIFICATIONS: char = '\u{e7f4}';
-const ICON_DND: char = '\u{ef44}';
-
-/// The glyph for what a sound goes to (or, with `input`, comes from), so the
-/// bar, the Sound panel's header and its device rows all agree. Built-in
-/// devices show the plain speaker / microphone.
-pub(crate) fn audio_glyph(kind: AudioKind, input: bool) -> char {
-    match kind {
-        AudioKind::Internal if input => ICON_MIC,
-        AudioKind::Internal => ICON_VOLUME_UP,
-        AudioKind::Speaker => ICON_SPEAKER,
-        AudioKind::Headphones => ICON_HEADPHONES,
-        AudioKind::Headset => ICON_HEADSET_MIC,
-        AudioKind::Display => ICON_TV,
-        AudioKind::Car => ICON_CAR,
-        AudioKind::Phone => ICON_PHONE,
-        AudioKind::Webcam => ICON_WEBCAM,
-        AudioKind::Microphone => ICON_MIC_EXTERNAL,
-    }
-}
-
-/// Horizontal batteries (`battery_android_0` … `_6`, `_full`, `_bolt`), the
-/// macOS shape; the fill shows the charge.
-const ICON_BATTERY_LEVELS: [char; 7] = [
-    '\u{f30d}', '\u{f30c}', '\u{f30b}', '\u{f30a}', '\u{f309}', '\u{f308}', '\u{f307}',
-];
-const ICON_BATTERY_FULL: char = '\u{f304}';
-const ICON_BATTERY_BOLT: char = '\u{f305}';
-
-/// The battery glyph for a charge: a bolt while charging, otherwise filled to
-/// the nearest of the glyph's six bars (full from 95 %).
-pub(crate) fn battery_glyph(percent: u8, charging: bool) -> char {
-    if charging {
-        ICON_BATTERY_BOLT
-    } else if percent >= 95 {
-        ICON_BATTERY_FULL
-    } else {
-        let bars = (usize::from(percent) * 6 + 50) / 100;
-        ICON_BATTERY_LEVELS[bars.min(6)]
-    }
-}
-
-/// Signal wedges (`network_wifi_1_bar` … `_3_bar`, `network_wifi`, then the
-/// filled `signal_wifi_4_bar`), drawn like the battery glyphs: the filled part
-/// shows the signal.
-const ICON_WIFI_LEVELS: [char; 5] = ['\u{ebe4}', '\u{ebd6}', '\u{ebe1}', '\u{e1ba}', '\u{e1d8}'];
-pub(crate) const ICON_WIFI: char = ICON_WIFI_LEVELS[4];
-/// The empty wedge (`signal_wifi_0_bar`): the radio is on but nothing is joined.
-const ICON_WIFI_NONE: char = '\u{f0b0}';
-const ICON_WIFI_OFF: char = '\u{e1da}';
-const ICON_CABLE: char = '\u{efe6}';
-
-/// The wedge for a signal strength (0–100): the nearest of its five steps,
-/// never fewer than one, since a network you can see has some signal.
-pub(crate) fn wifi_glyph(strength: u8) -> char {
-    let steps = (usize::from(strength) * 5 + 50) / 100;
-    ICON_WIFI_LEVELS[steps.clamp(1, 5) - 1]
-}
-
-/// A Material-Symbols glyph as a `Text` widget (centered on its ink).
-///
-/// Every bar and panel glyph goes through here, so they all share one font
-/// instance (weight, grade, optical size); keep picking glyphs from the same
-/// drawing family so their visual weight matches too.
-pub(crate) fn icon(glyph: char, size: f32, color: Color) -> Text {
-    Text::new(glyph.to_string())
-        .font(sys::r#type::icon())
-        .size(size)
-        .color(color)
-        .tight()
-}
 
 /// The taskbar's layer-surface namespace. The niri `layer-rule` matches this
 /// for blur + corner rounding, and menus opened from a window pill hang under
@@ -147,19 +58,33 @@ pub const BAR_NS: &str = "amane.taskbar";
 /// Registry key for the dynamically-rebuilt per-window menu.
 const WINDOW_MENU_KEY: &str = "amane.taskbar.window-menu";
 
-thread_local! {
-    // Last pointer x within the bar surface (surface-local, from the panel's
-    // on_move). A right-click handler only gets a Button, so it reads this to
-    // know where to anchor the window menu.
-    static CURSOR_X: Cell<i32> = const { Cell::new(0) };
+/// At or under this charge a battery reads low, where UPower gives no
+/// warning level of its own (sysfs, peripherals).
+pub(crate) const LOW_BATTERY: u8 = 15;
+
+/// Whether the machine's battery is low: UPower's warning level, or the
+/// threshold where the sysfs fallback has none.
+pub(crate) fn battery_low(battery: &Battery) -> bool {
+    battery.warning() >= WarningLevel::Low || (battery.percent() <= LOW_BATTERY && !battery.on_ac())
 }
 
-fn set_cursor_x(x: i32) {
-    CURSOR_X.with(|c| c.set(x));
+/// `normal`, or the critical colour while a battery at `percent` is low and
+/// not charging.
+pub(crate) fn battery_color(percent: u8, charging: bool, normal: Color) -> Color {
+    if percent <= LOW_BATTERY && !charging {
+        sys::color::status::critical::bg()
+    } else {
+        normal
+    }
 }
 
-fn cursor_x() -> i32 {
-    CURSOR_X.with(|c| c.get())
+/// The accent while something is connected, else secondary.
+fn status_color(connected: bool) -> Color {
+    if connected {
+        sys::color::accent::bg()
+    } else {
+        sys::color::content::secondary()
+    }
 }
 
 /// The taskbar view. Registered with `App::window`.
@@ -177,27 +102,9 @@ pub fn bar() -> LayerWindow {
     // Three zones via a Stack: each layer spans the full width and justifies
     // its own content, so the center never shifts when the sides differ.
     let sections = Stack::new(vec![
-        boxed(
-            Row::new(vec![boxed(left_section())])
-                .width(Parent)
-                .height(Parent)
-                .justify(Start)
-                .align(Center),
-        ),
-        boxed(
-            Row::new(vec![center_section(overview)])
-                .width(Parent)
-                .height(Parent)
-                .justify(Center)
-                .align(Center),
-        ),
-        boxed(
-            Row::new(vec![boxed(right_section())])
-                .width(Parent)
-                .height(Parent)
-                .justify(End)
-                .align(Center),
-        ),
+        zone(boxed(left_section()), Start.into()),
+        zone(center_section(overview), Center.into()),
+        zone(boxed(right_section()), End.into()),
     ])
     .width(Parent)
     .height(Parent);
@@ -208,9 +115,8 @@ pub fn bar() -> LayerWindow {
         .radius(bar::radius())
         .fill(sys::color::surface::panel::bg())
         .blur(sys::effect::backdrop_blur())
-        .padding(pad(sys::space::inset::m(), bar::panel::padding_y()))
-        .on_move(|p: Point| set_cursor_x(p.x as i32))
-        .child(sections);
+        .padding(pad(sys::space::inset::m(), bar::panel::padding_y()));
+    let panel = track_cursor(panel).child(sections);
 
     LayerWindow::new()
         .width(Full)
@@ -229,6 +135,17 @@ pub fn bar() -> LayerWindow {
 }
 
 // ───── sections ─────────────────────────────────────────────────────────────
+
+/// One of the bar's three full-width layers, its content justified.
+fn zone(content: Box<dyn Widget>, justify: Justify) -> Box<dyn Widget> {
+    boxed(
+        Row::new(vec![content])
+            .width(Parent)
+            .height(Parent)
+            .justify(justify)
+            .align(Center),
+    )
+}
 
 fn left_section() -> Row {
     let mut items: Vec<Box<dyn Widget>> = vec![boxed(overview_button())];
@@ -314,20 +231,13 @@ fn focused_title() -> Box<dyn Widget> {
         .map(|win| win.title().or(win.app_id()).unwrap_or("").to_string())
         .unwrap_or_default();
 
-    boxed(
-        Rectangle::new()
-            .width(Size::Fixed(bar::window_item::max_width() * 2.0))
-            .height(Parent)
-            .fill(Color::TRANSPARENT)
-            .align_child(Center, Center)
-            .clip()
-            .child(
-                Text::new(text)
-                    .style(sys::r#type::title())
-                    .color(sys::color::surface::panel::fg())
-                    .elide(),
-            ),
-    )
+    boxed(clipped_label(
+        text,
+        sys::r#type::title(),
+        sys::color::surface::panel::fg(),
+        bar::window_item::max_width() * 2.0,
+        Center,
+    ))
 }
 
 fn window_dock() -> Box<dyn Widget> {
@@ -353,11 +263,7 @@ fn window_tile(win: &WindowInfo) -> Rectangle {
 
     let app = win.app_id().unwrap_or("").to_string();
     let title = win.title().unwrap_or("").to_string();
-    let heading = if app.is_empty() {
-        title.clone()
-    } else {
-        app.clone()
-    };
+    let heading = if app.is_empty() { &title } else { &app };
 
     let side = sys::size::icon::m() * 2.0;
     let text_w = (bar::window_item::max_width()
@@ -368,13 +274,13 @@ fn window_tile(win: &WindowInfo) -> Rectangle {
 
     let label = Column::new(vec![
         boxed(
-            Text::new(heading)
+            Text::new(heading.as_str())
                 .style(sys::r#type::title())
                 .color(sys::color::surface::panel::fg())
                 .elide(),
         ),
         boxed(
-            Text::new(title.clone())
+            Text::new(title.as_str())
                 .style(sys::r#type::caption())
                 .color(sys::color::content::secondary())
                 .elide(),
@@ -515,8 +421,7 @@ fn open_window_menu(id: u64, floating: bool) {
                 .on_select(move || Windows::close(id)),
         );
 
-    context_menu::register(WINDOW_MENU_KEY, menu);
-    context_menu::open_under(WINDOW_MENU_KEY, BAR_NS, cursor_x(), 0, 1, 1);
+    context_menu::show_under(WINDOW_MENU_KEY, menu, BAR_NS, (cursor().0, 0));
 }
 
 // ───── right: status cluster ─────────────────────────────────────────────────
@@ -543,7 +448,7 @@ fn volume_module() -> Box<dyn Widget> {
         )),
         boxed(
             Text::new(format!("{volume}%"))
-                .style(sys::r#type::label())
+                .style(sys::r#type::numeric())
                 .color(sys::color::content::secondary()),
         ),
     ])
@@ -558,15 +463,8 @@ fn volume_module() -> Box<dyn Widget> {
             .padding(pad(sys::space::inset::m(), bar::pill::padding_y()))
             .align_child(Center, Center)
             .cursor(Pointer)
-            .on_scroll(|scroll: Scroll| {
-                let current = Audio::read().volume();
-                // scroll up (negative y) raises, down lowers, in 5% steps
-                let next = if scroll.y < 0.0 {
-                    current.saturating_add(5).min(100)
-                } else {
-                    current.saturating_sub(5)
-                };
-                Audio::set_volume(next);
+            .on_scroll(move |scroll: Scroll| {
+                Audio::set_volume(slider::scrolled(volume, scroll, slider::STEP))
             })
             .on_click(|button| {
                 if button == Button::Left {
@@ -582,7 +480,7 @@ fn bluetooth_indicator() -> Box<dyn Widget> {
 
     // no adapter, nothing to control
     if !bluetooth.available() {
-        return boxed(Row::new(Vec::new()));
+        return nothing();
     }
 
     let powered = bluetooth.powered();
@@ -594,14 +492,8 @@ fn bluetooth_indicator() -> Box<dyn Widget> {
         (true, true) => ICON_BLUETOOTH_CONNECTED,
         (true, false) => ICON_BLUETOOTH,
     };
-    let color = if connected {
-        sys::color::accent::bg()
-    } else {
-        sys::color::content::secondary()
-    };
-
     boxed(
-        bar_icon("amane.bar.bluetooth", glyph, color)
+        bar_icon("amane.bar.bluetooth", glyph, status_color(connected))
             .on_press(|| panel::toggle(Panel::Bluetooth))
             .build(),
     )
@@ -623,14 +515,8 @@ fn network_indicator() -> Box<dyn Widget> {
         Link::Offline if wifi_on => ICON_WIFI_NONE,
         Link::Offline => ICON_WIFI_OFF,
     };
-    let color = if connected {
-        sys::color::accent::bg()
-    } else {
-        sys::color::content::secondary()
-    };
-
     boxed(
-        bar_icon("amane.bar.network", glyph, color)
+        bar_icon("amane.bar.network", glyph, status_color(connected))
             .on_press(|| panel::toggle(Panel::Wifi))
             .build(),
     )
@@ -640,13 +526,12 @@ fn battery_module() -> Box<dyn Widget> {
     let battery = Battery::read();
 
     if !battery.present() {
-        return boxed(Row::new(Vec::new()));
+        return nothing();
     }
 
     let pct = battery.percent();
     let on_ac = battery.on_ac();
-    // UPower's warning level; the sysfs fallback has none, so keep a threshold there
-    let low = battery.warning() >= WarningLevel::Low || (pct <= 15 && !on_ac);
+    let low = battery_low(&battery);
     drop(battery);
 
     let color = if on_ac {
@@ -656,16 +541,23 @@ fn battery_module() -> Box<dyn Widget> {
     } else {
         sys::color::content::secondary()
     };
+    // percentages are numeric (manual §11.4)
+    let text = sys::r#type::numeric();
 
     boxed(
         PushButton::new("amane.bar.battery", format!("{pct}%"))
             .style(Style::Plain)
             .icon(battery_glyph(pct, on_ac))
             .icon_size(sys::size::icon::m())
-            .text(sys::r#type::label())
+            .text(text)
             .color(color)
-            // room for the battery glyph and "100%"
-            .width(sys::size::icon::m() + sys::r#type::label().size * 2.8)
+            // room for the battery glyph and "100%", so the bar doesn't shift
+            .width(
+                sys::size::icon::m()
+                    + sys::space::gap::xs()
+                    + text_width("100%", text)
+                    + sys::space::inset::m() * 2.0,
+            )
             .height(Parent)
             .on_press(|| panel::toggle(Panel::Power))
             .build(),
@@ -682,13 +574,13 @@ fn notification_indicator() -> Box<dyn Widget> {
     let (glyph, color) = match (dnd, unseen) {
         (true, _) => (ICON_DND, sys::color::surface::panel::fg()),
         (false, true) => (ICON_NOTIFICATIONS, sys::color::accent::bg()),
-        (false, false) => return boxed(Row::new(Vec::new())),
+        (false, false) => return nothing(),
     };
 
     boxed(
         bar_icon("amane.bar.notifications", glyph, color)
             .on_press(|| panel::toggle(Panel::Notifications))
-            .on_secondary(|| DoNotDisturb::open_menu(BAR_NS, cursor_x(), 0))
+            .on_secondary(|| DoNotDisturb::open_menu(BAR_NS, (cursor().0, 0)))
             .build(),
     )
 }
@@ -697,13 +589,7 @@ fn notification_indicator() -> Box<dyn Widget> {
 fn clock_module() -> Box<dyn Widget> {
     let time = Clock::read().text().to_string();
     // as wide as the time, so the bar's spacing stays as it was
-    let width = match Text::new(time.clone())
-        .style(sys::r#type::numeric())
-        .width()
-    {
-        Size::Fixed(width) => width,
-        Size::Parent => 0.0,
-    };
+    let width = text_width(&time, sys::r#type::numeric());
 
     boxed(
         PushButton::new("amane.bar.clock", time)
@@ -725,55 +611,4 @@ fn bar_icon(id: &'static str, glyph: char, color: Color) -> IconButton {
         .color(color)
         .width(bar::indicator::width())
         .height(Parent)
-}
-
-pub(crate) fn boxed(widget: impl Widget + 'static) -> Box<dyn Widget> {
-    Box::new(widget)
-}
-
-pub(crate) fn pad(x: f32, y: f32) -> Padding {
-    Padding {
-        top: y,
-        right: x,
-        bottom: y,
-        left: x,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn battery_glyph_follows_the_charge() {
-        assert_eq!(battery_glyph(0, false), ICON_BATTERY_LEVELS[0]);
-        assert_eq!(battery_glyph(18, false), ICON_BATTERY_LEVELS[1]);
-        assert_eq!(battery_glyph(50, false), ICON_BATTERY_LEVELS[3]);
-        assert_eq!(battery_glyph(94, false), ICON_BATTERY_LEVELS[6]);
-        assert_eq!(battery_glyph(95, false), ICON_BATTERY_FULL);
-        assert_eq!(battery_glyph(100, false), ICON_BATTERY_FULL);
-        assert_eq!(battery_glyph(18, true), ICON_BATTERY_BOLT);
-    }
-
-    #[test]
-    fn wifi_glyph_follows_the_signal() {
-        assert_eq!(wifi_glyph(0), ICON_WIFI_LEVELS[0]);
-        assert_eq!(wifi_glyph(29), ICON_WIFI_LEVELS[0]);
-        assert_eq!(wifi_glyph(30), ICON_WIFI_LEVELS[1]);
-        assert_eq!(wifi_glyph(50), ICON_WIFI_LEVELS[2]);
-        assert_eq!(wifi_glyph(70), ICON_WIFI_LEVELS[3]);
-        assert_eq!(wifi_glyph(89), ICON_WIFI_LEVELS[3]);
-        assert_eq!(wifi_glyph(90), ICON_WIFI);
-        assert_eq!(wifi_glyph(100), ICON_WIFI);
-    }
-
-    #[test]
-    fn audio_glyph_shows_what_sound_goes_through() {
-        assert_eq!(audio_glyph(AudioKind::Internal, false), ICON_VOLUME_UP);
-        assert_eq!(audio_glyph(AudioKind::Internal, true), ICON_MIC);
-        assert_eq!(audio_glyph(AudioKind::Headphones, false), ICON_HEADPHONES);
-        assert_eq!(audio_glyph(AudioKind::Headset, true), ICON_HEADSET_MIC);
-        assert_eq!(audio_glyph(AudioKind::Display, false), ICON_TV);
-        assert_eq!(audio_glyph(AudioKind::Speaker, false), ICON_SPEAKER);
-    }
 }

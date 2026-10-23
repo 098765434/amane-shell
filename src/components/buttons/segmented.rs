@@ -11,20 +11,21 @@
 //! under it, and in multi-select each segment's thumb fades in and out. A
 //! click moves the thumb at once; if the service doesn't follow within
 //! [`PENDING_TIMEOUT`], it goes back to what the service says.
+//!
+//! [`PENDING_TIMEOUT`]: super::PENDING_TIMEOUT
 
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Instant;
 
 use amane::{
-    Animation, Blend, Button, Center, Color, Easing, Pointer, Radius, Rectangle, Row, Size, Stack,
-    Text, Widget, request_frame,
+    Animation, Blend, Center, Color, Radius, Rectangle, Row, Size, Stack, Widget, request_frame,
 };
 
-use super::{DISABLED_OPACITY, FADE, PENDING_TIMEOUT, SLIDE, SLIDE_BOUNCE, faded};
-use crate::components::taskbar::{boxed, icon, pad};
-use crate::tokens::{Styled, sys};
+use super::{Actions, Pending, interactive, label_row, state_fill, with_existing, with_state};
+use crate::components::color::faded;
+use crate::components::layout::{boxed, inner_width, pad};
+use crate::components::motion::{self, FADE};
+use crate::tokens::sys;
 
 /// One button's motion, kept across rebuilds under its id.
 struct Motion {
@@ -32,34 +33,22 @@ struct Motion {
     thumb: Animation,
     // each segment's thumb opacity, multi-select
     fades: Vec<Animation>,
-    // what a click asked a segment to be, until the service agrees or it times out
-    pending: Vec<Option<(bool, Instant)>>,
+    pending: Vec<Pending<bool>>,
 }
 
 impl Motion {
     // at rest on the current selection, so opening a panel doesn't animate
     fn new(selected: &[bool]) -> Self {
         let first = selected.iter().position(|&on| on).unwrap_or(0);
-        let fade = |on: bool| {
-            Animation::new(if on { 1.0 } else { 0.0 })
-                .duration(FADE)
-                .easing(Easing::Out)
-        };
-
         Self {
-            thumb: Animation::new(first as f32)
-                .duration(SLIDE)
-                .easing(Easing::Spring {
-                    bounce: SLIDE_BOUNCE,
-                }),
-            fades: selected.iter().map(|&on| fade(on)).collect(),
-            pending: vec![None; selected.len()],
+            thumb: motion::spring(first as f32),
+            fades: selected
+                .iter()
+                .map(|&on| motion::fade(if on { 1.0 } else { 0.0 }, FADE))
+                .collect(),
+            pending: vec![Pending::NONE; selected.len()],
         }
     }
-}
-
-thread_local! {
-    static MOTION: RefCell<HashMap<&'static str, Motion>> = RefCell::new(HashMap::new());
 }
 
 /// One option: a label, optionally led by a Material Symbols glyph.
@@ -96,7 +85,7 @@ impl Segment {
 /// `id` keys the motion, so it must be unique and stable, like a
 /// `ScrollArea`'s.
 pub struct SegmentedButton {
-    id: &'static str,
+    id: String,
     segments: Vec<Segment>,
     selected: Vec<bool>,
     multi: bool,
@@ -108,25 +97,30 @@ pub struct SegmentedButton {
 impl SegmentedButton {
     /// Single-select: at most one segment selected; clicking one asks for
     /// `(index, true)`.
-    pub fn new(id: &'static str, segments: Vec<Segment>, selected: Option<usize>) -> Self {
+    pub fn new(id: impl Into<String>, segments: Vec<Segment>, selected: Option<usize>) -> Self {
         let selected = (0..segments.len()).map(|i| Some(i) == selected).collect();
         Self::with(id, segments, selected, false)
     }
 
     /// Multi-select: clicking a segment asks for the other state.
-    pub fn multi(id: &'static str, segments: Vec<Segment>, mut selected: Vec<bool>) -> Self {
+    pub fn multi(id: impl Into<String>, segments: Vec<Segment>, mut selected: Vec<bool>) -> Self {
         selected.resize(segments.len(), false);
         Self::with(id, segments, selected, true)
     }
 
-    fn with(id: &'static str, segments: Vec<Segment>, selected: Vec<bool>, multi: bool) -> Self {
+    fn with(
+        id: impl Into<String>,
+        segments: Vec<Segment>,
+        selected: Vec<bool>,
+        multi: bool,
+    ) -> Self {
         Self {
-            id,
+            id: id.into(),
             segments,
             selected,
             multi,
             radius: Radius::Fixed(sys::radius::raised()),
-            width: sys::size::popover::width() - sys::space::inset::l() * 2.0,
+            width: inner_width(sys::size::popover::width()),
             on_select: Rc::new(|_, _| {}),
         }
     }
@@ -171,7 +165,7 @@ impl SegmentedButton {
             None => vec![0.0; count],
         };
 
-        let id = self.id;
+        let id = self.id.clone();
         let multi = self.multi;
         let segments: Vec<Box<dyn Widget>> = self
             .segments
@@ -184,14 +178,16 @@ impl SegmentedButton {
                     true => faded(sys::color::accent::bg(), fades[index]),
                     false => Color::TRANSPARENT,
                 };
+                let button = id.clone();
                 boxed(segment_view(
+                    format!("{id}.{index}"),
                     segment,
                     lit[index],
                     fill,
                     (segment_w, segment_h),
                     thumb_radius,
                     move || {
-                        clicked(id, index, on, multi);
+                        clicked(&button, index, on, multi);
                         on_select(index, on);
                     },
                 ))
@@ -230,23 +226,14 @@ impl SegmentedButton {
         let now = Instant::now();
         let count = self.selected.len();
 
-        MOTION.with_borrow_mut(|motions| {
-            let motion = motions
-                .entry(self.id)
-                .or_insert_with(|| Motion::new(&self.selected));
+        let init = || Motion::new(&self.selected);
+        with_state(&self.id, init, |motion: &mut Motion| {
             if motion.pending.len() != count {
                 *motion = Motion::new(&self.selected);
             }
 
             let shown: Vec<bool> = (0..count)
-                .map(|i| {
-                    if let Some((on, at)) = motion.pending[i]
-                        && (self.selected[i] == on || now - at > PENDING_TIMEOUT)
-                    {
-                        motion.pending[i] = None;
-                    }
-                    motion.pending[i].map_or(self.selected[i], |(on, _)| on)
-                })
+                .map(|i| motion.pending[i].shown(self.selected[i], now))
                 .collect();
 
             if self.multi {
@@ -273,18 +260,15 @@ impl SegmentedButton {
 }
 
 /// Shows a click before the service answers it.
-fn clicked(id: &'static str, index: usize, on: bool, multi: bool) {
+fn clicked(id: &str, index: usize, on: bool, multi: bool) {
     let now = Instant::now();
 
-    MOTION.with_borrow_mut(|motions| {
-        let Some(motion) = motions.get_mut(id) else {
-            return;
-        };
+    with_existing(id, |motion: &mut Motion| {
         if multi {
-            motion.pending[index] = Some((on, now));
+            motion.pending[index].set(on, now);
         } else {
             for (i, pending) in motion.pending.iter_mut().enumerate() {
-                *pending = Some((i == index, now));
+                pending.set(i == index, now);
             }
         }
     });
@@ -293,6 +277,7 @@ fn clicked(id: &'static str, index: usize, on: bool, multi: bool) {
 }
 
 fn segment_view(
+    id: String,
     segment: Segment,
     lit: f32,
     fill: Color,
@@ -306,31 +291,26 @@ fn segment_view(
         lit,
     );
 
-    let mut content: Vec<Box<dyn Widget>> = Vec::new();
-    if let Some(glyph) = segment.icon {
-        content.push(boxed(icon(glyph, sys::size::icon::s(), color)));
-    }
-    content.push(boxed(
-        Text::new(segment.label)
-            .style(sys::r#type::caption())
-            .color(color),
-    ));
+    let content = label_row(
+        segment.icon,
+        sys::size::icon::s(),
+        segment.label,
+        sys::r#type::caption(),
+        color,
+    );
 
+    // the hover layer sits on the segment, over the thumb when it's there
     let base = Rectangle::new()
         .width(Size::Fixed(width))
         .height(Size::Fixed(height))
         .radius(radius)
-        .fill(fill)
+        .fill(state_fill(&id, fill, segment.disabled))
         .align_child(Center, Center)
-        .child(Row::new(content).gap(sys::space::gap::xs()).align(Center));
+        .child(content);
 
-    if segment.disabled {
-        return base.opacity(DISABLED_OPACITY);
-    }
-
-    base.cursor(Pointer).on_click(move |button| {
-        if button == Button::Left {
-            click();
-        }
-    })
+    let actions = Actions {
+        press: Some(Rc::new(click)),
+        secondary: None,
+    };
+    interactive(base, id, segment.disabled, actions)
 }

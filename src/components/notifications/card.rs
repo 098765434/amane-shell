@@ -6,27 +6,29 @@
 //! sender's actions as a row of equal buttons underneath. A hovered card
 //! swaps the time for a close button.
 //!
-//! The card's height is known before it is drawn ([`height`]), so the
-//! stacks around it can place and animate cards exactly.
+//! The card is measured before it is drawn ([`measure`]), so the stacks
+//! around it can place and animate cards exactly, and drawing reuses the
+//! measurement.
 
 use std::cell::Cell;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 use amane::{
-    Center, Color, Column, Image, Notification, Notifications, Parent, Radius, Rectangle, Row,
-    Size, SpaceBetween, Stack, Start, Text, Urgency, Widget,
+    Button, Center, Color, Column, Image, Notification, Notifications, Pointer, Radius, Rectangle,
+    Row, Size, Stack, Start, Text, Urgency, Widget,
 };
 use chrono::{DateTime, Local};
 
 use crate::components::buttons::{IconButton, PushButton, Style};
-use crate::components::taskbar::{app_icon_tile, boxed, icon_for, pad};
+use crate::components::card::Surface;
+use crate::components::icons::ICON_CLOSE;
+use crate::components::layout::{blank, boxed, inner_width, pad, split_row};
+use crate::components::taskbar::{app_icon_tile, icon_for};
 use crate::tokens::{Styled, notification, sys};
 
 /// The body is cut after this many lines, like a banner's.
 const BODY_LINES: usize = 4;
-
-const ICON_CLOSE: char = '\u{e5cd}';
 
 /// Where a card is drawn, which decides its width and material.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -48,22 +50,23 @@ impl Place {
     pub fn width(self) -> f32 {
         match self {
             Place::Toast => notification::toast::width(),
-            Place::Center => notification::center::width() - sys::space::inset::l() * 2.0,
+            Place::Center => inner_width(notification::center::width()),
         }
     }
 
     fn look(self) -> Look {
         match self {
             Place::Toast => Look {
-                fill: sys::color::surface::notification::bg(),
-                fg: sys::color::surface::notification::fg(),
-                secondary: sys::color::surface::notification::fg_secondary(),
-                stroke: sys::color::surface::notification::stroke(),
+                fill: Surface::Notification.bg(),
+                fg: Surface::Notification.fg(),
+                secondary: Surface::Notification.fg_secondary(),
+                stroke: Surface::Notification.stroke().unwrap_or(Color::TRANSPARENT),
             },
+            // a raised card on the center's popover sheet, in its colours
             Place::Center => Look {
                 fill: sys::color::surface::raised::bg(),
-                fg: sys::color::surface::popover::fg(),
-                secondary: sys::color::surface::popover::fg_secondary(),
+                fg: Surface::Popover.fg(),
+                secondary: Surface::Popover.fg_secondary(),
                 stroke: Color::TRANSPARENT,
             },
         }
@@ -75,8 +78,9 @@ thread_local! {
     static HOVERED: Cell<Option<u32>> = const { Cell::new(None) };
 }
 
-/// Callers pass their card's `on_hover` here.
-pub fn hover(id: u32, inside: bool) {
+/// The pointer entered or left card `id`. Kept apart from the buttons'
+/// hover, which the close button inside the card takes over.
+fn hover(id: u32, inside: bool) {
     HOVERED.with(|hovered| {
         if inside {
             hovered.set(Some(id));
@@ -89,17 +93,21 @@ pub fn hover(id: u32, inside: bool) {
 // ───── layout ────────────────────────────────────────────────────────────────
 
 /// The text a card shows, cleaned, and how tall each part is.
-struct Layout {
+#[derive(Clone)]
+pub struct Layout {
     summary: String,
     body: String,
     text_width: f32,
     line: f32,
     title_line: f32,
     body_height: f32,
-    height: f32,
+    /// The whole card's height.
+    pub height: f32,
 }
 
-fn layout(n: &Notification, width: f32) -> Layout {
+/// `n`'s card in `place`, measured: how tall it is, and what it shows.
+pub fn measure(n: &Notification, place: Place) -> Layout {
+    let width = place.width();
     let inset = sys::space::inset::l();
     let text_width =
         (width - inset * 2.0 - notification::card::icon_size() - sys::space::gap::m()).max(1.0);
@@ -143,9 +151,21 @@ fn layout(n: &Notification, width: f32) -> Layout {
     }
 }
 
-/// How tall `n`'s card is in `place`.
-pub fn height(n: &Notification, place: Place) -> f32 {
-    layout(n, place.width()).height
+/// A notification with its card measured, for the lists that place cards.
+#[derive(Clone)]
+pub struct Measured {
+    pub notification: Notification,
+    pub layout: Layout,
+}
+
+impl Measured {
+    pub fn new(notification: Notification, place: Place) -> Self {
+        let layout = measure(&notification, place);
+        Self {
+            notification,
+            layout,
+        }
+    }
 }
 
 fn body_text(body: &str, color: Color) -> Text {
@@ -159,12 +179,13 @@ fn body_text(body: &str, color: Color) -> Text {
 
 // ───── view ──────────────────────────────────────────────────────────────────
 
-/// `n`'s card, its content at `content` opacity (0 for a blank plate
-/// stacked behind another). Callers add the click and hover handlers.
-pub fn card(n: &Notification, place: Place, now: SystemTime, content: f32) -> Rectangle {
+/// `m`'s card, its content at `content` opacity (0 for a blank plate
+/// stacked behind another). Callers make it clickable with [`interactive`].
+pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectangle {
+    let n = &m.notification;
+    let parts = &m.layout;
     let width = place.width();
     let look = place.look();
-    let parts = layout(n, width);
     let id = n.id();
     let hovered = HOVERED.with(Cell::get) == Some(id);
 
@@ -178,7 +199,13 @@ pub fn card(n: &Notification, place: Place, now: SystemTime, content: f32) -> Re
 
     // app name on the left, the time (or close, while hovered) on the right
     let trailing: Box<dyn Widget> = if hovered {
-        boxed(close_button(id, parts.line, look.secondary))
+        let side = parts.line + sys::space::gap::xs();
+        boxed(close_button(
+            format!("amane.notification.{id}.close"),
+            side,
+            look.secondary,
+            move || Notifications::dismiss(id),
+        ))
     } else {
         boxed(
             Text::new(ago(n.received(), now))
@@ -186,22 +213,16 @@ pub fn card(n: &Notification, place: Place, now: SystemTime, content: f32) -> Re
                 .color(look.secondary),
         )
     };
-    let header = Row::new(vec![
-        boxed(
-            fixed(parts.text_width * 0.7, parts.line)
-                .align_child(Start, Center)
-                .child(
-                    Text::new(app_name(n))
-                        .style(sys::r#type::caption())
-                        .color(look.secondary)
-                        .elide(),
-                ),
-        ),
-        trailing,
-    ])
-    .width(Size::Fixed(parts.text_width))
-    .justify(SpaceBetween)
-    .align(Center);
+    // the app's name takes most of the line, leaving the rest to the time
+    let app = fixed(parts.text_width * 0.7, parts.line)
+        .align_child(Start, Center)
+        .child(
+            Text::new(app_name(n))
+                .style(sys::r#type::caption())
+                .color(look.secondary)
+                .elide(),
+        );
+    let header = split_row(app, vec![trailing]).width(Size::Fixed(parts.text_width));
 
     let mut text: Vec<Box<dyn Widget>> = vec![boxed(header)];
     if !parts.summary.is_empty() {
@@ -230,23 +251,15 @@ pub fn card(n: &Notification, place: Place, now: SystemTime, content: f32) -> Re
 
     let mut rows: Vec<Box<dyn Widget>> = vec![boxed(top)];
     if !n.actions().is_empty() {
-        rows.push(boxed(actions(
-            n,
-            width - sys::space::inset::l() * 2.0,
-            look.fg,
-        )));
+        rows.push(boxed(actions(n, inner_width(width), look.fg)));
     }
 
-    let mut body = Rectangle::new()
-        .width(Parent)
-        .height(Parent)
-        .fill(Color::TRANSPARENT)
-        .child(Column::new(rows).gap(sys::space::gap::m()));
+    let mut body = blank().child(Column::new(rows).gap(sys::space::gap::m()));
     if content < 1.0 {
         body = body.opacity(content.clamp(0.0, 1.0));
     }
 
-    let stroke = if n.urgency() == Urgency::Critical {
+    let stroke = if critical(n) {
         sys::color::status::critical::bg()
     } else {
         look.stroke
@@ -292,16 +305,42 @@ fn actions(n: &Notification, width: f32, color: Color) -> Row {
     Row::new(buttons).gap(gap)
 }
 
-fn close_button(id: u32, side: f32, color: Color) -> Rectangle {
-    let side = side + sys::space::gap::xs();
-    IconButton::new(format!("amane.notification.{id}.close"), ICON_CLOSE)
+/// Makes card `id` clickable: a left click does `press`, and the pointer
+/// coming onto it or leaving shows its close button and calls `hover`.
+pub fn interactive(
+    card: Rectangle,
+    id: u32,
+    hover_also: impl Fn(bool) + 'static,
+    press: impl Fn() + 'static,
+) -> Rectangle {
+    card.cursor(Pointer)
+        .on_hover(move |inside| {
+            hover(id, inside);
+            hover_also(inside);
+        })
+        .on_click(move |button| {
+            if button == Button::Left {
+                press();
+            }
+        })
+}
+
+/// A small tonal close button `side` square, as a card and a group use.
+pub fn close_button(id: String, side: f32, color: Color, press: impl Fn() + 'static) -> Rectangle {
+    IconButton::new(id, ICON_CLOSE)
         .style(Style::Tonal)
         .size(sys::size::icon::s())
         .color(color)
         .width(side)
         .height(side)
-        .on_press(move || Notifications::dismiss(id))
+        .on_press(press)
         .build()
+}
+
+/// Whether `n` is critical, which shows until acted on and through Do Not
+/// Disturb.
+pub fn critical(n: &Notification) -> bool {
+    n.urgency() == Urgency::Critical
 }
 
 /// The app's icon, or the sender's own image with the app icon as a badge.
@@ -392,10 +431,13 @@ pub fn ago(received: SystemTime, now: SystemTime) -> String {
         0 => String::from("now"),
         1..60 => format!("{minutes}m ago"),
         60..1440 => format!("{}h ago", minutes / 60),
-        _ => DateTime::<Local>::from(received)
-            .format("%a %H:%M")
-            .to_string(),
+        _ => local(received, "%a %H:%M"),
     }
+}
+
+/// `time` on the local clock, in chrono's `format`.
+pub fn local(time: SystemTime, format: &str) -> String {
+    DateTime::<Local>::from(time).format(format).to_string()
 }
 
 #[cfg(test)]

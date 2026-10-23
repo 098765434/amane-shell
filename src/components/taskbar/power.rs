@@ -8,16 +8,17 @@
 use std::time::Duration;
 
 use amane::{
-    Battery, BatteryState, Center, Color, Column, DeviceKind, LayerWindow, Parent, PowerDevice,
-    PowerProfile, Rectangle, Row, ScrollArea, Service, Size, SpaceBetween, Start, Text,
-    WarningLevel, Widget,
+    Battery, BatteryState, Column, LayerWindow, Parent, PowerDevice, PowerProfile, Rectangle, Row,
+    ScrollArea, Service, Size, Text, Widget,
 };
 
 use super::panel::{self, Panel};
-use super::{
-    ICON_GAMEPAD, ICON_HEADPHONES, ICON_KEYBOARD, ICON_MOUSE, battery_glyph, boxed, icon, pad,
-};
+use super::{battery_color, battery_low};
+use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::{Segment, SegmentedButton};
+use crate::components::icons::{battery_glyph, peripheral_glyph};
+use crate::components::layout::{boxed, caption};
+use crate::components::list::{List, ListItem};
 use crate::tokens::{Styled, sys};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
@@ -46,7 +47,7 @@ fn header() -> Row {
     let present = battery.present();
     let percent = battery.percent();
     let on_ac = battery.on_ac();
-    let low = battery.warning() >= WarningLevel::Low;
+    let low = battery_low(&battery);
     let detail = battery_detail(&battery);
     drop(battery);
 
@@ -62,7 +63,11 @@ fn header() -> Row {
         String::from("Power")
     };
 
-    panel::header(glyph, title, color, vec![boxed(panel::caption(detail))])
+    TopAppBar::new(title)
+        .navigation_icon(glyph)
+        .color(color)
+        .actions(vec![boxed(caption(detail))])
+        .build()
 }
 
 /// "2 h 10 min left", "full in 45 min", "on AC" …
@@ -107,8 +112,8 @@ fn profile_section() -> Box<dyn Widget> {
         .collect();
     let selected = available.iter().position(|name| *name == active);
 
+    // as wide as the card's content, the button's default
     let picker = SegmentedButton::new("amane.power.profile", segments, selected)
-        .width(sys::size::popover::width() - sys::space::inset::l() * 2.0)
         .on_select(move |index, _| PowerProfile::set(&available[index]))
         .build();
 
@@ -116,8 +121,7 @@ fn profile_section() -> Box<dyn Widget> {
 
     if let Some(reason) = degraded {
         rows.push(boxed(
-            Text::new(format!("performance limited: {reason}"))
-                .style(sys::r#type::caption())
+            caption(format!("performance limited: {reason}"))
                 .color(sys::color::status::critical::bg()),
         ));
     }
@@ -138,93 +142,40 @@ fn profile_label(name: &str) -> &str {
 
 fn peripheral_section() -> Box<dyn Widget> {
     let battery = Battery::read();
-    let rows: Vec<Box<dyn Widget>> = battery
-        .peripherals()
-        .iter()
-        .map(|device| boxed(peripheral_row(device)))
-        .collect();
+    let items: Vec<ListItem> = battery.peripherals().iter().map(peripheral_item).collect();
     drop(battery);
 
-    if rows.is_empty() {
-        return boxed(
-            Text::new("No devices with a battery")
-                .style(sys::r#type::caption())
-                .color(sys::color::content::secondary()),
-        );
+    if items.is_empty() {
+        return boxed(caption("No devices with a battery"));
     }
 
-    let column = Column::new(rows).gap(sys::space::gap::xs()).width(Parent);
-
     boxed(
-        ScrollArea::new("amane.power.devices", column).height(Size::Fixed(
+        ScrollArea::new("amane.power.devices", List::new(items).build()).height(Size::Fixed(
             sys::size::list::max_height() - sys::size::row::height(),
         )),
     )
 }
 
-fn peripheral_row(device: &PowerDevice) -> Rectangle {
-    let glyph = match device.kind() {
-        DeviceKind::Mouse => ICON_MOUSE,
-        DeviceKind::Keyboard => ICON_KEYBOARD,
-        DeviceKind::Headset => ICON_HEADPHONES,
-        DeviceKind::GamingInput => ICON_GAMEPAD,
-        _ => battery_glyph(device.percent(), device.state() == BatteryState::Charging),
-    };
+fn peripheral_item(device: &PowerDevice) -> ListItem {
     let model = match device.model() {
         "" => String::from("Unknown device"),
         model => model.to_string(),
     };
-    let model_w = (sys::size::popover::width() - sys::size::row::trailing_width()).max(1.0);
     let charging = device.state() == BatteryState::Charging;
-    let percent_color = if device.percent() <= 15 && !charging {
-        sys::color::status::critical::bg()
-    } else {
-        sys::color::content::secondary()
-    };
+    let percent = device.percent();
 
-    let left = Row::new(vec![
-        boxed(icon(
-            glyph,
-            sys::size::icon::m(),
-            sys::color::surface::panel::fg(),
-        )),
-        boxed(
-            Rectangle::new()
-                .width(Size::Fixed(model_w))
-                .height(Parent)
-                .fill(Color::TRANSPARENT)
-                .align_child(Start, Center)
-                .clip()
-                .child(
-                    Text::new(model)
-                        .style(sys::r#type::label())
-                        .color(sys::color::surface::panel::fg())
-                        .elide(),
-                ),
-        ),
-    ])
-    .gap(sys::space::gap::m())
-    .align(Center);
-
-    let content = Row::new(vec![
-        boxed(left),
-        boxed(
-            Text::new(format!("{}%", device.percent()))
-                .style(sys::r#type::label())
-                .color(percent_color),
-        ),
-    ])
-    .width(Parent)
-    .justify(SpaceBetween)
-    .align(Center);
-
-    Rectangle::new()
-        .width(Parent)
-        .height(Size::Fixed(sys::size::row::height()))
-        .radius(sys::radius::raised())
-        .fill(sys::color::surface::raised::bg())
-        .padding(pad(sys::space::inset::l(), 0.0))
-        .align_child(Center, Center)
-        .clip()
-        .child(content)
+    // nothing to pick, so full-strength like a selected item, but unfilled
+    ListItem::new(format!("amane.power.device.{model}"), model)
+        .leading(peripheral_glyph(device))
+        .color(sys::color::surface::panel::fg())
+        .trailing(
+            // percentages are numeric (manual §11.4)
+            Text::new(format!("{percent}%"))
+                .style(sys::r#type::numeric())
+                .color(battery_color(
+                    percent,
+                    charging,
+                    sys::color::content::secondary(),
+                )),
+        )
 }

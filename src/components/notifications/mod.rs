@@ -8,19 +8,19 @@
 //! - [`center`] — the session's notifications, stacked by app, in a
 //!   right-edge sidebar the clock opens.
 //! - [`dnd`] — Do Not Disturb, on or until a time, kept across restarts.
-//! - [`card`] — the card both draw; [`motion`] — how their cards move.
+//! - [`card`] — the card both draw; [`motion`](crate::components::motion)
+//!   moves their cards.
 //!
 //! See `docs/notifications.md`.
 
 pub mod card;
 pub mod center;
 pub mod dnd;
-pub mod motion;
 pub mod toasts;
 
 use amane::{Notifications, mark_all};
 
-pub use center::{CENTER_NS, center, unseen};
+pub use center::{CENTER_NS, side_sheet, unseen};
 pub use dnd::DoNotDisturb;
 pub use toasts::{TOAST_NS, TOASTS};
 

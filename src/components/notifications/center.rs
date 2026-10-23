@@ -11,43 +11,34 @@
 
 use std::cell::{Cell, RefCell};
 use std::collections::HashSet;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
 use amane::{
-    Animation, Button, Center, Color, Column, Easing, Full, Horizontal, Key, Keyboard, Layer,
-    LayerWindow, Margin, Notification, Notifications, Parent, Point, Pointer, Rectangle, Row,
-    ScrollArea, Service, Size, SpaceBetween, Stack, Text, Vertical, Widget, Zone,
+    Animation, Center, Color, Column, Full, Horizontal, LayerWindow, Margin, Notification,
+    Notifications, Parent, Rectangle, ScrollArea, Service, Size, Stack, Text, Vertical, Widget,
 };
-use chrono::{DateTime, Local};
 
-use super::card::{self, Place};
+use super::card::{self, Measured, Place};
 use super::dnd::{DoNotDisturb, Until};
-use super::motion::{self, Arrive, Item, Pose};
+use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::{IconButton, PushButton, Shape, Style};
-use crate::components::taskbar::{Clock, Panel, boxed, close, is_open, pad};
+use crate::components::card::{Card, Surface, Variant};
+use crate::components::icons::ICON_DND;
+use crate::components::layout::{blank, boxed, cursor, split_row};
+use crate::components::motion::{self, Arrive, Item, Pose};
+use crate::components::taskbar::{Clock, Panel, dismissable, is_open, overlay};
 use crate::tokens::{Styled, notification, sys};
 
 /// Layer-surface namespace; the niri `layer-rule` matches it for blur, and
 /// the Do Not Disturb menu hangs under it.
 pub const CENTER_NS: &str = "amane.notifications.center";
 
-const ICON_DND: char = '\u{ef44}';
-const ICON_CLOSE: char = '\u{e5cd}';
-
-// iOS-like motion; become `sys.motion.*` tokens once they exist in Penpot
-const SLIDE: Duration = Duration::from_millis(500);
-const SLIDE_BOUNCE: f32 = 0.1;
-
 /// Every list of cards in the center is a `motion` scope under this.
 const SCOPE: &str = "center.";
 
 thread_local! {
     // 0 hidden off the right edge, 1 in place
-    static SLIDE_IN: RefCell<Animation> = RefCell::new(
-        Animation::new(0.0)
-            .duration(SLIDE)
-            .easing(Easing::Spring { bounce: SLIDE_BOUNCE }),
-    );
+    static SLIDE_IN: RefCell<Animation> = RefCell::new(motion::sheet(0.0));
 
     // the groups opened out from a stack, by key
     static EXPANDED: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
@@ -58,9 +49,6 @@ thread_local! {
 
     // the newest notification the user has seen, for the bar's dot
     static SEEN: Cell<u32> = const { Cell::new(0) };
-
-    // where the pointer last was on the sheet, for anchoring the menu
-    static CURSOR: Cell<(i32, i32)> = const { Cell::new((0, 0)) };
 }
 
 // ───── runtime ───────────────────────────────────────────────────────────────
@@ -127,7 +115,9 @@ fn groups(list: &[Notification]) -> Vec<Group> {
 
 // ───── view ──────────────────────────────────────────────────────────────────
 
-pub fn center() -> LayerWindow {
+/// The center's surface: M3's modal side sheet, sliding in from the right
+/// edge.
+pub fn side_sheet() -> LayerWindow {
     let open = is_open(Panel::Notifications);
     let progress = SLIDE_IN.with_borrow_mut(|slide| {
         slide.to(if open { 1.0 } else { 0.0 });
@@ -143,34 +133,19 @@ pub fn center() -> LayerWindow {
     let base = LayerWindow::new()
         .width(width)
         .height(Full)
-        .anchor_vertical(Vertical::Top)
-        .anchor_horizontal(Horizontal::Right)
         .margin(Margin {
             top: gap as i32,
             right: right.round() as i32,
             bottom: gap as i32,
             left: 0,
         })
-        .layer(Layer::Overlay)
-        .space(Zone::Respect)
-        .keyboard(Keyboard::OnDemand)
-        .namespace(CENTER_NS)
-        .visible(shown)
-        .on_key(|key| {
-            if matches!(key, Key::Escape) {
-                close();
-            }
-        });
+        .visible(shown);
+    let base = dismissable(overlay(base, CENTER_NS, Vertical::Top, Horizontal::Right));
 
     if !shown {
         motion::forget(SCOPE);
         DRAWN.with_borrow_mut(Vec::clear);
-        return base.child(
-            Rectangle::new()
-                .width(Parent)
-                .height(Parent)
-                .fill(Color::TRANSPARENT),
-        );
+        return base.child(blank());
     }
 
     base.child(sheet())
@@ -207,62 +182,34 @@ fn sheet() -> Rectangle {
 
     if views.is_empty() {
         rows.push(boxed(
-            Rectangle::new()
-                .width(Parent)
-                .height(Parent)
-                .fill(Color::TRANSPARENT)
-                .align_child(Center, Center)
-                .child(
-                    Text::new("No Notifications")
-                        .style(sys::r#type::label())
-                        .color(sys::color::surface::popover::fg_secondary()),
-                ),
+            blank().align_child(Center, Center).child(
+                Text::new("No Notifications")
+                    .style(sys::r#type::label())
+                    .color(Surface::Popover.fg_secondary()),
+            ),
         ));
     } else {
         rows.push(boxed(ScrollArea::new(
-            "amane.notifications.center",
+            "amane.notifications.center.list",
             Column::new(views).gap(sys::space::gap::l()).width(Parent),
         )));
     }
 
-    Rectangle::new()
-        .width(Parent)
-        .height(Parent)
-        .radius(sys::radius::popover())
-        .fill(sys::color::surface::popover::bg())
-        .border(
-            sys::border::hairline(),
-            sys::color::surface::popover::stroke(),
-        )
-        .padding(pad(sys::space::inset::l(), sys::space::inset::l()))
-        .on_move(|p: Point| CURSOR.with(|c| c.set((p.x as i32, p.y as i32))))
-        .child(Column::new(rows).gap(sys::space::gap::l()).width(Parent))
+    Card::new(rows)
+        .surface(Surface::Popover)
+        .variant(Variant::Outlined)
+        .gap(sys::space::gap::l())
+        .build()
 }
 
 /// "Notifications", what Do Not Disturb is doing, and the sheet's buttons.
-fn header(any: bool) -> Row {
+fn header(any: bool) -> amane::Row {
     let until = DoNotDisturb::read().until();
 
-    let mut title: Vec<Box<dyn Widget>> = vec![boxed(
-        Text::new("Notifications")
-            .style(sys::r#type::title())
-            .color(sys::color::surface::popover::fg()),
-    )];
-    if let Some(until) = until {
-        title.push(boxed(
-            Text::new(dnd_status(until))
-                .style(sys::r#type::caption())
-                .color(sys::color::surface::popover::fg_secondary()),
-        ));
-    }
-
-    let open_menu = || {
-        let (x, y) = CURSOR.with(Cell::get);
-        DoNotDisturb::open_menu(CENTER_NS, x, y);
-    };
+    let open_menu = || DoNotDisturb::open_menu(CENTER_NS, cursor());
     let dnd = IconButton::new("amane.notifications.dnd", ICON_DND)
         .style(Style::Tonal)
-        .color(sys::color::surface::popover::fg_secondary())
+        .color(Surface::Popover.fg_secondary())
         .selected(until.is_some())
         .on_press(open_menu)
         .on_secondary(open_menu)
@@ -278,22 +225,19 @@ fn header(any: bool) -> Row {
     }
     trailing.push(boxed(dnd));
 
-    Row::new(vec![
-        boxed(Column::new(title).gap(sys::space::gap::_2xs())),
-        boxed(Row::new(trailing).gap(sys::space::gap::s()).align(Center)),
-    ])
-    .width(Parent)
-    .justify(SpaceBetween)
-    .align(Center)
+    let mut bar = TopAppBar::new("Notifications")
+        .surface(Surface::Popover)
+        .actions(trailing);
+    if let Some(until) = until {
+        bar = bar.subtitle(dnd_status(until));
+    }
+    bar.build()
 }
 
 fn dnd_status(until: Until) -> String {
     match until {
         Until::Forever => String::from("Do Not Disturb"),
-        Until::At(end) => format!(
-            "Do Not Disturb until {}",
-            DateTime::<Local>::from(end).format("%H:%M")
-        ),
+        Until::At(end) => format!("Do Not Disturb until {}", card::local(end, "%H:%M")),
     }
 }
 
@@ -305,7 +249,7 @@ fn text_button(
 ) -> Rectangle {
     PushButton::new(id, label)
         .shape(Shape::Round)
-        .color(sys::color::surface::popover::fg())
+        .color(Surface::Popover.fg())
         .on_press(press)
         .build()
 }
@@ -314,7 +258,7 @@ fn text_button(
 #[derive(Clone)]
 enum Entry {
     Header,
-    Card(Box<Notification>),
+    Card(Box<Measured>),
 }
 
 const HEADER_KEY: u64 = u64::MAX;
@@ -332,10 +276,11 @@ fn group_view(
     let expanded = many && EXPANDED.with_borrow(|open| open.contains(key));
     let header_h = sys::size::control::height();
 
-    let heights: Vec<f32> = cards
+    let measured: Vec<Measured> = cards
         .iter()
-        .map(|n| card::height(n, Place::Center))
+        .map(|n| Measured::new(n.clone(), Place::Center))
         .collect();
+    let heights: Vec<f32> = measured.iter().map(|m| m.layout.height).collect();
     let poses = stack_poses(&heights, expanded, header_h + sys::space::gap::s());
 
     let mut items: Vec<Item<Entry>> = Vec::new();
@@ -350,11 +295,11 @@ fn group_view(
             exit: pose.faded(),
         });
     }
-    for ((n, height), pose) in cards.iter().zip(&heights).zip(&poses) {
+    for (m, pose) in measured.into_iter().zip(&poses) {
         items.push(Item {
-            key: u64::from(n.id()),
-            value: Entry::Card(Box::new(n.clone())),
-            height: *height,
+            key: u64::from(m.notification.id()),
+            height: m.layout.height,
+            value: Entry::Card(Box::new(m)),
             pose: *pose,
             enter: Pose {
                 scale: 0.9,
@@ -398,22 +343,22 @@ fn group_view(
             let pose = s.pose;
             let view = match s.value {
                 Entry::Header => group_header(name, &group, ids.clone(), width, header_h),
-                Entry::Card(n) => {
-                    let id = n.id();
+                Entry::Card(m) => {
+                    let id = m.notification.id();
                     let group = group.clone();
-                    card::card(&n, Place::Center, now, pose.content)
-                        .on_hover(move |inside| card::hover(id, inside))
-                        .on_click(move |button| {
-                            if button != Button::Left {
-                                return;
-                            }
+                    let view = card::card(&m, Place::Center, now, pose.content);
+                    card::interactive(
+                        view,
+                        id,
+                        |_| {},
+                        move || {
                             if many && !expanded {
                                 EXPANDED.with_borrow_mut(|open| open.insert(group.clone()));
                             } else {
                                 Notifications::click(id);
                             }
-                        })
-                        .cursor(Pointer)
+                        },
+                    )
                 }
             };
             boxed(
@@ -482,52 +427,36 @@ fn stack_poses(heights: &[f32], expanded: bool, top: f32) -> Vec<Pose> {
 /// An opened group's title: the app's name, "Show Less", and clear.
 fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32) -> Rectangle {
     let collapse = group.to_string();
-    let clear = IconButton::new(
+    let clear = card::close_button(
         format!("amane.notifications.group.{group}.clear"),
-        ICON_CLOSE,
-    )
-    .style(Style::Tonal)
-    .size(sys::size::icon::s())
-    .color(sys::color::surface::popover::fg())
-    .width(height)
-    .height(height)
-    .on_press(move || {
-        for id in &ids {
-            Notifications::dismiss(*id);
-        }
-    })
-    .build();
+        height,
+        Surface::Popover.fg(),
+        move || {
+            for id in &ids {
+                Notifications::dismiss(*id);
+            }
+        },
+    );
+    let less = text_button(
+        format!("amane.notifications.group.{group}.collapse"),
+        "Show Less",
+        move || {
+            EXPANDED.with_borrow_mut(|open| open.remove(&collapse));
+        },
+    );
 
     Rectangle::new()
         .width(Size::Fixed(width))
         .height(Size::Fixed(height))
         .fill(Color::TRANSPARENT)
         .child(
-            Row::new(vec![
-                boxed(
-                    Text::new(name.to_string())
-                        .style(sys::r#type::title())
-                        .color(sys::color::surface::popover::fg()),
-                ),
-                boxed(
-                    Row::new(vec![
-                        boxed(text_button(
-                            format!("amane.notifications.group.{group}.collapse"),
-                            "Show Less",
-                            move || {
-                                EXPANDED.with_borrow_mut(|open| open.remove(&collapse));
-                            },
-                        )),
-                        boxed(clear),
-                    ])
-                    .gap(sys::space::gap::s())
-                    .align(Center),
-                ),
-            ])
-            .width(Parent)
-            .height(Parent)
-            .justify(SpaceBetween)
-            .align(Center),
+            split_row(
+                Text::new(name.to_string())
+                    .style(sys::r#type::title())
+                    .color(Surface::Popover.fg()),
+                vec![boxed(less), boxed(clear)],
+            )
+            .height(Parent),
         )
 }
 
