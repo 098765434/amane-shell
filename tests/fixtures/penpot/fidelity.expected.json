@@ -1,0 +1,102 @@
+{
+  "$provenance": "Hand-derived from Penpot 2.18's validators (style_dictionary.cljs, files/tokens.cljc); NOT yet checked against Penpot's UI. To verify: import fidelity.json into a scratch Penpot file, read each value (or red pill) in both mode themes, correct this file, and replace this note with the Penpot version used.",
+  "mode/dark": {
+    "color.alpha-ref": "#0a84ff80",
+    "override.me": "4px"
+  },
+  "mode/light": {
+    "bool.ok": true,
+    "border.neg": {
+      "error": true
+    },
+    "border.ok": "1px",
+    "case.bad": {
+      "error": true
+    },
+    "case.ok": "uppercase",
+    "color.alpha-ref": "#0a84ff80",
+    "color.bad": {
+      "error": true
+    },
+    "color.hex": "#0a84ff",
+    "color.hsl": "#ff0000",
+    "color.named": "#663399",
+    "color.rgb": "#ff453a",
+    "cycle.a": {
+      "error": true
+    },
+    "cycle.b": {
+      "error": true
+    },
+    "deco.bad": {
+      "error": true
+    },
+    "deco.ok": "strike-through",
+    "family.list": [
+      "Inter",
+      "sans-serif"
+    ],
+    "font.size": "13px",
+    "letter.ok": "-0.5px",
+    "letter.pct": {
+      "error": true
+    },
+    "number.div-zero": {
+      "error": true
+    },
+    "number.missing-ref": {
+      "error": true
+    },
+    "number.px": {
+      "error": true
+    },
+    "number.ratio": "0.56",
+    "opacity.big": {
+      "error": true
+    },
+    "opacity.pct": "0.5",
+    "override.me": "6px",
+    "radius.max": "4px",
+    "rotation.deg": "45",
+    "shadow.bad": {
+      "error": true
+    },
+    "shadow.ok": [
+      {
+        "blur": "12",
+        "color": "#0a84ff33",
+        "inset": false,
+        "offsetX": "0",
+        "offsetY": "4",
+        "spread": "0"
+      }
+    ],
+    "size.bad-ref": {
+      "error": true
+    },
+    "size.ref": "8px",
+    "space.base": "8px",
+    "space.double": "16px",
+    "space.rem": {
+      "error": true
+    },
+    "space.round": "9px",
+    "string.ok": "hello",
+    "type.bad": {
+      "error": true
+    },
+    "type.label": {
+      "fontFamilies": [
+        "Inter",
+        "sans-serif"
+      ],
+      "fontSizes": "13",
+      "fontWeights": "500",
+      "lineHeights": "1.5"
+    },
+    "weight.bad": {
+      "error": true
+    },
+    "weight.name": "600 italic"
+  }
+}

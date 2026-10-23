@@ -1,11 +1,56 @@
 mod components;
+mod theme;
+// Components switch over to these readers in the next change.
+#[allow(dead_code)]
+mod tokens;
+
+use std::process::ExitCode;
 
 use amane::App;
 
 use components::context_menu::{self, ContextMenu, Icon, MenuItem, Theme};
 use components::taskbar;
 
-fn main() {
+/// `amane-shell tokens …` runs a token tool and exits instead of the shell.
+fn cli(args: &[String]) -> Option<ExitCode> {
+    let read = |path: &str| {
+        std::fs::read_to_string(path).map_err(|e| eprintln!("amane-shell: {path}: {e}"))
+    };
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+
+    let ok = match args.as_slice() {
+        ["tokens", "normalize", path] => read(path).and_then(|json| {
+            tokens::check::normalize(&json)
+                .map(|out| print!("{out}"))
+                .map_err(|e| eprintln!("amane-shell: {path}: {e}"))
+        }),
+        ["tokens", "check", path] => read(path).and_then(|json| {
+            if tokens::check::check(&json) {
+                Ok(())
+            } else {
+                Err(())
+            }
+        }),
+        ["tokens", ..] => {
+            eprintln!("usage: amane-shell tokens normalize <file> | tokens check <file>");
+            Err(())
+        }
+        _ => return None,
+    };
+
+    Some(if ok.is_ok() {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    })
+}
+
+fn main() -> ExitCode {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if let Some(code) = cli(&args) {
+        return code;
+    }
+
     let share = ContextMenu::new(Theme::auto())
         .item(
             MenuItem::label("AirDrop")
@@ -115,4 +160,6 @@ fn main() {
         String::from("ok")
     })
     .run();
+
+    ExitCode::SUCCESS
 }

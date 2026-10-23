@@ -1,0 +1,275 @@
+{
+  "$metadata": {
+    "tokenSetOrder": [
+      "base",
+      "override"
+    ]
+  },
+  "$themes": [
+    {
+      "description": "",
+      "group": "mode",
+      "isSource": false,
+      "name": "light",
+      "selectedTokenSets": {
+        "base": "enabled",
+        "override": "enabled"
+      }
+    },
+    {
+      "description": "",
+      "group": "mode",
+      "isSource": false,
+      "name": "dark",
+      "selectedTokenSets": {
+        "base": "enabled"
+      }
+    },
+    {
+      "description": "",
+      "group": "density",
+      "isSource": false,
+      "name": "comfortable",
+      "selectedTokenSets": {}
+    },
+    {
+      "description": "",
+      "group": "density",
+      "isSource": false,
+      "name": "compact",
+      "selectedTokenSets": {}
+    }
+  ],
+  "base": {
+    "bool": {
+      "ok": {
+        "$type": "boolean",
+        "$value": "true"
+      }
+    },
+    "border": {
+      "neg": {
+        "$type": "borderWidth",
+        "$value": "-1"
+      },
+      "ok": {
+        "$type": "borderWidth",
+        "$value": "1"
+      }
+    },
+    "case": {
+      "bad": {
+        "$type": "textCase",
+        "$value": "small-caps"
+      },
+      "ok": {
+        "$type": "textCase",
+        "$value": "uppercase"
+      }
+    },
+    "color": {
+      "alpha-ref": {
+        "$type": "color",
+        "$value": "rgba({color.hex}, 0.5)"
+      },
+      "bad": {
+        "$type": "color",
+        "$value": "#12345"
+      },
+      "hex": {
+        "$type": "color",
+        "$value": "#0A84FF"
+      },
+      "hsl": {
+        "$type": "color",
+        "$value": "hsl(0, 100%, 50%)"
+      },
+      "named": {
+        "$type": "color",
+        "$value": "rebeccapurple"
+      },
+      "rgb": {
+        "$type": "color",
+        "$value": "rgb(255, 69, 58)"
+      }
+    },
+    "cycle": {
+      "a": {
+        "$type": "number",
+        "$value": "{cycle.b}"
+      },
+      "b": {
+        "$type": "number",
+        "$value": "{cycle.a}"
+      }
+    },
+    "deco": {
+      "bad": {
+        "$type": "textDecoration",
+        "$value": "overline"
+      },
+      "ok": {
+        "$type": "textDecoration",
+        "$value": "strike-through"
+      }
+    },
+    "family": {
+      "list": {
+        "$type": "fontFamilies",
+        "$value": "Inter, sans-serif"
+      }
+    },
+    "font": {
+      "size": {
+        "$type": "fontSizes",
+        "$value": "13"
+      }
+    },
+    "letter": {
+      "ok": {
+        "$type": "letterSpacing",
+        "$value": "-0.5"
+      },
+      "pct": {
+        "$type": "letterSpacing",
+        "$value": "5%"
+      }
+    },
+    "number": {
+      "div-zero": {
+        "$type": "number",
+        "$value": "1 / 0"
+      },
+      "missing-ref": {
+        "$type": "number",
+        "$value": "{nope}"
+      },
+      "px": {
+        "$type": "number",
+        "$value": "4px"
+      },
+      "ratio": {
+        "$type": "number",
+        "$value": "0.56"
+      }
+    },
+    "opacity": {
+      "big": {
+        "$type": "opacity",
+        "$value": "1.2"
+      },
+      "pct": {
+        "$type": "opacity",
+        "$value": "50%"
+      }
+    },
+    "override": {
+      "me": {
+        "$type": "spacing",
+        "$value": "4"
+      }
+    },
+    "radius": {
+      "max": {
+        "$type": "borderRadius",
+        "$value": "max(4, {space.base} / 2, 3)"
+      }
+    },
+    "rotation": {
+      "deg": {
+        "$type": "rotation",
+        "$value": "45"
+      }
+    },
+    "shadow": {
+      "bad": {
+        "$type": "shadow",
+        "$value": {
+          "blur": "2",
+          "offsetX": "0"
+        }
+      },
+      "ok": {
+        "$type": "shadow",
+        "$value": [
+          {
+            "blur": "12",
+            "color": "rgba({color.hex}, 0.2)",
+            "offsetX": "0",
+            "offsetY": "4",
+            "spread": "0"
+          }
+        ]
+      }
+    },
+    "size": {
+      "bad-ref": {
+        "$type": "sizing",
+        "$value": "{color.hex}"
+      },
+      "ref": {
+        "$type": "sizing",
+        "$value": "{space.base}"
+      }
+    },
+    "space": {
+      "base": {
+        "$type": "spacing",
+        "$value": "8"
+      },
+      "double": {
+        "$type": "spacing",
+        "$value": "{space.base} * 2"
+      },
+      "rem": {
+        "$type": "spacing",
+        "$value": "1rem"
+      },
+      "round": {
+        "$type": "spacing",
+        "$value": "round(10 * 0.875)"
+      }
+    },
+    "string": {
+      "ok": {
+        "$type": "string",
+        "$value": "hello"
+      }
+    },
+    "type": {
+      "bad": {
+        "$type": "typography",
+        "$value": {
+          "lineHeights": "1.2"
+        }
+      },
+      "label": {
+        "$type": "typography",
+        "$value": {
+          "fontFamilies": "{family.list}",
+          "fontSizes": "{font.size}",
+          "fontWeights": "500",
+          "lineHeights": "150%"
+        }
+      }
+    },
+    "weight": {
+      "bad": {
+        "$type": "fontWeights",
+        "$value": "510"
+      },
+      "name": {
+        "$type": "fontWeights",
+        "$value": "semi-bold italic"
+      }
+    }
+  },
+  "override": {
+    "override": {
+      "me": {
+        "$type": "spacing",
+        "$value": "6"
+      }
+    }
+  }
+}
