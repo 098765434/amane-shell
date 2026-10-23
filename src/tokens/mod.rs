@@ -464,6 +464,41 @@ mod tests {
     }
 
     #[test]
+    fn compact_tightens_spacing_and_rows_only() {
+        use crate::components::{context_menu, taskbar};
+
+        let at = |density| resolve_key(library(), Key::new(Mode::Dark, density)).unwrap();
+        let (comfortable, compact) = (at(Density::Comfortable), at(Density::Compact));
+        let (a, b) = (
+            taskbar::tokens::parse(&comfortable.sys()).unwrap(),
+            taskbar::tokens::parse(&compact.sys()).unwrap(),
+        );
+
+        assert!(b.gap_m < a.gap_m && b.inset_l < a.inset_l && b.row_h < a.row_h);
+        assert_eq!(b.control_h, b.row_h - 10.0);
+        for (x, y) in [
+            (a.icon_size, b.icon_size),
+            (a.radius_popover, b.radius_popover),
+            (a.label_size, b.label_size),
+        ] {
+            assert_eq!(x, y);
+        }
+        // Penpot rounds density-scaled values, so the shell lands on whole pixels
+        for v in [
+            b.gap_2xs, b.gap_xs, b.gap_s, b.gap_m, b.gap_l, b.gap_xl, b.row_h,
+        ] {
+            assert_eq!(v, v.round());
+        }
+
+        let menu = |r: &Resolved| {
+            context_menu::tokens::parse(&r.sys(), &r.component("menu"))
+                .unwrap()
+                .row_height
+        };
+        assert_eq!((menu(&comfortable), menu(&compact)), (24.0, 21.0));
+    }
+
+    #[test]
     fn text_scale_multiplies_font_sizes_only() {
         use crate::components::{context_menu, taskbar};
 

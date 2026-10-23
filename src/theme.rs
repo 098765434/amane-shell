@@ -76,6 +76,11 @@ pub fn text_scale() -> f32 {
     })
 }
 
+/// `AMANE_DENSITY=compact|comfortable`, else comfortable.
 pub fn density() -> Density {
-    Density::Comfortable
+    static DENSITY: OnceLock<Density> = OnceLock::new();
+    *DENSITY.get_or_init(|| match std::env::var("AMANE_DENSITY").ok().as_deref() {
+        Some("compact") => Density::Compact,
+        _ => Density::Comfortable,
+    })
 }
