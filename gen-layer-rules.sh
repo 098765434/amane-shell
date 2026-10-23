@@ -19,6 +19,9 @@ cd "$(dirname "$0")"
 
 SRC="niri-layer-rule.kdl"
 TARGET="${1:-$HOME/.config/niri/config.kdl}"
+# write through a symlink (home-manager links config.kdl into a repo), or the
+# final `mv` replaces the link with a plain file
+TARGET="$(readlink -f "$TARGET")"
 SENTINEL="//<<<GENERATED-RULES-BELOW>>>"
 BEGIN="// >>> amane layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)"
 END="// <<< amane layer-rules"
