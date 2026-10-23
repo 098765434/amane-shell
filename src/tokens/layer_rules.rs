@@ -5,7 +5,7 @@
 
 use std::fmt::Write;
 
-use crate::components::context_menu::NAMESPACE_ANCHOR;
+use crate::components::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
 use crate::components::taskbar::{AUDIO_NS, BLUETOOTH_NS, POWER_NS, WIFI_NS};
 use crate::theme::{Density, Mode};
@@ -13,12 +13,12 @@ use crate::tokens::{Key, notification, sys, with_key};
 
 pub struct LayerRule {
     pub namespace: &'static str,
-    pub comment: &'static str,
-    /// Corner radius of the surface's own blur, if the surface is blurred.
+    pub comment: String,
+    /// The surface is a frosted card with these corners; `None` leaves it
+    /// alone.
     pub radius: Option<f32>,
-    pub blur: bool,
-    /// Corner radius and blur for the surface's xdg-popups.
-    pub popups: Option<(f32, bool)>,
+    /// Its xdg-popups are frosted cards with these corners.
+    pub popups: Option<f32>,
 }
 
 /// One rule per frosted surface. The bar has none: it is deliberately not
@@ -31,64 +31,77 @@ pub fn rules() -> Vec<LayerRule> {
 
     vec![
         LayerRule {
-            namespace: NAMESPACE_ANCHOR,
-            comment: "Context menu. The anchor is an invisible 1×1 layer-surface; the visible\n\
-                      cards (menu + nested submenus) are xdg-popups of it, so the `popups {}`\n\
-                      block styles every level uniformly. Namespaces: the anchor is\n\
-                      `amane.context-menu-anchor`; each depth level is `amane.context-menu.0`..`7`.",
+            namespace: ANCHOR_NS,
+            comment: format!(
+                "Context menu. The anchor is an invisible 1×1 layer-surface; the visible\n\
+                 cards (menu + nested submenus) are xdg-popups of it, so the `popups {{}}`\n\
+                 block styles every level uniformly. Namespaces: the anchor is\n\
+                 `{ANCHOR_NS}`; each depth level is `{}`..`{}`.",
+                level_ns(0),
+                MAX_DEPTH - 1
+            ),
             radius: None,
-            blur: false,
-            popups: Some((popover, true)),
+            popups: Some(popover),
         },
         LayerRule {
             namespace: WIFI_NS,
-            comment: "Wi-Fi panel: a rounded frosted card anchored bottom-right, toggled by the\n\
+            comment: String::from(
+                "Wi-Fi panel: a rounded frosted card anchored bottom-right, toggled by the\n\
                       taskbar's network indicator.",
+            ),
             radius: Some(popover),
-            blur: true,
             popups: None,
         },
         LayerRule {
             namespace: POWER_NS,
-            comment: "Power panel: the same frosted card, toggled by the taskbar's battery\n\
+            comment: String::from(
+                "Power panel: the same frosted card, toggled by the taskbar's battery\n\
                       indicator.",
+            ),
             radius: Some(popover),
-            blur: true,
             popups: None,
         },
         LayerRule {
             namespace: BLUETOOTH_NS,
-            comment: "Bluetooth panel: the same frosted card, toggled by the taskbar's Bluetooth\n\
+            comment: String::from(
+                "Bluetooth panel: the same frosted card, toggled by the taskbar's Bluetooth\n\
                       indicator. Its device menu is an xdg-popup of this surface, frosted like the others.",
+            ),
             radius: Some(popover),
-            blur: true,
-            popups: Some((popover, true)),
+            popups: Some(popover),
         },
         LayerRule {
             namespace: AUDIO_NS,
-            comment: "Sound panel: the same frosted card, toggled by the taskbar's volume pill.",
+            comment: String::from(
+                "Sound panel: the same frosted card, toggled by the taskbar's volume pill.",
+            ),
             radius: Some(popover),
-            blur: true,
             popups: None,
         },
         LayerRule {
             namespace: TOAST_NS,
-            comment: "Notification toasts: one surface per banner, sized to its card, sliding in\n\
+            comment: String::from(
+                "Notification toasts: one surface per banner, sized to its card, sliding in\n\
                       at the top-right.",
+            ),
             radius: Some(toast),
-            blur: true,
             popups: None,
         },
         LayerRule {
             namespace: CENTER_NS,
-            comment: "Notification center: a full-height frosted sidebar at the right edge,\n\
+            comment: String::from(
+                "Notification center: a full-height frosted sidebar at the right edge,\n\
                       opened from the clock. Its Do Not Disturb menu is an xdg-popup of it.",
+            ),
             radius: Some(popover),
-            blur: true,
-            popups: Some((popover, true)),
+            popups: Some(popover),
         },
     ]
 }
+
+/// The line `gen-layer-rules.sh` looks for; everything after it goes into
+/// the niri config.
+const SENTINEL: &str = "//<<<GENERATED-RULES-BELOW>>>";
 
 const HEADER: &str = "\
 // GENERATED by `cargo run -q -- layer-rules > niri-layer-rule.kdl` from the
@@ -108,16 +121,17 @@ const HEADER: &str = "\
 //
 // Verify the surfaces are up:  niri msg layers | grep amane
 
-//<<<GENERATED-RULES-BELOW>>>  (gen-layer-rules.sh injects everything past this line)
+{SENTINEL}  (gen-layer-rules.sh injects everything past this line)
 
 // Taskbar: a full-width bottom bar. It is deliberately NOT blurred — only the
-// floating surfaces (menus and the Wi-Fi and power cards) are frosted.
+// floating surfaces (menus, panels, toasts and the notification center) are
+// frosted.
 // (No layer-rule for `amane.taskbar` on purpose.)
 ";
 
 /// The whole `niri-layer-rule.kdl`.
 pub fn render(rules: &[LayerRule]) -> String {
-    let mut out = String::from(HEADER);
+    let mut out = HEADER.replace("{SENTINEL}", SENTINEL);
 
     for rule in rules {
         out.push('\n');
@@ -132,19 +146,15 @@ pub fn render(rules: &[LayerRule]) -> String {
         );
         if let Some(radius) = rule.radius {
             let _ = writeln!(out, "    geometry-corner-radius {radius}");
-        }
-        // niri gives a layer-surface's blur xray by default, which shows only
-        // the wallpaper; these cards float over windows, so they blur what's
-        // below (popups already default to that)
-        if rule.blur {
+            // niri gives a layer-surface's blur xray by default, which shows
+            // only the wallpaper; these cards float over windows, so they blur
+            // what's below (popups already default to that)
             out.push_str("    background-effect {\n        blur true\n        xray false\n    }\n");
         }
-        if let Some((radius, blur)) = rule.popups {
+        if let Some(radius) = rule.popups {
             out.push_str("\n    popups {\n");
             let _ = writeln!(out, "        geometry-corner-radius {radius}");
-            if blur {
-                out.push_str("        background-effect {\n            blur true\n        }\n");
-            }
+            out.push_str("        background-effect {\n            blur true\n        }\n");
             out.push_str("    }\n");
         }
         out.push_str("}\n");
@@ -182,6 +192,12 @@ mod tests {
             "niri-layer-rule.kdl is out of date — run: \
              cargo run -q -- layer-rules > niri-layer-rule.kdl"
         );
+    }
+
+    #[test]
+    fn the_script_splices_after_the_same_sentinel() {
+        let script = include_str!("../../gen-layer-rules.sh");
+        assert!(script.contains(&format!("SENTINEL=\"{SENTINEL}\"")));
     }
 
     #[test]

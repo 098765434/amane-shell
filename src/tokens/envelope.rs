@@ -1,9 +1,12 @@
 //! Penpot's single-file export: top-level keys are set names (`sys/base`),
 //! each a tree of groups and tokens; plus `$themes` and `$metadata`.
+//!
+//! `build.rs` includes this file (with `error.rs`) to generate the token
+//! functions, so the build reads the export exactly as the shell does.
 
 use serde_json::{Map, Value};
 
-use super::TokenError;
+use super::error::TokenError;
 
 /// Penpot's 20 token types, by their names in the export.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -34,30 +37,15 @@ impl TokenType {
     pub fn from_name(name: &str) -> Option<Self> {
         use TokenType::*;
 
-        Some(match name {
-            "boolean" => Boolean,
-            "borderRadius" => BorderRadius,
-            "borderWidth" => BorderWidth,
-            "color" => Color,
-            "dimension" => Dimension,
-            // Penpot also imports the singular legacy names
-            "fontFamilies" | "fontFamily" => FontFamilies,
-            "fontSizes" | "fontSize" => FontSizes,
-            "fontWeights" | "fontWeight" => FontWeights,
-            "letterSpacing" => LetterSpacing,
-            "number" => Number,
-            "opacity" => Opacity,
-            "other" => Other,
-            "rotation" => Rotation,
-            "shadow" | "boxShadow" => Shadow,
-            "sizing" => Sizing,
-            "spacing" => Spacing,
-            "string" => String,
-            "textCase" => TextCase,
-            "textDecoration" => TextDecoration,
-            "typography" => Typography,
-            _ => return None,
-        })
+        // Penpot also imports the singular legacy names
+        let legacy = match name {
+            "fontFamily" => Some(FontFamilies),
+            "fontSize" => Some(FontSizes),
+            "fontWeight" => Some(FontWeights),
+            "boxShadow" => Some(Shadow),
+            _ => None,
+        };
+        legacy.or_else(|| ALL.iter().copied().find(|ty| ty.name() == name))
     }
 
     pub fn name(self) -> &'static str {
@@ -87,6 +75,33 @@ impl TokenType {
         }
     }
 }
+
+/// Every type, for looking one up by name.
+const ALL: [TokenType; 20] = {
+    use TokenType::*;
+    [
+        Boolean,
+        BorderRadius,
+        BorderWidth,
+        Color,
+        Dimension,
+        FontFamilies,
+        FontSizes,
+        FontWeights,
+        LetterSpacing,
+        Number,
+        Opacity,
+        Other,
+        Rotation,
+        Shadow,
+        Sizing,
+        Spacing,
+        String,
+        TextCase,
+        TextDecoration,
+        Typography,
+    ]
+};
 
 #[derive(Clone, Debug)]
 pub struct RawToken {
@@ -297,6 +312,15 @@ mod tests {
                 .iter()
                 .any(|t| t.name == "space.w" && t.ty == TokenType::Sizing)
         );
+    }
+
+    #[test]
+    fn type_names_round_trip() {
+        for ty in ALL {
+            assert_eq!(TokenType::from_name(ty.name()), Some(ty));
+        }
+        assert_eq!(TokenType::from_name("fontSize"), Some(TokenType::FontSizes));
+        assert_eq!(TokenType::from_name("pixels"), None);
     }
 
     #[test]

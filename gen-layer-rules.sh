@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Generate the amane layer-rules into the niri config from the single source of
-# truth, niri-layer-rule.kdl. Replaces only the region between the markers
+# Splice the amane layer-rules into the niri config from niri-layer-rule.kdl,
+# which `cargo run -q -- layer-rules` generates from the design tokens (see
+# src/tokens/layer_rules.rs). Replaces only the region between the markers
 #
 #     // >>> amane layer-rules (generated from shell/niri-layer-rule.kdl ...)
 #     // <<< amane layer-rules
 #
 # in the target config and leaves everything else untouched, so it is safe to
-# re-run after editing niri-layer-rule.kdl. Reload niri afterwards:
+# re-run after regenerating niri-layer-rule.kdl. Reload niri afterwards:
 #
 #     ./gen-layer-rules.sh ~/.config/niri/config.kdl
 #     niri validate -c ~/.config/niri/config.kdl
@@ -19,9 +20,10 @@ cd "$(dirname "$0")"
 
 SRC="niri-layer-rule.kdl"
 TARGET="${1:-$HOME/.config/niri/config.kdl}"
-# write through a symlink (home-manager links config.kdl into a repo), or the
-# final `mv` replaces the link with a plain file
+# write through a symlink (home-manager links config.kdl into a repo), so the
+# link stays a link
 TARGET="$(readlink -f "$TARGET")"
+# the same sentinel as src/tokens/layer_rules.rs (a test checks it)
 SENTINEL="//<<<GENERATED-RULES-BELOW>>>"
 BEGIN="// >>> amane layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)"
 END="// <<< amane layer-rules"
@@ -47,16 +49,16 @@ EOF
 fi
 
 # Replacement block: markers wrapping the generated rules.
-block="$(mktemp)"; trap 'rm -f "$block"' EXIT
+block="$(mktemp)"; out="$(mktemp)"; trap 'rm -f "$block" "$out"' EXIT
 { printf '%s\n' "$BEGIN"; printf '%s\n' "$rules"; printf '%s\n' "$END"; } > "$block"
 
 # Splice: replace everything from BEGIN through END (inclusive) with the block.
-out="$(mktemp)"
 awk -v b="$BEGIN" -v e="$END" -v bf="$block" '
   BEGIN { while ((getline l < bf) > 0) blk = blk l "\n" }
   index($0, b) { printf "%s", blk; inblock = 1; next }
   inblock      { if (index($0, e)) inblock = 0; next }
   { print }
 ' "$TARGET" > "$out"
-mv "$out" "$TARGET"
+# copied over rather than moved, so the config keeps its own permissions
+cat "$out" > "$TARGET"
 echo "updated $TARGET (amane layer-rules regenerated from $SRC)"

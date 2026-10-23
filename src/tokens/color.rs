@@ -23,6 +23,12 @@ impl Rgba {
         Self { r, g, b, a: 1.0 }
     }
 
+    /// An opaque colour from 8-bit channels.
+    pub fn from_rgb8([r, g, b]: [u8; 3]) -> Self {
+        let unit = |c: u8| f64::from(c) / 255.0;
+        Self::opaque(unit(r), unit(g), unit(b))
+    }
+
     pub fn to_color(self) -> Color {
         let byte = |c: f64| (c.clamp(0.0, 1.0) * 255.0).round() as u8;
         Color::rgba(byte(self.r), byte(self.g), byte(self.b), byte(self.a))
@@ -51,14 +57,7 @@ impl Rgba {
 
     /// WCAG 2 relative luminance (alpha ignored).
     pub fn luminance(self) -> f64 {
-        let lin = |c: f64| {
-            if c <= 0.04045 {
-                c / 12.92
-            } else {
-                ((c + 0.055) / 1.055).powf(2.4)
-            }
-        };
-        0.2126 * lin(self.r) + 0.7152 * lin(self.g) + 0.0722 * lin(self.b)
+        0.2126 * to_linear(self.r) + 0.7152 * to_linear(self.g) + 0.0722 * to_linear(self.b)
     }
 
     /// WCAG 2 contrast ratio between two opaque colours.
@@ -291,6 +290,29 @@ const NAMED: &[(&str, u32)] = &[
     ("violet", 0xee82ee), ("wheat", 0xf5deb3), ("white", 0xffffff), ("whitesmoke", 0xf5f5f5),
     ("yellow", 0xffff00), ("yellowgreen", 0x9acd32),
 ];
+
+/// An sRGB channel (0..=1) in linear light.
+pub fn to_linear(c: f64) -> f64 {
+    if c <= 0.04045 {
+        c / 12.92
+    } else {
+        ((c + 0.055) / 1.055).powf(2.4)
+    }
+}
+
+/// The largest difference between two colours in any 8-bit channel.
+#[cfg(test)]
+pub fn byte_distance(a: Color, b: Color) -> u8 {
+    [
+        a.red().abs_diff(b.red()),
+        a.green().abs_diff(b.green()),
+        a.blue().abs_diff(b.blue()),
+        a.alpha().abs_diff(b.alpha()),
+    ]
+    .into_iter()
+    .max()
+    .unwrap_or(0)
+}
 
 #[cfg(test)]
 mod tests {

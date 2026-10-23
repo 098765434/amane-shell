@@ -30,7 +30,7 @@ pub const MAX_DEPTH: usize = 8;
 
 /// The anchor layer-surface namespace. The niri `layer-rule` matches this and
 /// its `popups { }` block styles every descendant popup (all menu levels).
-pub const NAMESPACE_ANCHOR: &str = "amane.context-menu-anchor";
+pub const ANCHOR_NS: &str = "amane.context-menu-anchor";
 
 /// One namespace per depth level. Level `k`'s popup is parented to level
 /// `k-1` (level 0 to the anchor).
@@ -45,11 +45,16 @@ const NS: [&str; MAX_DEPTH] = [
     "amane.context-menu.7",
 ];
 
+/// The popup namespace of menu level `k`.
+pub fn level_ns(k: usize) -> &'static str {
+    NS[k]
+}
+
 fn parent_ns(k: usize) -> &'static str {
     if k == 0 {
         // level 0 hangs under a caller-supplied surface when one is set
         // (e.g. a taskbar pill via `open_under`), else the desktop anchor
-        runtime::root_parent().unwrap_or(NAMESPACE_ANCHOR)
+        runtime::root_parent().unwrap_or(ANCHOR_NS)
     } else {
         NS[k - 1]
     }
@@ -201,7 +206,7 @@ pub fn anchor() -> LayerWindow {
         .height(size)
         .layer(Layer::Overlay)
         .keyboard(Keyboard::OnDemand)
-        .namespace(NAMESPACE_ANCHOR)
+        .namespace(ANCHOR_NS)
         .visible(true);
 
     if !arming {

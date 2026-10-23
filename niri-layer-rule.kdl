@@ -18,7 +18,8 @@
 //<<<GENERATED-RULES-BELOW>>>  (gen-layer-rules.sh injects everything past this line)
 
 // Taskbar: a full-width bottom bar. It is deliberately NOT blurred — only the
-// floating surfaces (menus and the Wi-Fi and power cards) are frosted.
+// floating surfaces (menus, panels, toasts and the notification center) are
+// frosted.
 // (No layer-rule for `amane.taskbar` on purpose.)
 
 // Context menu. The anchor is an invisible 1×1 layer-surface; the visible

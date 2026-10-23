@@ -20,6 +20,7 @@ pub mod accent;
 pub mod check;
 pub mod color;
 pub mod envelope;
+pub mod error;
 pub mod expr;
 pub mod font;
 pub mod layer_rules;
@@ -29,13 +30,13 @@ pub mod values;
 
 use std::cell::Cell;
 use std::collections::HashMap;
-use std::fmt;
 use std::sync::{Mutex, OnceLock};
 
 use amane::Text;
 
 use crate::theme::{self, Density, Mode};
 pub use envelope::{Library, TokenType};
+pub use error::TokenError;
 pub use values::{Shadow, TextCase, TextDecoration, Value};
 
 /// The committed Penpot export.
@@ -43,49 +44,6 @@ pub const SOURCE: &str = include_str!("../../design-tokens/tokens.json");
 
 /// The prefixes component tokens may use (manual §3).
 pub const COMPONENTS: &[&str] = &["bar", "menu", "wifi", "power", "osd", "notification"];
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct TokenError {
-    pub token: String,
-    pub set: String,
-    /// The `mode` × `density` selection, when one applies.
-    pub key: String,
-    pub message: String,
-}
-
-impl TokenError {
-    pub fn file(message: impl Into<String>) -> Self {
-        Self::in_set("", "", message)
-    }
-
-    pub fn in_set(set: &str, token: &str, message: impl Into<String>) -> Self {
-        Self {
-            token: token.to_string(),
-            set: set.to_string(),
-            key: String::new(),
-            message: message.into(),
-        }
-    }
-}
-
-impl fmt::Display for TokenError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let place: Vec<String> = [
-            (!self.set.is_empty()).then(|| format!("set {}", self.set)),
-            (!self.key.is_empty()).then(|| self.key.clone()),
-        ]
-        .into_iter()
-        .flatten()
-        .collect();
-
-        match (self.token.is_empty(), place.is_empty()) {
-            (true, true) => write!(f, "{}", self.message),
-            (true, false) => write!(f, "({}): {}", place.join(", "), self.message),
-            (false, true) => write!(f, "{}: {}", self.token, self.message),
-            (false, false) => write!(f, "{} ({}): {}", self.token, place.join(", "), self.message),
-        }
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct ResolvedToken {
@@ -127,6 +85,14 @@ pub fn with_key<T>(key: Key, f: impl FnOnce() -> T) -> T {
 }
 
 impl Key {
+    /// Every `mode` × `density` combination, with the default accent and
+    /// text scale.
+    pub fn all() -> impl Iterator<Item = Key> {
+        Mode::ALL
+            .into_iter()
+            .flat_map(|m| Density::ALL.into_iter().map(move |d| Key::new(m, d)))
+    }
+
     /// The runtime inputs as they are now.
     pub fn current() -> Self {
         if let Some(key) = OVERRIDE.with(Cell::get) {
@@ -179,10 +145,7 @@ pub fn resolved(key: Key) -> &'static Resolved {
 pub fn resolve_key(library: &Library, key: Key) -> Result<Resolved, Vec<TokenError>> {
     let overrides: Vec<(&str, String)> = key
         .accent
-        .map(|[r, g, b]| {
-            let seed = color::Rgba::opaque(r as f64 / 255.0, g as f64 / 255.0, b as f64 / 255.0);
-            accent::derive(seed).to_vec()
-        })
+        .map(|[r, g, b]| accent::derive(color::Rgba::from_rgb8([r, g, b])).to_vec())
         .unwrap_or_default();
 
     let mut resolved = library
@@ -368,22 +331,12 @@ mod tests {
                 .unwrap_or_else(|| panic!("{name} missing"))
         };
         let seed = raw(accent::SEED);
-        let seed = color::Rgba::opaque(
-            seed.red() as f64 / 255.0,
-            seed.green() as f64 / 255.0,
-            seed.blue() as f64 / 255.0,
-        );
+        let seed = color::Rgba::from_rgb8([seed.red(), seed.green(), seed.blue()]);
 
         for (name, derived) in accent::derive(seed) {
             let (want, got) = (raw(name), color::parse(&derived).unwrap().to_color());
-            let step = [
-                want.red().abs_diff(got.red()),
-                want.green().abs_diff(got.green()),
-                want.blue().abs_diff(got.blue()),
-                want.alpha().abs_diff(got.alpha()),
-            ];
             assert!(
-                step.iter().all(|d| *d <= 1),
+                color::byte_distance(want, got) <= 1,
                 "{name}: Penpot has {}, the runtime derives {derived}",
                 want.hex()
             );

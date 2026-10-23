@@ -193,7 +193,7 @@ fn text(value: &Json) -> Result<&str, String> {
         .ok_or_else(|| format!("expected a string, found {value}"))
 }
 
-fn text_or_number(value: &Json) -> Result<std::string::String, String> {
+fn text_or_number(value: &Json) -> Result<String, String> {
     match value {
         Json::String(s) => Ok(s.clone()),
         Json::Number(n) => Ok(n.to_string()),
@@ -212,8 +212,8 @@ fn length(value: &Json) -> Result<Num, String> {
 
 fn opacity(value: &Json) -> Result<f64, String> {
     let raw = text_or_number(value)?;
-    let v = match raw.trim().strip_suffix('%') {
-        Some(pct) => number(&Json::String(pct.into()))?.value / 100.0,
+    let v = match percent(&raw) {
+        Some(fraction) => fraction?,
         None => {
             let n = number(value)?;
             if n.px {
@@ -285,7 +285,7 @@ fn font_weight(value: &Json) -> Result<(u16, bool), String> {
         ));
     }
 
-    let key: std::string::String = base.chars().filter(|c| c.is_ascii_alphabetic()).collect();
+    let key: String = base.chars().filter(|c| c.is_ascii_alphabetic()).collect();
     WEIGHT_NAMES
         .iter()
         .find(|(name, _)| *name == key)
@@ -293,65 +293,79 @@ fn font_weight(value: &Json) -> Result<(u16, bool), String> {
         .ok_or_else(|| format!("`{raw}` is not a font weight"))
 }
 
+/// Penpot's names for text cases and decorations, read both ways.
+const TEXT_CASES: [(&str, TextCase); 4] = [
+    ("none", TextCase::None),
+    ("uppercase", TextCase::Uppercase),
+    ("lowercase", TextCase::Lowercase),
+    ("capitalize", TextCase::Capitalize),
+];
+const TEXT_DECORATIONS: [(&str, TextDecoration); 3] = [
+    ("none", TextDecoration::None),
+    ("underline", TextDecoration::Underline),
+    ("strike-through", TextDecoration::StrikeThrough),
+];
+
+fn by_name<T: Copy>(table: &[(&'static str, T)], name: &str, what: &str) -> Result<T, String> {
+    table
+        .iter()
+        .find(|(n, _)| *n == name.trim())
+        .map(|(_, v)| *v)
+        .ok_or_else(|| format!("`{}` is not a {what}", name.trim()))
+}
+
+fn name_of<T: Copy + PartialEq>(table: &[(&'static str, T)], value: T) -> &'static str {
+    table
+        .iter()
+        .find(|(_, v)| *v == value)
+        .map(|(n, _)| *n)
+        .expect("every variant is in its table")
+}
+
 fn text_case(s: &str) -> Result<TextCase, String> {
-    Ok(match s.trim() {
-        "none" => TextCase::None,
-        "uppercase" => TextCase::Uppercase,
-        "lowercase" => TextCase::Lowercase,
-        "capitalize" => TextCase::Capitalize,
-        other => return Err(format!("`{other}` is not a text case")),
-    })
+    by_name(&TEXT_CASES, s, "text case")
 }
 
 fn text_case_name(c: TextCase) -> &'static str {
-    match c {
-        TextCase::None => "none",
-        TextCase::Uppercase => "uppercase",
-        TextCase::Lowercase => "lowercase",
-        TextCase::Capitalize => "capitalize",
-    }
+    name_of(&TEXT_CASES, c)
 }
 
 fn text_decoration(s: &str) -> Result<TextDecoration, String> {
-    Ok(match s.trim() {
-        "none" => TextDecoration::None,
-        "underline" => TextDecoration::Underline,
-        "strike-through" => TextDecoration::StrikeThrough,
-        other => return Err(format!("`{other}` is not a text decoration")),
-    })
+    by_name(&TEXT_DECORATIONS, s, "text decoration")
 }
 
 fn text_decoration_name(d: TextDecoration) -> &'static str {
-    match d {
-        TextDecoration::None => "none",
-        TextDecoration::Underline => "underline",
-        TextDecoration::StrikeThrough => "strike-through",
-    }
+    name_of(&TEXT_DECORATIONS, d)
 }
 
-/// A typography member key, in any of the spellings Penpot imports.
-fn member(key: &str) -> Option<TokenType> {
-    let k: std::string::String = key
-        .chars()
-        .filter(|c| *c != '-')
-        .collect::<std::string::String>()
-        .to_ascii_lowercase();
+/// A typography member key with its spelling evened out: `font-size`,
+/// `fontSize` and `fontSizes` all read `fontsize…`.
+fn member_key(key: &str) -> String {
+    key.replace('-', "").to_ascii_lowercase()
+}
 
-    Some(match k.as_str() {
+/// A typography member's type, in any of the spellings Penpot imports.
+fn member(key: &str) -> Option<TokenType> {
+    Some(match member_key(key).as_str() {
         "fontfamilies" | "fontfamily" => TokenType::FontFamilies,
         "fontsizes" | "fontsize" => TokenType::FontSizes,
         "fontweights" | "fontweight" => TokenType::FontWeights,
         "letterspacing" => TokenType::LetterSpacing,
-        "lineheights" | "lineheight" => return None,
         "textcase" => TokenType::TextCase,
         "textdecoration" => TokenType::TextDecoration,
         _ => return None,
     })
 }
 
+/// Line height has no token type of its own: it's a ratio of the size.
 fn is_line_height(key: &str) -> bool {
-    let k = key.replace('-', "").to_ascii_lowercase();
-    k == "lineheights" || k == "lineheight"
+    matches!(member_key(key).as_str(), "lineheights" | "lineheight")
+}
+
+/// `raw` as a fraction when written as a percentage (`"50%"` is 0.5).
+fn percent(raw: &str) -> Option<Result<f64, String>> {
+    let pct = raw.trim().strip_suffix('%')?;
+    Some(number(&Json::String(pct.into())).map(|n| n.value / 100.0))
 }
 
 fn typography(value: &Json) -> Result<Typography, String> {
@@ -393,8 +407,8 @@ fn typography(value: &Json) -> Result<Typography, String> {
             .size
             .ok_or_else(|| String::from("lineHeights needs fontSizes in the same typography"))?;
         let raw = text_or_number(lh)?;
-        t.line_height = Some(match raw.trim().strip_suffix('%') {
-            Some(pct) => number(&Json::String(pct.into()))?.value as f32 / 100.0,
+        t.line_height = Some(match percent(&raw) {
+            Some(fraction) => fraction? as f32,
             None => {
                 let n = number(lh)?;
                 if n.px {

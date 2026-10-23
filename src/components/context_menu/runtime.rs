@@ -45,7 +45,7 @@ pub(crate) struct Runtime {
     /// The open levels, outermost first. Empty unless `phase == Open`.
     pub(crate) stack: Vec<Level>,
     /// Parent surface namespace for level 0. `None` → the desktop anchor
-    /// (`NAMESPACE_ANCHOR`); `Some` → a caller-supplied surface the menu
+    /// (`ANCHOR_NS`); `Some` → a caller-supplied surface the menu
     /// should hang under (set by `open_under`, e.g. a taskbar pill).
     pub(crate) root_parent: Option<&'static str>,
 }

@@ -2,7 +2,7 @@
 //! the runtime swaps them in for Penpot's values when the system publishes
 //! an accent, and everything referencing them follows.
 
-use super::color::Rgba;
+use super::color::{Rgba, to_linear};
 
 /// White text on the seed down to this contrast, dark text below it.
 const ON_SEED_MIN_CONTRAST: f64 = 3.0;
@@ -40,14 +40,6 @@ pub fn derive(seed: Rgba) -> [(&'static str, String); 4] {
         (DIM, dim.hex()),
         (BRIGHT, bright.hex()),
     ]
-}
-
-fn to_linear(c: f64) -> f64 {
-    if c <= 0.04045 {
-        c / 12.92
-    } else {
-        ((c + 0.055) / 1.055).powf(2.4)
-    }
 }
 
 fn from_linear(c: f64) -> f64 {
@@ -118,23 +110,14 @@ pub fn from_oklab(lab: [f64; 3]) -> Rgba {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tokens::color::parse;
+    use crate::tokens::color::{self, parse};
 
     fn derived(seed: &str) -> [String; 4] {
         derive(parse(seed).unwrap()).map(|(_, v)| v)
     }
 
     fn byte_distance(a: &str, b: &str) -> u8 {
-        let (a, b) = (parse(a).unwrap().to_color(), parse(b).unwrap().to_color());
-        [
-            a.red().abs_diff(b.red()),
-            a.green().abs_diff(b.green()),
-            a.blue().abs_diff(b.blue()),
-            a.alpha().abs_diff(b.alpha()),
-        ]
-        .into_iter()
-        .max()
-        .unwrap()
+        color::byte_distance(parse(a).unwrap().to_color(), parse(b).unwrap().to_color())
     }
 
     #[test]

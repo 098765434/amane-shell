@@ -38,12 +38,6 @@ const SURFACES: &[(&str, &str, &str)] = &[
     ),
 ];
 
-pub fn combinations() -> impl Iterator<Item = Key> {
-    Mode::ALL
-        .into_iter()
-        .flat_map(|m| Density::ALL.into_iter().map(move |d| Key::new(m, d)))
-}
-
 /// Every rule that can fail, in manual §13 order.
 pub fn check(lib: &Library, source: &str) -> Vec<String> {
     let mut out = Vec::new();
@@ -71,8 +65,8 @@ pub fn themes(lib: &Library) -> Vec<String> {
     let mut out = Vec::new();
 
     for (group, names) in [
-        ("mode", ["light", "dark"]),
-        ("density", ["comfortable", "compact"]),
+        ("mode", Mode::ALL.map(Mode::theme)),
+        ("density", Density::ALL.map(Density::theme)),
     ] {
         for name in names {
             if lib.theme(group, name).is_none() {
@@ -105,7 +99,7 @@ pub fn resolve_all(lib: &Library) -> Result<Vec<(Key, Resolved)>, Vec<String>> {
     let mut resolved = Vec::new();
     let mut errors = Vec::new();
 
-    for key in combinations() {
+    for key in Key::all() {
         match resolve_key(lib, key) {
             Ok(r) => resolved.push((key, r)),
             Err(e) => errors.extend(e.iter().map(|e| format!("manual §13.2: {e}"))),
@@ -251,24 +245,28 @@ pub fn set_contents(lib: &Library) -> Vec<String> {
         ));
     }
 
-    for (group, theme, needs) in [
+    // each mode needs the primitives, the base, its colours and the
+    // components; each density its own set
+    let mode_sets = Mode::ALL.map(|m| {
+        let color = format!("sys/color/{}", m.theme());
         (
             "mode",
-            "light",
-            &["ref", "sys/base", "sys/color/light", "components"][..],
-        ),
+            m.theme(),
+            vec!["ref".into(), "sys/base".into(), color, "components".into()],
+        )
+    });
+    let density_sets = Density::ALL.map(|d| {
         (
-            "mode",
-            "dark",
-            &["ref", "sys/base", "sys/color/dark", "components"][..],
-        ),
-        ("density", "comfortable", &["sys/density/comfortable"][..]),
-        ("density", "compact", &["sys/density/compact"][..]),
-    ] {
+            "density",
+            d.theme(),
+            vec![format!("sys/density/{}", d.theme())],
+        )
+    });
+    for (group, theme, needs) in mode_sets.into_iter().chain(density_sets) {
         let Some(t) = lib.theme(group, theme) else {
             continue;
         };
-        for set in needs {
+        for set in &needs {
             if !t.sets.iter().any(|s| s == set) {
                 out.push(format!(
                     "manual §9.2: theme {group}/{theme} must enable set {set}"
@@ -588,9 +586,9 @@ mod tests {
 
     #[test]
     fn generated_tokens_resolve_with_their_type() {
-        for key in combinations() {
+        for key in Key::all() {
             let r = resolve_key(library(), key).expect("resolves");
-            for (name, ty) in GENERATED {
+            for (name, ty, _) in GENERATED {
                 let want = TokenType::from_name(ty).expect("generated from a known type");
                 match r.tokens.get(*name) {
                     Some(token) if token.ty == want => {}
@@ -678,21 +676,11 @@ mod tests {
         }
     }
 
-    /// A generated function's call as it appears in code: its last two path
-    /// segments, e.g. `popover::bg(`.
-    fn call_suffix(name: &str) -> String {
-        let ident = |s: &str| {
-            let mut id = s.replace('-', "_");
-            if id.starts_with(|c: char| c.is_ascii_digit()) {
-                id.insert(0, '_');
-            }
-            if id == "type" {
-                id.insert_str(0, "r#");
-            }
-            id
-        };
-        let parts: Vec<String> = name.split('.').map(ident).collect();
-        format!("{}::{}(", parts[parts.len() - 2], parts[parts.len() - 1])
+    /// A generated function's call as it appears in code: the last two
+    /// segments of its path, e.g. `popover::bg(`.
+    fn call_suffix(path: &str) -> String {
+        let parts: Vec<&str> = path.rsplit("::").take(2).collect();
+        format!("{}::{}(", parts[1], parts[0])
     }
 
     /// Report only: tokens no code reads, and tier sizes against the budget.
@@ -701,8 +689,10 @@ mod tests {
         let code: String = component_sources().into_iter().map(|(_, s)| s).collect();
         let unread: Vec<&str> = GENERATED
             .iter()
-            .map(|(name, _)| *name)
-            .filter(|n| *n != "sys.density.factor" && !code.contains(&call_suffix(n)))
+            .filter(|(name, _, path)| {
+                *name != "sys.density.factor" && !code.contains(&call_suffix(path))
+            })
+            .map(|(name, _, _)| *name)
             .collect();
 
         eprintln!("tokens no code reads ({}):", unread.len());
