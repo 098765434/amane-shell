@@ -8,15 +8,16 @@
 use std::time::Duration;
 
 use amane::{
-    Battery, BatteryState, Button, Center, Color, Column, DeviceKind, LayerWindow, Parent, Pointer,
-    PowerDevice, PowerProfile, Rectangle, Row, ScrollArea, Service, Size, SpaceBetween, Start,
-    Text, WarningLevel, Widget,
+    Battery, BatteryState, Center, Color, Column, DeviceKind, LayerWindow, Parent, PowerDevice,
+    PowerProfile, Rectangle, Row, ScrollArea, Service, Size, SpaceBetween, Start, Text,
+    WarningLevel, Widget,
 };
 
 use super::panel::{self, Panel};
 use super::{
     ICON_GAMEPAD, ICON_HEADPHONES, ICON_KEYBOARD, ICON_MOUSE, battery_glyph, boxed, icon, pad,
 };
+use crate::components::buttons::{Segment, SegmentedButton};
 use crate::tokens::{Styled, sys};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
@@ -99,18 +100,19 @@ fn profile_section() -> Box<dyn Widget> {
     let degraded = profile.degraded().map(String::from);
     drop(profile);
 
-    let inner = sys::size::popover::width() - sys::space::inset::l() * 2.0;
-    let gap = sys::space::gap::xs();
-    let count = available.len().max(1) as f32;
-    let segment_w = ((inner - gap * (count - 1.0)) / count).max(1.0);
-
     // only what this machine offers, so a 2-profile laptop shows no "performance"
-    let segments: Vec<Box<dyn Widget>> = available
-        .into_iter()
-        .map(|name| boxed(profile_segment(name, &active, segment_w)))
+    let segments = available
+        .iter()
+        .map(|name| Segment::new(profile_label(name)))
         .collect();
+    let selected = available.iter().position(|name| *name == active);
 
-    let mut rows = vec![boxed(Row::new(segments).gap(gap).width(Parent))];
+    let picker = SegmentedButton::new(segments, selected)
+        .width(sys::size::popover::width() - sys::space::inset::l() * 2.0)
+        .on_select(move |index, _| PowerProfile::set(&available[index]))
+        .build();
+
+    let mut rows = vec![boxed(picker)];
 
     if let Some(reason) = degraded {
         rows.push(boxed(
@@ -123,38 +125,13 @@ fn profile_section() -> Box<dyn Widget> {
     boxed(Column::new(rows).gap(sys::space::gap::s()).width(Parent))
 }
 
-fn profile_segment(name: String, active: &str, width: f32) -> Rectangle {
-    let selected = name == active;
-    let label = match name.as_str() {
+fn profile_label(name: &str) -> &str {
+    match name {
         "power-saver" => "Saver",
         "balanced" => "Balanced",
         "performance" => "Performance",
         other => other,
     }
-    .to_string();
-
-    let (fill, color) = if selected {
-        (sys::color::accent::bg(), sys::color::surface::panel::fg())
-    } else {
-        (
-            sys::color::surface::raised::bg(),
-            sys::color::content::secondary(),
-        )
-    };
-
-    Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(sys::size::control::height()))
-        .radius(sys::radius::raised())
-        .fill(fill)
-        .align_child(Center, Center)
-        .cursor(Pointer)
-        .on_click(move |button| {
-            if button == Button::Left {
-                PowerProfile::set(&name);
-            }
-        })
-        .child(Text::new(label).style(sys::r#type::caption()).color(color))
 }
 
 // ───── peripherals ───────────────────────────────────────────────────────────
