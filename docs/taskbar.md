@@ -2,7 +2,7 @@
 
 A bottom layer-shell bar (`src/components/taskbar/mod.rs`), full-width, anchored to the bottom on
 the `Top` layer with `Zone::Reserve`. Namespace `amane.taskbar`. The root is an opaque rounded
-`Rectangle` holding a three-zone `Stack` — the bar is intentionally **not** blurred (no layer-rule
+`Rectangle` holding a three-zone `Stack`. The bar is intentionally **not** blurred (no layer-rule
 for its namespace); only the floating surfaces (popups and the panels below) are frosted.
 
 ## Height & the overview smooth-expand
@@ -47,10 +47,10 @@ uses its compact height until the overview bool flips.
 Four bottom-right popover cards share `panel.rs`: one `LayerWindow` each (namespaces
 `amane.taskbar.{audio,bluetooth,wifi,power}`, each with a frosted layer-rule), but **only one is open
 at a time** — `panel::toggle(Panel::…)` closes whichever other one is up. Escape or toggling again
-closes it. They are built from the same pieces: `card`, `header` (glyph + title + controls),
-`caption`, `list_row` (glyph, elided label, trailing badges; the selected row is filled) and
-`slider` (`sys.size.slider.height`, drag or scroll), plus the shared buttons and `Switch` from
-[buttons.md](buttons.md).
+closes it. `panel.rs` also holds the overlay-surface helpers (`overlay`, `dismissable`) the
+notification center and toasts use. Each panel is built from the
+[shared components](components.md): a frosted `Card` (`panel::card`), a `TopAppBar`, `List`s of
+`ListItem`s and a `Slider`, plus the buttons and `Switch` from [buttons.md](buttons.md).
 
 - **Sound** (`audio.rs`): for the output and for the microphone, a mute button showing the
   default device's glyph, a volume slider and the device list; clicking a device makes it the
@@ -61,7 +61,13 @@ closes it. They are built from the same pieces: `card`, `header` (glyph + title 
   pairs; the row says "Connecting…" until BlueZ reports back (up to 15 s); right-click a paired
   device for Connect/Disconnect and Forget. Battery shows when the device reports it. **Pairing
   works only for devices that need no PIN** — the fork has no BlueZ agent to show or type a code.
-- **Wi‑Fi** (`wifi.rs`) and **power** (`power.rs`) as before.
+- **Wi‑Fi** (`wifi.rs`): power switch and rescan, the networks found, and a password field for a
+  secured one that isn't saved.
+- **Power** (`power.rs`): the battery and its time left, the power-profile segmented button, and
+  the batteries of connected peripherals.
+
+A battery reads low from UPower's warning level, or at 15 % and below when nothing gives one
+(`battery_low`, `LOW_BATTERY`), so the bar and the power panel agree.
 
 ## Related
 

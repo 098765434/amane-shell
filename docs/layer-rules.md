@@ -40,7 +40,7 @@ cargo run -q -- layer-rules > niri-layer-rule.kdl
 ```
 
 `gen-layer-rules.sh` reads everything below the `//<<<GENERATED-RULES-BELOW>>>` sentinel in
-`niri-layer-rule.kdl` and replaces the region **between the markers** in the target config,
+`niri-layer-rule.kdl` (a test checks the script and the generator use the same one) and replaces the region **between the markers** in the target config,
 touching nothing else:
 
 ```
@@ -55,9 +55,10 @@ niri validate -c ~/.config/niri/config.kdl
 niri msg action load-config-file
 ```
 
-With home-manager, `~/.config/niri/config.kdl` is a symlink into the Nix store: pass the source
-file you edit instead (for example `./gen-layer-rules.sh ~/nixos-config/niri/config.kdl`) and
-rebuild.
+A target that is a symlink is written through, to the file it points at, and stays a link; the
+file keeps its permissions. That covers home-manager's out-of-store links into a repo. A link
+into the Nix store is read-only, so then pass the source file you edit instead (for example
+`./gen-layer-rules.sh ~/nixos-config/niri/config.kdl`) and rebuild.
 
 ```sh
 # then check the surfaces are up

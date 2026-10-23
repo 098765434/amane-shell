@@ -3,8 +3,9 @@
 A custom Wayland desktop bar for the [niri](https://github.com/YaLTeR/niri) compositor, built on the
 [amane](https://github.com/098765434/amane) shell library (a fork). macOS-flavoured: a clean
 opaque bar with rounded pills and generous spacing — compact and ambient in normal use, expanding
-into an interactive dock while niri's overview is open. Its floating surfaces (context menus and the
-Wi-Fi panel) are the frosted, compositor-blurred ones — the bar itself is not.
+into an interactive dock while niri's overview is open. Its floating surfaces (context menus, the
+panels, notification toasts and the notification center) are the frosted, compositor-blurred
+ones — the bar itself is not.
 
 > **Requires a forked niri** for its signature feature (the overview smooth-expand needs live
 > gesture-IPC events): [098765434/niri](https://github.com/098765434/niri). It runs on
@@ -15,11 +16,12 @@ Wi-Fi panel) are the frosted, compositor-blurred ones — the bar itself is not.
 - **Taskbar** ([docs/taskbar.md](docs/taskbar.md)) — bottom bar with three zones:
   - left: overview toggle + workspace pips;
   - center: focused-window title (compact) ↔ interactive window dock (overview);
-  - right: volume, network, battery, clock.
+  - right: volume, Bluetooth, network, battery, notifications, clock.
   - **Overview smooth-expand**: the bar height eases between compact and tall in lockstep with
     niri's overview zoom, driven by the amane `Gestures::overview_progress()` value (requires the
     [niri gesture-IPC fork](https://github.com/098765434/niri)).
-- **Wi‑Fi panel** — a toggle in the status cluster opens a layer-shell panel to scan/connect.
+- **Panels** — the status items open frosted cards: Sound (volume and devices), Bluetooth
+  (connect, pair, forget), Wi‑Fi (scan and join) and power (battery, power profile, peripherals).
 - **Context menus** ([docs/context-menu.md](docs/context-menu.md)) — right-click a window pill for focus/close/fullscreen/float/move-to-workspace,
   built on amane's xdg-popup support (nested submenus, outside-click dismiss).
 - **Notifications** ([docs/notifications.md](docs/notifications.md)) — the shell is the
@@ -27,8 +29,10 @@ Wi-Fi panel) are the frosted, compositor-blurred ones — the bar itself is not.
   to put away), a notification center sidebar opened from the clock with iOS-style stacks per
   app, and Do Not Disturb (on, for an hour, until this evening or tomorrow; critical
   notifications still show).
-- **Buttons** ([docs/buttons.md](docs/buttons.md)) — shared push buttons, icon buttons, a
-  switch and a segmented button, after Material 3's but drawn in the shell's macOS/iOS look.
+- **Buttons** ([docs/buttons.md](docs/buttons.md)) and **components**
+  ([docs/components.md](docs/components.md)) — shared push and icon buttons, a switch, a
+  segmented button, cards, top app bars, lists, dividers and a slider, each after its Material 3
+  counterpart but drawn in the shell's macOS/iOS look.
 - **Design tokens** — every colour, size, gap and font is a token designed in Penpot and exported
   to `design-tokens/tokens.json`, compiled in with `include_str!` and resolved the way Penpot does
   (`src/tokens/`). See [docs/design-token-manual.md](docs/design-token-manual.md).
@@ -41,9 +45,13 @@ works inside it:
 
 ```sh
 nix develop -c cargo build          # compile
-nix develop -c cargo run            # run  (default theme: dark)
-nix develop -c env AMANE_THEME=light cargo run   # light theme
+nix develop -c cargo run            # run  (follows the system light/dark preference)
+nix develop -c env AMANE_THEME=light cargo run   # force the light theme
 ```
+
+The theme follows the system preference (the Settings portal), else dark. `AMANE_THEME=light|dark`
+forces one, `AMANE_DENSITY=compact` tightens spacing and rows, and `AMANE_TEXT_SCALE` (0.5–3)
+scales text.
 
 For a release binary, `nix build` produces `./result/bin/amane-shell`, wrapped with the runtime
 libraries it needs (so it runs standalone).
@@ -60,8 +68,10 @@ the library together, check `amane` out beside this repo and add a git-ignored
 
 The shell's **floating** surfaces (context menus, the panels, notification toasts and the center) get their blur + corner
 rounding from matching `layer-rule` blocks in your niri config. The bar itself is opaque and needs
-no rule. `niri-layer-rule.kdl` is the **source of truth**; `./gen-layer-rules.sh` injects those blocks into a
-target niri config between marker comments, so the two never drift (no hand-copying):
+no rule. `niri-layer-rule.kdl` holds those blocks, generated from the design tokens
+(`cargo run -q -- layer-rules > niri-layer-rule.kdl`), so the blur's corners follow the cards'
+radii. `./gen-layer-rules.sh` injects the blocks into a target niri config between marker
+comments, so the two never drift (no hand-copying):
 
 ```sh
 ./gen-layer-rules.sh /path/to/your/niri/config.kdl   # e.g. ~/.config/niri/config.kdl
@@ -83,8 +93,7 @@ systemd.user.services.amane-shell = {
 };
 ```
 
-Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery). Default theme is
-dark; set `AMANE_THEME=light` to switch.
+Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery).
 
 ## Layout
 
@@ -93,13 +102,20 @@ src/
   main.rs                       App builder: windows, popups, IPC handlers, `tokens` CLI
   theme.rs                      runtime inputs: mode, accent, density, text scale
   tokens/                       Penpot token resolver and the manual's checks
-build.rs                        generates `tokens::sys::…`, `tokens::bar::…`, … from tokens.json
   components/
-    taskbar/                    the bar (mod.rs) + clock, wifi, power, theme, tokens
+    taskbar/                    the bar (mod.rs), its panels (panel.rs: audio, bluetooth,
+                                wifi, power) and the clock
     context_menu/               reusable nested context menu on xdg-popups
     notifications/              toasts, the notification center and Do Not Disturb
+    buttons/                    push, icon and segmented buttons, and a switch
+    card.rs app_bar.rs list.rs  shared M3-style components (docs/components.md)
+    divider.rs slider.rs
+    layout.rs icons.rs          layout primitives, glyphs, colour arithmetic, motion
+    color.rs motion.rs
+build.rs                        generates `tokens::sys::…`, `tokens::bar::…`, … from tokens.json
 design-tokens/tokens.json       Penpot export (normalized); edit in Penpot, not here
-niri-layer-rule.kdl             layer-rule source of truth (see docs/layer-rules.md)
+tests/fixtures/                 token exports the resolver is tested against
+niri-layer-rule.kdl             layer rules generated from the tokens (see docs/layer-rules.md)
 gen-layer-rules.sh              injects those rules into the niri config
 flake.nix                       devShell (Rust toolchain + wayland/vulkan/pulse libs)
 ```

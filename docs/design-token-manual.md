@@ -86,7 +86,7 @@ Why tier prefixes in the name: Penpot token names are global across all active s
 designers pick tokens from one list. `ref.` and `sys.` tell everyone at a glance what's
 allowed where, and let CI check it with a string prefix.
  
-**Budget.** For a shell of five components, roughly 60 primitives, 70 semantic tokens and
+**Budget.** For a shell of half a dozen components, roughly 60 primitives, 70 semantic tokens and
 15 component tokens is healthy. If the component tier grows bigger than the semantic tier,
 semantic roles are missing.
  
@@ -385,7 +385,7 @@ Avoid the `boolean` and `string` types: Penpot imports them but has no panel to 
  
 ```
 amane-shell tokens normalize ~/Downloads/tokens.json > design-tokens/tokens.json
-amane-shell tokens check design-tokens/tokens.json   # rules + diff against HEAD
+amane-shell tokens check design-tokens/tokens.json   # rules + diff against the tokens built in
 cargo test
 ```
  
@@ -409,14 +409,20 @@ Text::new("Open").style(sys::r#type::label());  // family, size and weight of a 
 ```
 
 - A new component writes no token code: import `sys` and its own component's module.
+- The shared components (buttons, cards, lists, the top app bar, dividers, the slider; see
+  `docs/components.md`) read `sys` only, so any component can use them. A value one of them
+  needs from a component is passed in, never read from that component's tokens.
 - Each call returns the value for the current mode, density, accent and text scale, with the
   Rust type of the token's Penpot type (`Color`, `f32`, `TextStyle`, …).
 - Names map mechanically: hyphens become underscores (`fg-secondary` → `fg_secondary`), a
-  leading digit gets an underscore (`2xs` → `_2xs`), and `type` is written `r#type`.
+  leading digit gets an underscore (`2xs` → `_2xs`), a Rust keyword is written raw (`type` →
+  `r#type`), and `self`, `super`, `crate` and `Self` get a trailing underscore.
 - A token renamed or removed in Penpot is a compile error at every line that reads it.
 - There is no `ref` module, and a test fails if a component imports another component's
   tokens: read `sys.*` and your own prefix only.
-- Missing a token? Ask design to add it in Penpot. Don't hard-code a value "for now".
+- Missing a token? Ask design to add it in Penpot. Don't hard-code a value "for now". The few
+  that are still constants are marked `TODO(token)` in the code and listed in
+  [penpot-todo.md](penpot-todo.md).
 - Layout arithmetic (`/ 2.0`, `* 2.0`) stays in code; style values don't.
 ### 10.5 PR checklist
  

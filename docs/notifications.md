@@ -38,7 +38,8 @@ changes, and keeps what the list can't say: swiped toasts, hover, grace times.
 
 ## Notification center (`center.rs`)
 
-A full-height frosted sidebar at the right edge (namespace `amane.notifications.center`). It
+A full-height frosted sidebar at the right edge (namespace `amane.notifications.center`), M3's
+modal side sheet (`side_sheet()`). It
 springs in when the **clock** is clicked and closes with Escape, the clock, or the IPC call. It
 shares the bar panels' one-open-at-a-time state (`Panel::Notifications`). Its header shows Do Not
 Disturb's state, **Clear All**, and the Do Not Disturb button, which opens the timed menu.
@@ -86,19 +87,20 @@ printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock   #
 
 A niri keybind: `Mod+N { spawn "sh" "-c" "printf 'notifications\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock"; }`.
 
-## Motion (`motion.rs`)
+## Motion (`components/motion.rs`)
 
-Both surfaces place cards through one keyed animator. The view says where each card should be
+Both surfaces place cards through one keyed animator, shared with the rest of the shell. The view says where each card should be
 (a `Pose`: offset, scale, opacity, content opacity) every time it runs. Each card springs there
 under its key, and a card that drops out keeps its last content while it moves to its exit pose.
-The timings are named constants for now. They become `sys.motion.*` tokens once those exist in
-Penpot.
+The timings are the shell's shared springs and fades (`motion::spring`, `sheet`, `fade`), named
+constants until `sys.motion.*` tokens exist in Penpot. A card is measured once
+(`card::measure`), and the stack places it and draws it from that measurement.
 
 ## Tokens
 
 Colours are the `sys.color.surface.notification.*` pair for toasts (`bg`, `fg`, `fg-secondary`,
-`stroke`; checked for contrast over black and white wallpaper). The center uses the popover
-surface with `raised` cards. Sizes are `notification.*`: `toast.width`, `toast.max-visible`,
+`stroke`; checked for contrast over black and white wallpaper). The center is an outlined popover [`Card`](components.md#card) with
+`raised` cards on it, in the popover's colours, under a `TopAppBar`. Sizes are `notification.*`: `toast.width`, `toast.max-visible`,
 `center.width`, `card.radius`, `card.icon-size`, `card.badge-size`, and `stack.peek`,
 `max-peek`, `scale-step`, `fade-step`.
 

@@ -103,9 +103,10 @@ Non-goals:
 - Hot-reloading tokens while the shell runs.
 ---
  
-## 2. What exists today
+## 2. What existed before v2
  
-Checked against `main` on 22 Oct 2026.
+Historical: checked against `main` on 22 Oct 2026, before this spec was implemented. None of
+these files exist any more.
  
 | Problem | Where |
 |---------|-------|
@@ -432,8 +433,8 @@ The 3.0 threshold keeps white on mid blues, as macOS and libadwaita do (white on
  
 ### 7.3 Text scale
  
-After resolving, `font_size()` and `typography()` multiply font sizes (and px line heights) by
-`text_scale()`. Layout code sizes rows from text height where it can; fixed row heights
+After resolving, `font_size()` and `typography()` multiply font sizes by `text_scale()`. Line
+heights are kept as a multiple of the font size, so they follow it. Layout code sizes rows from text height where it can; fixed row heights
 (`menu.row.height`) are a known limit at large scales (§12).
  
 ---
@@ -444,13 +445,13 @@ After resolving, `font_size()` and `typography()` multiply font sizes (and px li
  
 ```rust
 /// The first family in `stack` that fontconfig has installed, else the last entry.
-pub fn first_installed(stack: &[String]) -> String;
+pub fn first_installed(stack: &[String]) -> &'static str;
 ```
  
 For each entry, ask fontconfig (the `fontconfig` 0.11 crate amane already uses) for a match
 and accept it only if the returned family name equals the requested one, ignoring case.
-Generic names (`sans-serif`, `monospace`) are accepted as is. Run once per resolved key; log
-the chosen family once at debug level.
+Generic names (`sans-serif`, `monospace`) are accepted as is. The choice is cached per stack;
+the chosen family is logged once at debug level.
  
 Penpot renders only the first family, and only if Penpot has it; amane walks the stack on the
 user's machine. The token value is the same; only the fallback differs (§12 on SF Pro).
@@ -466,11 +467,11 @@ tokens and whose namespaces come from the existing constants (`WIFI_NS`, `POWER_
 anchor):
  
 ```rust
-pub struct LayerRule { pub namespace: &'static str, pub comment: &'static str,
-                       pub radius: Option<f32>, pub blur: bool,
-                       pub popups: Option<(f32, bool)> }
+pub struct LayerRule { pub namespace: &'static str, pub comment: String,
+                       pub radius: Option<f32>,   // a frosted card with these corners
+                       pub popups: Option<f32> }  // its popups, frosted, with these corners
 
-pub fn rules() -> Vec<LayerRule>;      // menu anchor, Wi-Fi and power panels; none for the bar
+pub fn rules() -> Vec<LayerRule>;      // menu anchor, every panel, toasts, center; none for the bar
 pub fn render(rules: &[LayerRule]) -> String;   // full file: header, sentinel, rules
 ```
  
@@ -478,6 +479,10 @@ pub fn render(rules: &[LayerRule]) -> String;   // full file: header, sentinel, 
 - Wi-Fi panel: `geometry-corner-radius = sys.radius.popover` — the same role `card()` now
   draws with (10). The rule's 14 goes. Visible change: the blur's corners match the card's.
 - Power panel: the same rule as Wi-Fi. It had none before, so it gains compositor blur.
+- Bluetooth and Sound panels, and the notification center: the same rule; the Bluetooth panel
+  and the center also frost their popups (their menus).
+- Toasts: `geometry-corner-radius = notification.card.radius`, the radius their cards are drawn
+  with.
 - Radii don't depend on mode or density (checked in §11); the generator resolves under the
   default key.
 - Namespaces are regex-escaped in one helper.
@@ -511,11 +516,13 @@ startup. The KDL file and the script can then be removed.
  
 ```
 src/tokens/
-  mod.rs        # Library, Resolved, Key, TokenError, resolved(), read::*, generated modules
-  envelope.rs   # parse sets, $themes, $metadata
+  mod.rs        # Resolved, Key, resolved(), read::*, generated modules
+  envelope.rs   # parse sets, $themes, $metadata (build.rs includes it too)
+  error.rs      # TokenError (build.rs includes it too)
   resolve.rs    # set selection, references, cycle detection
   expr.rs       # Penpot math expressions
-  values.rs     # per-type value parsing (§10.3), CSS colours
+  values.rs     # per-type value parsing (§10.3)
+  color.rs      # CSS colours, contrast, luminance
   accent.rs     # OKLab derivation and on-seed contrast (§7.2)
   rules.rs      # manual rules: tiers, set contents, naming (§11)
   font.rs       # first installed family (§8)
@@ -546,7 +553,7 @@ pub fn resolved(key: Key) -> &'static Resolved;   // cached; text scale applied 
 pub fn with_key<T>(key: Key, f: impl FnOnce() -> T) -> T; // read under a fixed key (tests, tools)
  
 pub enum Value {
-    Color(Color), Px(f32), Number(f32), FontFamily(Vec<String>),
+    Color(Rgba), Number(Num), FontFamily(Vec<String>),   // Num: f64, and whether it was px
     FontWeight { weight: u16, italic: bool }, TextCase(TextCase),
     TextDecoration(TextDecoration), Typography(Typography), Shadow(Vec<Shadow>),
     Bool(bool), Str(String),
@@ -628,8 +635,8 @@ Values beyond Penpot's safe-integer range are errors, as in Penpot.
 ### 10.4 Errors and panics
  
 Errors carry the token name, the set, the key, and what was wrong:
-`menu.row.height (set components, mode/dark + density/compact): expected sizing or
-dimension, found fontSizes`, or `sys.color.accent.bg (set sys/color/dark): reference
+`menu.row.height (set components, mode/dark + density/compact): reference {x} is a fontSizes
+token, which a sizing token can't use`, or `sys.color.accent.bg (set sys/color/dark): reference
 {ref.color.accent.sed} has no target`.
  
 `resolved()` panics on error at first use, since the JSON is embedded; the contract tests make
@@ -672,15 +679,17 @@ All in `cargo test`. Tests 1–10 are the contract between Penpot, the manual an
 12. **Resolver fidelity**: `tests/fixtures/penpot/fidelity.json`, built in Penpot with one
     token per type and per rule of §10.3 (valid and invalid), references, math, `rgba()` over
     a reference, set override order and two theme groups. Expected values in
-    `fidelity.expected.json` are read off Penpot's UI once and recorded with the Penpot
-    version. amane must produce the same values and fail on the same tokens.
+    `fidelity.expected.json` are to be read off Penpot's UI once and recorded with the Penpot
+    version; until then they're derived by hand (the fixture's `$provenance` says so). amane
+    must produce the same values and fail on the same tokens.
 13. **Expressions**: precedence, `%`, `^`, every function, `px` propagation, division by zero
     as an error.
 14. **Accent**: deriving from #0a84ff reproduces the committed `ref.color.accent.*` values
     within one 8-bit step; a yellow (#c88800) keeps white, a lime (#a6e22e) gets dark text;
     `dim` has L ≤ 0.50 and `bright` L ≥ 0.85 in OKLab; overriding the seed changes exactly the
     tokens that reference the accent primitives.
-15. **Text scale**: 1.25 scales every font size and px line height by 1.25 and nothing else.
+15. **Text scale**: 1.25 scales every font size by 1.25 and nothing else (line heights are
+    multiples of the size, so they follow).
 16. **Font stack**: `first_installed` returns the generic fallback for made-up names, and the
     last entry for an empty match.
 ---

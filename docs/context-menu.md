@@ -7,7 +7,7 @@ frosted by the niri layer rule for `amane.context-menu-anchor` ([layer-rules.md]
 
 | File | Contents |
 |------|----------|
-| `mod.rs` | public types (`ContextMenu`, `MenuItem`, `Icon`), the anchor surface, the per-level popups, row rendering, pointer and keyboard handling, size estimates |
+| `mod.rs` | public types (`ContextMenu`, `MenuItem`, `Icon`), the anchor surface, the per-level popups, row rendering, pointer and keyboard handling, sizing |
 | `runtime.rs` | the state: registered menus, the open stack of levels, and the open/close/arm functions |
 
 ## Using it
@@ -67,7 +67,8 @@ for level in context_menu::LEVELS {
 | Call | Use |
 |------|-----|
 | `arm(name)` | the reliable way from outside the shell (see below); the next right-click opens `name` at the cursor |
-| `open_under(name, parent_ns, x, y, w, h)` | open hanging under another of the shell's surfaces, anchored to a rect in its coordinates. The taskbar uses this for the per-window menu; a bottom-anchored parent makes the menu open upward |
+| `show_under(name, menu, parent_ns, (x, y))` | register `menu` and open it hanging under another of the shell's surfaces, at a point in its coordinates: for a menu built fresh for what was clicked. The taskbar's per-window menu, a Bluetooth device's menu and the Do Not Disturb menu use it; a bottom-anchored parent makes the menu open upward |
+| `open_under(name, parent_ns, x, y, w, h)` | the same for a menu already registered, anchored to a rect |
 | `open_at(name, x, y)` / `open_named(name, x, y)` | open at a screen position (logical px) |
 | `close()` | close every level |
 
@@ -143,26 +144,26 @@ accent, density and text scale while open.
 | Keyboard selection | fill `sys.color.accent.bg`, text `sys.color.accent.fg` |
 | Shortcut text | `…popover.fg-secondary`; on a keyboard-selected row `sys.color.accent.fg`, on any other focused row `…popover.fg`, both at `menu.shortcut.hover-opacity` |
 | Icon and chevron slots | `menu.icon-slot.width`, `menu.chevron-slot.width`; gap after the icon `sys.space.gap.m` |
-| Separator | `sys.color.separator`, `sys.border.hairline`, margin `sys.space.gap.xs` |
+| Card | an outlined popover [`Card`](components.md#card), padding `menu.card.padding` |
+| Separator | a [`Divider`](components.md#divider-and-slider): `sys.color.separator`, `sys.border.hairline`, margin `sys.space.gap.xs` |
 | Submenu offset | `menu.submenu.offset` |
 | Width limits | `menu.min-width`, `menu.max-width` |
 
 ## Sizing
 
-A popup's size has to be known before it is drawn, and amane has no public text measurement, so
-`size_for` **estimates** it:
+A popup's size has to be known before it is drawn, so `size_for` measures it, with amane's
+text measurement (`Text::width`):
 
 - **Width:** the widest row, clamped to `menu.min-width` … `menu.max-width`. A row's width is:
-  - the label: characters × font size × `menu.label.advance-ratio`;
-  - the shortcut, estimated the same way, plus `sys.space.gap.xl`;
+  - the label, measured in `sys.type.label`;
+  - the shortcut, measured the same way, plus `sys.space.gap.xl`;
   - the chevron slot plus `sys.space.gap.s`;
   - the icon column, when the menu has one;
   - row padding on both sides, then card padding on both sides.
-- **Height:** card padding, plus `menu.row.height` per row, plus the hairline and its two margins
-  per separator.
+- **Height:** card padding, plus `menu.row.height` per row, plus `Divider::height()` per
+  separator (`entry_height`). The submenu anchor adds up the same heights (`row_offset`).
 
-Wide glyphs and non-Latin text can make the estimate too narrow (labels then elide). The submenu
-anchor uses the same estimate (`row_offset`).
+`menu.label.advance-ratio`, which the old estimate used, is no longer read: delete it in Penpot.
 
 ## Internals
 
@@ -187,8 +188,7 @@ hidden when the stack is shallower. Every state change calls `request_frame()`.
   (like the taskbar's per-window menu), register it again under the same name before opening.
 - **Single-threaded:** callbacks are `Rc<dyn Fn()>` and the state is thread-local, so open and
   register from the UI thread (view functions, input handlers, IPC handlers).
-- **Text width is estimated** (see Sizing).
-- **Window menus from the bar** use `open_under` with the taskbar as parent. The taskbar is
+- **Window menus from the bar** use `show_under` with the taskbar as parent. The taskbar is
   `Keyboard::None` so it never steals focus, which means keyboard navigation doesn't reach those
   menus; pointer use works.
 

@@ -10,7 +10,8 @@ use super::{SOURCE, rules};
 
 /// Keys sorted, two-space indent, trailing newline: Penpot builds its export
 /// from hash maps, so this keeps diffs to the tokens that changed. Arrays keep
-/// their order.
+/// their order. The sorting is serde_json's default map; it would stop if a
+/// dependency turned on its `preserve_order` feature.
 pub fn normalize(json: &str) -> Result<String, String> {
     let value: Json = serde_json::from_str(json).map_err(|e| format!("invalid JSON: {e}"))?;
     serde_json::to_string_pretty(&value)

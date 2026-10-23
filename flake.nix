@@ -127,8 +127,8 @@
             nativeBuildInputs = [ pkgs.pkg-config ];
             buildInputs = runtimeLibs;
 
-            # Reproduces the old run.sh runtime wiring WITHOUT hardcoded /nix/store
-            # hashes. The system GPU driver dir goes first so wgpu's Vulkan loader
+            # The runtime wiring, without hardcoded /nix/store hashes. The system
+            # GPU driver dir goes first so wgpu's Vulkan loader
             # finds the system ICDs and the driver's own libwayland.
             shellHook = ''
               export LD_LIBRARY_PATH="${ldLibraryPath pkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"

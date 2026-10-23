@@ -156,9 +156,6 @@ pub fn resolve_key(library: &Library, key: Key) -> Result<Resolved, Vec<TokenErr
     Ok(resolved)
 }
 
-/// Reads tokens under one prefix, checking each against the Penpot types
-/// that Penpot's own inputs accept for that property (manual §10.4).
-
 #[allow(dead_code, clippy::all)]
 mod generated {
     include!(concat!(env!("OUT_DIR"), "/tokens.rs"));

@@ -18,7 +18,7 @@ path = 'src/main.rs'
 [dependencies]
 # amane is consumed as a pinned git-dependency on the maintained fork (not a
 # submodule / path dep): reproducible for published builds, while a git-ignored
-# `.cargo/config.toml` with `paths = ["../amane-fork"]` overrides it with a
+# `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
 # sibling checkout during local co-development. See README.
 amane = { git = "https://github.com/098765434/amane", rev = "7a16b39224b19ab7f7fdca0d85072b66f282ff47" }
 serde_json = "1.0"

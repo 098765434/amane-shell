@@ -604,6 +604,9 @@ mod tests {
     }
 
     /// Source files and the component whose tokens they may read, besides `sys`.
+    /// The shared components (`buttons/`, `card.rs`, `list.rs`, `layout.rs` …)
+    /// are left out on purpose: any component can use them, so they read
+    /// `sys` only (manual §10.4).
     const OWNERS: &[(&str, &str)] = &[
         ("taskbar/wifi.rs", "wifi"),
         ("taskbar/power.rs", "power"),

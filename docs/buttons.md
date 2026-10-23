@@ -14,7 +14,9 @@ only, so any component can use them.
 
 ## Style and shape
 
-`PushButton` and `IconButton` take a `Style` and a `Shape`:
+`PushButton` and `IconButton` are one `ButtonBuilder` with a different kind, so they share every
+builder method (`style`, `shape`, `color`, `height`, `disabled`, `on_press`, `on_secondary`). They
+take a `Style` and a `Shape`:
 
 | `Style` | M3 | Fill | Content by default |
 |---|---|---|---|
@@ -33,12 +35,14 @@ unless given `.width(…)`. An `IconButton` is a control-height square. Bar item
 
 ## State
 
-amane rebuilds the view every frame, so a button can't hold state of its own. Hover is
-tracked in the module, keyed by each button's **id**. Ids must be unique and stable,
+amane rebuilds the view every frame, so a button can't hold state of its own. Hover, and the
+switch's and segmented button's motion, are kept in tables in the module, keyed by each
+control's **id**. Ids must be unique and stable,
 for example `amane.wifi.connect` or `amane.notification.{id}.close`. While hovered, the fill
 is `sys.color.state.hover` composited over it (`over()`). This is the state-layer rule from
 the token manual (§6.1, §11.3), and it also works on `Plain` buttons and translucent
-surfaces. Disabled buttons are drawn at 38 % opacity and take no input.
+surfaces. Disabled buttons are drawn at 38 % opacity and take no input. Segments show the same
+hover layer, and so do clickable [list items](components.md#list).
 
 The `Switch` and `SegmentedButton` reflect a service's state the same way the panels do. A
 click shows the new state at once, and if the service hasn't agreed within 1.5 s the control
@@ -53,9 +57,9 @@ across.
 
 ## Pending tokens
 
-These are constants in `buttons/mod.rs` until they exist in Penpot:
+These are constants until they exist in Penpot (marked `TODO(token)` in the code):
 
-- `sys.state.disabled`: 0.38.
-- `sys.motion.*`: slide 450 ms with a 0.15 bounce, fade 200 ms.
+- `sys.opacity.disabled`: 0.38 (`buttons/mod.rs`).
+- `sys.motion.*`: spring 450 ms with a 0.15 bounce, fade 200 ms (`motion.rs`).
 - `sys.color.state.pressed`. amane reports clicks but not presses, so there is no pressed
   layer yet.
