@@ -20,9 +20,9 @@ use std::path::PathBuf;
 
 use amane::{
     Apps, Audio, Battery, Button, Center, Color, Column, End, Full, Gestures, Image, Keyboard,
-    Layer, LayerWindow, Network, Padding, Parent, Point, Pointer, Rectangle, Row, Scroll, Service,
-    Size, Stack, Start, Text, Vertical, WarningLevel, Widget, WindowInfo, Windows, Workspace,
-    Workspaces, Zone,
+    Layer, LayerWindow, Link, Network, Padding, Parent, Point, Pointer, Rectangle, Row, Scroll,
+    Service, Size, Stack, Start, Text, Vertical, WarningLevel, Widget, WindowInfo, Windows,
+    Workspace, Workspaces, Zone,
 };
 
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
@@ -37,8 +37,6 @@ pub use wifi::{WIFI_NS, panel as wifi_panel};
 pub(crate) const ICON_APPS: char = '\u{e5c3}';
 pub(crate) const ICON_VOLUME_UP: char = '\u{e050}';
 pub(crate) const ICON_VOLUME_OFF: char = '\u{e04f}';
-pub(crate) const ICON_WIFI: char = '\u{e63e}';
-pub(crate) const ICON_WIFI_OFF: char = '\u{e648}';
 pub(crate) const ICON_LOCK: char = '\u{e897}';
 pub(crate) const ICON_CHECK: char = '\u{e5ca}';
 pub(crate) const ICON_REFRESH: char = '\u{e5d5}';
@@ -68,7 +66,28 @@ pub(crate) fn battery_glyph(percent: u8, charging: bool) -> char {
     }
 }
 
+/// Signal wedges (`network_wifi_1_bar` … `_3_bar`, `network_wifi`, then the
+/// filled `signal_wifi_4_bar`), drawn like the battery glyphs: the filled part
+/// shows the signal.
+const ICON_WIFI_LEVELS: [char; 5] = ['\u{ebe4}', '\u{ebd6}', '\u{ebe1}', '\u{e1ba}', '\u{e1d8}'];
+pub(crate) const ICON_WIFI: char = ICON_WIFI_LEVELS[4];
+/// The empty wedge (`signal_wifi_0_bar`): the radio is on but nothing is joined.
+const ICON_WIFI_NONE: char = '\u{f0b0}';
+const ICON_WIFI_OFF: char = '\u{e1da}';
+const ICON_CABLE: char = '\u{efe6}';
+
+/// The wedge for a signal strength (0–100): the nearest of its five steps,
+/// never fewer than one, since a network you can see has some signal.
+pub(crate) fn wifi_glyph(strength: u8) -> char {
+    let steps = (usize::from(strength) * 5 + 50) / 100;
+    ICON_WIFI_LEVELS[steps.clamp(1, 5) - 1]
+}
+
 /// A Material-Symbols glyph as a `Text` widget (centered on its ink).
+///
+/// Every bar and panel glyph goes through here, so they all share one font
+/// instance (weight, grade, optical size); keep picking glyphs from the same
+/// drawing family so their visual weight matches too.
 pub(crate) fn icon(glyph: char, size: f32, color: Color) -> Text {
     Text::new(glyph.to_string())
         .font(sys::r#type::icon())
@@ -523,13 +542,18 @@ fn volume_module() -> Box<dyn Widget> {
 fn network_indicator() -> Box<dyn Widget> {
     let net = Network::read();
     let connected = net.connected();
+    let link = net.link();
+    let strength = net.strength();
     let wifi_on = net.wifi_enabled();
     drop(net);
 
-    let glyph = if connected || wifi_on {
-        ICON_WIFI
-    } else {
-        ICON_WIFI_OFF
+    let glyph = match link {
+        Link::Wifi => wifi_glyph(strength),
+        Link::Wired => ICON_CABLE,
+        // vpn and the rest carry no strength to show
+        Link::Other => ICON_WIFI,
+        Link::Offline if wifi_on => ICON_WIFI_NONE,
+        Link::Offline => ICON_WIFI_OFF,
     };
     let color = if connected {
         sys::color::accent::bg()
@@ -640,5 +664,17 @@ mod tests {
         assert_eq!(battery_glyph(95, false), ICON_BATTERY_FULL);
         assert_eq!(battery_glyph(100, false), ICON_BATTERY_FULL);
         assert_eq!(battery_glyph(18, true), ICON_BATTERY_BOLT);
+    }
+
+    #[test]
+    fn wifi_glyph_follows_the_signal() {
+        assert_eq!(wifi_glyph(0), ICON_WIFI_LEVELS[0]);
+        assert_eq!(wifi_glyph(29), ICON_WIFI_LEVELS[0]);
+        assert_eq!(wifi_glyph(30), ICON_WIFI_LEVELS[1]);
+        assert_eq!(wifi_glyph(50), ICON_WIFI_LEVELS[2]);
+        assert_eq!(wifi_glyph(70), ICON_WIFI_LEVELS[3]);
+        assert_eq!(wifi_glyph(89), ICON_WIFI_LEVELS[3]);
+        assert_eq!(wifi_glyph(90), ICON_WIFI);
+        assert_eq!(wifi_glyph(100), ICON_WIFI);
     }
 }

@@ -35,7 +35,7 @@ uses its compact height until the overview bool flips.
   app icon + heading/title; left-click focuses (`Windows::focus`), right-click opens the per-window
   context menu.
 - **Right** (`right_section`): volume (scroll to change, click to mute), network (click → Wi‑Fi
-  panel), battery, clock.
+  panel; signal wedges follow the joined network's strength, a cable when wired), battery, clock.
 
 ## Related
 

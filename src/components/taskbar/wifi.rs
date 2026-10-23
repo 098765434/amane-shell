@@ -13,7 +13,7 @@ use amane::{
     Start, Text, TextInput, Vertical, Widget, Zone, mark_all,
 };
 
-use super::{ICON_CHECK, ICON_LOCK, ICON_REFRESH, ICON_WIFI, boxed, icon, pad};
+use super::{ICON_CHECK, ICON_LOCK, ICON_REFRESH, ICON_WIFI, boxed, icon, pad, wifi_glyph};
 use crate::tokens::{Styled, sys, wifi};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
@@ -240,7 +240,11 @@ fn ap_row(ap: &AccessPoint) -> Rectangle {
     let ssid_w = (sys::size::popover::width() - sys::size::row::trailing_width()).max(1.0);
 
     let left = Row::new(vec![
-        boxed(icon(ICON_WIFI, sys::size::icon::m(), ssid_color)),
+        boxed(icon(
+            wifi_glyph(ap.strength()),
+            sys::size::icon::m(),
+            ssid_color,
+        )),
         boxed(
             Rectangle::new()
                 .width(Size::Fixed(ssid_w))
