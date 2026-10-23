@@ -40,7 +40,9 @@ CI runs these three inside the devShell.
 - Design values (sizing/colour/type) are Penpot tokens. Change them in Penpot, export, then
   `cargo run -q -- tokens normalize export.json > design-tokens/tokens.json` and
   `cargo run -q -- tokens check design-tokens/tokens.json`; never hand-edit the file or hardcode a
-  value. Rules and workflow: [docs/design-token-manual.md](docs/design-token-manual.md).
+  value. Code reads tokens through functions generated from the file
+  (`sys::color::surface::popover::bg()`), so a renamed token is a compile error. Rules and
+  workflow: [docs/design-token-manual.md](docs/design-token-manual.md).
 
 ## License
 

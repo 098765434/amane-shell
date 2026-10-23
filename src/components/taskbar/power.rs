@@ -16,12 +16,11 @@ use amane::{
     mark_all,
 };
 
-use super::theme::Theme;
-use super::tokens::{Tokens, tokens};
 use super::{
     ICON_BATTERY, ICON_BATTERY_CHARGING, ICON_GAMEPAD, ICON_HEADSET, ICON_KEYBOARD, ICON_MOUSE,
     boxed, icon, pad,
 };
+use crate::tokens::{Styled, sys};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
 pub const POWER_NS: &str = "amane.taskbar.power";
@@ -49,19 +48,17 @@ fn is_open() -> bool {
 // ───── view ──────────────────────────────────────────────────────────────────
 
 pub fn panel() -> LayerWindow {
-    let t = tokens();
-    let theme = Theme::auto();
     let open = is_open();
 
     let base = LayerWindow::new()
-        .width(t.panel_w)
-        .height(t.panel_h)
+        .width(sys::size::popover::width())
+        .height(sys::size::popover::height())
         .anchor_vertical(Vertical::Bottom)
         .anchor_horizontal(Horizontal::Right)
         .margin(Margin {
             top: 0,
-            right: t.gap_m as i32,
-            bottom: (t.height_compact + t.gap_m) as i32,
+            right: sys::space::gap::m() as i32,
+            bottom: (sys::size::panel::height() + sys::space::gap::m()) as i32,
             left: 0,
         })
         .layer(Layer::Overlay)
@@ -84,29 +81,29 @@ pub fn panel() -> LayerWindow {
         );
     }
 
-    base.child(card(theme, t))
+    base.child(card())
 }
 
-fn card(theme: Theme, t: &Tokens) -> Rectangle {
-    let mut body = vec![boxed(header(theme, t))];
+fn card() -> Rectangle {
+    let mut body = vec![boxed(header())];
 
     if PowerProfile::read().present() {
-        body.push(profile_section(theme, t));
+        body.push(profile_section());
     }
 
-    body.push(peripheral_section(theme, t));
+    body.push(peripheral_section());
 
     Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .radius(t.radius_popover)
-        .fill(theme.surface)
-        .blur(t.blur)
-        .padding(pad(t.inset_l, t.inset_l))
-        .child(Column::new(body).gap(t.gap_xl).width(Parent))
+        .radius(sys::radius::popover())
+        .fill(sys::color::surface::panel::bg())
+        .blur(sys::effect::backdrop_blur())
+        .padding(pad(sys::space::inset::l(), sys::space::inset::l()))
+        .child(Column::new(body).gap(sys::space::gap::xl()).width(Parent))
 }
 
-fn header(theme: Theme, t: &Tokens) -> Row {
+fn header() -> Row {
     let battery = Battery::read();
     let present = battery.present();
     let percent = battery.percent();
@@ -120,7 +117,11 @@ fn header(theme: Theme, t: &Tokens) -> Row {
     } else {
         ICON_BATTERY
     };
-    let color = if low { theme.urgent } else { theme.fg_strong };
+    let color = if low {
+        sys::color::status::critical::bg()
+    } else {
+        sys::color::surface::panel::fg()
+    };
     let title = if present {
         format!("Battery {percent}%")
     } else {
@@ -128,25 +129,18 @@ fn header(theme: Theme, t: &Tokens) -> Row {
     };
 
     let left = Row::new(vec![
-        boxed(icon(glyph, t.icon_size, color, t)),
-        boxed(
-            Text::new(title)
-                .size(t.title_size)
-                .color(color)
-                .font(&t.font_family)
-                .weight(t.weight_medium),
-        ),
+        boxed(icon(glyph, sys::size::icon::m(), color)),
+        boxed(Text::new(title).style(sys::r#type::title()).color(color)),
     ])
-    .gap(t.gap_s)
+    .gap(sys::space::gap::s())
     .align(Center);
 
     Row::new(vec![
         boxed(left),
         boxed(
             Text::new(detail)
-                .size(t.caption_size)
-                .color(theme.fg)
-                .font(&t.font_family),
+                .style(sys::r#type::caption())
+                .color(sys::color::content::secondary()),
         ),
     ])
     .width(Parent)
@@ -182,22 +176,22 @@ fn duration(duration: Duration) -> String {
 
 // ───── power profile ─────────────────────────────────────────────────────────
 
-fn profile_section(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
+fn profile_section() -> Box<dyn Widget> {
     let profile = PowerProfile::read();
     let active = profile.active().to_string();
     let available = profile.available().to_vec();
     let degraded = profile.degraded().map(String::from);
     drop(profile);
 
-    let inner = t.panel_w - t.inset_l * 2.0;
-    let gap = t.gap_xs;
+    let inner = sys::size::popover::width() - sys::space::inset::l() * 2.0;
+    let gap = sys::space::gap::xs();
     let count = available.len().max(1) as f32;
     let segment_w = ((inner - gap * (count - 1.0)) / count).max(1.0);
 
     // only what this machine offers, so a 2-profile laptop shows no "performance"
     let segments: Vec<Box<dyn Widget>> = available
         .into_iter()
-        .map(|name| boxed(profile_segment(name, &active, segment_w, theme, t)))
+        .map(|name| boxed(profile_segment(name, &active, segment_w)))
         .collect();
 
     let mut rows = vec![boxed(Row::new(segments).gap(gap).width(Parent))];
@@ -205,16 +199,15 @@ fn profile_section(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     if let Some(reason) = degraded {
         rows.push(boxed(
             Text::new(format!("performance limited: {reason}"))
-                .size(t.caption_size)
-                .color(theme.urgent)
-                .font(&t.font_family),
+                .style(sys::r#type::caption())
+                .color(sys::color::status::critical::bg()),
         ));
     }
 
-    boxed(Column::new(rows).gap(t.gap_s).width(Parent))
+    boxed(Column::new(rows).gap(sys::space::gap::s()).width(Parent))
 }
 
-fn profile_segment(name: String, active: &str, width: f32, theme: Theme, t: &Tokens) -> Rectangle {
+fn profile_segment(name: String, active: &str, width: f32) -> Rectangle {
     let selected = name == active;
     let label = match name.as_str() {
         "power-saver" => "Saver",
@@ -225,15 +218,18 @@ fn profile_segment(name: String, active: &str, width: f32, theme: Theme, t: &Tok
     .to_string();
 
     let (fill, color) = if selected {
-        (theme.accent, theme.fg_strong)
+        (sys::color::accent::bg(), sys::color::surface::panel::fg())
     } else {
-        (theme.pill, theme.fg)
+        (
+            sys::color::surface::raised::bg(),
+            sys::color::content::secondary(),
+        )
     };
 
     Rectangle::new()
         .width(Size::Fixed(width))
-        .height(Size::Fixed(t.control_h))
-        .radius(t.radius_pill)
+        .height(Size::Fixed(sys::size::control::height()))
+        .radius(sys::radius::raised())
         .fill(fill)
         .align_child(Center, Center)
         .cursor(Pointer)
@@ -242,40 +238,38 @@ fn profile_segment(name: String, active: &str, width: f32, theme: Theme, t: &Tok
                 PowerProfile::set(&name);
             }
         })
-        .child(
-            Text::new(label)
-                .size(t.caption_size)
-                .color(color)
-                .font(&t.font_family),
-        )
+        .child(Text::new(label).style(sys::r#type::caption()).color(color))
 }
 
 // ───── peripherals ───────────────────────────────────────────────────────────
 
-fn peripheral_section(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
+fn peripheral_section() -> Box<dyn Widget> {
     let battery = Battery::read();
     let rows: Vec<Box<dyn Widget>> = battery
         .peripherals()
         .iter()
-        .map(|device| boxed(peripheral_row(device, theme, t)))
+        .map(|device| boxed(peripheral_row(device)))
         .collect();
     drop(battery);
 
     if rows.is_empty() {
         return boxed(
             Text::new("No devices with a battery")
-                .size(t.caption_size)
-                .color(theme.fg)
-                .font(&t.font_family),
+                .style(sys::r#type::caption())
+                .color(sys::color::content::secondary()),
         );
     }
 
-    let column = Column::new(rows).gap(t.gap_xs).width(Parent);
+    let column = Column::new(rows).gap(sys::space::gap::xs()).width(Parent);
 
-    boxed(ScrollArea::new("amane.power.devices", column).height(Size::Fixed(t.list_h - t.row_h)))
+    boxed(
+        ScrollArea::new("amane.power.devices", column).height(Size::Fixed(
+            sys::size::list::max_height() - sys::size::row::height(),
+        )),
+    )
 }
 
-fn peripheral_row(device: &PowerDevice, theme: Theme, t: &Tokens) -> Rectangle {
+fn peripheral_row(device: &PowerDevice) -> Rectangle {
     let glyph = match device.kind() {
         DeviceKind::Mouse => ICON_MOUSE,
         DeviceKind::Keyboard => ICON_KEYBOARD,
@@ -287,16 +281,20 @@ fn peripheral_row(device: &PowerDevice, theme: Theme, t: &Tokens) -> Rectangle {
         "" => String::from("Unknown device"),
         model => model.to_string(),
     };
-    let model_w = (t.panel_w - t.row_trailing_w).max(1.0);
+    let model_w = (sys::size::popover::width() - sys::size::row::trailing_width()).max(1.0);
     let charging = device.state() == BatteryState::Charging;
     let percent_color = if device.percent() <= 15 && !charging {
-        theme.urgent
+        sys::color::status::critical::bg()
     } else {
-        theme.fg
+        sys::color::content::secondary()
     };
 
     let left = Row::new(vec![
-        boxed(icon(glyph, t.icon_size, theme.fg_strong, t)),
+        boxed(icon(
+            glyph,
+            sys::size::icon::m(),
+            sys::color::surface::panel::fg(),
+        )),
         boxed(
             Rectangle::new()
                 .width(Size::Fixed(model_w))
@@ -306,23 +304,21 @@ fn peripheral_row(device: &PowerDevice, theme: Theme, t: &Tokens) -> Rectangle {
                 .clip()
                 .child(
                     Text::new(model)
-                        .size(t.label_size)
-                        .color(theme.fg_strong)
-                        .font(&t.font_family)
+                        .style(sys::r#type::label())
+                        .color(sys::color::surface::panel::fg())
                         .elide(),
                 ),
         ),
     ])
-    .gap(t.gap_m)
+    .gap(sys::space::gap::m())
     .align(Center);
 
     let content = Row::new(vec![
         boxed(left),
         boxed(
             Text::new(format!("{}%", device.percent()))
-                .size(t.label_size)
-                .color(percent_color)
-                .font(&t.font_family),
+                .style(sys::r#type::label())
+                .color(percent_color),
         ),
     ])
     .width(Parent)
@@ -331,10 +327,10 @@ fn peripheral_row(device: &PowerDevice, theme: Theme, t: &Tokens) -> Rectangle {
 
     Rectangle::new()
         .width(Parent)
-        .height(Size::Fixed(t.row_h))
-        .radius(t.radius_pill)
-        .fill(theme.pill)
-        .padding(pad(t.inset_l, 0.0))
+        .height(Size::Fixed(sys::size::row::height()))
+        .radius(sys::radius::raised())
+        .fill(sys::color::surface::raised::bg())
+        .padding(pad(sys::space::inset::l(), 0.0))
         .align_child(Center, Center)
         .clip()
         .child(content)

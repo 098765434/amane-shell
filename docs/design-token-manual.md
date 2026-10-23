@@ -41,7 +41,7 @@ design-tokens/tokens.json  (normalized, committed)  ← developers commit it
    │  include_str! + resolver that behaves like Penpot
    ▼
 resolved values per (mode, density, accent)         ← cached at runtime
-   │  Reader: sys.* + own component prefix
+   │  build.rs: one Rust function per sys.* and component token
    ▼
 bar · menus · Wi-Fi panel · OSD · notifications · niri layer rules
 ```
@@ -393,20 +393,27 @@ cargo test
  
 ### 10.4 Developer: read a token
  
+Every `sys.*` and component token is a function, generated from `tokens.json` at build time
+and named after the token. Call it where the value is used:
+
 ```rust
-fn parse(sys: &Reader, own: &Reader) -> Result<Tokens, TokenError> {
-    Ok(Tokens {
-        surface:   sys.color("color.surface.popover.bg")?,
-        hover:     sys.color("color.state.hover")?,
-        row_pad_x: sys.spacing("space.inset.l")?,
-        row_h:     own.sizing("row.height")?,       // menu.row.height
-    })
-}
+use crate::tokens::{Styled, menu, sys};
+
+Rectangle::new()
+    .fill(sys::color::surface::popover::bg())   // sys.color.surface.popover.bg
+    .padding(sys::space::inset::l())             // sys.space.inset.l
+    .height(menu::row::height());                // menu.row.height
+Text::new("Open").style(sys::r#type::label());  // family, size and weight of a type role
 ```
- 
-- `Reader` for `sys` and for your own component only; there is no `ref` reader.
-- Choose the reader by property (`spacing` for padding, `sizing` for heights): it accepts the
-  same Penpot types Penpot's own inputs accept.
+
+- A new component writes no token code: import `sys` and its own component's module.
+- Each call returns the value for the current mode, density, accent and text scale, with the
+  Rust type of the token's Penpot type (`Color`, `f32`, `TextStyle`, …).
+- Names map mechanically: hyphens become underscores (`fg-secondary` → `fg_secondary`), a
+  leading digit gets an underscore (`2xs` → `_2xs`), and `type` is written `r#type`.
+- A token renamed or removed in Penpot is a compile error at every line that reads it.
+- There is no `ref` module, and a test fails if a component imports another component's
+  tokens: read `sys.*` and your own prefix only.
 - Missing a token? Ask design to add it in Penpot. Don't hard-code a value "for now".
 - Layout arithmetic (`/ 2.0`, `* 2.0`) stays in code; style values don't.
 ### 10.5 PR checklist

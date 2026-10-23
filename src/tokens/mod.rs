@@ -1,7 +1,20 @@
 //! Design tokens from Penpot (`design-tokens/tokens.json`), resolved the way
-//! Penpot resolves them. Components read them through a [`Reader`] for
-//! `sys.*` and one for their own prefix; there is no reader for `ref.*`.
-//! The rules live in `docs/design-token-manual.md`.
+//! Penpot resolves them. Code reads them through functions generated from
+//! the export (`build.rs`), named after the tokens:
+//!
+//! ```ignore
+//! use crate::tokens::{Styled, menu, sys};
+//!
+//! Rectangle::new()
+//!     .fill(sys::color::surface::popover::bg())
+//!     .radius(sys::radius::popover())
+//!     .height(menu::row::height());
+//! Text::new("Open").style(sys::r#type::label());
+//! ```
+//!
+//! Each returns the value for the current mode, density, accent and text
+//! scale. There is no `ref` module: code never reads primitives. The rules
+//! live in `docs/design-token-manual.md`.
 
 pub mod accent;
 pub mod check;
@@ -14,17 +27,16 @@ pub mod resolve;
 pub mod rules;
 pub mod values;
 
-use std::cell::RefCell;
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::{Mutex, OnceLock};
-use std::time::Duration;
 
-use amane::Color;
+use amane::Text;
 
 use crate::theme::{self, Density, Mode};
 pub use envelope::{Library, TokenType};
-pub use values::{Shadow, TextCase, TextDecoration, Typography, Value};
+pub use values::{Shadow, TextCase, TextDecoration, Value};
 
 /// The committed Penpot export.
 pub const SOURCE: &str = include_str!("../../design-tokens/tokens.json");
@@ -78,7 +90,6 @@ impl fmt::Display for TokenError {
 #[derive(Clone, Debug)]
 pub struct ResolvedToken {
     pub ty: TokenType,
-    pub set: String,
     pub value: Value,
 }
 
@@ -89,20 +100,6 @@ pub struct Resolved {
     pub tokens: HashMap<String, ResolvedToken>,
     /// Multiplies font sizes when read (manual §8.4).
     pub text_scale: f32,
-}
-
-impl Resolved {
-    pub fn sys(&self) -> Reader<'_> {
-        Reader::new(self, "sys")
-    }
-
-    pub fn component(&self, name: &str) -> Reader<'_> {
-        assert!(
-            COMPONENTS.contains(&name),
-            "`{name}` is not a component prefix; code may read only sys.* and its own component"
-        );
-        Reader::new(self, name)
-    }
 }
 
 /// What the runtime varies on top of Penpot. Resolution is cached per key.
@@ -116,9 +113,26 @@ pub struct Key {
     pub text_scale: u16,
 }
 
+thread_local! {
+    static OVERRIDE: Cell<Option<Key>> = const { Cell::new(None) };
+}
+
+/// Run `f` with the generated token functions reading `key` instead of the
+/// runtime's inputs (tests, and tools that need the default look).
+pub fn with_key<T>(key: Key, f: impl FnOnce() -> T) -> T {
+    let before = OVERRIDE.with(|o| o.replace(Some(key)));
+    let out = f();
+    OVERRIDE.with(|o| o.set(before));
+    out
+}
+
 impl Key {
     /// The runtime inputs as they are now.
     pub fn current() -> Self {
+        if let Some(key) = OVERRIDE.with(Cell::get) {
+            return key;
+        }
+
         Self {
             accent: theme::system_accent().map(|c| [c.red(), c.green(), c.blue()]),
             text_scale: (theme::text_scale() * 100.0).round() as u16,
@@ -162,29 +176,6 @@ pub fn resolved(key: Key) -> &'static Resolved {
     })
 }
 
-/// A component's parsed tokens, one per [`Key`].
-pub type Cache<T> = OnceLock<Mutex<HashMap<Key, &'static T>>>;
-
-/// Parse a component's tokens for the current key, once per key. `what`
-/// names the component in the panic, which the contract tests make
-/// unreachable.
-pub fn cached<T: Send + Sync + 'static>(
-    cache: &'static Cache<T>,
-    what: &str,
-    parse: fn(&Resolved) -> Result<T, TokenError>,
-) -> &'static T {
-    let key = Key::current();
-    let mut map = cache
-        .get_or_init(Default::default)
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
-
-    map.entry(key).or_insert_with(|| {
-        let parsed = parse(resolved(key)).unwrap_or_else(|e| panic!("{what} tokens: {e}"));
-        Box::leak(Box::new(parsed))
-    })
-}
-
 pub fn resolve_key(library: &Library, key: Key) -> Result<Resolved, Vec<TokenError>> {
     let overrides: Vec<(&str, String)> = key
         .accent
@@ -204,189 +195,149 @@ pub fn resolve_key(library: &Library, key: Key) -> Result<Resolved, Vec<TokenErr
 
 /// Reads tokens under one prefix, checking each against the Penpot types
 /// that Penpot's own inputs accept for that property (manual §10.4).
-pub struct Reader<'r> {
-    resolved: &'r Resolved,
-    prefix: &'static str,
-    reads: RefCell<Vec<String>>,
+
+#[allow(dead_code, clippy::all)]
+mod generated {
+    include!(concat!(env!("OUT_DIR"), "/tokens.rs"));
+}
+pub use generated::*;
+
+/// A `sys.type.*` role, ready for a `Text`: the first installed family of
+/// its stack and its size times the text scale.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TextStyle {
+    pub family: &'static str,
+    pub size: f32,
+    pub weight: u16,
+    pub italic: bool,
+    /// A multiple of the size.
+    pub line_height: Option<f32>,
+    pub letter_spacing: Option<f32>,
 }
 
-// One reader per row of manual §4.3, whether or not a component uses that
-// type yet, so a designer's type choice is never blocked by a missing reader.
+/// `Text::new(…).style(sys::r#type::label())` sets family, size and weight.
+pub trait Styled {
+    fn style(self, style: TextStyle) -> Self;
+}
+
+impl Styled for Text {
+    fn style(self, style: TextStyle) -> Self {
+        self.font(style.family)
+            .size(style.size)
+            .weight(style.weight)
+    }
+}
+
+/// What the generated functions call: the token's value under the current
+/// [`Key`]. Every generated name resolves with its generated type in every
+/// combination (the contract tests check it), so the panics are unreachable
+/// in a passing build. There is one function per Penpot type, used or not.
 #[allow(dead_code)]
-impl<'r> Reader<'r> {
-    fn new(resolved: &'r Resolved, prefix: &str) -> Self {
-        let prefix = COMPONENTS
-            .iter()
-            .chain(&["sys"])
-            .find(|p| **p == prefix)
-            .copied()
-            .unwrap_or("sys");
-        Self {
-            resolved,
-            prefix,
-            reads: RefCell::new(Vec::new()),
-        }
-    }
+pub mod read {
+    use amane::Color;
 
-    /// Every full token name read so far (for the contract tests).
-    pub fn read_paths(&self) -> Vec<String> {
-        self.reads.borrow().clone()
-    }
+    use super::{
+        Key, Resolved, Shadow, TextCase, TextDecoration, TextStyle, Value, font, resolved,
+    };
 
-    fn get(
-        &self,
-        path: &str,
-        accepts: &[TokenType],
-        reader: &str,
-    ) -> Result<&'r Value, TokenError> {
-        let name = format!("{}.{path}", self.prefix);
-        self.reads.borrow_mut().push(name.clone());
-
-        let error = |set: &str, message: String| TokenError {
-            token: name.clone(),
-            set: set.to_string(),
-            key: self.resolved.key.clone(),
-            message,
-        };
-
-        let token = self
-            .resolved
+    fn get(name: &str) -> (&'static Resolved, &'static Value) {
+        let r = resolved(Key::current());
+        let token = r
             .tokens
-            .get(&name)
-            .ok_or_else(|| error("", format!("the {reader} reader found no such token")))?;
-
-        if !accepts.contains(&token.ty) {
-            let names: Vec<&str> = accepts.iter().map(|t| t.name()).collect();
-            return Err(error(
-                &token.set,
-                format!("expected {}, found {}", names.join(" or "), token.ty.name()),
-            ));
-        }
-
-        Ok(&token.value)
+            .get(name)
+            .unwrap_or_else(|| panic!("token {name} is not in the active sets ({})", r.key));
+        (r, &token.value)
     }
 
-    fn px(&self, path: &str, accepts: &[TokenType], reader: &str) -> Result<f32, TokenError> {
-        match self.get(path, accepts, reader)? {
-            Value::Number(n) => Ok(n.value as f32),
-            other => unreachable!("{path}: number types resolve to numbers, got {other:?}"),
+    fn wrong(name: &str, value: &Value) -> ! {
+        panic!("token {name} resolved to {value:?}, not the type it was generated with")
+    }
+
+    pub fn color(name: &str) -> Color {
+        match get(name).1 {
+            Value::Color(c) => c.to_color(),
+            other => wrong(name, other),
         }
     }
 
-    pub fn color(&self, path: &str) -> Result<Color, TokenError> {
-        match self.get(path, &[TokenType::Color], "color")? {
-            Value::Color(c) => Ok(c.to_color()),
-            other => unreachable!("{path}: {other:?}"),
+    pub fn number(name: &str) -> f32 {
+        match get(name).1 {
+            Value::Number(n) => n.value as f32,
+            other => wrong(name, other),
         }
     }
 
-    pub fn spacing(&self, path: &str) -> Result<f32, TokenError> {
-        self.px(path, &[TokenType::Spacing, TokenType::Dimension], "spacing")
-    }
-
-    pub fn sizing(&self, path: &str) -> Result<f32, TokenError> {
-        self.px(path, &[TokenType::Sizing, TokenType::Dimension], "sizing")
-    }
-
-    pub fn radius(&self, path: &str) -> Result<f32, TokenError> {
-        self.px(
-            path,
-            &[TokenType::BorderRadius, TokenType::Dimension],
-            "radius",
-        )
-    }
-
-    pub fn stroke_width(&self, path: &str) -> Result<f32, TokenError> {
-        self.px(
-            path,
-            &[TokenType::BorderWidth, TokenType::Dimension],
-            "stroke_width",
-        )
-    }
-
-    pub fn font_size(&self, path: &str) -> Result<f32, TokenError> {
-        Ok(self.px(path, &[TokenType::FontSizes], "font_size")? * self.resolved.text_scale)
-    }
-
-    pub fn font_family(&self, path: &str) -> Result<Vec<String>, TokenError> {
-        match self.get(path, &[TokenType::FontFamilies], "font_family")? {
-            Value::FontFamily(f) => Ok(f.clone()),
-            other => unreachable!("{path}: {other:?}"),
+    pub fn font_size(name: &str) -> f32 {
+        let (r, value) = get(name);
+        match value {
+            Value::Number(n) => n.value as f32 * r.text_scale,
+            other => wrong(name, other),
         }
     }
 
-    pub fn font_weight(&self, path: &str) -> Result<(u16, bool), TokenError> {
-        match self.get(path, &[TokenType::FontWeights], "font_weight")? {
-            Value::FontWeight { weight, italic } => Ok((*weight, *italic)),
-            other => unreachable!("{path}: {other:?}"),
+    pub fn font_family(name: &str) -> &'static str {
+        match get(name).1 {
+            Value::FontFamily(stack) => font::first_installed(stack),
+            other => wrong(name, other),
         }
     }
 
-    pub fn letter_spacing(&self, path: &str) -> Result<f32, TokenError> {
-        self.px(path, &[TokenType::LetterSpacing], "letter_spacing")
-    }
-
-    pub fn text_case(&self, path: &str) -> Result<TextCase, TokenError> {
-        match self.get(path, &[TokenType::TextCase], "text_case")? {
-            Value::TextCase(c) => Ok(*c),
-            other => unreachable!("{path}: {other:?}"),
+    pub fn font_weight(name: &str) -> u16 {
+        match get(name).1 {
+            Value::FontWeight { weight, .. } => *weight,
+            other => wrong(name, other),
         }
     }
 
-    pub fn text_decoration(&self, path: &str) -> Result<TextDecoration, TokenError> {
-        match self.get(path, &[TokenType::TextDecoration], "text_decoration")? {
-            Value::TextDecoration(d) => Ok(*d),
-            other => unreachable!("{path}: {other:?}"),
+    pub fn text_style(name: &str) -> TextStyle {
+        let (r, value) = get(name);
+        let Value::Typography(t) = value else {
+            wrong(name, value)
+        };
+        // the manual's rules require all three members (manual §6.3)
+        let (weight, italic) = t.weight.unwrap_or((400, false));
+        TextStyle {
+            family: font::first_installed(&t.families),
+            size: t.size.unwrap_or_default() * r.text_scale,
+            weight,
+            italic,
+            line_height: t.line_height,
+            letter_spacing: t.letter_spacing,
         }
     }
 
-    /// A type role, with its font size (and nothing else) times the text scale.
-    pub fn typography(&self, path: &str) -> Result<Typography, TokenError> {
-        match self.get(path, &[TokenType::Typography], "typography")? {
-            Value::Typography(t) => Ok(Typography {
-                size: t.size.map(|s| s * self.resolved.text_scale),
-                ..t.clone()
-            }),
-            other => unreachable!("{path}: {other:?}"),
+    pub fn shadow(name: &str) -> Vec<Shadow> {
+        match get(name).1 {
+            Value::Shadow(s) => s.clone(),
+            other => wrong(name, other),
         }
     }
 
-    pub fn opacity(&self, path: &str) -> Result<f32, TokenError> {
-        self.px(path, &[TokenType::Opacity], "opacity")
-    }
-
-    pub fn rotation(&self, path: &str) -> Result<f32, TokenError> {
-        self.px(path, &[TokenType::Rotation, TokenType::Number], "rotation")
-    }
-
-    pub fn number(&self, path: &str) -> Result<f32, TokenError> {
-        self.px(path, &[TokenType::Number], "number")
-    }
-
-    /// Milliseconds, from a `number` token under `motion`.
-    pub fn duration(&self, path: &str) -> Result<Duration, TokenError> {
-        let ms = self.px(path, &[TokenType::Number], "duration")?;
-        Ok(Duration::from_secs_f32(ms.max(0.0) / 1000.0))
-    }
-
-    pub fn shadow(&self, path: &str) -> Result<Vec<Shadow>, TokenError> {
-        match self.get(path, &[TokenType::Shadow], "shadow")? {
-            Value::Shadow(s) => Ok(s.clone()),
-            other => unreachable!("{path}: {other:?}"),
+    pub fn boolean(name: &str) -> bool {
+        match get(name).1 {
+            Value::Bool(b) => *b,
+            other => wrong(name, other),
         }
     }
 
-    pub fn boolean(&self, path: &str) -> Result<bool, TokenError> {
-        match self.get(path, &[TokenType::Boolean], "boolean")? {
-            Value::Bool(b) => Ok(*b),
-            other => unreachable!("{path}: {other:?}"),
+    pub fn string(name: &str) -> String {
+        match get(name).1 {
+            Value::Str(s) => s.clone(),
+            other => wrong(name, other),
         }
     }
 
-    pub fn string(&self, path: &str) -> Result<String, TokenError> {
-        match self.get(path, &[TokenType::String, TokenType::Other], "string")? {
-            Value::Str(s) => Ok(s.clone()),
-            other => unreachable!("{path}: {other:?}"),
+    pub fn text_case(name: &str) -> TextCase {
+        match get(name).1 {
+            Value::TextCase(c) => *c,
+            other => wrong(name, other),
+        }
+    }
+
+    pub fn text_decoration(name: &str) -> TextDecoration {
+        match get(name).1 {
+            Value::TextDecoration(d) => *d,
+            other => wrong(name, other),
         }
     }
 }
@@ -467,74 +418,70 @@ mod tests {
 
     #[test]
     fn compact_tightens_spacing_and_rows_only() {
-        use crate::components::{context_menu, taskbar};
-
-        let at = |density| resolve_key(library(), Key::new(Mode::Dark, density)).unwrap();
-        let (comfortable, compact) = (at(Density::Comfortable), at(Density::Compact));
-        let (a, b) = (
-            taskbar::tokens::parse(&comfortable.sys()).unwrap(),
-            taskbar::tokens::parse(&compact.sys()).unwrap(),
-        );
-
-        assert!(b.gap_m < a.gap_m && b.inset_l < a.inset_l && b.row_h < a.row_h);
-        assert_eq!(b.control_h, b.row_h - 10.0);
-        for (x, y) in [
-            (a.icon_size, b.icon_size),
-            (a.radius_popover, b.radius_popover),
-            (a.label_size, b.label_size),
-        ] {
-            assert_eq!(x, y);
-        }
-        // Penpot rounds density-scaled values, so the shell lands on whole pixels
-        for v in [
-            b.gap_2xs, b.gap_xs, b.gap_s, b.gap_m, b.gap_l, b.gap_xl, b.row_h,
-        ] {
-            assert_eq!(v, v.round());
-        }
-
-        let menu = |r: &Resolved| {
-            context_menu::tokens::parse(&r.sys(), &r.component("menu"))
-                .unwrap()
-                .row_height
+        let read = |density| {
+            with_key(Key::new(Mode::Dark, density), || {
+                (
+                    [
+                        sys::space::gap::m(),
+                        sys::space::inset::l(),
+                        sys::size::row::height(),
+                    ],
+                    [
+                        sys::size::icon::m(),
+                        sys::radius::popover(),
+                        sys::r#type::label().size,
+                    ],
+                    menu::row::height(),
+                    sys::size::control::height(),
+                )
+            })
         };
-        assert_eq!((menu(&comfortable), menu(&compact)), (24.0, 21.0));
+        let (scaled_a, fixed_a, menu_a, _) = read(Density::Comfortable);
+        let (scaled_b, fixed_b, menu_b, control_b) = read(Density::Compact);
+
+        for (a, b) in scaled_a.iter().zip(&scaled_b) {
+            assert!(b < a, "{b} isn't tighter than {a}");
+            // Penpot rounds density-scaled values, so the shell lands on whole pixels
+            assert_eq!(*b, b.round());
+        }
+        assert_eq!(fixed_a, fixed_b);
+        assert_eq!((menu_a, menu_b), (24.0, 21.0));
+        assert_eq!(control_b, scaled_b[2] - 10.0);
     }
 
     #[test]
     fn text_scale_multiplies_font_sizes_only() {
-        use crate::components::{context_menu, taskbar};
+        let read = |text_scale| {
+            let key = Key {
+                text_scale,
+                ..Key::new(Mode::Dark, Density::Comfortable)
+            };
+            with_key(key, || {
+                (
+                    [
+                        sys::r#type::label().size,
+                        sys::r#type::title().size,
+                        sys::r#type::numeric().size,
+                        sys::r#type::caption().size,
+                    ],
+                    [
+                        sys::size::icon::m(),
+                        sys::size::row::height(),
+                        sys::space::gap::m(),
+                        menu::row::height(),
+                    ],
+                )
+            })
+        };
+        let ((text_a, other_a), (text_b, other_b)) = (read(100), read(125));
 
-        let (one, big) = (dark(None, 100), dark(None, 125));
-        let (a, b) = (
-            taskbar::tokens::parse(&one.sys()).unwrap(),
-            taskbar::tokens::parse(&big.sys()).unwrap(),
-        );
-        for (x, y) in [
-            (a.label_size, b.label_size),
-            (a.title_size, b.title_size),
-            (a.clock_size, b.clock_size),
-            (a.caption_size, b.caption_size),
-        ] {
-            assert_eq!(x * 1.25, y);
+        for (a, b) in text_a.iter().zip(&text_b) {
+            assert_eq!(a * 1.25, *b);
         }
-        for (x, y) in [
-            (a.icon_size, b.icon_size),
-            (a.icon_small, b.icon_small),
-            (a.row_h, b.row_h),
-            (a.gap_m, b.gap_m),
-            (a.radius_popover, b.radius_popover),
-        ] {
-            assert_eq!(x, y);
-        }
-
-        let (m1, m2) = (
-            context_menu::tokens::parse(&one.sys(), &one.component("menu")).unwrap(),
-            context_menu::tokens::parse(&big.sys(), &big.component("menu")).unwrap(),
-        );
-        assert_eq!(m1.label_size * 1.25, m2.label_size);
-        assert_eq!(m1.row_height, m2.row_height);
+        assert_eq!(other_a, other_b);
 
         // the resolved values themselves don't change; only font-size reads do
+        let (one, big) = (dark(None, 100), dark(None, 125));
         for (name, token) in &one.tokens {
             assert_eq!(token.value, big.tokens[name].value, "{name}");
         }

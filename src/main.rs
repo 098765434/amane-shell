@@ -6,7 +6,7 @@ use std::process::ExitCode;
 
 use amane::App;
 
-use components::context_menu::{self, ContextMenu, Icon, MenuItem, Theme};
+use components::context_menu::{self, ContextMenu, Icon, MenuItem};
 use components::taskbar;
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
@@ -56,7 +56,7 @@ fn main() -> ExitCode {
         return code;
     }
 
-    let share = ContextMenu::new(Theme::auto())
+    let share = ContextMenu::new()
         .item(
             MenuItem::label("AirDrop")
                 .icon(Icon::glyph("\u{E2BD}"))
@@ -75,10 +75,10 @@ fn main() -> ExitCode {
         );
 
     // "Code" carries a third-level submenu to exercise arbitrary nesting.
-    let open_with = ContextMenu::new(Theme::auto())
+    let open_with = ContextMenu::new()
         .item(
             MenuItem::label("Code").submenu(
-                ContextMenu::new(Theme::auto())
+                ContextMenu::new()
                     .item(MenuItem::label("New Window").on_select(|| eprintln!("code: new window")))
                     .item(
                         MenuItem::label("New Workspace").on_select(|| eprintln!("code: workspace")),
@@ -88,7 +88,7 @@ fn main() -> ExitCode {
         .item(MenuItem::label("Firefox").on_select(|| eprintln!("firefox")))
         .item(MenuItem::label("Preview").on_select(|| eprintln!("preview")));
 
-    let menu = ContextMenu::new(Theme::auto())
+    let menu = ContextMenu::new()
         .item(
             MenuItem::label("Open")
                 .icon(Icon::glyph("\u{1F4C2}"))

@@ -5,8 +5,6 @@
 #![allow(dead_code)]
 
 pub mod runtime;
-pub mod theme;
-pub mod tokens;
 
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -14,19 +12,16 @@ use std::rc::Rc;
 use amane::{
     Button, Center, Color, Column, ConstraintAdjustment, Gravity, Horizontal, Image, Key, Keyboard,
     Layer, LayerWindow, Padding, Parent, Point, Pointer, Popup, Rectangle, Row, SpaceBetween, Text,
-    Vertical, Weight, Widget, WindowSize, request_frame,
+    Vertical, Widget, WindowSize, request_frame,
 };
 
-pub use theme::Theme;
 // Full public API of the component. Some entry points aren't exercised by
 // the bundled demo, so this re-export block allows unused imports.
 #[allow(unused_imports)]
 pub use runtime::{arm, close, open_at, open_named, open_under, register, set_cursor};
-#[allow(unused_imports)]
-pub use theme::Mode;
 
+use crate::tokens::{Styled, menu, sys};
 use runtime::{FocusSource, with, with_mut};
-use tokens::{Tokens, tokens};
 
 /// Maximum submenu nesting depth. Each level is a distinct popup slot with
 /// its own compile-time namespace; bump this (and [`NS`]) to allow deeper.
@@ -157,14 +152,12 @@ pub(crate) enum Entry {
 
 #[derive(Clone)]
 pub struct ContextMenu {
-    pub(crate) theme: Theme,
     pub(crate) entries: Vec<Entry>,
 }
 
 impl ContextMenu {
-    pub fn new(theme: Theme) -> Self {
+    pub fn new() -> Self {
         Self {
-            theme,
             entries: Vec::new(),
         }
     }
@@ -260,10 +253,7 @@ pub const LEVELS: [fn() -> Popup; MAX_DEPTH] = [
 /// when the stack isn't that deep, so the slot stays registered but mapped
 /// only while its level is open.
 fn render(k: usize) -> Popup {
-    let t = tokens();
-
-    let Some((entries, theme, anchor_rect)) =
-        runtime::level(k, |l| (l.entries.clone(), l.theme, l.anchor_rect))
+    let Some((entries, anchor_rect)) = runtime::level(k, |l| (l.entries.clone(), l.anchor_rect))
     else {
         return Popup::new(NS[k])
             .size(1, 1)
@@ -272,8 +262,8 @@ fn render(k: usize) -> Popup {
             .visible(false);
     };
 
-    let (width, height) = size_for(&entries, t);
-    let card = card_widget(&entries, theme.current(), t, k);
+    let (width, height) = size_for(&entries);
+    let card = card_widget(&entries, k);
     let (ax, ay, aw, ah) = anchor_rect;
 
     // Level 0 can slide on both axes; deeper levels keep their x (they flip
@@ -299,7 +289,7 @@ fn render(k: usize) -> Popup {
         .child(card);
 
     if k > 0 {
-        popup = popup.offset(-t.submenu_offset as i32, 0);
+        popup = popup.offset(-menu::submenu::offset() as i32, 0);
     } else {
         popup = popup.on_dismiss(runtime::close);
     }
@@ -309,68 +299,57 @@ fn render(k: usize) -> Popup {
 
 // ───── Card / row rendering ──────────────────────────────────────────────
 
-fn card_widget(entries: &[Entry], theme: Theme, t: &Tokens, level: usize) -> Rectangle {
+fn card_widget(entries: &[Entry], level: usize) -> Rectangle {
     let any_icon = entries_have_icon(entries);
     let rows: Vec<Box<dyn Widget>> = entries
         .iter()
         .enumerate()
-        .map(|(i, entry)| build_entry(i, entry, theme, t, level, any_icon))
+        .map(|(i, entry)| build_entry(i, entry, level, any_icon))
         .collect();
 
     Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(theme.surface)
-        .radius(t.radius)
-        .border(t.hairline, theme.border)
+        .fill(sys::color::surface::popover::bg())
+        .radius(sys::radius::popover())
+        .border(
+            sys::border::hairline(),
+            sys::color::surface::popover::stroke(),
+        )
         .padding(Padding {
-            top: t.card_padding,
-            right: t.card_padding,
-            bottom: t.card_padding,
-            left: t.card_padding,
+            top: menu::card::padding(),
+            right: menu::card::padding(),
+            bottom: menu::card::padding(),
+            left: menu::card::padding(),
         })
         .child(Column::new(rows).width(Parent))
 }
 
-fn build_entry(
-    index: usize,
-    entry: &Entry,
-    theme: Theme,
-    t: &Tokens,
-    level: usize,
-    any_icon: bool,
-) -> Box<dyn Widget> {
+fn build_entry(index: usize, entry: &Entry, level: usize, any_icon: bool) -> Box<dyn Widget> {
     match entry {
         Entry::Separator => Box::new(
             Rectangle::new()
                 .width(Parent)
-                .height(t.hairline + 2.0 * t.separator_margin)
+                .height(sys::border::hairline() + 2.0 * sys::space::gap::xs())
                 .fill(Color::TRANSPARENT)
                 .padding(Padding {
-                    top: t.separator_margin,
+                    top: sys::space::gap::xs(),
                     right: 0.0,
-                    bottom: t.separator_margin,
+                    bottom: sys::space::gap::xs(),
                     left: 0.0,
                 })
                 .child(
                     Rectangle::new()
                         .width(Parent)
-                        .height(t.hairline)
-                        .fill(theme.separator),
+                        .height(sys::border::hairline())
+                        .fill(sys::color::separator()),
                 ),
         ),
-        Entry::Item(item) => Box::new(row(index, item, theme, t, level, any_icon)),
+        Entry::Item(item) => Box::new(row(index, item, level, any_icon)),
     }
 }
 
-fn row(
-    index: usize,
-    item: &MenuItem,
-    theme: Theme,
-    t: &Tokens,
-    level: usize,
-    any_icon: bool,
-) -> Rectangle {
+fn row(index: usize, item: &MenuItem, level: usize, any_icon: bool) -> Rectangle {
     let (focused, source) = runtime::level(level, |l| (l.focus == Some(index), l.focus_source))
         .unwrap_or((false, None));
     let focused = focused && item.enabled;
@@ -379,47 +358,46 @@ fn row(
     let fill = if !focused {
         Color::TRANSPARENT
     } else if keyboard && !item.destructive {
-        theme.selected_fill
+        sys::color::accent::bg()
     } else if item.destructive {
-        theme.hover_destructive_fill
+        sys::color::status::critical::hover()
     } else {
-        theme.hover_fill
+        sys::color::state::hover()
     };
 
     let fg = if !item.enabled {
-        theme.muted
+        sys::color::surface::popover::fg_secondary()
     } else if keyboard && !item.destructive {
-        theme.on_selected_fg
+        sys::color::accent::fg()
     } else if item.destructive {
-        theme.destructive
+        sys::color::status::critical::text()
     } else {
-        theme.fg
+        sys::color::surface::popover::fg()
     };
 
     let shortcut_color = if keyboard && !item.destructive {
-        with_alpha_f(theme.on_selected_fg, t.shortcut_hover_alpha)
+        with_alpha_f(sys::color::accent::fg(), menu::shortcut::hover_opacity())
     } else if focused {
-        with_alpha_f(theme.fg, t.shortcut_hover_alpha)
+        with_alpha_f(
+            sys::color::surface::popover::fg(),
+            menu::shortcut::hover_opacity(),
+        )
     } else {
-        theme.muted
+        sys::color::surface::popover::fg_secondary()
     };
 
     let label_widget: Box<dyn Widget> = Box::new(
         Text::new(item.label.clone())
-            .size(t.label_size)
+            .style(sys::r#type::label())
             .color(fg)
-            .font(&t.font_family)
-            .weight(Weight::from(t.font_regular))
             .elide(),
     );
 
     let shortcut_widget: Box<dyn Widget> = match &item.shortcut {
         Some(s) => Box::new(
             Text::new(s.clone())
-                .size(t.shortcut_size)
-                .color(shortcut_color)
-                .font(&t.font_family)
-                .weight(Weight::from(t.font_regular)),
+                .style(sys::r#type::label())
+                .color(shortcut_color),
         ),
         None => Box::new(empty()),
     };
@@ -427,15 +405,14 @@ fn row(
     let chevron_widget: Box<dyn Widget> = if item.has_submenu() {
         Box::new(
             Rectangle::new()
-                .width(t.chevron_slot)
-                .height(t.chevron_slot)
+                .width(menu::chevron_slot::width())
+                .height(menu::chevron_slot::width())
                 .fill(Color::TRANSPARENT)
                 .align_child(Center, Center)
                 .child(
                     Text::new("\u{203A}")
-                        .size(t.label_size)
+                        .style(sys::r#type::label())
                         .color(fg)
-                        .font(&t.font_family)
                         .tight(),
                 ),
         )
@@ -446,15 +423,15 @@ fn row(
     // When no row in this menu has an icon, drop the leading icon column
     // entirely so the label hugs the left padding.
     let leading = if any_icon {
-        Row::new(vec![icon_widget(item.icon.as_ref(), fg, t), label_widget])
-            .gap(t.gap)
+        Row::new(vec![icon_widget(item.icon.as_ref(), fg), label_widget])
+            .gap(sys::space::gap::m())
             .align(Center)
             .height(Parent)
     } else {
         Row::new(vec![label_widget]).align(Center).height(Parent)
     };
     let trailing = Row::new(vec![shortcut_widget, chevron_widget])
-        .gap(t.trailing_gap)
+        .gap(sys::space::gap::s())
         .align(Center);
 
     let inner = Row::new(vec![
@@ -472,14 +449,14 @@ fn row(
 
     let mut rect = Rectangle::new()
         .width(Parent)
-        .height(t.row_height)
+        .height(menu::row::height())
         .fill(fill)
-        .radius(t.radius_row)
+        .radius(menu::row::radius())
         .padding(Padding {
             top: 0.0,
-            right: t.row_pad_x,
+            right: sys::space::inset::l(),
             bottom: 0.0,
-            left: t.row_pad_x,
+            left: sys::space::inset::l(),
         })
         .child(inner);
 
@@ -502,18 +479,21 @@ fn row(
     rect
 }
 
-fn icon_widget(icon: Option<&Icon>, fg: Color, t: &Tokens) -> Box<dyn Widget> {
+fn icon_widget(icon: Option<&Icon>, fg: Color) -> Box<dyn Widget> {
     match icon {
         Some(Icon::Glyph { ch, font }) => {
-            let text = Text::new(ch.clone()).size(t.label_size).color(fg).tight();
+            let text = Text::new(ch.clone())
+                .size(sys::r#type::label().size)
+                .color(fg)
+                .tight();
             let text = match font {
                 Some(f) => text.font(f),
-                None => text.font(&t.font_family),
+                None => text.font(sys::r#type::label().family),
             };
             Box::new(
                 Rectangle::new()
-                    .width(t.icon_slot)
-                    .height(t.icon_slot)
+                    .width(menu::icon_slot::width())
+                    .height(menu::icon_slot::width())
                     .fill(Color::TRANSPARENT)
                     .align_child(Center, Center)
                     .child(text),
@@ -521,14 +501,14 @@ fn icon_widget(icon: Option<&Icon>, fg: Color, t: &Tokens) -> Box<dyn Widget> {
         }
         Some(Icon::Image(path)) => Box::new(
             Rectangle::new()
-                .width(t.icon_slot)
-                .height(t.icon_slot)
+                .width(menu::icon_slot::width())
+                .height(menu::icon_slot::width())
                 .fill(Image::contain(path.clone())),
         ),
         None => Box::new(
             Rectangle::new()
-                .width(t.icon_slot)
-                .height(t.icon_slot)
+                .width(menu::icon_slot::width())
+                .height(menu::icon_slot::width())
                 .fill(Color::TRANSPARENT),
         ),
     }
@@ -692,25 +672,29 @@ fn invoke_focused(level: usize) {
 // ───── Measurement ───────────────────────────────────────────────────────
 
 /// An estimate: amane doesn't expose text measurement.
-fn text_width(s: &str, size: f32, t: &Tokens) -> f32 {
-    s.chars().count() as f32 * size * t.advance_ratio
+fn text_width(s: &str, size: f32) -> f32 {
+    s.chars().count() as f32 * size * menu::label::advance_ratio()
 }
 
-fn item_width(item: &MenuItem, t: &Tokens, any_icon: bool) -> f32 {
-    let label = text_width(&item.label, t.label_size, t);
+fn item_width(item: &MenuItem, any_icon: bool) -> f32 {
+    let label = text_width(&item.label, sys::r#type::label().size);
     let shortcut = item
         .shortcut
         .as_ref()
-        .map(|s| text_width(s, t.shortcut_size, t) + t.shortcut_gap)
+        .map(|s| text_width(s, sys::r#type::label().size) + sys::space::gap::xl())
         .unwrap_or(0.0);
     let chevron = if item.has_submenu() {
-        t.chevron_slot + t.trailing_gap
+        menu::chevron_slot::width() + sys::space::gap::s()
     } else {
         0.0
     };
-    let leading = if any_icon { t.icon_slot + t.gap } else { 0.0 };
+    let leading = if any_icon {
+        menu::icon_slot::width() + sys::space::gap::m()
+    } else {
+        0.0
+    };
 
-    leading + label + shortcut + chevron + 2.0 * t.row_pad_x
+    leading + label + shortcut + chevron + 2.0 * sys::space::inset::l()
 }
 
 pub(crate) fn entries_have_icon(entries: &[Entry]) -> bool {
@@ -719,38 +703,38 @@ pub(crate) fn entries_have_icon(entries: &[Entry]) -> bool {
         .any(|e| matches!(e, Entry::Item(it) if it.icon.is_some()))
 }
 
-pub(crate) fn size_for(entries: &[Entry], t: &Tokens) -> (f32, f32) {
+pub(crate) fn size_for(entries: &[Entry]) -> (f32, f32) {
     let any_icon = entries_have_icon(entries);
     let widest = entries
         .iter()
         .filter_map(|e| match e {
-            Entry::Item(it) => Some(item_width(it, t, any_icon)),
+            Entry::Item(it) => Some(item_width(it, any_icon)),
             _ => None,
         })
         .fold(0.0_f32, f32::max);
 
-    let width = (widest + 2.0 * t.card_padding).clamp(t.min_width, t.max_width);
+    let width = (widest + 2.0 * menu::card::padding()).clamp(menu::min_width(), menu::max_width());
 
-    let mut h = 2.0 * t.card_padding;
+    let mut h = 2.0 * menu::card::padding();
     for e in entries {
         match e {
-            Entry::Item(_) => h += t.row_height,
-            Entry::Separator => h += t.hairline + 2.0 * t.separator_margin,
+            Entry::Item(_) => h += menu::row::height(),
+            Entry::Separator => h += sys::border::hairline() + 2.0 * sys::space::gap::xs(),
         }
     }
 
     (width, h)
 }
 
-pub(crate) fn row_offset(entries: &[Entry], index: usize, t: &Tokens) -> f32 {
+pub(crate) fn row_offset(entries: &[Entry], index: usize) -> f32 {
     let mut y = 0.0;
     for (i, e) in entries.iter().enumerate() {
         if i == index {
             break;
         }
         match e {
-            Entry::Item(_) => y += t.row_height,
-            Entry::Separator => y += t.hairline + 2.0 * t.separator_margin,
+            Entry::Item(_) => y += menu::row::height(),
+            Entry::Separator => y += sys::border::hairline() + 2.0 * sys::space::gap::xs(),
         }
     }
     y

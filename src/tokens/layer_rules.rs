@@ -8,7 +8,7 @@ use std::fmt::Write;
 use crate::components::context_menu::NAMESPACE_ANCHOR;
 use crate::components::taskbar::{POWER_NS, WIFI_NS};
 use crate::theme::{Density, Mode};
-use crate::tokens::{Key, resolved};
+use crate::tokens::{Key, sys, with_key};
 
 pub struct LayerRule {
     pub namespace: &'static str,
@@ -24,10 +24,10 @@ pub struct LayerRule {
 /// blurred.
 pub fn rules() -> Vec<LayerRule> {
     // radii don't vary with mode or density (a contract test checks it)
-    let sys = resolved(Key::new(Mode::Dark, Density::Comfortable)).sys();
-    let popover = sys
-        .radius("radius.popover")
-        .unwrap_or_else(|e| panic!("layer rules: {e}"));
+    let popover = with_key(
+        Key::new(Mode::Dark, Density::Comfortable),
+        sys::radius::popover,
+    );
 
     vec![
         LayerRule {

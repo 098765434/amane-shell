@@ -3,9 +3,8 @@ use std::collections::HashMap;
 
 use amane::request_frame;
 
-use super::theme::Theme;
-use super::tokens::tokens;
 use super::{ContextMenu, Entry, row_offset, size_for};
+use crate::tokens::menu;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Phase {
@@ -27,7 +26,6 @@ pub enum FocusSource {
 /// level is the submenu of the focused item in the level above it.
 pub(crate) struct Level {
     pub(crate) entries: Vec<Entry>,
-    pub(crate) theme: Theme,
     pub(crate) focus: Option<usize>,
     pub(crate) focus_source: Option<FocusSource>,
     /// Anchor rect for this level's popup, in its parent surface's coords.
@@ -95,7 +93,6 @@ pub fn open_at(key: &'static str, x: i32, y: i32) {
         };
         let level = Level {
             entries: menu.entries.clone(),
-            theme: menu.theme,
             focus: None,
             focus_source: None,
             anchor_rect: (x, y, 1, 1),
@@ -121,7 +118,6 @@ pub fn open_under(key: &'static str, parent_ns: &'static str, x: i32, y: i32, w:
         };
         let level = Level {
             entries: menu.entries.clone(),
-            theme: menu.theme,
             focus: None,
             focus_source: None,
             anchor_rect: (x, y, w, h),
@@ -217,15 +213,14 @@ pub(crate) fn push_level(parent_k: usize, parent_index: usize) {
             let Some(sub) = item.submenu.clone() else {
                 return;
             };
-            let t = tokens();
-            let parent_width = size_for(&parent.entries, t).0 as i32;
-            let row_y = t.card_padding as i32 + row_offset(&parent.entries, parent_index, t) as i32;
+            let parent_width = size_for(&parent.entries).0 as i32;
+            let row_y =
+                menu::card::padding() as i32 + row_offset(&parent.entries, parent_index) as i32;
             Level {
                 entries: sub,
-                theme: parent.theme,
                 focus: None,
                 focus_source: None,
-                anchor_rect: (parent_width - 1, row_y, 1, t.row_height as i32),
+                anchor_rect: (parent_width - 1, row_y, 1, menu::row::height() as i32),
             }
         };
 

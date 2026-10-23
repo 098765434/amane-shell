@@ -21,27 +21,29 @@ const GENERIC: &[&str] = &[
 ];
 
 /// The first family in `stack` that fontconfig has installed, else the
-/// last entry. Each stack is looked up once.
-pub fn first_installed(stack: &[String]) -> String {
-    static CHOSEN: OnceLock<Mutex<HashMap<Vec<String>, String>>> = OnceLock::new();
+/// last entry. Each stack is looked up once; token reads call this every
+/// frame, so a repeat costs one hash lookup.
+pub fn first_installed(stack: &[String]) -> &'static str {
+    static CHOSEN: OnceLock<Mutex<HashMap<Vec<String>, &'static str>>> = OnceLock::new();
     let mut chosen = CHOSEN
         .get_or_init(Default::default)
         .lock()
         .unwrap_or_else(|e| e.into_inner());
 
-    chosen
-        .entry(stack.to_vec())
-        .or_insert_with(|| {
-            let fontconfig = Fontconfig::new();
-            let pick = pick(stack, |family| {
-                fontconfig.as_ref().is_some_and(|fc| installed(fc, family))
-            });
-            if std::env::var_os("AMANE_DEBUG").is_some() {
-                eprintln!("amane-shell: font stack {stack:?} → {pick}");
-            }
-            pick
-        })
-        .clone()
+    if let Some(family) = chosen.get(stack) {
+        return family;
+    }
+
+    let fontconfig = Fontconfig::new();
+    let family = pick(stack, |f| {
+        fontconfig.as_ref().is_some_and(|fc| installed(fc, f))
+    });
+    if std::env::var_os("AMANE_DEBUG").is_some() {
+        eprintln!("amane-shell: font stack {stack:?} → {family}");
+    }
+    let family: &'static str = Box::leak(family.into_boxed_str());
+    chosen.insert(stack.to_vec(), family);
+    family
 }
 
 fn pick(stack: &[String], installed: impl Fn(&str) -> bool) -> String {

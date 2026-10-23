@@ -79,6 +79,12 @@ What building it against `main` and Penpot 2.18.4's source changed:
   below 4.5 and 3.0; raising them is part of PR 7.
 - **Appearance service.** It already exists in amane 317943e, so §7 uses it directly.
 - `Theme::auto()` had 8 call sites, not 7.
+- **Generated token functions instead of readers.** §10.1's per-component structs and
+  `Reader`s were replaced by functions generated in `build.rs`, one per `sys.*` and component
+  token (`tokens::sys::color::surface::popover::bg()`). Components hold no token code and no
+  `theme.rs`. A renamed token is a compile error at the line using it, and the return type
+  follows the Penpot type. A source-scanning test enforces the own-prefix rule, and
+  `ContextMenu::new()` no longer takes a `Theme`.
 ---
  
 ## 1. Goal
@@ -201,10 +207,11 @@ Set contents the code relies on:
    group (`accent`, anything a designer adds) is preview-only and ignored.
 2. Active sets = union of those themes' `selectedTokenSets` with `"enabled"`.
 3. Resolve in `tokenSetOrder`; on a name clash the later set wins.
-### 4.3 Readers (manual §10.4)
- 
-Each reader accepts the Penpot types Penpot's own inputs accept for that property, so a
-token a designer can apply to a padding is one the code accepts as a padding.
+### 4.3 Penpot types per property (manual §10.4)
+
+Revision 5 replaced the readers with generated functions whose return type follows the
+token's Penpot type (§10.1). The table still says which Penpot types fit each property, so a
+token a designer applies to a padding in Penpot is one the code uses as a padding.
  
 | Reader | Accepts Penpot types | Used for |
 |--------|----------------------|----------|
@@ -388,18 +395,9 @@ pub fn text_scale() -> f32;            // AMANE_TEXT_SCALE → 1.0
 - `density()` and `text_scale()` have no system source yet; config can feed them later.
 - `Mode` selects theme `mode/light` / `mode/dark`; `Density` selects `density/comfortable` /
   `density/compact` (§4.2).
-Each component's theme struct is parsed from the resolved tokens; the hand-written copy goes:
- 
-```rust
-// context_menu/tokens.rs
-impl Theme {
-    pub fn auto() -> Self {
-        let r = tokens::resolved(Key::current());     // cached per key
-        parse_theme(&r.sys(), &r.component("menu"))
-    }
-}
-```
- 
+Components keep no theme structs; every generated token function reads the current key
+(§10.1).
+
 `Key` is `(Mode, Density, Option<accent rgb8>, text_scale in 1/100 steps)`. Resolution is
 cached per key; all four change rarely.
  
@@ -503,7 +501,7 @@ startup. The KDL file and the script can then be removed.
  
 ```
 src/tokens/
-  mod.rs        # Library, Resolved, Reader, Key, TokenError, resolved()
+  mod.rs        # Library, Resolved, Key, TokenError, resolved(), read::*, generated modules
   envelope.rs   # parse sets, $themes, $metadata
   resolve.rs    # set selection, references, cycle detection
   expr.rs       # Penpot math expressions
@@ -514,8 +512,9 @@ src/tokens/
   layer_rules.rs
   check.rs      # tokens check / normalize (§3)
 src/theme.rs
+build.rs        # generates tokens::{sys, bar, menu, wifi, …} from tokens.json
 ```
- 
+
 ### 10.1 API
  
 ```rust
@@ -533,12 +532,8 @@ impl Selection<'_> {
     pub fn resolve(&self, overrides: &[(&str, String)]) -> Result<Resolved, Vec<TokenError>>;
 }
  
-pub fn resolved(key: Key) -> &'static Resolved;   // cached; text scale applied by readers
- 
-impl Resolved {
-    pub fn sys(&self) -> Reader<'_>;                       // prefix "sys."
-    pub fn component(&self, name: &str) -> Reader<'_>;     // prefix "<name>."; panics on "ref"/"sys"
-}
+pub fn resolved(key: Key) -> &'static Resolved;   // cached; text scale applied on read
+pub fn with_key<T>(key: Key, f: impl FnOnce() -> T) -> T; // read under a fixed key (tests, tools)
  
 pub enum Value {
     Color(Color), Px(f32), Number(f32), FontFamily(Vec<String>),
@@ -547,45 +542,40 @@ pub enum Value {
     Bool(bool), Str(String),
 }
  
-impl Reader<'_> {   // one method per row of §4.3; paths are relative to the prefix
-    pub fn color(&self, path: &str) -> Result<Color, TokenError>;
-    pub fn spacing(&self, path: &str) -> Result<f32, TokenError>;
-    pub fn sizing(&self, path: &str) -> Result<f32, TokenError>;
-    pub fn radius(&self, path: &str) -> Result<f32, TokenError>;
-    pub fn stroke_width(&self, path: &str) -> Result<f32, TokenError>;
-    pub fn font_size(&self, path: &str) -> Result<f32, TokenError>;
-    pub fn font_family(&self, path: &str) -> Result<Vec<String>, TokenError>;
-    pub fn font_weight(&self, path: &str) -> Result<(u16, bool), TokenError>;
-    pub fn letter_spacing(&self, path: &str) -> Result<f32, TokenError>;
-    pub fn text_case(&self, path: &str) -> Result<TextCase, TokenError>;
-    pub fn text_decoration(&self, path: &str) -> Result<TextDecoration, TokenError>;
-    pub fn typography(&self, path: &str) -> Result<Typography, TokenError>;
-    pub fn opacity(&self, path: &str) -> Result<f32, TokenError>;
-    pub fn rotation(&self, path: &str) -> Result<f32, TokenError>;
-    pub fn number(&self, path: &str) -> Result<f32, TokenError>;
-    pub fn duration(&self, path: &str) -> Result<Duration, TokenError>;
-    pub fn shadow(&self, path: &str) -> Result<Vec<Shadow>, TokenError>;
-    pub fn boolean(&self, path: &str) -> Result<bool, TokenError>;
-    pub fn string(&self, path: &str) -> Result<String, TokenError>;
-    pub fn read_paths(&self) -> Vec<String>;   // for the contract tests
-}
 ```
- 
-There is no reader for `ref.*`, so the tier rule is enforced by the API as well as by tests.
-A component's `tokens.rs` is its struct plus one line per field:
- 
+
+`build.rs` reads `tokens.json` and generates one module per tier prefix (except `ref`), nested
+by token name, with one function per token:
+
 ```rust
-fn parse(sys: &Reader, menu: &Reader) -> Result<Tokens, TokenError> {
-    Ok(Tokens {
-        surface:    sys.color("color.surface.popover.bg")?,
-        row_pad_x:  sys.spacing("space.inset.l")?,
-        row_height: menu.sizing("row.height")?,
-        /* … */
-    })
-}
+pub mod sys { pub mod color { pub mod surface { pub mod popover {
+    /// `sys.color.surface.popover.bg` (color)
+    pub fn bg() -> amane::Color { read::color("sys.color.surface.popover.bg") }
+}}}}
+pub mod menu { pub mod row {
+    /// `menu.row.height` (sizing)
+    pub fn height() -> f32 { read::number("menu.row.height") }
+}}
+pub const GENERATED: &[(&str, &str)];   // every name and its Penpot type, for the tests
 ```
- 
-Plain functions, no macro: the contract tests (§11) catch a field and a path drifting apart.
+
+Return types by Penpot type: `color` → `Color`; dimension-like types, `number`, `opacity`,
+`rotation` → `f32`; `fontSizes` → `f32` × text scale; `fontFamilies` → `&'static str` (first
+installed, §8); `fontWeights` → `u16`; `typography` → `TextStyle` (family, size × text scale,
+weight; `Text::style` applies it); `shadow`, `boolean`, `string`/`other`, `textCase`,
+`textDecoration` → their values. Components call these where the value is used:
+
+```rust
+Rectangle::new()
+    .fill(sys::color::surface::popover::bg())
+    .padding(sys::space::inset::l())
+    .height(menu::row::height())
+```
+
+There is no `ref` module, so code can't read primitives. A token renamed in Penpot is a
+compile error at each line that reads it. The generated code is plain functions; the tests
+check that every generated name resolves with its type in all four combinations, and that
+each component imports only `sys` and its own module.
  
 ### 10.2 Resolution
  

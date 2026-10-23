@@ -55,6 +55,7 @@ pub fn check(lib: &Library, source: &str) -> Vec<String> {
     out.extend(naming(lib));
     out.extend(invariants(lib, &resolved));
     out.extend(contrast(&resolved));
+    out.extend(type_roles(&resolved));
     out.extend(normalized(source));
     out
 }
@@ -460,6 +461,32 @@ pub fn contrast(resolved: &[(Key, Resolved)]) -> Vec<String> {
     out
 }
 
+// ───── type roles ─────────────────────────────────────────────────────────────
+
+/// Code sets family, size and weight from a type role, so each role must
+/// define all three (manual §6.3).
+pub fn type_roles(resolved: &[(Key, Resolved)]) -> Vec<String> {
+    let Some((_, r)) = resolved.first() else {
+        return Vec::new();
+    };
+    let mut out: Vec<String> = r
+        .tokens
+        .iter()
+        .filter_map(|(name, token)| match &token.value {
+            Value::Typography(t)
+                if t.families.is_empty() || t.size.is_none() || t.weight.is_none() =>
+            {
+                Some(format!(
+                    "manual §6.3: {name} must set fontFamilies, fontSizes and fontWeights"
+                ))
+            }
+            _ => None,
+        })
+        .collect();
+    out.sort();
+    out
+}
+
 // ───── 9. hygiene ────────────────────────────────────────────────────────────
 
 pub fn normalized(source: &str) -> Vec<String> {
@@ -494,7 +521,7 @@ pub fn tier_counts(lib: &Library) -> [(&'static str, usize, usize); 3] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tokens::{SOURCE, TokenError, library};
+    use crate::tokens::{GENERATED, SOURCE, library};
 
     fn assert_none(rule: &str, violations: Vec<String>) {
         assert!(
@@ -544,78 +571,132 @@ mod tests {
     }
 
     #[test]
+    fn type_roles_are_complete() {
+        let resolved = resolve_all(library()).expect("resolves");
+        assert_none("type roles", type_roles(&resolved));
+    }
+
+    #[test]
     fn hygiene() {
         assert_none("hygiene", normalized(SOURCE));
     }
 
-    /// Every component's tokens, parsed with its readers; returns the
-    /// token names each component read.
-    fn component_reads(key: Key) -> Result<Vec<(&'static str, Vec<String>)>, TokenError> {
-        use crate::components::{context_menu, taskbar};
-
-        let r = resolve_key(library(), key).map_err(|e| e[0].clone())?;
-        let mut out = Vec::new();
-
-        let sys = r.sys();
-        taskbar::tokens::parse(&sys)?;
-        out.push(("sys", sys.read_paths()));
-
-        let bar = r.component("bar");
-        taskbar::tokens::parse_bar(&bar)?;
-        out.push(("bar", bar.read_paths()));
-
-        let wifi = r.component("wifi");
-        taskbar::tokens::parse_wifi(&wifi)?;
-        out.push(("wifi", wifi.read_paths()));
-
-        let (sys, menu) = (r.sys(), r.component("menu"));
-        context_menu::tokens::parse(&sys, &menu)?;
-        context_menu::tokens::parse_theme(&sys)?;
-        out.push(("sys", sys.read_paths()));
-        out.push(("menu", menu.read_paths()));
-
-        Ok(out)
-    }
-
     #[test]
-    fn code_reads_exist_in_every_combination() {
+    fn generated_tokens_resolve_with_their_type() {
         for key in combinations() {
-            let reads = component_reads(key).unwrap_or_else(|e| {
-                panic!("manual §13.5: the code reads a token Penpot doesn't provide: {e}")
-            });
-            for (prefix, paths) in reads {
-                for path in paths {
-                    assert!(
-                        path.starts_with(&format!("{prefix}.")),
-                        "manual §10.4: {prefix} code read {path}"
-                    );
+            let r = resolve_key(library(), key).expect("resolves");
+            for (name, ty) in GENERATED {
+                let want = TokenType::from_name(ty).expect("generated from a known type");
+                match r.tokens.get(*name) {
+                    Some(token) if token.ty == want => {}
+                    Some(token) => panic!(
+                        "manual §13.5: {name} is {} in {}, but the code was generated for {ty}",
+                        token.ty.name(),
+                        r.key
+                    ),
+                    None => panic!("manual §13.5: {name} is missing in {}", r.key),
                 }
             }
         }
     }
 
+    /// Source files and the component whose tokens they may read, besides `sys`.
+    const OWNERS: &[(&str, &str)] = &[
+        ("taskbar/wifi.rs", "wifi"),
+        ("taskbar/power.rs", "power"),
+        ("taskbar/", "bar"),
+        ("context_menu/", "menu"),
+    ];
+
+    fn component_sources() -> Vec<(String, String)> {
+        fn walk(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+            for entry in std::fs::read_dir(dir).unwrap().flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    walk(&path, out);
+                } else if path.extension().is_some_and(|e| e == "rs") {
+                    out.push(path);
+                }
+            }
+        }
+
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/components");
+        let mut files = Vec::new();
+        walk(&root, &mut files);
+        files
+            .into_iter()
+            .map(|f| {
+                let rel = f
+                    .strip_prefix(&root)
+                    .unwrap()
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                (rel, std::fs::read_to_string(&f).unwrap())
+            })
+            .collect()
+    }
+
     #[test]
-    #[should_panic(expected = "not a component prefix")]
-    fn there_is_no_ref_reader() {
-        let r = resolve_key(library(), Key::new(Mode::Dark, Density::Comfortable)).unwrap();
-        r.component("ref");
+    fn components_read_only_sys_and_their_own_tokens() {
+        for (file, source) in component_sources() {
+            let own = OWNERS
+                .iter()
+                .find(|(prefix, _)| file.starts_with(prefix))
+                .map(|(_, c)| *c);
+
+            // every `crate::tokens::…` path or import list, by its first segment
+            let mut used = BTreeSet::new();
+            for part in source.split("crate::tokens::").skip(1) {
+                let names = match part.strip_prefix('{') {
+                    Some(list) => list.split('}').next().unwrap_or(""),
+                    None => part.split("::").next().unwrap_or(""),
+                };
+                for name in names.split(',') {
+                    let name: String = name
+                        .trim()
+                        .chars()
+                        .take_while(|c| c.is_alphanumeric() || *c == '_')
+                        .collect();
+                    used.insert(name);
+                }
+            }
+
+            for name in used.iter().filter(|n| COMPONENTS.contains(&n.as_str())) {
+                assert_eq!(
+                    Some(name.as_str()),
+                    own,
+                    "manual §3: src/components/{file} reads {name}.* tokens; code reads only \
+                     sys.* and its own component's tokens"
+                );
+            }
+        }
+    }
+
+    /// A generated function's call as it appears in code: its last two path
+    /// segments, e.g. `popover::bg(`.
+    fn call_suffix(name: &str) -> String {
+        let ident = |s: &str| {
+            let mut id = s.replace('-', "_");
+            if id.starts_with(|c: char| c.is_ascii_digit()) {
+                id.insert(0, '_');
+            }
+            if id == "type" {
+                id.insert_str(0, "r#");
+            }
+            id
+        };
+        let parts: Vec<String> = name.split('.').map(ident).collect();
+        format!("{}::{}(", parts[parts.len() - 2], parts[parts.len() - 1])
     }
 
     /// Report only: tokens no code reads, and tier sizes against the budget.
     #[test]
     fn report() {
-        let read: BTreeSet<String> = component_reads(Key::new(Mode::Dark, Density::Comfortable))
-            .unwrap()
-            .into_iter()
-            .flat_map(|(_, paths)| paths)
-            .collect();
-        let unread: BTreeSet<&str> = library()
-            .sets
+        let code: String = component_sources().into_iter().map(|(_, s)| s).collect();
+        let unread: Vec<&str> = GENERATED
             .iter()
-            .flat_map(|s| &s.tokens)
-            .map(|t| t.name.as_str())
-            .filter(|n| !n.starts_with("ref.") && n != &"sys.density.factor")
-            .filter(|n| !read.contains(*n))
+            .map(|(name, _)| *name)
+            .filter(|n| *n != "sys.density.factor" && !code.contains(&call_suffix(n)))
             .collect();
 
         eprintln!("tokens no code reads ({}):", unread.len());

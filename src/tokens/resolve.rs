@@ -145,11 +145,7 @@ impl Resolver<'_, '_> {
         let result = self
             .substitute(&raw_value, Some(raw.ty), name, set)
             .and_then(|json| values::parse(raw.ty, &json).map_err(|e| self.error(name, set, e)))
-            .map(|value| ResolvedToken {
-                ty: raw.ty,
-                set: set.to_string(),
-                value,
-            });
+            .map(|value| ResolvedToken { ty: raw.ty, value });
         self.stack.pop();
 
         self.done.insert(name.to_string(), result.clone());

@@ -13,8 +13,6 @@
 
 mod clock;
 mod power;
-mod theme;
-pub(crate) mod tokens;
 mod wifi;
 
 use std::cell::Cell;
@@ -29,9 +27,8 @@ use amane::{
 
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
 
+use crate::tokens::{Styled, bar, sys};
 use clock::Clock;
-use theme::Theme;
-use tokens::{Tokens, bar_tokens, tokens};
 
 pub use power::{POWER_NS, panel as power_panel};
 pub use wifi::{WIFI_NS, panel as wifi_panel};
@@ -53,9 +50,9 @@ pub(crate) const ICON_HEADSET: char = '\u{e310}';
 pub(crate) const ICON_GAMEPAD: char = '\u{ea28}';
 
 /// A Material-Symbols glyph as a `Text` widget (centered on its ink).
-pub(crate) fn icon(glyph: char, size: f32, color: Color, t: &Tokens) -> Text {
+pub(crate) fn icon(glyph: char, size: f32, color: Color) -> Text {
     Text::new(glyph.to_string())
-        .font(&t.font_icon)
+        .font(sys::r#type::icon())
         .size(size)
         .color(color)
         .tight()
@@ -86,9 +83,6 @@ fn cursor_x() -> i32 {
 
 /// The taskbar view. Registered with `App::window`.
 pub fn bar() -> LayerWindow {
-    let theme = Theme::auto();
-    let t = tokens();
-    let b = bar_tokens();
     let overview = Windows::read().overview();
 
     // The overview open/close progress (0..1) from niri drives a smooth height
@@ -96,27 +90,28 @@ pub fn bar() -> LayerWindow {
     // bool still decides the center content swap — it flips when the gesture
     // commits, so the dock appears/disappears cleanly while the height eases.
     let progress = Gestures::read().overview_progress().clamp(0.0, 1.0) as f32;
-    let height = t.height_compact + (b.height_overview - t.height_compact) * progress;
+    let height = sys::size::panel::height()
+        + (bar::overview::height() - sys::size::panel::height()) * progress;
 
     // Three zones via a Stack: each layer spans the full width and justifies
     // its own content, so the center never shifts when the sides differ.
     let sections = Stack::new(vec![
         boxed(
-            Row::new(vec![boxed(left_section(theme, t))])
+            Row::new(vec![boxed(left_section())])
                 .width(Parent)
                 .height(Parent)
                 .justify(Start)
                 .align(Center),
         ),
         boxed(
-            Row::new(vec![center_section(theme, t, overview)])
+            Row::new(vec![center_section(overview)])
                 .width(Parent)
                 .height(Parent)
                 .justify(Center)
                 .align(Center),
         ),
         boxed(
-            Row::new(vec![boxed(right_section(theme, t))])
+            Row::new(vec![boxed(right_section())])
                 .width(Parent)
                 .height(Parent)
                 .justify(End)
@@ -129,10 +124,10 @@ pub fn bar() -> LayerWindow {
     let panel = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .radius(b.radius)
-        .fill(theme.surface)
-        .blur(t.blur)
-        .padding(pad(t.inset_m, b.pad_y))
+        .radius(bar::radius())
+        .fill(sys::color::surface::panel::bg())
+        .blur(sys::effect::backdrop_blur())
+        .padding(pad(sys::space::inset::m(), bar::panel::padding_y()))
         .on_move(|p: Point| set_cursor_x(p.x as i32))
         .child(sections);
 
@@ -154,41 +149,41 @@ pub fn bar() -> LayerWindow {
 
 // ───── sections ─────────────────────────────────────────────────────────────
 
-fn left_section(theme: Theme, t: &Tokens) -> Row {
-    let mut items: Vec<Box<dyn Widget>> = vec![boxed(overview_button(theme, t))];
+fn left_section() -> Row {
+    let mut items: Vec<Box<dyn Widget>> = vec![boxed(overview_button())];
 
     let workspaces = Workspaces::read();
     for workspace in workspaces.list() {
-        items.push(boxed(workspace_pip(workspace, theme)));
+        items.push(boxed(workspace_pip(workspace)));
     }
 
-    Row::new(items).gap(t.gap_s).align(Center)
+    Row::new(items).gap(sys::space::gap::s()).align(Center)
 }
 
-fn center_section(theme: Theme, t: &Tokens, overview: bool) -> Box<dyn Widget> {
+fn center_section(overview: bool) -> Box<dyn Widget> {
     if overview {
-        window_dock(theme, t)
+        window_dock()
     } else {
-        focused_title(theme, t)
+        focused_title()
     }
 }
 
-fn right_section(theme: Theme, t: &Tokens) -> Row {
+fn right_section() -> Row {
     let items: Vec<Box<dyn Widget>> = vec![
-        volume_module(theme, t),
-        network_indicator(theme, t),
-        battery_module(theme, t),
-        clock_module(theme, t),
+        volume_module(),
+        network_indicator(),
+        battery_module(),
+        clock_module(),
     ];
 
-    Row::new(items).gap(t.gap_xl).align(Center)
+    Row::new(items).gap(sys::space::gap::xl()).align(Center)
 }
 
 // ───── left: overview button + workspace pips ────────────────────────────────
 
-fn overview_button(theme: Theme, t: &Tokens) -> Rectangle {
+fn overview_button() -> Rectangle {
     Rectangle::new()
-        .width(Size::Fixed(bar_tokens().indicator_w))
+        .width(Size::Fixed(bar::indicator::width()))
         .height(Parent)
         .fill(Color::TRANSPARENT)
         .align_child(Center, Center)
@@ -198,28 +193,35 @@ fn overview_button(theme: Theme, t: &Tokens) -> Rectangle {
                 Windows::toggle_overview();
             }
         })
-        .child(icon(ICON_APPS, t.icon_size, theme.fg, t))
+        .child(icon(
+            ICON_APPS,
+            sys::size::icon::m(),
+            sys::color::content::secondary(),
+        ))
 }
 
-fn workspace_pip(ws: &Workspace, theme: Theme) -> Rectangle {
-    let b = bar_tokens();
+fn workspace_pip(ws: &Workspace) -> Rectangle {
     let id = ws.id();
     let lit = ws.active() || ws.focused();
 
     let color = if ws.urgent() {
-        theme.urgent
+        sys::color::status::critical::bg()
     } else if lit {
-        theme.fg_strong
+        sys::color::surface::panel::fg()
     } else {
-        theme.fg
+        sys::color::content::secondary()
     };
 
-    let width = if lit { b.dot_active } else { b.dot_size };
+    let width = if lit {
+        bar::workspace_dot::active_size()
+    } else {
+        bar::workspace_dot::size()
+    };
 
     Rectangle::new()
         .width(Size::Fixed(width))
-        .height(Size::Fixed(b.dot_size))
-        .radius(b.dot_size / 2.0)
+        .height(Size::Fixed(bar::workspace_dot::size()))
+        .radius(bar::workspace_dot::size() / 2.0)
         .fill(color)
         .cursor(Pointer)
         .on_click(move |button| {
@@ -231,7 +233,7 @@ fn workspace_pip(ws: &Workspace, theme: Theme) -> Rectangle {
 
 // ───── center: focused title (compact) / window dock (overview) ──────────────
 
-fn focused_title(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
+fn focused_title() -> Box<dyn Widget> {
     let windows = Windows::read();
     let text = windows
         .focused()
@@ -240,42 +242,39 @@ fn focused_title(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
 
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(bar_tokens().window_max * 2.0))
+            .width(Size::Fixed(bar::window_item::max_width() * 2.0))
             .height(Parent)
             .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
             .clip()
             .child(
                 Text::new(text)
-                    .size(t.title_size)
-                    .color(theme.fg_strong)
-                    .font(&t.font_family)
-                    .weight(t.weight_medium)
+                    .style(sys::r#type::title())
+                    .color(sys::color::surface::panel::fg())
                     .elide(),
             ),
     )
 }
 
-fn window_dock(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
+fn window_dock() -> Box<dyn Widget> {
     let windows = Windows::read();
     let tiles: Vec<Box<dyn Widget>> = windows
         .list()
         .iter()
-        .map(|win| boxed(window_tile(win, theme, t)))
+        .map(|win| boxed(window_tile(win)))
         .collect();
 
-    boxed(Row::new(tiles).gap(t.gap_s).align(Center))
+    boxed(Row::new(tiles).gap(sys::space::gap::s()).align(Center))
 }
 
-fn window_tile(win: &WindowInfo, theme: Theme, t: &Tokens) -> Rectangle {
-    let b = bar_tokens();
+fn window_tile(win: &WindowInfo) -> Rectangle {
     let id = win.id();
     let floating = win.floating();
 
     let fill = if win.focused() {
-        theme.pill_focused
+        sys::color::state::selected()
     } else {
-        theme.pill
+        sys::color::surface::raised::bg()
     };
 
     let app = win.app_id().unwrap_or("").to_string();
@@ -286,42 +285,40 @@ fn window_tile(win: &WindowInfo, theme: Theme, t: &Tokens) -> Rectangle {
         app.clone()
     };
 
-    let side = t.icon_size * 2.0;
-    let text_w = (b.window_max - side - t.gap_s - t.inset_m * 2.0).max(1.0);
+    let side = sys::size::icon::m() * 2.0;
+    let text_w = (bar::window_item::max_width()
+        - side
+        - sys::space::gap::s()
+        - sys::space::inset::m() * 2.0)
+        .max(1.0);
 
     let label = Column::new(vec![
         boxed(
             Text::new(heading)
-                .size(t.title_size)
-                .color(theme.fg_strong)
-                .font(&t.font_family)
-                .weight(t.weight_medium)
+                .style(sys::r#type::title())
+                .color(sys::color::surface::panel::fg())
                 .elide(),
         ),
         boxed(
             Text::new(title.clone())
-                .size(t.caption_size)
-                .color(theme.fg)
-                .font(&t.font_family)
+                .style(sys::r#type::caption())
+                .color(sys::color::content::secondary())
                 .elide(),
         ),
     ])
-    .gap(t.gap_2xs)
+    .gap(sys::space::gap::_2xs())
     .width(Size::Fixed(text_w));
 
-    let row = Row::new(vec![
-        boxed(app_icon_tile(&app, &title, side, theme, t)),
-        boxed(label),
-    ])
-    .gap(t.gap_s)
-    .align(Center);
+    let row = Row::new(vec![boxed(app_icon_tile(&app, &title, side)), boxed(label)])
+        .gap(sys::space::gap::s())
+        .align(Center);
 
     Rectangle::new()
-        .width(Size::Fixed(b.window_max))
+        .width(Size::Fixed(bar::window_item::max_width()))
         .height(Parent)
-        .radius(b.window_radius)
+        .radius(bar::window_item::radius())
         .fill(fill)
-        .padding(t.inset_m)
+        .padding(sys::space::inset::m())
         .align_child(Start, Center)
         .clip()
         .cursor(Pointer)
@@ -334,7 +331,7 @@ fn window_tile(win: &WindowInfo, theme: Theme, t: &Tokens) -> Rectangle {
 }
 
 /// A window's app icon, or a first-letter placeholder when none resolves.
-fn app_icon_tile(app: &str, title: &str, side: f32, theme: Theme, t: &Tokens) -> Rectangle {
+fn app_icon_tile(app: &str, title: &str, side: f32) -> Rectangle {
     if let Some(path) = icon_for(app) {
         // `loaded` kicks off the async decode and wakes us when ready; until
         // then fall through to the placeholder for this frame
@@ -349,15 +346,13 @@ fn app_icon_tile(app: &str, title: &str, side: f32, theme: Theme, t: &Tokens) ->
     Rectangle::new()
         .width(Size::Fixed(side))
         .height(Size::Fixed(side))
-        .radius(t.radius_pill)
-        .fill(theme.pill)
+        .radius(sys::radius::raised())
+        .fill(sys::color::surface::raised::bg())
         .align_child(Center, Center)
         .child(
             Text::new(first_letter(app, title))
-                .size(t.title_size)
-                .color(theme.fg_strong)
-                .font(&t.font_family)
-                .weight(t.weight_medium)
+                .style(sys::r#type::title())
+                .color(sys::color::surface::panel::fg())
                 .tight(),
         )
 }
@@ -413,9 +408,7 @@ fn first_letter(app: &str, title: &str) -> String {
 /// Build a per-window menu bound to `id` and open it anchored to the bar at
 /// the last cursor x. The bottom-anchored parent makes it open upward.
 fn open_window_menu(id: u64, floating: bool) {
-    let theme = context_menu::Theme::auto();
-
-    let mut move_to = ContextMenu::new(theme);
+    let mut move_to = ContextMenu::new();
     {
         let workspaces = Workspaces::read();
         for workspace in workspaces.list() {
@@ -436,7 +429,7 @@ fn open_window_menu(id: u64, floating: bool) {
         "Move to Floating"
     };
 
-    let menu = ContextMenu::new(theme)
+    let menu = ContextMenu::new()
         .item(MenuItem::label("Focus").on_select(move || Windows::focus(id)))
         .item(MenuItem::label("Toggle Fullscreen").on_select(move || Windows::fullscreen(id)))
         .item(MenuItem::label(float_label).on_select(move || Windows::toggle_floating(id)))
@@ -454,7 +447,7 @@ fn open_window_menu(id: u64, floating: bool) {
 
 // ───── right: status cluster ─────────────────────────────────────────────────
 
-fn volume_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
+fn volume_module() -> Box<dyn Widget> {
     let audio = Audio::read();
     let muted = audio.muted();
     let volume = audio.volume();
@@ -467,25 +460,26 @@ fn volume_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     };
 
     let content = Row::new(vec![
-        boxed(icon(glyph, t.icon_size, theme.fg, t)),
+        boxed(icon(
+            glyph,
+            sys::size::icon::m(),
+            sys::color::content::secondary(),
+        )),
         boxed(
             Text::new(format!("{volume}%"))
-                .size(t.label_size)
-                .color(theme.fg)
-                .font(&t.font_family),
+                .style(sys::r#type::label())
+                .color(sys::color::content::secondary()),
         ),
     ])
-    .gap(t.gap_xs)
+    .gap(sys::space::gap::xs())
     .align(Center);
-
-    let b = bar_tokens();
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(b.volume_w))
+            .width(Size::Fixed(bar::volume::width()))
             .height(Parent)
-            .radius(t.radius_pill)
-            .fill(theme.pill)
-            .padding(pad(t.inset_m, b.pill_pad_y))
+            .radius(sys::radius::raised())
+            .fill(sys::color::surface::raised::bg())
+            .padding(pad(sys::space::inset::m(), bar::pill::padding_y()))
             .align_child(Center, Center)
             .cursor(Pointer)
             .on_scroll(|scroll: Scroll| {
@@ -507,7 +501,7 @@ fn volume_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     )
 }
 
-fn network_indicator(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
+fn network_indicator() -> Box<dyn Widget> {
     let net = Network::read();
     let connected = net.connected();
     let wifi_on = net.wifi_enabled();
@@ -518,11 +512,15 @@ fn network_indicator(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     } else {
         ICON_WIFI_OFF
     };
-    let color = if connected { theme.accent } else { theme.fg };
+    let color = if connected {
+        sys::color::accent::bg()
+    } else {
+        sys::color::content::secondary()
+    };
 
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(bar_tokens().indicator_w))
+            .width(Size::Fixed(bar::indicator::width()))
             .height(Parent)
             .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
@@ -533,11 +531,11 @@ fn network_indicator(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
                     wifi::toggle();
                 }
             })
-            .child(icon(glyph, t.icon_size, color, t)),
+            .child(icon(glyph, sys::size::icon::m(), color)),
     )
 }
 
-fn battery_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
+fn battery_module() -> Box<dyn Widget> {
     let battery = Battery::read();
 
     if !battery.present() {
@@ -551,28 +549,33 @@ fn battery_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     drop(battery);
 
     let color = if on_ac {
-        theme.accent
+        sys::color::accent::bg()
     } else if low {
-        theme.urgent
+        sys::color::status::critical::bg()
     } else {
-        theme.fg
+        sys::color::content::secondary()
     };
 
     let mut content: Vec<Box<dyn Widget>> = Vec::new();
     if on_ac {
-        content.push(boxed(icon(ICON_BATTERY_CHARGING, t.icon_size, color, t)));
+        content.push(boxed(icon(
+            ICON_BATTERY_CHARGING,
+            sys::size::icon::m(),
+            color,
+        )));
     }
     content.push(boxed(
         Text::new(format!("{pct}%"))
-            .size(t.label_size)
-            .color(color)
-            .font(&t.font_family),
+            .style(sys::r#type::label())
+            .color(color),
     ));
 
     boxed(
         Rectangle::new()
             // room for the AC glyph and "100%"
-            .width(Size::Fixed(t.icon_size + t.label_size * 2.8))
+            .width(Size::Fixed(
+                sys::size::icon::m() + sys::r#type::label().size * 2.8,
+            ))
             .height(Parent)
             .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
@@ -583,17 +586,15 @@ fn battery_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
                     power::toggle();
                 }
             })
-            .child(Row::new(content).gap(t.gap_2xs).align(Center)),
+            .child(Row::new(content).gap(sys::space::gap::_2xs()).align(Center)),
     )
 }
 
-fn clock_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
+fn clock_module() -> Box<dyn Widget> {
     boxed(
         Text::new(Clock::read().text().to_string())
-            .size(t.clock_size)
-            .color(theme.fg_strong)
-            .font(&t.font_family)
-            .weight(t.weight_medium),
+            .style(sys::r#type::numeric())
+            .color(sys::color::surface::panel::fg()),
     )
 }
 
