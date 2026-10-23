@@ -48,7 +48,7 @@ touching nothing else:
 ./gen-layer-rules.sh                         # default target: ~/.config/niri/config.kdl
 ./gen-layer-rules.sh /path/to/other.kdl      # or an explicit target
 niri validate -c ~/.config/niri/config.kdl
-niri msg action reload-config
+niri msg action load-config-file
 ```
 
 With home-manager, `~/.config/niri/config.kdl` is a symlink into the Nix store: pass the source

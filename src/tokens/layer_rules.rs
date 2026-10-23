@@ -72,7 +72,7 @@ const HEADER: &str = "\
 // `>>> amane layer-rules` / `<<<` markers (see docs/layer-rules.md); then:
 //
 //     niri validate -c ~/.config/niri/config.kdl
-//     niri msg action reload-config
+//     niri msg action load-config-file
 //
 // Verify the surfaces are up:  niri msg layers | grep amane
 

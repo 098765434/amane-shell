@@ -10,7 +10,7 @@
 #
 #     ./gen-layer-rules.sh ~/.config/niri/config.kdl
 #     niri validate -c ~/.config/niri/config.kdl
-#     niri msg action reload-config
+#     niri msg action load-config-file
 #
 # Usage: ./gen-layer-rules.sh [path-to-config.kdl]
 #        (default target: ~/.config/niri/config.kdl)
