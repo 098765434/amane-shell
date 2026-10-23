@@ -14,12 +14,13 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 use amane::{
-    Button, Center, Color, Column, Image, Notification, Notifications, Parent, Pointer, Radius,
-    Rectangle, Row, Size, SpaceBetween, Stack, Start, Text, Urgency, Widget,
+    Center, Color, Column, Image, Notification, Notifications, Parent, Radius, Rectangle, Row,
+    Size, SpaceBetween, Stack, Start, Text, Urgency, Widget,
 };
 use chrono::{DateTime, Local};
 
-use crate::components::taskbar::{app_icon_tile, boxed, icon, icon_for, pad};
+use crate::components::buttons::{IconButton, PushButton, Style};
+use crate::components::taskbar::{app_icon_tile, boxed, icon_for, pad};
 use crate::tokens::{Styled, notification, sys};
 
 /// The body is cut after this many lines, like a banner's.
@@ -275,26 +276,15 @@ fn actions(n: &Notification, width: f32, color: Color) -> Row {
         .map(|action| {
             let key = action.key().to_string();
             boxed(
-                Rectangle::new()
-                    .width(Size::Fixed(each))
-                    .height(Size::Fixed(sys::size::control::height()))
-                    .radius(sys::radius::raised())
-                    .fill(sys::color::surface::raised::bg())
-                    .align_child(Center, Center)
-                    .clip()
-                    .cursor(Pointer)
-                    .on_click(move |button| {
-                        if button == Button::Left {
-                            Notifications::invoke(id, &key);
-                        }
-                    })
-                    // not elided, which would stretch it and lose the centering;
-                    // the button clips a label too long for it
-                    .child(
-                        Text::new(action.label())
-                            .style(sys::r#type::label())
-                            .color(color),
-                    ),
+                PushButton::new(
+                    format!("amane.notification.{id}.action.{key}"),
+                    action.label(),
+                )
+                .width(each)
+                .text(sys::r#type::label())
+                .color(color)
+                .on_press(move || Notifications::invoke(id, &key))
+                .build(),
             )
         })
         .collect();
@@ -304,19 +294,14 @@ fn actions(n: &Notification, width: f32, color: Color) -> Row {
 
 fn close_button(id: u32, side: f32, color: Color) -> Rectangle {
     let side = side + sys::space::gap::xs();
-    Rectangle::new()
-        .width(Size::Fixed(side))
-        .height(Size::Fixed(side))
-        .radius(Radius::Full)
-        .fill(sys::color::state::hover())
-        .align_child(Center, Center)
-        .cursor(Pointer)
-        .on_click(move |button| {
-            if button == Button::Left {
-                Notifications::dismiss(id);
-            }
-        })
-        .child(icon(ICON_CLOSE, sys::size::icon::s(), color))
+    IconButton::new(format!("amane.notification.{id}.close"), ICON_CLOSE)
+        .style(Style::Tonal)
+        .size(sys::size::icon::s())
+        .color(color)
+        .width(side)
+        .height(side)
+        .on_press(move || Notifications::dismiss(id))
+        .build()
 }
 
 /// The app's icon, or the sender's own image with the app icon as a badge.

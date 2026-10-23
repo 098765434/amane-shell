@@ -27,6 +27,8 @@ Wi-Fi panel) are the frosted, compositor-blurred ones — the bar itself is not.
   to put away), a notification center sidebar opened from the clock with iOS-style stacks per
   app, and Do Not Disturb (on, for an hour, until this evening or tomorrow; critical
   notifications still show).
+- **Buttons** ([docs/buttons.md](docs/buttons.md)) — shared push buttons, icon buttons, a
+  switch and a segmented button, after Material 3's but drawn in the shell's macOS/iOS look.
 - **Design tokens** — every colour, size, gap and font is a token designed in Penpot and exported
   to `design-tokens/tokens.json`, compiled in with `include_str!` and resolved the way Penpot does
   (`src/tokens/`). See [docs/design-token-manual.md](docs/design-token-manual.md).

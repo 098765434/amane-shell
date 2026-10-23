@@ -28,6 +28,7 @@ use amane::{
     WarningLevel, Widget, WindowInfo, Windows, Workspace, Workspaces, Zone,
 };
 
+use crate::components::buttons::{IconButton, PushButton, Shape, Style};
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
 use crate::components::notifications::{self, DoNotDisturb};
 
@@ -264,22 +265,13 @@ fn right_section() -> Row {
 // ───── left: overview button + workspace pips ────────────────────────────────
 
 fn overview_button() -> Rectangle {
-    Rectangle::new()
-        .width(Size::Fixed(bar::indicator::width()))
-        .height(Parent)
-        .fill(Color::TRANSPARENT)
-        .align_child(Center, Center)
-        .cursor(Pointer)
-        .on_click(|button| {
-            if button == Button::Left {
-                Windows::toggle_overview();
-            }
-        })
-        .child(icon(
-            ICON_APPS,
-            sys::size::icon::m(),
-            sys::color::content::secondary(),
-        ))
+    bar_icon(
+        "amane.bar.overview",
+        ICON_APPS,
+        sys::color::content::secondary(),
+    )
+    .on_press(Windows::toggle_overview)
+    .build()
 }
 
 fn workspace_pip(ws: &Workspace) -> Rectangle {
@@ -609,18 +601,9 @@ fn bluetooth_indicator() -> Box<dyn Widget> {
     };
 
     boxed(
-        Rectangle::new()
-            .width(Size::Fixed(bar::indicator::width()))
-            .height(Parent)
-            .fill(Color::TRANSPARENT)
-            .align_child(Center, Center)
-            .cursor(Pointer)
-            .on_click(|button| {
-                if button == Button::Left {
-                    panel::toggle(Panel::Bluetooth);
-                }
-            })
-            .child(icon(glyph, sys::size::icon::m(), color)),
+        bar_icon("amane.bar.bluetooth", glyph, color)
+            .on_press(|| panel::toggle(Panel::Bluetooth))
+            .build(),
     )
 }
 
@@ -647,18 +630,9 @@ fn network_indicator() -> Box<dyn Widget> {
     };
 
     boxed(
-        Rectangle::new()
-            .width(Size::Fixed(bar::indicator::width()))
-            .height(Parent)
-            .fill(Color::TRANSPARENT)
-            .align_child(Center, Center)
-            .cursor(Pointer)
-            .on_click(|button| {
-                if button == Button::Left {
-                    panel::toggle(Panel::Wifi);
-                }
-            })
-            .child(icon(glyph, sys::size::icon::m(), color)),
+        bar_icon("amane.bar.network", glyph, color)
+            .on_press(|| panel::toggle(Panel::Wifi))
+            .build(),
     )
 }
 
@@ -683,31 +657,18 @@ fn battery_module() -> Box<dyn Widget> {
         sys::color::content::secondary()
     };
 
-    let content: Vec<Box<dyn Widget>> = vec![
-        boxed(icon(battery_glyph(pct, on_ac), sys::size::icon::m(), color)),
-        boxed(
-            Text::new(format!("{pct}%"))
-                .style(sys::r#type::label())
-                .color(color),
-        ),
-    ];
-
     boxed(
-        Rectangle::new()
+        PushButton::new("amane.bar.battery", format!("{pct}%"))
+            .style(Style::Plain)
+            .icon(battery_glyph(pct, on_ac))
+            .icon_size(sys::size::icon::m())
+            .text(sys::r#type::label())
+            .color(color)
             // room for the battery glyph and "100%"
-            .width(Size::Fixed(
-                sys::size::icon::m() + sys::r#type::label().size * 2.8,
-            ))
+            .width(sys::size::icon::m() + sys::r#type::label().size * 2.8)
             .height(Parent)
-            .fill(Color::TRANSPARENT)
-            .align_child(Center, Center)
-            .cursor(Pointer)
-            .on_click(|button| {
-                if button == Button::Left {
-                    panel::toggle(Panel::Power);
-                }
-            })
-            .child(Row::new(content).gap(sys::space::gap::_2xs()).align(Center)),
+            .on_press(|| panel::toggle(Panel::Power))
+            .build(),
     )
 }
 
@@ -725,48 +686,46 @@ fn notification_indicator() -> Box<dyn Widget> {
     };
 
     boxed(
-        Rectangle::new()
-            .width(Size::Fixed(bar::indicator::width()))
-            .height(Parent)
-            .fill(Color::TRANSPARENT)
-            .align_child(Center, Center)
-            .cursor(Pointer)
-            .on_click(|button| match button {
-                Button::Left => panel::toggle(Panel::Notifications),
-                Button::Right => DoNotDisturb::open_menu(BAR_NS, cursor_x(), 0),
-                _ => {}
-            })
-            .child(icon(glyph, sys::size::icon::m(), color)),
+        bar_icon("amane.bar.notifications", glyph, color)
+            .on_press(|| panel::toggle(Panel::Notifications))
+            .on_secondary(|| DoNotDisturb::open_menu(BAR_NS, cursor_x(), 0))
+            .build(),
     )
 }
 
 /// The clock opens the notification center, like macOS's.
 fn clock_module() -> Box<dyn Widget> {
-    let text = Text::new(Clock::read().text().to_string())
+    let time = Clock::read().text().to_string();
+    // as wide as the time, so the bar's spacing stays as it was
+    let width = match Text::new(time.clone())
         .style(sys::r#type::numeric())
-        .color(sys::color::surface::panel::fg());
-    let width = match text.width() {
+        .width()
+    {
         Size::Fixed(width) => width,
         Size::Parent => 0.0,
     };
 
     boxed(
-        Rectangle::new()
-            .width(Size::Fixed(width))
+        PushButton::new("amane.bar.clock", time)
+            .style(Style::Plain)
+            .text(sys::r#type::numeric())
+            .width(width)
             .height(Parent)
-            .fill(Color::TRANSPARENT)
-            .align_child(Center, Center)
-            .cursor(Pointer)
-            .on_click(|button| {
-                if button == Button::Left {
-                    panel::toggle(Panel::Notifications);
-                }
-            })
-            .child(text),
+            .on_press(|| panel::toggle(Panel::Notifications))
+            .build(),
     )
 }
 
 // ───── helpers ───────────────────────────────────────────────────────────────
+
+/// A bar item that's a lone glyph: unfilled until hovered, the bar's height.
+fn bar_icon(id: &'static str, glyph: char, color: Color) -> IconButton {
+    IconButton::new(id, glyph)
+        .shape(Shape::Square)
+        .color(color)
+        .width(bar::indicator::width())
+        .height(Parent)
+}
 
 pub(crate) fn boxed(widget: impl Widget + 'static) -> Box<dyn Widget> {
     Box::new(widget)

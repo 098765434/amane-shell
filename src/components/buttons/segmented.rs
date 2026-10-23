@@ -15,27 +15,16 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use amane::{
     Animation, Blend, Button, Center, Color, Easing, Pointer, Radius, Rectangle, Row, Size, Stack,
     Text, Widget, request_frame,
 };
 
+use super::{DISABLED_OPACITY, FADE, PENDING_TIMEOUT, SLIDE, SLIDE_BOUNCE, faded};
 use crate::components::taskbar::{boxed, icon, pad};
 use crate::tokens::{Styled, sys};
-
-/// M3's disabled-content opacity; becomes `sys.state.disabled` once the
-/// token exists in Penpot.
-const DISABLED_OPACITY: f32 = 0.38;
-
-// iOS-like motion; become `sys.motion.*` tokens once they exist in Penpot
-const SLIDE: Duration = Duration::from_millis(450);
-const SLIDE_BOUNCE: f32 = 0.15;
-const FADE: Duration = Duration::from_millis(200);
-
-/// How long a click's selection is shown before the service has to agree.
-const PENDING_TIMEOUT: Duration = Duration::from_millis(1500);
 
 /// One button's motion, kept across rebuilds under its id.
 struct Motion {
@@ -301,12 +290,6 @@ fn clicked(id: &'static str, index: usize, on: bool, multi: bool) {
     });
 
     request_frame();
-}
-
-/// `color` at `amount` of its own opacity.
-fn faded(color: Color, amount: f32) -> Color {
-    let alpha = (f32::from(color.alpha()) * amount.clamp(0.0, 1.0)).round() as u8;
-    Color::rgba(color.red(), color.green(), color.blue(), alpha)
 }
 
 fn segment_view(

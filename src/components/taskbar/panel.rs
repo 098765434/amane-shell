@@ -10,9 +10,9 @@
 use std::cell::Cell;
 
 use amane::{
-    Button, Center, Color, Column, Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Parent,
-    Point, Pointer, Rectangle, Row, Scroll, Size, SpaceBetween, Start, Text, Vertical, Widget,
-    Zone, mark_all,
+    Center, Color, Column, Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Parent, Point,
+    Pointer, Rectangle, Row, Scroll, Size, SpaceBetween, Start, Text, Vertical, Widget, Zone,
+    mark_all,
 };
 
 use super::{ICON_CHECK, bluetooth, boxed, icon, pad, wifi};
@@ -163,29 +163,6 @@ pub fn header(
     .width(Parent)
     .justify(SpaceBetween)
     .align(Center)
-}
-
-/// An On/Off pill; clicking it asks for the other state.
-pub fn switch(on: bool, toggle: impl Fn(bool) + 'static) -> Rectangle {
-    let (label, color) = if on {
-        ("On", sys::color::accent::bg())
-    } else {
-        ("Off", sys::color::content::secondary())
-    };
-
-    Rectangle::new()
-        .width(Size::Fixed(sys::size::switch::width()))
-        .height(Size::Fixed(sys::size::switch::height()))
-        .radius(sys::size::switch::height() / 2.0)
-        .fill(sys::color::surface::raised::bg())
-        .align_child(Center, Center)
-        .cursor(Pointer)
-        .on_click(move |button| {
-            if button == Button::Left {
-                toggle(!on);
-            }
-        })
-        .child(Text::new(label).style(sys::r#type::caption()).color(color))
 }
 
 /// A secondary caption: a section title, or a note like "Searching…".

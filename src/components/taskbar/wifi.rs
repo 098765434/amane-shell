@@ -9,12 +9,13 @@ use std::cell::RefCell;
 
 use amane::{
     AccessPoint, Button, Center, Column, LayerWindow, Network, Parent, Pointer, Rectangle, Row,
-    ScrollArea, Service, Size, Text, TextInput, Widget, mark_all,
+    ScrollArea, Service, Size, TextInput, Widget, mark_all,
 };
 
 use super::panel::{self, Panel};
 use super::{ICON_LOCK, ICON_REFRESH, ICON_WIFI, boxed, icon, wifi_glyph};
-use crate::tokens::{Styled, sys, wifi};
+use crate::components::buttons::{IconButton, PushButton, Shape, Style, Switch};
+use crate::tokens::{sys, wifi};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
 pub const WIFI_NS: &str = "amane.taskbar.wifi";
@@ -89,30 +90,24 @@ fn header() -> Row {
         "Wi-Fi",
         sys::color::surface::panel::fg(),
         vec![
-            boxed(panel::switch(enabled, Network::set_wifi)),
+            boxed(
+                Switch::new("amane.wifi.enabled", enabled)
+                    .on_toggle(Network::set_wifi)
+                    .build(),
+            ),
             boxed(scan_button()),
         ],
     )
 }
 
 fn scan_button() -> Rectangle {
-    Rectangle::new()
-        .width(Size::Fixed(wifi::icon_button::width()))
-        .height(Size::Fixed(sys::size::switch::height()))
-        .radius(sys::radius::raised())
-        .fill(sys::color::surface::raised::bg())
-        .align_child(Center, Center)
-        .cursor(Pointer)
-        .on_click(|button| {
-            if button == Button::Left {
-                Network::scan();
-            }
-        })
-        .child(icon(
-            ICON_REFRESH,
-            sys::size::icon::m(),
-            sys::color::surface::panel::fg(),
-        ))
+    IconButton::new("amane.wifi.scan", ICON_REFRESH)
+        .style(Style::Tonal)
+        .shape(Shape::Square)
+        .width(wifi::icon_button::width())
+        .height(sys::size::switch::height())
+        .on_press(Network::scan)
+        .build()
 }
 
 fn ap_list() -> ScrollArea {
@@ -186,24 +181,14 @@ fn password_section() -> Box<dyn Widget> {
         });
 
     let connect_ssid = ssid.clone();
-    let connect = Rectangle::new()
-        .width(Size::Fixed(connect_w))
-        .height(Size::Fixed(sys::size::control::height()))
-        .radius(sys::radius::raised())
-        .fill(sys::color::accent::bg())
-        .align_child(Center, Center)
-        .cursor(Pointer)
-        .on_click(move |button| {
-            if button == Button::Left {
-                Network::connect(&connect_ssid, Some(&password_buf()));
-                panel::close();
-            }
+    let connect = PushButton::new("amane.wifi.connect", "Connect")
+        .style(Style::Filled)
+        .width(connect_w)
+        .on_press(move || {
+            Network::connect(&connect_ssid, Some(&password_buf()));
+            panel::close();
         })
-        .child(
-            Text::new("Connect")
-                .style(sys::r#type::caption())
-                .color(sys::color::surface::panel::fg()),
-        );
+        .build();
 
     let field = Row::new(vec![boxed(input), boxed(connect)])
         .gap(sys::space::gap::s())

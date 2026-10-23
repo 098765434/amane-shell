@@ -12,7 +12,8 @@ use amane::{
 };
 
 use super::panel::{self, Panel};
-use super::{ICON_MIC_OFF, ICON_VOLUME_OFF, audio_glyph, boxed, icon};
+use super::{ICON_MIC_OFF, ICON_VOLUME_OFF, audio_glyph, boxed};
+use crate::components::buttons::{IconButton, Shape, Style};
 use crate::tokens::{Styled, sys};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
@@ -138,19 +139,17 @@ fn level(
     let inner = sys::size::popover::width() - sys::space::inset::l() * 2.0;
     let slider_w = (inner - button_w - percent_w - sys::space::gap::s() * 2.0).max(1.0);
 
-    let mute = Rectangle::new()
-        .width(Size::Fixed(button_w))
-        .height(Size::Fixed(button_w))
-        .radius(sys::radius::raised())
-        .fill(sys::color::surface::raised::bg())
-        .align_child(Center, Center)
-        .cursor(Pointer)
-        .on_click(move |button| {
-            if button == Button::Left {
-                toggle_mute();
-            }
-        })
-        .child(icon(glyph, sys::size::icon::m(), color));
+    let id = if input {
+        "amane.audio.mute.input"
+    } else {
+        "amane.audio.mute.output"
+    };
+    let mute = IconButton::new(id, glyph)
+        .style(Style::Tonal)
+        .shape(Shape::Square)
+        .color(color)
+        .on_press(toggle_mute)
+        .build();
 
     let percent = Rectangle::new()
         .width(Size::Fixed(percent_w))

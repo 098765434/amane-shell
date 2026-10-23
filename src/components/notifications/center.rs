@@ -15,15 +15,16 @@ use std::time::{Duration, SystemTime};
 
 use amane::{
     Animation, Button, Center, Color, Column, Easing, Full, Horizontal, Key, Keyboard, Layer,
-    LayerWindow, Margin, Notification, Notifications, Parent, Point, Pointer, Radius, Rectangle,
-    Row, ScrollArea, Service, Size, SpaceBetween, Stack, Text, Vertical, Widget, Zone,
+    LayerWindow, Margin, Notification, Notifications, Parent, Point, Pointer, Rectangle, Row,
+    ScrollArea, Service, Size, SpaceBetween, Stack, Text, Vertical, Widget, Zone,
 };
 use chrono::{DateTime, Local};
 
 use super::card::{self, Place};
 use super::dnd::{DoNotDisturb, Until};
 use super::motion::{self, Arrive, Item, Pose};
-use crate::components::taskbar::{Clock, Panel, boxed, close, icon, is_open, pad};
+use crate::components::buttons::{IconButton, PushButton, Shape, Style};
+use crate::components::taskbar::{Clock, Panel, boxed, close, is_open, pad};
 use crate::tokens::{Styled, notification, sys};
 
 /// Layer-surface namespace; the niri `layer-rule` matches it for blur, and
@@ -255,30 +256,25 @@ fn header(any: bool) -> Row {
         ));
     }
 
-    let dnd_color = if until.is_some() {
-        sys::color::accent::bg()
-    } else {
-        sys::color::surface::popover::fg_secondary()
+    let open_menu = || {
+        let (x, y) = CURSOR.with(Cell::get);
+        DoNotDisturb::open_menu(CENTER_NS, x, y);
     };
-    let side = sys::size::control::height();
-    let dnd = Rectangle::new()
-        .width(Size::Fixed(side))
-        .height(Size::Fixed(side))
-        .radius(Radius::Full)
-        .fill(sys::color::surface::raised::bg())
-        .align_child(Center, Center)
-        .cursor(Pointer)
-        .on_click(|button| {
-            if button == Button::Left || button == Button::Right {
-                let (x, y) = CURSOR.with(Cell::get);
-                DoNotDisturb::open_menu(CENTER_NS, x, y);
-            }
-        })
-        .child(icon(ICON_DND, sys::size::icon::m(), dnd_color));
+    let dnd = IconButton::new("amane.notifications.dnd", ICON_DND)
+        .style(Style::Tonal)
+        .color(sys::color::surface::popover::fg_secondary())
+        .selected(until.is_some())
+        .on_press(open_menu)
+        .on_secondary(open_menu)
+        .build();
 
     let mut trailing: Vec<Box<dyn Widget>> = Vec::new();
     if any {
-        trailing.push(boxed(pill("Clear All", Notifications::clear)));
+        trailing.push(boxed(text_button(
+            "amane.notifications.clear-all",
+            "Clear All",
+            Notifications::clear,
+        )));
     }
     trailing.push(boxed(dnd));
 
@@ -301,29 +297,17 @@ fn dnd_status(until: Until) -> String {
     }
 }
 
-/// A small text button.
-fn pill(label: &'static str, press: impl Fn() + 'static) -> Rectangle {
-    let text = Text::new(label)
-        .style(sys::r#type::caption())
-        .color(sys::color::surface::popover::fg());
-    let width = match text.width() {
-        Size::Fixed(width) => width,
-        Size::Parent => 0.0,
-    };
-
-    Rectangle::new()
-        .width(Size::Fixed(width + sys::space::inset::m() * 2.0))
-        .height(Size::Fixed(sys::size::control::height()))
-        .radius(Radius::Full)
-        .fill(sys::color::surface::raised::bg())
-        .align_child(Center, Center)
-        .cursor(Pointer)
-        .on_click(move |button| {
-            if button == Button::Left {
-                press();
-            }
-        })
-        .child(text)
+/// A small capsule text button on the sheet.
+fn text_button(
+    id: impl Into<String>,
+    label: &'static str,
+    press: impl Fn() + 'static,
+) -> Rectangle {
+    PushButton::new(id, label)
+        .shape(Shape::Round)
+        .color(sys::color::surface::popover::fg())
+        .on_press(press)
+        .build()
 }
 
 /// What a stack draws: its title row, or a card.
@@ -498,25 +482,21 @@ fn stack_poses(heights: &[f32], expanded: bool, top: f32) -> Vec<Pose> {
 /// An opened group's title: the app's name, "Show Less", and clear.
 fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32) -> Rectangle {
     let collapse = group.to_string();
-    let clear = Rectangle::new()
-        .width(Size::Fixed(height))
-        .height(Size::Fixed(height))
-        .radius(Radius::Full)
-        .fill(sys::color::surface::raised::bg())
-        .align_child(Center, Center)
-        .cursor(Pointer)
-        .on_click(move |button| {
-            if button == Button::Left {
-                for id in &ids {
-                    Notifications::dismiss(*id);
-                }
-            }
-        })
-        .child(icon(
-            ICON_CLOSE,
-            sys::size::icon::s(),
-            sys::color::surface::popover::fg(),
-        ));
+    let clear = IconButton::new(
+        format!("amane.notifications.group.{group}.clear"),
+        ICON_CLOSE,
+    )
+    .style(Style::Tonal)
+    .size(sys::size::icon::s())
+    .color(sys::color::surface::popover::fg())
+    .width(height)
+    .height(height)
+    .on_press(move || {
+        for id in &ids {
+            Notifications::dismiss(*id);
+        }
+    })
+    .build();
 
     Rectangle::new()
         .width(Size::Fixed(width))
@@ -531,9 +511,13 @@ fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32)
                 ),
                 boxed(
                     Row::new(vec![
-                        boxed(pill("Show Less", move || {
-                            EXPANDED.with_borrow_mut(|open| open.remove(&collapse));
-                        })),
+                        boxed(text_button(
+                            format!("amane.notifications.group.{group}.collapse"),
+                            "Show Less",
+                            move || {
+                                EXPANDED.with_borrow_mut(|open| open.remove(&collapse));
+                            },
+                        )),
                         boxed(clear),
                     ])
                     .gap(sys::space::gap::s())

@@ -1,7 +1,8 @@
 //! Reusable shell components, each self-contained and driven by the Penpot
 //! tokens in `design-tokens/tokens.json` (`sys.*` plus its own prefix):
 //!
-//! - [`buttons`] — reusable controls, like the [`buttons::SegmentedButton`].
+//! - [`buttons`] — reusable controls: push, icon and segmented buttons, and
+//!   a switch.
 //! - [`context_menu`] — a macOS-style, arbitrarily-nested context menu built
 //!   on the fork's xdg-popup support.
 //! - [`notifications`] — iOS/macOS-style toasts, a notification center in

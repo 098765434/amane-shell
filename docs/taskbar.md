@@ -48,8 +48,9 @@ Four bottom-right popover cards share `panel.rs`: one `LayerWindow` each (namesp
 `amane.taskbar.{audio,bluetooth,wifi,power}`, each with a frosted layer-rule), but **only one is open
 at a time** — `panel::toggle(Panel::…)` closes whichever other one is up. Escape or toggling again
 closes it. They are built from the same pieces: `card`, `header` (glyph + title + controls),
-`switch` (On/Off pill, `sys.size.switch.*`), `caption`, `list_row` (glyph, elided label, trailing
-badges; the selected row is filled) and `slider` (`sys.size.slider.height`, drag or scroll).
+`caption`, `list_row` (glyph, elided label, trailing badges; the selected row is filled) and
+`slider` (`sys.size.slider.height`, drag or scroll), plus the shared buttons and `Switch` from
+[buttons.md](buttons.md).
 
 - **Sound** (`audio.rs`): for the output and for the microphone, a mute button showing the
   default device's glyph, a volume slider and the device list; clicking a device makes it the

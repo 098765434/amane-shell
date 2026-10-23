@@ -21,6 +21,7 @@ use super::{
     ICON_BLUETOOTH, ICON_COMPUTER, ICON_DEVICE_OTHER, ICON_GAMEPAD, ICON_HEADPHONES, ICON_KEYBOARD,
     ICON_MOUSE, ICON_PHONE, ICON_SPEAKER, boxed,
 };
+use crate::components::buttons::Switch;
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
 use crate::tokens::{Styled, sys};
 
@@ -154,7 +155,11 @@ fn card() -> Rectangle {
         ICON_BLUETOOTH,
         "Bluetooth",
         sys::color::surface::panel::fg(),
-        vec![boxed(panel::switch(powered, Bluetooth::set_powered))],
+        vec![boxed(
+            Switch::new("amane.bluetooth.powered", powered)
+                .on_toggle(Bluetooth::set_powered)
+                .build(),
+        )],
     );
 
     let mut body = vec![boxed(header)];
