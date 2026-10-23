@@ -4,6 +4,7 @@
 
 use amane::Color;
 
+use crate::tokens::font::first_installed;
 use crate::tokens::{Cache, Reader, TokenError, cached};
 
 /// Colour roles (they follow light/dark mode).
@@ -87,7 +88,6 @@ pub fn wifi_tokens() -> &'static WifiTokens {
 pub fn parse(sys: &Reader) -> Result<Tokens, TokenError> {
     let label = sys.typography("type.label")?;
     let title = sys.typography("type.title")?;
-    let first = |stack: Vec<String>| stack.into_iter().next().unwrap_or_default();
 
     Ok(Tokens {
         height_compact: sys.sizing("size.panel.height")?,
@@ -110,13 +110,13 @@ pub fn parse(sys: &Reader) -> Result<Tokens, TokenError> {
         row_trailing_w: sys.sizing("size.row.trailing-width")?,
         control_h: sys.sizing("size.control.height")?,
         blur: sys.number("effect.backdrop-blur")?,
-        font_icon: first(sys.font_family("type.icon")?),
+        font_icon: first_installed(&sys.font_family("type.icon")?),
         weight_medium: title.weight.map_or(400, |(w, _)| w),
         label_size: label.size.unwrap_or_default(),
         title_size: title.size.unwrap_or_default(),
         clock_size: sys.typography("type.numeric")?.size.unwrap_or_default(),
         caption_size: sys.typography("type.caption")?.size.unwrap_or_default(),
-        font_family: first(label.families),
+        font_family: first_installed(&label.families),
         theme: ThemeTokens {
             surface: sys.color("color.surface.panel.bg")?,
             fg: sys.color("color.content.secondary")?,

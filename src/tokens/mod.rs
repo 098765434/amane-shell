@@ -8,6 +8,7 @@ pub mod check;
 pub mod color;
 pub mod envelope;
 pub mod expr;
+pub mod font;
 pub mod resolve;
 pub mod rules;
 pub mod values;

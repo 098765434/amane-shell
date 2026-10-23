@@ -3,6 +3,7 @@
 
 use amane::Color;
 
+use crate::tokens::font::first_installed;
 use crate::tokens::{Cache, Reader, TokenError, cached};
 
 /// Colour roles (they follow light/dark mode).
@@ -75,7 +76,7 @@ pub fn parse(sys: &Reader, menu: &Reader) -> Result<Tokens, TokenError> {
         min_width: menu.sizing("min-width")?,
         max_width: menu.sizing("max-width")?,
         submenu_offset: menu.spacing("submenu.offset")?,
-        font_family: label.families.into_iter().next().unwrap_or_default(),
+        font_family: first_installed(&label.families),
         font_regular: label.weight.map_or(400, |(w, _)| w),
         label_size: size,
         shortcut_size: size,
