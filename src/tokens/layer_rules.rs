@@ -101,8 +101,11 @@ pub fn render(rules: &[LayerRule]) -> String {
         if let Some(radius) = rule.radius {
             let _ = writeln!(out, "    geometry-corner-radius {radius}");
         }
+        // niri gives a layer-surface's blur xray by default, which shows only
+        // the wallpaper; these cards float over windows, so they blur what's
+        // below (popups already default to that)
         if rule.blur {
-            out.push_str("    background-effect {\n        blur true\n    }\n");
+            out.push_str("    background-effect {\n        blur true\n        xray false\n    }\n");
         }
         if let Some((radius, blur)) = rule.popups {
             out.push_str("\n    popups {\n");

@@ -9,6 +9,10 @@ backdrop blur and corner rounding. Two things must agree:
    namespace constants and the design tokens (corner radii are `sys.radius.popover`, the radius
    the cards are drawn with).
 
+A blurred surface gets `xray false`: niri's layer-surface blur is xray by default, which shows
+only the wallpaper, so the cards would look opaque over windows. (Popups already default to
+non-xray.)
+
 A golden test fails when (2) is out of date with the tokens. The live niri config is in turn
 generated from (2), not hand-edited, so neither can drift.
 

@@ -42,6 +42,7 @@ layer-rule {
     geometry-corner-radius 10
     background-effect {
         blur true
+        xray false
     }
 }
 
@@ -52,5 +53,6 @@ layer-rule {
     geometry-corner-radius 10
     background-effect {
         blur true
+        xray false
     }
 }
