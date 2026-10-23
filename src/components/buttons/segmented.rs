@@ -3,13 +3,24 @@
 //! Modelled on Material 3's segmented buttons (2–5 equal segments, a label
 //! and optional leading icon each, single- or multi-select, disabled
 //! segments), but drawn in the shell's language rather than M3's outlined
-//! one: a `surface.raised` track with the caller's corner radius, and each
-//! selected segment an inset accent thumb whose corners stay concentric with
-//! the track's.
+//! one: a `surface.raised` track with the caller's corner radius, and an
+//! inset accent thumb whose corners stay concentric with the track's.
+//!
+//! It moves like iOS's segmented control: in single-select one thumb springs
+//! across to the new segment, each label brightening as the thumb passes
+//! under it, and in multi-select each segment's thumb fades in and out. A
+//! click moves the thumb at once; if the service doesn't follow within
+//! [`PENDING_TIMEOUT`], it goes back to what the service says.
 
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
-use amane::{Button, Center, Color, Pointer, Radius, Rectangle, Row, Size, Text, Widget};
+use amane::{
+    Animation, Blend, Button, Center, Color, Easing, Pointer, Radius, Rectangle, Row, Size, Stack,
+    Text, Widget, request_frame,
+};
 
 use crate::components::taskbar::{boxed, icon, pad};
 use crate::tokens::{Styled, sys};
@@ -17,6 +28,50 @@ use crate::tokens::{Styled, sys};
 /// M3's disabled-content opacity; becomes `sys.state.disabled` once the
 /// token exists in Penpot.
 const DISABLED_OPACITY: f32 = 0.38;
+
+// iOS-like motion; become `sys.motion.*` tokens once they exist in Penpot
+const SLIDE: Duration = Duration::from_millis(450);
+const SLIDE_BOUNCE: f32 = 0.15;
+const FADE: Duration = Duration::from_millis(200);
+
+/// How long a click's selection is shown before the service has to agree.
+const PENDING_TIMEOUT: Duration = Duration::from_millis(1500);
+
+/// One button's motion, kept across rebuilds under its id.
+struct Motion {
+    // the thumb's position in segments (0.0 = the first), single-select
+    thumb: Animation,
+    // each segment's thumb opacity, multi-select
+    fades: Vec<Animation>,
+    // what a click asked a segment to be, until the service agrees or it times out
+    pending: Vec<Option<(bool, Instant)>>,
+}
+
+impl Motion {
+    // at rest on the current selection, so opening a panel doesn't animate
+    fn new(selected: &[bool]) -> Self {
+        let first = selected.iter().position(|&on| on).unwrap_or(0);
+        let fade = |on: bool| {
+            Animation::new(if on { 1.0 } else { 0.0 })
+                .duration(FADE)
+                .easing(Easing::Out)
+        };
+
+        Self {
+            thumb: Animation::new(first as f32)
+                .duration(SLIDE)
+                .easing(Easing::Spring {
+                    bounce: SLIDE_BOUNCE,
+                }),
+            fades: selected.iter().map(|&on| fade(on)).collect(),
+            pending: vec![None; selected.len()],
+        }
+    }
+}
+
+thread_local! {
+    static MOTION: RefCell<HashMap<&'static str, Motion>> = RefCell::new(HashMap::new());
+}
 
 /// One option: a label, optionally led by a Material Symbols glyph.
 pub struct Segment {
@@ -47,9 +102,12 @@ impl Segment {
 }
 
 /// The segments, which of them are selected, and what a click asks for.
-/// Like the panel controls it only reflects state: `on_select(index, on)`
-/// asks for a change, and the next frame redraws from the service.
+/// Like the panel controls it reflects state: `on_select(index, on)` asks
+/// for a change, and the service's answer is what's drawn once it arrives.
+/// `id` keys the motion, so it must be unique and stable, like a
+/// `ScrollArea`'s.
 pub struct SegmentedButton {
+    id: &'static str,
     segments: Vec<Segment>,
     selected: Vec<bool>,
     multi: bool,
@@ -61,19 +119,20 @@ pub struct SegmentedButton {
 impl SegmentedButton {
     /// Single-select: at most one segment selected; clicking one asks for
     /// `(index, true)`.
-    pub fn new(segments: Vec<Segment>, selected: Option<usize>) -> Self {
+    pub fn new(id: &'static str, segments: Vec<Segment>, selected: Option<usize>) -> Self {
         let selected = (0..segments.len()).map(|i| Some(i) == selected).collect();
-        Self::with(segments, selected, false)
+        Self::with(id, segments, selected, false)
     }
 
     /// Multi-select: clicking a segment asks for the other state.
-    pub fn multi(segments: Vec<Segment>, mut selected: Vec<bool>) -> Self {
+    pub fn multi(id: &'static str, segments: Vec<Segment>, mut selected: Vec<bool>) -> Self {
         selected.resize(segments.len(), false);
-        Self::with(segments, selected, true)
+        Self::with(id, segments, selected, true)
     }
 
-    fn with(segments: Vec<Segment>, selected: Vec<bool>, multi: bool) -> Self {
+    fn with(id: &'static str, segments: Vec<Segment>, selected: Vec<bool>, multi: bool) -> Self {
         Self {
+            id,
             segments,
             selected,
             multi,
@@ -105,30 +164,64 @@ impl SegmentedButton {
         let inset = sys::space::gap::xs();
         let segment_h = sys::size::control::height();
         let height = segment_h + inset * 2.0;
-        let count = self.segments.len().max(1) as f32;
-        let segment_w = ((self.width - inset * 2.0) / count).max(1.0);
-        let thumb = match self.radius {
+        let count = self.segments.len();
+        let segment_w = ((self.width - inset * 2.0) / count.max(1) as f32).max(1.0);
+        let thumb_radius = match self.radius {
             Radius::Full => Radius::Full,
             Radius::Fixed(r) => Radius::Fixed((r - inset).max(0.0)),
         };
 
+        let (shown, thumb, fades) = self.animate();
+
+        // how selected each segment looks right now, from 0 to 1
+        let lit: Vec<f32> = match thumb {
+            Some(x) => (0..count)
+                .map(|i| (1.0 - (x - i as f32).abs()).clamp(0.0, 1.0))
+                .collect(),
+            None if self.multi => fades.clone(),
+            None => vec![0.0; count],
+        };
+
+        let id = self.id;
+        let multi = self.multi;
         let segments: Vec<Box<dyn Widget>> = self
             .segments
             .into_iter()
-            .zip(self.selected)
             .enumerate()
-            .map(|(index, (segment, selected))| {
+            .map(|(index, segment)| {
                 let on_select = self.on_select.clone();
-                let on = !(self.multi && selected);
+                let on = !(multi && shown[index]);
+                let fill = match multi {
+                    true => faded(sys::color::accent::bg(), fades[index]),
+                    false => Color::TRANSPARENT,
+                };
                 boxed(segment_view(
                     segment,
-                    selected,
+                    lit[index],
+                    fill,
                     (segment_w, segment_h),
-                    thumb,
-                    move || on_select(index, on),
+                    thumb_radius,
+                    move || {
+                        clicked(id, index, on, multi);
+                        on_select(index, on);
+                    },
                 ))
             })
             .collect();
+
+        let mut layers: Vec<Box<dyn Widget>> = Vec::new();
+        if let Some(x) = thumb {
+            layers.push(boxed(
+                Rectangle::new()
+                    .width(Size::Fixed(segment_w))
+                    .height(Size::Fixed(segment_h))
+                    .radius(thumb_radius)
+                    .fill(sys::color::accent::bg())
+                    .translate(x * segment_w, 0.0),
+            ));
+        }
+        // last, so the segments take the clicks
+        layers.push(boxed(Row::new(segments).align(Center)));
 
         Rectangle::new()
             .width(Size::Fixed(self.width))
@@ -137,22 +230,98 @@ impl SegmentedButton {
             .fill(sys::color::surface::raised::bg())
             .padding(pad(inset, inset))
             .align_child(Center, Center)
-            .child(Row::new(segments).align(Center))
+            .child(Stack::new(layers))
     }
+
+    /// Steps this button's motion towards what should show: the selection
+    /// with any pending clicks laid over it. Gives that selection, the
+    /// sliding thumb's position (single-select, when something's selected)
+    /// and each segment's fade (multi-select).
+    fn animate(&self) -> (Vec<bool>, Option<f32>, Vec<f32>) {
+        let now = Instant::now();
+        let count = self.selected.len();
+
+        MOTION.with_borrow_mut(|motions| {
+            let motion = motions
+                .entry(self.id)
+                .or_insert_with(|| Motion::new(&self.selected));
+            if motion.pending.len() != count {
+                *motion = Motion::new(&self.selected);
+            }
+
+            let shown: Vec<bool> = (0..count)
+                .map(|i| {
+                    if let Some((on, at)) = motion.pending[i]
+                        && (self.selected[i] == on || now - at > PENDING_TIMEOUT)
+                    {
+                        motion.pending[i] = None;
+                    }
+                    motion.pending[i].map_or(self.selected[i], |(on, _)| on)
+                })
+                .collect();
+
+            if self.multi {
+                let fades = motion
+                    .fades
+                    .iter_mut()
+                    .zip(&shown)
+                    .map(|(fade, &on)| {
+                        fade.to(if on { 1.0 } else { 0.0 });
+                        fade.value()
+                    })
+                    .collect();
+                return (shown, None, fades);
+            }
+
+            let thumb = shown.iter().position(|&on| on).map(|target| {
+                motion.thumb.to(target as f32);
+                // an overshoot past either end stays inside the track
+                motion.thumb.value().clamp(0.0, count as f32 - 1.0)
+            });
+            (shown, thumb, vec![0.0; count])
+        })
+    }
+}
+
+/// Shows a click before the service answers it.
+fn clicked(id: &'static str, index: usize, on: bool, multi: bool) {
+    let now = Instant::now();
+
+    MOTION.with_borrow_mut(|motions| {
+        let Some(motion) = motions.get_mut(id) else {
+            return;
+        };
+        if multi {
+            motion.pending[index] = Some((on, now));
+        } else {
+            for (i, pending) in motion.pending.iter_mut().enumerate() {
+                *pending = Some((i == index, now));
+            }
+        }
+    });
+
+    request_frame();
+}
+
+/// `color` at `amount` of its own opacity.
+fn faded(color: Color, amount: f32) -> Color {
+    let alpha = (f32::from(color.alpha()) * amount.clamp(0.0, 1.0)).round() as u8;
+    Color::rgba(color.red(), color.green(), color.blue(), alpha)
 }
 
 fn segment_view(
     segment: Segment,
-    selected: bool,
+    lit: f32,
+    fill: Color,
     (width, height): (f32, f32),
     radius: Radius,
     click: impl Fn() + 'static,
 ) -> Rectangle {
-    let (fill, color) = if selected {
-        (sys::color::accent::bg(), sys::color::surface::panel::fg())
-    } else {
-        (Color::TRANSPARENT, sys::color::content::secondary())
-    };
+    let color = Color::blend(
+        sys::color::content::secondary(),
+        sys::color::surface::panel::fg(),
+        lit,
+    );
 
     let mut content: Vec<Box<dyn Widget>> = Vec::new();
     if let Some(glyph) = segment.icon {

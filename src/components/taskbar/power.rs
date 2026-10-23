@@ -107,7 +107,7 @@ fn profile_section() -> Box<dyn Widget> {
         .collect();
     let selected = available.iter().position(|name| *name == active);
 
-    let picker = SegmentedButton::new(segments, selected)
+    let picker = SegmentedButton::new("amane.power.profile", segments, selected)
         .width(sys::size::popover::width() - sys::space::inset::l() * 2.0)
         .on_select(move |index, _| PowerProfile::set(&available[index]))
         .build();
