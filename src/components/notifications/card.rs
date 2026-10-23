@@ -200,12 +200,23 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
     // app name on the left, the time (or close, while hovered) on the right
     let trailing: Box<dyn Widget> = if hovered {
         let side = parts.line + sys::space::gap::xs();
-        boxed(close_button(
+        let close = close_button(
             format!("amane.notification.{id}.close"),
             side,
             look.secondary,
             move || Notifications::dismiss(id),
-        ))
+        );
+        // a line tall, like the time it replaces, so the header doesn't grow
+        // (and the card measured without it doesn't shift); the button spills
+        // evenly above and below
+        boxed(
+            Rectangle::new()
+                .width(Size::Fixed(side))
+                .height(Size::Fixed(parts.line))
+                .fill(Color::TRANSPARENT)
+                .align_child(Center, Center)
+                .child(close),
+        )
     } else {
         boxed(
             Text::new(ago(n.received(), now))
