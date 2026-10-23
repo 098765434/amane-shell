@@ -1,9 +1,8 @@
 # amane-shell Design Token Manual
  
-For designers working in Penpot and developers working in the amane-shell code. Version 1,
-22 Oct 2026. The implementation is specified in `amane-shell-design-tokens-spec.md`
-(revision 4); Penpot's format is described in `penpot-design-tokens-findings.md`. Where this
-manual says "must", a check in CI enforces it (§13).
+For designers working in Penpot and developers working in the amane-shell code. Version 1.1,
+23 Oct 2026. The implementation is specified in `spec-design-tokens-v2.md` (revision 5) and
+lives in `src/tokens/`. Where this manual says "must", a check in CI enforces it (§13).
  
 ---
  
@@ -13,8 +12,8 @@ manual says "must", a check in CI enforces it (§13).
    shell draws is a token in the Penpot file *amane-shell design system*. Nobody edits
    `design-tokens/tokens.json` by hand.
 2. **Three tiers, one direction.** `ref.*` (raw values) ← `sys.*` (decisions) ← component
-   tokens (`bar.*`, `menu.*`, `wifi.*`, `osd.*`, `notification.*`). References only point
-   leftwards.
+   tokens (`bar.*`, `menu.*`, `wifi.*`, `power.*`, `osd.*`, `notification.*`). References only
+   point leftwards.
 3. **Code reads `sys.*` and its own component's tokens. Never `ref.*`.**
 4. **Light/dark changes only `sys.color.*`.** Primitives never change with mode; component
    tokens never contain mode values.
@@ -67,7 +66,7 @@ Everything else is exactly what Penpot shows.
 |------|--------|-------|---------------|---------------|--------------------|
 | 1 · Primitives | `ref.` | raw values and scales: palette, spacing steps, font families, sizes, radii, opacities | nothing (literals only) | **no** | no |
 | 2 · Semantic | `sys.` | decisions by role: surfaces, content, accent, status, states, spacing roles, control sizes, typography roles, shadows | `ref.*`, other `sys.*` | yes | colours yes; dimensions via density |
-| 3 · Component | `bar.`, `menu.`, `wifi.`, `osd.`, `notification.` | values unique to one component, or its deliberate departures | `sys.*`; `ref.*` only for non-colour values; `sys.density.factor` | only by that component | no |
+| 3 · Component | `bar.`, `menu.`, `wifi.`, `power.`, `osd.`, `notification.` | values unique to one component, or its deliberate departures | `sys.*`; `ref.*` only for non-colour values; `sys.density.factor` | only by that component | no |
  
 ```
 ref.color.neutral.11 ──► sys.color.surface.popover.bg (in sys/color/dark) ──► menu code
@@ -120,15 +119,15 @@ Use these words; add new ones only by updating this manual.
 | Level | Words |
 |-------|-------|
 | `ref` categories | `color`, `space`, `size`, `radius`, `border`, `font`, `opacity`, `duration`, `shadow` |
-| `sys` categories | `color`, `space`, `size`, `radius`, `border`, `type`, `opacity`, `shadow`, `motion`, `density` |
-| Surfaces | `panel` (the bar), `popover` (menus, Wi-Fi panel, calendar), `osd` (volume/brightness), `notification`, `raised` (rows, chips and cards inside a surface) |
+| `sys` categories | `color`, `space`, `size`, `radius`, `border`, `type`, `opacity`, `shadow`, `motion`, `density`, `effect` |
+| Surfaces | `panel` (the bar), `popover` (menus, Wi-Fi and power panels, calendar), `osd` (volume/brightness), `notification`, `raised` (rows, chips and cards inside a surface) |
 | Surface parts | `bg`, `fg`, `stroke` |
 | Content levels | `primary`, `secondary`, `tertiary`, `disabled` |
 | Accent | `bg` (fill), `fg` (text/icons on the fill), `text` (accent-coloured text on a normal surface) |
 | Status | `critical`, `warning`, `success` — each with `bg`, `fg`, `text` |
 | States | `hover`, `pressed`, `selected`, `focus`, `disabled` |
 | Spacing roles | `inset` (padding inside a surface or control), `gap` (between siblings) |
-| Size roles | `control` (row/button heights), `icon` |
+| Size roles | `control` (button and field heights), `icon`, `row` (list rows), `list`; `panel` and `popover` (the size of those surfaces) |
 | Type roles | `caption`, `label`, `body`, `title`, `numeric` |
 | Component parts | `row`, `item`, `icon`, `label`, `field`, `button`, `switch`, `list`, `progress`, `card`; properties `height`, `width`, `min-width`, `max-width`, `padding-x`, `padding-y`, `gap`, `radius`, `size` |
  
@@ -159,11 +158,11 @@ and component non-colour values may use them.
 | `ref.color.<hue>.<L>` | `color` | same rule for status hues | `ref.color.red.58` #ff453a |
 | `ref.color.accent.seed` | `color` | the default accent | #0a84ff |
 | `ref.color.accent.on-seed` | `color` | text/icons on the seed (§8.3) | #ffffff |
-| `ref.color.accent.dim` | `color` | seed with OKLab L ≤ 0.50 — accent text on light surfaces | #005cd4 |
-| `ref.color.accent.bright` | `color` | seed with OKLab L ≥ 0.85 — accent text on dark surfaces | #68cfff |
+| `ref.color.accent.dim` | `color` | seed with OKLab L ≤ 0.50 — accent text on light surfaces | #0060bf |
+| `ref.color.accent.bright` | `color` | seed with OKLab L ≥ 0.85 — accent text on dark surfaces | #add1ff |
 | `ref.space.<px>` | `spacing` | 2 px steps up to 12, then 4 px | `.2 .4 .6 .8 .10 .12` |
-| `ref.size.<px>` | `sizing` | shared sizes only (icons, controls) | as used |
-| `ref.radius.<px>` | `borderRadius` | | `.10` |
+| `ref.size.<px>` | `sizing` | shared sizes only (icons, controls) | `.12 .16` |
+| `ref.radius.<px>` | `borderRadius` | | `.0 .5 .6 .10` |
 | `ref.border.<px>` | `borderWidth` | | `.1` |
 | `ref.font.family.<name>` | `fontFamilies` | full fallback stack, first entry is the design font | `ui` [SF Pro Text, Inter, Atkinson Hyperlegible, sans-serif], `icon` [Material Symbols Rounded, Material Icons Round, sans-serif] |
 | `ref.font.weight.<name>` | `fontWeights` | Penpot accepts 100–900 in hundreds and 950 | `regular` 400, `medium` 500 |
@@ -192,9 +191,11 @@ dimension role may follow density.
 | `sys.color.surface.osd.bg / .fg / .stroke` | volume/brightness OSD (reserved) |
 | `sys.color.surface.notification.bg / .fg / .stroke` | notifications (reserved) |
 | `sys.color.surface.raised.bg` | chips, rows and cards inside any surface (the bar's pill) |
+| `sys.color.surface.popover.fg-secondary` | secondary text in menus (differs from `content.secondary` until converged) |
 | `sys.color.content.secondary / .tertiary / .disabled` | less important text and icons on any surface |
 | `sys.color.accent.bg / .fg / .text` | accent fill, content on it, accent-coloured text |
 | `sys.color.status.critical.bg / .fg / .text` | urgent/destructive (also `warning`, `success` when needed) |
+| `sys.color.status.critical.hover` | hover fill on a destructive row |
 | `sys.color.state.hover / .pressed / .selected` | overlay fills painted on top of a surface |
 | `sys.color.focus.ring` | keyboard focus outline |
 | `sys.color.separator` | dividers inside a surface |
@@ -221,12 +222,18 @@ How to set them:
 | `sys.space.gap.2xs … xl` | `spacing` | `round({ref.space.N} * {sys.density.factor})` |
 | `sys.space.inset.xs … l` | `spacing` | same pattern |
 | `sys.size.icon.s / .m / .l` | `sizing` | not density-scaled |
+| `sys.size.panel.height` | `sizing` | the bar's height; popovers sit above it |
+| `sys.size.popover.width / .height` | `sizing` | the Wi-Fi and power panels |
+| `sys.size.list.max-height` | `sizing` | scrolling lists inside a popover |
+| `sys.size.row.height` | `sizing` | `round(40 * {sys.density.factor})` — list rows in popovers |
+| `sys.size.row.trailing-width` | `sizing` | room a row keeps for its trailing content |
 | `sys.size.control.<variant>` | `sizing` | `round(<px> * {sys.density.factor})` — only for heights shared by two or more components |
 | `sys.radius.popover / .control / .osd / .raised` | `borderRadius` | not density-scaled |
 | `sys.border.hairline` | `borderWidth` | `{ref.border.1}` |
 | `sys.opacity.disabled` | `opacity` | `{ref.opacity.38}` |
 | `sys.shadow.popover / .osd` | `shadow` | |
 | `sys.motion.duration.short / .medium` | `number` | ms, `{ref.duration.N}` |
+| `sys.effect.backdrop-blur` | `number` | px of in-surface blur under translucent surfaces |
  
 Always `round()` density-scaled values in Penpot, so Penpot and the shell land on the same
 whole pixel.
@@ -236,20 +243,23 @@ whole pixel.
 `sys.type.caption`, `.label`, `.body`, `.title`, `.numeric` — Penpot `typography`
 composites whose members reference `ref.font.*`. `numeric` is for clocks and percentages
 (tabular figures). Five roles is enough for a shell; add one only when a size is used by two
-components and matches no role.
+components and matches no role. `sys.type.icon` (`fontFamilies`) is the icon font stack.
+
+Today: `caption` 12/regular (secondary lines, small controls), `label` 13/regular, `title`
+13/medium (headings, focused titles), `numeric` 13/medium (the clock); `body` is unused.
  
 ---
  
 ## 7. Tier 3 — component tokens
  
-Components: `bar`, `menu`, `wifi`, `osd`, `notification`. Each component reads its surface
-role from `sys` directly:
+Components: `bar`, `menu`, `wifi`, `power`, `osd`, `notification`. Each component reads its
+surface role from `sys` directly:
  
 | Component | Surface role |
 |-----------|--------------|
 | `bar` | `sys.color.surface.panel.*` |
 | `menu` | `sys.color.surface.popover.*` |
-| `wifi` | `sys.color.surface.popover.*` |
+| `wifi`, `power` | `sys.color.surface.popover.*` (they still read `panel.*` until the seed's surface conflict is converged) |
 | `osd` | `sys.color.surface.osd.*` |
 | `notification` | `sys.color.surface.notification.*` |
  
@@ -291,8 +301,8 @@ Density: component dimensions that should follow density reference
 - At runtime, when the system publishes an accent, the shell replaces those four before
   resolving: `seed` = the system colour; `on-seed` = white if white has at least 3:1
   contrast on the seed, else black at 80 %; `dim` and `bright` = the seed with OKLab
-  lightness clamped to ≤ 0.50 and ≥ 0.85 (libadwaita's rule). Everything referencing them
-  follows.
+  lightness clamped to ≤ 0.50 and ≥ 0.85 (libadwaita's rule), with chroma reduced where
+  needed to stay inside sRGB at that lightness. Everything referencing them follows.
 - So: **anything accent-coloured must reference `sys.color.accent.*`**, never repeat the
   hex value, or it won't follow the user's accent.
 - Previewing other accents in Penpot (optional): theme group `accent` with sets
@@ -318,7 +328,7 @@ Density: component dimensions that should follow density reference
 | `sys/density/comfortable` | `sys.density.factor` |
 | `sys/density/compact` | `sys.density.factor` |
 | `accent/<name>` (optional) | `ref.color.accent.*` |
-| `components` | `bar.*`, `menu.*`, `wifi.*`, `osd.*`, `notification.*` |
+| `components` | `bar.*`, `menu.*`, `wifi.*`, `power.*`, `osd.*`, `notification.*` |
  
 Later sets win on name clashes; the only intended clashes are the accent preview sets
 overriding `ref.color.accent.*`.
@@ -335,7 +345,11 @@ overriding `ref.color.accent.*`.
  
 Penpot ignores tokens in disabled sets when resolving, so **every `mode` theme must enable
 `ref`, `sys/base` and `components`**, or references break. Every theme needs a description
-(it can be empty) or Penpot's own import fails.
+(it can be empty) or Penpot's own import fails. A theme lists only the sets it enables: Penpot's
+import enables every set a theme lists, even one marked `"disabled"`.
+
+Every token carries its own `$type` (Penpot before 2.17 can't import a type set on a group).
+Avoid the `boolean` and `string` types: Penpot imports them but has no panel to show them.
  
 ### 9.3 Applying tokens to layers in Penpot
  
@@ -502,5 +516,6 @@ From the spec's tests; failures name the token and the rule.
 - [Smart Interface Design Patterns: naming design tokens](https://smart-interface-design-patterns.com/articles/naming-design-tokens/); Nathan Curtis, *Naming Tokens in Design Systems* (EightShapes)
 - [Penpot user guide: design tokens](https://help.penpot.app/user-guide/design-systems/design-tokens/) (sets, themes, disabled sets, math)
 - [Tokens Studio: colour tokens](https://docs.tokens.studio/manage-tokens/token-types/color/) (`rgba()` with references)
-- `penpot-design-tokens-findings.md` (Penpot source, 2.18.3)
+- Penpot source (2.18.4: `common/src/app/common/types/token.cljc`, `tokens_lib.cljc`,
+  `frontend/src/app/main/data/style_dictionary.cljs`)
  

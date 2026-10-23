@@ -317,18 +317,12 @@ fn card_widget(entries: &[Entry], theme: Theme, t: &Tokens, level: usize) -> Rec
         .map(|(i, entry)| build_entry(i, entry, theme, t, level, any_icon))
         .collect();
 
-    let radius = if level == 0 {
-        t.radius_card
-    } else {
-        t.radius_submenu
-    };
-
     Rectangle::new()
         .width(Parent)
         .height(Parent)
         .fill(theme.surface)
-        .radius(radius)
-        .border(1.0, theme.border)
+        .radius(t.radius)
+        .border(t.hairline, theme.border)
         .padding(Padding {
             top: t.card_padding,
             right: t.card_padding,
@@ -350,7 +344,7 @@ fn build_entry(
         Entry::Separator => Box::new(
             Rectangle::new()
                 .width(Parent)
-                .height(t.separator + 2.0 * t.separator_margin)
+                .height(t.hairline + 2.0 * t.separator_margin)
                 .fill(Color::TRANSPARENT)
                 .padding(Padding {
                     top: t.separator_margin,
@@ -361,7 +355,7 @@ fn build_entry(
                 .child(
                     Rectangle::new()
                         .width(Parent)
-                        .height(t.separator)
+                        .height(t.hairline)
                         .fill(theme.separator),
                 ),
         ),
@@ -460,7 +454,7 @@ fn row(
         Row::new(vec![label_widget]).align(Center).height(Parent)
     };
     let trailing = Row::new(vec![shortcut_widget, chevron_widget])
-        .gap(6.0)
+        .gap(t.trailing_gap)
         .align(Center);
 
     let inner = Row::new(vec![
@@ -483,9 +477,9 @@ fn row(
         .radius(t.radius_row)
         .padding(Padding {
             top: 0.0,
-            right: t.row_h,
+            right: t.row_pad_x,
             bottom: 0.0,
-            left: t.row_h,
+            left: t.row_pad_x,
         })
         .child(inner);
 
@@ -697,25 +691,26 @@ fn invoke_focused(level: usize) {
 
 // ───── Measurement ───────────────────────────────────────────────────────
 
-fn text_width(s: &str, size: f32) -> f32 {
-    s.chars().count() as f32 * size * 0.56
+/// An estimate: amane doesn't expose text measurement.
+fn text_width(s: &str, size: f32, t: &Tokens) -> f32 {
+    s.chars().count() as f32 * size * t.advance_ratio
 }
 
 fn item_width(item: &MenuItem, t: &Tokens, any_icon: bool) -> f32 {
-    let label = text_width(&item.label, t.label_size);
+    let label = text_width(&item.label, t.label_size, t);
     let shortcut = item
         .shortcut
         .as_ref()
-        .map(|s| text_width(s, t.shortcut_size) + 12.0)
+        .map(|s| text_width(s, t.shortcut_size, t) + t.shortcut_gap)
         .unwrap_or(0.0);
     let chevron = if item.has_submenu() {
-        t.chevron_slot + 6.0
+        t.chevron_slot + t.trailing_gap
     } else {
         0.0
     };
     let leading = if any_icon { t.icon_slot + t.gap } else { 0.0 };
 
-    leading + label + shortcut + chevron + 2.0 * t.row_h
+    leading + label + shortcut + chevron + 2.0 * t.row_pad_x
 }
 
 pub(crate) fn entries_have_icon(entries: &[Entry]) -> bool {
@@ -740,7 +735,7 @@ pub(crate) fn size_for(entries: &[Entry], t: &Tokens) -> (f32, f32) {
     for e in entries {
         match e {
             Entry::Item(_) => h += t.row_height,
-            Entry::Separator => h += t.separator + 2.0 * t.separator_margin,
+            Entry::Separator => h += t.hairline + 2.0 * t.separator_margin,
         }
     }
 
@@ -755,7 +750,7 @@ pub(crate) fn row_offset(entries: &[Entry], index: usize, t: &Tokens) -> f32 {
         }
         match e {
             Entry::Item(_) => y += t.row_height,
-            Entry::Separator => y += t.separator + 2.0 * t.separator_margin,
+            Entry::Separator => y += t.hairline + 2.0 * t.separator_margin,
         }
     }
     y

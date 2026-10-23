@@ -37,8 +37,10 @@ CI runs these three inside the devShell.
 
 - Library-level changes (popups, compositor services) belong in
   [amane](https://github.com/098765434/amane), not here.
-- Design values (sizing/colour/type) live in `design-tokens/*.json`, parsed in each component's
-  `tokens.rs` — change tokens there rather than hardcoding.
+- Design values (sizing/colour/type) are Penpot tokens. Change them in Penpot, export, then
+  `cargo run -q -- tokens normalize export.json > design-tokens/tokens.json` and
+  `cargo run -q -- tokens check design-tokens/tokens.json`; never hand-edit the file or hardcode a
+  value. Rules and workflow: [docs/design-token-manual.md](docs/design-token-manual.md).
 
 ## License
 

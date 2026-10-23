@@ -1,10 +1,12 @@
-use std::sync::OnceLock;
+//! The taskbar family's tokens from Penpot (`design-tokens/tokens.json`).
+//! [`Tokens`] holds the `sys.*` roles the bar, Wi-Fi and power panels share;
+//! [`BarTokens`] and [`WifiTokens`] hold each component's own tokens.
 
 use amane::Color;
-use serde_json::Value;
 
-const SOURCE: &str = include_str!("../../../design-tokens/bar.tokens.json");
+use crate::tokens::{Cache, Reader, TokenError, cached};
 
+/// Colour roles (they follow light/dark mode).
 #[derive(Clone, Copy)]
 pub struct ThemeTokens {
     pub surface: Color,
@@ -18,224 +20,135 @@ pub struct ThemeTokens {
 
 pub struct Tokens {
     pub height_compact: f32,
-    pub height_overview: f32,
-    pub radius_panel: f32,
     pub radius_pill: f32,
-    pub radius_tile: f32,
-    pub panel_pad_x: f32,
-    pub panel_pad_y: f32,
-    pub section_gap: f32,
-    pub item_gap: f32,
-    pub pill_pad_x: f32,
-    pub pill_pad_y: f32,
-    pub dot_size: f32,
-    pub dot_active: f32,
+    pub radius_popover: f32,
+    pub inset_m: f32,
+    pub inset_l: f32,
+    pub gap_2xs: f32,
+    pub gap_xs: f32,
+    pub gap_s: f32,
+    pub gap_m: f32,
+    pub gap_l: f32,
+    pub gap_xl: f32,
     pub icon_size: f32,
-    pub window_max: f32,
-    pub tile_pad: f32,
+    pub icon_small: f32,
     pub panel_w: f32,
     pub panel_h: f32,
     pub list_h: f32,
     pub row_h: f32,
-    pub panel_gap: f32,
+    pub row_trailing_w: f32,
+    pub control_h: f32,
     pub blur: f32,
     pub font_family: String,
     pub font_icon: String,
     pub weight_medium: u16,
     pub label_size: f32,
+    pub title_size: f32,
     pub clock_size: f32,
-    pub window_size: f32,
-    pub light: ThemeTokens,
-    pub dark: ThemeTokens,
+    pub caption_size: f32,
+    pub theme: ThemeTokens,
+}
+
+pub struct BarTokens {
+    pub height_overview: f32,
+    pub radius: f32,
+    pub pad_y: f32,
+    pub pill_pad_y: f32,
+    pub dot_size: f32,
+    pub dot_active: f32,
+    pub indicator_w: f32,
+    pub window_max: f32,
+    pub window_radius: f32,
+    pub volume_w: f32,
+}
+
+pub struct WifiTokens {
+    pub switch_w: f32,
+    pub switch_h: f32,
+    pub icon_button_w: f32,
+    pub button_w: f32,
 }
 
 pub fn tokens() -> &'static Tokens {
-    static CELL: OnceLock<Tokens> = OnceLock::new();
-    // SOURCE is embedded at compile time, so a failure here is a token the
-    // bundled JSON is missing or has in the wrong shape — a build-time bug.
-    CELL.get_or_init(|| parse(SOURCE).unwrap_or_else(|e| panic!("bar.tokens.json: {e}")))
+    static CACHE: Cache<Tokens> = Cache::new();
+    cached(&CACHE, "taskbar", |r| parse(&r.sys()))
 }
 
-fn parse(source: &str) -> Result<Tokens, String> {
-    let root: Value = serde_json::from_str(source).map_err(|e| format!("invalid JSON: {e}"))?;
+pub fn bar_tokens() -> &'static BarTokens {
+    static CACHE: Cache<BarTokens> = Cache::new();
+    cached(&CACHE, "bar", |r| parse_bar(&r.component("bar")))
+}
 
-    let dim = |path: &str| dimension(&root, path).ok_or_else(|| format!("bad dimension {path}"));
-    let num = |path: &str| number(&root, path).ok_or_else(|| format!("bad number {path}"));
-    let weight = |path: &str| {
-        number(&root, path)
-            .map(|n| n as u16)
-            .ok_or_else(|| format!("bad weight {path}"))
-    };
+pub fn wifi_tokens() -> &'static WifiTokens {
+    static CACHE: Cache<WifiTokens> = Cache::new();
+    cached(&CACHE, "wifi", |r| parse_wifi(&r.component("wifi")))
+}
+
+pub fn parse(sys: &Reader) -> Result<Tokens, TokenError> {
+    let label = sys.typography("type.label")?;
+    let title = sys.typography("type.title")?;
+    let first = |stack: Vec<String>| stack.into_iter().next().unwrap_or_default();
 
     Ok(Tokens {
-        height_compact: dim("size.height-compact")?,
-        height_overview: dim("size.height-overview")?,
-        radius_panel: dim("radius.panel")?,
-        radius_pill: dim("radius.pill")?,
-        radius_tile: dim("radius.tile")?,
-        panel_pad_x: dim("space.panel-pad-x")?,
-        panel_pad_y: dim("space.panel-pad-y")?,
-        section_gap: dim("space.section-gap")?,
-        item_gap: dim("space.item-gap")?,
-        pill_pad_x: dim("space.pill-pad-x")?,
-        pill_pad_y: dim("space.pill-pad-y")?,
-        dot_size: dim("space.dot-size")?,
-        dot_active: dim("space.dot-active")?,
-        icon_size: dim("space.icon-size")?,
-        window_max: dim("space.window-max")?,
-        tile_pad: dim("space.tile-pad")?,
-        panel_w: dim("space.panel-w")?,
-        panel_h: dim("space.panel-h")?,
-        list_h: dim("space.list-h")?,
-        row_h: dim("space.row-h")?,
-        panel_gap: dim("space.panel-gap")?,
-        blur: num("effect.blur")?,
-        font_family: font_family(&root, "font.ui.family").ok_or("bad token font.ui.family")?,
-        font_icon: font_family(&root, "font.icon.family").ok_or("bad token font.icon.family")?,
-        weight_medium: weight("font.ui.weight.medium")?,
-        label_size: num("type.label.size")?,
-        clock_size: num("type.clock.size")?,
-        window_size: num("type.window.size")?,
-        light: theme(&root, "theme.light")?,
-        dark: theme(&root, "theme.dark")?,
+        height_compact: sys.sizing("size.panel.height")?,
+        radius_pill: sys.radius("radius.raised")?,
+        radius_popover: sys.radius("radius.popover")?,
+        inset_m: sys.spacing("space.inset.m")?,
+        inset_l: sys.spacing("space.inset.l")?,
+        gap_2xs: sys.spacing("space.gap.2xs")?,
+        gap_xs: sys.spacing("space.gap.xs")?,
+        gap_s: sys.spacing("space.gap.s")?,
+        gap_m: sys.spacing("space.gap.m")?,
+        gap_l: sys.spacing("space.gap.l")?,
+        gap_xl: sys.spacing("space.gap.xl")?,
+        icon_size: sys.sizing("size.icon.m")?,
+        icon_small: sys.sizing("size.icon.s")?,
+        panel_w: sys.sizing("size.popover.width")?,
+        panel_h: sys.sizing("size.popover.height")?,
+        list_h: sys.sizing("size.list.max-height")?,
+        row_h: sys.sizing("size.row.height")?,
+        row_trailing_w: sys.sizing("size.row.trailing-width")?,
+        control_h: sys.sizing("size.control.height")?,
+        blur: sys.number("effect.backdrop-blur")?,
+        font_icon: first(sys.font_family("type.icon")?),
+        weight_medium: title.weight.map_or(400, |(w, _)| w),
+        label_size: label.size.unwrap_or_default(),
+        title_size: title.size.unwrap_or_default(),
+        clock_size: sys.typography("type.numeric")?.size.unwrap_or_default(),
+        caption_size: sys.typography("type.caption")?.size.unwrap_or_default(),
+        font_family: first(label.families),
+        theme: ThemeTokens {
+            surface: sys.color("color.surface.panel.bg")?,
+            fg: sys.color("color.content.secondary")?,
+            fg_strong: sys.color("color.surface.panel.fg")?,
+            pill: sys.color("color.surface.raised.bg")?,
+            pill_focused: sys.color("color.state.selected")?,
+            accent: sys.color("color.accent.bg")?,
+            urgent: sys.color("color.status.critical.bg")?,
+        },
     })
 }
 
-fn theme(root: &Value, prefix: &str) -> Result<ThemeTokens, String> {
-    let c = |leaf: &str| {
-        color(root, &format!("{prefix}.{leaf}")).ok_or_else(|| format!("bad color {prefix}.{leaf}"))
-    };
-
-    Ok(ThemeTokens {
-        surface: c("surface")?,
-        fg: c("fg")?,
-        fg_strong: c("fg-strong")?,
-        pill: c("pill")?,
-        pill_focused: c("pill-focused")?,
-        accent: c("accent")?,
-        urgent: c("urgent")?,
+pub fn parse_bar(bar: &Reader) -> Result<BarTokens, TokenError> {
+    Ok(BarTokens {
+        height_overview: bar.sizing("overview.height")?,
+        radius: bar.radius("radius")?,
+        pad_y: bar.spacing("panel.padding-y")?,
+        pill_pad_y: bar.spacing("pill.padding-y")?,
+        dot_size: bar.sizing("workspace-dot.size")?,
+        dot_active: bar.sizing("workspace-dot.active-size")?,
+        indicator_w: bar.sizing("indicator.width")?,
+        window_max: bar.sizing("window-item.max-width")?,
+        window_radius: bar.radius("window-item.radius")?,
+        volume_w: bar.sizing("volume.width")?,
     })
 }
 
-fn color(root: &Value, path: &str) -> Option<Color> {
-    color_value(&resolve(root, &token_at(root, path)?)?)
-}
-
-fn dimension(root: &Value, path: &str) -> Option<f32> {
-    dimension_value(&resolve(root, &token_at(root, path)?)?)
-}
-
-fn number(root: &Value, path: &str) -> Option<f32> {
-    let v = resolve(root, &token_at(root, path)?)?;
-    v.as_f64().map(|n| n as f32)
-}
-
-fn font_family(root: &Value, path: &str) -> Option<String> {
-    let v = resolve(root, &token_at(root, path)?)?;
-
-    if let Some(s) = v.as_str() {
-        return Some(s.to_string());
-    }
-
-    v.as_array()?
-        .iter()
-        .find_map(|entry| entry.as_str().map(|s| s.to_string()))
-}
-
-fn token_at(root: &Value, path: &str) -> Option<Value> {
-    walk(root, path)?.get("$value").cloned()
-}
-
-fn walk<'a>(root: &'a Value, path: &str) -> Option<&'a Value> {
-    let mut cur = root;
-
-    for part in path.split('.') {
-        cur = cur.get(part)?;
-    }
-
-    Some(cur)
-}
-
-fn resolve(root: &Value, value: &Value) -> Option<Value> {
-    let mut current = value.clone();
-
-    for _ in 0..16 {
-        let Some(s) = current.as_str() else {
-            return Some(current);
-        };
-
-        if !(s.starts_with('{') && s.ends_with('}')) {
-            return Some(current);
-        }
-
-        let inner = &s[1..s.len() - 1];
-        current = token_at(root, inner)?;
-    }
-
-    None
-}
-
-fn color_value(v: &Value) -> Option<Color> {
-    let comps = v.get("components")?.as_array()?;
-
-    if comps.len() < 3 {
-        return None;
-    }
-
-    let r = channel(&comps[0])?;
-    let g = channel(&comps[1])?;
-    let b = channel(&comps[2])?;
-
-    let a = v
-        .get("alpha")
-        .and_then(|a| a.as_f64())
-        .map(|a| (a.clamp(0.0, 1.0) * 255.0).round() as u8)
-        .unwrap_or(255);
-
-    Some(Color::rgba(r, g, b, a))
-}
-
-fn channel(v: &Value) -> Option<u8> {
-    let n = v.as_f64()?.clamp(0.0, 1.0);
-    Some((n * 255.0).round() as u8)
-}
-
-fn dimension_value(v: &Value) -> Option<f32> {
-    v.get("value")?.as_f64().map(|n| n as f32)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn bundled_tokens_parse() {
-        // The embedded bar.tokens.json must be complete and well-shaped; this
-        // catches a renamed/missing token or a wrong-typed value at test time
-        // rather than as a runtime panic in tokens().
-        let t = parse(SOURCE).expect("bundled bar.tokens.json must parse");
-        assert!(t.height_overview >= t.height_compact);
-        assert!(t.weight_medium > 0);
-        assert!(!t.font_family.is_empty());
-        assert!(!t.font_icon.is_empty());
-        assert!(t.radius_pill >= 0.0);
-    }
-
-    #[test]
-    fn invalid_json_is_err() {
-        assert!(parse("definitely not json").is_err());
-    }
-
-    #[test]
-    fn missing_tokens_are_err() {
-        // Valid JSON but missing the required token tree.
-        assert!(parse("{}").is_err());
-    }
-
-    #[test]
-    fn alias_resolution_terminates() {
-        // A self-referential alias must not loop forever (resolve() is capped).
-        let root: Value = serde_json::from_str(r#"{"a":{"$value":"{a}"}}"#).unwrap();
-        assert!(resolve(&root, &Value::String("{a}".to_string())).is_none());
-    }
+pub fn parse_wifi(wifi: &Reader) -> Result<WifiTokens, TokenError> {
+    Ok(WifiTokens {
+        switch_w: wifi.sizing("switch.width")?,
+        switch_h: wifi.sizing("switch.height")?,
+        icon_button_w: wifi.sizing("icon-button.width")?,
+        button_w: wifi.sizing("button.width")?,
+    })
 }

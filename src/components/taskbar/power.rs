@@ -26,8 +26,6 @@ use super::{
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
 pub const POWER_NS: &str = "amane.taskbar.power";
 
-const CARD_PAD: f32 = 10.0;
-
 thread_local! {
     static OPEN: Cell<bool> = const { Cell::new(false) };
 }
@@ -62,8 +60,8 @@ pub fn panel() -> LayerWindow {
         .anchor_horizontal(Horizontal::Right)
         .margin(Margin {
             top: 0,
-            right: t.panel_gap as i32,
-            bottom: (t.height_compact + t.panel_gap) as i32,
+            right: t.gap_m as i32,
+            bottom: (t.height_compact + t.gap_m) as i32,
             left: 0,
         })
         .layer(Layer::Overlay)
@@ -101,11 +99,11 @@ fn card(theme: Theme, t: &Tokens) -> Rectangle {
     Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .radius(t.radius_tile)
+        .radius(t.radius_popover)
         .fill(theme.surface)
         .blur(t.blur)
-        .padding(pad(CARD_PAD, CARD_PAD))
-        .child(Column::new(body).gap(12.0).width(Parent))
+        .padding(pad(t.inset_l, t.inset_l))
+        .child(Column::new(body).gap(t.gap_xl).width(Parent))
 }
 
 fn header(theme: Theme, t: &Tokens) -> Row {
@@ -133,20 +131,20 @@ fn header(theme: Theme, t: &Tokens) -> Row {
         boxed(icon(glyph, t.icon_size, color, t)),
         boxed(
             Text::new(title)
-                .size(t.label_size)
+                .size(t.title_size)
                 .color(color)
                 .font(&t.font_family)
                 .weight(t.weight_medium),
         ),
     ])
-    .gap(6.0)
+    .gap(t.gap_s)
     .align(Center);
 
     Row::new(vec![
         boxed(left),
         boxed(
             Text::new(detail)
-                .size(t.window_size)
+                .size(t.caption_size)
                 .color(theme.fg)
                 .font(&t.font_family),
         ),
@@ -191,8 +189,8 @@ fn profile_section(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     let degraded = profile.degraded().map(String::from);
     drop(profile);
 
-    let inner = t.panel_w - CARD_PAD * 2.0;
-    let gap = 4.0;
+    let inner = t.panel_w - t.inset_l * 2.0;
+    let gap = t.gap_xs;
     let count = available.len().max(1) as f32;
     let segment_w = ((inner - gap * (count - 1.0)) / count).max(1.0);
 
@@ -207,13 +205,13 @@ fn profile_section(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     if let Some(reason) = degraded {
         rows.push(boxed(
             Text::new(format!("performance limited: {reason}"))
-                .size(t.window_size)
+                .size(t.caption_size)
                 .color(theme.urgent)
                 .font(&t.font_family),
         ));
     }
 
-    boxed(Column::new(rows).gap(6.0).width(Parent))
+    boxed(Column::new(rows).gap(t.gap_s).width(Parent))
 }
 
 fn profile_segment(name: String, active: &str, width: f32, theme: Theme, t: &Tokens) -> Rectangle {
@@ -234,7 +232,7 @@ fn profile_segment(name: String, active: &str, width: f32, theme: Theme, t: &Tok
 
     Rectangle::new()
         .width(Size::Fixed(width))
-        .height(Size::Fixed(t.row_h - 10.0))
+        .height(Size::Fixed(t.control_h))
         .radius(t.radius_pill)
         .fill(fill)
         .align_child(Center, Center)
@@ -246,7 +244,7 @@ fn profile_segment(name: String, active: &str, width: f32, theme: Theme, t: &Tok
         })
         .child(
             Text::new(label)
-                .size(t.window_size)
+                .size(t.caption_size)
                 .color(color)
                 .font(&t.font_family),
         )
@@ -266,13 +264,13 @@ fn peripheral_section(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     if rows.is_empty() {
         return boxed(
             Text::new("No devices with a battery")
-                .size(t.window_size)
+                .size(t.caption_size)
                 .color(theme.fg)
                 .font(&t.font_family),
         );
     }
 
-    let column = Column::new(rows).gap(4.0).width(Parent);
+    let column = Column::new(rows).gap(t.gap_xs).width(Parent);
 
     boxed(ScrollArea::new("amane.power.devices", column).height(Size::Fixed(t.list_h - t.row_h)))
 }
@@ -289,7 +287,7 @@ fn peripheral_row(device: &PowerDevice, theme: Theme, t: &Tokens) -> Rectangle {
         "" => String::from("Unknown device"),
         model => model.to_string(),
     };
-    let model_w = (t.panel_w - 120.0).max(1.0);
+    let model_w = (t.panel_w - t.row_trailing_w).max(1.0);
     let charging = device.state() == BatteryState::Charging;
     let percent_color = if device.percent() <= 15 && !charging {
         theme.urgent
@@ -315,7 +313,7 @@ fn peripheral_row(device: &PowerDevice, theme: Theme, t: &Tokens) -> Rectangle {
                 ),
         ),
     ])
-    .gap(8.0)
+    .gap(t.gap_m)
     .align(Center);
 
     let content = Row::new(vec![
@@ -336,7 +334,7 @@ fn peripheral_row(device: &PowerDevice, theme: Theme, t: &Tokens) -> Rectangle {
         .height(Size::Fixed(t.row_h))
         .radius(t.radius_pill)
         .fill(theme.pill)
-        .padding(pad(10.0, 0.0))
+        .padding(pad(t.inset_l, 0.0))
         .align_child(Center, Center)
         .clip()
         .child(content)

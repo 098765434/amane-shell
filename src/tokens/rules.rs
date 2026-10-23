@@ -489,7 +489,7 @@ pub fn tier_counts(lib: &Library) -> [(&'static str, usize, usize); 3] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tokens::{SOURCE, library};
+    use crate::tokens::{SOURCE, TokenError, library};
 
     fn assert_none(rule: &str, violations: Vec<String>) {
         assert!(
@@ -541,6 +541,85 @@ mod tests {
     #[test]
     fn hygiene() {
         assert_none("hygiene", normalized(SOURCE));
+    }
+
+    /// Every component's tokens, parsed with its readers; returns the
+    /// token names each component read.
+    fn component_reads(key: Key) -> Result<Vec<(&'static str, Vec<String>)>, TokenError> {
+        use crate::components::{context_menu, taskbar};
+
+        let r = resolve_key(library(), key).map_err(|e| e[0].clone())?;
+        let mut out = Vec::new();
+
+        let sys = r.sys();
+        taskbar::tokens::parse(&sys)?;
+        out.push(("sys", sys.read_paths()));
+
+        let bar = r.component("bar");
+        taskbar::tokens::parse_bar(&bar)?;
+        out.push(("bar", bar.read_paths()));
+
+        let wifi = r.component("wifi");
+        taskbar::tokens::parse_wifi(&wifi)?;
+        out.push(("wifi", wifi.read_paths()));
+
+        let (sys, menu) = (r.sys(), r.component("menu"));
+        context_menu::tokens::parse(&sys, &menu)?;
+        context_menu::tokens::parse_theme(&sys)?;
+        out.push(("sys", sys.read_paths()));
+        out.push(("menu", menu.read_paths()));
+
+        Ok(out)
+    }
+
+    #[test]
+    fn code_reads_exist_in_every_combination() {
+        for key in combinations() {
+            let reads = component_reads(key).unwrap_or_else(|e| {
+                panic!("manual §13.5: the code reads a token Penpot doesn't provide: {e}")
+            });
+            for (prefix, paths) in reads {
+                for path in paths {
+                    assert!(
+                        path.starts_with(&format!("{prefix}.")),
+                        "manual §10.4: {prefix} code read {path}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "not a component prefix")]
+    fn there_is_no_ref_reader() {
+        let r = resolve_key(library(), Key::new(Mode::Dark, Density::Comfortable)).unwrap();
+        r.component("ref");
+    }
+
+    /// Report only: tokens no code reads, and tier sizes against the budget.
+    #[test]
+    fn report() {
+        let read: BTreeSet<String> = component_reads(Key::new(Mode::Dark, Density::Comfortable))
+            .unwrap()
+            .into_iter()
+            .flat_map(|(_, paths)| paths)
+            .collect();
+        let unread: BTreeSet<&str> = library()
+            .sets
+            .iter()
+            .flat_map(|s| &s.tokens)
+            .map(|t| t.name.as_str())
+            .filter(|n| !n.starts_with("ref.") && n != &"sys.density.factor")
+            .filter(|n| !read.contains(*n))
+            .collect();
+
+        eprintln!("tokens no code reads ({}):", unread.len());
+        for name in unread {
+            eprintln!("  {name}");
+        }
+        for (tier, count, budget) in tier_counts(library()) {
+            eprintln!("{tier}: {count} tokens (budget about {budget})");
+        }
     }
 
     #[test]

@@ -20,7 +20,7 @@ use std::time::Duration;
 
 use amane::Color;
 
-use crate::theme::{Density, Mode};
+use crate::theme::{self, Density, Mode};
 pub use envelope::{Library, TokenType};
 pub use values::{Shadow, TextCase, TextDecoration, Typography, Value};
 
@@ -115,6 +115,11 @@ pub struct Key {
 }
 
 impl Key {
+    /// The runtime inputs as they are now.
+    pub fn current() -> Self {
+        Self::new(theme::mode(), theme::density())
+    }
+
     pub fn new(mode: Mode, density: Density) -> Self {
         Self {
             mode,
@@ -151,6 +156,29 @@ pub fn resolved(key: Key) -> &'static Resolved {
     })
 }
 
+/// A component's parsed tokens, one per [`Key`].
+pub type Cache<T> = OnceLock<Mutex<HashMap<Key, &'static T>>>;
+
+/// Parse a component's tokens for the current key, once per key. `what`
+/// names the component in the panic, which the contract tests make
+/// unreachable.
+pub fn cached<T: Send + Sync + 'static>(
+    cache: &'static Cache<T>,
+    what: &str,
+    parse: fn(&Resolved) -> Result<T, TokenError>,
+) -> &'static T {
+    let key = Key::current();
+    let mut map = cache
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+
+    map.entry(key).or_insert_with(|| {
+        let parsed = parse(resolved(key)).unwrap_or_else(|e| panic!("{what} tokens: {e}"));
+        Box::leak(Box::new(parsed))
+    })
+}
+
 pub fn resolve_key(library: &Library, key: Key) -> Result<Resolved, Vec<TokenError>> {
     let overrides: Vec<(&str, String)> = key
         .accent
@@ -176,6 +204,9 @@ pub struct Reader<'r> {
     reads: RefCell<Vec<String>>,
 }
 
+// One reader per row of manual §4.3, whether or not a component uses that
+// type yet, so a designer's type choice is never blocked by a missing reader.
+#[allow(dead_code)]
 impl<'r> Reader<'r> {
     fn new(resolved: &'r Resolved, prefix: &str) -> Self {
         let prefix = COMPONENTS

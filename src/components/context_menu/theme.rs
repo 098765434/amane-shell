@@ -1,12 +1,9 @@
 use amane::Color;
 
-use super::tokens::{ThemeTokens, tokens};
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Mode {
-    Light,
-    Dark,
-}
+use super::tokens::{ThemeTokens, parse_theme, theme_tokens};
+use crate::theme::Density;
+pub use crate::theme::Mode;
+use crate::tokens::{Key, resolved};
 
 #[derive(Clone, Copy)]
 pub struct Theme {
@@ -33,14 +30,9 @@ impl Theme {
         Self::from_mode(Mode::Dark)
     }
 
+    /// The colour roles for the current mode.
     pub fn auto() -> Self {
-        let mode = match std::env::var("AMANE_THEME").ok().as_deref() {
-            Some("light") => Mode::Light,
-            Some("dark") => Mode::Dark,
-            _ => Mode::Dark,
-        };
-
-        Self::from_mode(mode)
+        Self::from_tokens(Key::current().mode, *theme_tokens())
     }
 
     pub fn with_accent(mut self, accent: Color) -> Self {
@@ -50,12 +42,12 @@ impl Theme {
     }
 
     fn from_mode(mode: Mode) -> Self {
-        let t = tokens();
-        let picked: ThemeTokens = match mode {
-            Mode::Light => t.light,
-            Mode::Dark => t.dark,
-        };
+        let r = resolved(Key::new(mode, Density::Comfortable));
+        let picked = parse_theme(&r.sys()).unwrap_or_else(|e| panic!("menu theme tokens: {e}"));
+        Self::from_tokens(mode, picked)
+    }
 
+    fn from_tokens(mode: Mode, picked: ThemeTokens) -> Self {
         Self {
             mode,
             surface: picked.surface,

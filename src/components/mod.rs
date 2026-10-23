@@ -1,5 +1,5 @@
-//! Reusable shell components, each self-contained and driven by its own
-//! design-token file under `design-tokens/`:
+//! Reusable shell components, each self-contained and driven by the Penpot
+//! tokens in `design-tokens/tokens.json` (`sys.*` plus its own prefix):
 //!
 //! - [`context_menu`] — a macOS-style, arbitrarily-nested context menu built
 //!   on the fork's xdg-popup support.

@@ -36,3 +36,15 @@ impl Density {
         }
     }
 }
+
+/// `AMANE_THEME=light|dark`, else dark.
+pub fn mode() -> Mode {
+    match std::env::var("AMANE_THEME").ok().as_deref() {
+        Some("light") => Mode::Light,
+        _ => Mode::Dark,
+    }
+}
+
+pub fn density() -> Density {
+    Density::Comfortable
+}

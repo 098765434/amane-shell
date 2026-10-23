@@ -1,7 +1,5 @@
 mod components;
 mod theme;
-// Components switch over to these readers in the next change.
-#[allow(dead_code)]
 mod tokens;
 
 use std::process::ExitCode;

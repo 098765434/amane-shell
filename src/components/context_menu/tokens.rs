@@ -1,10 +1,11 @@
-use std::sync::OnceLock;
+//! The context menu's tokens from Penpot (`design-tokens/tokens.json`):
+//! `sys.*` roles plus its own `menu.*` tokens.
 
 use amane::Color;
-use serde_json::Value;
 
-const SOURCE: &str = include_str!("../../../design-tokens/menu.tokens.json");
+use crate::tokens::{Cache, Reader, TokenError, cached};
 
+/// Colour roles (they follow light/dark mode).
 #[derive(Clone, Copy)]
 pub struct ThemeTokens {
     pub surface: Color,
@@ -21,16 +22,17 @@ pub struct ThemeTokens {
 }
 
 pub struct Tokens {
-    pub radius_card: f32,
+    pub radius: f32,
     pub radius_row: f32,
-    pub radius_submenu: f32,
     pub card_padding: f32,
-    pub row_h: f32,
+    pub row_pad_x: f32,
     pub gap: f32,
+    pub trailing_gap: f32,
+    pub shortcut_gap: f32,
     pub row_height: f32,
     pub icon_slot: f32,
     pub chevron_slot: f32,
-    pub separator: f32,
+    pub hairline: f32,
     pub separator_margin: f32,
     pub min_width: f32,
     pub max_width: f32,
@@ -40,158 +42,62 @@ pub struct Tokens {
     pub label_size: f32,
     pub shortcut_size: f32,
     pub shortcut_hover_alpha: f32,
-    pub light: ThemeTokens,
-    pub dark: ThemeTokens,
+    pub advance_ratio: f32,
 }
 
 pub fn tokens() -> &'static Tokens {
-    static CELL: OnceLock<Tokens> = OnceLock::new();
-    // SOURCE is embedded at compile time, so a failure here is a token the
-    // bundled JSON is missing or has in the wrong shape — a build-time bug.
-    // Name the offending token so it is obvious which one to fix.
-    CELL.get_or_init(|| parse(SOURCE).unwrap_or_else(|e| panic!("menu.tokens.json: {e}")))
+    static CACHE: Cache<Tokens> = Cache::new();
+    cached(&CACHE, "menu", |r| parse(&r.sys(), &r.component("menu")))
 }
 
-fn parse(source: &str) -> Result<Tokens, String> {
-    let root: Value = serde_json::from_str(source).map_err(|e| format!("invalid JSON: {e}"))?;
+pub fn theme_tokens() -> &'static ThemeTokens {
+    static CACHE: Cache<ThemeTokens> = Cache::new();
+    cached(&CACHE, "menu theme", |r| parse_theme(&r.sys()))
+}
 
-    let dim = |path: &str| dimension(&root, path).ok_or_else(|| format!("bad dimension {path}"));
-    let num = |path: &str| number(&root, path).ok_or_else(|| format!("bad number {path}"));
-    let weight = |path: &str| {
-        number(&root, path)
-            .map(|n| n as u16)
-            .ok_or_else(|| format!("bad weight {path}"))
-    };
+pub fn parse(sys: &Reader, menu: &Reader) -> Result<Tokens, TokenError> {
+    let label = sys.typography("type.label")?;
+    let size = label.size.unwrap_or_default();
 
     Ok(Tokens {
-        radius_card: dim("radius.card")?,
-        radius_row: dim("radius.row")?,
-        radius_submenu: dim("radius.submenu")?,
-        card_padding: dim("space.card-padding")?,
-        row_h: dim("space.row-h")?,
-        gap: dim("space.gap")?,
-        row_height: dim("space.row-height")?,
-        icon_slot: dim("space.icon-slot")?,
-        chevron_slot: dim("space.chevron-slot")?,
-        separator: dim("space.separator")?,
-        separator_margin: dim("space.separator-margin")?,
-        min_width: dim("space.min-width")?,
-        max_width: dim("space.max-width")?,
-        submenu_offset: dim("space.submenu-offset")?,
-        font_family: font_family(&root, "font.ui.family").ok_or("bad token font.ui.family")?,
-        font_regular: weight("font.ui.weight.regular")?,
-        label_size: num("type.label.size")?,
-        shortcut_size: num("type.shortcut.size")?,
-        shortcut_hover_alpha: num("type.shortcut.hover-alpha")?,
-        light: theme(&root, "theme.light")?,
-        dark: theme(&root, "theme.dark")?,
+        radius: sys.radius("radius.popover")?,
+        radius_row: menu.radius("row.radius")?,
+        card_padding: menu.spacing("card.padding")?,
+        row_pad_x: sys.spacing("space.inset.l")?,
+        gap: sys.spacing("space.gap.m")?,
+        trailing_gap: sys.spacing("space.gap.s")?,
+        shortcut_gap: sys.spacing("space.gap.xl")?,
+        row_height: menu.sizing("row.height")?,
+        icon_slot: menu.sizing("icon-slot.width")?,
+        chevron_slot: menu.sizing("chevron-slot.width")?,
+        hairline: sys.stroke_width("border.hairline")?,
+        separator_margin: sys.spacing("space.gap.xs")?,
+        min_width: menu.sizing("min-width")?,
+        max_width: menu.sizing("max-width")?,
+        submenu_offset: menu.spacing("submenu.offset")?,
+        font_family: label.families.into_iter().next().unwrap_or_default(),
+        font_regular: label.weight.map_or(400, |(w, _)| w),
+        label_size: size,
+        shortcut_size: size,
+        shortcut_hover_alpha: menu.opacity("shortcut.hover-opacity")?,
+        advance_ratio: menu.number("label.advance-ratio")?,
     })
 }
 
-fn theme(root: &Value, prefix: &str) -> Result<ThemeTokens, String> {
-    let c = |leaf: &str| {
-        color(root, &format!("{prefix}.{leaf}")).ok_or_else(|| format!("bad color {prefix}.{leaf}"))
-    };
+pub fn parse_theme(sys: &Reader) -> Result<ThemeTokens, TokenError> {
+    let accent = sys.color("color.accent.bg")?;
 
     Ok(ThemeTokens {
-        surface: c("surface")?,
-        border: c("border")?,
-        fg: c("fg")?,
-        muted: c("muted")?,
-        hover_fill: c("hover-fill")?,
-        hover_destructive_fill: c("hover-destructive-fill")?,
-        selected_fill: c("selected-fill")?,
-        on_selected_fg: c("on-selected-fg")?,
-        accent: c("accent")?,
-        separator: c("separator")?,
-        destructive: c("destructive")?,
+        surface: sys.color("color.surface.popover.bg")?,
+        border: sys.color("color.surface.popover.stroke")?,
+        fg: sys.color("color.surface.popover.fg")?,
+        muted: sys.color("color.surface.popover.fg-secondary")?,
+        hover_fill: sys.color("color.state.hover")?,
+        hover_destructive_fill: sys.color("color.status.critical.hover")?,
+        selected_fill: accent,
+        on_selected_fg: sys.color("color.accent.fg")?,
+        accent,
+        separator: sys.color("color.separator")?,
+        destructive: sys.color("color.status.critical.text")?,
     })
-}
-
-fn color(root: &Value, path: &str) -> Option<Color> {
-    color_value(&resolve(root, &token_at(root, path)?)?)
-}
-
-fn dimension(root: &Value, path: &str) -> Option<f32> {
-    dimension_value(&resolve(root, &token_at(root, path)?)?)
-}
-
-fn number(root: &Value, path: &str) -> Option<f32> {
-    let v = resolve(root, &token_at(root, path)?)?;
-    v.as_f64().map(|n| n as f32)
-}
-
-fn font_family(root: &Value, path: &str) -> Option<String> {
-    let v = resolve(root, &token_at(root, path)?)?;
-
-    if let Some(s) = v.as_str() {
-        return Some(s.to_string());
-    }
-
-    v.as_array()?
-        .iter()
-        .find_map(|entry| entry.as_str().map(|s| s.to_string()))
-}
-
-fn token_at(root: &Value, path: &str) -> Option<Value> {
-    let node = walk(root, path)?;
-    node.get("$value").cloned()
-}
-
-fn walk<'a>(root: &'a Value, path: &str) -> Option<&'a Value> {
-    let mut cur = root;
-
-    for part in path.split('.') {
-        cur = cur.get(part)?;
-    }
-
-    Some(cur)
-}
-
-fn resolve(root: &Value, value: &Value) -> Option<Value> {
-    let mut current = value.clone();
-
-    for _ in 0..16 {
-        let Some(s) = current.as_str() else {
-            return Some(current);
-        };
-
-        if !(s.starts_with('{') && s.ends_with('}')) {
-            return Some(current);
-        }
-
-        let inner = &s[1..s.len() - 1];
-        current = token_at(root, inner)?;
-    }
-
-    None
-}
-
-fn color_value(v: &Value) -> Option<Color> {
-    let comps = v.get("components")?.as_array()?;
-
-    if comps.len() < 3 {
-        return None;
-    }
-
-    let r = channel(&comps[0])?;
-    let g = channel(&comps[1])?;
-    let b = channel(&comps[2])?;
-
-    let a = v
-        .get("alpha")
-        .and_then(|a| a.as_f64())
-        .map(|a| (a.clamp(0.0, 1.0) * 255.0).round() as u8)
-        .unwrap_or(255);
-
-    Some(Color::rgba(r, g, b, a))
-}
-
-fn channel(v: &Value) -> Option<u8> {
-    let n = v.as_f64()?.clamp(0.0, 1.0);
-    Some((n * 255.0).round() as u8)
-}
-
-fn dimension_value(v: &Value) -> Option<f32> {
-    v.get("value")?.as_f64().map(|n| n as f32)
 }

@@ -9,12 +9,12 @@
 //!
 //! Visual language is macOS: a translucent frosted panel (backdrop blur on
 //! the root rectangle), rounded pills, and generous spacing. Everything is
-//! driven by `design-tokens/bar.tokens.json` via [`tokens`].
+//! driven by the Penpot tokens in `design-tokens/tokens.json` via [`tokens`].
 
 mod clock;
 mod power;
 mod theme;
-mod tokens;
+pub(crate) mod tokens;
 mod wifi;
 
 use std::cell::Cell;
@@ -31,12 +31,12 @@ use crate::components::context_menu::{self, ContextMenu, MenuItem};
 
 use clock::Clock;
 use theme::Theme;
-use tokens::{Tokens, tokens};
+use tokens::{Tokens, bar_tokens, tokens};
 
 pub use power::panel as power_panel;
 pub use wifi::panel as wifi_panel;
 
-// Material Symbols codepoints (see design-tokens/bar.tokens.json font.icon).
+// Material Symbols codepoints (the font stack is token `sys.type.icon`).
 pub(crate) const ICON_APPS: char = '\u{e5c3}';
 pub(crate) const ICON_VOLUME_UP: char = '\u{e050}';
 pub(crate) const ICON_VOLUME_OFF: char = '\u{e04f}';
@@ -88,6 +88,7 @@ fn cursor_x() -> i32 {
 pub fn bar() -> LayerWindow {
     let theme = Theme::auto();
     let t = tokens();
+    let b = bar_tokens();
     let overview = Windows::read().overview();
 
     // The overview open/close progress (0..1) from niri drives a smooth height
@@ -95,7 +96,7 @@ pub fn bar() -> LayerWindow {
     // bool still decides the center content swap — it flips when the gesture
     // commits, so the dock appears/disappears cleanly while the height eases.
     let progress = Gestures::read().overview_progress().clamp(0.0, 1.0) as f32;
-    let height = t.height_compact + (t.height_overview - t.height_compact) * progress;
+    let height = t.height_compact + (b.height_overview - t.height_compact) * progress;
 
     // Three zones via a Stack: each layer spans the full width and justifies
     // its own content, so the center never shifts when the sides differ.
@@ -128,10 +129,10 @@ pub fn bar() -> LayerWindow {
     let panel = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .radius(t.radius_panel)
+        .radius(b.radius)
         .fill(theme.surface)
         .blur(t.blur)
-        .padding(pad(t.panel_pad_x, t.panel_pad_y))
+        .padding(pad(t.inset_m, b.pad_y))
         .on_move(|p: Point| set_cursor_x(p.x as i32))
         .child(sections);
 
@@ -158,10 +159,10 @@ fn left_section(theme: Theme, t: &Tokens) -> Row {
 
     let workspaces = Workspaces::read();
     for workspace in workspaces.list() {
-        items.push(boxed(workspace_pip(workspace, theme, t)));
+        items.push(boxed(workspace_pip(workspace, theme)));
     }
 
-    Row::new(items).gap(t.item_gap).align(Center)
+    Row::new(items).gap(t.gap_s).align(Center)
 }
 
 fn center_section(theme: Theme, t: &Tokens, overview: bool) -> Box<dyn Widget> {
@@ -180,14 +181,14 @@ fn right_section(theme: Theme, t: &Tokens) -> Row {
         clock_module(theme, t),
     ];
 
-    Row::new(items).gap(t.section_gap).align(Center)
+    Row::new(items).gap(t.gap_xl).align(Center)
 }
 
 // ───── left: overview button + workspace pips ────────────────────────────────
 
 fn overview_button(theme: Theme, t: &Tokens) -> Rectangle {
     Rectangle::new()
-        .width(Size::Fixed(t.dot_active))
+        .width(Size::Fixed(bar_tokens().indicator_w))
         .height(Parent)
         .fill(Color::TRANSPARENT)
         .align_child(Center, Center)
@@ -200,7 +201,8 @@ fn overview_button(theme: Theme, t: &Tokens) -> Rectangle {
         .child(icon(ICON_APPS, t.icon_size, theme.fg, t))
 }
 
-fn workspace_pip(ws: &Workspace, theme: Theme, t: &Tokens) -> Rectangle {
+fn workspace_pip(ws: &Workspace, theme: Theme) -> Rectangle {
+    let b = bar_tokens();
     let id = ws.id();
     let lit = ws.active() || ws.focused();
 
@@ -212,12 +214,12 @@ fn workspace_pip(ws: &Workspace, theme: Theme, t: &Tokens) -> Rectangle {
         theme.fg
     };
 
-    let width = if lit { t.dot_active } else { t.dot_size };
+    let width = if lit { b.dot_active } else { b.dot_size };
 
     Rectangle::new()
         .width(Size::Fixed(width))
-        .height(Size::Fixed(t.dot_size))
-        .radius(t.dot_size / 2.0)
+        .height(Size::Fixed(b.dot_size))
+        .radius(b.dot_size / 2.0)
         .fill(color)
         .cursor(Pointer)
         .on_click(move |button| {
@@ -238,14 +240,14 @@ fn focused_title(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
 
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(t.window_max * 2.0))
+            .width(Size::Fixed(bar_tokens().window_max * 2.0))
             .height(Parent)
             .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
             .clip()
             .child(
                 Text::new(text)
-                    .size(t.label_size)
+                    .size(t.title_size)
                     .color(theme.fg_strong)
                     .font(&t.font_family)
                     .weight(t.weight_medium)
@@ -262,10 +264,11 @@ fn window_dock(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
         .map(|win| boxed(window_tile(win, theme, t)))
         .collect();
 
-    boxed(Row::new(tiles).gap(t.item_gap).align(Center))
+    boxed(Row::new(tiles).gap(t.gap_s).align(Center))
 }
 
 fn window_tile(win: &WindowInfo, theme: Theme, t: &Tokens) -> Rectangle {
+    let b = bar_tokens();
     let id = win.id();
     let floating = win.floating();
 
@@ -284,12 +287,12 @@ fn window_tile(win: &WindowInfo, theme: Theme, t: &Tokens) -> Rectangle {
     };
 
     let side = t.icon_size * 2.0;
-    let text_w = (t.window_max - side - t.item_gap - t.tile_pad * 2.0).max(1.0);
+    let text_w = (b.window_max - side - t.gap_s - t.inset_m * 2.0).max(1.0);
 
     let label = Column::new(vec![
         boxed(
             Text::new(heading)
-                .size(t.label_size)
+                .size(t.title_size)
                 .color(theme.fg_strong)
                 .font(&t.font_family)
                 .weight(t.weight_medium)
@@ -297,28 +300,28 @@ fn window_tile(win: &WindowInfo, theme: Theme, t: &Tokens) -> Rectangle {
         ),
         boxed(
             Text::new(title.clone())
-                .size(t.window_size)
+                .size(t.caption_size)
                 .color(theme.fg)
                 .font(&t.font_family)
                 .elide(),
         ),
     ])
-    .gap(2.0)
+    .gap(t.gap_2xs)
     .width(Size::Fixed(text_w));
 
     let row = Row::new(vec![
         boxed(app_icon_tile(&app, &title, side, theme, t)),
         boxed(label),
     ])
-    .gap(t.item_gap)
+    .gap(t.gap_s)
     .align(Center);
 
     Rectangle::new()
-        .width(Size::Fixed(t.window_max))
+        .width(Size::Fixed(b.window_max))
         .height(Parent)
-        .radius(t.radius_tile)
+        .radius(b.window_radius)
         .fill(fill)
-        .padding(t.tile_pad)
+        .padding(t.inset_m)
         .align_child(Start, Center)
         .clip()
         .cursor(Pointer)
@@ -351,7 +354,7 @@ fn app_icon_tile(app: &str, title: &str, side: f32, theme: Theme, t: &Tokens) ->
         .align_child(Center, Center)
         .child(
             Text::new(first_letter(app, title))
-                .size(t.label_size)
+                .size(t.title_size)
                 .color(theme.fg_strong)
                 .font(&t.font_family)
                 .weight(t.weight_medium)
@@ -472,16 +475,17 @@ fn volume_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
                 .font(&t.font_family),
         ),
     ])
-    .gap(4.0)
+    .gap(t.gap_xs)
     .align(Center);
 
+    let b = bar_tokens();
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(58.0))
+            .width(Size::Fixed(b.volume_w))
             .height(Parent)
             .radius(t.radius_pill)
             .fill(theme.pill)
-            .padding(pad(t.pill_pad_x, t.pill_pad_y))
+            .padding(pad(t.inset_m, b.pill_pad_y))
             .align_child(Center, Center)
             .cursor(Pointer)
             .on_scroll(|scroll: Scroll| {
@@ -518,7 +522,7 @@ fn network_indicator(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
 
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(t.dot_active))
+            .width(Size::Fixed(bar_tokens().indicator_w))
             .height(Parent)
             .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
@@ -579,7 +583,7 @@ fn battery_module(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
                     power::toggle();
                 }
             })
-            .child(Row::new(content).gap(2.0).align(Center)),
+            .child(Row::new(content).gap(t.gap_2xs).align(Center)),
     )
 }
 

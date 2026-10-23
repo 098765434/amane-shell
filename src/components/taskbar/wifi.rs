@@ -14,7 +14,7 @@ use amane::{
 };
 
 use super::theme::Theme;
-use super::tokens::{Tokens, tokens};
+use super::tokens::{Tokens, tokens, wifi_tokens};
 use super::{ICON_CHECK, ICON_LOCK, ICON_REFRESH, ICON_WIFI, boxed, icon, pad};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
@@ -22,8 +22,6 @@ pub const WIFI_NS: &str = "amane.taskbar.wifi";
 
 /// TextInput identity for the password field (keys its text store).
 const PW_ID: &str = "amane.wifi.password";
-
-const CARD_PAD: f32 = 10.0;
 
 #[derive(Default)]
 struct State {
@@ -106,8 +104,8 @@ pub fn panel() -> LayerWindow {
         .anchor_horizontal(Horizontal::Right)
         .margin(Margin {
             top: 0,
-            right: t.panel_gap as i32,
-            bottom: (t.height_compact + t.panel_gap) as i32,
+            right: t.gap_m as i32,
+            bottom: (t.height_compact + t.gap_m) as i32,
             left: 0,
         })
         .layer(Layer::Overlay)
@@ -139,16 +137,16 @@ fn card(theme: Theme, t: &Tokens) -> Rectangle {
         boxed(ap_list(theme, t)),
         password_section(theme, t),
     ])
-    .gap(10.0)
+    .gap(t.gap_l)
     .width(Parent);
 
     Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .radius(t.radius_tile)
+        .radius(t.radius_popover)
         .fill(theme.surface)
         .blur(t.blur)
-        .padding(pad(CARD_PAD, CARD_PAD))
+        .padding(pad(t.inset_l, t.inset_l))
         .child(body)
 }
 
@@ -157,20 +155,20 @@ fn header(theme: Theme, t: &Tokens) -> Row {
         boxed(icon(ICON_WIFI, t.icon_size, theme.fg_strong, t)),
         boxed(
             Text::new("Wi-Fi")
-                .size(t.label_size)
+                .size(t.title_size)
                 .color(theme.fg_strong)
                 .font(&t.font_family)
                 .weight(t.weight_medium),
         ),
     ])
-    .gap(6.0)
+    .gap(t.gap_s)
     .align(Center);
 
     let right = Row::new(vec![
         boxed(wifi_toggle(theme, t)),
         boxed(scan_button(theme, t)),
     ])
-    .gap(6.0)
+    .gap(t.gap_s)
     .align(Center);
 
     Row::new(vec![boxed(left), boxed(right)])
@@ -187,10 +185,11 @@ fn wifi_toggle(theme: Theme, t: &Tokens) -> Rectangle {
         ("Off", theme.fg)
     };
 
+    let w = wifi_tokens();
     Rectangle::new()
-        .width(Size::Fixed(44.0))
-        .height(Size::Fixed(22.0))
-        .radius(11.0)
+        .width(Size::Fixed(w.switch_w))
+        .height(Size::Fixed(w.switch_h))
+        .radius(w.switch_h / 2.0)
         .fill(theme.pill)
         .align_child(Center, Center)
         .cursor(Pointer)
@@ -201,16 +200,17 @@ fn wifi_toggle(theme: Theme, t: &Tokens) -> Rectangle {
         })
         .child(
             Text::new(label)
-                .size(t.window_size)
+                .size(t.caption_size)
                 .color(color)
                 .font(&t.font_family),
         )
 }
 
 fn scan_button(theme: Theme, t: &Tokens) -> Rectangle {
+    let w = wifi_tokens();
     Rectangle::new()
-        .width(Size::Fixed(28.0))
-        .height(Size::Fixed(22.0))
+        .width(Size::Fixed(w.icon_button_w))
+        .height(Size::Fixed(w.switch_h))
         .radius(t.radius_pill)
         .fill(theme.pill)
         .align_child(Center, Center)
@@ -232,7 +232,7 @@ fn ap_list(theme: Theme, t: &Tokens) -> ScrollArea {
         .collect();
     drop(net);
 
-    let column = Column::new(rows).gap(4.0).width(Parent);
+    let column = Column::new(rows).gap(t.gap_xs).width(Parent);
 
     ScrollArea::new("amane.wifi.aps", column).height(Size::Fixed(t.list_h))
 }
@@ -244,7 +244,7 @@ fn ap_row(ap: &AccessPoint, theme: Theme, t: &Tokens) -> Rectangle {
     let saved = ap.saved();
 
     let ssid_color = if active { theme.fg_strong } else { theme.fg };
-    let ssid_w = (t.panel_w - 120.0).max(1.0);
+    let ssid_w = (t.panel_w - t.row_trailing_w).max(1.0);
 
     let left = Row::new(vec![
         boxed(icon(ICON_WIFI, t.icon_size, ssid_color, t)),
@@ -264,17 +264,17 @@ fn ap_row(ap: &AccessPoint, theme: Theme, t: &Tokens) -> Rectangle {
                 ),
         ),
     ])
-    .gap(8.0)
+    .gap(t.gap_m)
     .align(Center);
 
     let mut right: Vec<Box<dyn Widget>> = Vec::new();
     if secured {
-        right.push(boxed(icon(ICON_LOCK, t.window_size, theme.fg, t)));
+        right.push(boxed(icon(ICON_LOCK, t.icon_small, theme.fg, t)));
     }
     if active {
         right.push(boxed(icon(ICON_CHECK, t.icon_size, theme.accent, t)));
     }
-    let right = Row::new(right).gap(6.0).align(Center);
+    let right = Row::new(right).gap(t.gap_s).align(Center);
 
     let content = Row::new(vec![boxed(left), boxed(right)])
         .width(Parent)
@@ -292,7 +292,7 @@ fn ap_row(ap: &AccessPoint, theme: Theme, t: &Tokens) -> Rectangle {
         .height(Size::Fixed(t.row_h))
         .radius(t.radius_pill)
         .fill(fill)
-        .padding(pad(10.0, 0.0))
+        .padding(pad(t.inset_l, 0.0))
         .align_child(Center, Center)
         .clip()
         .cursor(Pointer)
@@ -315,9 +315,9 @@ fn password_section(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
         return boxed(Row::new(Vec::new()));
     };
 
-    let inner = t.panel_w - CARD_PAD * 2.0;
-    let connect_w = 72.0;
-    let input_w = (inner - connect_w - 6.0).max(1.0);
+    let inner = t.panel_w - t.inset_l * 2.0;
+    let connect_w = wifi_tokens().button_w;
+    let input_w = (inner - connect_w - t.gap_s).max(1.0);
 
     let submit_ssid = ssid.clone();
     let input = TextInput::new(PW_ID)
@@ -336,7 +336,7 @@ fn password_section(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
     let connect_ssid = ssid.clone();
     let connect = Rectangle::new()
         .width(Size::Fixed(connect_w))
-        .height(Size::Fixed(t.row_h - 10.0))
+        .height(Size::Fixed(t.control_h))
         .radius(t.radius_pill)
         .fill(theme.accent)
         .align_child(Center, Center)
@@ -349,13 +349,13 @@ fn password_section(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
         })
         .child(
             Text::new("Connect")
-                .size(t.window_size)
+                .size(t.caption_size)
                 .color(theme.fg_strong)
                 .font(&t.font_family),
         );
 
     let field = Row::new(vec![boxed(input), boxed(connect)])
-        .gap(6.0)
+        .gap(t.gap_s)
         .width(Parent)
         .align(Center);
 
@@ -363,13 +363,13 @@ fn password_section(theme: Theme, t: &Tokens) -> Box<dyn Widget> {
         Column::new(vec![
             boxed(
                 Text::new(format!("Password for {ssid}"))
-                    .size(t.window_size)
+                    .size(t.caption_size)
                     .color(theme.fg)
                     .font(&t.font_family),
             ),
             boxed(field),
         ])
-        .gap(6.0)
+        .gap(t.gap_s)
         .width(Parent),
     )
 }

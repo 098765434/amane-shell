@@ -22,8 +22,9 @@ Wi-Fi panel) are the frosted, compositor-blurred ones — the bar itself is not.
 - **Wi‑Fi panel** — a toggle in the status cluster opens a layer-shell panel to scan/connect.
 - **Context menus** — right-click a window pill for focus/close/fullscreen/float/move-to-workspace,
   built on amane's xdg-popup support (nested submenus, outside-click dismiss).
-- **Design tokens** — all sizing/colour/typography live in `design-tokens/*.json`, compiled into
-  the binary via `include_str!` and parsed in each component's `tokens.rs`.
+- **Design tokens** — every colour, size, gap and font is a token designed in Penpot and exported
+  to `design-tokens/tokens.json`, compiled in with `include_str!` and resolved the way Penpot does
+  (`src/tokens/`). See [docs/design-token-manual.md](docs/design-token-manual.md).
 
 ## Build & run
 
@@ -82,11 +83,13 @@ dark; set `AMANE_THEME=light` to switch.
 
 ```
 src/
-  main.rs                       App builder: windows, popups, IPC handlers
+  main.rs                       App builder: windows, popups, IPC handlers, `tokens` CLI
+  theme.rs                      runtime inputs: light/dark mode, density
+  tokens/                       Penpot token resolver, readers and the manual's checks
   components/
     taskbar/                    the bar (mod.rs) + clock, wifi, power, theme, tokens
     context_menu/               reusable nested context menu on xdg-popups
-design-tokens/                  bar.tokens.json, menu.tokens.json
+design-tokens/tokens.json       Penpot export (normalized); edit in Penpot, not here
 niri-layer-rule.kdl             layer-rule source of truth (see docs/layer-rules.md)
 gen-layer-rules.sh              injects those rules into the niri config
 flake.nix                       devShell (Rust toolchain + wayland/vulkan/pulse libs)
