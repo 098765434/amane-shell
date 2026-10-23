@@ -56,6 +56,15 @@
       # The system GPU driver dir goes first so wgpu's Vulkan loader finds the
       # system ICDs and the driver's own libwayland.
       ldLibraryPath = pkgs: "/run/opengl-driver/lib:${lib.makeLibraryPath (runtimeLibsFor pkgs)}";
+
+      # Without VK_ICD_FILENAMES, point the Vulkan loader at the system's
+      # drivers. Shared by the devShell and the installed binary's wrapper.
+      vulkanIcdFallback = ''
+        if [ -z "''${VK_ICD_FILENAMES:-}" ] && [ -d /run/opengl-driver/share/vulkan/icd.d ]; then
+          VK_ICD_FILENAMES="$(printf '%s:' /run/opengl-driver/share/vulkan/icd.d/*.json)"
+          export VK_ICD_FILENAMES="''${VK_ICD_FILENAMES%:}"
+        fi
+      '';
     in
     {
       packages = forAllSystems (
@@ -71,9 +80,24 @@
 
           amane-shell = rustPlatform.buildRustPackage {
             pname = "amane-shell";
-            version = "0.1.0";
+            inherit ((lib.importTOML ./Cargo.toml).package) version;
 
-            src = ./.;
+            # only what the build and its tests read, so a docs change
+            # doesn't rebuild
+            src = lib.fileset.toSource {
+              root = ./.;
+              fileset = lib.fileset.unions [
+                ./Cargo.toml
+                ./Cargo.lock
+                ./build.rs
+                ./rustfmt.toml
+                ./src
+                ./design-tokens
+                ./tests
+                ./niri-layer-rule.kdl
+                ./gen-layer-rules.sh
+              ];
+            };
 
             # amane is a git-dependency (see Cargo.toml); Nix needs its content
             # hash to fetch it reproducibly. After a rev bump, update this — the
@@ -97,7 +121,7 @@
             postFixup = ''
               wrapProgram $out/bin/amane-shell \
                 --prefix LD_LIBRARY_PATH : "${ldLibraryPath pkgs}" \
-                --run '[ -z "''${VK_ICD_FILENAMES:-}" ] && [ -d /run/opengl-driver/share/vulkan/icd.d ] && { VK_ICD_FILENAMES="$(printf "%s:" /run/opengl-driver/share/vulkan/icd.d/*.json)"; export VK_ICD_FILENAMES="''${VK_ICD_FILENAMES%:}"; } || true'
+                --run ${lib.escapeShellArg vulkanIcdFallback}
             '';
 
             meta = {
@@ -132,10 +156,7 @@
             # finds the system ICDs and the driver's own libwayland.
             shellHook = ''
               export LD_LIBRARY_PATH="${ldLibraryPath pkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-              if [ -z "''${VK_ICD_FILENAMES:-}" ] && [ -d /run/opengl-driver/share/vulkan/icd.d ]; then
-                VK_ICD_FILENAMES="$(printf '%s:' /run/opengl-driver/share/vulkan/icd.d/*.json)"
-                export VK_ICD_FILENAMES="''${VK_ICD_FILENAMES%:}"
-              fi
+              ${vulkanIcdFallback}
             '';
           };
         }

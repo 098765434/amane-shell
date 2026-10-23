@@ -13,14 +13,33 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@v16
       - uses: DeterminateSystems/magic-nix-cache-action@v8
+      # magic-nix-cache keeps the Nix store; this keeps cargo's registry and
+      # target dir, so amane and wgpu aren't rebuilt every run
+      - uses: Swatinem/rust-cache@v2
 
       # clippy/test compile the crate, pulling the public `amane` git-dependency
       # (no credentials needed).
       - name: rustfmt
         run: nix develop -c cargo fmt --all --check
 
+      # --locked: a Cargo.lock out of step with Cargo.toml fails instead of
+      # being rewritten
       - name: clippy
-        run: nix develop -c cargo clippy --all-targets -- -D warnings
+        run: nix develop -c cargo clippy --locked --all-targets -- -D warnings
 
       - name: test
-        run: nix develop -c cargo test
+        run: nix develop -c cargo test --locked
+
+      - name: shellcheck
+        run: nix run nixpkgs#shellcheck -- gen-layer-rules.sh
+
+  # The Nix package: catches a stale amane `outputHashes` after a rev bump
+  # (flake.nix), and runs the tests again in its check phase.
+  nix-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      - name: nix build
+        run: nix build -L
