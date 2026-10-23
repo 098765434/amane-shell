@@ -42,12 +42,31 @@ pub(crate) const ICON_WIFI_OFF: char = '\u{e648}';
 pub(crate) const ICON_LOCK: char = '\u{e897}';
 pub(crate) const ICON_CHECK: char = '\u{e5ca}';
 pub(crate) const ICON_REFRESH: char = '\u{e5d5}';
-pub(crate) const ICON_BATTERY: char = '\u{e1a4}';
-pub(crate) const ICON_BATTERY_CHARGING: char = '\u{e1a3}';
 pub(crate) const ICON_MOUSE: char = '\u{e323}';
 pub(crate) const ICON_KEYBOARD: char = '\u{e312}';
 pub(crate) const ICON_HEADSET: char = '\u{e310}';
 pub(crate) const ICON_GAMEPAD: char = '\u{ea28}';
+
+/// Horizontal batteries (`battery_android_0` … `_6`, `_full`, `_bolt`), the
+/// macOS shape; the fill shows the charge.
+const ICON_BATTERY_LEVELS: [char; 7] = [
+    '\u{f30d}', '\u{f30c}', '\u{f30b}', '\u{f30a}', '\u{f309}', '\u{f308}', '\u{f307}',
+];
+const ICON_BATTERY_FULL: char = '\u{f304}';
+const ICON_BATTERY_BOLT: char = '\u{f305}';
+
+/// The battery glyph for a charge: a bolt while charging, otherwise filled to
+/// the nearest of the glyph's six bars (full from 95 %).
+pub(crate) fn battery_glyph(percent: u8, charging: bool) -> char {
+    if charging {
+        ICON_BATTERY_BOLT
+    } else if percent >= 95 {
+        ICON_BATTERY_FULL
+    } else {
+        let bars = (usize::from(percent) * 6 + 50) / 100;
+        ICON_BATTERY_LEVELS[bars.min(6)]
+    }
+}
 
 /// A Material-Symbols glyph as a `Text` widget (centered on its ink).
 pub(crate) fn icon(glyph: char, size: f32, color: Color) -> Text {
@@ -556,23 +575,18 @@ fn battery_module() -> Box<dyn Widget> {
         sys::color::content::secondary()
     };
 
-    let mut content: Vec<Box<dyn Widget>> = Vec::new();
-    if on_ac {
-        content.push(boxed(icon(
-            ICON_BATTERY_CHARGING,
-            sys::size::icon::m(),
-            color,
-        )));
-    }
-    content.push(boxed(
-        Text::new(format!("{pct}%"))
-            .style(sys::r#type::label())
-            .color(color),
-    ));
+    let content: Vec<Box<dyn Widget>> = vec![
+        boxed(icon(battery_glyph(pct, on_ac), sys::size::icon::m(), color)),
+        boxed(
+            Text::new(format!("{pct}%"))
+                .style(sys::r#type::label())
+                .color(color),
+        ),
+    ];
 
     boxed(
         Rectangle::new()
-            // room for the AC glyph and "100%"
+            // room for the battery glyph and "100%"
             .width(Size::Fixed(
                 sys::size::icon::m() + sys::r#type::label().size * 2.8,
             ))
@@ -610,5 +624,21 @@ pub(crate) fn pad(x: f32, y: f32) -> Padding {
         right: x,
         bottom: y,
         left: x,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn battery_glyph_follows_the_charge() {
+        assert_eq!(battery_glyph(0, false), ICON_BATTERY_LEVELS[0]);
+        assert_eq!(battery_glyph(18, false), ICON_BATTERY_LEVELS[1]);
+        assert_eq!(battery_glyph(50, false), ICON_BATTERY_LEVELS[3]);
+        assert_eq!(battery_glyph(94, false), ICON_BATTERY_LEVELS[6]);
+        assert_eq!(battery_glyph(95, false), ICON_BATTERY_FULL);
+        assert_eq!(battery_glyph(100, false), ICON_BATTERY_FULL);
+        assert_eq!(battery_glyph(18, true), ICON_BATTERY_BOLT);
     }
 }

@@ -17,8 +17,7 @@ use amane::{
 };
 
 use super::{
-    ICON_BATTERY, ICON_BATTERY_CHARGING, ICON_GAMEPAD, ICON_HEADSET, ICON_KEYBOARD, ICON_MOUSE,
-    boxed, icon, pad,
+    ICON_GAMEPAD, ICON_HEADSET, ICON_KEYBOARD, ICON_MOUSE, battery_glyph, boxed, icon, pad,
 };
 use crate::tokens::{Styled, sys};
 
@@ -112,11 +111,7 @@ fn header() -> Row {
     let detail = battery_detail(&battery);
     drop(battery);
 
-    let glyph = if on_ac {
-        ICON_BATTERY_CHARGING
-    } else {
-        ICON_BATTERY
-    };
+    let glyph = battery_glyph(percent, on_ac);
     let color = if low {
         sys::color::status::critical::bg()
     } else {
@@ -275,7 +270,7 @@ fn peripheral_row(device: &PowerDevice) -> Rectangle {
         DeviceKind::Keyboard => ICON_KEYBOARD,
         DeviceKind::Headset => ICON_HEADSET,
         DeviceKind::GamingInput => ICON_GAMEPAD,
-        _ => ICON_BATTERY,
+        _ => battery_glyph(device.percent(), device.state() == BatteryState::Charging),
     };
     let model = match device.model() {
         "" => String::from("Unknown device"),
