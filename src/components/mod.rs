@@ -4,9 +4,12 @@
 //! - [`buttons`] — reusable controls, like the [`buttons::SegmentedButton`].
 //! - [`context_menu`] — a macOS-style, arbitrarily-nested context menu built
 //!   on the fork's xdg-popup support.
+//! - [`notifications`] — iOS/macOS-style toasts, a notification center in
+//!   a sidebar, and Do Not Disturb, over amane's notification daemon.
 //! - [`taskbar`] — a bottom taskbar that is compact in normal use and
 //!   expands into an interactive dock while niri's overview is open.
 
 pub mod buttons;
 pub mod context_menu;
+pub mod notifications;
 pub mod taskbar;

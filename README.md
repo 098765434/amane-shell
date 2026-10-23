@@ -22,6 +22,11 @@ Wi-Fi panel) are the frosted, compositor-blurred ones — the bar itself is not.
 - **Wi‑Fi panel** — a toggle in the status cluster opens a layer-shell panel to scan/connect.
 - **Context menus** ([docs/context-menu.md](docs/context-menu.md)) — right-click a window pill for focus/close/fullscreen/float/move-to-workspace,
   built on amane's xdg-popup support (nested submenus, outside-click dismiss).
+- **Notifications** ([docs/notifications.md](docs/notifications.md)) — the shell is the
+  notification daemon (through amane): macOS-style toasts at the top-right (hover to hold, swipe
+  to put away), a notification center sidebar opened from the clock with iOS-style stacks per
+  app, and Do Not Disturb (on, for an hour, until this evening or tomorrow; critical
+  notifications still show).
 - **Design tokens** — every colour, size, gap and font is a token designed in Penpot and exported
   to `design-tokens/tokens.json`, compiled in with `include_str!` and resolved the way Penpot does
   (`src/tokens/`). See [docs/design-token-manual.md](docs/design-token-manual.md).
@@ -51,7 +56,7 @@ the library together, check `amane` out beside this repo and add a git-ignored
 
 ## niri layer-rules (for the frosted popups)
 
-The shell's **floating** surfaces (context menus and the Wi-Fi panel) get their blur + corner
+The shell's **floating** surfaces (context menus, the panels, notification toasts and the center) get their blur + corner
 rounding from matching `layer-rule` blocks in your niri config. The bar itself is opaque and needs
 no rule. `niri-layer-rule.kdl` is the **source of truth**; `./gen-layer-rules.sh` injects those blocks into a
 target niri config between marker comments, so the two never drift (no hand-copying):
@@ -90,6 +95,7 @@ build.rs                        generates `tokens::sys::…`, `tokens::bar::…`
   components/
     taskbar/                    the bar (mod.rs) + clock, wifi, power, theme, tokens
     context_menu/               reusable nested context menu on xdg-popups
+    notifications/              toasts, the notification center and Do Not Disturb
 design-tokens/tokens.json       Penpot export (normalized); edit in Penpot, not here
 niri-layer-rule.kdl             layer-rule source of truth (see docs/layer-rules.md)
 gen-layer-rules.sh              injects those rules into the niri config

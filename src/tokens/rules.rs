@@ -31,6 +31,11 @@ const SURFACES: &[(&str, &str, &str)] = &[
         "sys.color.surface.popover.fg",
         "sys.color.surface.popover.fg-secondary",
     ),
+    (
+        "sys.color.surface.notification.bg",
+        "sys.color.surface.notification.fg",
+        "sys.color.surface.notification.fg-secondary",
+    ),
 ];
 
 pub fn combinations() -> impl Iterator<Item = Key> {
@@ -606,6 +611,7 @@ mod tests {
         ("taskbar/power.rs", "power"),
         ("taskbar/", "bar"),
         ("context_menu/", "menu"),
+        ("notifications/", "notification"),
     ];
 
     fn component_sources() -> Vec<(String, String)> {

@@ -189,7 +189,7 @@ dimension role may follow density.
 | `sys.color.surface.panel.bg / .fg / .stroke` | the bar |
 | `sys.color.surface.popover.bg / .fg / .stroke` | context menus, Wi-Fi panel, other popovers |
 | `sys.color.surface.osd.bg / .fg / .stroke` | volume/brightness OSD (reserved) |
-| `sys.color.surface.notification.bg / .fg / .stroke` | notifications (reserved) |
+| `sys.color.surface.notification.bg / .fg / .fg-secondary / .stroke` | notification toasts |
 | `sys.color.surface.raised.bg` | chips, rows and cards inside any surface (the bar's pill) |
 | `sys.color.surface.popover.fg-secondary` | secondary text in menus (differs from `content.secondary` until converged) |
 | `sys.color.content.secondary / .tertiary / .disabled` | less important text and icons on any surface |

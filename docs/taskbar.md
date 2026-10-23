@@ -38,7 +38,9 @@ uses its compact height until the overview bool flips.
   the default output is — built-in speaker, speaker, headphones, headset, TV, car …), Bluetooth
   (only with an adapter; off / on / connected, click → Bluetooth panel), network (click → Wi‑Fi
   panel; signal wedges follow the joined network's strength, a cable when wired), battery (click →
-  power panel), clock.
+  power panel), the notification indicator (a moon while Do Not Disturb is on, a bell while
+  something arrived unseen; right-click for Do Not Disturb), clock (click → notification
+  center, see [notifications.md](notifications.md)).
 
 ## Panels
 

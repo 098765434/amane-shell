@@ -29,10 +29,12 @@ use amane::{
 };
 
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
+use crate::components::notifications::{self, DoNotDisturb};
 
 use crate::tokens::{Styled, bar, sys};
-use clock::Clock;
-use panel::Panel;
+
+pub(crate) use clock::Clock;
+pub(crate) use panel::{Panel, close, is_open, toggle};
 
 pub use audio::{AUDIO_NS, panel as audio_panel};
 pub use bluetooth::{BLUETOOTH_NS, panel as bluetooth_panel};
@@ -64,6 +66,8 @@ const ICON_HEADSET_MIC: char = '\u{e311}';
 const ICON_TV: char = '\u{e333}';
 const ICON_CAR: char = '\u{e531}';
 const ICON_WEBCAM: char = '\u{e04b}';
+const ICON_NOTIFICATIONS: char = '\u{e7f4}';
+const ICON_DND: char = '\u{ef44}';
 
 /// The glyph for what a sound goes to (or, with `input`, comes from), so the
 /// bar, the Sound panel's header and its device rows all agree. Built-in
@@ -250,6 +254,7 @@ fn right_section() -> Row {
         bluetooth_indicator(),
         network_indicator(),
         battery_module(),
+        notification_indicator(),
         clock_module(),
     ];
 
@@ -408,7 +413,7 @@ fn window_tile(win: &WindowInfo) -> Rectangle {
 }
 
 /// A window's app icon, or a first-letter placeholder when none resolves.
-fn app_icon_tile(app: &str, title: &str, side: f32) -> Rectangle {
+pub(crate) fn app_icon_tile(app: &str, title: &str, side: f32) -> Rectangle {
     if let Some(path) = icon_for(app) {
         // `loaded` kicks off the async decode and wakes us when ready; until
         // then fall through to the placeholder for this frame
@@ -437,7 +442,7 @@ fn app_icon_tile(app: &str, title: &str, side: f32) -> Rectangle {
 /// Resolve a niri window app_id to a desktop-entry icon file, matching the
 /// id (and its last dotted segment) against each app's icon name, exec
 /// basename, or name — case-insensitively.
-fn icon_for(app_id: &str) -> Option<PathBuf> {
+pub(crate) fn icon_for(app_id: &str) -> Option<PathBuf> {
     if app_id.is_empty() {
         return None;
     }
@@ -706,11 +711,58 @@ fn battery_module() -> Box<dyn Widget> {
     )
 }
 
-fn clock_module() -> Box<dyn Widget> {
+/// A moon while Do Not Disturb is on, else a bell while something arrived
+/// unseen; nothing otherwise. Click opens the center, right-click picks
+/// how long Do Not Disturb lasts.
+fn notification_indicator() -> Box<dyn Widget> {
+    let dnd = DoNotDisturb::read().on();
+    let unseen = notifications::unseen();
+
+    let (glyph, color) = match (dnd, unseen) {
+        (true, _) => (ICON_DND, sys::color::surface::panel::fg()),
+        (false, true) => (ICON_NOTIFICATIONS, sys::color::accent::bg()),
+        (false, false) => return boxed(Row::new(Vec::new())),
+    };
+
     boxed(
-        Text::new(Clock::read().text().to_string())
-            .style(sys::r#type::numeric())
-            .color(sys::color::surface::panel::fg()),
+        Rectangle::new()
+            .width(Size::Fixed(bar::indicator::width()))
+            .height(Parent)
+            .fill(Color::TRANSPARENT)
+            .align_child(Center, Center)
+            .cursor(Pointer)
+            .on_click(|button| match button {
+                Button::Left => panel::toggle(Panel::Notifications),
+                Button::Right => DoNotDisturb::open_menu(BAR_NS, cursor_x(), 0),
+                _ => {}
+            })
+            .child(icon(glyph, sys::size::icon::m(), color)),
+    )
+}
+
+/// The clock opens the notification center, like macOS's.
+fn clock_module() -> Box<dyn Widget> {
+    let text = Text::new(Clock::read().text().to_string())
+        .style(sys::r#type::numeric())
+        .color(sys::color::surface::panel::fg());
+    let width = match text.width() {
+        Size::Fixed(width) => width,
+        Size::Parent => 0.0,
+    };
+
+    boxed(
+        Rectangle::new()
+            .width(Size::Fixed(width))
+            .height(Parent)
+            .fill(Color::TRANSPARENT)
+            .align_child(Center, Center)
+            .cursor(Pointer)
+            .on_click(|button| {
+                if button == Button::Left {
+                    panel::toggle(Panel::Notifications);
+                }
+            })
+            .child(text),
     )
 }
 

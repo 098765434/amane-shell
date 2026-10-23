@@ -16,7 +16,7 @@ use amane::{
 };
 
 use super::{ICON_CHECK, bluetooth, boxed, icon, pad, wifi};
-use crate::components::context_menu;
+use crate::components::{context_menu, notifications};
 use crate::tokens::{Styled, sys};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -25,6 +25,9 @@ pub enum Panel {
     Bluetooth,
     Audio,
     Power,
+    /// The notification center: not one of the bottom-right cards, but
+    /// sharing their one-open-at-a-time state.
+    Notifications,
 }
 
 thread_local! {
@@ -64,7 +67,11 @@ fn set(next: Option<Panel>) {
     match previous {
         Some(Panel::Wifi) => wifi::reset(),
         Some(Panel::Bluetooth) => bluetooth::closed(),
+        Some(Panel::Notifications) => notifications::center::closed(),
         _ => {}
+    }
+    if next == Some(Panel::Notifications) {
+        notifications::center::opened();
     }
     // a device menu belongs to the card it was opened from
     if previous.is_some() {

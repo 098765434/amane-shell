@@ -7,7 +7,7 @@ use std::process::ExitCode;
 use amane::App;
 
 use components::context_menu::{self, ContextMenu, Icon, MenuItem};
-use components::taskbar;
+use components::{notifications, taskbar};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {
@@ -136,7 +136,11 @@ fn main() -> ExitCode {
         .window(taskbar::bluetooth_panel)
         .window(taskbar::wifi_panel)
         .window(taskbar::power_panel)
+        .window(notifications::center)
         .window(context_menu::anchor);
+    for toast in notifications::TOASTS {
+        app = app.window(toast);
+    }
     for level in context_menu::LEVELS {
         app = app.popup(level);
     }
@@ -162,6 +166,9 @@ fn main() -> ExitCode {
         context_menu::open_named(name, x, y);
         String::from("ok")
     })
+    // One argument per line, e.g. Do Not Disturb from a keybind:
+    // `printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    .ipc("notifications", notifications::ipc)
     .ipc("close", |_| {
         context_menu::close();
         String::from("ok")

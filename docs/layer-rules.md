@@ -6,8 +6,8 @@ backdrop blur and corner rounding. Two things must agree:
 
 1. the Rust source — `LayerWindow::namespace("…")` in `src/components/**`;
 2. `niri-layer-rule.kdl` — the rules, **generated** by `src/tokens/layer_rules.rs` from those
-   namespace constants and the design tokens (corner radii are `sys.radius.popover`, the radius
-   the cards are drawn with).
+   namespace constants and the design tokens (corner radii are `sys.radius.popover`, or
+   `notification.card.radius` for toasts: the radius the cards are drawn with).
 
 A blurred surface gets `xray false`: niri's layer-surface blur is xray by default, which shows
 only the wallpaper, so the cards would look opaque over windows. (Popups already default to
@@ -25,6 +25,8 @@ generated from (2), not hand-edited, so neither can drift.
 | `amane.taskbar.power` | the power panel |
 | `amane.taskbar.bluetooth` | the Bluetooth panel (its device menu is a frosted xdg-popup of it) |
 | `amane.taskbar.audio` | the Sound panel |
+| `amane.notifications.toast` | each notification toast (one surface per banner, radius `notification.card.radius`) |
+| `amane.notifications.center` | the notification center sidebar (its Do Not Disturb menu is a frosted xdg-popup of it) |
 | `amane.context-menu-anchor` | the context-menu anchor window |
 | `amane.context-menu.0` … `.7` | nested context-menu levels |
 
