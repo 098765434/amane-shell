@@ -5,10 +5,12 @@ Each layer-shell surface the shell opens is given a **namespace** via amane's
 backdrop blur and corner rounding. Two things must agree:
 
 1. the Rust source — `LayerWindow::namespace("…")` in `src/components/**`;
-2. `niri-layer-rule.kdl` — the **single source of truth** for the rules (this repo).
+2. `niri-layer-rule.kdl` — the rules, **generated** by `src/tokens/layer_rules.rs` from those
+   namespace constants and the design tokens (corner radii are `sys.radius.popover`, the radius
+   the cards are drawn with).
 
-The live niri config (`~/nixos-config/niri/config.kdl`) is **generated** from (2), not hand-edited,
-so it can't drift.
+A golden test fails when (2) is out of date with the tokens. The live niri config is in turn
+generated from (2), not hand-edited, so neither can drift.
 
 ## Namespaces
 
@@ -16,10 +18,18 @@ so it can't drift.
 |---|---|
 | `amane.taskbar` | the bar (opaque — intentionally has **no** blur rule) |
 | `amane.taskbar.wifi` | the Wi‑Fi panel |
+| `amane.taskbar.power` | the power panel |
 | `amane.context-menu-anchor` | the context-menu anchor window |
 | `amane.context-menu.0` … `.7` | nested context-menu levels |
 
 ## Generating the rules
+
+First bring the KDL up to date with the tokens (needed whenever a radius changes in Penpot; CI
+tells you):
+
+```sh
+cargo run -q -- layer-rules > niri-layer-rule.kdl
+```
 
 `gen-layer-rules.sh` reads everything below the `//<<<GENERATED-RULES-BELOW>>>` sentinel in
 `niri-layer-rule.kdl` and replaces the region **between the markers** in the target config,
@@ -31,10 +41,19 @@ touching nothing else:
 ```
 
 ```sh
-./gen-layer-rules.sh                         # default target: ~/nixos-config/niri/config.kdl
+./gen-layer-rules.sh                         # default target: ~/.config/niri/config.kdl
 ./gen-layer-rules.sh /path/to/other.kdl      # or an explicit target
-niri validate -c ~/nixos-config/niri/config.kdl
-niri msg action reload-config                # live reload (config is an out-of-store symlink)
+niri validate -c ~/.config/niri/config.kdl
+niri msg action reload-config
+```
+
+With home-manager, `~/.config/niri/config.kdl` is a symlink into the Nix store: pass the source
+file you edit instead (for example `./gen-layer-rules.sh ~/nixos-config/niri/config.kdl`) and
+rebuild.
+
+```sh
+# then check the surfaces are up
+niri msg layers | grep amane
 ```
 
 The script is idempotent — re-run it after every edit to `niri-layer-rule.kdl`.
@@ -42,7 +61,7 @@ The script is idempotent — re-run it after every edit to `niri-layer-rule.kdl`
 ### One-time setup (per target config)
 
 The target needs the two marker lines once. Replace the hand-written amane `layer-rule` blocks in
-`~/nixos-config/niri/config.kdl` with just:
+the niri config with just:
 
 ```kdl
 // >>> amane layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)
@@ -54,7 +73,8 @@ setup hint and makes no changes.)
 
 ## Adding or renaming a surface
 
-1. set its `.namespace("amane.…")` in the Rust source;
-2. add/adjust the matching `layer-rule { match namespace="^amane\\.…$"; … }` block in
-   `niri-layer-rule.kdl` (below the sentinel);
-3. run `./gen-layer-rules.sh` and reload niri.
+1. set its `.namespace("amane.…")` in the Rust source, as a `pub const`;
+2. add a `LayerRule` for it in `rules()` in `src/tokens/layer_rules.rs`, taking its radius from
+   a `sys.radius.*` token;
+3. `cargo run -q -- layer-rules > niri-layer-rule.kdl`, then `./gen-layer-rules.sh` and reload
+   niri.

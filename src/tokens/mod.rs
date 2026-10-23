@@ -9,6 +9,7 @@ pub mod color;
 pub mod envelope;
 pub mod expr;
 pub mod font;
+pub mod layer_rules;
 pub mod resolve;
 pub mod rules;
 pub mod values;

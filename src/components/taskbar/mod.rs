@@ -33,8 +33,8 @@ use clock::Clock;
 use theme::Theme;
 use tokens::{Tokens, bar_tokens, tokens};
 
-pub use power::panel as power_panel;
-pub use wifi::panel as wifi_panel;
+pub use power::{POWER_NS, panel as power_panel};
+pub use wifi::{WIFI_NS, panel as wifi_panel};
 
 // Material Symbols codepoints (the font stack is token `sys.type.icon`).
 pub(crate) const ICON_APPS: char = '\u{e5c3}';

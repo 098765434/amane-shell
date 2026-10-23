@@ -33,6 +33,13 @@ fn cli(args: &[String]) -> Option<ExitCode> {
             eprintln!("usage: amane-shell tokens normalize <file> | tokens check <file>");
             Err(())
         }
+        ["layer-rules"] => {
+            print!(
+                "{}",
+                tokens::layer_rules::render(&tokens::layer_rules::rules())
+            );
+            Ok(())
+        }
         _ => return None,
     };
 
