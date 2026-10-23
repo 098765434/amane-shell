@@ -1,5 +1,12 @@
 //! The runtime inputs the token system may vary on top of Penpot's values
-//! (manual §2): light/dark mode and density select theme sets.
+//! (manual §2): light/dark mode and density select theme sets, the system
+//! accent replaces the accent primitives, and text scale multiplies font
+//! sizes. Env overrides are read once; the system values are read per
+//! frame through amane's `Appearance` service, so a change redraws.
+
+use std::sync::OnceLock;
+
+use amane::{Appearance, Color, Scheme, Service};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum Mode {
@@ -37,12 +44,36 @@ impl Density {
     }
 }
 
-/// `AMANE_THEME=light|dark`, else dark.
+/// `AMANE_THEME=light|dark`, else the system preference, else dark.
 pub fn mode() -> Mode {
-    match std::env::var("AMANE_THEME").ok().as_deref() {
-        Some("light") => Mode::Light,
-        _ => Mode::Dark,
-    }
+    static OVERRIDE: OnceLock<Option<Mode>> = OnceLock::new();
+    let forced = OVERRIDE.get_or_init(|| match std::env::var("AMANE_THEME").ok().as_deref() {
+        Some("light") => Some(Mode::Light),
+        Some("dark") => Some(Mode::Dark),
+        _ => None,
+    });
+
+    forced.unwrap_or_else(|| match Appearance::read().scheme() {
+        Scheme::Light => Mode::Light,
+        Scheme::Dark | Scheme::NoPreference => Mode::Dark,
+    })
+}
+
+/// The accent the system publishes, if any (many portals publish none).
+pub fn system_accent() -> Option<Color> {
+    Appearance::read().accent()
+}
+
+/// `AMANE_TEXT_SCALE`, else 1.
+pub fn text_scale() -> f32 {
+    static SCALE: OnceLock<f32> = OnceLock::new();
+    *SCALE.get_or_init(|| {
+        std::env::var("AMANE_TEXT_SCALE")
+            .ok()
+            .and_then(|s| s.trim().parse::<f32>().ok())
+            .filter(|s| s.is_finite())
+            .map_or(1.0, |s| s.clamp(0.5, 3.0))
+    })
 }
 
 pub fn density() -> Density {

@@ -273,7 +273,7 @@ fn render(k: usize) -> Popup {
     };
 
     let (width, height) = size_for(&entries, t);
-    let card = card_widget(&entries, theme, t, k);
+    let card = card_widget(&entries, theme.current(), t, k);
     let (ax, ay, aw, ah) = anchor_rect;
 
     // Level 0 can slide on both axes; deeper levels keep their x (they flip

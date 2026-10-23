@@ -1,8 +1,8 @@
 use amane::Color;
 
 use super::tokens::{ThemeTokens, parse_theme, theme_tokens};
-use crate::theme::Density;
 pub use crate::theme::Mode;
+use crate::theme::{self, Density};
 use crate::tokens::{Key, resolved};
 
 #[derive(Clone, Copy)]
@@ -19,6 +19,9 @@ pub struct Theme {
     pub accent: Color,
     pub separator: Color,
     pub destructive: Color,
+    /// Built by [`Theme::auto`]: re-read at each render, so an open menu
+    /// follows the system's mode and accent.
+    follows_system: bool,
 }
 
 impl Theme {
@@ -30,15 +33,29 @@ impl Theme {
         Self::from_mode(Mode::Dark)
     }
 
-    /// The colour roles for the current mode.
+    /// The colour roles for the current mode and accent.
     pub fn auto() -> Self {
-        Self::from_tokens(Key::current().mode, *theme_tokens())
+        Self {
+            follows_system: true,
+            ..Self::from_tokens(theme::mode(), *theme_tokens())
+        }
     }
 
+    /// A fixed accent; the theme then no longer follows the system.
     pub fn with_accent(mut self, accent: Color) -> Self {
         self.accent = accent;
         self.selected_fill = accent;
+        self.follows_system = false;
         self
+    }
+
+    /// This theme as it should draw now.
+    pub fn current(self) -> Self {
+        if self.follows_system {
+            Self::auto()
+        } else {
+            self
+        }
     }
 
     fn from_mode(mode: Mode) -> Self {
@@ -61,6 +78,7 @@ impl Theme {
             accent: picked.accent,
             separator: picked.separator,
             destructive: picked.destructive,
+            follows_system: false,
         }
     }
 }

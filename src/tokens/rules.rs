@@ -327,12 +327,17 @@ pub fn naming(lib: &Library) -> Vec<String> {
 
 /// Tokens whose value may depend on `sys.density.factor`.
 fn density_scaled(lib: &Library) -> HashSet<String> {
+    dependents(lib, &["sys.density.factor"])
+}
+
+/// `roots` and every token that references one of them, directly or not.
+pub fn dependents(lib: &Library, roots: &[&str]) -> HashSet<String> {
     let mut refs: HashMap<&str, Vec<String>> = HashMap::new();
     for token in lib.sets.iter().flat_map(|s| &s.tokens) {
         string_refs(&token.value, refs.entry(&token.name).or_default());
     }
 
-    let mut scaled = HashSet::from([String::from("sys.density.factor")]);
+    let mut scaled: HashSet<String> = roots.iter().map(|r| r.to_string()).collect();
     loop {
         let before = scaled.len();
         for (name, targets) in &refs {
