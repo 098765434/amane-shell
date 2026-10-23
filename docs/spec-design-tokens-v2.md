@@ -2,13 +2,12 @@
  
 Status: implemented, revision 5 (23 Oct 2026) · Target: `098765434/amane-shell` (`main`) · Scope:
 **Penpot is the source of truth for every design token, organised by the Design Token
-Manual** (`amane-shell-design-token-manual.md`). amane-shell reads Penpot's own token
+Manual** (`design-token-manual.md`). amane-shell reads Penpot's own token
 export, resolves it the way Penpot does, and enforces the manual's rules in CI. Also in
 scope: every remaining hard-coded style value moved into tokens, a theme that follows the
 system (mode, accent, density, text scale), font stacks that actually fall back, and niri
 layer rules generated from the same tokens. **No amane library changes are needed**; §7
-uses the Appearance service from `amane-presence-appearance-spec.md` when it lands, and
-works without it.
+uses amane's Appearance service (in amane since 317943e) and works without a portal.
  
 Decisions:
  
@@ -161,9 +160,9 @@ reads the two current JSON files and writes a Penpot-format `seed.json` laid out
 §9, with the mapping of §5. It prints a **conflict report**: every place where two current
 values meet in one `sys` role but differ (e.g. bar and menu secondary text). Each conflict
 is resolved before import by either keeping both as separate `sys` roles (pixel-identical,
-the default) or choosing one (a visible change, decided by a designer). A designer imports
-the seed, checks it (§14), exports, and that export becomes the first
-`design-tokens/tokens.json`.
+the default) or choosing one (a visible change, decided by a designer). The normalized seed
+was committed as the first `design-tokens/tokens.json`; a designer imports it into Penpot and
+checks it (§14), and from then on Penpot's exports replace it.
  
 ---
  
@@ -213,7 +212,7 @@ Revision 5 replaced the readers with generated functions whose return type follo
 token's Penpot type (§10.1). The table still says which Penpot types fit each property, so a
 token a designer applies to a padding in Penpot is one the code uses as a padding.
  
-| Reader | Accepts Penpot types | Used for |
+| Property | Accepts Penpot types | Used for |
 |--------|----------------------|----------|
 | `color` | `color` | fills, strokes, text |
 | `spacing` | `spacing`, `dimension` | gaps, padding |
@@ -240,7 +239,7 @@ token a designer applies to a padding in Penpot is one the code uses as a paddin
 |------|-------------|------------|---------|
 | Animation duration | `number` | ms, under `motion` | `sys.motion.duration.short` = `{ref.duration.120}` |
 | Density | `number` | only in density sets | `sys.density.factor` = `1` |
-| In-surface blur radius | `number` | px, under `effect` | `bar.effect.backdrop-blur` = `24` |
+| In-surface blur radius | `number` | px, under `effect` | `sys.effect.backdrop-blur` = `24` |
 | Layout ratio / estimate | `number` | unitless | `menu.label.advance-ratio` = `0.56` |
 | On/off design switch | `boolean` | | — |
  
@@ -260,7 +259,7 @@ says so); seed hex values come from today's srgb components.
  
 | Today | Becomes | Penpot type |
 |-------|---------|-------------|
-| `color.accent` (both files) | `ref.color.accent.seed` #0a84ff, plus derived `.on-seed` #ffffff, `.dim` #005cd4, `.bright` #68cfff (§7.2) | `color` |
+| `color.accent` (both files) | `ref.color.accent.seed` #0a84ff, plus derived `.on-seed` #ffffff, `.dim` #0060bf, `.bright` #add1ff (§7.2) | `color` |
 | `urgent` / `destructive` red | `ref.color.red.58` #ff453a | `color` |
 | ink, chalk, white neutrals | `ref.color.neutral.11` #1d1d1f, `.97` #f5f5f7, `.100` #ffffff, plus `.0` #000000 | `color` |
 | `font.ui.family` | `ref.font.family.ui` (bar's stack, with Atkinson Hyperlegible) | `fontFamilies` |
@@ -305,11 +304,21 @@ Dimensions and typography (`sys/base`):
 | paddings 6, 8, 10 | `sys.space.inset.s, m, l` | same pattern |
 | hairline | `sys.border.hairline` | `{ref.border.1}` |
 | menu `radius.card`, `radius.submenu`, Wi-Fi `radius.tile` (all 10) | `sys.radius.popover` | `{ref.radius.10}` |
-| bar label, menu label sizes | `sys.type.label` | typography composite |
-| menu shortcut size | `sys.type.caption` | |
-| bar clock size | `sys.type.numeric` | |
-| bar window-title size | `sys.type.body` | |
-| — (new) | `sys.density.factor` | in density sets: 1 / compact value (§12) |
+| bar label, menu label and menu shortcut sizes (13, regular) | `sys.type.label` | typography composite |
+| bar medium-weight text: titles, headings (13, 500) | `sys.type.title` | |
+| bar clock size (13, 500) | `sys.type.numeric` | |
+| bar window subtitle and small labels (12) | `sys.type.caption` | |
+| bar `font.icon.family` | `sys.type.icon` | `fontFamilies`, `{ref.font.family.icon}` |
+| bar `space.icon-size`; Wi-Fi lock icon (12) | `sys.size.icon.m`, `sys.size.icon.s` | `{ref.size.16}`, `{ref.size.12}` |
+| bar `size.height-compact` | `sys.size.panel.height` | 18; popovers sit above it |
+| bar `space.panel-w`, `panel-h` (Wi-Fi and power panels) | `sys.size.popover.width`, `.height` | 320, 380 |
+| bar `space.list-h` | `sys.size.list.max-height` | 260 |
+| bar `space.row-h` (40) | `sys.size.row.height` | `round(40 * {sys.density.factor})` |
+| `panel_w - 120` (Wi-Fi and power rows) | `sys.size.row.trailing-width` | 120 |
+| `row_h - 10` (Wi-Fi field, power segments) | `sys.size.control.height` | `{sys.size.row.height} - 10` |
+| bar `radius.pill` | `sys.radius.raised` | `{ref.radius.6}` |
+| bar `effect.blur` (bar, Wi-Fi, power) | `sys.effect.backdrop-blur` | 24 (§12) |
+| — (new) | `sys.density.factor` | in density sets: 1 / 0.875 (§12) |
  
 Equal sizes merge into one role; a size that differs between, say, the bar's and the menu's
 label becomes a conflict (§3.3).
@@ -320,23 +329,22 @@ Only values that pass manual §7:
  
 | Today | Becomes | Penpot type |
 |-------|---------|-------------|
-| bar `size.height-compact` etc. | `bar.height` | `sizing` |
+| bar `size.height-overview` | `bar.overview.height` | `sizing` |
+| bar `radius.panel` | `bar.radius` | `borderRadius` |
+| bar `space.panel-pad-y`, `pill-pad-y` | `bar.panel.padding-y`, `bar.pill.padding-y` (density-scaled) | `spacing` |
 | bar `space.dot-size`, `dot-active` | `bar.workspace-dot.size`, `bar.workspace-dot.active-size` | `sizing` |
-| bar `space.icon-size` | `sys.size.icon.m` if shared, else `bar.icon.size` | `sizing` |
-| bar `space.window-max` | `bar.window-item.max-width` | `sizing` |
-| bar `effect.blur` | `bar.effect.backdrop-blur` (§12) | `number` |
-| bar `space.panel-w`, `panel-h` | `wifi.panel.width`, `wifi.panel.height` | `sizing` |
-| bar `space.list-h` | `wifi.list.max-height` | `sizing` |
-| bar `space.row-h` (40) | `wifi.row.height` = `round(40 * {sys.density.factor})` | `sizing` |
+| bar `space.dot-active` as a button width | `bar.indicator.width` | `sizing` |
+| bar `space.window-max`, `radius.tile` (dock tile) | `bar.window-item.max-width`, `bar.window-item.radius` | `sizing`, `borderRadius` |
 | menu `space.row-height` (24) | `menu.row.height` = `round(24 * {sys.density.factor})` | `sizing` |
 | menu `space.row-h` (10, padding) | read `sys.space.inset.l` directly | — |
 | menu `space.icon-slot`, `chevron-slot` | `menu.icon-slot.width`, `menu.chevron-slot.width` | `sizing` |
 | menu `space.separator` | read `sys.border.hairline` directly | — |
 | menu `space.min-width`, `max-width` | `menu.min-width`, `menu.max-width` | `sizing` |
+| menu `radius.row`, `space.card-padding`, `space.submenu-offset` | `menu.row.radius`, `menu.card.padding`, `menu.submenu.offset` | `borderRadius`, `spacing`, `dimension` |
 | menu `type.shortcut.hover-alpha` | `menu.shortcut.hover-opacity` | `opacity` |
 | menu `animation.open-ms`, `close-ms` | removed; re-add as `sys.motion.duration.*` with the code that animates | — |
  
-Rust field names follow the token names (`row_height`, `backdrop_blur`, …).
+Code calls the function generated for each token (`menu::row::height()`, §10.1).
  
 ---
  
@@ -353,9 +361,10 @@ Every style value in component code comes from a token after this change. Layout
 | `wifi.rs` `wifi_toggle()` | 44 × 22, radius 11 | `wifi.switch.width`, `wifi.switch.height`; radius = `height / 2` in code |
 | `wifi.rs` `scan_button()` | 28 × 22 | `wifi.icon-button.width`, `{wifi.switch.height}` |
 | `wifi.rs` `ap_list()` gap | 4 | `sys.space.gap.xs` |
-| `wifi.rs` `ap_row()` | `panel_w - 120` | `wifi.row.trailing-width` (120) |
+| `wifi.rs` `ap_row()` | `panel_w - 120` | `sys.size.row.trailing-width` (120) |
 | `wifi.rs` `ap_row()` gaps / padding | 8, 6, 10 | `sys.space.gap.m`, `sys.space.gap.s`, `sys.space.inset.l` |
-| `wifi.rs` `password_section()` | connect 72, gap 6, `row_h - 10` | `wifi.button.width`, `sys.space.gap.s`, `wifi.field.height` = `{wifi.row.height} - 10` |
+| `wifi.rs` `password_section()` | connect 72, gap 6, `row_h - 10` | `wifi.button.width`, `sys.space.gap.s`, `sys.size.control.height` = `{sys.size.row.height} - 10` |
+| `power.rs` (all) | card padding 10, gaps 12, 6, 4, 8, row padding 10, `panel_w - 120`, `row_h - 10` | `sys.space.inset.l`, `sys.space.gap.xl`/`s`/`xs`/`m`, `sys.size.row.trailing-width`, `sys.size.control.height` |
 | `taskbar/mod.rs` `window_tile()` label gap | 2 | `sys.space.gap.2xs` |
 | `taskbar/mod.rs` `volume_module()` | gap 4, width 58 | `sys.space.gap.xs`, `bar.volume.width` |
 | `context_menu/mod.rs` `card_widget()` border | 1.0 | `sys.border.hairline` |
@@ -387,11 +396,10 @@ pub fn text_scale() -> f32;            // AMANE_TEXT_SCALE → 1.0
 ```
  
 - Env overrides are read once into `OnceLock`s.
-- `mode()` asks the system when no override is set. Until amane ships the `Appearance`
-  service (`amane-presence-appearance-spec.md` §B) it returns `Dark`, today's behaviour. The
-  adapter is `Appearance::read().scheme()` → `Mode`, `NoPreference` falling through.
-  `system_accent()` is `Appearance::read().accent()` under the same gate. Both are read per
-  frame, so changes redraw immediately.
+- `mode()` asks amane's `Appearance` service (the XDG Settings portal) when no override is
+  set: `Appearance::read().scheme()` → `Mode`, with `NoPreference` (or no portal) meaning
+  `Dark`. `system_accent()` is `Appearance::read().accent()`. Both are read per frame inside
+  `view()`, so a change redraws immediately.
 - `density()` and `text_scale()` have no system source yet; config can feed them later.
 - `Mode` selects theme `mode/light` / `mode/dark`; `Density` selects `density/comfortable` /
   `density/compact` (§4.2).
@@ -410,8 +418,8 @@ accent primitives before resolving (manual §8.3):
 |-------|---------------|
 | `ref.color.accent.seed` | `seed` |
 | `ref.color.accent.on-seed` | `#ffffff` if its WCAG contrast on `seed` is ≥ 3.0, else `rgba(0, 0, 0, 0.8)` |
-| `ref.color.accent.dim` | `seed` in OKLab with L = min(L, 0.50), a and b kept, clipped to sRGB |
-| `ref.color.accent.bright` | `seed` in OKLab with L = max(L, 0.85), clipped to sRGB |
+| `ref.color.accent.dim` | `seed` in OKLab with L = min(L, 0.50), hue kept, chroma reduced until it fits sRGB |
+| `ref.color.accent.bright` | `seed` in OKLab with L = max(L, 0.85), hue kept, chroma reduced until it fits sRGB |
  
 Everything that references them (`sys.color.accent.*`, a focus ring, an `rgba()` tint)
 follows exactly as if a designer had changed those primitives in Penpot. With no system
@@ -454,20 +462,22 @@ user's machine. The token value is the same; only the fallback differs (§12 on 
 ### 9.1 Generator
  
 `src/tokens/layer_rules.rs` builds `niri-layer-rule.kdl` from rules whose numbers come from
-tokens and whose namespaces come from the existing constants (`BAR_NS`, `WIFI_NS`, the menu
+tokens and whose namespaces come from the existing constants (`WIFI_NS`, `POWER_NS`, the menu
 anchor):
  
 ```rust
-pub struct LayerRule { pub namespace: &'static str, pub radius: f32,
-                       pub blur: bool, pub popups: Option<(f32, bool)> }
- 
-pub fn rules() -> Vec<LayerRule>;      // menu anchor, Wi-Fi panel; none for the bar
+pub struct LayerRule { pub namespace: &'static str, pub comment: &'static str,
+                       pub radius: Option<f32>, pub blur: bool,
+                       pub popups: Option<(f32, bool)> }
+
+pub fn rules() -> Vec<LayerRule>;      // menu anchor, Wi-Fi and power panels; none for the bar
 pub fn render(rules: &[LayerRule]) -> String;   // full file: header, sentinel, rules
 ```
  
 - Menu anchor: `popups { geometry-corner-radius = sys.radius.popover }`.
 - Wi-Fi panel: `geometry-corner-radius = sys.radius.popover` — the same role `card()` now
   draws with (10). The rule's 14 goes. Visible change: the blur's corners match the card's.
+- Power panel: the same rule as Wi-Fi. It had none before, so it gains compositor blur.
 - Radii don't depend on mode or density (checked in §11); the generator resolves under the
   default key.
 - Namespaces are regex-escaped in one helper.
@@ -491,7 +501,7 @@ KDL is regenerated in the same PR.
  
 ### 9.3 Later
  
-When the fork gains `write_niri_rules` (`amane-blur-and-activation-spec.md` §A.6), `rules()`
+When the fork gains `write_niri_rules` (amane `docs/spec-write-own-layer-rules.md`), `rules()`
 maps onto `NiriLayerRule` one to one and the shell writes its own `amane.kdl` include at
 startup. The KDL file and the script can then be removed.
  
@@ -643,16 +653,18 @@ All in `cargo test`. Tests 1–10 are the contract between Penpot, the manual an
    `sys.density.factor`; every token name starts with an allowed prefix.
 4. **Set contents**: §4.2's table; `sys/color/light` and `sys/color/dark` define the same
    names; every `mode` theme enables the sets holding `ref.*`, `sys/base` and components.
-5. **Code reads exist**: every component's structs parse in all four combinations;
-   `read_paths()` contains only `sys.*` and the component's own prefix.
+5. **Code reads exist**: every generated token function's token resolves, with the type it was
+   generated for, in all four combinations (a missing token is already a compile error); a
+   source scan fails if a component imports another component's token module.
 6. **Naming**: lowercase grammar of manual §4.1; `ref.color.<scale>.<L>` within ±2 of the
    colour's CIE L\*.
 7. **Invariants**: radii, strokes, icon sizes and font sizes are equal across all four
    combinations; density changes only tokens that reference `sys.density.factor`; colours
    are equal across densities.
 8. **Contrast**: for each mode, composite each `sys.color.surface.*.bg` over black and over
-   white and check its `fg` ≥ 4.5 and `sys.color.content.secondary` ≥ 3.0 on top. Floors are
-   set in PR 1 so today's design passes; the message names the pair to fix in Penpot.
+   white and check its `fg` and secondary content on top. The target is 4.5 and 3.0; the floors
+   are what today's design passes (3.4 and 2.0, revision 5), and the message names the pair to
+   fix in Penpot.
 9. **Hygiene**: no `$extensions`, no unknown `$type`, committed file normalized.
 10. **Golden layer rules**: `niri-layer-rule.kdl` equals `render(&rules())`.
 11. **Report (always passes)**: tokens no code reads, and counts per tier against the
@@ -683,9 +695,8 @@ All in `cargo test`. Tests 1–10 are the contract between Penpot, the manual an
   point of 0.875 makes 8 → 7, 10 → 9, 24 → 21) is a design decision to make in Penpot.
 - **On-accent threshold.** 3.0:1 keeps today's white-on-blue look but is below WCAG 4.5 for
   small text. Raising it to 4.5 would turn selected-row text black on the default blue.
-- **Font weight 510.** Penpot only accepts hundreds and 950. Recommended: 500 (Penpot shows
-  what ships; a small visible change to check by screenshot). PR 2 stays pixel-identical by
-  shipping that change in PR 3 if needed.
+- **Font weight 510.** Resolved: 500. Penpot only accepts hundreds and 950, and amane draws
+  510 and 500 with the same Medium face.
 - **Fonts in Penpot.** "SF Pro Text" needs a team upload (licence permitting), or designers
   see "Missing font". Alternative: Inter first in `ref.font.family.ui`.
 - **Conflicts at seed time.** Bar and menu may disagree on a role today (secondary text,
@@ -705,7 +716,7 @@ All in `cargo test`. Tests 1–10 are the contract between Penpot, the manual an
   manual, the tiers and the component code don't.
 - **Fidelity is measured by hand.** Penpot exports raw values, so test 12's expected values
   come from Penpot's UI. If Penpot's API exposes resolved tokens, generate them.
-- **Is `bar.effect.backdrop-blur` doing anything?** amane's `Rectangle::blur` blurs what the
+- **Is `sys.effect.backdrop-blur` doing anything?** amane's `Rectangle::blur` blurs what the
   same surface has already drawn beneath it — nothing, under the bar and the Wi-Fi card.
   Check with screenshots at 0 and 24; if they match, delete the token and the calls.
 - **Text width estimate.** `menu.label.advance-ratio` (0.56) breaks for wide glyphs and
@@ -724,11 +735,11 @@ All in `cargo test`. Tests 1–10 are the contract between Penpot, the manual an
    (made in Penpot first), `tokens normalize` / `check`, the seed script and conflict report,
    the `rgba({ref})` check, the Penpot file seeded and exported, `design-tokens/tokens.json`
    committed. Components still read the old files. No visible change.
-2. **Switch components to Penpot tokens.** Readers (`sys` + own component), §5 mapping, §6
-   literals, old JSON files and seed script deleted. Tests 1–11. Pixel-identical at
-   `density/comfortable` (font weight kept as is until PR 3).
-3. **Theme.** Shared `Mode`, `AMANE_THEME` read once, Appearance adapter (stubbed), accent
-   override and derivation, text scale, font weight 500. Tests 14, 15.
+2. **Switch components to Penpot tokens.** §5 mapping, §6 literals, old JSON files and seed
+   script deleted. Tests 1–11. Pixel-identical at `density/comfortable`. (Revision 5 then
+   replaced the per-component readers with generated token functions, §10.1.)
+3. **Theme.** Shared `Mode`, `AMANE_THEME` read once, Appearance adapter, accent override and
+   derivation, text scale. Tests 14, 15.
 4. **Density.** `AMANE_DENSITY`, compact factor set in Penpot. Visible only in compact.
 5. **Font stacks.** §8 and test 16. Visible only without SF Pro Text installed.
 6. **Layer rules from tokens.** §9, `layer-rules`, golden test. Visible: Wi-Fi blur corners
@@ -742,21 +753,22 @@ PRs 1–2 change no pixels; 3–7 each change one thing.
  
 ## 14. Verification
  
-1. **Seed (PR 1):** import `seed.json` into the Penpot file: no error, no "unsupported types"
+1. **Seed (PR 1):** import `design-tokens/tokens.json` into the Penpot file: no error, no "unsupported types"
    toast; sets as in manual §9.1; groups `mode` and `density`. Bind a rectangle's fill to
    `sys.color.surface.popover.bg` and switch `mode`: the fill changes. Bind a board's padding
    to `sys.space.inset.m` and switch `density`: it shrinks in compact. No red pills in any
    combination.
-2. **Pixel-identical (PR 2):** capture the bar, the Wi-Fi panel and a nested context menu
-   with `grim` before and after; `compare -metric AE before.png after.png null:` gives 0.
+2. **Pixel-identical (PR 2):** every value each component draws equals the old files' value in
+   both modes (done by a test before the old parsers were deleted), and a `grim` capture
+   beside the running bar matches.
 3. **Design change end to end:** in Penpot, change `ref.color.accent.seed` (and its three
    derived values, or pick an `accent` preview set's values); export; normalize; the diff is
    four lines; `cargo test` passes; the bar's accent and the menu's selection both change.
-4. **Breaking change caught:** rename `menu.row.height` in Penpot; export; `cargo test` fails
-   naming `menu.row.height` and the menu reader. Add a `bar.theme.surface` colour token;
+4. **Breaking change caught:** rename `menu.row.height` in Penpot; export; `cargo build` fails
+   at each line calling `menu::row::height()`. Add a `bar.theme.surface` colour token;
    `cargo test` fails naming the tier rule and manual §7.
-5. **Theme (PR 3):** `AMANE_THEME=light` forces light; unset, without Appearance, dark. Once
-   the service exists, switching scheme or accent re-themes without a restart; a yellow accent
+5. **Theme (PR 3):** `AMANE_THEME=light` forces light; unset, with no portal preference, dark.
+   Switching the system scheme or accent re-themes without a restart; a yellow accent
    keeps white selected text, a lime one gets dark text. `AMANE_TEXT_SCALE=1.25` enlarges all
    text.
 6. **Density (PR 4):** `AMANE_DENSITY=compact` tightens gaps, paddings and row heights;
@@ -778,14 +790,16 @@ PRs 1–2 change no pixels; 3–7 each change one thing.
  
 ## 16. Dependencies
  
-- `serde_json` — already present (default `BTreeMap` maps give `tokens normalize` sorted keys).
+- `serde_json` — already present (default `BTreeMap` maps give `tokens normalize` sorted keys);
+  also a build-dependency, for `build.rs` to generate the token functions.
 - `fontconfig` 0.11 (new direct dependency; already in `Cargo.lock` through amane).
 - No others: colour parsing, OKLab conversion and the expression evaluator are small
   hand-written modules.
 - Outside the build: Penpot 2.18 or later, and one Penpot file that owns the tokens.
 ### Related docs
-- `amane-shell-design-token-manual.md` — the rules this spec implements and enforces.
-- `penpot-design-tokens-findings.md` — Penpot's token types, file format and quirks.
-- `amane-presence-appearance-spec.md` — the Appearance service §7 reads.
-- `amane-blur-and-activation-spec.md` §A.6 — `write_niri_rules`, the later home for §9.
+- `design-token-manual.md` — the rules this spec implements and enforces.
+- Penpot 2.18.4 source (`common/src/app/common/types/token.cljc`, `tokens_lib.cljc`,
+  `frontend/src/app/main/data/style_dictionary.cljs`) — token types, file format and quirks.
+- amane `docs/appearance.md` — the Appearance service §7 reads.
+- amane `docs/spec-write-own-layer-rules.md` — `write_niri_rules`, the later home for §9.
 - `amane-design-values-and-feature-fit.md` — the rubric in §15.

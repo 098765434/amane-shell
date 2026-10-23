@@ -140,7 +140,7 @@ Use these words; add new ones only by updating this manual.
 | `menu.bg` = `{sys.color.surface.popover.bg}` | read `sys.color.surface.popover.bg` in menu code | pure renames bloat the system |
 | `sys.space.8` | `sys.space.gap.m` | roles survive value changes |
 | `ref.space.small` | `ref.space.6` | primitives name their value |
-| `bar.size.wifi-panel-w` | `wifi.panel.width` | the Wi-Fi panel is its own component |
+| `bar.size.wifi-panel-w` | `sys.size.popover.width`, or `wifi.*` if only Wi-Fi uses it | a token belongs to the role or component that owns it |
 | `space.row-h` holding a height | `menu.row.height` | category must match meaning |
 | `menu.hoverAlpha` | `menu.shortcut.hover-opacity` | lowercase, hyphens |
 | `sys.color.text-grey` | `sys.color.content.secondary` | role, not appearance |
@@ -265,7 +265,7 @@ surface role from `sys` directly:
  
 **Add a component token only if:**
 1. the value is unique to this component and not part of a shared scale
-   (`osd.width = 240`, `menu.min-width`, `wifi.row.height`); or
+   (`osd.width = 240`, `menu.min-width`, `wifi.switch.width`); or
 2. the component deliberately departs from its role in a mode-free way (a fixed size, a
    different radius) — still aliasing `sys` or `ref` where possible; or
 3. designers need one knob for one component that would otherwise mean editing a shared role.

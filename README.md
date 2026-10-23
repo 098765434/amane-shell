@@ -84,7 +84,7 @@ dark; set `AMANE_THEME=light` to switch.
 ```
 src/
   main.rs                       App builder: windows, popups, IPC handlers, `tokens` CLI
-  theme.rs                      runtime inputs: light/dark mode, density
+  theme.rs                      runtime inputs: mode, accent, density, text scale
   tokens/                       Penpot token resolver and the manual's checks
 build.rs                        generates `tokens::sys::…`, `tokens::bar::…`, … from tokens.json
   components/
