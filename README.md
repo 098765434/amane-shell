@@ -20,7 +20,7 @@ Wi-Fi panel) are the frosted, compositor-blurred ones — the bar itself is not.
     niri's overview zoom, driven by the amane `Gestures::overview_progress()` value (requires the
     [niri gesture-IPC fork](https://github.com/098765434/niri)).
 - **Wi‑Fi panel** — a toggle in the status cluster opens a layer-shell panel to scan/connect.
-- **Context menus** — right-click a window pill for focus/close/fullscreen/float/move-to-workspace,
+- **Context menus** ([docs/context-menu.md](docs/context-menu.md)) — right-click a window pill for focus/close/fullscreen/float/move-to-workspace,
   built on amane's xdg-popup support (nested submenus, outside-click dismiss).
 - **Design tokens** — every colour, size, gap and font is a token designed in Penpot and exported
   to `design-tokens/tokens.json`, compiled in with `include_str!` and resolved the way Penpot does

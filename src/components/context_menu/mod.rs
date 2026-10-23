@@ -1,5 +1,5 @@
-// This module is a reusable context-menu component. Its public API
-// (icon/theme constructors, extra builder methods) is intentionally broader
+// This module is a reusable context-menu component (docs/context-menu.md). Its
+// public API (icon constructors, extra builder methods) is intentionally broader
 // than the bundled demo exercises, so dead_code is allowed module-wide.
 // `unused_imports` is deliberately NOT allowed — imports must stay honest.
 #![allow(dead_code)]

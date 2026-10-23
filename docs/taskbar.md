@@ -16,7 +16,8 @@ for its namespace); only the floating surfaces (popups, Wi-Fi panel) are frosted
 
   ```rust
   let progress = Gestures::read().overview_progress().clamp(0.0, 1.0) as f32;
-  let height = t.height_compact + (t.height_overview - t.height_compact) * progress;
+  let compact = sys::size::panel::height();
+  let height = compact + (bar::overview::height() - compact) * progress;
   ```
 
 So the bar grows/shrinks smoothly in lockstep with niri's overview zoom (and previews-then-settles
@@ -39,7 +40,7 @@ uses its compact height until the overview bool flips.
 ## Related
 
 - Window actions and the `Windows`/`Gestures` services are documented in the library:
-  [../../amane-fork/docs/compositor.md](../../amane-fork/docs/compositor.md).
-- Context menus use the library's popup support:
-  [../../amane-fork/docs/popups.md](../../amane-fork/docs/popups.md).
+  [../../amane/docs/compositor.md](../../amane/docs/compositor.md).
+- The per-window menu is the shell's context menu: [context-menu.md](context-menu.md).
+- Sizes and colours are Penpot design tokens: [design-token-manual.md](design-token-manual.md).
 - Surface namespaces & niri layer-rules: [layer-rules.md](layer-rules.md).
