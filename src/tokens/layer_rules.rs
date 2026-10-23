@@ -6,7 +6,7 @@
 use std::fmt::Write;
 
 use crate::components::context_menu::NAMESPACE_ANCHOR;
-use crate::components::taskbar::{POWER_NS, WIFI_NS};
+use crate::components::taskbar::{AUDIO_NS, BLUETOOTH_NS, POWER_NS, WIFI_NS};
 use crate::theme::{Density, Mode};
 use crate::tokens::{Key, sys, with_key};
 
@@ -52,6 +52,21 @@ pub fn rules() -> Vec<LayerRule> {
             namespace: POWER_NS,
             comment: "Power panel: the same frosted card, toggled by the taskbar's battery\n\
                       indicator.",
+            radius: Some(popover),
+            blur: true,
+            popups: None,
+        },
+        LayerRule {
+            namespace: BLUETOOTH_NS,
+            comment: "Bluetooth panel: the same frosted card, toggled by the taskbar's Bluetooth\n\
+                      indicator. Its device menu is an xdg-popup of this surface, frosted like the others.",
+            radius: Some(popover),
+            blur: true,
+            popups: Some((popover, true)),
+        },
+        LayerRule {
+            namespace: AUDIO_NS,
+            comment: "Sound panel: the same frosted card, toggled by the taskbar's volume pill.",
             radius: Some(popover),
             blur: true,
             popups: None,

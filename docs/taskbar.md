@@ -3,7 +3,7 @@
 A bottom layer-shell bar (`src/components/taskbar/mod.rs`), full-width, anchored to the bottom on
 the `Top` layer with `Zone::Reserve`. Namespace `amane.taskbar`. The root is an opaque rounded
 `Rectangle` holding a three-zone `Stack` — the bar is intentionally **not** blurred (no layer-rule
-for its namespace); only the floating surfaces (popups, Wi-Fi panel) are frosted.
+for its namespace); only the floating surfaces (popups and the panels below) are frosted.
 
 ## Height & the overview smooth-expand
 
@@ -34,8 +34,31 @@ uses its compact height until the overview bool flips.
   interactive `window_dock` (a tile per open window) when the overview is open. Dock tiles show the
   app icon + heading/title; left-click focuses (`Windows::focus`), right-click opens the per-window
   context menu.
-- **Right** (`right_section`): volume (scroll to change, click to mute), network (click → Wi‑Fi
-  panel; signal wedges follow the joined network's strength, a cable when wired), battery, clock.
+- **Right** (`right_section`): volume (scroll to change, click → Sound panel; the glyph shows what
+  the default output is — built-in speaker, speaker, headphones, headset, TV, car …), Bluetooth
+  (only with an adapter; off / on / connected, click → Bluetooth panel), network (click → Wi‑Fi
+  panel; signal wedges follow the joined network's strength, a cable when wired), battery (click →
+  power panel), clock.
+
+## Panels
+
+Four bottom-right popover cards share `panel.rs`: one `LayerWindow` each (namespaces
+`amane.taskbar.{audio,bluetooth,wifi,power}`, each with a frosted layer-rule), but **only one is open
+at a time** — `panel::toggle(Panel::…)` closes whichever other one is up. Escape or toggling again
+closes it. They are built from the same pieces: `card`, `header` (glyph + title + controls),
+`switch` (On/Off pill, `sys.size.switch.*`), `caption`, `list_row` (glyph, elided label, trailing
+badges; the selected row is filled) and `slider` (`sys.size.slider.height`, drag or scroll).
+
+- **Sound** (`audio.rs`): for the output and for the microphone, a mute button showing the
+  default device's glyph, a volume slider and the device list; clicking a device makes it the
+  default (`Audio::set_output` / `set_input`), and PipeWire moves what is playing along. Device
+  kinds come from the amane fork (`AudioKind`, see `amane/docs/audio.md`).
+- **Bluetooth** (`bluetooth.rs`): power switch, then "My Devices" (paired) and "Other Devices"
+  (found by the search that runs only while the panel is open). Click connects, disconnects or
+  pairs; the row says "Connecting…" until BlueZ reports back (up to 15 s); right-click a paired
+  device for Connect/Disconnect and Forget. Battery shows when the device reports it. **Pairing
+  works only for devices that need no PIN** — the fork has no BlueZ agent to show or type a code.
+- **Wi‑Fi** (`wifi.rs`) and **power** (`power.rs`) as before.
 
 ## Related
 

@@ -23,6 +23,8 @@ generated from (2), not hand-edited, so neither can drift.
 | `amane.taskbar` | the bar (opaque — intentionally has **no** blur rule) |
 | `amane.taskbar.wifi` | the Wi‑Fi panel |
 | `amane.taskbar.power` | the power panel |
+| `amane.taskbar.bluetooth` | the Bluetooth panel (its device menu is a frosted xdg-popup of it) |
+| `amane.taskbar.audio` | the Sound panel |
 | `amane.context-menu-anchor` | the context-menu anchor window |
 | `amane.context-menu.0` … `.7` | nested context-menu levels |
 

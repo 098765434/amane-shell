@@ -11,7 +11,10 @@
 //! the root rectangle), rounded pills, and generous spacing. Everything is
 //! driven by the Penpot tokens in `design-tokens/tokens.json` via [`tokens`].
 
+mod audio;
+mod bluetooth;
 mod clock;
+mod panel;
 mod power;
 mod wifi;
 
@@ -19,17 +22,20 @@ use std::cell::Cell;
 use std::path::PathBuf;
 
 use amane::{
-    Apps, Audio, Battery, Button, Center, Color, Column, End, Full, Gestures, Image, Keyboard,
-    Layer, LayerWindow, Link, Network, Padding, Parent, Point, Pointer, Rectangle, Row, Scroll,
-    Service, Size, Stack, Start, Text, Vertical, WarningLevel, Widget, WindowInfo, Windows,
-    Workspace, Workspaces, Zone,
+    Apps, Audio, AudioKind, Battery, Bluetooth, BluetoothDevice, Button, Center, Color, Column,
+    End, Full, Gestures, Image, Keyboard, Layer, LayerWindow, Link, Network, Padding, Parent,
+    Point, Pointer, Rectangle, Row, Scroll, Service, Size, Stack, Start, Text, Vertical,
+    WarningLevel, Widget, WindowInfo, Windows, Workspace, Workspaces, Zone,
 };
 
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
 
 use crate::tokens::{Styled, bar, sys};
 use clock::Clock;
+use panel::Panel;
 
+pub use audio::{AUDIO_NS, panel as audio_panel};
+pub use bluetooth::{BLUETOOTH_NS, panel as bluetooth_panel};
 pub use power::{POWER_NS, panel as power_panel};
 pub use wifi::{WIFI_NS, panel as wifi_panel};
 
@@ -42,8 +48,40 @@ pub(crate) const ICON_CHECK: char = '\u{e5ca}';
 pub(crate) const ICON_REFRESH: char = '\u{e5d5}';
 pub(crate) const ICON_MOUSE: char = '\u{e323}';
 pub(crate) const ICON_KEYBOARD: char = '\u{e312}';
-pub(crate) const ICON_HEADSET: char = '\u{e310}';
+pub(crate) const ICON_HEADPHONES: char = '\u{e310}';
 pub(crate) const ICON_GAMEPAD: char = '\u{ea28}';
+pub(crate) const ICON_MIC_OFF: char = '\u{e02b}';
+pub(crate) const ICON_SPEAKER: char = '\u{e32d}';
+pub(crate) const ICON_PHONE: char = '\u{e32c}';
+pub(crate) const ICON_COMPUTER: char = '\u{e30a}';
+pub(crate) const ICON_DEVICE_OTHER: char = '\u{e337}';
+pub(crate) const ICON_BLUETOOTH: char = '\u{e1a7}';
+const ICON_BLUETOOTH_CONNECTED: char = '\u{e1a8}';
+const ICON_BLUETOOTH_OFF: char = '\u{e1a9}';
+const ICON_MIC: char = '\u{e029}';
+const ICON_MIC_EXTERNAL: char = '\u{ef5a}';
+const ICON_HEADSET_MIC: char = '\u{e311}';
+const ICON_TV: char = '\u{e333}';
+const ICON_CAR: char = '\u{e531}';
+const ICON_WEBCAM: char = '\u{e04b}';
+
+/// The glyph for what a sound goes to (or, with `input`, comes from), so the
+/// bar, the Sound panel's header and its device rows all agree. Built-in
+/// devices show the plain speaker / microphone.
+pub(crate) fn audio_glyph(kind: AudioKind, input: bool) -> char {
+    match kind {
+        AudioKind::Internal if input => ICON_MIC,
+        AudioKind::Internal => ICON_VOLUME_UP,
+        AudioKind::Speaker => ICON_SPEAKER,
+        AudioKind::Headphones => ICON_HEADPHONES,
+        AudioKind::Headset => ICON_HEADSET_MIC,
+        AudioKind::Display => ICON_TV,
+        AudioKind::Car => ICON_CAR,
+        AudioKind::Phone => ICON_PHONE,
+        AudioKind::Webcam => ICON_WEBCAM,
+        AudioKind::Microphone => ICON_MIC_EXTERNAL,
+    }
+}
 
 /// Horizontal batteries (`battery_android_0` … `_6`, `_full`, `_bolt`), the
 /// macOS shape; the fill shows the charge.
@@ -209,6 +247,7 @@ fn center_section(overview: bool) -> Box<dyn Widget> {
 fn right_section() -> Row {
     let items: Vec<Box<dyn Widget>> = vec![
         volume_module(),
+        bluetooth_indicator(),
         network_indicator(),
         battery_module(),
         clock_module(),
@@ -489,12 +528,14 @@ fn volume_module() -> Box<dyn Widget> {
     let audio = Audio::read();
     let muted = audio.muted();
     let volume = audio.volume();
+    let kind = audio.output_kind();
     drop(audio);
 
+    // what is playing through: speakers, headphones, a headset, the TV …
     let glyph = if muted {
         ICON_VOLUME_OFF
     } else {
-        ICON_VOLUME_UP
+        audio_glyph(kind, false)
     };
 
     let content = Row::new(vec![
@@ -532,10 +573,49 @@ fn volume_module() -> Box<dyn Widget> {
             })
             .on_click(|button| {
                 if button == Button::Left {
-                    Audio::toggle_mute();
+                    panel::toggle(Panel::Audio);
                 }
             })
             .child(content),
+    )
+}
+
+fn bluetooth_indicator() -> Box<dyn Widget> {
+    let bluetooth = Bluetooth::read();
+
+    // no adapter, nothing to control
+    if !bluetooth.available() {
+        return boxed(Row::new(Vec::new()));
+    }
+
+    let powered = bluetooth.powered();
+    let connected = bluetooth.devices().iter().any(BluetoothDevice::connected);
+    drop(bluetooth);
+
+    let glyph = match (powered, connected) {
+        (false, _) => ICON_BLUETOOTH_OFF,
+        (true, true) => ICON_BLUETOOTH_CONNECTED,
+        (true, false) => ICON_BLUETOOTH,
+    };
+    let color = if connected {
+        sys::color::accent::bg()
+    } else {
+        sys::color::content::secondary()
+    };
+
+    boxed(
+        Rectangle::new()
+            .width(Size::Fixed(bar::indicator::width()))
+            .height(Parent)
+            .fill(Color::TRANSPARENT)
+            .align_child(Center, Center)
+            .cursor(Pointer)
+            .on_click(|button| {
+                if button == Button::Left {
+                    panel::toggle(Panel::Bluetooth);
+                }
+            })
+            .child(icon(glyph, sys::size::icon::m(), color)),
     )
 }
 
@@ -570,8 +650,7 @@ fn network_indicator() -> Box<dyn Widget> {
             .cursor(Pointer)
             .on_click(|button| {
                 if button == Button::Left {
-                    power::close();
-                    wifi::toggle();
+                    panel::toggle(Panel::Wifi);
                 }
             })
             .child(icon(glyph, sys::size::icon::m(), color)),
@@ -620,8 +699,7 @@ fn battery_module() -> Box<dyn Widget> {
             .cursor(Pointer)
             .on_click(|button| {
                 if button == Button::Left {
-                    wifi::close();
-                    power::toggle();
+                    panel::toggle(Panel::Power);
                 }
             })
             .child(Row::new(content).gap(sys::space::gap::_2xs()).align(Center)),
@@ -676,5 +754,15 @@ mod tests {
         assert_eq!(wifi_glyph(89), ICON_WIFI_LEVELS[3]);
         assert_eq!(wifi_glyph(90), ICON_WIFI);
         assert_eq!(wifi_glyph(100), ICON_WIFI);
+    }
+
+    #[test]
+    fn audio_glyph_shows_what_sound_goes_through() {
+        assert_eq!(audio_glyph(AudioKind::Internal, false), ICON_VOLUME_UP);
+        assert_eq!(audio_glyph(AudioKind::Internal, true), ICON_MIC);
+        assert_eq!(audio_glyph(AudioKind::Headphones, false), ICON_HEADPHONES);
+        assert_eq!(audio_glyph(AudioKind::Headset, true), ICON_HEADSET_MIC);
+        assert_eq!(audio_glyph(AudioKind::Display, false), ICON_TV);
+        assert_eq!(audio_glyph(AudioKind::Speaker, false), ICON_SPEAKER);
     }
 }

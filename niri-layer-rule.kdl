@@ -56,3 +56,31 @@ layer-rule {
         xray false
     }
 }
+
+// Bluetooth panel: the same frosted card, toggled by the taskbar's Bluetooth
+// indicator. Its device menu is an xdg-popup of this surface, frosted like the others.
+layer-rule {
+    match namespace="^amane\\.taskbar\\.bluetooth$"
+    geometry-corner-radius 10
+    background-effect {
+        blur true
+        xray false
+    }
+
+    popups {
+        geometry-corner-radius 10
+        background-effect {
+            blur true
+        }
+    }
+}
+
+// Sound panel: the same frosted card, toggled by the taskbar's volume pill.
+layer-rule {
+    match namespace="^amane\\.taskbar\\.audio$"
+    geometry-corner-radius 10
+    background-effect {
+        blur true
+        xray false
+    }
+}

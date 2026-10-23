@@ -223,11 +223,13 @@ How to set them:
 | `sys.space.inset.xs … l` | `spacing` | same pattern |
 | `sys.size.icon.s / .m / .l` | `sizing` | not density-scaled |
 | `sys.size.panel.height` | `sizing` | the bar's height; popovers sit above it |
-| `sys.size.popover.width / .height` | `sizing` | the Wi-Fi and power panels |
+| `sys.size.popover.width / .height` | `sizing` | the bar's panels (Sound, Bluetooth, Wi-Fi, power) |
 | `sys.size.list.max-height` | `sizing` | scrolling lists inside a popover |
 | `sys.size.row.height` | `sizing` | `round(40 * {sys.density.factor})` — list rows in popovers |
 | `sys.size.row.trailing-width` | `sizing` | room a row keeps for its trailing content |
 | `sys.size.control.<variant>` | `sizing` | `round(<px> * {sys.density.factor})` — only for heights shared by two or more components |
+| `sys.size.switch.width / .height` | `sizing` | the On/Off pill in panel headers (Wi-Fi, Bluetooth) |
+| `sys.size.slider.height` | `sizing` | a slider's track; its hit area is `sys.size.control.height` |
 | `sys.radius.popover / .control / .osd / .raised` | `borderRadius` | not density-scaled |
 | `sys.border.hairline` | `borderWidth` | `{ref.border.1}` |
 | `sys.opacity.disabled` | `opacity` | `{ref.opacity.38}` |
@@ -265,7 +267,7 @@ surface role from `sys` directly:
  
 **Add a component token only if:**
 1. the value is unique to this component and not part of a shared scale
-   (`osd.width = 240`, `menu.min-width`, `wifi.switch.width`); or
+   (`osd.width = 240`, `menu.min-width`, `wifi.icon-button.width`); or
 2. the component deliberately departs from its role in a mode-free way (a fixed size, a
    different radius) — still aliasing `sys` or `ref` where possible; or
 3. designers need one knob for one component that would otherwise mean editing a shared role.

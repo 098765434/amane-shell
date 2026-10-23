@@ -132,6 +132,8 @@ fn main() -> ExitCode {
 
     let mut app = App::new()
         .window(taskbar::bar)
+        .window(taskbar::audio_panel)
+        .window(taskbar::bluetooth_panel)
         .window(taskbar::wifi_panel)
         .window(taskbar::power_panel)
         .window(context_menu::anchor);

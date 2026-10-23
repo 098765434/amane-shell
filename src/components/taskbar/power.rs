@@ -1,86 +1,31 @@
 //! Power panel — a bottom-right `LayerWindow` with the battery's details,
 //! the power-profile toggle and the batteries of connected peripherals.
 //!
-//! Same shape as the [`wifi`](super::wifi) panel: a separate surface toggled
-//! by the bar's battery indicator, dismissed with Escape or by toggling
-//! again. Everything shown is read from the fork's `Battery` (UPower) and
+//! One of the bar's [`panel`](super::panel)s, toggled by the battery
+//! indicator. Everything shown is read from the fork's `Battery` (UPower) and
 //! `PowerProfile` (power-profiles-daemon) services, so it updates live.
 
-use std::cell::Cell;
 use std::time::Duration;
 
 use amane::{
-    Battery, BatteryState, Button, Center, Color, Column, DeviceKind, Horizontal, Key, Keyboard,
-    Layer, LayerWindow, Margin, Parent, Pointer, PowerDevice, PowerProfile, Rectangle, Row,
-    ScrollArea, Service, Size, SpaceBetween, Start, Text, Vertical, WarningLevel, Widget, Zone,
-    mark_all,
+    Battery, BatteryState, Button, Center, Color, Column, DeviceKind, LayerWindow, Parent, Pointer,
+    PowerDevice, PowerProfile, Rectangle, Row, ScrollArea, Service, Size, SpaceBetween, Start,
+    Text, WarningLevel, Widget,
 };
 
+use super::panel::{self, Panel};
 use super::{
-    ICON_GAMEPAD, ICON_HEADSET, ICON_KEYBOARD, ICON_MOUSE, battery_glyph, boxed, icon, pad,
+    ICON_GAMEPAD, ICON_HEADPHONES, ICON_KEYBOARD, ICON_MOUSE, battery_glyph, boxed, icon, pad,
 };
 use crate::tokens::{Styled, sys};
 
 /// Layer-surface namespace; the niri `layer-rule` matches this for blur.
 pub const POWER_NS: &str = "amane.taskbar.power";
 
-thread_local! {
-    static OPEN: Cell<bool> = const { Cell::new(false) };
-}
-
-// ───── runtime ───────────────────────────────────────────────────────────────
-
-pub fn toggle() {
-    OPEN.with(|open| open.set(!open.get()));
-    mark_all();
-}
-
-pub fn close() {
-    OPEN.with(|open| open.set(false));
-    mark_all();
-}
-
-fn is_open() -> bool {
-    OPEN.with(Cell::get)
-}
-
 // ───── view ──────────────────────────────────────────────────────────────────
 
 pub fn panel() -> LayerWindow {
-    let open = is_open();
-
-    let base = LayerWindow::new()
-        .width(sys::size::popover::width())
-        .height(sys::size::popover::height())
-        .anchor_vertical(Vertical::Bottom)
-        .anchor_horizontal(Horizontal::Right)
-        .margin(Margin {
-            top: 0,
-            right: sys::space::gap::m() as i32,
-            bottom: (sys::size::panel::height() + sys::space::gap::m()) as i32,
-            left: 0,
-        })
-        .layer(Layer::Overlay)
-        .space(Zone::Respect)
-        .keyboard(Keyboard::OnDemand)
-        .namespace(POWER_NS)
-        .visible(open)
-        .on_key(|key| {
-            if matches!(key, Key::Escape) {
-                close();
-            }
-        });
-
-    if !open {
-        return base.child(
-            Rectangle::new()
-                .width(Parent)
-                .height(Parent)
-                .fill(Color::TRANSPARENT),
-        );
-    }
-
-    base.child(card())
+    panel::surface(POWER_NS, Panel::Power, card)
 }
 
 fn card() -> Rectangle {
@@ -92,14 +37,7 @@ fn card() -> Rectangle {
 
     body.push(peripheral_section());
 
-    Rectangle::new()
-        .width(Parent)
-        .height(Parent)
-        .radius(sys::radius::popover())
-        .fill(sys::color::surface::panel::bg())
-        .blur(sys::effect::backdrop_blur())
-        .padding(pad(sys::space::inset::l(), sys::space::inset::l()))
-        .child(Column::new(body).gap(sys::space::gap::xl()).width(Parent))
+    panel::card(body, sys::space::gap::xl())
 }
 
 fn header() -> Row {
@@ -123,24 +61,7 @@ fn header() -> Row {
         String::from("Power")
     };
 
-    let left = Row::new(vec![
-        boxed(icon(glyph, sys::size::icon::m(), color)),
-        boxed(Text::new(title).style(sys::r#type::title()).color(color)),
-    ])
-    .gap(sys::space::gap::s())
-    .align(Center);
-
-    Row::new(vec![
-        boxed(left),
-        boxed(
-            Text::new(detail)
-                .style(sys::r#type::caption())
-                .color(sys::color::content::secondary()),
-        ),
-    ])
-    .width(Parent)
-    .justify(SpaceBetween)
-    .align(Center)
+    panel::header(glyph, title, color, vec![boxed(panel::caption(detail))])
 }
 
 /// "2 h 10 min left", "full in 45 min", "on AC" …
@@ -268,7 +189,7 @@ fn peripheral_row(device: &PowerDevice) -> Rectangle {
     let glyph = match device.kind() {
         DeviceKind::Mouse => ICON_MOUSE,
         DeviceKind::Keyboard => ICON_KEYBOARD,
-        DeviceKind::Headset => ICON_HEADSET,
+        DeviceKind::Headset => ICON_HEADPHONES,
         DeviceKind::GamingInput => ICON_GAMEPAD,
         _ => battery_glyph(device.percent(), device.state() == BatteryState::Charging),
     };
