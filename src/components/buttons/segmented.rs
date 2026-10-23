@@ -101,11 +101,12 @@ impl SegmentedButton {
     }
 
     pub fn build(self) -> Rectangle {
+        // segments are control-height; the track grows around them by the inset
         let inset = sys::space::gap::xs();
-        let height = sys::size::control::height();
+        let segment_h = sys::size::control::height();
+        let height = segment_h + inset * 2.0;
         let count = self.segments.len().max(1) as f32;
         let segment_w = ((self.width - inset * 2.0) / count).max(1.0);
-        let segment_h = (height - inset * 2.0).max(1.0);
         let thumb = match self.radius {
             Radius::Full => Radius::Full,
             Radius::Fixed(r) => Radius::Fixed((r - inset).max(0.0)),
