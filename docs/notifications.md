@@ -99,8 +99,8 @@ constants until `sys.motion.*` tokens exist in Penpot. A card is measured once
 ## Tokens
 
 Colours are the `sys.color.surface.notification.*` pair for toasts (`bg`, `fg`, `fg-secondary`,
-`stroke`; checked for contrast over black and white wallpaper). The center is an outlined popover [`Card`](components.md#card) with
-`raised` cards on it, in the popover's colours, under a `TopAppBar`. Sizes are `notification.*`: `toast.width`, `toast.max-visible`,
+`stroke`; checked for contrast over black and white wallpaper). The center is a panel [`Card`](components.md#card), tinted like the bar's panels, with
+`raised` cards on it, in the panel's colours, under a `TopAppBar`. Sizes are `notification.*`: `toast.width`, `toast.max-visible`,
 `center.width`, `card.radius`, `card.icon-size`, `card.badge-size`, and `stack.peek`,
 `max-peek`, `scale-step`, `fade-step`.
 

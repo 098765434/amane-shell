@@ -22,7 +22,7 @@ use super::card::{self, Measured, Place};
 use super::dnd::{DoNotDisturb, Until};
 use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::{IconButton, PushButton, Shape, Style};
-use crate::components::card::{Card, Surface, Variant};
+use crate::components::card::{Card, Surface};
 use crate::components::icons::ICON_DND;
 use crate::components::layout::{blank, boxed, cursor, split_row};
 use crate::components::motion::{self, Arrive, Item, Pose};
@@ -185,7 +185,7 @@ fn sheet() -> Rectangle {
             blank().align_child(Center, Center).child(
                 Text::new("No Notifications")
                     .style(sys::r#type::label())
-                    .color(Surface::Popover.fg_secondary()),
+                    .color(Surface::Panel.fg_secondary()),
             ),
         ));
     } else {
@@ -196,8 +196,7 @@ fn sheet() -> Rectangle {
     }
 
     Card::new(rows)
-        .surface(Surface::Popover)
-        .variant(Variant::Outlined)
+        .surface(Surface::Panel)
         .glass(true)
         .gap(sys::space::gap::l())
         .build()
@@ -210,7 +209,7 @@ fn header(any: bool) -> amane::Row {
     let open_menu = || DoNotDisturb::open_menu(CENTER_NS, cursor());
     let dnd = IconButton::new("amane.notifications.dnd", ICON_DND)
         .style(Style::Tonal)
-        .color(Surface::Popover.fg_secondary())
+        .color(Surface::Panel.fg_secondary())
         .selected(until.is_some())
         .on_press(open_menu)
         .on_secondary(open_menu)
@@ -227,7 +226,7 @@ fn header(any: bool) -> amane::Row {
     trailing.push(boxed(dnd));
 
     let mut bar = TopAppBar::new("Notifications")
-        .surface(Surface::Popover)
+        .surface(Surface::Panel)
         .actions(trailing);
     if let Some(until) = until {
         bar = bar.subtitle(dnd_status(until));
@@ -250,7 +249,7 @@ fn text_button(
 ) -> Rectangle {
     PushButton::new(id, label)
         .shape(Shape::Round)
-        .color(Surface::Popover.fg())
+        .color(Surface::Panel.fg())
         .on_press(press)
         .build()
 }
@@ -432,7 +431,7 @@ fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32)
     let clear = card::close_button(
         format!("amane.notifications.group.{group}.clear"),
         height,
-        Surface::Popover.fg(),
+        Surface::Panel.fg(),
         move || {
             for id in &ids {
                 Notifications::dismiss(*id);
@@ -455,7 +454,7 @@ fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32)
             split_row(
                 Text::new(name.to_string())
                     .style(sys::r#type::title())
-                    .color(Surface::Popover.fg()),
+                    .color(Surface::Panel.fg()),
                 vec![boxed(less), boxed(clear)],
             )
             .height(Parent),

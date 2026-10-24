@@ -63,11 +63,11 @@ impl Place {
                 secondary: Surface::Notification.fg_secondary(),
                 stroke: Surface::Notification.stroke().unwrap_or(Color::TRANSPARENT),
             },
-            // a raised card on the center's popover sheet, in its colours
+            // a raised card on the center's panel sheet, in its colours
             Place::Center => Look {
                 fill: sys::color::surface::raised::bg(),
-                fg: Surface::Popover.fg(),
-                secondary: Surface::Popover.fg_secondary(),
+                fg: Surface::Panel.fg(),
+                secondary: Surface::Panel.fg_secondary(),
                 stroke: Color::TRANSPARENT,
             },
         }
