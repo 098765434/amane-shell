@@ -29,6 +29,15 @@ const SHEET_BOUNCE: f32 = 0.1;
 pub const FADE: Duration = Duration::from_millis(200);
 /// A card on its way out.
 pub const EXIT: Duration = Duration::from_millis(300);
+/// The hover layer coming and going under the pointer.
+pub const HOVER: Duration = Duration::from_millis(120);
+/// A pressed control swelling back to its size.
+pub const PRESS: Duration = Duration::from_millis(220);
+/// A popover appearing over the bar, and going.
+pub const OPEN: Duration = Duration::from_millis(220);
+pub const CLOSE: Duration = Duration::from_millis(160);
+/// How small a card is as it enters, growing to its size.
+pub const ENTER_SCALE: f32 = 0.9;
 
 /// The spring things move on, starting at rest at `value`.
 pub fn spring<T: Blend>(value: T) -> Animation<T> {

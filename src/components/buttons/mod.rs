@@ -31,7 +31,10 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
-use amane::{Button, Center, Color, Pointer, Radius, Rectangle, Row, Scroll, Size, Text, Widget};
+use amane::{
+    Animation, Blend, Button, Center, Color, Point, Pointer, Radius, Rectangle, Row, Scroll, Size,
+    Text, Widget, request_frame,
+};
 
 pub use icon_button::IconButton;
 pub use push_button::PushButton;
@@ -40,7 +43,7 @@ pub use switch::Switch;
 
 use crate::components::color::over;
 use crate::components::layout::{boxed, icon};
-use crate::components::tooltip;
+use crate::components::{motion, tooltip};
 use crate::tokens::{Styled, TextStyle, sys};
 
 /// M3's disabled-content opacity. TODO(token): `sys.opacity.disabled` once
@@ -49,6 +52,11 @@ const DISABLED_OPACITY: f32 = 0.38;
 
 /// How long a click's new state is shown before the service has to agree.
 const PENDING_TIMEOUT: Duration = Duration::from_millis(1500);
+
+/// How far a pressed button shrinks before springing back. TODO(token):
+/// `sys.motion.press-scale` once Penpot has it (manual §1.1); Quick
+/// Settings' `quick.press.scale` holds the same value for its tiles.
+const PRESS_SCALE: f32 = 0.96;
 
 /// How much a button stands out, after M3's filled, tonal and text buttons.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -201,6 +209,7 @@ impl<K> ButtonBuilder<K> {
             .height(self.height)
             .radius(self.shape.radius())
             .fill(state_fill(&self.id, self.style.fill(), self.disabled))
+            .scale(press_scale(&self.id, PRESS_SCALE))
             .align_child(Center, Center)
             .clip()
             .child(content);
@@ -250,9 +259,31 @@ impl<T: Copy + PartialEq> Pending<T> {
     }
 }
 
+/// What a toggle `id` should show while the service says `actual`: the
+/// state a click asked for ([`expect`]), until the service agrees or
+/// gives up waiting.
+pub(crate) fn optimistic(id: &str, actual: bool) -> bool {
+    with_state(
+        &format!("{id}.pending"),
+        || Pending::<bool>::NONE,
+        |pending: &mut Pending<bool>| pending.shown(actual, Instant::now()),
+    )
+}
+
+/// A click on toggle `id` asked for `wanted`: show it right away.
+pub(crate) fn expect(id: &str, wanted: bool) {
+    with_state(
+        &format!("{id}.pending"),
+        || Pending::<bool>::NONE,
+        |pending: &mut Pending<bool>| pending.set(wanted, Instant::now()),
+    );
+    request_frame();
+}
+
 thread_local! {
-    // the button under the pointer, which shows the hover layer
-    static HOVERED: RefCell<Option<String>> = const { RefCell::new(None) };
+    // the buttons under the pointer, which show the hover layer: more than
+    // one when a control sits inside another (a tile's disc in its tile)
+    static HOVERED: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
 
     // each switch's and segmented button's motion, by id
     static STATES: RefCell<HashMap<String, Box<dyn Any>>> = RefCell::new(HashMap::new());
@@ -286,24 +317,66 @@ pub(crate) fn with_existing<S: 'static, R>(id: &str, f: impl FnOnce(&mut S) -> R
 pub(crate) fn hover(id: &str, inside: bool) {
     HOVERED.with_borrow_mut(|hovered| {
         if inside {
-            *hovered = Some(id.to_string());
-        } else if hovered.as_deref() == Some(id) {
-            *hovered = None;
+            if !hovered.iter().any(|h| h == id) {
+                hovered.push(id.to_string());
+            }
+        } else {
+            hovered.retain(|h| h != id);
         }
     });
 }
 
 pub(crate) fn hovered(id: &str) -> bool {
-    HOVERED.with_borrow(|hovered| hovered.as_deref() == Some(id))
+    HOVERED.with_borrow(|hovered| hovered.iter().any(|h| h == id))
 }
 
-/// `fill` with the hover layer laid over it while `id` is hovered.
+/// `fill` with the hover layer fading over it while `id` is hovered.
 pub(crate) fn state_fill(id: &str, fill: Color, disabled: bool) -> Color {
-    if !disabled && hovered(id) {
-        over(sys::color::state::hover(), fill)
-    } else {
-        fill
-    }
+    let inside = !disabled && hovered(id);
+    let target = if inside { 1.0 } else { 0.0 };
+    // starts where it is, so a control that appears under the pointer
+    // doesn't fade in its hover
+    let amount = with_state(
+        &format!("{id}.hover"),
+        || motion::fade(target, motion::HOVER),
+        |fade: &mut Animation| {
+            fade.to(target);
+            fade.value().clamp(0.0, 1.0)
+        },
+    );
+    Color::blend(fill, over(sys::color::state::hover(), fill), amount)
+}
+
+/// A press's pulse: 0 the moment the button is pressed, 1 once it has
+/// swelled back. A button that was never pressed is at rest.
+struct Press(Animation);
+
+/// The scale to draw control `id` at, shrinking to `scale` on a press and
+/// springing back. amane reports a press as the start of a drag, not its
+/// release, so the pulse is timed rather than held.
+pub(crate) fn press_scale(id: &str, scale: f32) -> f32 {
+    let progress = with_state(
+        &format!("{id}.press"),
+        || Press(motion::spring(1.0)),
+        |press: &mut Press| press.0.value().clamp(0.0, 1.0),
+    );
+    f32::blend(scale, 1.0, progress)
+}
+
+/// Control `id` was pressed: its pulse starts over.
+fn pressed(id: &str) {
+    with_state(
+        &format!("{id}.press"),
+        || Press(motion::spring(1.0)),
+        |press: &mut Press| {
+            let mut pulse = Animation::new(0.0)
+                .duration(motion::PRESS)
+                .easing(amane::Easing::Out);
+            pulse.to(1.0);
+            press.0 = pulse;
+        },
+    );
+    request_frame();
 }
 
 /// What a click asks for: the left button presses, the right one is the
@@ -334,8 +407,11 @@ pub(crate) fn interactive(
         scroll,
     } = actions;
     let clicked = id.clone();
+    let pressed_id = id.clone();
     let base = base
         .cursor(Pointer)
+        // a left press starts a drag, which is the only press amane reports
+        .on_drag(move |_: Point| pressed(&pressed_id))
         .on_hover(move |inside| {
             hover(&id, inside);
             if !inside {

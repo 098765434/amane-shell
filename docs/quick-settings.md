@@ -1,8 +1,11 @@
 # Quick Settings
 
-GNOME's quick settings menu, drawn in the macOS Control Center look
-(`src/components/quick_settings/`). It's one frosted card above the bar's right end, with the
-session's actions, the sliders and a grid of tiles. Each tile can open a page of its own.
+GNOME's quick settings menu, drawn as the macOS Control Center
+(`src/components/quick_settings/`). As on macOS Tahoe the card itself has no background: it's a
+clear surface above the bar's right end holding frosted glass modules, laid out as Control
+Center is — Wi‑Fi and Bluetooth tiles beside Now Playing, the Focus tile and round buttons, a
+Display card and a Sound card with their sliders, then the battery and more round buttons.
+Each control can open a page of its own, and an edit mode moves, resizes, removes and adds them.
 
 It's opened from the bar's Control Center button (the slider glyph, between the battery and the
 notification bell), and closed by the same button, by Escape, or by opening any other panel. It
@@ -13,33 +16,37 @@ that page.
 
 ## What's in it
 
-In GNOME's order. Every row shows only when the machine has what it controls, as in GNOME:
+In Control Center's order (the default layout; edit mode changes it). Every control shows only
+when the machine has what it drives, as in GNOME, and the grid packs around what's missing:
 
-| Row | Shows | Click | Page |
+| Control | Shows | Click | Page |
 |---|---|---|---|
-| System row | the battery, screenshot, lock, power | battery → its page; screenshot closes the card, then opens niri's screenshot UI; lock locks through logind | Battery (charge, time left, power mode, peripherals); Power Off |
-| Now Playing | the active player's art, title and artist | previous, play/pause, next | — |
-| Output slider | the default output's glyph and level | the glyph mutes; drag or scroll sets the level | Sound (output and input devices), when there's more than one output |
-| Input slider | only while something records | as above, for the microphone | Sound |
-| Brightness | only with a backlight | drag or scroll | — |
-| Wired | only with a cable in; the connection | connects or disconnects the device | — |
-| Wi‑Fi | the network joined, "Connecting…", "Not Connected" or "Off" | switches the radio | Wi‑Fi: the networks (rescanned every 15 s while shown), joining with a password |
-| Wi‑Fi hotspot | "<ssid> Hotspot", while the machine is one | stops it | — |
-| VPN | only with a VPN profile; the active one | turns on the last used, or off | VPN: a switch per profile |
-| Bluetooth | only with an adapter; the device connected, or how many | switches the radio | Bluetooth: the devices, searching while shown |
-| Power Mode | only with power-profiles-daemon; the mode | Balanced, or back to the mode last picked | Power Mode: the modes |
-| Night Light | only with `wlsunset`; the temperature | on or off | Night Light: how warm |
-| Dark Style | the system preference | switches it | — |
-| Do Not Disturb | on, until when, or off | on or off | For 1 Hour, Until This Evening, Until Tomorrow |
-| Keyboard | only with a keyboard light; its level | off, or back to its level | Off/Low/High (a slider for keyboards with many steps) |
-| Airplane Mode | only with a radio | blocks or unblocks every radio | — |
-| Background Apps | only while an app runs without a window; how many | — | the apps, each with a close button |
+| Wi‑Fi | the network joined, "Connecting…", "Not Connected", "Off" or "Hardware switch off"; "<ssid> Hotspot" while the machine is one | the disc switches the radio (or stops the hotspot); the tile opens the page | the networks (rescanned every 15 s while shown; "Searching…" or "Wi‑Fi is off" while there are none), joining with a password; the page stays open and the row says "Connecting…" |
+| Bluetooth | the device connected, or how many | the disc switches the adapter; the tile opens the page | the device lists, searching while shown |
+| Airplane Mode | a round button (or a tile) | switches every radio | — |
+| VPN, Wired | tiles, waiting in the Add list by default; VPN says "Off", the tunnel that's up or how many are; Wired the connection or "Not Connected" | the disc switches; the VPN tile opens its page | VPN: a switch in the header for the preferred tunnel, and one per profile |
+| Now Playing | the active player's art (from a file or the web), title and artist, how far through the track, or "Not Playing" | previous, play/pause, next | — |
+| Focus | Do Not Disturb: what's on, until when, or off | the disc switches it; the tile opens the page | Focus: For 1 Hour, Until This Evening, Until Tomorrow, the one that's on checked |
+| Dark Style, Night Light | round buttons, accent while on | switch; a right click on Night Light opens its page | Night Light: how warm |
+| Display | only with a backlight; the brightness slider between a dim and a bright glyph | drag or scroll | — |
+| Sound | the default output's level; the small glyph says how loud (off, down, up) | the small glyph mutes; drag or scroll sets the level; the chevron picks the device when there's more than one; a right click opens the page | Sound: the level, the microphone's slider (its glyph mutes it), then the output and input devices |
+| Battery | only with a battery; the charge and how long it lasts, the disc in the critical colour when it's low | opens its page | Battery (time left, power mode, peripherals) |
+| Round buttons | Power Mode (accent while not Balanced), Keyboard (the backlight), Background Apps (how many, in a tooltip), screenshot, lock, power off | switch; a right click opens the page; screenshot closes the card, then opens niri's screenshot UI; lock locks through logind | Power Mode: the modes; Keyboard: Off/Low/High (a slider for keyboards with many steps); Background Apps: the apps, each with a close button; Power Off: suspend, restart, power off, log out |
 
-A tile works like a macOS Control Center module. A click on the round glyph switches the setting,
-and a click anywhere else on the tile opens its page. A tile with no page switches from anywhere.
-A right click opens the page too. The Power Off page's Restart…, Power Off… and Log Out… ask for a
-second click before they act, which stands in for GNOME's confirmation dialog. Switch User is left
-out because greetd has no user switching.
+A control works like a macOS Control Center module. A click on the round disc switches the
+setting, and a click anywhere else on a tile or a module row opens its page. A control with no
+page switches from anywhere. A right click opens the page too; a round button has no label, so a
+tooltip names it, and a tile whose lines are too long for it names itself the same way. The
+Power Off page's Restart…, Power Off… and Log Out… ask for a second click within five seconds
+(the row turns into "Click to Restart" in the critical colour), which stands in for GNOME's
+confirmation dialog. Switch User is left out because greetd has no user switching.
+
+A page is at least five rows tall, however short the grid is, and its lists scroll in the room
+they have. A page whose setting goes away while it's open (the adapter unplugged) gives way to
+the grid, and `quick-settings open` answers with an error for a page the machine can't show.
+
+Now Playing is always there, saying "Not Playing" when nothing is, as on macOS; everything else
+follows GNOME's rule and hides without its hardware.
 
 A page's last row opens the app with the rest of its settings when that app is installed:
 `nm-connection-editor` for Wi‑Fi and VPN, `blueman-manager` for Bluetooth and `pavucontrol` for
@@ -54,13 +61,115 @@ The bar also shows GNOME's status icons, each only while it applies:
 
 Clicking any of them opens Quick Settings.
 
+## Edit Controls
+
+In edit mode the chrome (ghost discs, badges, handles) fades in, a control added grows into its
+cells and one removed shrinks away, and when the grid gains or loses rows at rest the controls
+slide to their new place rather than jump.
+
+The grid is iOS Control Center's canvas: `quick.grid.cols` × `quick.grid.rows` (4 × 8) cells of
+`quick.grid.cell` (74 px) with `quick.grid.gap` (16 px) between them, so a row is 344 px. A
+control spans whole cells: a round button 1×1, a tile 2×1 (164 × 74), Now Playing and the
+Now Playing 2×2 (164 × 164), a slider 3×1 (254 × 74, room for a button beside it) or
+4×1 (344 × 74). Inside, a tile is padded `quick.tile.pad` (17) with `quick.tile.gap` (8) between
+its disc (`quick.tile.disc`, 40) and its two lines (`quick.type.title` 14 px and `.caption` 12 px
+on a `quick.type.line` 17 px line), so a 1×1 is exactly the disc and its padding. Out of edit
+mode the card shows the rows in use; holes inside stay empty.
+
+"Edit Controls" under the grid enters edit mode, as on iOS: the card grows to the whole canvas,
+the controls go inert, every free cell shows as a faint disc, and each control gets a remove
+badge at its top-left and, when it comes in more than one size, a resize handle at its
+bottom-right.
+
+- **Move**: drag a control; the cell its top-left is nearest takes it, and the others make way
+  live: one control of the same size under it changes places with it, anything else goes to the
+  first free cells. Where nothing fits, the arrangement stays as it last fit. Every preview is
+  worked out from the layout as it was when the drag began, and the held control sits exactly
+  where the pointer took it (the pointer less where it was grabbed), so the cell under it never
+  shifts because of what the preview moved (the same cell always gives the same arrangement, and
+  moving back restores the start). A control keeps its cell until it's clearly in the next (half
+  a pitch and a tenth more), so a hand resting on a boundary doesn't make the grid flap; an
+  accent outline shows the cells it will land in. Escape lets go of it where it started.
+- **Resize**: drag the handle; the pull picks the nearest size the control comes in, by width
+  and height (a round button becomes a tile, a tile three or four cells wide, Now Playing a
+  full row). An outline follows the hand, the control snaps between its sizes (holding the one
+  it has until another is clearly nearer), and the others make way the same way.
+- **Remove**: the badge hides it. **Add**: the hidden controls list under the grid, each with a
+  `+`, puts one back in the first free cells (at its smallest size if only that fits). One
+  whose hardware is missing ("Not available") goes on the canvas as a dimmed placeholder that
+  shows in edit mode only, waiting for its hardware; outside edit mode its cells count as
+  empty. The list scrolls past six rows, and says so when every control is on the canvas.
+- **Undo Remove** puts the last removed control back where it was; **Reset Layout** restores
+  Control Center's order (as `quick-settings reset-layout` does). Both are under the Add list.
+- **Done** (the accent capsule, or Escape) leaves edit mode. A right click on the canvas's
+  empty space enters it.
+
+The layout is kept in `$XDG_STATE_HOME/amane-shell/quick-settings`:
+
+```json
+{ "version": 2, "controls": [ { "id": "focus", "cols": 2, "rows": 1, "col": 0, "row": 2 }, … ] }
+```
+
+The ids are `wifi`, `bluetooth`, `now-playing`, `vpn`, `wired`, `focus`, `dark-style`,
+`night-light`, `display`, `sound`, `battery`, `power-mode`, `keyboard`, `airplane`,
+`background-apps`, `screenshot`, `lock` and `power-off`. A control without `col`/`row` is
+hidden. A file from an older version is ignored. One that places something off the canvas or
+over another control moves it to the first free cells (or hides it); a control the file doesn't
+name is added hidden, so a control that arrives with an update or new hardware waits in the Add
+list rather than tearing a hole in the canvas. The default packs Control Center's order onto the
+canvas for the controls this machine has, with VPN and Wired hidden. `quick-settings reset-layout` over IPC
+restores it.
+
 ## Motion
 
-The card unfolds upwards from the bar and fades in on a `motion::sheet` spring. A page slides in
-from the right while the grid recedes to the left (`quick.page.recede`), and the card springs to
-the page's height. Escape goes back to the grid, then closes. Closing, the card fades at the size
-it had. A surface resized just before it hides still has the compositor's answers to the resize
-on their way, and amane draws on those after the hide, which niri rejects as a protocol error.
+The card has one height, the grid's, for the grid and every page. A surface resized every frame
+costs a compositor configure round-trip and a second draw each time, which is what made the old
+unfolding card stutter. So nothing resizes while anything moves: the card fades and swells in
+from the bar's corner (`motion::OPEN`, from `quick.open.scale`), a page slides in from the right
+while the grid recedes to the left (`quick.page.recede`) inside the unchanged surface, and the
+card fades out at the size it had (`motion::CLOSE`). The surface is resized only at rest: when
+the grid gains or loses a row, and when edit mode begins or ends — never while a control is
+held. A surface resized just before it hides
+still has the compositor's answers to the resize on their way, and amane draws on those after
+the hide, which niri rejects as a protocol error; closing never resizes.
+
+Every control's hover layer fades (`motion::HOVER`), and a press shrinks a tile or disc to
+`quick.press.scale` and springs it back (`motion::PRESS`): amane reports a press as the start of a
+drag and not its release, so the pulse is timed rather than held. In edit mode the controls
+spring between cells (`motion::animate`, keyed by control), and the one in hand draws over them
+at `quick.drag.scale`, springing back to size when let go. The cursor a drag started with stays
+until the drop (amane keeps the dragged target's cursor): a resize handle doesn't follow the
+pointer, and a cursor flipping on every motion made niri redraw every output each time.
+
+A drag is measured on one still layer over the canvas (`edit::drag_layer`), not on the control.
+amane measures a drag against the hit areas of the last frame drawn, and a control on the move
+is drawn somewhere new each frame; a drag measured on it counted the pointer's motion against
+where the control *was*, several times a frame with a mouse that reports faster than the screen
+refreshes, so the control overshot and snapped back every frame. amane also keeps the target
+being dragged by its position in the frame's hit areas, so the layer comes before the controls,
+after layers whose shape never changes under a drag (one ghost disc per cell, one drop outline).
+The frost behind a moving control is the control as drawn, scaled and rounded to whole pixels
+(`edit::frosted`), so its strips shift as one block.
+
+## Frost
+
+niri frosts a layer surface where the surface asks (`ext-background-effect-v1`), or its whole
+geometry when it doesn't ask. The Quick Settings surface asks (`LayerWindow::blur_region`): the
+grid's modules, each a rounded shape sent as a few strips (`glass_region.rs`), the Edit Controls
+capsule, and the whole card while a page is on it. Its layer rule therefore carries no corner
+radius, blur or shadow, only `xray false` (niri's blur region shows the wallpaper alone
+otherwise); see [layer-rules.md](layer-rules.md). niri blurs once per surface and paints the
+result through the region, so the strips cost nothing extra. The strips overlap by a pixel:
+niri rounds each rectangle to the screen's pixels on its own, and two that only touch can leave
+a hairline of sharp desktop between them at a fractional scale.
+
+A module is the panel's tint with a hairline rim and a soft drop shadow (`tile::module`,
+`quick.shadow`); vello draws the shadow analytically in the module's own pass, so sixteen of
+them cost well under a millisecond (gpu median 2.6 ms with them, 2.8 before). The card itself
+sits `quick.grid.margin` in from the surface's edge, room for the shadows. The surfaces' full glass
+(`glass::apply`, the rim shader and the inner glow) is a GPU pass each per rectangle, which at a
+dozen modules a frame costs more than the frame has on an integrated GPU (measured: the glow
+≈ 8 ms, the shader ≈ 9 ms), so only a page's sheet, one piece, wears it.
 
 ## IPC
 
@@ -71,46 +180,72 @@ printf 'quick-settings\nclose\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
 ```
 
 The pages are `grid`, `sound`, `wifi`, `vpn`, `bluetooth`, `power-mode`, `power`, `night-light`,
-`do-not-disturb`, `keyboard`, `session` and `background-apps`. A niri keybind:
+`do-not-disturb`, `keyboard`, `session` and `background-apps`. `quick-settings edit` opens the
+grid in edit mode, and `quick-settings reset-layout` restores the default layout. A niri keybind:
 
 ```kdl
 Mod+S { spawn "sh" "-c" "printf 'quick-settings\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock"; }
 ```
 
-The card takes keys once it's clicked into (`Keyboard::OnDemand`, like the panels), so Escape
-works after a click. A click outside doesn't close it, the same as the panels.
+The card takes the keyboard while it's open (`Keyboard::Exclusive`: it's modal, as Control
+Center is), so Escape works from the first moment however the card was opened, and the Wi‑Fi
+password field types without a click first. A click outside doesn't close it, the same as the
+panels.
 
 ## Components
 
 The parts are in `src/components/quick_settings/`:
 
-- **`tile.rs` (`QuickToggle`)**: GNOME's QuickToggle as a Control Center module.
-  - A rounded `surface.raised` tile, half or full width (`Span`).
+- **`tile.rs` (`QuickToggle`, `module`)**: GNOME's QuickToggle in Control Center's shapes
+  (`Style`): a `Card` (a glass capsule two, three or four cells wide), a `Row` (one line of a module), a
+  `Round` button (the disc alone in a glass circle, named by a tooltip), a bare `Disc` inside a
+  module. `module` is the glass piece every control sits in; `sheet` the page's, with the full
+  glass edge; `capsule_button` the labelled capsules.
   - A round disc holding the glyph. It springs to the accent when the setting is on, like the
     `Switch` knob.
   - A title and an elided subtitle beside the disc.
   - Like the other controls, it shows a click before the service agrees, for up to 1.5 s.
-- **`grid.rs`**: GNOME's two-column layout, packed from rows. amane has no grid widget, on
-  purpose. Half tiles go two to a row, and a full-width cell starts its own. Every cell has a
-  fixed height, so the grid knows its height before it's drawn, and the surface is sized to it.
-- **`detail.rs` (`DetailPage`)**: a page.
-  - A back chevron (`TopAppBar::back`), the glyph, the title and subtitle, and an optional
-    `Switch`.
-  - A body that says how tall it is.
-  - An optional link to a settings app.
-- **`system_row.rs`, `tiles/`, `pages.rs`**: the rows and pages themselves. `tiles/` has one file
-  per setting, holding its grid cell and its page.
+  - `inert` draws it without any handler, for edit mode.
+- **`grid.rs`**: the canvas's geometry: a `Span` (cells across and down), a `Place`, a `Rect`,
+  the `Canvas` (from the tokens), `Metrics` (cell and gap in pixels, a rect's `Slot`, the
+  nearest place to a point) and `Occupancy` (which control each cell holds; the first free
+  place for a span, what a rect covers, the rows in use). amane has no grid widget, on purpose.
+- **`controls.rs` (`ControlId`)**: every control, the sizes it comes in, and how to build it.
+- **`layout.rs` (`Layout`)**: where each control sits and how big it is; the file; `moved` and
+  `resized` give the layout a drag would leave (swap or push), `show` the first free cells.
+- **`edit.rs`**: edit mode: the drag in hand and the layout it previews from the base, the
+  resize ghost, the badge and handle, the ghost discs, the add list's actions.
+- **`glass_region.rs`**: a rounded shape as the strips the compositor frosts.
+- **`tiles/media.rs`**: the square Now Playing module.
+- **`slider_card.rs`**: the Display and Sound cards: a title over each thin slider, a small
+  glyph before the track and a large faint one after it, and a right click (`Card::on_secondary`)
+  for a card with a page. The track's fill is the panel's `fg` (white in dark mode) as on macOS,
+  a documented departure from the one-accent rule (§11.2). (Control Center's microphone slider
+  would need a taller module; the grid's cells are one height, so it's on the Sound page.)
+- **`detail.rs` (`DetailPage`)**: a page, as tall as the grid.
+  - A back chevron (`TopAppBar::back`), the title and subtitle (elided to the room the
+    chevron and switch leave), and an optional `Switch`.
+  - A hairline, then a body built for the room it has (`List` rows are the page's width,
+    `list::with_row_width`), at least `MIN_PAGE_ROWS` tall.
+  - An optional link to a settings app, pinned at the bottom.
+- **`system_row.rs`, `tiles/`, `pages.rs`**: the controls and pages themselves. `tiles/` has one
+  file per setting, holding its toggle and its page.
 
 It reuses the shared components:
 
-- **`Slider::large`**: the Control Center slider, a control-tall track with the glyph as its knob.
-  The glyph can be a button (`on_icon_press`, used for mute).
-- **The panels' bodies**: `wifi::networks`, `bluetooth::devices`, `audio::device_section`,
-  `power::profile_section` and `power::peripheral_section`.
+- **`Slider`**: the thin slider, with `fill` and `thickness` for the cards and `inert` for
+  edit mode; `Slider::large` (a control-tall track with the glyph as its knob, which can mute)
+  on the pages.
+- **The panels' bodies**: `wifi::networks_in`, `bluetooth::devices_in`, `audio::device_section`,
+  `power::profile_section` and `power::peripheral_section_in`, each given the room it has.
+- **`buttons::optimistic` / `expect`**: the click shown before the service agrees, for the
+  mute and play/pause glyphs as `Pending` is for the tiles.
 - **`dnd::choices`**: the timed choices, which the Do Not Disturb menu uses too.
 
-Tokens: `quick.tile.height`, `quick.tile.radius`, `quick.tile.disc`, `quick.media.art` and
-`quick.page.recede` (see [penpot-todo.md](penpot-todo.md)). Everything else is `sys.*`.
+Tokens: `quick.grid.{cell,cols,rows,gap,margin}`, `quick.tile.{pad,gap,disc}`,
+`quick.card.radius`, `quick.media.{art,art-radius,play}`, `quick.slider.track`, `quick.shadow`,
+`quick.type.{title,caption,line}`, `quick.page.recede`, `quick.open.scale`, `quick.press.scale`
+and `quick.drag.scale` (see [penpot-todo.md](penpot-todo.md)). Everything else is `sys.*`.
 
 ## Backends
 

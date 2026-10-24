@@ -1,17 +1,16 @@
-//! Background Apps — GNOME's last row: how many apps run without a window,
-//! opening a page that lists them, each with a button to close it.
+//! Background Apps — GNOME's last row as a round button: how many apps run
+//! without a window, opening a page that lists them, each with a button to
+//! close it.
 
 use amane::{ScrollArea, Service, Size, Widget};
 
-use super::GridCell;
+use super::super::{Page, open};
 use crate::components::buttons::{IconButton, Style};
 use crate::components::icons::{ICON_BACKGROUND_APPS, ICON_CLOSE};
 use crate::components::layout::{boxed, caption};
 use crate::components::list::{self, List, ListItem};
 use crate::components::quick_settings::detail::DetailPage;
-use crate::components::quick_settings::grid::Cell;
-use crate::components::quick_settings::tile::{QuickToggle, Span};
-use crate::components::quick_settings::{Page, open};
+use crate::components::quick_settings::tile::QuickToggle;
 use crate::services::background_apps::BackgroundApps;
 use crate::tokens::sys;
 
@@ -27,69 +26,64 @@ fn name(app_id: &str) -> &str {
     app_id.rsplit('.').next().unwrap_or(app_id)
 }
 
-pub(crate) fn cell() -> Option<GridCell> {
+pub(crate) fn toggle() -> Option<QuickToggle> {
     let n = BackgroundApps::read().apps().len();
     if n == 0 {
         return None;
     }
 
-    let tile = QuickToggle::new("amane.qs.background", ICON_BACKGROUND_APPS, count(n))
-        .subtitle("Running without a window")
-        .span(Span::Full)
-        .on_open(|| open(Page::BackgroundApps))
-        .build();
-    Some(Cell::Full(boxed(tile), QuickToggle::height()))
+    Some(
+        QuickToggle::new("amane.qs.background", ICON_BACKGROUND_APPS, count(n))
+            .subtitle("Running without a window")
+            .on_open(|| open(Page::BackgroundApps)),
+    )
 }
 
 pub(crate) fn page() -> DetailPage {
     let apps = BackgroundApps::read().apps().to_vec();
+    let n = apps.len();
 
-    let items: Vec<ListItem> = apps
-        .iter()
-        .map(|app| {
-            let id = app.app_id.clone();
-            let mut item = ListItem::new(format!("amane.qs.background.{id}"), name(&app.app_id))
-                .leading(ICON_BACKGROUND_APPS);
-            if !app.message.is_empty() {
-                item = item.trailing(list::trailing_text(
-                    app.message.clone(),
-                    sys::color::content::secondary(),
-                ));
-            }
-            item.trailing(
-                IconButton::new(format!("amane.qs.background.{id}.close"), ICON_CLOSE)
-                    .style(Style::Tonal)
-                    .size(sys::size::icon::s())
-                    .height(sys::size::switch::height())
-                    .width(sys::size::switch::height())
-                    .on_press(move || BackgroundApps::quit(&id))
-                    .build(),
-            )
+    DetailPage::new("amane.qs.background.page", "Background Apps")
+        .subtitle(count(n))
+        .body(move |height| {
+            let items: Vec<ListItem> = apps
+                .iter()
+                .map(|app| {
+                    let id = app.app_id.clone();
+                    let mut item =
+                        ListItem::new(format!("amane.qs.background.{id}"), name(&app.app_id))
+                            .leading(ICON_BACKGROUND_APPS);
+                    if !app.message.is_empty() {
+                        item = item.trailing(list::trailing_text(
+                            app.message.clone(),
+                            sys::color::content::secondary(),
+                        ));
+                    }
+                    item.trailing(
+                        IconButton::new(format!("amane.qs.background.{id}.close"), ICON_CLOSE)
+                            .style(Style::Tonal)
+                            .size(sys::size::icon::s())
+                            .height(sys::size::switch::height())
+                            .width(sys::size::switch::height())
+                            .on_press(move || BackgroundApps::quit(&id))
+                            .build(),
+                    )
+                })
+                .collect();
+
+            let body: Vec<Box<dyn Widget>> = if items.is_empty() {
+                vec![boxed(caption("No background apps"))]
+            } else {
+                vec![boxed(
+                    ScrollArea::new(
+                        "amane.qs.background.list",
+                        List::new(items).header("Running without a window").build(),
+                    )
+                    .height(Size::Fixed(height)),
+                )]
+            };
+            body
         })
-        .collect();
-
-    let height = sys::size::list::max_height();
-    let body: Vec<Box<dyn Widget>> = if items.is_empty() {
-        vec![boxed(caption("No Background Apps"))]
-    } else {
-        vec![boxed(
-            ScrollArea::new(
-                "amane.qs.background.list",
-                List::new(items)
-                    .header("Apps known to be running without a window")
-                    .build(),
-            )
-            .height(Size::Fixed(height)),
-        )]
-    };
-
-    DetailPage::new(
-        "amane.qs.background.page",
-        ICON_BACKGROUND_APPS,
-        "Background Apps",
-    )
-    .subtitle(count(apps.len()))
-    .body(body, height)
 }
 
 #[cfg(test)]

@@ -49,9 +49,7 @@ use crate::services::rfkill::Rfkill;
 use crate::tokens::{Styled, bar, sys};
 
 pub(crate) use clock::Clock;
-pub(crate) use panel::{
-    Panel, card as panel_card, close, dismissable, is_open, overlay, popover_margin, toggle,
-};
+pub(crate) use panel::{Panel, close, dismissable, is_open, overlay, popover_margin, toggle};
 
 pub use audio::{AUDIO_NS, panel as audio_panel};
 pub use bluetooth::{BLUETOOTH_NS, panel as bluetooth_panel};

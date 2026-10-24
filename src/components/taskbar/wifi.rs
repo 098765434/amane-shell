@@ -16,7 +16,7 @@ use super::panel::{self, Panel};
 use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::{IconButton, PushButton, Shape, Style, Switch};
 use crate::components::icons::{ICON_LOCK, ICON_REFRESH, ICON_WIFI, wifi_glyph};
-use crate::components::layout::{boxed, caption, icon, inner_width, nothing};
+use crate::components::layout::{boxed, caption, icon, inner_width, nothing, text_height};
 use crate::components::list::{self, List, ListItem};
 use crate::tokens::{sys, wifi};
 
@@ -85,14 +85,36 @@ pub fn panel() -> LayerWindow {
 
 fn card() -> Rectangle {
     let mut body = vec![boxed(header())];
-    body.extend(networks());
+    body.extend(networks_in(
+        sys::size::list::max_height(),
+        inner_width(sys::size::popover::width()),
+        panel::close,
+    ));
     panel::card(body, sys::space::gap::l())
 }
 
+/// How tall the password field is with the gap over it, which the list
+/// above makes room for.
+fn password_height() -> f32 {
+    text_height(sys::r#type::caption()) + sys::space::gap::s() * 2.0 + sys::size::control::height()
+}
+
 /// The networks found and, when one is picked that needs it, the password
-/// field: the panel's body, which Quick Settings' Wi-Fi page shows too.
-pub(crate) fn networks() -> Vec<Box<dyn Widget>> {
-    vec![boxed(ap_list()), password_section()]
+/// field: the panel's body, which Quick Settings' Wi‑Fi page shows too.
+/// The list scrolls in `height` less the field's room, the field is
+/// `width` wide, and `joined` runs once a network is asked to join (the
+/// panel closes; a page stays to show it connecting).
+pub(crate) fn networks_in(height: f32, width: f32, joined: fn()) -> Vec<Box<dyn Widget>> {
+    let asking = asking_password();
+    let list_h = if asking {
+        (height - password_height()).max(1.0)
+    } else {
+        height.max(1.0)
+    };
+    vec![
+        boxed(ap_list(list_h, joined)),
+        password_section(width, joined),
+    ]
 }
 
 fn header() -> Row {
@@ -121,16 +143,27 @@ fn scan_button() -> Rectangle {
         .build()
 }
 
-fn ap_list() -> ScrollArea {
+fn ap_list(height: f32, joined: fn()) -> ScrollArea {
     let net = Network::read();
-    let items = net.access_points().iter().map(ap_item).collect();
+    let enabled = net.wifi_enabled();
+    let connecting = net.connecting().then(|| net.ssid().to_string());
+    let items = net
+        .access_points()
+        .iter()
+        .map(|ap| ap_item(ap, connecting.as_deref(), joined))
+        .collect();
     drop(net);
 
-    ScrollArea::new("amane.wifi.aps", List::new(items).build())
-        .height(Size::Fixed(sys::size::list::max_height()))
+    let note = if enabled {
+        "Searching…"
+    } else {
+        "Wi‑Fi is off"
+    };
+    ScrollArea::new("amane.wifi.aps", List::new(items).empty(note).build())
+        .height(Size::Fixed(height))
 }
 
-fn ap_item(ap: &AccessPoint) -> ListItem {
+fn ap_item(ap: &AccessPoint, connecting: Option<&str>, joined: fn()) -> ListItem {
     let ssid = ap.ssid().to_string();
     let secured = ap.secured();
     let active = ap.active();
@@ -139,6 +172,9 @@ fn ap_item(ap: &AccessPoint) -> ListItem {
     let mut item = ListItem::new(format!("amane.wifi.ap.{ssid}"), ssid.clone())
         .leading(wifi_glyph(ap.strength()))
         .selected(active);
+    if connecting == Some(ssid.as_str()) && !active {
+        item = item.trailing(caption("Connecting…"));
+    }
     if secured {
         item = item.trailing(icon(
             ICON_LOCK,
@@ -155,17 +191,17 @@ fn ap_item(ap: &AccessPoint) -> ListItem {
             begin_password(ssid.clone());
         } else {
             Network::connect(&ssid, None);
-            panel::close();
+            joined();
         }
     })
 }
 
-fn password_section() -> Box<dyn Widget> {
+fn password_section(width: f32, joined: fn()) -> Box<dyn Widget> {
     let Some(ssid) = password_target() else {
         return nothing();
     };
 
-    let inner = inner_width(sys::size::popover::width());
+    let inner = width;
     let connect_w = wifi::button::width();
     let input_w = (inner - connect_w - sys::space::gap::s()).max(1.0);
 
@@ -180,7 +216,8 @@ fn password_section() -> Box<dyn Widget> {
         .on_change(set_password_buf)
         .on_submit(move |pw| {
             Network::connect(&submit_ssid, Some(&pw));
-            panel::close();
+            reset();
+            joined();
         });
 
     let connect_ssid = ssid.clone();
@@ -189,7 +226,8 @@ fn password_section() -> Box<dyn Widget> {
         .width(connect_w)
         .on_press(move || {
             Network::connect(&connect_ssid, Some(&password_buf()));
-            panel::close();
+            reset();
+            joined();
         })
         .build();
 

@@ -28,8 +28,11 @@ pub const STEP: u8 = 5;
 pub fn scrolled(value: u8, scroll: Scroll, step: u8) -> u8 {
     if scroll.y < 0.0 {
         value.saturating_add(step).min(100)
-    } else {
+    } else if scroll.y > 0.0 {
         value.saturating_sub(step)
+    } else {
+        // a sideways scroll leaves the level alone
+        value
     }
 }
 
@@ -37,9 +40,15 @@ pub struct Slider {
     value: u8,
     width: f32,
     dimmed: bool,
+    // drawn but taking no input, as in Quick Settings' edit mode
+    inert: bool,
     on_value_change: Rc<dyn Fn(u8)>,
     // the large variant's glyph
     large: Option<char>,
+    // the thin variant's active colour, in place of the accent
+    fill: Option<Color>,
+    // the thin variant's track height, in place of `sys.size.slider.height`
+    thickness: Option<f32>,
     // the glyph's id and what pressing it does
     icon_press: Option<(String, Rc<dyn Fn()>)>,
 }
@@ -50,8 +59,11 @@ impl Slider {
             value: value.min(100),
             width,
             dimmed: false,
+            inert: false,
             on_value_change: Rc::new(|_| {}),
             large: None,
+            fill: None,
+            thickness: None,
             icon_press: None,
         }
     }
@@ -59,6 +71,13 @@ impl Slider {
     /// Greys the active track, as while muted; it still takes input.
     pub fn dimmed(mut self, dimmed: bool) -> Self {
         self.dimmed = dimmed;
+        self
+    }
+
+    /// Draws it without any handler or cursor, for a surface whose
+    /// controls are shown but not for use.
+    pub fn inert(mut self, inert: bool) -> Self {
+        self.inert = inert;
         self
     }
 
@@ -73,8 +92,24 @@ impl Slider {
         self
     }
 
+    /// The thin slider's active colour in place of the accent. Quick
+    /// Settings' glass cards use the panel's `fg`, a documented departure
+    /// from the one-accent rule.
+    pub fn fill(mut self, color: Color) -> Self {
+        self.fill = Some(color);
+        self
+    }
+
+    /// The thin slider's track height in place of `sys.size.slider.height`.
+    pub fn thickness(mut self, height: f32) -> Self {
+        self.thickness = Some(height);
+        self
+    }
+
     /// Makes the large slider's glyph a button (mute, say). `id` keys its
-    /// hover, so it must be unique and stable.
+    /// hover, so it must be unique and stable. (Quick Settings' Sound card
+    /// mutes with a button before its thin track now; the Sound page's
+    /// microphone slider mutes with its glyph.)
     pub fn on_icon_press(mut self, id: impl Into<String>, press: impl Fn() + 'static) -> Self {
         self.icon_press = Some((id.into(), Rc::new(press)));
         self
@@ -89,14 +124,17 @@ impl Slider {
             value,
             width,
             dimmed,
+            inert,
             on_value_change: set,
+            fill,
+            thickness,
             ..
         } = self;
-        let track_h = sys::size::slider::height();
+        let track_h = thickness.unwrap_or_else(sys::size::slider::height);
         let active = if dimmed {
             sys::color::content::secondary()
         } else {
-            sys::color::accent::bg()
+            fill.unwrap_or_else(sys::color::accent::bg)
         };
 
         let track = Rectangle::new()
@@ -114,11 +152,15 @@ impl Slider {
             );
 
         let scroll = set.clone();
-        Rectangle::new()
+        let input = Rectangle::new()
             .width(Size::Fixed(width))
             .height(Size::Fixed(sys::size::control::height()))
             .fill(Color::TRANSPARENT)
-            .align_child(Start, Center)
+            .align_child(Start, Center);
+        if inert {
+            return input.child(track);
+        }
+        input
             .cursor(Pointer)
             .on_drag(move |p: Point| {
                 // the drag keeps reporting past either end, so it is clamped
@@ -134,11 +176,13 @@ impl Slider {
             value,
             width,
             dimmed,
+            inert,
             on_value_change: set,
             icon_press,
             ..
         } = self;
         let height = sys::size::control::height();
+        let track = sys::color::surface::raised::bg();
         let active = if dimmed {
             sys::color::content::secondary()
         } else {
@@ -165,7 +209,7 @@ impl Slider {
                     press: Some(press),
                     ..Actions::default()
                 };
-                interactive(knob.fill(fill), id, false, actions)
+                interactive(knob.fill(fill), id, inert, actions)
             }
             None => knob,
         };
@@ -174,11 +218,14 @@ impl Slider {
         let rest = Rectangle::new()
             .width(Size::Fixed((width - drag_from).max(1.0)))
             .height(Size::Fixed(height))
-            .fill(Color::TRANSPARENT)
-            .cursor(Pointer)
-            .on_drag(move |p: Point| {
+            .fill(Color::TRANSPARENT);
+        let rest = if inert {
+            rest
+        } else {
+            rest.cursor(Pointer).on_drag(move |p: Point| {
                 drag_set(large_value(p.x + drag_from, width, height));
-            });
+            })
+        };
 
         // with no glyph button the whole track drags, from under the glyph
         let input: Box<dyn Widget> = if drag_from > 0.0 {
@@ -187,14 +234,17 @@ impl Slider {
             boxed(Stack::new(vec![boxed(knob), boxed(rest)]))
         };
 
-        Rectangle::new()
+        let slider = Rectangle::new()
             .width(Size::Fixed(width))
             .height(Size::Fixed(height))
             .radius(Radius::Full)
-            .fill(sys::color::surface::raised::bg())
+            .fill(track)
             .clip()
-            .on_scroll(move |s: Scroll| set(scrolled(value, s, STEP)))
-            .child(Stack::new(vec![boxed(fill), input]))
+            .child(Stack::new(vec![boxed(fill), input]));
+        if inert {
+            return slider;
+        }
+        slider.on_scroll(move |s: Scroll| set(scrolled(value, s, STEP)))
     }
 }
 

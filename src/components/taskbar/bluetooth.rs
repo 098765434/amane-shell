@@ -152,6 +152,11 @@ fn card() -> Rectangle {
 /// the panel's body, which Quick Settings' Bluetooth page shows too. A
 /// device's menu hangs under `parent_ns`, the surface it's drawn on.
 pub(crate) fn devices(parent_ns: &'static str) -> Box<dyn Widget> {
+    devices_in(parent_ns, sys::size::list::max_height())
+}
+
+/// [`devices`], scrolling in `height`.
+pub(crate) fn devices_in(parent_ns: &'static str, height: f32) -> Box<dyn Widget> {
     MENU_PARENT.set(parent_ns);
 
     let bluetooth = Bluetooth::read();
@@ -175,13 +180,14 @@ pub(crate) fn devices(parent_ns: &'static str) -> Box<dyn Widget> {
         Bluetooth::start_scan();
     }
 
-    device_list(mine, others, scanning)
+    device_list(mine, others, scanning, height)
 }
 
 fn device_list(
     mine: Vec<BluetoothDevice>,
     others: Vec<BluetoothDevice>,
     scanning: bool,
+    height: f32,
 ) -> Box<dyn Widget> {
     // unnamed devices only show their address, which nobody can pick out
     let others: Vec<BluetoothDevice> = others
@@ -210,10 +216,7 @@ fn device_list(
         .gap(sys::space::gap::xl())
         .width(Parent);
 
-    boxed(
-        ScrollArea::new("amane.bluetooth.devices", column)
-            .height(Size::Fixed(sys::size::list::max_height())),
-    )
+    boxed(ScrollArea::new("amane.bluetooth.devices", column).height(Size::Fixed(height.max(1.0))))
 }
 
 fn device_section(title: &str, devices: &[BluetoothDevice]) -> List {

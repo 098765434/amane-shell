@@ -10,6 +10,7 @@
 //! Only one-line items for now; M3's supporting and overline text are the
 //! next slots to add when a list needs them.
 
+use std::cell::Cell;
 use std::rc::Rc;
 
 use amane::{Center, Color, Column, Parent, Rectangle, Row, Size, Start, Text, Widget};
@@ -18,6 +19,21 @@ use crate::components::buttons::{Actions, interactive, state_fill};
 use crate::components::icons::ICON_CHECK;
 use crate::components::layout::{boxed, caption, clipped_label, icon, pad, split_row};
 use crate::tokens::{Styled, sys};
+
+thread_local! {
+    // how wide the rows being built are, when not a popover's width
+    static ROW_WIDTH: Cell<Option<f32>> = const { Cell::new(None) };
+}
+
+/// Builds `f` with every row in it `width` wide (the headline is elided to
+/// what's left after the trailing items), for a surface that isn't a
+/// popover's width.
+pub(crate) fn with_row_width<R>(width: f32, f: impl FnOnce() -> R) -> R {
+    let previous = ROW_WIDTH.replace(Some(width));
+    let out = f();
+    ROW_WIDTH.set(previous);
+    out
+}
 
 /// One row. `id` keys its hover state, so it must be unique and stable.
 pub struct ListItem {
@@ -86,7 +102,8 @@ impl ListItem {
         } else {
             sys::color::content::secondary()
         });
-        let headline_w = (sys::size::popover::width() - sys::size::row::trailing_width()).max(1.0);
+        let row_w = ROW_WIDTH.get().unwrap_or_else(sys::size::popover::width);
+        let headline_w = (row_w - sys::size::row::trailing_width()).max(1.0);
 
         let mut leading = Vec::new();
         if let Some(glyph) = self.leading {

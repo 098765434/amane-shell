@@ -21,6 +21,10 @@ pub struct LayerRule {
     /// Its xdg-popups are frosted cards with these corners. niri gives
     /// popups no shadow.
     pub popups: Option<f32>,
+    /// A clear surface that asks for frost itself, where its modules are
+    /// (ext-background-effect): no corners, no shadow, only `xray false`,
+    /// since niri's blur would otherwise show the wallpaper alone.
+    pub clear: bool,
 }
 
 // TODO(token): `sys.shadow.popover` once Penpot has it (docs/penpot-todo.md).
@@ -49,6 +53,7 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: None,
             popups: Some(popover),
+            clear: false,
         },
         LayerRule {
             namespace: ANCHOR_NS,
@@ -62,6 +67,7 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: None,
             popups: Some(popover),
+            clear: false,
         },
         LayerRule {
             namespace: WIFI_NS,
@@ -71,6 +77,7 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: Some(popover),
             popups: None,
+            clear: false,
         },
         LayerRule {
             namespace: POWER_NS,
@@ -80,6 +87,7 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: Some(popover),
             popups: None,
+            clear: false,
         },
         LayerRule {
             namespace: BLUETOOTH_NS,
@@ -89,6 +97,7 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: Some(popover),
             popups: Some(popover),
+            clear: false,
         },
         LayerRule {
             namespace: AUDIO_NS,
@@ -97,15 +106,18 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: Some(popover),
             popups: None,
+            clear: false,
         },
         LayerRule {
             namespace: QS_NS,
             comment: String::from(
-                "Quick Settings: the same frosted card, toggled by the taskbar's Control\n\
-                      Center button. A Bluetooth device's menu is an xdg-popup of it.",
+                "Quick Settings: a clear surface whose modules are frosted one by one, the\n\
+                      surface saying where (ext-background-effect). Toggled by the taskbar's\n\
+                      Control Center button. A Bluetooth device's menu is an xdg-popup of it.",
             ),
-            radius: Some(popover),
+            radius: None,
             popups: Some(popover),
+            clear: true,
         },
         LayerRule {
             namespace: TOAST_NS,
@@ -115,6 +127,7 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: Some(toast),
             popups: None,
+            clear: false,
         },
         LayerRule {
             namespace: CENTER_NS,
@@ -124,6 +137,7 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: Some(popover),
             popups: Some(popover),
+            clear: false,
         },
     ]
 }
@@ -179,6 +193,11 @@ pub fn render(rules: &[LayerRule]) -> String {
             let _ = writeln!(out, "        offset x=0 y={SHADOW_Y}");
             let _ = writeln!(out, "        color \"{SHADOW_COLOR}\"");
             out.push_str("    }\n");
+        }
+        if rule.clear {
+            // the surface sets its own blur region; without `xray false`
+            // niri would blur the wallpaper alone behind it
+            out.push_str("    background-effect {\n        xray false\n    }\n");
         }
         if let Some(radius) = rule.popups {
             out.push_str("\n    popups {\n");

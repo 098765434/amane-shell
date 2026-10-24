@@ -28,7 +28,9 @@ the same surface:
 
 `Variant::Filled` is the fill alone, and `Variant::Outlined` adds a `sys.border.hairline` in the
 surface's stroke. M3's elevated card is left out because there's no `sys.shadow` role yet.
-`.blur(true)` frosts what's below with `sys.effect.backdrop-blur`, a macOS departure from M3. A
+`.blur(true)` frosts what's below with `sys.effect.backdrop-blur`, a macOS departure from M3; the
+bar's panels leave it off, since niri frosts their whole surface through a layer rule and under a
+root card there's nothing of the window's own to blur. A
 card also records where the pointer is over it (`layout::cursor()`), so a right-click on its
 content can anchor a menu.
 
@@ -54,6 +56,11 @@ the next M3 slots to add when a list needs them.
 caption, with an `.empty(…)` note while there are none.
 
 ## Divider and Slider
+
+The thin `Slider` takes `fill` and `thickness` in place of the accent and `sys.size.slider.height`:
+Quick Settings' glass cards fill it with the panel's `fg`, as macOS does, a documented departure
+from the one-accent rule (§11.2).
+
 
 `Divider::build()` is a `sys.border.hairline` line in `sys.color.separator`, with `gap.xs` above
 and below. `Divider::height()` is what it takes up, for menus that measure themselves.

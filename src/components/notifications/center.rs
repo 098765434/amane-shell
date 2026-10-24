@@ -302,8 +302,7 @@ fn group_view(
             value: Entry::Card(Box::new(m)),
             pose: *pose,
             enter: Pose {
-                // TODO(token): a `sys.motion.*` entrance scale once Penpot has one
-                scale: 0.9,
+                scale: motion::ENTER_SCALE,
                 ..pose.faded()
             },
             exit: pose.moved(width).faded(),

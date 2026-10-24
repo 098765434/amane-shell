@@ -62,5 +62,6 @@ These are constants until they exist in Penpot (marked `TODO(token)` in the code
 
 - `sys.opacity.disabled`: 0.38 (`buttons/mod.rs`).
 - `sys.motion.*`: spring 450 ms with a 0.15 bounce, fade 200 ms (`motion.rs`).
-- `sys.color.state.pressed`. amane reports clicks but not presses, so there is no pressed
-  layer yet.
+- `sys.color.state.pressed`. amane reports a press as the start of a drag and the release
+  through `on_release`, so a held pressed layer is possible; until the token exists a press
+  is shown as a timed pulse (`press_scale`, `sys.motion.press-scale` to be).

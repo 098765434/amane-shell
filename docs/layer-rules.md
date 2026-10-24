@@ -13,6 +13,14 @@ A blurred surface gets `xray false`: niri's layer-surface blur is xray by defaul
 only the wallpaper, so the cards would look opaque over windows. (Popups already default to
 non-xray.)
 
+Because niri frosts the whole surface, a frosted card draws no blur of its own (`Card::blur`
+stays off for the panels), and a surface can't be bigger than its card.
+
+A surface can instead say where to frost (`LayerWindow::blur_region`, ext-background-effect):
+Quick Settings does, for its modules alone, so its rule is a `clear` one — no corner radius,
+blur or shadow, only `xray false`, since niri's blur region would otherwise show the wallpaper
+alone (see [quick-settings.md](quick-settings.md)).
+
 A blurred surface also gets a `shadow`: each surface is only as big as its card, so a shadow
 the shell drew would be cut off at the surface's edge. niri's `popups {}` block has no shadow,
 so context menus and the menus of panels go without one. The shell lights the cards' edges
@@ -30,7 +38,7 @@ generated from (2), not hand-edited, so neither can drift.
 | `amane.taskbar.power` | the power panel |
 | `amane.taskbar.bluetooth` | the Bluetooth panel (its device menu is a frosted xdg-popup of it) |
 | `amane.taskbar.audio` | the Sound panel |
-| `amane.quick-settings` | Quick Settings (a Bluetooth device's menu is a frosted xdg-popup of it) |
+| `amane.quick-settings` | Quick Settings: a clear surface that frosts its own modules through a blur region; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
 | `amane.notifications.toast` | each notification toast (one surface per banner, radius `notification.card.radius`) |
 | `amane.notifications.center` | the notification center sidebar (its Do Not Disturb menu is a frosted xdg-popup of it) |
 | `amane.context-menu-anchor` | the context-menu anchor window |

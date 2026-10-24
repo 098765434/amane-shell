@@ -1,25 +1,20 @@
-//! Keyboard — GNOME's keyboard backlight toggle: on at the level last used,
-//! and a page to pick it, as steps (Off, Low, High) when the keyboard has
-//! only a few, else a slider.
+//! Keyboard — GNOME's keyboard backlight toggle as a round button: on at
+//! the level last used, and a page to pick it, as steps (Off, Low, High)
+//! when the keyboard has only a few, else a slider.
 
 use std::cell::Cell as Slot;
 
 use amane::Service;
 
-use super::GridCell;
+use super::super::grid::{Metrics, Span};
+use super::super::{Page, open};
 use crate::components::buttons::{Segment, SegmentedButton};
 use crate::components::icons::ICON_KEYBOARD_LIGHT;
 use crate::components::layout::boxed;
 use crate::components::quick_settings::detail::DetailPage;
-use crate::components::quick_settings::grid::Cell;
-use crate::components::quick_settings::tile::{QuickToggle, Span};
-use crate::components::quick_settings::{Page, open};
+use crate::components::quick_settings::tile::QuickToggle;
 use crate::components::slider::Slider;
 use crate::services::keyboard_backlight::KeyboardBacklight;
-use crate::tokens::sys;
-
-/// Up to this many steps above off are picked from named segments.
-const MOST_STEPS: u32 = 3;
 
 thread_local! {
     // what turning it back on restores; none means the brightest
@@ -27,7 +22,7 @@ thread_local! {
 }
 
 /// The names of a keyboard's steps from off, or none when there are too
-/// many to name.
+/// many (more than three) to name; those get a slider.
 fn steps(max: u32) -> Option<&'static [&'static str]> {
     match max {
         1 => Some(&["Off", "On"]),
@@ -45,7 +40,7 @@ fn describe(level: u32, max: u32) -> String {
     }
 }
 
-pub(crate) fn cell() -> Option<GridCell> {
+pub(crate) fn toggle() -> Option<QuickToggle> {
     let light = KeyboardBacklight::read();
     if !light.present() {
         return None;
@@ -58,13 +53,13 @@ pub(crate) fn cell() -> Option<GridCell> {
     }
     let restore = LAST.get().unwrap_or(max);
 
-    let tile = QuickToggle::new("amane.qs.keyboard", ICON_KEYBOARD_LIGHT, "Keyboard")
-        .subtitle(describe(level, max))
-        .checked(level > 0)
-        .on_toggle(move |on| KeyboardBacklight::set(if on { restore } else { 0 }))
-        .on_open(|| open(Page::Keyboard))
-        .build();
-    Some(Cell::Half(boxed(tile)))
+    Some(
+        QuickToggle::new("amane.qs.keyboard", ICON_KEYBOARD_LIGHT, "Keyboard")
+            .subtitle(describe(level, max))
+            .checked(level > 0)
+            .on_toggle(move |on| KeyboardBacklight::set(if on { restore } else { 0 }))
+            .on_open(|| open(Page::Keyboard)),
+    )
 }
 
 pub(crate) fn page() -> DetailPage {
@@ -73,27 +68,32 @@ pub(crate) fn page() -> DetailPage {
     drop(light);
     let restore = LAST.get().unwrap_or(max);
 
-    let picker = match steps(max) {
-        Some(names) if max <= MOST_STEPS => {
-            let segments = names.iter().map(|name| Segment::new(*name)).collect();
-            SegmentedButton::new("amane.qs.keyboard.level", segments, Some(level as usize))
-                .on_select(|index, _| KeyboardBacklight::set(index as u32))
-                .build()
-        }
-        _ => Slider::new((level * 100 / max.max(1)) as u8, Span::Full.width())
-            .large(ICON_KEYBOARD_LIGHT)
-            .on_value_change(move |value| {
-                KeyboardBacklight::set((u32::from(value) * max).div_ceil(100))
-            })
-            .build(),
-    };
-
-    DetailPage::new("amane.qs.keyboard.page", ICON_KEYBOARD_LIGHT, "Keyboard")
+    DetailPage::new("amane.qs.keyboard.page", "Keyboard Brightness")
         .subtitle(describe(level, max))
         .switch(level > 0, move |on| {
             KeyboardBacklight::set(if on { restore } else { 0 })
         })
-        .body(vec![boxed(picker)], sys::size::control::height())
+        .body(move |_| {
+            let picker = match steps(max) {
+                Some(names) => {
+                    let segments = names.iter().map(|name| Segment::new(*name)).collect();
+                    SegmentedButton::new("amane.qs.keyboard.level", segments, Some(level as usize))
+                        .on_select(|index, _| KeyboardBacklight::set(index as u32))
+                        .build()
+                }
+                _ => Slider::new(
+                    (level * 100 / max.max(1)) as u8,
+                    Metrics::tokens().width(Span::FULL),
+                )
+                .large(ICON_KEYBOARD_LIGHT)
+                .dimmed(level == 0)
+                .on_value_change(move |value| {
+                    KeyboardBacklight::set((u32::from(value) * max).div_ceil(100))
+                })
+                .build(),
+            };
+            vec![boxed(picker)]
+        })
 }
 
 #[cfg(test)]

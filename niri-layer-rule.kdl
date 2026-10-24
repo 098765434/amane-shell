@@ -119,20 +119,13 @@ layer-rule {
     }
 }
 
-// Quick Settings: the same frosted card, toggled by the taskbar's Control
-// Center button. A Bluetooth device's menu is an xdg-popup of it.
+// Quick Settings: a clear surface whose modules are frosted one by one, the
+// surface saying where (ext-background-effect). Toggled by the taskbar's
+// Control Center button. A Bluetooth device's menu is an xdg-popup of it.
 layer-rule {
     match namespace="^amane\\.quick-settings$"
-    geometry-corner-radius 10
     background-effect {
-        blur true
         xray false
-    }
-    shadow {
-        on
-        softness 16
-        offset x=0 y=8
-        color "#00000073"
     }
 
     popups {

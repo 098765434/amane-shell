@@ -9,12 +9,12 @@
 
 use std::rc::Rc;
 
-use amane::{Center, Color, Column, Row, Text, Widget};
+use amane::{Center, Color, Column, Row, Start, Text, Widget};
 
 use crate::components::buttons::IconButton;
 use crate::components::card::Surface;
 use crate::components::icons::ICON_CHEVRON_LEFT;
-use crate::components::layout::{boxed, icon, split_row};
+use crate::components::layout::{boxed, clipped_label, icon, split_row};
 use crate::tokens::{Styled, sys};
 
 pub struct TopAppBar {
@@ -25,6 +25,8 @@ pub struct TopAppBar {
     surface: Surface,
     color: Option<Color>,
     actions: Vec<Box<dyn Widget>>,
+    // the title's and subtitle's width, when they're to be elided
+    text_width: Option<f32>,
 }
 
 impl TopAppBar {
@@ -37,6 +39,7 @@ impl TopAppBar {
             surface: Surface::Panel,
             color: None,
             actions: Vec::new(),
+            text_width: None,
         }
     }
 
@@ -79,25 +82,36 @@ impl TopAppBar {
         self
     }
 
+    /// Elides the title and subtitle to `width`, for a long network or
+    /// device name.
+    pub fn elide_to(mut self, width: f32) -> Self {
+        self.text_width = Some(width);
+        self
+    }
+
     pub fn build(self) -> Row {
         let color = self.color.unwrap_or(self.surface.fg());
 
-        let title = Text::new(self.title)
-            .style(sys::r#type::title())
-            .color(color);
+        let line = |text: String, style, color| -> Box<dyn Widget> {
+            match self.text_width {
+                Some(width) => boxed(clipped_label(text, style, color, width, Start)),
+                None => boxed(Text::new(text).style(style).color(color)),
+            }
+        };
+        let title = line(self.title, sys::r#type::title(), color);
         let title: Box<dyn Widget> = match self.subtitle {
             Some(subtitle) => boxed(
                 Column::new(vec![
-                    boxed(title),
-                    boxed(
-                        Text::new(subtitle)
-                            .style(sys::r#type::caption())
-                            .color(self.surface.fg_secondary()),
+                    title,
+                    line(
+                        subtitle,
+                        sys::r#type::caption(),
+                        self.surface.fg_secondary(),
                     ),
                 ])
                 .gap(sys::space::gap::_2xs()),
             ),
-            None => boxed(title),
+            None => title,
         };
 
         let mut leading = Vec::new();

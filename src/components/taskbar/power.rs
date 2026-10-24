@@ -122,8 +122,8 @@ pub(crate) fn profile_section() -> Box<dyn Widget> {
 
     if let Some(reason) = degraded {
         rows.push(boxed(
-            caption(format!("performance limited: {reason}"))
-                .color(sys::color::status::critical::bg()),
+            caption(format!("Performance is limited: {reason}"))
+                .color(sys::color::status::critical::text()),
         ));
     }
 
@@ -132,7 +132,7 @@ pub(crate) fn profile_section() -> Box<dyn Widget> {
 
 pub(crate) fn profile_label(name: &str) -> &str {
     match name {
-        "power-saver" => "Saver",
+        "power-saver" => "Power Saver",
         "balanced" => "Balanced",
         "performance" => "Performance",
         other => other,
@@ -141,20 +141,26 @@ pub(crate) fn profile_label(name: &str) -> &str {
 
 // ───── peripherals ───────────────────────────────────────────────────────────
 
-/// The batteries of connected devices.
+/// The batteries of connected devices, in the panel's room.
 pub(crate) fn peripheral_section() -> Box<dyn Widget> {
+    peripheral_section_in(sys::size::list::max_height() - sys::size::row::height())
+}
+
+/// The batteries of connected devices, scrolling in `height`.
+pub(crate) fn peripheral_section_in(height: f32) -> Box<dyn Widget> {
     let battery = Battery::read();
     let items: Vec<ListItem> = battery.peripherals().iter().map(peripheral_item).collect();
     drop(battery);
 
-    if items.is_empty() {
-        return boxed(caption("No devices with a battery"));
-    }
-
     boxed(
-        ScrollArea::new("amane.power.devices", List::new(items).build()).height(Size::Fixed(
-            sys::size::list::max_height() - sys::size::row::height(),
-        )),
+        ScrollArea::new(
+            "amane.power.devices",
+            List::new(items)
+                .header("Devices")
+                .empty("No devices with a battery")
+                .build(),
+        )
+        .height(Size::Fixed(height.max(1.0))),
     )
 }
 

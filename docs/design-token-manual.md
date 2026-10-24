@@ -165,7 +165,7 @@ and component non-colour values may use them.
 | `ref.size.<px>` | `sizing` | shared sizes only (icons, controls) | `.12 .16` |
 | `ref.radius.<px>` | `borderRadius` | | `.0 .5 .6 .10` |
 | `ref.border.<px>` | `borderWidth` | | `.1` |
-| `ref.font.family.<name>` | `fontFamilies` | full fallback stack, first entry is the design font | `ui` [SF Pro Text, Inter, Atkinson Hyperlegible, sans-serif], `icon` [Material Symbols Rounded, Material Icons Round, sans-serif] |
+| `ref.font.family.<name>` | `fontFamilies` | full fallback stack, first entry is the design font | `ui` [Atkinson Hyperlegible Next, Atkinson Hyperlegible, Inter, sans-serif], `icon` [Material Symbols Rounded, Material Icons Round, sans-serif] |
 | `ref.font.weight.<name>` | `fontWeights` | Penpot accepts 100–900 in hundreds and 950 | `regular` 400, `medium` 500 |
 | `ref.font.size.<px>` | `fontSizes` | | as used |
 | `ref.opacity.<percent>` | `opacity` | | `.38` … |

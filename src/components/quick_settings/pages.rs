@@ -62,7 +62,7 @@ impl Page {
 /// The page itself. The grid isn't one, so it gets an empty page.
 pub(super) fn page(page: Page) -> DetailPage {
     match page {
-        Page::Grid => DetailPage::new("amane.qs.grid", ' ', ""),
+        Page::Grid => DetailPage::new("amane.qs.grid", ""),
         Page::Sound => sound::page(),
         Page::Wifi => network::wifi_page(),
         Page::Vpn => network::vpn_page(),
@@ -74,6 +74,25 @@ pub(super) fn page(page: Page) -> DetailPage {
         Page::Keyboard => keyboard::page(),
         Page::Session => session::page(),
         Page::BackgroundApps => background::page(),
+    }
+}
+
+/// Whether `page` has what it shows: the setting's hardware or daemon is
+/// there. A page whose setting goes away while it's open gives way to the
+/// grid, and IPC won't open one.
+pub(super) fn available(page: Page) -> bool {
+    use amane::{Audio, Battery, Bluetooth, PowerProfile, Service};
+
+    match page {
+        Page::Grid | Page::DoNotDisturb | Page::Session | Page::BackgroundApps => true,
+        Page::Sound => !Audio::read().outputs().is_empty(),
+        Page::Wifi => network::wifi_available(),
+        Page::Vpn => network::vpn_available(),
+        Page::Bluetooth => Bluetooth::read().available(),
+        Page::PowerMode => PowerProfile::read().present(),
+        Page::Power => Battery::read().present(),
+        Page::NightLight => crate::services::night_light::NightLight::read().present(),
+        Page::Keyboard => crate::services::keyboard_backlight::KeyboardBacklight::read().present(),
     }
 }
 

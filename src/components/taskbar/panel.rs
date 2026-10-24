@@ -147,9 +147,11 @@ pub fn surface(
 
 /// The frosted card every panel draws, its sections `gap` apart.
 pub fn card(body: Vec<Box<dyn Widget>>, gap: f32) -> Rectangle {
+    // niri frosts the whole surface (its layer rule), so the card draws no
+    // blur of its own: under the root card the canvas is clear, and blurring
+    // it only costs a GPU pass per frame
     Card::new(body)
         .surface(Surface::Panel)
-        .blur(true)
         .glass(true)
         .gap(gap)
         .build()
