@@ -6,15 +6,20 @@
 //! and, pinned at the bottom, an optional "Show in Taskbar" switch for the
 //! setting's status icon and an optional link to the app that has the rest
 //! of its settings. Every page is as tall as the grid, so the card never
-//! changes size while a page slides in (see the module docs): the body is
+//! changes size while a page grows in (see the module docs): the body is
 //! told how much room it has.
+//!
+//! As the page's sheet grows out of its tile, what's on it comes in after:
+//! the header once the sheet has room for it, then the body's rows one
+//! after another, rising a little. Going back, they go first, the last row
+//! before the header, and the sheet shrinks into the tile empty.
 
 use std::rc::Rc;
 
-use amane::{Center, Color, Column, Parent, Rectangle, Size, Start, Widget};
+use amane::{Center, Color, Column, Parent, Rectangle, Size, Stack, Start, Widget};
 
-use super::back;
 use super::grid::{Canvas, Metrics};
+use super::{back, ramp};
 use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::Switch;
 use crate::components::divider::Divider;
@@ -29,6 +34,34 @@ use crate::tokens::{quick, sys};
 pub(super) fn page_width() -> f32 {
     let px = Metrics::tokens();
     (px.extent(Canvas::tokens().cols) - quick::tile::pad() * 2.0).max(1.0)
+}
+
+// TODO(token): `quick.page.reveal.*` once Penpot has them (manual §1.1).
+/// Where in the sheet's growth (0 … 1) the header comes in, and the body's
+/// first row; each row after that comes `REVEAL_STEP` later, over
+/// `REVEAL_SPAN`, rising `REVEAL_RISE` into place.
+const REVEAL_HEADER: (f32, f32) = (0.35, 0.7);
+const REVEAL_BODY: f32 = 0.45;
+const REVEAL_STEP: f32 = 0.06;
+const REVEAL_SPAN: f32 = 0.35;
+const REVEAL_RISE: f32 = 8.0;
+
+/// `widget` as far in as `shown` (0 … 1): fading in, rising into place.
+fn revealed(widget: impl Widget + 'static, shown: f32) -> Rectangle {
+    let height = widget.height();
+    Rectangle::new()
+        .width(Parent)
+        .height(height)
+        .fill(Color::TRANSPARENT)
+        .opacity(shown)
+        .translate(0.0, (1.0 - shown) * REVEAL_RISE)
+        .child(widget)
+}
+
+/// How far in the `index`th row after the header is at `reveal`.
+fn row_shown(reveal: f32, index: usize) -> f32 {
+    let from = (REVEAL_BODY + REVEAL_STEP * index as f32).min(1.0 - REVEAL_SPAN);
+    ramp(reveal, from, from + REVEAL_SPAN)
 }
 
 /// The header's switch: whether it's on, and what flipping it asks for.
@@ -91,8 +124,8 @@ impl DetailPage {
         self
     }
 
-    /// The page, `height` tall.
-    pub fn build(self, height: f32) -> Column {
+    /// The page, `height` tall, `reveal` of the way in (see the module docs).
+    pub fn build(self, height: f32, reveal: f32) -> Column {
         let row = sys::size::row::height();
         let gap = sys::space::gap::s();
 
@@ -126,9 +159,14 @@ impl DetailPage {
         let pinned = usize::from(self.taskbar.is_some()) + usize::from(self.footer.is_some());
         let footer_h = row * pinned as f32;
         let body_h = (height - row - Divider::height() - gap - footer_h).max(0.0);
-        let body = list::with_row_width(width, || {
+        let body: Vec<Box<dyn Widget>> = list::with_row_width(width, || {
             self.body.map_or_else(Vec::new, |body| body(body_h))
-        });
+        })
+        .into_iter()
+        .enumerate()
+        .map(|(index, row)| boxed(revealed(Stack::new(vec![row]), row_shown(reveal, index))))
+        .collect();
+        let rows_in = body.len();
         let body = Rectangle::new()
             .width(Parent)
             .height(Size::Fixed(body_h))
@@ -137,10 +175,17 @@ impl DetailPage {
             .clip()
             .child(Column::new(body).gap(sys::space::gap::l()).width(Parent));
 
-        let mut rows = vec![boxed(header), boxed(Divider::build()), boxed(body)];
+        let header_shown = ramp(reveal, REVEAL_HEADER.0, REVEAL_HEADER.1);
+        let mut rows = vec![
+            boxed(revealed(header, header_shown)),
+            boxed(revealed(Divider::build(), header_shown)),
+            boxed(body),
+        ];
+        // the pinned rows come in after the body's
+        let pinned_shown = row_shown(reveal, rows_in);
         if let Some(indicator) = self.taskbar {
             let shown = indicator.shown();
-            rows.push(boxed(
+            rows.push(boxed(revealed(
                 ListItem::new(format!("{}.taskbar", self.id), "Show in Taskbar")
                     .trailing(
                         Switch::new(format!("{}.taskbar.switch", self.id), shown)
@@ -149,10 +194,11 @@ impl DetailPage {
                     )
                     .on_press(move || indicator.set_shown(!shown))
                     .build(),
-            ));
+                pinned_shown,
+            )));
         }
         if let Some((label, open)) = self.footer {
-            rows.push(boxed(
+            rows.push(boxed(revealed(
                 ListItem::new(format!("{}.footer", self.id), label)
                     .trailing(icon(
                         ICON_CHEVRON_RIGHT,
@@ -161,7 +207,8 @@ impl DetailPage {
                     ))
                     .on_press(move || open())
                     .build(),
-            ));
+                pinned_shown,
+            )));
         }
 
         // the divider carries its own room; the body keeps `gap` from it

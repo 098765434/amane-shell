@@ -20,7 +20,7 @@ path = 'src/main.rs'
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
 # sibling checkout during local co-development. See README.
-amane = { git = "https://github.com/098765434/amane", rev = "389fc29bacedbebcf0b464b0af66f1914a97bce6" }
+amane = { git = "https://github.com/098765434/amane", rev = "289f191618915254e9594b1003a5f61aa9175c3b" }
 serde_json = "1.0"
 fontconfig = "0.11"
 chrono = "0.4"

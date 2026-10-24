@@ -1,5 +1,6 @@
 //! Which page Quick Settings shows: the grid, or one tile's page.
 
+use super::controls::ControlId;
 use super::detail::DetailPage;
 use super::tiles::{
     appearance, background, bluetooth, keyboard, network, notifications, power, session, sound,
@@ -52,6 +53,26 @@ impl Page {
         }
         names
     };
+
+    /// The controls on the grid that open this page, the one it grows out
+    /// of first.
+    pub(super) const fn controls(self) -> &'static [ControlId] {
+        match self {
+            Self::Grid => &[],
+            Self::Sound => &[ControlId::Sound],
+            Self::Wifi => &[ControlId::Wifi, ControlId::Wired],
+            Self::Vpn => &[ControlId::Vpn],
+            Self::Bluetooth => &[ControlId::Bluetooth],
+            Self::PowerMode => &[ControlId::PowerMode],
+            Self::Power => &[ControlId::Battery],
+            Self::NightLight => &[ControlId::NightLight],
+            Self::DoNotDisturb => &[ControlId::Focus],
+            Self::Keyboard => &[ControlId::Keyboard],
+            Self::Session => &[ControlId::PowerOff],
+            Self::BackgroundApps => &[ControlId::BackgroundApps],
+            Self::Tailscale => &[ControlId::Tailscale],
+        }
+    }
 
     /// The page `quick-settings open <name>` asks for.
     pub fn named(name: &str) -> Option<Self> {
@@ -122,5 +143,12 @@ mod tests {
         }
         assert_eq!(Page::NAMES[2], "wifi");
         assert_eq!(Page::named("nope"), None);
+    }
+
+    #[test]
+    fn every_page_but_the_grid_grows_out_of_a_control() {
+        for (_, page) in Page::ALL {
+            assert_eq!(page.controls().is_empty(), page == Page::Grid);
+        }
     }
 }

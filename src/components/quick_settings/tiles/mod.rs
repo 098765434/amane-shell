@@ -17,10 +17,11 @@ pub mod sound;
 pub mod tailscale;
 
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
 use amane::{
-    BlurShape, Button, Center, Color, Column, End, Parent, Rectangle, Row, ScrollArea, Size, Stack,
-    Start, Text, Widget,
+    Blend, BlurShape, Button, Center, Color, Column, End, Parent, Rectangle, Row, ScrollArea, Size,
+    Stack, Start, Text, Widget,
 };
 
 use super::controls::{self, ControlId, Ctx};
@@ -44,6 +45,54 @@ const ADD_LIST_CELLS: u8 = 3;
 /// Every control's motion is kept under this scope.
 pub(super) const SCOPE: &str = "amane.qs.grid";
 
+// TODO(token): `quick.open.cascade`, `quick.open.cascade-scale` and
+// `quick.open.cascade-rise` once Penpot has them (manual §1.1).
+/// How much later the module farthest from the bar's corner sets off than
+/// the nearest as the card opens.
+const CASCADE: Duration = Duration::from_millis(90);
+/// How small a module is as the cascade brings it in, and how far below.
+const CASCADE_SCALE: f32 = 0.9;
+const CASCADE_RISE: f32 = 10.0;
+
+/// How the grid moves this frame, beyond its controls' own motion.
+#[derive(Clone, Copy, Default)]
+pub(super) struct Motion {
+    /// When the card began to open, for the modules to arrive in a wave
+    /// out from the bar's corner.
+    pub opened: Option<Instant>,
+    /// The controls a page growing over the grid comes out of (the first
+    /// on the grid), and how much of that one still shows: its frost has
+    /// gone to the page's sheet.
+    pub focus: Option<(&'static [ControlId], f32)>,
+}
+
+impl Motion {
+    /// How far a module whose centre is `distance` (0 … 1 of the canvas's
+    /// diagonal) from the bar's corner has arrived: 0 … 1, a little past on
+    /// the spring.
+    fn arrival(self, distance: f32) -> f32 {
+        let Some(opened) = self.opened else {
+            return 1.0;
+        };
+        let elapsed = opened.elapsed().as_secs_f32() - CASCADE.as_secs_f32() * distance;
+        let progress = elapsed / motion::settle().as_secs_f32();
+        if progress < 1.0 {
+            amane::request_frame();
+        }
+        motion::spring_curve(progress)
+    }
+}
+
+/// `pose` as the cascade has it, `arrived` of the way in.
+fn arriving(pose: Pose, arrived: f32) -> Pose {
+    Pose {
+        y: pose.y + (1.0 - arrived) * CASCADE_RISE,
+        scale: pose.scale * f32::blend(CASCADE_SCALE, 1.0, arrived),
+        opacity: pose.opacity * arrived.clamp(0.0, 1.0),
+        ..pose
+    }
+}
+
 /// The grid as drawn this frame: its widget, how tall it is, and where the
 /// compositor should frost behind it (in the grid's own coordinates).
 pub(super) struct Grid {
@@ -52,10 +101,25 @@ pub(super) struct Grid {
     pub width: f32,
     pub height: f32,
     pub shapes: Vec<BlurShape>,
+    /// Each control where it rests, with its corners' radius, in the
+    /// grid's own coordinates: where its page grows from.
+    pub rests: Vec<(ControlId, Slot, f32)>,
+}
+
+impl Grid {
+    /// Where the first of `ids` on the grid rests, and its corners' radius.
+    pub fn rest(&self, ids: &[ControlId]) -> Option<(Slot, f32)> {
+        ids.iter().find_map(|id| {
+            self.rests
+                .iter()
+                .find(|(placed, _, _)| placed == id)
+                .map(|(_, slot, radius)| (*slot, *radius))
+        })
+    }
 }
 
 /// The canvas, and the Edit Controls button under it.
-pub(super) fn grid() -> Grid {
+pub(super) fn grid(look: Motion) -> Grid {
     let editing = edit::editing();
     let ctx = Ctx::new(editing);
     layout::load_once(&|id| controls::present(id, &ctx));
@@ -138,6 +202,15 @@ pub(super) fn grid() -> Grid {
     let held = edit::held();
     shown.sort_by_key(|item| Some(item.value.0) == held);
     let mut dressings: Vec<Box<dyn Widget>> = Vec::new();
+    let mut rests = Vec::new();
+    let focus = look.focus.and_then(|(ids, shows)| {
+        ids.iter()
+            .find(|id| slots.iter().any(|(placed, _, _)| placed == *id))
+            .map(|id| (*id, shows))
+    });
+    let width = px.extent(canvas.cols);
+    // the cascade spreads out from the canvas's bottom-right corner, by the bar
+    let diagonal = width.hypot(grid_h).max(1.0);
     for item in shown {
         let (id, rect, slot) = item.value;
         // a control on its way out is drawn as it was until it has gone
@@ -149,13 +222,27 @@ pub(super) fn grid() -> Grid {
             },
             None => continue,
         };
-        let pose = edit::held_pose(id).unwrap_or(item.pose);
+        let distance = (width - (slot.x + slot.width / 2.0))
+            .hypot(grid_h - (slot.y + slot.height / 2.0))
+            / diagonal;
+        let mut pose = arriving(
+            edit::held_pose(id).unwrap_or(item.pose),
+            look.arrival(distance),
+        );
+        // the control whose page grows out of it gives its frost to the page
+        let focused = focus.filter(|(focus, _)| *focus == id);
+        if let Some((_, shows)) = focused {
+            pose.opacity *= shows;
+        }
         let widget = if editing && !item.leaving {
             dressings.push(edit::dressing(id, slot, pose));
             edit::body(widget, slot)
         } else {
             widget
         };
+        if !item.leaving {
+            rests.push((id, slot, radius_of(id, rect.span, slot)));
+        }
         let radius = radius_of(id, rect.span, slot) * pose.scale;
         // frosted and lit as drawn: scaled about its centre, fading with it
         let drawn = Rim {
@@ -166,7 +253,9 @@ pub(super) fn grid() -> Grid {
             radius,
             opacity: pose.opacity.clamp(0.0, 1.0),
         };
-        shapes.push(frost(&drawn));
+        if focused.is_none() {
+            shapes.push(frost(&drawn));
+        }
         rims.push(drawn);
         layers.push(boxed(
             Rectangle::new()
@@ -182,7 +271,6 @@ pub(super) fn grid() -> Grid {
     // the badges and handles sit over everything, the held control's last
     layers.extend(dressings);
 
-    let width = px.extent(canvas.cols);
     let cells = Rectangle::new()
         .width(Size::Fixed(width))
         .height(Size::Fixed(grid_h))
@@ -205,13 +293,15 @@ pub(super) fn grid() -> Grid {
     let label = if editing { "Done" } else { "Edit Controls" };
     let button_w = capsule_width(label, false);
     let button_x = canvas_x + (width - button_w) / 2.0;
+    // it arrives last, after the controls above it
+    let pose = arriving(Pose::at(0.0), look.arrival(1.0));
     let capsule = Rim {
-        x: button_x,
-        y: grid_h + gap,
-        width: button_w,
-        height: button_h,
-        radius: button_h / 2.0,
-        opacity: 1.0,
+        x: button_x + button_w * (1.0 - pose.scale) / 2.0,
+        y: grid_h + gap + pose.y + button_h * (1.0 - pose.scale) / 2.0,
+        width: button_w * pose.scale,
+        height: button_h * pose.scale,
+        radius: button_h * pose.scale / 2.0,
+        opacity: pose.opacity,
     };
     shapes.push(frost(&capsule));
     rims.push(capsule);
@@ -220,13 +310,22 @@ pub(super) fn grid() -> Grid {
         .height(Size::Fixed(button_h))
         .fill(Color::TRANSPARENT)
         .align_child(Center, Center)
-        .child(capsule_button(
-            "amane.qs.edit",
-            None,
-            label,
-            editing,
-            edit::toggle,
-        ));
+        .child(
+            Rectangle::new()
+                .width(Size::Fixed(button_w))
+                .height(Size::Fixed(button_h))
+                .fill(Color::TRANSPARENT)
+                .translate(0.0, pose.y)
+                .scale(pose.scale)
+                .opacity(pose.opacity)
+                .child(capsule_button(
+                    "amane.qs.edit",
+                    None,
+                    label,
+                    editing,
+                    edit::toggle,
+                )),
+        );
 
     let height = grid_h + gap + button_h;
     let column = Column::new(vec![boxed(cells), boxed(button)])
@@ -284,6 +383,7 @@ pub(super) fn grid() -> Grid {
         width: total_w,
         height,
         shapes,
+        rests,
     }
 }
 

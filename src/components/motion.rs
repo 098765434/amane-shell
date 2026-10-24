@@ -25,6 +25,9 @@ const SPRING_BOUNCE: f32 = 0.15;
 /// A whole sheet sliding in: longer, and calmer.
 const SHEET: Duration = Duration::from_millis(500);
 const SHEET_BOUNCE: f32 = 0.1;
+/// A popover swelling in over the bar: quick, with a breath of overshoot.
+pub const POP: Duration = Duration::from_millis(380);
+const POP_BOUNCE: f32 = 0.08;
 /// A selection fading in or out.
 pub const FADE: Duration = Duration::from_millis(200);
 /// A card on its way out.
@@ -33,8 +36,7 @@ pub const EXIT: Duration = Duration::from_millis(300);
 pub const HOVER: Duration = Duration::from_millis(120);
 /// A pressed control swelling back to its size.
 pub const PRESS: Duration = Duration::from_millis(220);
-/// A popover appearing over the bar, and going.
-pub const OPEN: Duration = Duration::from_millis(220);
+/// A popover going: quicker than it came ([`POP`]).
 pub const CLOSE: Duration = Duration::from_millis(160);
 /// How small a card is as it enters, growing to its size.
 pub const ENTER_SCALE: f32 = 0.9;
@@ -55,6 +57,40 @@ pub fn sheet<T: Blend>(value: T) -> Animation<T> {
         .easing(Easing::Spring {
             bounce: SHEET_BOUNCE,
         })
+}
+
+/// A page growing out of the control that opens it: a sheet's spring
+/// with less overshoot, as the page fills the card it's clipped to.
+const ZOOM_BOUNCE: f32 = 0.05;
+
+/// The spring a page grows out of its control on.
+pub fn zoom<T: Blend>(value: T) -> Animation<T> {
+    Animation::new(value)
+        .duration(SHEET)
+        .easing(Easing::Spring {
+            bounce: ZOOM_BOUNCE,
+        })
+}
+
+/// The spring a popover swells in on.
+pub fn pop<T: Blend>(value: T) -> Animation<T> {
+    Animation::new(value)
+        .duration(POP)
+        .easing(Easing::Spring { bounce: POP_BOUNCE })
+}
+
+/// How long a spring takes to settle, for motion that runs on its own clock.
+pub const fn settle() -> Duration {
+    SPRING
+}
+
+/// The spring's curve at `progress` (0 … 1 of [`settle`]), for motion that
+/// runs on its own clock rather than an `Animation`.
+pub fn spring_curve(progress: f32) -> f32 {
+    Easing::Spring {
+        bounce: SPRING_BOUNCE,
+    }
+    .apply(progress.clamp(0.0, 1.0))
 }
 
 /// An ease-out over `duration`, for fades and exits.
@@ -125,6 +161,27 @@ impl Blend for Pose {
             opacity: f32::blend(from.opacity, to.opacity, amount),
             content: f32::blend(from.content, to.content, amount),
         }
+    }
+
+    // along whichever way it moves most: across, down, then its scale and fade
+    fn along(from: Self, to: Self, value: Self) -> Option<f32> {
+        let ways = [
+            (from.x, to.x, value.x),
+            (from.y, to.y, value.y),
+            (from.scale, to.scale, value.scale),
+            (from.opacity, to.opacity, value.opacity),
+        ];
+        let moved = ways
+            .iter()
+            .take(2)
+            .max_by(|a, b| (a.1 - a.0).abs().total_cmp(&(b.1 - b.0).abs()))
+            .filter(|(from, to, _)| (to - from).abs() > 0.5);
+        let (from, to, value) = moved.or_else(|| {
+            ways.iter()
+                .skip(2)
+                .find(|(from, to, _)| (to - from).abs() > f32::EPSILON)
+        })?;
+        f32::along(*from, *to, *value)
     }
 }
 

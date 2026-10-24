@@ -40,18 +40,6 @@ fn tint() -> Color {
     Surface::Panel.bg()
 }
 
-/// `shapes` as they are once the card is drawn at `scale` about its
-/// bottom-right corner (`width`, `height` from the surface's origin), as
-/// it is while it opens and closes.
-pub(super) fn scaled(
-    shapes: Vec<BlurShape>,
-    scale: f32,
-    width: f32,
-    height: f32,
-) -> Vec<BlurShape> {
-    transformed(shapes, scale, (width, height), (0.0, 0.0))
-}
-
 /// `shapes` scaled by `scale` about `origin`, then moved by `offset`: where
 /// a layer drawn with that transform puts them.
 pub(super) fn transformed(
@@ -81,8 +69,9 @@ mod tests {
     #[test]
     fn a_card_scaled_about_its_corner_scales_its_frost_too() {
         let one = vec![BlurShape::new(0.0, 0.0, 100.0, 200.0, 20.0)];
-        assert_eq!(scaled(one.clone(), 1.0, 100.0, 200.0), one);
-        let half = &scaled(one, 0.5, 100.0, 200.0)[0];
+        let corner = (100.0, 200.0);
+        assert_eq!(transformed(one.clone(), 1.0, corner, (0.0, 0.0)), one);
+        let half = &transformed(one, 0.5, corner, (0.0, 0.0))[0];
         assert_eq!(
             (
                 half.x(),

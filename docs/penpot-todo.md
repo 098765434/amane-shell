@@ -13,12 +13,17 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `sys.motion.duration.spring`, `sys.motion.spring.bounce` | 450 ms, 0.15 | `components/motion.rs` (`SPRING`) |
 | `sys.motion.duration.sheet`, `sys.motion.sheet.bounce` | 500 ms, 0.1 | `components/motion.rs` (`SHEET`) |
 | `sys.motion.duration.fade`, `sys.motion.duration.exit` | 200 ms, 300 ms | `components/motion.rs` (`FADE`, `EXIT`) |
-| `sys.motion.duration.hover`, `.press`, `.open`, `.close` | 120 ms, 220 ms, 220 ms, 160 ms | `components/motion.rs` (`HOVER`, `PRESS`, `OPEN`, `CLOSE`) |
+| `sys.motion.duration.hover`, `.press`, `.close` | 120 ms, 220 ms, 160 ms | `components/motion.rs` (`HOVER`, `PRESS`, `CLOSE`) |
+| `sys.motion.duration.pop`, `sys.motion.pop.bounce` | 380 ms, 0.08 | `components/motion.rs` (`POP`: a popover swelling in) |
+| `sys.motion.zoom.bounce` | 0.05 | `components/motion.rs` (`ZOOM_BOUNCE`: a page growing out of its control) |
 | `sys.motion.enter-scale` | 0.9 | `components/motion.rs` (`ENTER_SCALE`: a card's or control's entrance) |
 | `sys.motion.press-scale` | 0.96 | `buttons/mod.rs` (`PRESS_SCALE`; `quick.press.scale` holds the same) |
 | `quick.drag.band` | 0.1 | `quick_settings/edit.rs` (`BAND`: the dead band before a held control changes cell) |
 | `quick.page.min-rows` | 5 | `quick_settings/mod.rs` (`MIN_PAGE_ROWS`) |
-| `quick.page.grid-recede` | 0.25 | `quick_settings/mod.rs` (`GRID_RECEDE`: how far the grid moves as a page slides in) |
+| `quick.open.lift` | 12 | `quick_settings/mod.rs` (`OPEN_LIFT`: how far below its place the card starts) |
+| `quick.open.cascade`, `.cascade-scale`, `.cascade-rise` | 90 ms, 0.9, 10 | `quick_settings/tiles/mod.rs` (`CASCADE*`: the modules arriving in a wave) |
+| `quick.page.tile-fade`, `quick.page.grid-fade` | 0.25, 0.6 | `quick_settings/mod.rs` (`TILE_FADE`, `GRID_FADE`: shares of the zoom) |
+| `quick.page.reveal.*` (header, body, step, span, rise) | 0.35–0.7, 0.45, 0.06, 0.35, 8 | `quick_settings/detail.rs` (`REVEAL_*`: a page's content coming in) |
 | `quick.glass.material` | `glass` | `quick_settings/glass_region.rs` (`MATERIAL`: the compositor material the modules' frost asks for) |
 | `sys.opacity.disabled` (also) | 0.38 | `quick_settings/tiles/mod.rs` (`DIMMED`: a placeholder for a control without its hardware) |
 | `sys.opacity.disabled` | 0.38 | `buttons/mod.rs` (`DISABLED_OPACITY`) |
@@ -48,6 +53,7 @@ whose output is static: it can't follow the mode, so it holds one value for both
   `quick.tile.glyph`, `quick.button.glyph`) and
   `ref.font.size.14` were added to `tokens.json` by hand too (see
   [quick-settings.md](quick-settings.md)). Recreate them in Penpot under the same names.
+  `quick.open.scale` has since been retuned by hand from 0.98 to 0.92, so the card's swell reads.
 - `ref.font.family.ui` was reordered by hand to put "Atkinson Hyperlegible Next" first
   (then "Atkinson Hyperlegible", "Inter", `sans-serif`). Make the same change to the stack in
   Penpot, or the next export puts SF Pro Text back.

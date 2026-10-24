@@ -125,17 +125,31 @@ restores it.
 
 The card has one height, the grid's, for the grid and every page. A surface resized every frame
 costs a compositor configure round-trip and a second draw each time, which is what made the old
-unfolding card stutter. So nothing resizes while anything moves: the card swells in from the
-bar's corner (`motion::OPEN`, from `quick.open.scale`), a page slides in from the right while the
-grid recedes to the left (`quick.page.recede`) inside the unchanged surface, and the card fades
-out at the size it had (`motion::CLOSE`). Every piece of frost fades with what's on it: the card's
-as it opens and closes, the grid's as it recedes under a page and the page's as it comes in, a
-control's as it's added or removed in edit mode (`glass_region::faded`, alpha on each blur shape).
+unfolding card stutter. So nothing resizes while anything moves. The card swells in from the
+bar's corner and rises a little out of it on a spring (`motion::pop`, from `quick.open.scale`),
+its modules arriving in a quick wave out from that corner, the Edit Controls capsule last. It goes
+quicker than it came (`motion::CLOSE`), at the size it had, without the wave. A tile's page grows
+out of the tile (`motion::zoom`): one glass sheet that starts as the tile's glass, its rect and
+corners, and grows to fill the card, while the rest of the grid stays put, sinks back from the
+tile (`quick.page.recede`) and fades. What's on the page comes in once the sheet has room for
+it: the header, then the rows one after another, rising a little (`detail.rs`); going back,
+they go first and the sheet shrinks into the tile empty. A page opened from the bar or over IPC
+grows out of the card's bottom-right corner, by the bar; opened while the card is closed, it's
+simply there. Every spring keeps its speed when it's turned around (amane's `Animation::to`), so
+going back halfway through, or closing while the card is still opening, never stalls.
+
+Every piece of frost fades with what's on it: the card's as it opens and closes, the grid's as it
+sinks under a page, a module's as it arrives, a control's as it's added or removed in edit mode
+(`glass_region::faded`, alpha on each blur shape). A page's sheet is the exception: its frost is
+at full strength from the first frame, taking over from its tile's, so the card never shows
+through half-frosted mid-zoom.
+
 A compositor that can't fade frost (no niri-blur-shapes, `amane::blur_fades()` false) only shows
 or hides it, and frost at full strength under modules still fading in reads as blurred patches
 with nothing on them; there the card arrives whole, frost and modules in the same frame, closing
 drops the frost in the first frame, and amane leaves out the frost of anything less than half
-visible. The surface is resized only at rest: when
+visible; the modules don't arrive in a wave there either, as their frost would pop in one by
+one. The surface is resized only at rest: when
 the grid gains or loses a row, and when edit mode begins or ends — never while a control is
 held. A surface resized just before it hides
 still has the compositor's answers to the resize on their way, and amane draws on those after

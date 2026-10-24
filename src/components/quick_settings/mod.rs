@@ -8,8 +8,8 @@
 //! Display card and a Sound card with their sliders, then the battery and
 //! rows of round buttons; Edit Controls moves and resizes
 //! them (`edit`, `layout`). It keeps GNOME's rules: a control shows only
-//! when the machine has what it drives. A tile's page slides in over the
-//! grid, as on macOS. Escape goes back to the grid, then closes.
+//! when the machine has what it drives. A tile's page grows out of the tile
+//! to fill the card, as on iOS. Escape goes back to the grid, then closes.
 //!
 //! As on macOS Tahoe, the card itself has no background: each module is a
 //! frosted glass piece of its own, and the surface tells the compositor
@@ -44,6 +44,7 @@ mod tile;
 mod tiles;
 
 use std::cell::{Cell, RefCell};
+use std::time::Instant;
 
 use amane::{
     Animation, Blend, BlurShape, Color, End, Horizontal, Key, Keyboard, LayerWindow, Parent,
@@ -68,14 +69,18 @@ thread_local! {
     // the page drawn over the grid, which stays while sliding back out
     static DETAIL: Cell<Page> = const { Cell::new(Page::Grid) };
 
-    // 0 closed … 1 open: the card fades and swells in over the bar
-    static OPEN: RefCell<Animation> = RefCell::new(motion::fade(0.0, motion::OPEN));
+    // 0 closed … 1 open: the card fades, swells and rises in over the bar
+    static OPEN: RefCell<Animation> = RefCell::new(motion::pop(0.0));
 
     // whether OPEN is heading for 1
     static OPENING: Cell<bool> = const { Cell::new(false) };
 
-    // 0 the grid … 1 a page
-    static SLIDE: RefCell<Animation> = RefCell::new(motion::sheet(0.0));
+    // when the card began opening from nothing onto the grid: its modules
+    // arrive in a wave from then
+    static OPENED_AT: Cell<Option<Instant>> = const { Cell::new(None) };
+
+    // 0 the grid … 1 a page: the page grows out of its tile
+    static SLIDE: RefCell<Animation> = RefCell::new(motion::zoom(0.0));
 
     // the surface's height last frame, kept while it closes
     static LAST_HEIGHT: Cell<f32> = const { Cell::new(1.0) };
@@ -127,9 +132,9 @@ fn go(page: Page) {
     let target = if page == Page::Grid { 0.0 } else { 1.0 };
     SLIDE.with_borrow_mut(|slide| {
         if hidden {
-            *slide = motion::sheet(target);
+            *slide = motion::zoom(target);
         } else if swapping {
-            *slide = motion::sheet(0.0);
+            *slide = motion::zoom(0.0);
             slide.to(1.0);
         } else {
             slide.to(target);
@@ -170,7 +175,8 @@ fn hidden() {
     }
     DETAIL.set(Page::Grid);
     SWAP.set(Page::Grid);
-    SLIDE.with_borrow_mut(|slide| *slide = motion::sheet(0.0));
+    SLIDE.with_borrow_mut(|slide| *slide = motion::zoom(0.0));
+    OPENED_AT.set(None);
     SHIFT.with_borrow_mut(|shift| *shift = motion::spring(0.0));
     LAST_INNER.set(0.0);
     edit::leave();
@@ -220,20 +226,27 @@ pub fn ipc(args: &[String]) -> String {
 
 // ───── view ──────────────────────────────────────────────────────────────────
 
-/// Steps the card's opening towards `open` and gives how far it is. Each
-/// direction has its own duration, so the fade starts over from where it
-/// is when the direction changes.
+/// Steps the card's opening towards `open` and gives how far it is, a
+/// little past 1 on the spring. Closing is quicker than opening, and a
+/// change of mind turns it around at the speed it had.
 fn unfold(open: bool) -> f32 {
     OPEN.with_borrow_mut(|anim| {
         if OPENING.replace(open) != open {
-            let (from, duration) = (
-                anim.value(),
-                if open { motion::OPEN } else { motion::CLOSE },
-            );
-            *anim = motion::fade(from, duration);
+            // opening from nothing onto the grid, the modules arrive in a
+            // wave; frost that can only show or hide would pop in module by
+            // module, and an edit or a page has better things to show
+            let cascade = open
+                && anim.value() < 0.05
+                && PAGE.get() == Page::Grid
+                && !edit::editing()
+                && amane::blur_fades();
+            if cascade {
+                OPENED_AT.set(Some(Instant::now()));
+            }
+            anim.retime(if open { motion::POP } else { motion::CLOSE });
             anim.to(if open { 1.0 } else { 0.0 });
         }
-        anim.value().clamp(0.0, 1.0)
+        anim.value()
     })
 }
 
@@ -256,21 +269,32 @@ pub fn surface() -> LayerWindow {
         back();
     }
     let page = PAGE.get();
-    // the sheet's spring overshoots a little; only what it draws at is
-    // clamped, not where
+    // the zoom's spring overshoots a little; what it draws at is clamped
     let slide_raw = SLIDE.with_borrow_mut(|slide| slide.value());
     let slide = slide_raw.clamp(0.0, 1.0);
     if slide_raw >= 0.999 {
         SWAP.set(Page::Grid);
     }
+    let detail = if page == Page::Grid {
+        DETAIL.get()
+    } else {
+        page
+    };
+    let zooming = detail != Page::Grid && (page != Page::Grid || slide > 0.001);
+    let swap = SWAP.get();
     // the canvas sits a margin in from the surface's edge: room for the
     // modules' shadows
     let inset = quick::grid::margin();
 
     // the grid sets the card's size, so it's always built; only what's on
     // screen is drawn, so a page hidden behind the grid takes no clicks and
-    // starts no searches
-    let grid = tiles::grid();
+    // starts no searches. The tile a page grows out of fades into it, and
+    // gives the page its frost.
+    let grid = tiles::grid(tiles::Motion {
+        opened: OPENED_AT.get(),
+        focus: (zooming && swap == Page::Grid)
+            .then(|| (detail.controls(), 1.0 - ramp(slide, 0.0, TILE_FADE))),
+    });
     // in edit mode the Add list beside the canvas widens the card to the left
     let width = grid.width + inset * 2.0;
     let grid_w = grid::Metrics::tokens().extent(grid::Canvas::tokens().cols);
@@ -308,18 +332,46 @@ pub fn surface() -> LayerWindow {
     };
     LAST_HEIGHT.set(outer);
 
+    // the page fills the card; it grows out of its tile on the grid, or out
+    // of the bar's corner when it was opened from the bar
+    let full = Sheet {
+        x: inset,
+        y: inset,
+        width: grid_w,
+        height: inner,
+        radius: quick::card::radius(),
+    };
+    let origin = match grid.rest(detail.controls()) {
+        Some((slot, radius)) => Sheet {
+            x: inset + slot.x,
+            y: inset + grid_top + shift + slot.y,
+            width: slot.width,
+            height: slot.height,
+            radius,
+        },
+        None => {
+            let cell = grid::Metrics::tokens().extent(1);
+            Sheet {
+                x: inset + grid_w - cell,
+                y: inset + inner - cell,
+                width: cell,
+                height: cell,
+                radius: cell / 2.0,
+            }
+        }
+    };
+
     let mut shapes: Vec<BlurShape> = Vec::new();
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
-    let recede = quick::page::recede();
-    let swap = SWAP.get();
 
     if page == Page::Grid || slide < 0.999 {
-        // the grid recedes left as a page slides in from the right; from
-        // one page to another, the old page recedes in its place
+        // the grid stays where it is and sinks back from the tile its page
+        // grows out of, fading as the page covers it; from one page to
+        // another, the old page sinks back in its place
         let mut frost: Vec<BlurShape> = Vec::new();
         let receding: Box<dyn Widget> = if swap != Page::Grid {
-            frost.push(sheet_frost(inset, inset, grid_w, inner));
-            boxed(sheet_layer(swap, grid_w, inner))
+            frost.push(full.frost());
+            boxed(sheet_layer(swap, full, inner, 1.0))
         } else {
             frost.extend(glass_region::transformed(
                 grid.shapes,
@@ -337,12 +389,19 @@ pub fn surface() -> LayerWindow {
                     .child(Stack::new(vec![grid.widget])),
             )
         };
-        let shift_x = -slide_raw * width * GRID_RECEDE;
-        let shrink = 1.0 - (1.0 - recede) * slide_raw;
-        // the frost recedes and fades with it
+        let shrink = f32::blend(1.0, quick::page::recede(), slide_raw);
+        // scaled about the origin's centre: a layer scales about its own,
+        // then moves by how far apart the two are, scaled down
+        let (cx, cy) = origin.centre();
+        let moved = (
+            (cx - width / 2.0) * (1.0 - shrink),
+            (cy - outer / 2.0) * (1.0 - shrink),
+        );
+        let shows = 1.0 - ramp(slide, 0.0, GRID_FADE);
+        // the frost sinks and fades with it
         shapes.extend(glass_region::faded(
-            glass_region::transformed(frost, shrink, (width / 2.0, outer / 2.0), (shift_x, 0.0)),
-            1.0 - slide,
+            glass_region::transformed(frost, shrink, (cx, cy), (0.0, 0.0)),
+            shows,
         ));
         layers.push(boxed(
             Rectangle::new()
@@ -352,27 +411,19 @@ pub fn surface() -> LayerWindow {
                 .padding(pad(inset, inset))
                 .align_child(Start, End)
                 .clip()
-                .opacity(1.0 - slide)
-                .translate(shift_x, 0.0)
+                .opacity(shows)
+                .translate(moved.0, moved.1)
                 .scale(shrink)
                 .child(Stack::new(vec![receding])),
         ));
     }
-    let detail = if page == Page::Grid {
-        DETAIL.get()
-    } else {
-        page
-    };
-    if detail != Page::Grid && (page != Page::Grid || slide > 0.001) {
-        // a page is one glass sheet the size of the grid, and the frost
-        // comes in with it
-        let offset = (1.0 - slide_raw) * width;
-        shapes.push(sheet_frost(inset + offset, inset, grid_w, inner).fade(slide));
-        layers.push(boxed(
-            sheet_layer(detail, grid_w, inner)
-                .opacity(slide)
-                .translate(offset, 0.0),
-        ));
+    if zooming {
+        // a page is one glass sheet that grows from its tile's glass to the
+        // card's, the frost with it at full strength: it takes over from
+        // the tile's own, so the card never shows through half-frosted
+        let sheet = Sheet::blend(origin, full, slide);
+        shapes.push(sheet.frost());
+        layers.push(boxed(sheet_layer(detail, sheet, inner, slide)));
     }
 
     let content = Rectangle::new()
@@ -382,22 +433,28 @@ pub fn surface() -> LayerWindow {
         .clip()
         .child(Stack::new(layers).width(Parent).height(Parent));
 
-    // The card swells in from the bar's corner: scaled about its centre,
-    // then moved so its bottom-right corner stays put, the frost swelling
-    // and fading with it. A compositor that can't fade frost only shows or
+    // The card swells in from the bar's corner, rising out of the bar:
+    // scaled about its centre, then moved so its bottom-right corner stays
+    // put and lowered by what's left of the rise, the frost swelling and
+    // fading with it. A compositor that can't fade frost only shows or
     // hides it, so there the card arrives whole (frost and modules in the
     // same frame) rather than fading in over frost already at full
     // strength; going, the frost goes at once and the modules fade out over
     // the sharp desktop.
     let fades = amane::blur_fades();
+    let unfolded_shown = unfolded.clamp(0.0, 1.0);
     let scale = f32::blend(quick::open::scale(), 1.0, unfolded);
-    let opacity = if open && !fades { 1.0 } else { unfolded };
-    let card = content
-        .opacity(opacity)
-        .scale(scale)
-        .translate((1.0 - scale) * width / 2.0, (1.0 - scale) * outer / 2.0);
+    let lift = (1.0 - unfolded) * OPEN_LIFT;
+    let opacity = if open && !fades { 1.0 } else { unfolded_shown };
+    let card = content.opacity(opacity).scale(scale).translate(
+        (1.0 - scale) * width / 2.0,
+        (1.0 - scale) * outer / 2.0 + lift,
+    );
     let frost = if open || fades {
-        glass_region::faded(glass_region::scaled(shapes, scale, width, outer), opacity)
+        glass_region::faded(
+            glass_region::transformed(shapes, scale, (width, outer), (0.0, lift)),
+            opacity,
+        )
     } else {
         Vec::new()
     };
@@ -407,35 +464,77 @@ pub fn surface() -> LayerWindow {
         .child(card)
 }
 
-// TODO(token): `quick.page.grid-recede` once Penpot has it (manual §1.1).
-/// How far across the card the grid moves as a page slides in over it, as
-/// a share of the card's width.
-const GRID_RECEDE: f32 = 0.25;
+// TODO(token): `quick.open.lift`, `quick.page.tile-fade` and
+// `quick.page.grid-fade` once Penpot has them (manual §1.1).
+/// How far below its place the card starts as it rises out of the bar.
+const OPEN_LIFT: f32 = 12.0;
+/// How much of the zoom it takes the tile to fade into its page, and the
+/// rest of the grid to fade under it.
+const TILE_FADE: f32 = 0.25;
+const GRID_FADE: f32 = 0.6;
 
-/// Where the compositor frosts behind a page's sheet at (`x`, `y`).
-fn sheet_frost(x: f32, y: f32, width: f32, height: f32) -> BlurShape {
-    glass_region::module(x, y, width, height, quick::card::radius(), 1.0)
+/// 0 before `from`, 1 after `to`, easing in and out between: one part of a
+/// motion that runs across a larger one.
+pub(super) fn ramp(value: f32, from: f32, to: f32) -> f32 {
+    let t = ((value - from) / (to - from)).clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
 }
 
-/// `page` on its glass sheet, the grid's size, a margin in from the
-/// surface's edge like the grid.
-fn sheet_layer(page: Page, width: f32, height: f32) -> Rectangle {
-    let inset = quick::grid::margin();
+/// Where a page's glass sheet is drawn, in the surface's coordinates.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Sheet {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    radius: f32,
+}
+
+impl Sheet {
+    fn centre(self) -> (f32, f32) {
+        (self.x + self.width / 2.0, self.y + self.height / 2.0)
+    }
+
+    /// Where the compositor frosts behind it.
+    fn frost(self) -> BlurShape {
+        glass_region::module(self.x, self.y, self.width, self.height, self.radius, 1.0)
+    }
+}
+
+impl Blend for Sheet {
+    fn blend(from: Self, to: Self, amount: f32) -> Self {
+        Self {
+            x: f32::blend(from.x, to.x, amount),
+            y: f32::blend(from.y, to.y, amount),
+            width: f32::blend(from.width, to.width, amount),
+            height: f32::blend(from.height, to.height, amount),
+            radius: f32::blend(from.radius, to.radius, amount),
+        }
+    }
+}
+
+/// `page` on its glass sheet at `sheet`, laid out for the card it fills,
+/// `height` tall (and clipped to the sheet while it grows), `reveal` of the
+/// way in.
+fn sheet_layer(page: Page, sheet: Sheet, height: f32, reveal: f32) -> Rectangle {
     let pad_in = quick::tile::pad();
+    let grid_w = grid::Metrics::tokens().extent(grid::Canvas::tokens().cols);
     let content = Rectangle::new()
-        .width(Size::Fixed(width))
+        .width(Size::Fixed(grid_w))
         .height(Size::Fixed(height))
         .fill(Color::TRANSPARENT)
         .padding(pad(pad_in, pad_in))
         .align_child(Start, Start)
-        .child(pages::page(page).build((height - pad_in * 2.0).max(1.0)));
+        .child(pages::page(page).build((height - pad_in * 2.0).max(1.0), reveal));
     Rectangle::new()
         .width(Parent)
         .height(Parent)
         .fill(Color::TRANSPARENT)
-        .padding(pad(inset, inset))
         .align_child(Start, Start)
-        .child(tile::sheet(width, height, quick::card::radius(), content))
+        .child(
+            tile::sheet(sheet.width, sheet.height, sheet.radius, content)
+                .translate(sheet.x, sheet.y),
+        )
 }
 
 /// How wide the surface is at rest: the canvas and the margin either side.
