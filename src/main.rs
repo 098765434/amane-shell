@@ -7,7 +7,7 @@ use std::process::ExitCode;
 use amane::App;
 
 use components::context_menu::{self, ContextMenu, Icon, MenuItem};
-use components::{notifications, taskbar};
+use components::{notifications, taskbar, tooltip};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {
@@ -144,6 +144,7 @@ fn main() -> ExitCode {
     for level in context_menu::LEVELS {
         app = app.popup(level);
     }
+    app = app.popup(tooltip::popup);
 
     app.ipc("arm", |args| {
         // Expand the anchor fullscreen so the next right-click captures a

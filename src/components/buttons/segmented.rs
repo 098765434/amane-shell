@@ -310,7 +310,7 @@ fn segment_view(
 
     let actions = Actions {
         press: Some(Rc::new(click)),
-        secondary: None,
+        ..Actions::default()
     };
     interactive(base, id, segment.disabled, actions)
 }

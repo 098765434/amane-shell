@@ -11,6 +11,7 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `List`, `ListItem` | `list.rs` | [Lists](https://m3.material.io/components/lists/overview) | networks, Bluetooth devices, audio devices, peripherals |
 | `Divider` | `divider.rs` | [Divider](https://m3.material.io/components/divider/overview) | context-menu separators |
 | `Slider` | `slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume |
+| `tooltip` | `tooltip.rs` | [Tooltips](https://m3.material.io/components/tooltips/overview) (plain) | the bar's volume level and battery charge |
 
 ## Card
 
@@ -58,8 +59,24 @@ and below. `Divider::height()` is what it takes up, for menus that measure thems
 
 `Slider::new(value, width)` sets a 0–100 level when pressed, dragged or scrolled. Its thin
 `sys.size.slider.height` track is filled with the accent, or greyed with `.dimmed(true)`. The hit
-area is a full control tall. One scroll notch moves it `slider::STEP` (5). The bar's volume pill
+area is a full control tall. One scroll notch moves it `slider::STEP` (5). The bar's volume button
 uses the same `slider::scrolled`.
+
+## Tooltip
+
+A plain tooltip: one `sys.type.caption` line on a `sys.color.surface.popover` card with
+`sys.radius.raised` corners and a `sys.space.inset.s` inset. It shows after the pointer rests on its
+control for half a second. It's an xdg-popup with no grab, so it never takes input or focus. It
+hangs under the control's surface and is centred above the pointer, as macOS's are, sliding inward
+at a screen edge.
+
+Buttons take one with `.tooltip(parent_ns, text)`, where `parent_ns` is the namespace of the
+surface they're on (the bar's is `BAR_NS`). Moving off the button hides it. Clicking also hides it
+until the pointer leaves. Any other control can use it by calling `tooltip::offer(id, parent_ns,
+text)` every frame it's built while hovered, `tooltip::suppress(id)` on click and
+`tooltip::dismiss(id)` on leave. Only one shows at a time, in the one popup slot `tooltip::popup`,
+which `main.rs` registers. amane never resizes or moves an open popup, so when the text's size or
+the control changes, the tooltip closes for one frame and reopens.
 
 ## Under the components
 

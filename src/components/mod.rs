@@ -20,6 +20,7 @@
 //! - [`list`] — M3's list: one-line items with leading and trailing slots.
 //! - [`divider`] — M3's divider: a hairline between groups.
 //! - [`slider`] — M3's slider: a 0–100 level along a track.
+//! - [`tooltip`] — M3's plain tooltip: a hovered control's label.
 //!
 //! Under those, with no look of their own:
 //!
@@ -42,3 +43,4 @@ pub mod motion;
 pub mod notifications;
 pub mod slider;
 pub mod taskbar;
+pub mod tooltip;

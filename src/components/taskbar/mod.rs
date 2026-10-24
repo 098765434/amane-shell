@@ -35,7 +35,7 @@ use crate::components::icons::{
     battery_glyph, wifi_glyph,
 };
 use crate::components::layout::{
-    boxed, clipped_label, cursor, icon, nothing, pad, text_width, track_cursor,
+    boxed, clipped_label, cursor, nothing, pad, text_width, track_cursor,
 };
 use crate::components::notifications::{self, DoNotDisturb};
 use crate::components::slider;
@@ -439,39 +439,20 @@ fn volume_module() -> Box<dyn Widget> {
     } else {
         audio_glyph(kind, false)
     };
+    let tip = if muted {
+        String::from("Muted")
+    } else {
+        format!("Volume {volume}%")
+    };
 
-    let content = Row::new(vec![
-        boxed(icon(
-            glyph,
-            sys::size::icon::m(),
-            sys::color::content::secondary(),
-        )),
-        boxed(
-            Text::new(format!("{volume}%"))
-                .style(sys::r#type::numeric())
-                .color(sys::color::content::secondary()),
-        ),
-    ])
-    .gap(sys::space::gap::xs())
-    .align(Center);
     boxed(
-        Rectangle::new()
-            .width(Size::Fixed(bar::volume::width()))
-            .height(Parent)
-            .radius(sys::radius::raised())
-            .fill(sys::color::surface::raised::bg())
-            .padding(pad(sys::space::inset::m(), bar::pill::padding_y()))
-            .align_child(Center, Center)
-            .cursor(Pointer)
+        bar_icon("amane.bar.volume", glyph, sys::color::content::secondary())
             .on_scroll(move |scroll: Scroll| {
                 Audio::set_volume(slider::scrolled(volume, scroll, slider::STEP))
             })
-            .on_click(|button| {
-                if button == Button::Left {
-                    panel::toggle(Panel::Audio);
-                }
-            })
-            .child(content),
+            .on_press(|| panel::toggle(Panel::Audio))
+            .tooltip(BAR_NS, tip)
+            .build(),
     )
 }
 
@@ -541,25 +522,16 @@ fn battery_module() -> Box<dyn Widget> {
     } else {
         sys::color::content::secondary()
     };
-    // percentages are numeric (manual §11.4)
-    let text = sys::r#type::numeric();
+    let tip = if on_ac {
+        format!("Battery {pct}% · charging")
+    } else {
+        format!("Battery {pct}%")
+    };
 
     boxed(
-        PushButton::new("amane.bar.battery", format!("{pct}%"))
-            .style(Style::Plain)
-            .icon(battery_glyph(pct, on_ac))
-            .icon_size(sys::size::icon::m())
-            .text(text)
-            .color(color)
-            // room for the battery glyph and "100%", so the bar doesn't shift
-            .width(
-                sys::size::icon::m()
-                    + sys::space::gap::xs()
-                    + text_width("100%", text)
-                    + sys::space::inset::m() * 2.0,
-            )
-            .height(Parent)
+        bar_icon("amane.bar.battery", battery_glyph(pct, on_ac), color)
             .on_press(|| panel::toggle(Panel::Power))
+            .tooltip(BAR_NS, tip)
             .build(),
     )
 }

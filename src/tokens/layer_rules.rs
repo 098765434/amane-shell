@@ -83,7 +83,7 @@ pub fn rules() -> Vec<LayerRule> {
         LayerRule {
             namespace: AUDIO_NS,
             comment: String::from(
-                "Sound panel: the same frosted card, toggled by the taskbar's volume pill.",
+                "Sound panel: the same frosted card, toggled by the taskbar's volume button.",
             ),
             radius: Some(popover),
             popups: None,

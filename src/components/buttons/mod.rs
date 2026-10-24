@@ -31,7 +31,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
-use amane::{Button, Center, Color, Pointer, Radius, Rectangle, Row, Size, Text, Widget};
+use amane::{Button, Center, Color, Pointer, Radius, Rectangle, Row, Scroll, Size, Text, Widget};
 
 pub use icon_button::IconButton;
 pub use push_button::PushButton;
@@ -40,6 +40,7 @@ pub use switch::Switch;
 
 use crate::components::color::over;
 use crate::components::layout::{boxed, icon};
+use crate::components::tooltip;
 use crate::tokens::{Styled, TextStyle, sys};
 
 /// M3's disabled-content opacity. TODO(token): `sys.opacity.disabled` once
@@ -107,6 +108,8 @@ pub struct ButtonBuilder<K> {
     height: Size,
     disabled: bool,
     actions: Actions,
+    /// The surface it's on and what its tooltip says.
+    tooltip: Option<(&'static str, String)>,
     kind: K,
 }
 
@@ -120,6 +123,7 @@ impl<K> ButtonBuilder<K> {
             height: Size::Fixed(sys::size::control::height()),
             disabled: false,
             actions: Actions::default(),
+            tooltip: None,
             kind,
         }
     }
@@ -165,6 +169,19 @@ impl<K> ButtonBuilder<K> {
         self
     }
 
+    /// What scrolling over it does, such as changing a level.
+    pub fn on_scroll(mut self, scroll: impl Fn(Scroll) + 'static) -> Self {
+        self.actions.scroll = Some(Rc::new(scroll));
+        self
+    }
+
+    /// A [`tooltip`] with `text` while hovered. `parent` is the namespace of
+    /// the surface the button is on, which the tooltip hangs under.
+    pub fn tooltip(mut self, parent: &'static str, text: impl Into<String>) -> Self {
+        self.tooltip = Some((parent, text.into()));
+        self
+    }
+
     /// The content colour this button draws in.
     fn fg(&self) -> Color {
         self.color.unwrap_or(self.style.fg())
@@ -172,6 +189,13 @@ impl<K> ButtonBuilder<K> {
 
     /// The button around `content`, `width` wide.
     fn finish(self, width: f32, content: impl Widget + 'static) -> Rectangle {
+        if let Some((parent, text)) = self.tooltip
+            && !self.disabled
+            && hovered(&self.id)
+        {
+            tooltip::offer(&self.id, parent, text);
+        }
+
         let base = Rectangle::new()
             .width(Size::Fixed(width))
             .height(self.height)
@@ -279,15 +303,17 @@ pub(crate) fn state_fill(id: &str, fill: Color, disabled: bool) -> Color {
 }
 
 /// What a click asks for: the left button presses, the right one is the
-/// secondary action (usually a menu).
+/// secondary action (usually a menu). Scrolling is optional too.
 #[derive(Clone, Default)]
 pub(crate) struct Actions {
     pub(crate) press: Option<Rc<dyn Fn()>>,
     pub(crate) secondary: Option<Rc<dyn Fn()>>,
+    pub(crate) scroll: Option<Rc<dyn Fn(Scroll)>>,
 }
 
 /// Makes `base` a button: pointer cursor, hover tracking and the clicks.
-/// A disabled one is dimmed and takes none of them.
+/// Leaving or clicking it hides its tooltip. A disabled one is dimmed and
+/// takes none of them.
 pub(crate) fn interactive(
     base: Rectangle,
     id: String,
@@ -298,19 +324,36 @@ pub(crate) fn interactive(
         return base.opacity(DISABLED_OPACITY);
     }
 
-    let Actions { press, secondary } = actions;
-    base.cursor(Pointer)
-        .on_hover(move |inside| hover(&id, inside))
+    let Actions {
+        press,
+        secondary,
+        scroll,
+    } = actions;
+    let clicked = id.clone();
+    let base = base
+        .cursor(Pointer)
+        .on_hover(move |inside| {
+            hover(&id, inside);
+            if !inside {
+                tooltip::dismiss(&id);
+            }
+        })
         .on_click(move |button| {
             let action = match button {
                 Button::Left => &press,
                 Button::Right => &secondary,
                 _ => return,
             };
+            tooltip::suppress(&clicked);
             if let Some(action) = action {
                 action();
             }
-        })
+        });
+
+    match scroll {
+        Some(scroll) => base.on_scroll(move |delta| scroll(delta)),
+        None => base,
+    }
 }
 
 #[cfg(test)]

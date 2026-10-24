@@ -10,7 +10,7 @@ use amane::{Center, Color, Point, Pointer, Rectangle, Scroll, Size, Start};
 
 use crate::tokens::sys;
 
-/// How far one scroll notch moves a level, the bar's volume pill included.
+/// How far one scroll notch moves a level, the bar's volume button included.
 pub const STEP: u8 = 5;
 
 /// `value` moved one `step` by a scroll: up (negative y) raises, down lowers.

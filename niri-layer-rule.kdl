@@ -95,7 +95,7 @@ layer-rule {
     }
 }
 
-// Sound panel: the same frosted card, toggled by the taskbar's volume pill.
+// Sound panel: the same frosted card, toggled by the taskbar's volume button.
 layer-rule {
     match namespace="^amane\\.taskbar\\.audio$"
     geometry-corner-radius 10

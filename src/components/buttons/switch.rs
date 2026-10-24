@@ -97,7 +97,7 @@ impl Switch {
                 clicked(&id, next);
                 toggle(next);
             })),
-            secondary: None,
+            ..Actions::default()
         };
 
         interactive(base, self.id, self.disabled, actions)

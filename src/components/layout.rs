@@ -120,6 +120,14 @@ pub(crate) fn text_width(text: &str, style: TextStyle) -> f32 {
     fixed_width(&Text::new(text).style(style))
 }
 
+/// How tall one line of text in `style` is, measured.
+pub(crate) fn text_height(style: TextStyle) -> f32 {
+    match Text::new("").style(style).height() {
+        Size::Fixed(height) => height,
+        Size::Parent => 0.0,
+    }
+}
+
 /// A widget's fixed width; 0 for one that takes its parent's.
 pub(crate) fn fixed_width(widget: &impl Widget) -> f32 {
     match widget.width() {

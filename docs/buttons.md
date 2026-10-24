@@ -7,7 +7,7 @@ only, so any component can use them.
 
 | Component | M3 counterpart | Used for |
 |---|---|---|
-| `PushButton` | [Buttons](https://m3.material.io/components/buttons/overview) | "Connect", notification actions, "Clear All", "Show Less", the bar's battery and clock |
+| `PushButton` | [Buttons](https://m3.material.io/components/buttons/overview) | "Connect", notification actions, "Clear All", "Show Less", the bar's clock |
 | `IconButton` | [Icon buttons](https://m3.material.io/components/icon-buttons/overview) | mute, Wi-Fi scan, close/clear, Do Not Disturb, the bar's glyph items |
 | `Switch` | [Switch](https://m3.material.io/components/switch/overview) | Wi-Fi and Bluetooth power |
 | `SegmentedButton` | [Segmented buttons](https://m3.material.io/components/segmented-buttons/overview) | the power profile |
@@ -15,7 +15,8 @@ only, so any component can use them.
 ## Style and shape
 
 `PushButton` and `IconButton` are one `ButtonBuilder` with a different kind, so they share every
-builder method (`style`, `shape`, `color`, `height`, `disabled`, `on_press`, `on_secondary`). They
+builder method (`style`, `shape`, `color`, `height`, `disabled`, `on_press`, `on_secondary`,
+`on_scroll`, `tooltip`). They
 take a `Style` and a `Shape`:
 
 | `Style` | M3 | Fill | Content by default |

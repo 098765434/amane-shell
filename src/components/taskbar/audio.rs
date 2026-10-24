@@ -1,7 +1,7 @@
 //! Sound panel — a bottom-right `LayerWindow` to set the volume and pick where
 //! sound goes to and comes from.
 //!
-//! One of the bar's [`panel`](super::panel)s, toggled by the volume pill.
+//! One of the bar's [`panel`](super::panel)s, toggled by the volume button.
 //! Each half (output, microphone) is a mute button, a slider and the list of
 //! devices, the default one checked; clicking another makes it the default.
 //! Read from the fork's `Audio` service, which follows the sound server live.

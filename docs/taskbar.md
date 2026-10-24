@@ -35,10 +35,11 @@ uses its compact height until the overview bool flips.
   app icon + heading/title; left-click focuses (`Windows::focus`), right-click opens the per-window
   context menu.
 - **Right** (`right_section`): volume (scroll to change, click → Sound panel; the glyph shows what
-  the default output is — built-in speaker, speaker, headphones, headset, TV, car …), Bluetooth
+  the default output is — built-in speaker, speaker, headphones, headset, TV, car …, and a
+  [tooltip](components.md#tooltip) shows the level), Bluetooth
   (only with an adapter; off / on / connected, click → Bluetooth panel), network (click → Wi‑Fi
   panel; signal wedges follow the joined network's strength, a cable when wired), battery (click →
-  power panel), the notification indicator (a moon while Do Not Disturb is on, a bell while
+  power panel; a tooltip shows the charge), the notification indicator (a moon while Do Not Disturb is on, a bell while
   something arrived unseen; right-click for Do Not Disturb), clock (click → notification
   center, see [notifications.md](notifications.md)).
 
