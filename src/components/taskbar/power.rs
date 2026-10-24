@@ -71,7 +71,7 @@ fn header() -> Row {
 }
 
 /// "2 h 10 min left", "full in 45 min", "on AC" …
-fn battery_detail(battery: &Battery) -> String {
+pub(crate) fn battery_detail(battery: &Battery) -> String {
     match battery.state() {
         BatteryState::Discharging => battery
             .time_to_empty()
@@ -98,7 +98,8 @@ fn duration(duration: Duration) -> String {
 
 // ───── power profile ─────────────────────────────────────────────────────────
 
-fn profile_section() -> Box<dyn Widget> {
+/// The profile picker, and why performance is held back if it is.
+pub(crate) fn profile_section() -> Box<dyn Widget> {
     let profile = PowerProfile::read();
     let active = profile.active().to_string();
     let available = profile.available().to_vec();
@@ -129,7 +130,7 @@ fn profile_section() -> Box<dyn Widget> {
     boxed(Column::new(rows).gap(sys::space::gap::s()).width(Parent))
 }
 
-fn profile_label(name: &str) -> &str {
+pub(crate) fn profile_label(name: &str) -> &str {
     match name {
         "power-saver" => "Saver",
         "balanced" => "Balanced",
@@ -140,7 +141,8 @@ fn profile_label(name: &str) -> &str {
 
 // ───── peripherals ───────────────────────────────────────────────────────────
 
-fn peripheral_section() -> Box<dyn Widget> {
+/// The batteries of connected devices.
+pub(crate) fn peripheral_section() -> Box<dyn Widget> {
     let battery = Battery::read();
     let items: Vec<ListItem> = battery.peripherals().iter().map(peripheral_item).collect();
     drop(battery);

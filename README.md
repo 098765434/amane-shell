@@ -29,6 +29,13 @@ ones — the bar itself is not.
   to put away), a notification center sidebar opened from the clock with iOS-style stacks per
   app, and Do Not Disturb (on, for an hour, until this evening or tomorrow; critical
   notifications still show).
+- **Quick Settings** ([docs/quick-settings.md](docs/quick-settings.md)) — GNOME's quick
+  settings in the macOS Control Center look, from the bar's slider button. The system row
+  (battery, screenshot, lock, power menu), Now Playing, volume, microphone and brightness
+  sliders, and tiles for wired, Wi‑Fi (and hotspot), VPN, Bluetooth, power mode, night light,
+  dark style, Do Not Disturb, keyboard light, airplane mode and background apps. Each shows only
+  when the machine has it, and each opens a page of its own that slides in. The bar shows GNOME's
+  privacy icons (screen shared, camera, microphone) and the settings that are on.
 - **Buttons** ([docs/buttons.md](docs/buttons.md)) and **components**
   ([docs/components.md](docs/components.md)) — shared push and icon buttons, a switch, a
   segmented button, cards, top app bars, lists, dividers and a slider, each after its Material 3
@@ -66,7 +73,7 @@ the library together, check `amane` out beside this repo and add a git-ignored
 
 ## niri layer-rules (for the frosted popups)
 
-The shell's **floating** surfaces (context menus, the panels, notification toasts and the center) get their blur + corner
+The shell's **floating** surfaces (context menus, the panels, Quick Settings, notification toasts and the center) get their blur + corner
 rounding from matching `layer-rule` blocks in your niri config. The bar itself is opaque and needs
 no rule. `niri-layer-rule.kdl` holds those blocks, generated from the design tokens
 (`cargo run -q -- layer-rules > niri-layer-rule.kdl`), so the blur's corners follow the cards'

@@ -1,4 +1,5 @@
 mod components;
+mod services;
 mod theme;
 mod tokens;
 
@@ -7,7 +8,7 @@ use std::process::ExitCode;
 use amane::App;
 
 use components::context_menu::{self, ContextMenu, Icon, MenuItem};
-use components::{notifications, taskbar, tooltip};
+use components::{notifications, quick_settings, taskbar, tooltip};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {
@@ -136,6 +137,7 @@ fn main() -> ExitCode {
         .window(taskbar::bluetooth_panel)
         .window(taskbar::wifi_panel)
         .window(taskbar::power_panel)
+        .window(quick_settings::surface)
         .window(notifications::side_sheet)
         .window(context_menu::anchor);
     for toast in notifications::TOASTS {
@@ -170,6 +172,8 @@ fn main() -> ExitCode {
     // One argument per line, e.g. Do Not Disturb from a keybind:
     // `printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("notifications", notifications::ipc)
+    // `printf 'quick-settings\nopen\nwifi\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    .ipc("quick-settings", quick_settings::ipc)
     .ipc("close", |_| {
         context_menu::close();
         String::from("ok")

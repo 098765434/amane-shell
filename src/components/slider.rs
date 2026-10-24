@@ -5,9 +5,20 @@
 //! discrete [`STEP`]s for the scroll wheel. Drawn in the macOS look:
 //! a thin capsule track with no handle, the accent filling it; a hit area a
 //! full control tall, so the thin track is easy to grab.
+//!
+//! [`Slider::large`] is the macOS Control Center slider instead: a track a
+//! full control tall with the glyph inside it, at the start of a fill that
+//! never gets narrower than the glyph's circle, so the glyph is the knob.
+//! The glyph can mute (`on_icon_press`).
 
-use amane::{Center, Color, Point, Pointer, Rectangle, Scroll, Size, Start};
+use std::rc::Rc;
 
+use amane::{
+    Center, Color, Point, Pointer, Radius, Rectangle, Row, Scroll, Size, Stack, Start, Widget,
+};
+
+use crate::components::buttons::{Actions, interactive, state_fill};
+use crate::components::layout::{boxed, icon, slot};
 use crate::tokens::sys;
 
 /// How far one scroll notch moves a level, the bar's volume button included.
@@ -26,7 +37,11 @@ pub struct Slider {
     value: u8,
     width: f32,
     dimmed: bool,
-    on_value_change: fn(u8),
+    on_value_change: Rc<dyn Fn(u8)>,
+    // the large variant's glyph
+    large: Option<char>,
+    // the glyph's id and what pressing it does
+    icon_press: Option<(String, Rc<dyn Fn()>)>,
 }
 
 impl Slider {
@@ -35,7 +50,9 @@ impl Slider {
             value: value.min(100),
             width,
             dimmed: false,
-            on_value_change: |_| {},
+            on_value_change: Rc::new(|_| {}),
+            large: None,
+            icon_press: None,
         }
     }
 
@@ -45,17 +62,35 @@ impl Slider {
         self
     }
 
-    pub fn on_value_change(mut self, change: fn(u8)) -> Self {
-        self.on_value_change = change;
+    pub fn on_value_change(mut self, change: impl Fn(u8) + 'static) -> Self {
+        self.on_value_change = Rc::new(change);
+        self
+    }
+
+    /// The Control Center look: a control-tall track with `glyph` as its knob.
+    pub fn large(mut self, glyph: char) -> Self {
+        self.large = Some(glyph);
+        self
+    }
+
+    /// Makes the large slider's glyph a button (mute, say). `id` keys its
+    /// hover, so it must be unique and stable.
+    pub fn on_icon_press(mut self, id: impl Into<String>, press: impl Fn() + 'static) -> Self {
+        self.icon_press = Some((id.into(), Rc::new(press)));
         self
     }
 
     pub fn build(self) -> Rectangle {
+        if let Some(glyph) = self.large {
+            return self.build_large(glyph);
+        }
+
         let Self {
             value,
             width,
             dimmed,
             on_value_change: set,
+            ..
         } = self;
         let track_h = sys::size::slider::height();
         let active = if dimmed {
@@ -78,6 +113,7 @@ impl Slider {
                     .fill(active),
             );
 
+        let scroll = set.clone();
         Rectangle::new()
             .width(Size::Fixed(width))
             .height(Size::Fixed(sys::size::control::height()))
@@ -89,9 +125,90 @@ impl Slider {
                 let ratio = (p.x / width).clamp(0.0, 1.0);
                 set((ratio * 100.0).round() as u8);
             })
-            .on_scroll(move |scroll: Scroll| set(scrolled(value, scroll, STEP)))
+            .on_scroll(move |s: Scroll| scroll(scrolled(value, s, STEP)))
             .child(track)
     }
+
+    fn build_large(self, glyph: char) -> Rectangle {
+        let Self {
+            value,
+            width,
+            dimmed,
+            on_value_change: set,
+            icon_press,
+            ..
+        } = self;
+        let height = sys::size::control::height();
+        let active = if dimmed {
+            sys::color::content::secondary()
+        } else {
+            sys::color::accent::bg()
+        };
+
+        let fill = Rectangle::new()
+            .width(Size::Fixed(large_fill(value, width, height)))
+            .height(Size::Fixed(height))
+            .radius(Radius::Full)
+            .fill(active);
+
+        // the glyph's circle, and the rest of the track that the drag maps
+        let knob = slot(height).radius(Radius::Full).child(icon(
+            glyph,
+            sys::size::icon::m(),
+            sys::color::accent::fg(),
+        ));
+        let drag_from = if icon_press.is_some() { height } else { 0.0 };
+        let knob = match icon_press {
+            Some((id, press)) => {
+                let fill = state_fill(&id, Color::TRANSPARENT, false);
+                let actions = Actions {
+                    press: Some(press),
+                    ..Actions::default()
+                };
+                interactive(knob.fill(fill), id, false, actions)
+            }
+            None => knob,
+        };
+
+        let drag_set = set.clone();
+        let rest = Rectangle::new()
+            .width(Size::Fixed((width - drag_from).max(1.0)))
+            .height(Size::Fixed(height))
+            .fill(Color::TRANSPARENT)
+            .cursor(Pointer)
+            .on_drag(move |p: Point| {
+                drag_set(large_value(p.x + drag_from, width, height));
+            });
+
+        // with no glyph button the whole track drags, from under the glyph
+        let input: Box<dyn Widget> = if drag_from > 0.0 {
+            boxed(Row::new(vec![boxed(knob), boxed(rest)]))
+        } else {
+            boxed(Stack::new(vec![boxed(knob), boxed(rest)]))
+        };
+
+        Rectangle::new()
+            .width(Size::Fixed(width))
+            .height(Size::Fixed(height))
+            .radius(Radius::Full)
+            .fill(sys::color::surface::raised::bg())
+            .clip()
+            .on_scroll(move |s: Scroll| set(scrolled(value, s, STEP)))
+            .child(Stack::new(vec![boxed(fill), input]))
+    }
+}
+
+/// How wide the large slider's fill is at `value`: never narrower than the
+/// glyph's circle (`height`), the whole track at 100.
+fn large_fill(value: u8, width: f32, height: f32) -> f32 {
+    height + (width - height).max(0.0) * f32::from(value.min(100)) / 100.0
+}
+
+/// The level whose fill's centre-of-knob is under `x` along the track.
+fn large_value(x: f32, width: f32, height: f32) -> u8 {
+    let span = (width - height).max(1.0);
+    let ratio = ((x - height / 2.0) / span).clamp(0.0, 1.0);
+    (ratio * 100.0).round() as u8
 }
 
 #[cfg(test)]
@@ -108,5 +225,23 @@ mod tests {
         assert_eq!(scrolled(50, scroll(1.0), STEP), 45);
         assert_eq!(scrolled(98, scroll(-1.0), STEP), 100);
         assert_eq!(scrolled(3, scroll(1.0), STEP), 0);
+    }
+
+    #[test]
+    fn the_large_fill_never_gets_narrower_than_the_knob() {
+        assert_eq!(large_fill(0, 300.0, 30.0), 30.0);
+        assert_eq!(large_fill(50, 300.0, 30.0), 165.0);
+        assert_eq!(large_fill(100, 300.0, 30.0), 300.0);
+        // a track narrower than its knob is all knob
+        assert_eq!(large_fill(100, 20.0, 30.0), 30.0);
+    }
+
+    #[test]
+    fn the_large_knob_follows_the_pointer() {
+        assert_eq!(large_value(15.0, 300.0, 30.0), 0);
+        assert_eq!(large_value(150.0, 300.0, 30.0), 50);
+        assert_eq!(large_value(285.0, 300.0, 30.0), 100);
+        assert_eq!(large_value(-40.0, 300.0, 30.0), 0);
+        assert_eq!(large_value(900.0, 300.0, 30.0), 100);
     }
 }

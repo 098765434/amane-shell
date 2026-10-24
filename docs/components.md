@@ -10,7 +10,7 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `TopAppBar` | `app_bar.rs` | [Top app bar](https://m3.material.io/components/app-bars/overview) (small) | the title row of each panel and of the center |
 | `List`, `ListItem` | `list.rs` | [Lists](https://m3.material.io/components/lists/overview) | networks, Bluetooth devices, audio devices, peripherals |
 | `Divider` | `divider.rs` | [Divider](https://m3.material.io/components/divider/overview) | context-menu separators |
-| `Slider` | `slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume |
+| `Slider` | `slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume, Quick Settings' sliders |
 | `tooltip` | `tooltip.rs` | [Tooltips](https://m3.material.io/components/tooltips/overview) (plain) | the bar's volume level and battery charge |
 
 ## Card
@@ -34,7 +34,8 @@ content can anchor a menu.
 
 ## TopAppBar
 
-`TopAppBar::new(title)` has M3's slots: `.navigation_icon(glyph)` (here the panel's glyph),
+`TopAppBar::new(title)` has M3's slots: `.back(id, action)` (a back chevron, for a page drilled
+into, like Quick Settings'), `.navigation_icon(glyph)` (here the panel's glyph),
 `.subtitle(…)`, and `.actions(…)` at the trailing end. It uses its surface's `fg` and secondary,
 `Surface::Panel` by default, and `.color(…)` overrides the title (the power panel turns it
 critical on a low battery). Unlike M3's, it has no fill and is no taller than its content.
@@ -60,7 +61,14 @@ and below. `Divider::height()` is what it takes up, for menus that measure thems
 `Slider::new(value, width)` sets a 0–100 level when pressed, dragged or scrolled. Its thin
 `sys.size.slider.height` track is filled with the accent, or greyed with `.dimmed(true)`. The hit
 area is a full control tall. One scroll notch moves it `slider::STEP` (5). The bar's volume button
-uses the same `slider::scrolled`.
+uses the same `slider::scrolled`. `.on_value_change` takes any closure.
+
+`.large(glyph)` is the macOS Control Center slider: a track a full control tall with the glyph
+inside it, at the start of a fill that's never narrower than the glyph's circle, so the glyph is
+the knob. `.on_icon_press(id, action)` makes the glyph a button (Quick Settings' mute).
+
+Quick Settings' own parts (the tile, the grid, the page) are in
+[quick-settings.md](quick-settings.md).
 
 ## Tooltip
 

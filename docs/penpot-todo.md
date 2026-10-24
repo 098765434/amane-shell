@@ -34,6 +34,9 @@ whose output is static: it can't follow the mode, so it holds one value for both
 - The `notification.*` tokens and the `sys.color.surface.notification.*` pair were added to
   `tokens.json` by hand (see [notifications.md](notifications.md)). Recreate them in Penpot under
   the same names, or the next export drops them.
+- The `quick.*` tokens (`quick.tile.height`, `.radius`, `.disc`, `quick.media.art`,
+  `quick.page.recede`) were added to `tokens.json` by hand too (see
+  [quick-settings.md](quick-settings.md)). Recreate them in Penpot under the same names.
 - `menu.label.advance-ratio` is no longer read: menus measure their text now. Delete it.
 - `bar.volume.width` is no longer read: the volume is a glyph button now, its level in a tooltip.
   Delete it.

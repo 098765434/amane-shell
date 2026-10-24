@@ -43,7 +43,15 @@ pub use values::{Shadow, TextCase, TextDecoration, Value};
 pub const SOURCE: &str = include_str!("../../design-tokens/tokens.json");
 
 /// The prefixes component tokens may use (manual §3).
-pub const COMPONENTS: &[&str] = &["bar", "menu", "wifi", "power", "osd", "notification"];
+pub const COMPONENTS: &[&str] = &[
+    "bar",
+    "menu",
+    "wifi",
+    "power",
+    "osd",
+    "notification",
+    "quick",
+];
 
 #[derive(Clone, Debug)]
 pub struct ResolvedToken {

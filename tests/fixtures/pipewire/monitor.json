@@ -1,0 +1,92 @@
+[
+  {
+    "id": 63,
+    "type": "PipeWire:Interface:Node",
+    "info": {
+      "state": "suspended",
+      "props": {
+        "media.class": "Audio/Source",
+        "device.api": "alsa",
+        "node.name": "alsa_input.pci-0000_c4_00.6.HiFi__Mic1__source"
+      }
+    }
+  },
+  {
+    "id": 74,
+    "type": "PipeWire:Interface:Node",
+    "info": {
+      "state": "suspended",
+      "props": {
+        "media.class": "Video/Source",
+        "device.api": "v4l2",
+        "node.name": "v4l2_input.pci-0000_c4_00.4-usb-0_1_1.0"
+      }
+    }
+  },
+  {
+    "id": 80,
+    "type": "PipeWire:Interface:Node",
+    "info": {
+      "state": "running",
+      "props": {
+        "media.class": "Stream/Input/Audio",
+        "application.name": "cava",
+        "application.process.id": 900,
+        "stream.capture.sink": true
+      }
+    }
+  }
+]
+[
+  {
+    "id": 98,
+    "type": "PipeWire:Interface:Client",
+    "info": {
+      "props": {
+        "application.name": "pw-cat"
+      }
+    }
+  },
+  {
+    "id": 99,
+    "type": "PipeWire:Interface:Node",
+    "info": {
+      "state": "suspended",
+      "props": {
+        "media.class": "Stream/Input/Audio",
+        "application.name": "pw-record",
+        "application.process.id": 341703,
+        "node.name": "pw-record"
+      }
+    }
+  },
+  {
+    "id": 101,
+    "type": "PipeWire:Interface:Node",
+    "info": {
+      "state": "running",
+      "props": {
+        "media.class": "Stream/Input/Audio",
+        "application.name": "amane-shell",
+        "application.process.id": 4242
+      }
+    }
+  }
+]
+[
+  {
+    "id": 74,
+    "type": "PipeWire:Interface:Node",
+    "info": {
+      "state": "running"
+    }
+  },
+  {
+    "id": 99,
+    "info": null
+  },
+  {
+    "id": 101,
+    "info": null
+  }
+]

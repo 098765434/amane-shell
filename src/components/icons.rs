@@ -26,7 +26,31 @@ pub(crate) const ICON_BLUETOOTH_CONNECTED: char = '\u{e1a8}';
 pub(crate) const ICON_BLUETOOTH_OFF: char = '\u{e1a9}';
 pub(crate) const ICON_NOTIFICATIONS: char = '\u{e7f4}';
 pub(crate) const ICON_DND: char = '\u{ef44}';
-const ICON_MIC: char = '\u{e029}';
+pub(crate) const ICON_CHEVRON_LEFT: char = '\u{e5cb}';
+pub(crate) const ICON_CHEVRON_RIGHT: char = '\u{e5cc}';
+pub(crate) const ICON_TUNE: char = '\u{e429}';
+pub(crate) const ICON_POWER: char = '\u{f8c7}';
+pub(crate) const ICON_SCREENSHOT: char = '\u{f7d2}';
+pub(crate) const ICON_BRIGHTNESS: char = '\u{e1ae}';
+pub(crate) const ICON_NIGHT_LIGHT: char = '\u{e1c6}';
+pub(crate) const ICON_DARK_MODE: char = '\u{eb37}';
+pub(crate) const ICON_AIRPLANE: char = '\u{e53d}';
+pub(crate) const ICON_VPN: char = '\u{e0da}';
+pub(crate) const ICON_HOTSPOT: char = '\u{e1e2}';
+pub(crate) const ICON_WIRED: char = '\u{eb2f}';
+pub(crate) const ICON_KEYBOARD_LIGHT: char = '\u{f7ed}';
+pub(crate) const ICON_CAMERA: char = '\u{e04b}';
+pub(crate) const ICON_SCREEN_SHARE: char = '\u{e0e2}';
+pub(crate) const ICON_MUSIC: char = '\u{e405}';
+pub(crate) const ICON_PLAY: char = '\u{e037}';
+pub(crate) const ICON_PAUSE: char = '\u{e034}';
+pub(crate) const ICON_SKIP_NEXT: char = '\u{e044}';
+pub(crate) const ICON_SKIP_PREVIOUS: char = '\u{e045}';
+pub(crate) const ICON_SLEEP: char = '\u{f037}';
+pub(crate) const ICON_RESTART: char = '\u{f053}';
+pub(crate) const ICON_LOG_OUT: char = '\u{e9ba}';
+pub(crate) const ICON_BACKGROUND_APPS: char = '\u{e1bd}';
+pub(crate) const ICON_MIC: char = '\u{e029}';
 const ICON_MIC_EXTERNAL: char = '\u{ef5a}';
 const ICON_HEADSET_MIC: char = '\u{e311}';
 const ICON_TV: char = '\u{e333}';
@@ -100,6 +124,19 @@ pub(crate) fn device_glyph(icon: &str) -> char {
         "phone" => ICON_PHONE,
         "computer" => ICON_COMPUTER,
         _ => ICON_DEVICE_OTHER,
+    }
+}
+
+const ICON_POWER_SAVER: char = '\u{ea35}';
+const ICON_BALANCED: char = '\u{eaf6}';
+const ICON_PERFORMANCE: char = '\u{e9e4}';
+
+/// The glyph for a power-profiles-daemon profile.
+pub(crate) fn power_profile_glyph(profile: &str) -> char {
+    match profile {
+        "power-saver" => ICON_POWER_SAVER,
+        "performance" => ICON_PERFORMANCE,
+        _ => ICON_BALANCED,
     }
 }
 

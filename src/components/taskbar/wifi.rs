@@ -41,7 +41,7 @@ thread_local! {
 // ───── runtime ───────────────────────────────────────────────────────────────
 
 /// Forgets a half-typed password; the panel calls this as it closes.
-pub(super) fn reset() {
+pub(crate) fn reset() {
     STATE.with(|s| {
         let mut s = s.borrow_mut();
         s.password_for = None;
@@ -58,6 +58,11 @@ fn begin_password(ssid: String) {
     });
     TextInput::set_text(PW_ID, "");
     mark_all();
+}
+
+/// Whether a password is being typed, which the networks below make room for.
+pub(crate) fn asking_password() -> bool {
+    password_target().is_some()
 }
 
 fn password_target() -> Option<String> {
@@ -79,10 +84,15 @@ pub fn panel() -> LayerWindow {
 }
 
 fn card() -> Rectangle {
-    panel::card(
-        vec![boxed(header()), boxed(ap_list()), password_section()],
-        sys::space::gap::l(),
-    )
+    let mut body = vec![boxed(header())];
+    body.extend(networks());
+    panel::card(body, sys::space::gap::l())
+}
+
+/// The networks found and, when one is picked that needs it, the password
+/// field: the panel's body, which Quick Settings' Wi-Fi page shows too.
+pub(crate) fn networks() -> Vec<Box<dyn Widget>> {
+    vec![boxed(ap_list()), password_section()]
 }
 
 fn header() -> Row {

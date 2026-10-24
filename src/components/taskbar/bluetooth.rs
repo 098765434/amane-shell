@@ -48,13 +48,16 @@ thread_local! {
     // discovery was started for this opening of the panel
     static SEARCHING: Cell<bool> = const { Cell::new(false) };
 
+    // the surface the device list is on, which its menu hangs under
+    static MENU_PARENT: Cell<&'static str> = const { Cell::new(BLUETOOTH_NS) };
+
     static PENDING: RefCell<Option<Pending>> = const { RefCell::new(None) };
 }
 
 // ───── runtime ───────────────────────────────────────────────────────────────
 
 /// Stops the search the panel started; the panel calls this as it closes.
-pub(super) fn closed() {
+pub(crate) fn closed() {
     if SEARCHING.replace(false) {
         Bluetooth::stop_scan();
     }
@@ -118,7 +121,7 @@ fn open_device_menu(device: &BluetoothDevice) {
                 .on_select(move || Bluetooth::forget(&path)),
         );
 
-    context_menu::show_under(DEVICE_MENU_KEY, menu, BLUETOOTH_NS, cursor());
+    context_menu::show_under(DEVICE_MENU_KEY, menu, MENU_PARENT.get(), cursor());
 }
 
 // ───── view ──────────────────────────────────────────────────────────────────
@@ -128,6 +131,29 @@ pub fn panel() -> LayerWindow {
 }
 
 fn card() -> Rectangle {
+    let powered = Bluetooth::read().powered();
+
+    let header = TopAppBar::new("Bluetooth")
+        .navigation_icon(ICON_BLUETOOTH)
+        .actions(vec![boxed(
+            Switch::new("amane.bluetooth.powered", powered)
+                .on_toggle(Bluetooth::set_powered)
+                .build(),
+        )])
+        .build();
+
+    panel::card(
+        vec![boxed(header), devices(BLUETOOTH_NS)],
+        sys::space::gap::l(),
+    )
+}
+
+/// The devices, searching for new ones while shown and the radio is on:
+/// the panel's body, which Quick Settings' Bluetooth page shows too. A
+/// device's menu hangs under `parent_ns`, the surface it's drawn on.
+pub(crate) fn devices(parent_ns: &'static str) -> Box<dyn Widget> {
+    MENU_PARENT.set(parent_ns);
+
     let bluetooth = Bluetooth::read();
     let powered = bluetooth.powered();
     let scanning = bluetooth.scanning();
@@ -143,27 +169,13 @@ fn card() -> Rectangle {
     // ends a search by itself.
     if !powered {
         SEARCHING.set(false);
-    } else if !SEARCHING.replace(true) {
+        return boxed(caption("Bluetooth is off"));
+    }
+    if !SEARCHING.replace(true) {
         Bluetooth::start_scan();
     }
 
-    let header = TopAppBar::new("Bluetooth")
-        .navigation_icon(ICON_BLUETOOTH)
-        .actions(vec![boxed(
-            Switch::new("amane.bluetooth.powered", powered)
-                .on_toggle(Bluetooth::set_powered)
-                .build(),
-        )])
-        .build();
-
-    let mut body = vec![boxed(header)];
-    if powered {
-        body.push(device_list(mine, others, scanning));
-    } else {
-        body.push(boxed(caption("Bluetooth is off")));
-    }
-
-    panel::card(body, sys::space::gap::l())
+    device_list(mine, others, scanning)
 }
 
 fn device_list(

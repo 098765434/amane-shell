@@ -6,8 +6,8 @@
 //! [`Card`](crate::components::card::Card) on its own bottom-right
 //! `LayerWindow` (`Keyboard::OnDemand`, so a panel's text field can take keys
 //! while the bar never steals focus), toggled by its bar indicator and
-//! dismissed with Escape or by toggling again. The notification center
-//! shares the one-open-at-a-time state.
+//! dismissed with Escape or by toggling again. The notification center and
+//! Quick Settings share the one-open-at-a-time state.
 
 use std::cell::Cell;
 
@@ -19,7 +19,7 @@ use amane::{
 use super::{bluetooth, wifi};
 use crate::components::card::{Card, Surface};
 use crate::components::layout::blank;
-use crate::components::{context_menu, notifications};
+use crate::components::{context_menu, notifications, quick_settings};
 use crate::tokens::sys;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -31,6 +31,9 @@ pub enum Panel {
     /// The notification center: not one of the bottom-right cards, but
     /// sharing their one-open-at-a-time state.
     Notifications,
+    /// Quick Settings: a bottom-right card of its own, see
+    /// [`quick_settings`].
+    QuickSettings,
 }
 
 thread_local! {
@@ -62,10 +65,13 @@ fn set(next: Option<Panel>) {
         Some(Panel::Wifi) => wifi::reset(),
         Some(Panel::Bluetooth) => bluetooth::closed(),
         Some(Panel::Notifications) => notifications::center::closed(),
+        Some(Panel::QuickSettings) => quick_settings::closed(),
         _ => {}
     }
-    if next == Some(Panel::Notifications) {
-        notifications::center::opened();
+    match next {
+        Some(Panel::Notifications) => notifications::center::opened(),
+        Some(Panel::QuickSettings) => quick_settings::opened(),
+        _ => {}
     }
     // a device menu belongs to the card it was opened from
     if previous.is_some() {
@@ -101,6 +107,17 @@ pub(crate) fn dismissable(base: LayerWindow) -> LayerWindow {
     })
 }
 
+/// Where a bottom-right card sits: `gap.m` in from the right edge and above
+/// the bar.
+pub(crate) fn popover_margin() -> Margin {
+    Margin {
+        top: 0,
+        right: sys::space::gap::m() as i32,
+        bottom: (sys::size::panel::height() + sys::space::gap::m()) as i32,
+        left: 0,
+    }
+}
+
 /// The panel's surface: hidden and empty while closed, else `card()`.
 pub fn surface(
     namespace: &'static str,
@@ -112,12 +129,7 @@ pub fn surface(
     let base = LayerWindow::new()
         .width(sys::size::popover::width())
         .height(sys::size::popover::height())
-        .margin(Margin {
-            top: 0,
-            right: sys::space::gap::m() as i32,
-            bottom: (sys::size::panel::height() + sys::space::gap::m()) as i32,
-            left: 0,
-        })
+        .margin(popover_margin())
         .visible(open);
     let base = dismissable(overlay(
         base,

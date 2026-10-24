@@ -11,39 +11,47 @@
 //! the root rectangle), rounded pills, and generous spacing. Everything is
 //! driven by the Penpot tokens in `design-tokens/tokens.json` via [`tokens`].
 
-mod audio;
-mod bluetooth;
+pub(crate) mod audio;
+pub(crate) mod bluetooth;
 mod clock;
 mod panel;
-mod power;
-mod wifi;
+pub(crate) mod power;
+pub(crate) mod wifi;
 
 use std::path::PathBuf;
 
 use amane::{
     Apps, Audio, Battery, Bluetooth, BluetoothDevice, Button, Center, Color, Column, End, Full,
     Gestures, Image, Justify, Keyboard, Layer, LayerWindow, Link, Network, Parent, Pointer,
-    Rectangle, Row, Scroll, Service, Size, Stack, Start, Text, Vertical, WarningLevel, Widget,
-    WindowInfo, Windows, Workspace, Workspaces, Zone,
+    PowerProfile, Rectangle, Row, Scroll, Service, Size, Stack, Start, Text, Vertical,
+    WarningLevel, Widget, WindowInfo, Windows, Workspace, Workspaces, Zone,
 };
 
 use crate::components::buttons::{IconButton, PushButton, Shape, Style};
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
 use crate::components::icons::{
-    ICON_APPS, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE, ICON_DND,
-    ICON_NOTIFICATIONS, ICON_VOLUME_OFF, ICON_WIFI, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
-    battery_glyph, wifi_glyph,
+    ICON_AIRPLANE, ICON_APPS, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF,
+    ICON_CABLE, ICON_CAMERA, ICON_DND, ICON_MIC, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS,
+    ICON_SCREEN_SHARE, ICON_TUNE, ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE,
+    ICON_WIFI_OFF, audio_glyph, battery_glyph, power_profile_glyph, wifi_glyph,
 };
 use crate::components::layout::{
     boxed, clipped_label, cursor, nothing, pad, text_width, track_cursor,
 };
 use crate::components::notifications::{self, DoNotDisturb};
+use crate::components::quick_settings::{self, Page};
 use crate::components::slider;
+use crate::services::connections::Connections;
+use crate::services::night_light::NightLight;
+use crate::services::privacy::Privacy;
+use crate::services::rfkill::Rfkill;
 
 use crate::tokens::{Styled, bar, sys};
 
 pub(crate) use clock::Clock;
-pub(crate) use panel::{Panel, dismissable, is_open, overlay, toggle};
+pub(crate) use panel::{
+    Panel, card as panel_card, close, dismissable, is_open, overlay, popover_margin, toggle,
+};
 
 pub use audio::{AUDIO_NS, panel as audio_panel};
 pub use bluetooth::{BLUETOOTH_NS, panel as bluetooth_panel};
@@ -167,14 +175,17 @@ fn center_section(overview: bool) -> Box<dyn Widget> {
 }
 
 fn right_section() -> Row {
-    let items: Vec<Box<dyn Widget>> = vec![
+    let mut items: Vec<Box<dyn Widget>> = privacy_indicators();
+    items.extend(status_indicators());
+    items.extend([
         volume_module(),
         bluetooth_indicator(),
         network_indicator(),
         battery_module(),
+        quick_settings_button(),
         notification_indicator(),
         clock_module(),
-    ];
+    ]);
 
     Row::new(items).gap(sys::space::gap::xl()).align(Center)
 }
@@ -451,6 +462,7 @@ fn volume_module() -> Box<dyn Widget> {
                 Audio::set_volume(slider::scrolled(volume, scroll, slider::STEP))
             })
             .on_press(|| panel::toggle(Panel::Audio))
+            .on_secondary(|| quick_settings::open(Page::Sound))
             .tooltip(BAR_NS, tip)
             .build(),
     )
@@ -476,6 +488,7 @@ fn bluetooth_indicator() -> Box<dyn Widget> {
     boxed(
         bar_icon("amane.bar.bluetooth", glyph, status_color(connected))
             .on_press(|| panel::toggle(Panel::Bluetooth))
+            .on_secondary(|| quick_settings::open(Page::Bluetooth))
             .build(),
     )
 }
@@ -499,6 +512,7 @@ fn network_indicator() -> Box<dyn Widget> {
         // grey like its neighbours: the glyph already shows the link
         bar_icon("amane.bar.network", glyph, sys::color::content::secondary())
             .on_press(|| panel::toggle(Panel::Wifi))
+            .on_secondary(|| quick_settings::open(Page::Wifi))
             .build(),
     )
 }
@@ -534,6 +548,103 @@ fn battery_module() -> Box<dyn Widget> {
             .tooltip(BAR_NS, tip)
             .build(),
     )
+}
+
+/// Quick Settings' button, the macOS Control Center's place in the bar.
+fn quick_settings_button() -> Box<dyn Widget> {
+    let open = is_open(Panel::QuickSettings);
+    boxed(
+        bar_icon(
+            "amane.bar.quick-settings",
+            ICON_TUNE,
+            sys::color::content::secondary(),
+        )
+        .selected(open)
+        .on_press(|| panel::toggle(Panel::QuickSettings))
+        .tooltip(BAR_NS, "Quick Settings")
+        .build(),
+    )
+}
+
+/// What's using the camera, the microphone or the screen, first in the
+/// row as GNOME has them; each opens Quick Settings.
+fn privacy_indicators() -> Vec<Box<dyn Widget>> {
+    let privacy = Privacy::read();
+    let mut items = Vec::new();
+
+    if privacy.screen() {
+        items.push(privacy_icon(
+            "amane.bar.privacy.screen",
+            ICON_SCREEN_SHARE,
+            String::from("Screen is being shared"),
+        ));
+    }
+    if privacy.camera() {
+        items.push(privacy_icon(
+            "amane.bar.privacy.camera",
+            ICON_CAMERA,
+            String::from("Camera in use"),
+        ));
+    }
+    if privacy.recording() {
+        items.push(privacy_icon(
+            "amane.bar.privacy.microphone",
+            ICON_MIC,
+            format!("Microphone in use by {}", privacy.microphone().join(", ")),
+        ));
+    }
+    items
+}
+
+fn privacy_icon(id: &'static str, glyph: char, tip: String) -> Box<dyn Widget> {
+    boxed(
+        bar_icon(id, glyph, sys::color::status::critical::bg())
+            .on_press(|| quick_settings::open(Page::Grid))
+            .tooltip(BAR_NS, tip)
+            .build(),
+    )
+}
+
+/// Settings GNOME shows in the bar only while they're on: night light, a
+/// VPN, a power mode other than Balanced, airplane mode.
+fn status_indicators() -> Vec<Box<dyn Widget>> {
+    let mut glyphs: Vec<(&'static str, char, &'static str)> = Vec::new();
+
+    if NightLight::read().on() {
+        glyphs.push(("amane.bar.night-light", ICON_NIGHT_LIGHT, "Night Light"));
+    }
+    if Connections::read().vpns().iter().any(|vpn| vpn.active) {
+        glyphs.push(("amane.bar.vpn", ICON_VPN, "VPN"));
+    }
+    let profile = PowerProfile::read();
+    if profile.present() && profile.active() != "balanced" {
+        let tip = if profile.active() == "performance" {
+            "Performance Mode"
+        } else {
+            "Power Saver"
+        };
+        glyphs.push((
+            "amane.bar.power-mode",
+            power_profile_glyph(profile.active()),
+            tip,
+        ));
+    }
+    drop(profile);
+    if Rfkill::read().airplane() {
+        glyphs.push(("amane.bar.airplane", ICON_AIRPLANE, "Airplane Mode"));
+    }
+
+    glyphs
+        .into_iter()
+        .map(|(id, glyph, tip)| {
+            boxed(
+                bar_icon(id, glyph, sys::color::content::secondary())
+                    .on_press(|| quick_settings::open(Page::Grid))
+                    .tooltip(BAR_NS, tip)
+                    .build(),
+            )
+        })
+        .collect()
 }
 
 /// A moon while Do Not Disturb is on, else a bell while something arrived

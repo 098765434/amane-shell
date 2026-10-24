@@ -12,7 +12,8 @@ lives in `src/tokens/`. Where this manual says "must", a check in CI enforces it
    shell draws is a token in the Penpot file *amane-shell design system*. Nobody edits
    `design-tokens/tokens.json` by hand.
 2. **Three tiers, one direction.** `ref.*` (raw values) ← `sys.*` (decisions) ← component
-   tokens (`bar.*`, `menu.*`, `wifi.*`, `power.*`, `osd.*`, `notification.*`). References only
+   tokens (`bar.*`, `menu.*`, `wifi.*`, `power.*`, `osd.*`, `notification.*`, `quick.*`).
+   References only
    point leftwards.
 3. **Code reads `sys.*` and its own component's tokens. Never `ref.*`.**
 4. **Light/dark changes only `sys.color.*`.** Primitives never change with mode; component
@@ -43,7 +44,7 @@ design-tokens/tokens.json  (normalized, committed)  ← developers commit it
 resolved values per (mode, density, accent)         ← cached at runtime
    │  build.rs: one Rust function per sys.* and component token
    ▼
-bar · menus · Wi-Fi panel · OSD · notifications · niri layer rules
+bar · menus · Wi-Fi panel · OSD · notifications · Quick Settings · niri layer rules
 ```
  
 What the running shell may change on top of Penpot, and nothing else:
@@ -66,7 +67,7 @@ Everything else is exactly what Penpot shows.
 |------|--------|-------|---------------|---------------|--------------------|
 | 1 · Primitives | `ref.` | raw values and scales: palette, spacing steps, font families, sizes, radii, opacities | nothing (literals only) | **no** | no |
 | 2 · Semantic | `sys.` | decisions by role: surfaces, content, accent, status, states, spacing roles, control sizes, typography roles, shadows | `ref.*`, other `sys.*` | yes | colours yes; dimensions via density |
-| 3 · Component | `bar.`, `menu.`, `wifi.`, `power.`, `osd.`, `notification.` | values unique to one component, or its deliberate departures | `sys.*`; `ref.*` only for non-colour values; `sys.density.factor` | only by that component | no |
+| 3 · Component | `bar.`, `menu.`, `wifi.`, `power.`, `osd.`, `notification.`, `quick.` | values unique to one component, or its deliberate departures | `sys.*`; `ref.*` only for non-colour values; `sys.density.factor` | only by that component | no |
  
 ```
 ref.color.neutral.11 ──► sys.color.surface.popover.bg (in sys/color/dark) ──► menu code
@@ -254,7 +255,7 @@ Today: `caption` 12/regular (secondary lines, small controls), `label` 13/regula
  
 ## 7. Tier 3 — component tokens
  
-Components: `bar`, `menu`, `wifi`, `power`, `osd`, `notification`. Each component reads its
+Components: `bar`, `menu`, `wifi`, `power`, `osd`, `notification`, `quick`. Each component reads its
 surface role from `sys` directly:
  
 | Component | Surface role |
@@ -264,6 +265,7 @@ surface role from `sys` directly:
 | `wifi`, `power` | `sys.color.surface.popover.*` (they still read `panel.*` until the seed's surface conflict is converged) |
 | `osd` | `sys.color.surface.osd.*` |
 | `notification` | `sys.color.surface.notification.*` |
+| `quick` (Quick Settings) | `sys.color.surface.panel.*`, like the bar's panels |
  
 **Add a component token only if:**
 1. the value is unique to this component and not part of a shared scale
@@ -330,7 +332,7 @@ Density: component dimensions that should follow density reference
 | `sys/density/comfortable` | `sys.density.factor` |
 | `sys/density/compact` | `sys.density.factor` |
 | `accent/<name>` (optional) | `ref.color.accent.*` |
-| `components` | `bar.*`, `menu.*`, `wifi.*`, `power.*`, `osd.*`, `notification.*` |
+| `components` | `bar.*`, `menu.*`, `wifi.*`, `power.*`, `osd.*`, `notification.*`, `quick.*` |
  
 Later sets win on name clashes; the only intended clashes are the accent preview sets
 overriding `ref.color.accent.*`.

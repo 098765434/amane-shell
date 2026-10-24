@@ -184,6 +184,35 @@ fn level(
     .align(Center)
 }
 
+/// Where sound goes to (or, with `input`, comes from), under a header, the
+/// default checked; `None` with nothing to pick. Quick Settings' Sound page
+/// is these two lists.
+pub(crate) fn device_section(input: bool) -> Option<Box<dyn Widget>> {
+    let audio = Audio::read();
+    let devices = if input {
+        audio.inputs().to_vec()
+    } else {
+        audio.outputs().to_vec()
+    };
+    drop(audio);
+
+    if devices.is_empty() {
+        return None;
+    }
+    let set_default: fn(&str) = if input {
+        Audio::set_input
+    } else {
+        Audio::set_output
+    };
+    let items = devices
+        .iter()
+        .map(|device| device_item(device, input, set_default))
+        .collect();
+    let header = if input { "Input" } else { "Output" };
+
+    Some(boxed(List::new(items).header(header).build()))
+}
+
 fn device_item(device: &AudioDevice, input: bool, set_default: fn(&str)) -> ListItem {
     let selected = device.default();
     let name = device.name().to_string();

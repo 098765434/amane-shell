@@ -81,25 +81,13 @@ impl DoNotDisturb {
 
     /// The menu of timed choices, hung under `parent_ns` at `point`.
     pub fn open_menu(parent_ns: &'static str, point: (i32, i32)) {
-        let now = Local::now().naive_local();
         let on = Self::read().on();
 
-        let at = |time: NaiveDateTime| {
-            let end = Local
-                .from_local_datetime(&time)
-                .earliest()
-                .map_or(SystemTime::now(), SystemTime::from);
-            move || Self::set(Some(Until::At(end)))
-        };
-
-        let mut menu = ContextMenu::new()
-            .item(MenuItem::label("For 1 Hour").on_select(at(now + Duration::from_secs(3600))));
-        if let Some(evening) = this_evening(now) {
-            menu = menu.item(MenuItem::label("Until This Evening").on_select(at(evening)));
+        let mut menu = ContextMenu::new();
+        for (label, end) in choices(Local::now().naive_local()) {
+            menu = menu.item(MenuItem::label(label).on_select(move || Self::set(Some(end))));
         }
-        menu = menu
-            .item(MenuItem::label("Until Tomorrow").on_select(at(tomorrow_morning(now))))
-            .separator();
+        menu = menu.separator();
         menu = if on {
             menu.item(MenuItem::label("Turn Off").on_select(|| Self::set(None)))
         } else {
@@ -108,6 +96,26 @@ impl DoNotDisturb {
 
         context_menu::show_under(MENU_KEY, menu, parent_ns, point);
     }
+}
+
+/// The timed choices at `now`: for an hour, until this evening while it's
+/// still ahead, and until tomorrow morning. The menu and Quick Settings'
+/// Do Not Disturb page both offer these.
+pub fn choices(now: NaiveDateTime) -> Vec<(&'static str, Until)> {
+    let at = |time: NaiveDateTime| {
+        let end = Local
+            .from_local_datetime(&time)
+            .earliest()
+            .map_or(SystemTime::now(), SystemTime::from);
+        Until::At(end)
+    };
+
+    let mut choices = vec![("For 1 Hour", at(now + Duration::from_secs(3600)))];
+    if let Some(evening) = this_evening(now) {
+        choices.push(("Until This Evening", at(evening)));
+    }
+    choices.push(("Until Tomorrow", at(tomorrow_morning(now))));
+    choices
 }
 
 /// Today's evening, while it's still ahead.
@@ -208,6 +216,16 @@ mod tests {
         assert_eq!(tomorrow_morning(at(23, 59)), next);
         // past midnight, "tomorrow" means this morning
         assert_eq!(tomorrow_morning(at(2, 0)), at(8, 0));
+    }
+
+    #[test]
+    fn the_evening_choice_goes_once_it_has_passed() {
+        let labels = |now| -> Vec<&str> { choices(now).into_iter().map(|(l, _)| l).collect() };
+        assert_eq!(
+            labels(at(14, 0)),
+            ["For 1 Hour", "Until This Evening", "Until Tomorrow"]
+        );
+        assert_eq!(labels(at(20, 0)), ["For 1 Hour", "Until Tomorrow"]);
     }
 
     #[test]

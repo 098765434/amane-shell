@@ -7,6 +7,8 @@
 //!   on the fork's xdg-popup support.
 //! - [`notifications`] — iOS/macOS-style toasts, a notification center in
 //!   a sidebar, and Do Not Disturb, over amane's notification daemon.
+//! - [`quick_settings`] — GNOME's quick settings in the macOS Control
+//!   Center look: a grid of tiles and sliders, each with a page.
 //! - [`taskbar`] — a bottom taskbar that is compact in normal use and
 //!   expands into an interactive dock while niri's overview is open.
 //!
@@ -41,6 +43,7 @@ pub mod layout;
 pub mod list;
 pub mod motion;
 pub mod notifications;
+pub mod quick_settings;
 pub mod slider;
 pub mod taskbar;
 pub mod tooltip;

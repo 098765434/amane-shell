@@ -230,13 +230,13 @@ fn label_row(
 /// A click's new state, shown before the service agrees, until it does or
 /// [`PENDING_TIMEOUT`] passes.
 #[derive(Clone, Copy)]
-struct Pending<T>(Option<(T, Instant)>);
+pub(crate) struct Pending<T>(Option<(T, Instant)>);
 
 impl<T: Copy + PartialEq> Pending<T> {
-    const NONE: Self = Self(None);
+    pub(crate) const NONE: Self = Self(None);
 
     /// What to show while the service says `actual`.
-    fn shown(&mut self, actual: T, now: Instant) -> T {
+    pub(crate) fn shown(&mut self, actual: T, now: Instant) -> T {
         if let Some((wanted, at)) = self.0
             && (actual == wanted || now - at > PENDING_TIMEOUT)
         {
@@ -245,7 +245,7 @@ impl<T: Copy + PartialEq> Pending<T> {
         self.0.map_or(actual, |(wanted, _)| wanted)
     }
 
-    fn set(&mut self, wanted: T, now: Instant) {
+    pub(crate) fn set(&mut self, wanted: T, now: Instant) {
         self.0 = Some((wanted, now));
     }
 }
@@ -260,7 +260,11 @@ thread_local! {
 
 /// Runs `f` on control `id`'s state, made with `init` the first time (or
 /// when the control changed what it keeps).
-fn with_state<S: 'static, R>(id: &str, init: impl FnOnce() -> S, f: impl FnOnce(&mut S) -> R) -> R {
+pub(crate) fn with_state<S: 'static, R>(
+    id: &str,
+    init: impl FnOnce() -> S,
+    f: impl FnOnce(&mut S) -> R,
+) -> R {
     STATES.with_borrow_mut(|states| {
         if !states.get(id).is_some_and(|state| state.is::<S>()) {
             states.insert(id.to_string(), Box::new(init()));
@@ -273,7 +277,7 @@ fn with_state<S: 'static, R>(id: &str, init: impl FnOnce() -> S, f: impl FnOnce(
 }
 
 /// Runs `f` on control `id`'s state, if it has one yet.
-fn with_existing<S: 'static, R>(id: &str, f: impl FnOnce(&mut S) -> R) -> Option<R> {
+pub(crate) fn with_existing<S: 'static, R>(id: &str, f: impl FnOnce(&mut S) -> R) -> Option<R> {
     STATES.with_borrow_mut(|states| states.get_mut(id)?.downcast_mut::<S>().map(f))
 }
 

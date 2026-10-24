@@ -34,14 +34,19 @@ uses its compact height until the overview bool flips.
   interactive `window_dock` (a tile per open window) when the overview is open. Dock tiles show the
   app icon + heading/title; left-click focuses (`Windows::focus`), right-click opens the per-window
   context menu.
-- **Right** (`right_section`): volume (scroll to change, click → Sound panel; the glyph shows what
+- **Right** (`right_section`): first, GNOME's privacy icons while the screen is shared, the
+  camera runs or something records, and glyphs for night light, a VPN, a power mode other than
+  Balanced and airplane mode while they're on (each opens Quick Settings). Then volume (scroll to
+  change, click → Sound panel; the glyph shows what
   the default output is — built-in speaker, speaker, headphones, headset, TV, car …, and a
   [tooltip](components.md#tooltip) shows the level), Bluetooth
   (only with an adapter; off / on / connected, click → Bluetooth panel), network (click → Wi‑Fi
   panel; signal wedges follow the joined network's strength, a cable when wired), battery (click →
-  power panel; a tooltip shows the charge), the notification indicator (a moon while Do Not Disturb is on, a bell while
+  power panel; a tooltip shows the charge), the Quick Settings button (see
+  [quick-settings.md](quick-settings.md)), the notification indicator (a moon while Do Not Disturb is on, a bell while
   something arrived unseen; right-click for Do Not Disturb), clock (click → notification
-  center, see [notifications.md](notifications.md)).
+  center, see [notifications.md](notifications.md)). Right-clicking volume, Bluetooth or
+  network opens Quick Settings on that page.
 
 ## Panels
 

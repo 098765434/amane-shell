@@ -30,6 +30,7 @@ generated from (2), not hand-edited, so neither can drift.
 | `amane.taskbar.power` | the power panel |
 | `amane.taskbar.bluetooth` | the Bluetooth panel (its device menu is a frosted xdg-popup of it) |
 | `amane.taskbar.audio` | the Sound panel |
+| `amane.quick-settings` | Quick Settings (a Bluetooth device's menu is a frosted xdg-popup of it) |
 | `amane.notifications.toast` | each notification toast (one surface per banner, radius `notification.card.radius`) |
 | `amane.notifications.center` | the notification center sidebar (its Do Not Disturb menu is a frosted xdg-popup of it) |
 | `amane.context-menu-anchor` | the context-menu anchor window |

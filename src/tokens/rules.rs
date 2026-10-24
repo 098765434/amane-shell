@@ -613,6 +613,7 @@ mod tests {
         ("taskbar/", "bar"),
         ("context_menu/", "menu"),
         ("notifications/", "notification"),
+        ("quick_settings/", "quick"),
     ];
 
     fn component_sources() -> Vec<(String, String)> {

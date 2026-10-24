@@ -7,6 +7,7 @@ use std::fmt::Write;
 
 use crate::components::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
+use crate::components::quick_settings::QS_NS;
 use crate::components::taskbar::{AUDIO_NS, BAR_NS, BLUETOOTH_NS, POWER_NS, WIFI_NS};
 use crate::theme::{Density, Mode};
 use crate::tokens::{Key, notification, sys, with_key};
@@ -96,6 +97,15 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: Some(popover),
             popups: None,
+        },
+        LayerRule {
+            namespace: QS_NS,
+            comment: String::from(
+                "Quick Settings: the same frosted card, toggled by the taskbar's Control\n\
+                      Center button. A Bluetooth device's menu is an xdg-popup of it.",
+            ),
+            radius: Some(popover),
+            popups: Some(popover),
         },
         LayerRule {
             namespace: TOAST_NS,
