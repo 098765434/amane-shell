@@ -482,7 +482,6 @@ fn bluetooth_indicator() -> Box<dyn Widget> {
 
 fn network_indicator() -> Box<dyn Widget> {
     let net = Network::read();
-    let connected = net.connected();
     let link = net.link();
     let strength = net.strength();
     let wifi_on = net.wifi_enabled();
@@ -497,7 +496,8 @@ fn network_indicator() -> Box<dyn Widget> {
         Link::Offline => ICON_WIFI_OFF,
     };
     boxed(
-        bar_icon("amane.bar.network", glyph, status_color(connected))
+        // grey like its neighbours: the glyph already shows the link
+        bar_icon("amane.bar.network", glyph, sys::color::content::secondary())
             .on_press(|| panel::toggle(Panel::Wifi))
             .build(),
     )
