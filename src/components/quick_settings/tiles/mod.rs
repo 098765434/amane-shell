@@ -18,13 +18,13 @@ pub mod sound;
 use std::collections::HashMap;
 
 use amane::{
-    Button, Center, Color, Column, End, InputArea, Parent, Rectangle, Row, ScrollArea, Size, Stack,
+    BlurShape, Button, Center, Color, Column, End, Parent, Rectangle, Row, ScrollArea, Size, Stack,
     Start, Text, Widget,
 };
 
 use super::controls::{self, ControlId, Ctx};
 use super::detail::DetailPage;
-use super::glass_region::{self, STEPS};
+use super::glass_region;
 use super::grid::{Metrics, Occupancy, Rect, Slot, Span};
 use super::tile::{capsule_button, capsule_width, module};
 use super::{edit, layout};
@@ -50,7 +50,7 @@ pub(super) struct Grid {
     /// The canvas's width, and the Add list's beside it in edit mode.
     pub width: f32,
     pub height: f32,
-    pub regions: Vec<InputArea>,
+    pub shapes: Vec<BlurShape>,
 }
 
 /// The canvas, and the Edit Controls button under it.
@@ -120,7 +120,7 @@ pub(super) fn grid() -> Grid {
     } else {
         0.0
     };
-    let mut regions = Vec::new();
+    let mut shapes = Vec::new();
     // every module's glass edge, lit in one pass over the whole grid
     let mut rims: Vec<Rim> = Vec::new();
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
@@ -155,29 +155,18 @@ pub(super) fn grid() -> Grid {
         } else {
             widget
         };
-        let frost = edit::frosted(pose, slot);
-        let radius = radius_of(rect.span, slot) * pose.scale;
-        // a control fading in or out has no frost under it until it's
-        // mostly there (niri can't fade frost)
-        if pose.opacity >= glass_region::FROST_FROM {
-            regions.extend(glass_region::rounded(
-                canvas_x + frost.x,
-                frost.y,
-                frost.width,
-                frost.height,
-                radius,
-                STEPS,
-            ));
-        }
-        // lit as drawn: scaled about its centre, not rounded to pixels
-        rims.push(Rim {
+        let radius = radius_of(id, rect.span, slot) * pose.scale;
+        // frosted and lit as drawn: scaled about its centre, fading with it
+        let drawn = Rim {
             x: canvas_x + pose.x + slot.width * (1.0 - pose.scale) / 2.0,
             y: pose.y + slot.height * (1.0 - pose.scale) / 2.0,
             width: slot.width * pose.scale,
             height: slot.height * pose.scale,
             radius,
-            opacity: pose.opacity,
-        });
+            opacity: pose.opacity.clamp(0.0, 1.0),
+        };
+        shapes.push(frost(&drawn));
+        rims.push(drawn);
         layers.push(boxed(
             Rectangle::new()
                 .width(Size::Fixed(slot.width))
@@ -215,22 +204,16 @@ pub(super) fn grid() -> Grid {
     let label = if editing { "Done" } else { "Edit Controls" };
     let button_w = capsule_width(label, false);
     let button_x = canvas_x + (width - button_w) / 2.0;
-    regions.extend(glass_region::rounded(
-        button_x,
-        grid_h + gap,
-        button_w,
-        button_h,
-        button_h / 2.0,
-        STEPS,
-    ));
-    rims.push(Rim {
+    let capsule = Rim {
         x: button_x,
         y: grid_h + gap,
         width: button_w,
         height: button_h,
         radius: button_h / 2.0,
         opacity: 1.0,
-    });
+    };
+    shapes.push(frost(&capsule));
+    rims.push(capsule);
     let button = Rectangle::new()
         .width(Size::Fixed(width))
         .height(Size::Fixed(button_h))
@@ -255,22 +238,16 @@ pub(super) fn grid() -> Grid {
         let hidden: Vec<ControlId> = layout::with(|layout| layout.hidden().collect());
         let list_w = px.extent(ADD_LIST_CELLS);
         let (list, list_h) = add_list(hidden, list_w, grid_h);
-        regions.extend(glass_region::rounded(
-            0.0,
-            grid_h - list_h,
-            list_w,
-            list_h,
-            quick::card::radius(),
-            STEPS,
-        ));
-        rims.push(Rim {
+        let sheet = Rim {
             x: 0.0,
             y: grid_h - list_h,
             width: list_w,
             height: list_h,
             radius: quick::card::radius(),
             opacity: 1.0,
-        });
+        };
+        shapes.push(frost(&sheet));
+        rims.push(sheet);
         let beside = Rectangle::new()
             .width(Size::Fixed(list_w))
             .height(Size::Fixed(grid_h))
@@ -303,8 +280,20 @@ pub(super) fn grid() -> Grid {
         widget,
         width: total_w,
         height,
-        regions,
+        shapes,
     }
+}
+
+/// The frost behind a piece of glass, where it's drawn.
+fn frost(drawn: &Rim) -> BlurShape {
+    glass_region::module(
+        drawn.x,
+        drawn.y,
+        drawn.width,
+        drawn.height,
+        drawn.radius,
+        drawn.opacity,
+    )
 }
 
 /// The controls hidden from the grid, each a row that adds it back (one
@@ -402,7 +391,7 @@ fn placeholder(id: ControlId, slot: Slot) -> Box<dyn Widget> {
                 .style(quick::r#type::caption())
                 .color(sys::color::content::secondary()),
         );
-    boxed(module(slot.width, slot.height, radius_of(span, slot), inner).opacity(DIMMED))
+    boxed(module(slot.width, slot.height, radius_of(id, span, slot), inner).opacity(DIMMED))
 }
 
 // TODO(token): `sys.opacity.disabled` once Penpot has it (manual §1.1);
@@ -411,9 +400,11 @@ fn placeholder(id: ControlId, slot: Slot) -> Box<dyn Widget> {
 const DIMMED: f32 = 0.38;
 
 /// How round a control's module is: one cell tall it's a capsule, taller
-/// it has the card's corners.
-pub(super) fn radius_of(span: Span, slot: Slot) -> f32 {
-    if span.rows > 1 {
+/// it has the card's corners, and the slider cards (Sound, Display) keep
+/// the card's corners at any height. The frost and the glass edge follow
+/// this, so it must match what each control draws (`slider_card::card`).
+pub(super) fn radius_of(id: ControlId, span: Span, slot: Slot) -> f32 {
+    if span.rows > 1 || matches!(id, ControlId::Sound | ControlId::Display) {
         quick::card::radius()
     } else {
         slot.height / 2.0
@@ -444,4 +435,28 @@ pub(super) fn on_off(on: bool) -> &'static str {
 /// "3 Connected": how many devices or tunnels are, when it's more than one.
 pub(super) fn connected_count(n: usize) -> String {
     format!("{n} Connected")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_frost_takes_each_controls_own_corners() {
+        let px = Metrics::tokens();
+        let wide = px.slot(Rect {
+            at: super::super::grid::Place { col: 0, row: 0 },
+            span: Span { cols: 4, rows: 1 },
+        });
+        // the slider cards keep the card's corners, a toggle one cell tall
+        // is a capsule
+        assert_eq!(
+            radius_of(ControlId::Sound, Span { cols: 4, rows: 1 }, wide),
+            quick::card::radius()
+        );
+        assert_eq!(
+            radius_of(ControlId::Focus, Span { cols: 4, rows: 1 }, wide),
+            wide.height / 2.0
+        );
+    }
 }

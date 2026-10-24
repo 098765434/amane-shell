@@ -105,7 +105,7 @@
             cargoLock = {
               lockFile = ./Cargo.lock;
               outputHashes = {
-                "amane-0.1.2" = "sha256-htjg5+E/eYTG42Q2pV84KvtafiTpvGZBgD2DTaU/sAE=";
+                "amane-0.1.2" = "sha256-1PhHV5imMGl48pbHy39V195mHGH66UKgxiwr3yM8LbQ=";
               };
             };
 

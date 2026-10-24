@@ -523,6 +523,7 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
                 .width(Size::Fixed(w))
                 .height(Size::Fixed(h))
                 .radius(radius_of(
+                    id,
                     Span {
                         cols: 1,
                         rows: if h > px.cell * 1.5 { 2 } else { 1 },
@@ -615,7 +616,7 @@ pub(super) fn ghost_grid(
 /// Where the held control will land: an outline of the cells the preview
 /// gives it. Always one layer, empty when nothing is held.
 pub(super) fn drop_outline(px: &Metrics, layout: &Layout) -> Box<dyn Widget> {
-    let Some(rect) = held().and_then(|id| layout.rect_of(id)) else {
+    let Some((id, rect)) = held().and_then(|id| Some((id, layout.rect_of(id)?))) else {
         return boxed(
             Rectangle::new()
                 .width(Size::Fixed(0.0))
@@ -627,26 +628,11 @@ pub(super) fn drop_outline(px: &Metrics, layout: &Layout) -> Box<dyn Widget> {
         Rectangle::new()
             .width(Size::Fixed(slot.width))
             .height(Size::Fixed(slot.height))
-            .radius(radius_of(rect.span, slot))
+            .radius(radius_of(id, rect.span, slot))
             .fill(Color::TRANSPARENT)
             .border(sys::border::hairline(), sys::color::accent::bg())
             .translate(slot.x, slot.y),
     )
-}
-
-/// `slot` as it's drawn at `pose`, scaled about its centre and on whole
-/// pixels, for the frost behind it: the compositor rounds each strip on
-/// its own, and strips from a fractional origin shift by a pixel against
-/// each other as the control moves.
-pub(super) fn frosted(pose: Pose, slot: Slot) -> Slot {
-    let width = slot.width * pose.scale;
-    let height = slot.height * pose.scale;
-    Slot {
-        x: (pose.x + (slot.width - width) / 2.0).round(),
-        y: (pose.y + (slot.height - height) / 2.0).round(),
-        width: width.round(),
-        height: height.round(),
-    }
 }
 
 #[cfg(test)]
@@ -772,31 +758,5 @@ mod tests {
         // the gap between cells holds nothing
         assert_eq!(hit(&slots, at(80.0, 10.0), 22.0), None);
         assert_eq!(hit(&slots, at(10.0, 100.0), 22.0), None);
-    }
-
-    #[test]
-    fn the_frost_follows_the_scaled_tile_in_whole_pixels() {
-        let tile = Slot {
-            x: 0.0,
-            y: 0.0,
-            width: 164.0,
-            height: 74.0,
-        };
-        let lifted = frosted(
-            Pose {
-                scale: 1.04,
-                ..Pose::at(0.0)
-            },
-            tile,
-        );
-        assert_eq!(
-            (lifted.x, lifted.y, lifted.width, lifted.height),
-            (-3.0, -1.0, 171.0, 77.0)
-        );
-        let moved = frosted(Pose::at(20.6).moved(10.4), tile);
-        assert_eq!(
-            (moved.x, moved.y, moved.width, moved.height),
-            (10.0, 21.0, 164.0, 74.0)
-        );
     }
 }

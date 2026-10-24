@@ -17,7 +17,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amane"
 version = "0.1.2"
-source = "git+https://github.com/098765434/amane?rev=16480b2b5c5115f7b9dba2fc71f350f00f1a5ba7#16480b2b5c5115f7b9dba2fc71f350f00f1a5ba7"
+source = "git+https://github.com/098765434/amane?rev=bcc53acc11e6968b5b7a0eccb2019da4b5a386e9#bcc53acc11e6968b5b7a0eccb2019da4b5a386e9"
 dependencies = [
  "bitflags",
  "fontconfig",
@@ -31,6 +31,7 @@ dependencies = [
  "vello",
  "wayland-backend",
  "wayland-client",
+ "wayland-scanner",
  "wgpu",
  "zbus",
  "zune-jpeg",

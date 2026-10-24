@@ -19,6 +19,7 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `quick.drag.band` | 0.1 | `quick_settings/edit.rs` (`BAND`: the dead band before a held control changes cell) |
 | `quick.page.min-rows` | 5 | `quick_settings/mod.rs` (`MIN_PAGE_ROWS`) |
 | `quick.page.grid-recede` | 0.25 | `quick_settings/mod.rs` (`GRID_RECEDE`: how far the grid moves as a page slides in) |
+| `quick.glass.material` | `glass` | `quick_settings/glass_region.rs` (`MATERIAL`: the compositor material the modules' frost asks for) |
 | `sys.opacity.disabled` (also) | 0.38 | `quick_settings/tiles/mod.rs` (`DIMMED`: a placeholder for a control without its hardware) |
 | `sys.opacity.disabled` | 0.38 | `buttons/mod.rs` (`DISABLED_OPACITY`) |
 | `sys.color.glass.rim`, `sys.color.glass.glow` | light `#ffffffe6`, `#ffffffbf`; dark `#ffffff4d`, `#ffffff14` | `components/glass.rs` (`LIGHT`, `DARK`) |

@@ -127,14 +127,14 @@ costs a compositor configure round-trip and a second draw each time, which is wh
 unfolding card stutter. So nothing resizes while anything moves: the card swells in from the
 bar's corner (`motion::OPEN`, from `quick.open.scale`), a page slides in from the right while the
 grid recedes to the left (`quick.page.recede`) inside the unchanged surface, and the card fades
-out at the size it had (`motion::CLOSE`). It doesn't fade in: niri's frost can only be shown or
-hidden, not faded, and frost at full strength under modules still fading in read as blurred
-patches flashing up with nothing on them. So the card arrives whole, frost and modules in the
-same frame; closing, the frost goes in the first frame and the modules fade out over the sharp
-desktop. The same rule holds everywhere the card moves: a layer's frost shows only while the
-layer is at least half visible (`glass_region::FROST_FROM`), so the grid's frost recedes with it
-under a page and goes halfway through the slide, a page's arrives halfway, and a control being
-added or removed in edit mode has frost only once it's mostly there. The surface is resized only at rest: when
+out at the size it had (`motion::CLOSE`). Every piece of frost fades with what's on it: the card's
+as it opens and closes, the grid's as it recedes under a page and the page's as it comes in, a
+control's as it's added or removed in edit mode (`glass_region::faded`, alpha on each blur shape).
+A compositor that can't fade frost (no niri-blur-shapes, `amane::blur_fades()` false) only shows
+or hides it, and frost at full strength under modules still fading in reads as blurred patches
+with nothing on them; there the card arrives whole, frost and modules in the same frame, closing
+drops the frost in the first frame, and amane leaves out the frost of anything less than half
+visible. The surface is resized only at rest: when
 the grid gains or loses a row, and when edit mode begins or ends — never while a control is
 held. A surface resized just before it hides
 still has the compositor's answers to the resize on their way, and amane draws on those after
@@ -155,20 +155,23 @@ where the control *was*, several times a frame with a mouse that reports faster 
 refreshes, so the control overshot and snapped back every frame. amane also keeps the target
 being dragged by its position in the frame's hit areas, so the layer comes before the controls,
 after layers whose shape never changes under a drag (one ghost disc per cell, one drop outline).
-The frost behind a moving control is the control as drawn, scaled and rounded to whole pixels
-(`edit::frosted`), so its strips shift as one block.
+The frost behind a moving control is the control as drawn, scaled about its centre, the same
+shape its glass edge is lit on.
 
 ## Frost
 
-niri frosts a layer surface where the surface asks (`ext-background-effect-v1`), or its whole
-geometry when it doesn't ask. The Quick Settings surface asks (`LayerWindow::blur_region`): the
-grid's modules, each a rounded shape sent as a few strips (`glass_region.rs`), the Edit Controls
-capsule, and the whole card while a page is on it. Its layer rule therefore carries no corner
-radius, blur or shadow, only `xray false` (niri's blur region shows the wallpaper alone
-otherwise); see [layer-rules.md](layer-rules.md). niri blurs once per surface and paints the
-result through the region, so the strips cost nothing extra. The strips overlap by a pixel:
-niri rounds each rectangle to the screen's pixels on its own, and two that only touch can leave
-a hairline of sharp desktop between them at a fractional scale.
+niri frosts a layer surface where the surface asks, or its whole geometry when it doesn't ask.
+The Quick Settings surface asks with one rounded shape per piece of glass
+(`LayerWindow::blur_shapes`, `glass_region.rs`): the grid's modules, the Edit Controls capsule,
+the Add list, and a page's sheet. The shapes go over niri-blur-shapes, a protocol of our niri
+fork: each is a rounded rectangle in fractional surface coordinates with its own alpha, which
+niri draws through its corner-rounding shader, half a pixel inside the module's own antialiased
+edge, so no frost strays past a corner. Each also names the material `glass` and carries the
+modules' tint, for niri's liquid-glass materials. On a compositor without the protocol, amane
+sends the shapes as an `ext-background-effect-v1` region instead: strips that step in at the
+corners, rounded inwards. Its layer rule therefore carries no corner radius, blur or shadow, only
+`xray false` (niri's blur shows the wallpaper alone otherwise); see
+[layer-rules.md](layer-rules.md).
 
 A module is the panels' tint, the panels' glass edge and a soft drop shadow (`tile::module`,
 `quick.shadow`); vello draws the shadow analytically in the module's own pass, so sixteen of
@@ -225,7 +228,7 @@ The parts are in `src/components/quick_settings/`:
   `resized` give the layout a drag would leave (swap or push), `show` the first free cells.
 - **`edit.rs`**: edit mode: the drag in hand and the layout it previews from the base, the
   resize ghost, the badge and handle, the ghost discs, the add list's actions.
-- **`glass_region.rs`**: a rounded shape as the strips the compositor frosts.
+- **`glass_region.rs`**: the frost behind a piece of glass as a blur shape, and its transforms.
 - **`tiles/media.rs`**: the square Now Playing module.
 - **`slider_card.rs`**: the Display and Sound cards: a title over each thin slider, a small
   glyph before the track and a large faint one after it, and a right click (`Card::on_secondary`)
