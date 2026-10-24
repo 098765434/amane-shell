@@ -9,13 +9,14 @@ use super::grid::Span;
 use super::system_row;
 use super::tile::{QuickToggle, Style};
 use super::tiles::{
-    airplane, appearance, background, bluetooth, keyboard, media, network, notifications, power,
-    sound, tailscale,
+    airplane, appearance, background, bluetooth, keep_awake, keyboard, media, network,
+    notifications, power, sound, tailscale,
 };
 use crate::components::layout::boxed;
 use crate::services::background_apps::BackgroundApps;
 use crate::services::connections::Connections;
 use crate::services::dark_style;
+use crate::services::keep_awake::KeepAwake;
 use crate::services::keyboard_backlight::KeyboardBacklight;
 use crate::services::night_light::NightLight;
 use crate::services::rfkill::Rfkill;
@@ -42,12 +43,13 @@ pub enum ControlId {
     Lock,
     PowerOff,
     Tailscale,
+    KeepAwake,
 }
 
 impl ControlId {
     /// Control Center's order, then the ones added since (a control's
     /// place here keys its motion).
-    pub const ALL: [ControlId; 19] = [
+    pub const ALL: [ControlId; 20] = [
         Self::Wifi,
         Self::NowPlaying,
         Self::Bluetooth,
@@ -67,6 +69,7 @@ impl ControlId {
         Self::Vpn,
         Self::Wired,
         Self::Tailscale,
+        Self::KeepAwake,
     ];
 
     /// The name kept in the layout file.
@@ -91,6 +94,7 @@ impl ControlId {
             Self::Lock => "lock",
             Self::PowerOff => "power-off",
             Self::Tailscale => "tailscale",
+            Self::KeepAwake => "keep-awake",
         }
     }
 
@@ -120,6 +124,7 @@ impl ControlId {
             Self::Lock => "Lock Screen",
             Self::PowerOff => "Power Off",
             Self::Tailscale => "Tailscale",
+            Self::KeepAwake => "Keep Awake",
         }
     }
 
@@ -133,6 +138,7 @@ impl ControlId {
             | Self::Vpn
             | Self::Wired
             | Self::Tailscale
+            | Self::KeepAwake
             | Self::Focus
             | Self::Battery => &[Span::M, Span::W3, Span::FULL],
             _ => &[Span::S, Span::M],
@@ -148,6 +154,7 @@ impl ControlId {
             | Self::Vpn
             | Self::Wired
             | Self::Tailscale
+            | Self::KeepAwake
             | Self::Focus
             | Self::Battery => Span::M,
             _ => Span::S,
@@ -156,7 +163,10 @@ impl ControlId {
 
     /// Waits in the Add list until asked for.
     pub fn hidden_by_default(self) -> bool {
-        matches!(self, Self::Vpn | Self::Wired | Self::Tailscale)
+        matches!(
+            self,
+            Self::Vpn | Self::Wired | Self::Tailscale | Self::KeepAwake
+        )
     }
 
     /// `span`, or the nearest size it comes in.
@@ -214,6 +224,7 @@ pub fn build(id: ControlId, span: Span, ctx: &Ctx) -> Option<Box<dyn Widget>> {
         ControlId::Lock => toggle(Some(system_row::lock_toggle())),
         ControlId::PowerOff => toggle(Some(system_row::power_off_toggle())),
         ControlId::Tailscale => toggle(tailscale::toggle()),
+        ControlId::KeepAwake => toggle(keep_awake::toggle()),
     }
 }
 
@@ -245,6 +256,7 @@ pub fn available(id: ControlId) -> bool {
         ControlId::Keyboard => KeyboardBacklight::read().present(),
         ControlId::BackgroundApps => !BackgroundApps::read().apps().is_empty(),
         ControlId::Tailscale => Tailscale::read().present(),
+        ControlId::KeepAwake => KeepAwake::read().present(),
     }
 }
 

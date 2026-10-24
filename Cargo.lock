@@ -45,6 +45,7 @@ dependencies = [
  "chrono",
  "fontconfig",
  "serde_json",
+ "zbus",
 ]
 
 [[package]]

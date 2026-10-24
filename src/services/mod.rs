@@ -13,6 +13,7 @@
 //! - [`privacy`] — what's using the microphone, the camera or the screen.
 //! - [`background_apps`] — apps running without a window (the portal).
 //! - [`tailscale`] — the tailnet, its exit nodes and settings (the CLI).
+//! - [`keep_awake`] — the screen held on and the lid ignored (inhibitors).
 //!
 //! See `docs/quick-settings.md`.
 //!
@@ -21,6 +22,7 @@
 pub mod background_apps;
 pub mod connections;
 pub mod dark_style;
+pub mod keep_awake;
 pub mod keyboard_backlight;
 pub mod night_light;
 pub mod privacy;

@@ -1,6 +1,6 @@
-//! Which status icons the bar shows: volume, Bluetooth, network, Tailscale
-//! and battery are each optional, switched from their Quick Settings page
-//! ("Show in Taskbar") or over IPC. Kept in
+//! Which status icons the bar shows: volume, Bluetooth, network, Tailscale,
+//! battery and Keep Awake are each optional, switched from their Quick
+//! Settings page ("Show in Taskbar") or over IPC. Kept in
 //! `$XDG_STATE_HOME/amane-shell/taskbar` as the hidden ones' names, one per
 //! line; a missing file shows them all.
 
@@ -20,15 +20,17 @@ pub enum Indicator {
     Network,
     Tailscale,
     Battery,
+    KeepAwake,
 }
 
 impl Indicator {
-    const ALL: [Indicator; 5] = [
+    const ALL: [Indicator; 6] = [
         Self::Volume,
         Self::Bluetooth,
         Self::Network,
         Self::Tailscale,
         Self::Battery,
+        Self::KeepAwake,
     ];
 
     pub fn name(self) -> &'static str {
@@ -38,6 +40,7 @@ impl Indicator {
             Self::Network => "network",
             Self::Tailscale => "tailscale",
             Self::Battery => "battery",
+            Self::KeepAwake => "keep-awake",
         }
     }
 
@@ -96,13 +99,13 @@ pub fn ipc(args: &[String]) -> String {
         [action @ ("show" | "hide" | "toggle"), name] => (*action, *name),
         _ => {
             return String::from(
-                "usage: taskbar (show | hide | toggle) (volume | bluetooth | network | tailscale | battery)",
+                "usage: taskbar (show | hide | toggle) (volume | bluetooth | network | tailscale | battery | keep-awake)",
             );
         }
     };
     let Some(indicator) = Indicator::named(name) else {
         return format!(
-            "unknown indicator {name}; volume, bluetooth, network, tailscale or battery"
+            "unknown indicator {name}; volume, bluetooth, network, tailscale, battery or keep-awake"
         );
     };
     indicator.set_shown(match action {

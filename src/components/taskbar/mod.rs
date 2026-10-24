@@ -28,9 +28,9 @@ use crate::components::buttons::{IconButton, PushButton, Shape, Style};
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
 use crate::components::icons::{
     Glyph, ICON_AIRPLANE, ICON_APPS, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF,
-    ICON_CABLE, ICON_CAMERA, ICON_DND, ICON_MIC, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS,
-    ICON_SCREEN_SHARE, ICON_TUNE, ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE,
-    ICON_WIFI_OFF, audio_glyph, battery_glyph, power_profile_glyph, wifi_glyph,
+    ICON_CABLE, ICON_CAMERA, ICON_DND, ICON_KEEP_AWAKE, ICON_MIC, ICON_NIGHT_LIGHT,
+    ICON_NOTIFICATIONS, ICON_SCREEN_SHARE, ICON_TUNE, ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI,
+    ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph, battery_glyph, power_profile_glyph, wifi_glyph,
 };
 use crate::components::layout::{
     boxed, clipped_label, cursor, nothing, pad, text_width, track_cursor,
@@ -39,6 +39,7 @@ use crate::components::notifications::{self, DoNotDisturb};
 use crate::components::quick_settings::{self, Page};
 use crate::components::slider;
 use crate::services::connections::Connections;
+use crate::services::keep_awake::KeepAwake;
 use crate::services::night_light::NightLight;
 use crate::services::privacy::Privacy;
 use crate::services::rfkill::Rfkill;
@@ -176,6 +177,7 @@ fn right_section() -> Row {
         bluetooth_indicator(),
         network_indicator(),
         tailscale_indicator(),
+        keep_awake_indicator(),
         battery_module(),
         quick_settings_button(),
         notification_indicator(),
@@ -535,6 +537,22 @@ fn tailscale_indicator() -> Box<dyn Widget> {
         .on_press(|| quick_settings::open(Page::Tailscale))
         .tooltip(BAR_NS, tip)
         .build(),
+    )
+}
+
+/// While Keep Awake holds anything; accent, since the machine isn't
+/// behaving as it normally would.
+fn keep_awake_indicator() -> Box<dyn Widget> {
+    if !KeepAwake::read().on() || !Indicator::KeepAwake.shown() {
+        return nothing();
+    }
+    let tip = format!("Keep Awake · {}", quick_settings::keep_awake_status());
+
+    boxed(
+        bar_icon("amane.bar.keep-awake", ICON_KEEP_AWAKE, status_color(true))
+            .on_press(|| quick_settings::open(Page::KeepAwake))
+            .tooltip(BAR_NS, tip)
+            .build(),
     )
 }
 

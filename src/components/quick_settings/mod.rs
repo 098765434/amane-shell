@@ -57,6 +57,7 @@ use crate::components::taskbar::{self, Panel, close, is_open, overlay, popover_m
 use crate::tokens::quick;
 
 pub use pages::Page;
+pub(crate) use tiles::keep_awake::status as keep_awake_status;
 
 /// Layer-surface namespace; the niri `layer-rule` matches it for blur, and
 /// the Bluetooth device menu hangs under it.

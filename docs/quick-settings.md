@@ -28,6 +28,7 @@ when the machine has what it drives, as in GNOME, and the grid packs around what
 | VPN, Wired | tiles, waiting in the Add list by default; VPN says "Off", the tunnel that's up or how many are; Wired the connection or "Not Connected" | the disc switches; the VPN tile opens its page | VPN: a switch in the header for the preferred tunnel, and one per profile |
 | Now Playing | the active player's art (from a file or the web), title and artist, how far through the track, or "Not Playing" | previous, play/pause, next | — |
 | Focus | Do Not Disturb: what's on, until when, or off | the disc switches it; the tile opens the page | Focus: For 1 Hour, Until This Evening, Until Tomorrow, the one that's on checked |
+| Keep Awake | a tile with a cup, waiting in the Add list by default; "Off", "No limit", the time left ("1 h 24 min"), "Lid ignored" or "Lid · 1 h 24 min"; lit while anything is held | the disc holds the screen on with no limit, or lets go of everything, the lid too; the tile opens the page | how long (No limit, 15 min, 30 min, 1 h, 2 h; picking one starts it now), Keep screen on and Ignore lid close (hidden without logind; the last one off turns it all off), Turn the screen off now (the monitors go off a second later, nothing is let go, and input brings them back); Show in Taskbar |
 | Dark Style, Night Light | round buttons, accent while on | switch; a right click on Night Light opens its page | Night Light: how warm |
 | Display | only with a backlight; the brightness slider between a dim and a bright glyph | drag or scroll | — |
 | Sound | the default output's level; the small glyph says how loud (off, down, up) | the small glyph mutes; drag or scroll sets the level; the chevron or a right click opens the page | Sound: the output's level and percentage (its glyph mutes it) and its devices, then the microphone's level and its devices (with a microphone); the default device checked, a click makes another the default |
@@ -59,6 +60,8 @@ The bar also shows GNOME's status icons, each only while it applies:
   The microphone's tooltip names the app.
 - **Glyphs for settings that are on**: night light, a VPN, a power mode other than Balanced, and
   airplane mode.
+- **Keep Awake's cup**, in the accent colour while it holds anything (the time left in its
+  tooltip), unless its page's Show in Taskbar is off.
 
 Clicking any of them opens Quick Settings.
 
@@ -212,7 +215,7 @@ printf 'quick-settings\nclose\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
 ```
 
 The pages are `grid`, `sound`, `wifi`, `vpn`, `bluetooth`, `power-mode`, `power`, `night-light`,
-`do-not-disturb`, `keyboard`, `session`, `background-apps` and `tailscale`. `quick-settings edit` opens the
+`do-not-disturb`, `keyboard`, `session`, `background-apps`, `tailscale` and `keep-awake`. `quick-settings edit` opens the
 grid in edit mode, and `quick-settings reset-layout` restores the default layout. A niri keybind:
 
 ```kdl
@@ -293,6 +296,7 @@ daemon or device is missing.
 | `connections` | `nmcli -t` every 3 s: VPN profiles, the Ethernet device, a Wi‑Fi profile in access-point mode | `nmcli connection up/down`, `nmcli device connect/disconnect` |
 | `privacy` | `pw-dump --monitor` (recording streams, running v4l2/libcamera sources); `niri msg --json casts` every 2 s | — |
 | `background_apps` | `org.freedesktop.background.Monitor`'s `BackgroundApps`, on each change | the app's `quit` action, else `flatpak kill` |
+| `keep_awake` | what it holds and until when (kept in memory only); `NameHasOwner` on the screensaver and logind's `BlockInhibited`, asked once, say whether it can; logind's `Session.Lock` for this session | `org.freedesktop.ScreenSaver.Inhibit`/`UnInhibit` for the screen; logind `Inhibit("handle-lid-switch", …, "block")` for the lid, held as the fd it hands back; `niri msg action power-off-monitors` |
 | `tailscale` | `tailscale status --json` and `tailscale debug prefs`, read again whenever `tailscale debug watch-ipn` prints (a burst settles for 300 ms first; the stream is restarted with a 1–60 s backoff when the daemon goes) | `tailscale up` (never with flags), `down`, `set --exit-node / --accept-routes / --accept-dns / --shields-up`, `login` (left running; its URL is taken from `status --json` and opened with `xdg-open`); copying is `wl-copy` |
 
 **Tailscale needs the operator grant to change anything.** Reads work for anyone, but `tailscaled`
@@ -307,6 +311,22 @@ the niri config would fight the shell's, so remove it. It's manual only: on at t
 temperature until turned off. Its state (`on 4000`) is kept in
 `$XDG_STATE_HOME/amane-shell/night-light`, so it comes back on after a restart. A last-used VPN
 is kept beside it, in `vpn`.
+
+**Keep Awake never writes a power setting.** Each hold is an inhibitor tied to the shell: the
+screen's is on amane's one session-bus connection (niri serves `org.freedesktop.ScreenSaver`, and
+hypridle honours its inhibits, so nothing dims, locks or turns the monitors off), and the lid's
+is the file descriptor logind hands back, which needs no root (`HandleLidSwitch` in `/etc` is
+left alone). A shell that dies lets go of both, and the machine behaves as normal again by
+itself. That's also why the state isn't kept across a restart. A time limit is a wall-clock
+instant, so one that spans a suspend has run out on waking. Nothing blocks a suspend that's
+asked for.
+
+**Locking lets the screen blank.** On logind's Lock signal for this session the screen hold is
+let go, so the lock screen blanks on hypridle's timers instead of staying lit (burn-in on this
+OLED panel); the lid stays held. swaylock says nothing when it's unlocked, so the hold comes back
+once no `swaylock` process is left (it's given 5 s to start). Locks have to go through logind for
+the shell to see them, so niri's Super+Alt+L runs `loginctl lock-session`, and hypridle's
+`lock_cmd` starts swaylock.
 
 A VPN is a NetworkManager `vpn` or `wireguard` profile, as in GNOME. A tunnel NetworkManager
 doesn't manage (tailscale) isn't one.

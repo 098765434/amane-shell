@@ -22,6 +22,9 @@ path = 'src/main.rs'
 # sibling checkout during local co-development. See README.
 amane = { git = "https://github.com/098765434/amane", rev = "289f191618915254e9594b1003a5f61aa9175c3b" }
 serde_json = "1.0"
+# for the one bus call that hands back a file descriptor (logind's Inhibit),
+# which amane's Bus can't carry; the same zbus amane already pulls in
+zbus = "5.19.0"
 fontconfig = "0.11"
 chrono = "0.4"
 

@@ -3,8 +3,8 @@
 use super::controls::ControlId;
 use super::detail::DetailPage;
 use super::tiles::{
-    appearance, background, bluetooth, keyboard, network, notifications, power, session, sound,
-    tailscale,
+    appearance, background, bluetooth, keep_awake, keyboard, network, notifications, power,
+    session, sound, tailscale,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -24,11 +24,12 @@ pub enum Page {
     Session,
     BackgroundApps,
     Tailscale,
+    KeepAwake,
 }
 
 impl Page {
     /// Every page by its IPC name, the grid first.
-    const ALL: [(&'static str, Page); 13] = [
+    const ALL: [(&'static str, Page); 14] = [
         ("grid", Self::Grid),
         ("sound", Self::Sound),
         ("wifi", Self::Wifi),
@@ -42,10 +43,11 @@ impl Page {
         ("session", Self::Session),
         ("background-apps", Self::BackgroundApps),
         ("tailscale", Self::Tailscale),
+        ("keep-awake", Self::KeepAwake),
     ];
 
-    pub const NAMES: [&'static str; 13] = {
-        let mut names = [""; 13];
+    pub const NAMES: [&'static str; 14] = {
+        let mut names = [""; 14];
         let mut i = 0;
         while i < names.len() {
             names[i] = Self::ALL[i].0;
@@ -71,6 +73,7 @@ impl Page {
             Self::Session => &[ControlId::PowerOff],
             Self::BackgroundApps => &[ControlId::BackgroundApps],
             Self::Tailscale => &[ControlId::Tailscale],
+            Self::KeepAwake => &[ControlId::KeepAwake],
         }
     }
 
@@ -99,6 +102,7 @@ pub(super) fn page(page: Page) -> DetailPage {
         Page::Session => session::page(),
         Page::BackgroundApps => background::page(),
         Page::Tailscale => tailscale::page(),
+        Page::KeepAwake => keep_awake::page(),
     }
 }
 
@@ -119,6 +123,7 @@ pub(super) fn available(page: Page) -> bool {
         Page::NightLight => crate::services::night_light::NightLight::read().present(),
         Page::Keyboard => crate::services::keyboard_backlight::KeyboardBacklight::read().present(),
         Page::Tailscale => crate::services::tailscale::Tailscale::read().present(),
+        Page::KeepAwake => crate::services::keep_awake::KeepAwake::read().present(),
     }
 }
 
