@@ -64,8 +64,9 @@ uses the same `slider::scrolled`.
 
 ## Tooltip
 
-A plain tooltip: one `sys.type.caption` line on a `sys.color.surface.popover` card with
-`sys.radius.raised` corners and a `sys.space.inset.s` inset. It shows after the pointer rests on its
+A plain tooltip: one `sys.type.caption` line on a frosted, glass-edged `Card` on `Surface::Panel`,
+like the bar's panels, with a `sys.space.inset.s` inset. niri blurs behind it from the bar's
+`popups {}` layer rule, which has the same `sys.radius.popover` corners. It shows after the pointer rests on its
 control for half a second. It's an xdg-popup with no grab, so it never takes input or focus. It
 hangs under the control's surface and is centred above the pointer, as macOS's are, sliding inward
 at a screen edge.

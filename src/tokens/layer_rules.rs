@@ -7,7 +7,7 @@ use std::fmt::Write;
 
 use crate::components::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
-use crate::components::taskbar::{AUDIO_NS, BLUETOOTH_NS, POWER_NS, WIFI_NS};
+use crate::components::taskbar::{AUDIO_NS, BAR_NS, BLUETOOTH_NS, POWER_NS, WIFI_NS};
 use crate::theme::{Density, Mode};
 use crate::tokens::{Key, notification, sys, with_key};
 
@@ -31,8 +31,8 @@ const SHADOW_SOFTNESS: f32 = 16.0;
 const SHADOW_Y: f32 = 8.0;
 const SHADOW_COLOR: &str = "#00000073";
 
-/// One rule per frosted surface. The bar has none: it is deliberately not
-/// blurred.
+/// One rule per frosted surface. The bar's own is for its popups only: the
+/// bar itself is deliberately not blurred.
 pub fn rules() -> Vec<LayerRule> {
     // radii don't vary with mode or density (a contract test checks it)
     let key = Key::new(Mode::Dark, Density::Comfortable);
@@ -40,6 +40,15 @@ pub fn rules() -> Vec<LayerRule> {
     let toast = with_key(key, notification::card::radius);
 
     vec![
+        LayerRule {
+            namespace: BAR_NS,
+            comment: String::from(
+                "Taskbar: only its xdg-popups (tooltips, a window's menu) are frosted, like\n\
+                 the panels; the bar itself is deliberately NOT blurred.",
+            ),
+            radius: None,
+            popups: Some(popover),
+        },
         LayerRule {
             namespace: ANCHOR_NS,
             comment: format!(
@@ -132,11 +141,6 @@ const HEADER: &str = "\
 // Verify the surfaces are up:  niri msg layers | grep amane
 
 {SENTINEL}  (gen-layer-rules.sh injects everything past this line)
-
-// Taskbar: a full-width bottom bar. It is deliberately NOT blurred — only the
-// floating surfaces (menus, panels, toasts and the notification center) are
-// frosted.
-// (No layer-rule for `amane.taskbar` on purpose.)
 ";
 
 /// The whole `niri-layer-rule.kdl`.

@@ -20,7 +20,7 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `sys.effect.glass.rim-width`, `.bloom-width`, `.glow-blur` | 1.5, 14, 5 | `components/glass.rs` |
 | `sys.shadow.popover` | `0 8 16 #00000073` | `tokens/layer_rules.rs` (`SHADOW_*`) |
 | `sys.motion.duration.tooltip` | 500 ms | `components/tooltip.rs` (`DELAY`) |
-| `tooltip.*` (fill, text, radius, inset) | the `sys` roles it reuses now | `components/tooltip.rs` |
+| `tooltip.*` (text style, inset) | `sys.type.caption`, `sys.space.inset.s` | `components/tooltip.rs` |
 
 `motion` and `opacity` are already `sys` categories in the vocabulary (§4.2). Add `ref.duration.*`
 primitives for the durations first.

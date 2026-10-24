@@ -1,7 +1,7 @@
 //! Tooltip — a short label shown above a hovered control.
 //!
 //! Modelled on Material 3's plain tooltip: one line of text on a small
-//! filled card, shown after the pointer rests on its control for [`DELAY`]
+//! card, frosted and tinted like the bar's panels, shown after the pointer rests on its control for [`DELAY`]
 //! and hidden when it leaves or clicks. It's an xdg-popup without a grab, so
 //! it never takes input or focus, hung under the surface the control is on
 //! and centred above the pointer, as macOS's are.
@@ -15,12 +15,10 @@
 use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
-use amane::{
-    Center, ConstraintAdjustment, Gravity, Parent, Popup, PopupAnchor, Rectangle, Text,
-    request_frame,
-};
+use amane::{ConstraintAdjustment, Gravity, Popup, PopupAnchor, Text, request_frame};
 
-use crate::components::layout::{blank, cursor, text_height, text_width};
+use crate::components::card::{Card, Surface};
+use crate::components::layout::{blank, boxed, cursor, text_height, text_width};
 use crate::components::taskbar::BAR_NS;
 use crate::tokens::{Styled, sys};
 
@@ -122,8 +120,8 @@ pub fn popup() -> Popup {
         return hidden();
     };
 
-    // TODO(token): `tooltip.*` once Penpot has it: these are the closest
-    // `sys` roles
+    // TODO(token): `tooltip.*` text style and inset once Penpot has them:
+    // these are the closest `sys` roles
     let style = sys::r#type::caption();
     let inset = sys::space::inset::s();
     let width = (text_width(&text, style) + inset * 2.0).ceil() as u32;
@@ -140,17 +138,16 @@ pub fn popup() -> Popup {
         return hidden();
     }
 
-    let card = Rectangle::new()
-        .width(Parent)
-        .height(Parent)
-        .radius(sys::radius::raised())
-        .fill(sys::color::surface::popover::bg())
-        .align_child(Center, Center)
-        .child(
-            Text::new(text)
-                .style(style)
-                .color(sys::color::surface::popover::fg()),
-        );
+    // frosted and tinted like the panels; niri blurs behind it from the
+    // parent's `popups {}` rule, with the same corners
+    let card = Card::new(vec![boxed(
+        Text::new(text).style(style).color(Surface::Panel.fg()),
+    )])
+    .surface(Surface::Panel)
+    .blur(true)
+    .glass(true)
+    .padding(inset)
+    .build();
 
     Popup::new(TOOLTIP_NS)
         .size(width, height)

@@ -25,7 +25,7 @@ generated from (2), not hand-edited, so neither can drift.
 
 | Namespace | Surface |
 |---|---|
-| `amane.taskbar` | the bar (opaque — intentionally has **no** blur rule) |
+| `amane.taskbar` | the bar (intentionally **not** blurred); its rule only frosts its xdg-popups: tooltips and a window's menu |
 | `amane.taskbar.wifi` | the Wi‑Fi panel |
 | `amane.taskbar.power` | the power panel |
 | `amane.taskbar.bluetooth` | the Bluetooth panel (its device menu is a frosted xdg-popup of it) |

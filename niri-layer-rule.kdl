@@ -17,10 +17,18 @@
 
 //<<<GENERATED-RULES-BELOW>>>  (gen-layer-rules.sh injects everything past this line)
 
-// Taskbar: a full-width bottom bar. It is deliberately NOT blurred — only the
-// floating surfaces (menus, panels, toasts and the notification center) are
-// frosted.
-// (No layer-rule for `amane.taskbar` on purpose.)
+// Taskbar: only its xdg-popups (tooltips, a window's menu) are frosted, like
+// the panels; the bar itself is deliberately NOT blurred.
+layer-rule {
+    match namespace="^amane\\.taskbar$"
+
+    popups {
+        geometry-corner-radius 10
+        background-effect {
+            blur true
+        }
+    }
+}
 
 // Context menu. The anchor is an invisible 1×1 layer-surface; the visible
 // cards (menu + nested submenus) are xdg-popups of it, so the `popups {}`
