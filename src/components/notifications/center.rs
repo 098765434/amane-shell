@@ -198,6 +198,7 @@ fn sheet() -> Rectangle {
     Card::new(rows)
         .surface(Surface::Popover)
         .variant(Variant::Outlined)
+        .glass(true)
         .gap(sys::space::gap::l())
         .build()
 }

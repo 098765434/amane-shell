@@ -15,6 +15,7 @@
 //! Material 3 counterpart and drawn in the shell's macOS look:
 //!
 //! - [`card`] — M3's card: a filled or outlined surface, optionally frosted.
+//! - [`glass`] — the lit edge and glow every translucent surface wears.
 //! - [`app_bar`] — M3's small top app bar: a panel's or sheet's title row.
 //! - [`list`] — M3's list: one-line items with leading and trailing slots.
 //! - [`divider`] — M3's divider: a hairline between groups.
@@ -33,6 +34,7 @@ pub mod card;
 pub mod color;
 pub mod context_menu;
 pub mod divider;
+pub mod glass;
 pub mod icons;
 pub mod layout;
 pub mod list;

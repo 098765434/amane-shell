@@ -22,6 +22,7 @@ use chrono::{DateTime, Local};
 
 use crate::components::buttons::{IconButton, PushButton, Style};
 use crate::components::card::Surface;
+use crate::components::glass;
 use crate::components::icons::ICON_CLOSE;
 use crate::components::layout::{blank, boxed, inner_width, pad, split_row};
 use crate::components::taskbar::{app_icon_tile, icon_for};
@@ -276,7 +277,7 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
         look.stroke
     };
 
-    Rectangle::new()
+    let card = Rectangle::new()
         .width(Size::Fixed(width))
         .height(Size::Fixed(parts.height))
         .radius(notification::card::radius())
@@ -284,7 +285,13 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
         .border(sys::border::hairline(), stroke)
         .padding(pad(sys::space::inset::l(), sys::space::inset::l()))
         .clip()
-        .child(body)
+        .child(body);
+
+    // a toast is its own translucent surface; a card in the center sits on one
+    match place {
+        Place::Toast => glass::apply(card, notification::card::radius()),
+        Place::Center => card,
+    }
 }
 
 /// The sender's actions as equal buttons across `width`.

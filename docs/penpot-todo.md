@@ -15,9 +15,17 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `sys.motion.duration.fade`, `sys.motion.duration.exit` | 200 ms, 300 ms | `components/motion.rs` (`FADE`, `EXIT`) |
 | `sys.motion.enter-scale` | 0.9 | `notifications/center.rs` (a card's entrance) |
 | `sys.opacity.disabled` | 0.38 | `buttons/mod.rs` (`DISABLED_OPACITY`) |
+| `sys.color.glass.rim`, `sys.color.glass.glow` | light `#ffffffe6`, `#ffffffbf`; dark `#ffffff4d`, `#ffffff14` | `components/glass.rs` (`LIGHT`, `DARK`) |
+| `sys.effect.glass.far`, `sys.effect.glass.bloom` | light 0.5, 0.3; dark 0.2, 0.05 | `components/glass.rs` (`LIGHT`, `DARK`) |
+| `sys.effect.glass.rim-width`, `.bloom-width`, `.glow-blur` | 1.5, 14, 5 | `components/glass.rs` |
+| `sys.shadow.popover` | `0 8 16 #00000073` | `tokens/layer_rules.rs` (`SHADOW_*`) |
 
 `motion` and `opacity` are already `sys` categories in the vocabulary (§4.2). Add `ref.duration.*`
 primitives for the durations first.
+
+The glass `far` and `bloom` strengths differ by mode, so they go in the `sys/color/*` sets beside
+the two colours, though they are numbers. `sys.shadow.popover` is read by the niri rule generator,
+whose output is static: it can't follow the mode, so it holds one value for both.
 
 ## Tokens to recreate or delete
 
@@ -34,3 +42,4 @@ primitives for the durations first.
   translucent. §1.7 says every surface has `bg`, `fg` and `stroke`, and §11.1 pairs every
   translucent surface with a stroke. The panels draw no edge until it exists.
 - `sys.shadow.*`: there's no shadow role yet, so the shared `Card` has no M3 elevated variant.
+  The frosted surfaces' shadow is niri's, from `sys.shadow.popover` above.

@@ -13,6 +13,11 @@ A blurred surface gets `xray false`: niri's layer-surface blur is xray by defaul
 only the wallpaper, so the cards would look opaque over windows. (Popups already default to
 non-xray.)
 
+A blurred surface also gets a `shadow`: each surface is only as big as its card, so a shadow
+the shell drew would be cut off at the surface's edge. niri's `popups {}` block has no shadow,
+so context menus and the menus of panels go without one. The shell lights the cards' edges
+itself (`components/glass.rs`).
+
 A golden test fails when (2) is out of date with the tokens. The live niri config is in turn
 generated from (2), not hand-edited, so neither can drift.
 

@@ -2,9 +2,9 @@
 // design tokens (radii: sys.radius.popover, notification.card.radius) — do not
 // edit by hand.
 //
-// The amane shell's niri layer-rules (compositor-side blur / rounding on its
-// surfaces). Each rule matches an anchored regex on a layer-surface namespace
-// that a component sets via LayerWindow::namespace(...).
+// The amane shell's niri layer-rules (compositor-side blur, rounding and
+// shadow on its surfaces). Each rule matches an anchored regex on a
+// layer-surface namespace that a component sets via LayerWindow::namespace(...).
 //
 // Don't hand-copy these into the niri config. gen-layer-rules.sh injects
 // everything below the sentinel into the config between its
@@ -46,6 +46,12 @@ layer-rule {
         blur true
         xray false
     }
+    shadow {
+        on
+        softness 16
+        offset x=0 y=8
+        color "#00000073"
+    }
 }
 
 // Power panel: the same frosted card, toggled by the taskbar's battery
@@ -57,6 +63,12 @@ layer-rule {
         blur true
         xray false
     }
+    shadow {
+        on
+        softness 16
+        offset x=0 y=8
+        color "#00000073"
+    }
 }
 
 // Bluetooth panel: the same frosted card, toggled by the taskbar's Bluetooth
@@ -67,6 +79,12 @@ layer-rule {
     background-effect {
         blur true
         xray false
+    }
+    shadow {
+        on
+        softness 16
+        offset x=0 y=8
+        color "#00000073"
     }
 
     popups {
@@ -85,6 +103,12 @@ layer-rule {
         blur true
         xray false
     }
+    shadow {
+        on
+        softness 16
+        offset x=0 y=8
+        color "#00000073"
+    }
 }
 
 // Notification toasts: one surface per banner, sized to its card, sliding in
@@ -96,6 +120,12 @@ layer-rule {
         blur true
         xray false
     }
+    shadow {
+        on
+        softness 16
+        offset x=0 y=8
+        color "#00000073"
+    }
 }
 
 // Notification center: a full-height frosted sidebar at the right edge,
@@ -106,6 +136,12 @@ layer-rule {
     background-effect {
         blur true
         xray false
+    }
+    shadow {
+        on
+        softness 16
+        offset x=0 y=8
+        color "#00000073"
     }
 
     popups {

@@ -313,6 +313,7 @@ fn card_widget(entries: &[Entry], level: usize) -> Rectangle {
     Card::new(rows)
         .surface(Surface::Popover)
         .variant(Variant::Outlined)
+        .glass(true)
         .padding(menu::card::padding())
         .build()
 }

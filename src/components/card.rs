@@ -4,14 +4,15 @@
 //! surface role, content stacked inside an inset. Drawn in the shell's
 //! macOS look: `sys.radius.popover` corners, and frosted when the
 //! compositor can blur what's below (a departure from M3, which has no
-//! translucent material). M3's elevated card is left out: there's no
-//! `sys.shadow` role yet.
+//! translucent material), its edge lit like [`glass`](super::glass) when
+//! asked. M3's elevated card is left out: there's no `sys.shadow` role yet.
 //!
 //! A card records where the pointer is over it ([`layout::cursor`]), so a
 //! right-click on its content can anchor a menu.
 
 use amane::{Color, Column, Parent, Rectangle, Widget};
 
+use crate::components::glass;
 use crate::components::layout::{pad, track_cursor};
 use crate::tokens::sys;
 
@@ -79,6 +80,7 @@ pub struct Card {
     surface: Surface,
     variant: Variant,
     blur: bool,
+    glass: bool,
     gap: f32,
     padding: f32,
 }
@@ -90,6 +92,7 @@ impl Card {
             surface: Surface::Popover,
             variant: Variant::Filled,
             blur: false,
+            glass: false,
             gap: 0.0,
             padding: sys::space::inset::l(),
         }
@@ -108,6 +111,13 @@ impl Card {
     /// Frost what's below with `sys.effect.backdrop-blur`.
     pub fn blur(mut self, blur: bool) -> Self {
         self.blur = blur;
+        self
+    }
+
+    /// Light the edge like glass, for a card that is its surface's whole
+    /// translucent window.
+    pub fn glass(mut self, glass: bool) -> Self {
+        self.glass = glass;
         self
     }
 
@@ -138,6 +148,9 @@ impl Card {
         }
         if self.blur {
             card = card.blur(sys::effect::backdrop_blur());
+        }
+        if self.glass {
+            card = glass::apply(card, sys::radius::popover());
         }
 
         track_cursor(card).child(Column::new(self.content).gap(self.gap).width(Parent))

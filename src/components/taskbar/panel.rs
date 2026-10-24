@@ -138,6 +138,7 @@ pub fn card(body: Vec<Box<dyn Widget>>, gap: f32) -> Rectangle {
     Card::new(body)
         .surface(Surface::Panel)
         .blur(true)
+        .glass(true)
         .gap(gap)
         .build()
 }

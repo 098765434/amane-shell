@@ -14,12 +14,22 @@ use crate::tokens::{Key, notification, sys, with_key};
 pub struct LayerRule {
     pub namespace: &'static str,
     pub comment: String,
-    /// The surface is a frosted card with these corners; `None` leaves it
-    /// alone.
+    /// The surface is a frosted card with these corners, casting a shadow;
+    /// `None` leaves it alone.
     pub radius: Option<f32>,
-    /// Its xdg-popups are frosted cards with these corners.
+    /// Its xdg-popups are frosted cards with these corners. niri gives
+    /// popups no shadow.
     pub popups: Option<f32>,
 }
+
+// TODO(token): `sys.shadow.popover` once Penpot has it (docs/penpot-todo.md).
+// The rules are static, so the shadow can't follow the mode: this is the
+// dark one, which also reads in light.
+/// The shadow under every frosted surface: the shell can't draw it, as each
+/// surface is only as big as its card.
+const SHADOW_SOFTNESS: f32 = 16.0;
+const SHADOW_Y: f32 = 8.0;
+const SHADOW_COLOR: &str = "#00000073";
 
 /// One rule per frosted surface. The bar has none: it is deliberately not
 /// blurred.
@@ -108,9 +118,9 @@ const HEADER: &str = "\
 // design tokens (radii: sys.radius.popover, notification.card.radius) — do not
 // edit by hand.
 //
-// The amane shell's niri layer-rules (compositor-side blur / rounding on its
-// surfaces). Each rule matches an anchored regex on a layer-surface namespace
-// that a component sets via LayerWindow::namespace(...).
+// The amane shell's niri layer-rules (compositor-side blur, rounding and
+// shadow on its surfaces). Each rule matches an anchored regex on a
+// layer-surface namespace that a component sets via LayerWindow::namespace(...).
 //
 // Don't hand-copy these into the niri config. gen-layer-rules.sh injects
 // everything below the sentinel into the config between its
@@ -150,6 +160,11 @@ pub fn render(rules: &[LayerRule]) -> String {
             // only the wallpaper; these cards float over windows, so they blur
             // what's below (popups already default to that)
             out.push_str("    background-effect {\n        blur true\n        xray false\n    }\n");
+            out.push_str("    shadow {\n        on\n");
+            let _ = writeln!(out, "        softness {SHADOW_SOFTNESS}");
+            let _ = writeln!(out, "        offset x=0 y={SHADOW_Y}");
+            let _ = writeln!(out, "        color \"{SHADOW_COLOR}\"");
+            out.push_str("    }\n");
         }
         if let Some(radius) = rule.popups {
             out.push_str("\n    popups {\n");
