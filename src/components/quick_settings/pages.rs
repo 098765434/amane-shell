@@ -3,6 +3,7 @@
 use super::detail::DetailPage;
 use super::tiles::{
     appearance, background, bluetooth, keyboard, network, notifications, power, session, sound,
+    tailscale,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -21,11 +22,12 @@ pub enum Page {
     /// The power menu: suspend, restart, power off, log out.
     Session,
     BackgroundApps,
+    Tailscale,
 }
 
 impl Page {
     /// Every page by its IPC name, the grid first.
-    const ALL: [(&'static str, Page); 12] = [
+    const ALL: [(&'static str, Page); 13] = [
         ("grid", Self::Grid),
         ("sound", Self::Sound),
         ("wifi", Self::Wifi),
@@ -38,10 +40,11 @@ impl Page {
         ("keyboard", Self::Keyboard),
         ("session", Self::Session),
         ("background-apps", Self::BackgroundApps),
+        ("tailscale", Self::Tailscale),
     ];
 
-    pub const NAMES: [&'static str; 12] = {
-        let mut names = [""; 12];
+    pub const NAMES: [&'static str; 13] = {
+        let mut names = [""; 13];
         let mut i = 0;
         while i < names.len() {
             names[i] = Self::ALL[i].0;
@@ -74,6 +77,7 @@ pub(super) fn page(page: Page) -> DetailPage {
         Page::Keyboard => keyboard::page(),
         Page::Session => session::page(),
         Page::BackgroundApps => background::page(),
+        Page::Tailscale => tailscale::page(),
     }
 }
 
@@ -93,6 +97,7 @@ pub(super) fn available(page: Page) -> bool {
         Page::Power => Battery::read().present(),
         Page::NightLight => crate::services::night_light::NightLight::read().present(),
         Page::Keyboard => crate::services::keyboard_backlight::KeyboardBacklight::read().present(),
+        Page::Tailscale => crate::services::tailscale::Tailscale::read().present(),
     }
 }
 

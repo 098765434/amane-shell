@@ -1,9 +1,15 @@
 //! Material Symbols codepoints (the font stack is token `sys.type.icon`),
 //! and the pickers that choose one for a device or a reading, so the bar,
-//! the panels and the notifications all agree. Draw them with
-//! [`layout::icon`](super::layout::icon).
+//! Quick Settings and the notifications all agree. Draw them with
+//! [`layout::icon`](super::layout::icon), or, where a control can also show
+//! a mark the font hasn't got, as a [`Glyph`] with [`glyph`].
 
-use amane::{AudioKind, BatteryState, DeviceKind, PowerDevice};
+use amane::{
+    AudioKind, BatteryState, Center, Color, Column, DeviceKind, PowerDevice, Radius, Rectangle,
+    Row, Size,
+};
+
+use super::layout::{boxed, fixed_width, icon};
 
 pub(crate) const ICON_APPS: char = '\u{e5c3}';
 pub(crate) const ICON_VOLUME_UP: char = '\u{e050}';
@@ -153,6 +159,87 @@ pub(crate) fn peripheral_glyph(device: &PowerDevice) -> char {
         DeviceKind::GamingInput => ICON_GAMEPAD,
         _ => battery_glyph(device.percent(), device.state() == BatteryState::Charging),
     }
+}
+
+/// The glyph for a Tailscale peer's `OS`: a computer or a phone.
+pub(crate) fn os_glyph(os: &str) -> char {
+    match os.to_ascii_lowercase().as_str() {
+        "linux" | "windows" | "macos" | "freebsd" | "openbsd" => ICON_COMPUTER,
+        "ios" | "android" => ICON_PHONE,
+        _ => ICON_DEVICE_OTHER,
+    }
+}
+
+/// What a control shows: a font glyph, or a mark drawn from shapes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Glyph {
+    Font(char),
+    /// Tailscale's nine dots.
+    Tailscale,
+}
+
+impl From<char> for Glyph {
+    fn from(glyph: char) -> Self {
+        Self::Font(glyph)
+    }
+}
+
+/// `glyph` at `size` in `color`, as a box exactly its size.
+pub(crate) fn glyph(glyph: Glyph, size: f32, color: Color) -> Rectangle {
+    match glyph {
+        Glyph::Font(ch) => {
+            let text = icon(ch, size, color);
+            let height = match amane::Widget::height(&text) {
+                Size::Fixed(height) => height,
+                Size::Parent => size,
+            };
+            Rectangle::new()
+                .width(Size::Fixed(fixed_width(&text)))
+                .height(Size::Fixed(height))
+                .fill(Color::TRANSPARENT)
+                .child(text)
+        }
+        Glyph::Tailscale => tailscale_mark(size, color),
+    }
+}
+
+/// Tailscale's mark, rebuilt from its official geometry on a 16-unit grid:
+/// dots of radius 5/3 five units apart (upstream's 3:1 spacing to radius),
+/// the middle row and the bottom centre solid, the other five at 40 %.
+fn tailscale_mark(size: f32, color: Color) -> Rectangle {
+    const SOLID: [[bool; 3]; 3] = [
+        [false, false, false],
+        [true, true, true],
+        [false, true, false],
+    ];
+    let unit = size / 16.0;
+    let dot = unit * 10.0 / 3.0;
+    let gap = unit * 5.0 - dot;
+    let rows = SOLID
+        .iter()
+        .map(|row| {
+            let dots = row
+                .iter()
+                .map(|solid| {
+                    boxed(
+                        Rectangle::new()
+                            .width(Size::Fixed(dot))
+                            .height(Size::Fixed(dot))
+                            .radius(Radius::Full)
+                            .fill(color)
+                            .opacity(if *solid { 1.0 } else { 0.4 }),
+                    )
+                })
+                .collect();
+            boxed(Row::new(dots).gap(gap))
+        })
+        .collect();
+    Rectangle::new()
+        .width(Size::Fixed(size))
+        .height(Size::Fixed(size))
+        .fill(Color::TRANSPARENT)
+        .align_child(Center, Center)
+        .child(Column::new(rows).gap(gap))
 }
 
 #[cfg(test)]

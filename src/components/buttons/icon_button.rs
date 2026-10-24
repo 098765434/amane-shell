@@ -9,25 +9,25 @@
 use amane::Rectangle;
 
 use super::{ButtonBuilder, Shape, Style};
-use crate::components::layout::icon;
+use crate::components::icons::{Glyph, glyph};
 use crate::tokens::sys;
 
 /// A glyph button. `id` keys its hover state, so it must be unique and
 /// stable.
-pub type IconButton = ButtonBuilder<Glyph>;
+pub type IconButton = ButtonBuilder<Lone>;
 
 /// What only an icon button has.
-pub struct Glyph {
-    glyph: char,
+pub struct Lone {
+    glyph: Glyph,
     size: f32,
     selected: bool,
     width: f32,
 }
 
 impl IconButton {
-    pub fn new(id: impl Into<String>, glyph: char) -> Self {
-        let kind = Glyph {
-            glyph,
+    pub fn new(id: impl Into<String>, glyph: impl Into<Glyph>) -> Self {
+        let kind = Lone {
+            glyph: glyph.into(),
             size: sys::size::icon::m(),
             selected: false,
             width: sys::size::control::height(),
@@ -59,7 +59,7 @@ impl IconButton {
             (true, _) => sys::color::accent::bg(),
             (false, _) => self.fg(),
         };
-        let glyph = icon(self.kind.glyph, self.kind.size, color);
+        let glyph = glyph(self.kind.glyph, self.kind.size, color);
         let width = self.kind.width;
 
         self.finish(width, glyph)

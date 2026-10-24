@@ -12,6 +12,7 @@
 //! - [`connections`] — wired, VPN and hotspot (NetworkManager's `nmcli`).
 //! - [`privacy`] — what's using the microphone, the camera or the screen.
 //! - [`background_apps`] — apps running without a window (the portal).
+//! - [`tailscale`] — the tailnet, its exit nodes and settings (the CLI).
 //!
 //! See `docs/quick-settings.md`.
 //!
@@ -25,6 +26,7 @@ pub mod night_light;
 pub mod privacy;
 pub mod rfkill;
 pub mod session;
+pub mod tailscale;
 
 use std::cell::RefCell;
 use std::collections::HashMap;

@@ -1,0 +1,10 @@
+{
+	"ControlURL": "https://controlplane.tailscale.com",
+	"RouteAll": true,
+	"ExitNodeID": "nB",
+	"CorpDNS": false,
+	"WantRunning": true,
+	"ShieldsUp": true,
+	"OperatorUser": "ocbk",
+	"Hostname": ""
+}

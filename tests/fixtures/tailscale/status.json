@@ -1,0 +1,50 @@
+{
+  "Version": "1.98.10",
+  "TUN": true,
+  "BackendState": "Running",
+  "AuthURL": "",
+  "TailscaleIPs": ["100.64.0.1", "fd7a:115c:a1e0::1"],
+  "Self": {
+    "ID": "nSelf",
+    "HostName": "laptop",
+    "DNSName": "laptop.example.ts.net.",
+    "OS": "linux",
+    "TailscaleIPs": ["100.64.0.1", "fd7a:115c:a1e0::1"],
+    "Online": true,
+    "ExitNode": false,
+    "ExitNodeOption": false
+  },
+  "Health": [],
+  "Peer": {
+    "nodekey:aaa": {
+      "ID": "nA",
+      "HostName": "phone",
+      "DNSName": "phone.example.ts.net.",
+      "OS": "iOS",
+      "TailscaleIPs": ["100.64.0.2", "fd7a:115c:a1e0::2"],
+      "Online": false,
+      "ExitNode": false,
+      "ExitNodeOption": false
+    },
+    "nodekey:bbb": {
+      "ID": "nB",
+      "HostName": "server",
+      "DNSName": "server.example.ts.net.",
+      "OS": "linux",
+      "TailscaleIPs": ["100.64.0.3"],
+      "Online": true,
+      "ExitNode": true,
+      "ExitNodeOption": true
+    },
+    "nodekey:ccc": {
+      "ID": "nC",
+      "HostName": "Desktop",
+      "DNSName": "desktop.example.ts.net.",
+      "OS": "windows",
+      "TailscaleIPs": ["fd7a:115c:a1e0::4", "100.64.0.4"],
+      "Online": true,
+      "ExitNode": false,
+      "ExitNodeOption": true
+    }
+  }
+}

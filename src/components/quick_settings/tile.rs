@@ -33,6 +33,7 @@ use crate::components::buttons::{
 };
 use crate::components::card::Surface;
 use crate::components::glass;
+use crate::components::icons::{Glyph, glyph};
 use crate::components::layout::{boxed, icon, pad, text_height, text_width};
 use crate::components::motion;
 use crate::components::tooltip;
@@ -130,7 +131,7 @@ struct Motion {
 /// A tile. `id` keys its motion and hover, so it must be unique and stable.
 pub struct QuickToggle {
     id: String,
-    glyph: char,
+    glyph: Glyph,
     title: String,
     subtitle: Option<String>,
     checked: bool,
@@ -146,10 +147,10 @@ pub struct QuickToggle {
 }
 
 impl QuickToggle {
-    pub fn new(id: impl Into<String>, glyph: char, title: impl Into<String>) -> Self {
+    pub fn new(id: impl Into<String>, glyph: impl Into<Glyph>, title: impl Into<String>) -> Self {
         Self {
             id: id.into(),
-            glyph,
+            glyph: glyph.into(),
             title: title.into(),
             subtitle: None,
             checked: false,
@@ -318,7 +319,7 @@ impl QuickToggle {
             .fill(state_fill(&disc_id, disc_fill, quiet))
             .scale(press_scale(&disc_id, quick::press::scale()))
             .align_child(Center, Center)
-            .child(icon(self.glyph, quick::tile::glyph(), glyph_color));
+            .child(glyph(self.glyph, quick::tile::glyph(), glyph_color));
         let disc = self.act_part(
             disc,
             disc_id,
@@ -398,7 +399,7 @@ impl QuickToggle {
             .radius(Radius::Full)
             .fill(state_fill(&self.id, tint, quiet))
             .align_child(Center, Center)
-            .child(icon(self.glyph, quick::button::glyph(), glyph_color));
+            .child(glyph(self.glyph, quick::button::glyph(), glyph_color));
         let button = module(side, side, side / 2.0, inner)
             .scale(press_scale(&self.id, quick::press::scale()));
 

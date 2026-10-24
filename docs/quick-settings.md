@@ -24,6 +24,7 @@ when the machine has what it drives, as in GNOME, and the grid packs around what
 | Wi‑Fi | the network joined, "Connecting…", "Not Connected", "Off" or "Hardware switch off"; "<ssid> Hotspot" while the machine is one | the disc switches the radio (or stops the hotspot); the tile opens the page | the networks (rescanned every 15 s while shown; "Searching…" or "Wi‑Fi is off" while there are none), joining with a password; the page stays open and the row says "Connecting…" |
 | Bluetooth | the device connected, or how many | the disc switches the adapter; the tile opens the page | the device lists, searching while shown |
 | Airplane Mode | a round button (or a tile) | switches every radio | — |
+| Tailscale | a tile with Tailscale's mark (drawn, as the font hasn't got it), waiting in the Add list by default; "via <exit node>", this device's address, "Connecting…", "Not logged in", "Disconnected" or "Daemon not running"; hidden without the `tailscale` binary | the disc connects or disconnects (`tailscale up` / `down`), or logs in when logged out; the tile opens the page | what's wrong (no daemon; **Log In…**, which opens the browser once the control plane hands out the URL; no operator grant, with the command to copy; a failed change; tailscaled's own warnings), This Device (a click copies the address), Exit Node (None or a peer that offers itself; offline ones can't be picked), Accept Routes, Accept DNS and Block Incoming switches, and the tailnet's Devices, online first (a click copies the address); Show in Taskbar; Admin Console… |
 | VPN, Wired | tiles, waiting in the Add list by default; VPN says "Off", the tunnel that's up or how many are; Wired the connection or "Not Connected" | the disc switches; the VPN tile opens its page | VPN: a switch in the header for the preferred tunnel, and one per profile |
 | Now Playing | the active player's art (from a file or the web), title and artist, how far through the track, or "Not Playing" | previous, play/pause, next | — |
 | Focus | Do Not Disturb: what's on, until when, or off | the disc switches it; the tile opens the page | Focus: For 1 Hour, Until This Evening, Until Tomorrow, the one that's on checked |
@@ -112,7 +113,7 @@ The layout is kept in `$XDG_STATE_HOME/amane-shell/quick-settings`:
 
 The ids are `wifi`, `bluetooth`, `now-playing`, `vpn`, `wired`, `focus`, `dark-style`,
 `night-light`, `display`, `sound`, `battery`, `power-mode`, `keyboard`, `airplane`,
-`background-apps`, `screenshot`, `lock` and `power-off`. A control without `col`/`row` is
+`background-apps`, `screenshot`, `lock`, `power-off` and `tailscale`. A control without `col`/`row` is
 hidden. A file from an older version is ignored. One that places something off the canvas or
 over another control moves it to the first free cells (or hides it); a control the file doesn't
 name is added hidden, so a control that arrives with an update or new hardware waits in the Add
@@ -197,7 +198,7 @@ printf 'quick-settings\nclose\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
 ```
 
 The pages are `grid`, `sound`, `wifi`, `vpn`, `bluetooth`, `power-mode`, `power`, `night-light`,
-`do-not-disturb`, `keyboard`, `session` and `background-apps`. `quick-settings edit` opens the
+`do-not-disturb`, `keyboard`, `session`, `background-apps` and `tailscale`. `quick-settings edit` opens the
 grid in edit mode, and `quick-settings reset-layout` restores the default layout. A niri keybind:
 
 ```kdl
@@ -278,6 +279,13 @@ daemon or device is missing.
 | `connections` | `nmcli -t` every 3 s: VPN profiles, the Ethernet device, a Wi‑Fi profile in access-point mode | `nmcli connection up/down`, `nmcli device connect/disconnect` |
 | `privacy` | `pw-dump --monitor` (recording streams, running v4l2/libcamera sources); `niri msg --json casts` every 2 s | — |
 | `background_apps` | `org.freedesktop.background.Monitor`'s `BackgroundApps`, on each change | the app's `quit` action, else `flatpak kill` |
+| `tailscale` | `tailscale status --json` and `tailscale debug prefs`, read again whenever `tailscale debug watch-ipn` prints (a burst settles for 300 ms first; the stream is restarted with a 1–60 s backoff when the daemon goes) | `tailscale up` (never with flags), `down`, `set --exit-node / --accept-routes / --accept-dns / --shields-up`, `login` (left running; its URL is taken from `status --json` and opened with `xdg-open`); copying is `wl-copy` |
+
+**Tailscale needs the operator grant to change anything.** Reads work for anyone, but `tailscaled`
+refuses writes from a user who isn't root or its operator. Grant it once with
+`sudo tailscale set --operator=$USER`; it's kept in tailscaled's state across reboots. Without it
+the tile and page show the true state read-only (judged from `OperatorUser` in the prefs, so
+without a probe write), and the page has the command to copy. The shell never escalates.
 
 **Night light owns `wlsunset`.** The compositor gives the colour ramps to one program at a time,
 so turning night light on stops any other `wlsunset`. A `spawn-at-startup "wlsunset" …` line in

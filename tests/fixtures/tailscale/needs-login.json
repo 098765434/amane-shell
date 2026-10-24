@@ -1,0 +1,16 @@
+{
+  "Version": "1.98.10",
+  "BackendState": "NeedsLogin",
+  "AuthURL": "https://login.tailscale.com/a/abc123",
+  "TailscaleIPs": null,
+  "Self": {
+    "ID": "",
+    "HostName": "laptop",
+    "DNSName": "",
+    "OS": "linux",
+    "TailscaleIPs": null,
+    "Online": false
+  },
+  "Health": ["You are logged out."],
+  "Peer": null
+}

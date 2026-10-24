@@ -14,6 +14,7 @@ pub mod notifications;
 pub mod power;
 pub mod session;
 pub mod sound;
+pub mod tailscale;
 
 use std::collections::HashMap;
 

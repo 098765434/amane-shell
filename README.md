@@ -20,9 +20,10 @@ ones — the bar itself is not.
   - **Overview smooth-expand**: the bar height eases between compact and tall in lockstep with
     niri's overview zoom, driven by the amane `Gestures::overview_progress()` value (requires the
     [niri gesture-IPC fork](https://github.com/098765434/niri)).
-- **Status icons** — volume, Bluetooth, network and battery, each optional and opening its
-  Quick Settings page: Sound (volume, microphone and devices), Bluetooth (connect, pair, forget),
-  Wi‑Fi (scan and join) and Battery (power profile, peripherals).
+- **Status icons** — volume, Bluetooth, network, Tailscale and battery, each optional and
+  opening its Quick Settings page: Sound (volume, microphone and devices), Bluetooth (connect,
+  pair, forget), Wi‑Fi (scan and join), Tailscale (connect, log in, exit node, routes/DNS,
+  block incoming, the tailnet's devices) and Battery (power profile, peripherals).
 - **Context menus** ([docs/context-menu.md](docs/context-menu.md)) — right-click a window pill for focus/close/fullscreen/float/move-to-workspace,
   built on amane's xdg-popup support (nested submenus, outside-click dismiss).
 - **Notifications** ([docs/notifications.md](docs/notifications.md)) — the shell is the

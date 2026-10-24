@@ -361,8 +361,9 @@ mod tests {
         assert_eq!(at(&layout, ControlId::Sound), Some(Place::new(0, 4)));
         assert_eq!(at(&layout, ControlId::Battery), Some(Place::new(0, 5)));
         assert_eq!(at(&layout, ControlId::Airplane), Some(Place::new(2, 5)));
-        // VPN and the cable wait in the Add list
+        // VPN, the cable and Tailscale wait in the Add list
         assert_eq!(at(&layout, ControlId::Vpn), None);
+        assert_eq!(at(&layout, ControlId::Tailscale), None);
         assert!(layout.rows_used() <= CANVAS.rows);
         // a machine without a battery or a screen dimmer closes the gaps
         let laptopless = Layout::default_for(CANVAS, &|id| {

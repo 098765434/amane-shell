@@ -27,7 +27,7 @@ use amane::{
 use crate::components::buttons::{IconButton, PushButton, Shape, Style};
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
 use crate::components::icons::{
-    ICON_AIRPLANE, ICON_APPS, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF,
+    Glyph, ICON_AIRPLANE, ICON_APPS, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF,
     ICON_CABLE, ICON_CAMERA, ICON_DND, ICON_MIC, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS,
     ICON_SCREEN_SHARE, ICON_TUNE, ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE,
     ICON_WIFI_OFF, audio_glyph, battery_glyph, power_profile_glyph, wifi_glyph,
@@ -42,6 +42,7 @@ use crate::services::connections::Connections;
 use crate::services::night_light::NightLight;
 use crate::services::privacy::Privacy;
 use crate::services::rfkill::Rfkill;
+use crate::services::tailscale::{State as TailscaleState, Tailscale};
 
 use crate::tokens::{Styled, bar, sys};
 
@@ -174,6 +175,7 @@ fn right_section() -> Row {
         volume_module(),
         bluetooth_indicator(),
         network_indicator(),
+        tailscale_indicator(),
         battery_module(),
         quick_settings_button(),
         notification_indicator(),
@@ -513,6 +515,29 @@ fn network_indicator() -> Box<dyn Widget> {
     )
 }
 
+/// Tailscale's mark while connected; accent while routing through an
+/// exit node.
+fn tailscale_indicator() -> Box<dyn Widget> {
+    let tailscale = Tailscale::read();
+    if tailscale.state() != TailscaleState::Running || !Indicator::Tailscale.shown() {
+        return nothing();
+    }
+    let routed = tailscale.exit_node().is_some();
+    let tip = format!("Tailscale · {}", tailscale.describe());
+    drop(tailscale);
+
+    boxed(
+        bar_icon(
+            "amane.bar.tailscale",
+            Glyph::Tailscale,
+            status_color(routed),
+        )
+        .on_press(|| quick_settings::open(Page::Tailscale))
+        .tooltip(BAR_NS, tip)
+        .build(),
+    )
+}
+
 fn battery_module() -> Box<dyn Widget> {
     let battery = Battery::read();
 
@@ -684,7 +709,7 @@ fn clock_module() -> Box<dyn Widget> {
 // ───── helpers ───────────────────────────────────────────────────────────────
 
 /// A bar item that's a lone glyph: unfilled until hovered, the bar's height.
-fn bar_icon(id: &'static str, glyph: char, color: Color) -> IconButton {
+fn bar_icon(id: &'static str, glyph: impl Into<Glyph>, color: Color) -> IconButton {
     IconButton::new(id, glyph)
         .shape(Shape::Square)
         .color(color)

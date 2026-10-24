@@ -41,21 +41,23 @@ uses its compact height until the overview bool flips.
   glyph shows what the default output is — built-in speaker, speaker, headphones, headset, TV,
   car …, and a [tooltip](components.md#tooltip) shows the level), Bluetooth (only with an
   adapter; off / on / connected), network (signal wedges follow the joined network's strength, a
-  cable when wired) and battery (a tooltip shows the charge). Then the Quick Settings button (see
+  cable when wired), Tailscale (its nine-dot mark, only while connected; accent while routing
+  through an exit node, a tooltip with the address or the exit node) and battery (a tooltip
+  shows the charge). Then the Quick Settings button (see
   [quick-settings.md](quick-settings.md)), the notification indicator (a moon while Do Not Disturb is on, a bell while
   something arrived unseen; right-click for Do Not Disturb), clock (click → notification
   center, see [notifications.md](notifications.md)).
 
 ## Status icons
 
-Volume, Bluetooth, network and battery are optional: each Quick Settings page that has one
-(Sound, Bluetooth, Wi‑Fi, Battery) ends in a **Show in Taskbar** switch, and IPC does the same:
+Volume, Bluetooth, network, Tailscale and battery are optional: each Quick Settings page that
+has one (Sound, Bluetooth, Wi‑Fi, Tailscale, Battery) ends in a **Show in Taskbar** switch, and IPC does the same:
 
 ```sh
 printf 'taskbar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock   # show | hide | toggle
 ```
 
-The names are `volume`, `bluetooth`, `network` and `battery`. The hidden ones are kept in
+The names are `volume`, `bluetooth`, `network`, `tailscale` and `battery`. The hidden ones are kept in
 `$XDG_STATE_HOME/amane-shell/taskbar`, one per line (`indicators.rs`); a missing file shows them
 all.
 
