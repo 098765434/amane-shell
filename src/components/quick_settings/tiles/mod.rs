@@ -28,6 +28,7 @@ use super::glass_region::{self, STEPS};
 use super::grid::{Metrics, Occupancy, Rect, Slot, Span};
 use super::tile::{capsule_button, capsule_width, module};
 use super::{edit, layout};
+use crate::components::glass::{self, Rim};
 use crate::components::icons::ICON_ADD;
 use crate::components::layout::{boxed, icon, pad, text_height};
 use crate::components::list::{self, List, ListItem};
@@ -120,6 +121,8 @@ pub(super) fn grid() -> Grid {
         0.0
     };
     let mut regions = Vec::new();
+    // every module's glass edge, lit in one pass over the whole grid
+    let mut rims: Vec<Rim> = Vec::new();
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
     // in edit mode the places a control can go show through, as on iOS,
     // and the layer every drag is measured on comes before the controls:
@@ -153,14 +156,24 @@ pub(super) fn grid() -> Grid {
             widget
         };
         let frost = edit::frosted(pose, slot);
+        let radius = radius_of(rect.span, slot) * pose.scale;
         regions.extend(glass_region::rounded(
             canvas_x + frost.x,
             frost.y,
             frost.width,
             frost.height,
-            radius_of(rect.span, slot) * pose.scale,
+            radius,
             STEPS,
         ));
+        // lit as drawn: scaled about its centre, not rounded to pixels
+        rims.push(Rim {
+            x: canvas_x + pose.x + slot.width * (1.0 - pose.scale) / 2.0,
+            y: pose.y + slot.height * (1.0 - pose.scale) / 2.0,
+            width: slot.width * pose.scale,
+            height: slot.height * pose.scale,
+            radius,
+            opacity: pose.opacity,
+        });
         layers.push(boxed(
             Rectangle::new()
                 .width(Size::Fixed(slot.width))
@@ -206,6 +219,14 @@ pub(super) fn grid() -> Grid {
         button_h / 2.0,
         STEPS,
     ));
+    rims.push(Rim {
+        x: button_x,
+        y: grid_h + gap,
+        width: button_w,
+        height: button_h,
+        radius: button_h / 2.0,
+        opacity: 1.0,
+    });
     let button = Rectangle::new()
         .width(Size::Fixed(width))
         .height(Size::Fixed(button_h))
@@ -238,6 +259,14 @@ pub(super) fn grid() -> Grid {
             quick::card::radius(),
             STEPS,
         ));
+        rims.push(Rim {
+            x: 0.0,
+            y: grid_h - list_h,
+            width: list_w,
+            height: list_h,
+            radius: quick::card::radius(),
+            opacity: 1.0,
+        });
         let beside = Rectangle::new()
             .width(Size::Fixed(list_w))
             .height(Size::Fixed(grid_h))
@@ -253,9 +282,22 @@ pub(super) fn grid() -> Grid {
         boxed(column)
     };
 
+    // the glass over everything: one layer lights every module's edge
+    let total_w = canvas_x + width;
+    let mut lit: Vec<Box<dyn Widget>> = vec![widget];
+    lit.extend(glass::rim_layers(&rims).into_iter().map(boxed));
+    let widget = boxed(
+        Rectangle::new()
+            .width(Size::Fixed(total_w))
+            .height(Size::Fixed(height))
+            .fill(Color::TRANSPARENT)
+            .align_child(Start, Start)
+            .child(Stack::new(lit).width(Parent).height(Parent)),
+    );
+
     Grid {
         widget,
-        width: canvas_x + width,
+        width: total_w,
         height,
         regions,
     }

@@ -163,13 +163,15 @@ result through the region, so the strips cost nothing extra. The strips overlap 
 niri rounds each rectangle to the screen's pixels on its own, and two that only touch can leave
 a hairline of sharp desktop between them at a fractional scale.
 
-A module is the panel's tint with a hairline rim and a soft drop shadow (`tile::module`,
+A module is the panels' tint, the panels' glass edge and a soft drop shadow (`tile::module`,
 `quick.shadow`); vello draws the shadow analytically in the module's own pass, so sixteen of
-them cost well under a millisecond (gpu median 2.6 ms with them, 2.8 before). The card itself
-sits `quick.grid.margin` in from the surface's edge, room for the shadows. The surfaces' full glass
-(`glass::apply`, the rim shader and the inner glow) is a GPU pass each per rectangle, which at a
-dozen modules a frame costs more than the frame has on an integrated GPU (measured: the glow
-≈ 8 ms, the shader ≈ 9 ms), so only a page's sheet, one piece, wears it.
+them cost well under a millisecond. The card itself sits `quick.grid.margin` in from the
+surface's edge, room for the shadows. The glass (`glass.wgsl`: the lit rim, the far catch, the
+bloom and the glow) is a GPU pass whatever it covers, and a pass per module (`glass::apply`, as
+the panels wear it) cost 13 ms more a frame on an integrated GPU, so the grid lights every
+module in one pass over them all (`glass::rims`, up to thirty pieces a pass, their geometry in
+the shader's values; amane's fork gives a shader 64 rows for that): +2 ms a frame, measured. A
+page's sheet, one piece, wears `glass::apply` itself.
 
 ## IPC
 

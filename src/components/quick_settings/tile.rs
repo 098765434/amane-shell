@@ -31,7 +31,6 @@ use crate::components::buttons::{
     Actions, Pending, hovered, interactive, press_scale, state_fill, with_existing, with_state,
 };
 use crate::components::card::Surface;
-use crate::components::color::with_alpha;
 use crate::components::glass;
 use crate::components::layout::{boxed, icon, pad, text_height, text_width};
 use crate::components::motion;
@@ -47,10 +46,6 @@ pub enum Style {
     Round,
 }
 
-// TODO(token): `sys.color.glass.module-rim` once Penpot has it (manual §1.1).
-/// How strong a module's hairline rim is, in the panel's `fg`.
-const RIM_ALPHA: f32 = 0.14;
-
 /// The soft shadow every module casts (`quick.shadow`): vello draws it
 /// analytically in the same pass as the module, so it costs little.
 fn shadow() -> Option<Shadow> {
@@ -61,16 +56,13 @@ fn shadow() -> Option<Shadow> {
     })
 }
 
-/// A frosted module: the card's tint, a hairline rim and a soft shadow,
-/// `width` by `height` with `radius` corners, holding `content`. The
-/// compositor frosts behind it where the surface says so (see
-/// `glass_region`).
-///
-/// The surfaces' full glass (`glass::apply`: the rim shader and the inner
-/// glow) is a pass each per rectangle, which at a dozen modules a frame
-/// costs more than the frame has (measured: glow ≈ 8 ms, shader ≈ 9 ms on
-/// an integrated GPU), so a module wears the rim as a stroke, and only the
-/// page sheet, one piece, wears the glass.
+/// A frosted module: the panels' tint and a soft shadow, `width` by
+/// `height` with `radius` corners, holding `content`. The compositor
+/// frosts behind it where the surface says so (see `glass_region`), and
+/// the grid lights every module's glass edge in one pass over them all
+/// (`glass::rims`): a pass per module (`glass::apply`) cost more than a
+/// frame at a dozen modules (measured: +13 ms a frame on an integrated
+/// GPU), so only a page's sheet, one piece, wears `glass::apply` itself.
 pub(super) fn module(
     width: f32,
     height: f32,
@@ -82,10 +74,6 @@ pub(super) fn module(
         .height(Size::Fixed(height))
         .radius(radius)
         .fill(Surface::Panel.bg())
-        .border(
-            sys::border::hairline(),
-            with_alpha(Surface::Panel.fg(), RIM_ALPHA),
-        )
         .clip()
         .child(content);
     match shadow() {

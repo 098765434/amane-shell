@@ -7,6 +7,10 @@
 //! glow. The drop shadow under a surface is niri's
 //! ([`layer_rules`](crate::tokens::layer_rules)): each surface is only as big
 //! as its card, so a shadow drawn here would be cut off.
+//!
+//! A surface holding many glass pieces (Quick Settings' modules) lights
+//! them all in one pass ([`rims`]): a shader pass costs the same whatever
+//! it covers, and one per module cost more than a frame.
 
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
@@ -24,6 +28,9 @@ const RIM_WIDTH: f32 = 1.5;
 const BLOOM_WIDTH: f32 = 14.0;
 /// The even glow's blur.
 const GLOW_BLUR: f32 = 5.0;
+/// How many pieces one [`rims`] pass lights at most: what the shader's
+/// values hold (amane gives 64 rows; three carry the light).
+pub const RIMS_PER_PASS: usize = 30;
 
 /// The light on one mode's surfaces.
 struct Light {
@@ -67,19 +74,80 @@ pub fn apply(surface: Rectangle, radius: f32) -> Rectangle {
         return surface;
     };
 
+    // the whole surface is the one piece; its glow is the inner shadow's
+    let mut values = header(light, 1, 0.0);
+    values.push([0.0, 0.0, 0.0, 0.0]);
+    values.push([radius, 1.0, 0.0, 0.0]);
+    surface.shader(shader).shader_values(values)
+}
+
+/// One glass piece among many on a surface: where it is on the surface,
+/// how round, and how far it has faded in.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Rim {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub radius: f32,
+    pub opacity: f32,
+}
+
+/// A clear layer the size of its parent that lights every piece in `rims`
+/// at once, to draw over them. More than [`RIMS_PER_PASS`] pieces take a
+/// layer each; see [`rim_layers`].
+pub fn rims(rims: &[Rim]) -> Rectangle {
+    let layer = Rectangle::new()
+        .width(amane::Parent)
+        .height(amane::Parent)
+        .fill(Color::TRANSPARENT);
+    let Some(shader) = shader() else {
+        return layer;
+    };
+    let light = match theme::mode() {
+        Mode::Light => &LIGHT,
+        Mode::Dark => &DARK,
+    };
+    let rims = &rims[..rims.len().min(RIMS_PER_PASS)];
+    // the glow is drawn by the shader here: an inner shadow per piece
+    // would be a pass each again
+    let mut values = header(light, rims.len(), GLOW_BLUR * 2.0);
+    for rim in rims {
+        values.push([rim.x, rim.y, rim.width, rim.height]);
+        values.push([rim.radius, rim.opacity.clamp(0.0, 1.0), 0.0, 0.0]);
+    }
+    layer.shader(shader).shader_values(values)
+}
+
+/// The layers that light all of `rims`, [`RIMS_PER_PASS`] to a layer.
+pub fn rim_layers(rims: &[Rim]) -> Vec<Rectangle> {
+    rims.chunks(RIMS_PER_PASS).map(rims_layer).collect()
+}
+
+fn rims_layer(chunk: &[Rim]) -> Rectangle {
+    rims(chunk)
+}
+
+/// The shader's first three rows: how many pieces, and `light`'s strengths.
+/// `glow_width` 0 leaves the glow to an inner shadow.
+fn header(light: &Light, count: usize, glow_width: f32) -> Vec<[f32; 4]> {
     let channel = |value: u8| f32::from(value) / 255.0;
     let rim = light.rim;
-
-    surface.shader(shader).shader_values(vec![
-        [radius, RIM_WIDTH, channel(rim.alpha()), light.bloom],
-        [BLOOM_WIDTH, light.far, 0.0, 0.0],
+    let glow = if glow_width > 0.0 {
+        channel(light.glow.alpha())
+    } else {
+        0.0
+    };
+    vec![
+        [count as f32, RIM_WIDTH, channel(rim.alpha()), light.bloom],
+        [BLOOM_WIDTH, light.far, glow, glow_width],
         [
             channel(rim.red()),
             channel(rim.green()),
             channel(rim.blue()),
             0.0,
         ],
-    ])
+    ]
 }
 
 /// The shader, written once into the runtime dir: amane loads shaders from

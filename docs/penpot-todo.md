@@ -14,7 +14,6 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `sys.motion.duration.sheet`, `sys.motion.sheet.bounce` | 500 ms, 0.1 | `components/motion.rs` (`SHEET`) |
 | `sys.motion.duration.fade`, `sys.motion.duration.exit` | 200 ms, 300 ms | `components/motion.rs` (`FADE`, `EXIT`) |
 | `sys.motion.duration.hover`, `.press`, `.open`, `.close` | 120 ms, 220 ms, 220 ms, 160 ms | `components/motion.rs` (`HOVER`, `PRESS`, `OPEN`, `CLOSE`) |
-| `sys.color.glass.module-rim` | the panel's `fg` at 0.14 | `quick_settings/tile.rs` (`RIM_ALPHA`) |
 | `sys.motion.enter-scale` | 0.9 | `components/motion.rs` (`ENTER_SCALE`: a card's or control's entrance) |
 | `sys.motion.press-scale` | 0.96 | `buttons/mod.rs` (`PRESS_SCALE`; `quick.press.scale` holds the same) |
 | `quick.drag.band` | 0.1 | `quick_settings/edit.rs` (`BAND`: the dead band before a held control changes cell) |
