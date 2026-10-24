@@ -326,11 +326,12 @@ pub fn surface() -> LayerWindow {
     if page == Page::Grid || slide < 0.999 {
         // the grid recedes left as a page slides in from the right; from
         // one page to another, the old page recedes in its place
+        let mut frost: Vec<InputArea> = Vec::new();
         let receding: Box<dyn Widget> = if swap != Page::Grid {
-            regions.extend(sheet_region(inset, inset, grid_w, inner));
+            frost.extend(sheet_region(inset, inset, grid_w, inner));
             boxed(sheet_layer(swap, grid_w, inner))
         } else {
-            regions.extend(grid.regions.iter().map(|area| InputArea {
+            frost.extend(grid.regions.iter().map(|area| InputArea {
                 x: area.x + inset as i32,
                 y: area.y + (inset + grid_top + shift).round() as i32,
                 ..*area
@@ -345,6 +346,17 @@ pub fn surface() -> LayerWindow {
                     .child(Stack::new(vec![grid.widget])),
             )
         };
+        let shift_x = -slide_raw * width * GRID_RECEDE;
+        let shrink = 1.0 - (1.0 - recede) * slide_raw;
+        // the frost recedes with it, and goes once it's faded half away
+        if 1.0 - slide >= glass_region::FROST_FROM {
+            regions.extend(glass_region::transformed(
+                frost,
+                shrink,
+                (width / 2.0, outer / 2.0),
+                (shift_x, 0.0),
+            ));
+        }
         layers.push(boxed(
             Rectangle::new()
                 .width(Parent)
@@ -354,8 +366,8 @@ pub fn surface() -> LayerWindow {
                 .align_child(Start, End)
                 .clip()
                 .opacity(1.0 - slide)
-                .translate(-slide_raw * width * GRID_RECEDE, 0.0)
-                .scale(1.0 - (1.0 - recede) * slide_raw)
+                .translate(shift_x, 0.0)
+                .scale(shrink)
                 .child(Stack::new(vec![receding])),
         ));
     }
@@ -368,7 +380,9 @@ pub fn surface() -> LayerWindow {
         // a page is one glass sheet the size of the grid, and the frost
         // comes in with it
         let offset = (1.0 - slide_raw) * width;
-        regions.extend(sheet_region(inset + offset, inset, grid_w, inner));
+        if slide >= glass_region::FROST_FROM {
+            regions.extend(sheet_region(inset + offset, inset, grid_w, inner));
+        }
         layers.push(boxed(
             sheet_layer(detail, grid_w, inner)
                 .opacity(slide)
@@ -383,17 +397,25 @@ pub fn surface() -> LayerWindow {
         .clip()
         .child(Stack::new(layers).width(Parent).height(Parent));
 
-    // the card fades and swells in from the bar's corner: scaled about its
-    // centre, then moved so its bottom-right corner stays put; the frost
-    // swells with it
+    // The card swells in from the bar's corner: scaled about its centre,
+    // then moved so its bottom-right corner stays put, the frost swelling
+    // with it. niri can't fade its frost, only show or hide it, so the card
+    // arrives whole (frost and modules in the same frame) rather than
+    // fading in over frost already at full strength; going, the frost goes
+    // at once and the modules fade out over the sharp desktop.
     let scale = f32::blend(quick::open::scale(), 1.0, unfolded);
     let card = content
-        .opacity(unfolded)
+        .opacity(if open { 1.0 } else { unfolded })
         .scale(scale)
         .translate((1.0 - scale) * width / 2.0, (1.0 - scale) * outer / 2.0);
+    let frost = if open {
+        glass_region::scaled(regions, scale, width, outer)
+    } else {
+        Vec::new()
+    };
     window(width, outer.round())
         .visible(true)
-        .blur_region(glass_region::scaled(regions, scale, width, outer))
+        .blur_region(frost)
         .child(card)
 }
 

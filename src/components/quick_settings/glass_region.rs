@@ -58,24 +58,35 @@ pub(super) fn rounded(
     strips
 }
 
+/// The frost shows only behind what's at least this visible: niri can't
+/// fade its frost, so frost under a control that's faded away reads as a
+/// blurred patch with nothing on it.
+pub(super) const FROST_FROM: f32 = 0.5;
+
 /// `areas` as they are once the card is drawn at `scale` about its
 /// bottom-right corner (`width`, `height` from the surface's origin), as
 /// it is while it opens and closes.
 pub(super) fn scaled(areas: Vec<InputArea>, scale: f32, width: f32, height: f32) -> Vec<InputArea> {
-    if (scale - 1.0).abs() < 0.001 {
+    transformed(areas, scale, (width, height), (0.0, 0.0))
+}
+
+/// `areas` scaled by `scale` about `origin`, then moved by `offset`: where
+/// a layer drawn with that transform puts them.
+pub(super) fn transformed(
+    areas: Vec<InputArea>,
+    scale: f32,
+    origin: (f32, f32),
+    offset: (f32, f32),
+) -> Vec<InputArea> {
+    if (scale - 1.0).abs() < 0.001 && offset.0.abs() < 0.01 && offset.1.abs() < 0.01 {
         return areas;
     }
     areas
         .into_iter()
         .map(|a| {
-            let right = width - (width - a.x as f32) * scale;
-            let bottom = height - (height - a.y as f32) * scale;
-            area(
-                right,
-                bottom,
-                a.width as f32 * scale,
-                a.height as f32 * scale,
-            )
+            let x = origin.0 + (a.x as f32 - origin.0) * scale + offset.0;
+            let y = origin.1 + (a.y as f32 - origin.1) * scale + offset.1;
+            area(x, y, a.width as f32 * scale, a.height as f32 * scale)
         })
         .collect()
 }
@@ -134,6 +145,25 @@ mod tests {
         assert_eq!(
             (half[0].x, half[0].y, half[0].width, half[0].height),
             (50, 100, 50, 100)
+        );
+    }
+
+    #[test]
+    fn frost_follows_a_moved_and_scaled_layer() {
+        let one = vec![InputArea {
+            x: 10,
+            y: 10,
+            width: 20,
+            height: 20,
+        }];
+        assert_eq!(transformed(one.clone(), 1.0, (0.0, 0.0), (0.0, 0.0)), one);
+        let moved = transformed(one.clone(), 1.0, (0.0, 0.0), (-5.0, 0.0));
+        assert_eq!((moved[0].x, moved[0].width), (5, 20));
+        // halved about (20, 20): the corner at 10 comes to 15
+        let half = transformed(one, 0.5, (20.0, 20.0), (0.0, 0.0));
+        assert_eq!(
+            (half[0].x, half[0].y, half[0].width, half[0].height),
+            (15, 15, 10, 10)
         );
     }
 

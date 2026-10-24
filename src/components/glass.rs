@@ -109,9 +109,9 @@ pub fn rims(rims: &[Rim]) -> Rectangle {
         Mode::Dark => &DARK,
     };
     let rims = &rims[..rims.len().min(RIMS_PER_PASS)];
-    // the glow is drawn by the shader here: an inner shadow per piece
-    // would be a pass each again
-    let mut values = header(light, rims.len(), GLOW_BLUR * 2.0);
+    // no glow: the shader's stand-in for the panels' inner shadow read as a
+    // band inside small modules; the lit rim, far catch and bloom carry it
+    let mut values = header(light, rims.len(), 0.0);
     for rim in rims {
         values.push([rim.x, rim.y, rim.width, rim.height]);
         values.push([rim.radius, rim.opacity.clamp(0.0, 1.0), 0.0, 0.0]);

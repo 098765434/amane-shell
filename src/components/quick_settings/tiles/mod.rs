@@ -157,14 +157,18 @@ pub(super) fn grid() -> Grid {
         };
         let frost = edit::frosted(pose, slot);
         let radius = radius_of(rect.span, slot) * pose.scale;
-        regions.extend(glass_region::rounded(
-            canvas_x + frost.x,
-            frost.y,
-            frost.width,
-            frost.height,
-            radius,
-            STEPS,
-        ));
+        // a control fading in or out has no frost under it until it's
+        // mostly there (niri can't fade frost)
+        if pose.opacity >= glass_region::FROST_FROM {
+            regions.extend(glass_region::rounded(
+                canvas_x + frost.x,
+                frost.y,
+                frost.width,
+                frost.height,
+                radius,
+                STEPS,
+            ));
+        }
         // lit as drawn: scaled about its centre, not rounded to pixels
         rims.push(Rim {
             x: canvas_x + pose.x + slot.width * (1.0 - pose.scale) / 2.0,
