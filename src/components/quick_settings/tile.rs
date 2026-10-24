@@ -26,6 +26,7 @@ use amane::{
 };
 
 use super::QS_NS;
+use super::glass_region;
 use super::grid::{Metrics, Span};
 use crate::components::buttons::{
     Actions, Pending, hovered, interactive, press_scale, state_fill, with_existing, with_state,
@@ -58,7 +59,9 @@ fn shadow() -> Option<Shadow> {
 
 /// A frosted module: the panels' tint and a soft shadow, `width` by
 /// `height` with `radius` corners, holding `content`. The compositor
-/// frosts behind it where the surface says so (see `glass_region`), and
+/// frosts behind it where the surface says so (see `glass_region`); where
+/// it draws the glass material, the tint and lit edge are its too, and
+/// the module is only the shadow and the content. Otherwise
 /// the grid lights every module's glass edge in one pass over them all
 /// (`glass::rims`): a pass per module (`glass::apply`) cost more than a
 /// frame at a dozen modules (measured: +13 ms a frame on an integrated
@@ -73,7 +76,7 @@ pub(super) fn module(
         .width(Size::Fixed(width))
         .height(Size::Fixed(height))
         .radius(radius)
-        .fill(Surface::Panel.bg())
+        .fill(tint())
         .clip()
         .child(content);
     match shadow() {
@@ -94,14 +97,27 @@ pub(super) fn sheet(
         .width(Size::Fixed(width))
         .height(Size::Fixed(height))
         .radius(radius)
-        .fill(Surface::Panel.bg())
+        .fill(tint())
         .clip()
         .child(content);
     let surface = match shadow() {
         Some(shadow) => surface.shadow(shadow),
         None => surface,
     };
-    glass::apply(surface, radius)
+    if glass_region::compositor_glass() {
+        surface
+    } else {
+        glass::apply(surface, radius)
+    }
+}
+
+/// The modules' tint, unless the compositor lays it on with the glass.
+fn tint() -> Color {
+    if glass_region::compositor_glass() {
+        Color::TRANSPARENT
+    } else {
+        Surface::Panel.bg()
+    }
 }
 
 /// One tile's motion, kept across rebuilds under its id.

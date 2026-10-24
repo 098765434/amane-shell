@@ -266,7 +266,9 @@ pub(super) fn grid() -> Grid {
     // the glass over everything: one layer lights every module's edge
     let total_w = canvas_x + width;
     let mut lit: Vec<Box<dyn Widget>> = vec![widget];
-    lit.extend(glass::rim_layers(&rims).into_iter().map(boxed));
+    if !glass_region::compositor_glass() {
+        lit.extend(glass::rim_layers(&rims).into_iter().map(boxed));
+    }
     let widget = boxed(
         Rectangle::new()
             .width(Size::Fixed(total_w))

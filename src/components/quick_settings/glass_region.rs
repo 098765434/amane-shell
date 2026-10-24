@@ -13,6 +13,12 @@ use crate::components::card::Surface;
 /// its config names one so, plain frost otherwise.
 pub(super) const MATERIAL: &str = "glass";
 
+/// Whether the compositor draws the modules' glass itself (their tint and
+/// lit edge, with the frost, on one edge): the modules then leave both out.
+pub(super) fn compositor_glass() -> bool {
+    amane::material_available(MATERIAL)
+}
+
 /// The frost behind a module drawn at (`x`, `y`), `width` by `height`, with
 /// `radius` corners, at `opacity`.
 pub(super) fn module(

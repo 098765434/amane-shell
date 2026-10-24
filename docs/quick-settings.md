@@ -167,7 +167,11 @@ the Add list, and a page's sheet. The shapes go over niri-blur-shapes, a protoco
 fork: each is a rounded rectangle in fractional surface coordinates with its own alpha, which
 niri draws through its corner-rounding shader, half a pixel inside the module's own antialiased
 edge, so no frost strays past a corner. Each also names the material `glass` and carries the
-modules' tint, for niri's liquid-glass materials. On a compositor without the protocol, amane
+modules' tint. When niri's config defines a `glass` material (`materials {}`, see niri's
+Window-Effects wiki page), niri draws the modules' tint and lit edge itself, from the real
+backdrop and on the frost's own edge: the modules then leave out their tint fill and the grid
+its rim pass (`glass_region::compositor_glass`), and a page's sheet its `glass::apply`. Without
+the material the shell draws both as before. On a compositor without the protocol, amane
 sends the shapes as an `ext-background-effect-v1` region instead: strips that step in at the
 corners, rounded inwards. Its layer rule therefore carries no corner radius, blur or shadow, only
 `xray false` (niri's blur shows the wallpaper alone otherwise); see
