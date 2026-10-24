@@ -8,7 +8,7 @@ use std::fmt::Write;
 use crate::components::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
 use crate::components::quick_settings::QS_NS;
-use crate::components::taskbar::{AUDIO_NS, BAR_NS, BLUETOOTH_NS, POWER_NS, WIFI_NS};
+use crate::components::taskbar::BAR_NS;
 use crate::theme::{Density, Mode};
 use crate::tokens::{Key, notification, sys, with_key};
 
@@ -48,8 +48,8 @@ pub fn rules() -> Vec<LayerRule> {
         LayerRule {
             namespace: BAR_NS,
             comment: String::from(
-                "Taskbar: only its xdg-popups (tooltips, a window's menu) are frosted, like\n\
-                 the panels; the bar itself is deliberately NOT blurred.",
+                "Taskbar: only its xdg-popups (tooltips, a window's menu) are frosted; the\n\
+                 bar itself is deliberately NOT blurred.",
             ),
             radius: None,
             popups: Some(popover),
@@ -67,45 +67,6 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: None,
             popups: Some(popover),
-            clear: false,
-        },
-        LayerRule {
-            namespace: WIFI_NS,
-            comment: String::from(
-                "Wi-Fi panel: a rounded frosted card anchored bottom-right, toggled by the\n\
-                      taskbar's network indicator.",
-            ),
-            radius: Some(popover),
-            popups: None,
-            clear: false,
-        },
-        LayerRule {
-            namespace: POWER_NS,
-            comment: String::from(
-                "Power panel: the same frosted card, toggled by the taskbar's battery\n\
-                      indicator.",
-            ),
-            radius: Some(popover),
-            popups: None,
-            clear: false,
-        },
-        LayerRule {
-            namespace: BLUETOOTH_NS,
-            comment: String::from(
-                "Bluetooth panel: the same frosted card, toggled by the taskbar's Bluetooth\n\
-                      indicator. Its device menu is an xdg-popup of this surface, frosted like the others.",
-            ),
-            radius: Some(popover),
-            popups: Some(popover),
-            clear: false,
-        },
-        LayerRule {
-            namespace: AUDIO_NS,
-            comment: String::from(
-                "Sound panel: the same frosted card, toggled by the taskbar's volume button.",
-            ),
-            radius: Some(popover),
-            popups: None,
             clear: false,
         },
         LayerRule {

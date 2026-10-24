@@ -8,11 +8,11 @@ Display card and a Sound card with their sliders, then the battery and more roun
 Each control can open a page of its own, and an edit mode moves, resizes, removes and adds them.
 
 It's opened from the bar's Control Center button (the slider glyph, between the battery and the
-notification bell), and closed by the same button, by Escape, or by opening any other panel. It
-shares the panels' one-open-at-a-time state (`Panel::QuickSettings`). The bar's own Sound,
-Bluetooth, Wi‑Fi and power panels are still there: a left click on their icons opens them as
-before. A right click on the volume, Bluetooth or network icon opens Quick Settings straight on
-that page.
+notification bell), and closed by the same button, by Escape, or by opening the notification
+center, whose one-open-at-a-time state it shares (`Panel::QuickSettings`). It's the only place
+for sound, Wi‑Fi, Bluetooth and power: the bar's volume, Bluetooth, network and battery icons open
+it straight on their page, and each of those pages has a **Show in Taskbar** switch for its icon
+(see [taskbar.md](taskbar.md#status-icons)).
 
 ## What's in it
 
@@ -29,7 +29,7 @@ when the machine has what it drives, as in GNOME, and the grid packs around what
 | Focus | Do Not Disturb: what's on, until when, or off | the disc switches it; the tile opens the page | Focus: For 1 Hour, Until This Evening, Until Tomorrow, the one that's on checked |
 | Dark Style, Night Light | round buttons, accent while on | switch; a right click on Night Light opens its page | Night Light: how warm |
 | Display | only with a backlight; the brightness slider between a dim and a bright glyph | drag or scroll | — |
-| Sound | the default output's level; the small glyph says how loud (off, down, up) | the small glyph mutes; drag or scroll sets the level; the chevron picks the device when there's more than one; a right click opens the page | Sound: the level, the microphone's slider (its glyph mutes it), then the output and input devices |
+| Sound | the default output's level; the small glyph says how loud (off, down, up) | the small glyph mutes; drag or scroll sets the level; the chevron or a right click opens the page | Sound: the output's level and percentage (its glyph mutes it) and its devices, then the microphone's level and its devices (with a microphone); the default device checked, a click makes another the default |
 | Battery | only with a battery; the charge and how long it lasts, the disc in the critical colour when it's low | opens its page | Battery (time left, power mode, peripherals) |
 | Round buttons | Power Mode (accent while not Balanced), Keyboard (the backlight), Background Apps (how many, in a tooltip), screenshot, lock, power off | switch; a right click opens the page; screenshot closes the card, then opens niri's screenshot UI; lock locks through logind | Power Mode: the modes; Keyboard: Off/Low/High (a slider for keyboards with many steps); Background Apps: the apps, each with a close button; Power Off: suspend, restart, power off, log out |
 
@@ -206,8 +206,7 @@ Mod+S { spawn "sh" "-c" "printf 'quick-settings\\ntoggle\\n' | nc -U -N $XDG_RUN
 
 The card takes the keyboard while it's open (`Keyboard::Exclusive`: it's modal, as Control
 Center is), so Escape works from the first moment however the card was opened, and the Wi‑Fi
-password field types without a click first. A click outside doesn't close it, the same as the
-panels.
+password field types without a click first. A click outside doesn't close it.
 
 ## Components
 
@@ -244,7 +243,8 @@ The parts are in `src/components/quick_settings/`:
     chevron and switch leave), and an optional `Switch`.
   - A hairline, then a body built for the room it has (`List` rows are the page's width,
     `list::with_row_width`), at least `MIN_PAGE_ROWS` tall.
-  - An optional link to a settings app, pinned at the bottom.
+  - Pinned at the bottom: an optional **Show in Taskbar** switch (`DetailPage::taskbar`, for the
+    bar's status icon) and an optional link to a settings app.
 - **`system_row.rs`, `tiles/`, `pages.rs`**: the controls and pages themselves. `tiles/` has one
   file per setting, holding its toggle and its page.
 
@@ -253,8 +253,6 @@ It reuses the shared components:
 - **`Slider`**: the thin slider, with `fill` and `thickness` for the cards and `inert` for
   edit mode; `Slider::large` (a control-tall track with the glyph as its knob, which can mute)
   on the pages.
-- **The panels' bodies**: `wifi::networks_in`, `bluetooth::devices_in`, `audio::device_section`,
-  `power::profile_section` and `power::peripheral_section_in`, each given the room it has.
 - **`buttons::optimistic` / `expect`**: the click shown before the service agrees, for the
   mute and play/pause glyphs as `Pending` is for the tiles.
 - **`dnd::choices`**: the timed choices, which the Do Not Disturb menu uses too.

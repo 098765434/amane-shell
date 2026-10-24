@@ -34,10 +34,6 @@ generated from (2), not hand-edited, so neither can drift.
 | Namespace | Surface |
 |---|---|
 | `amane.taskbar` | the bar (intentionally **not** blurred); its rule only frosts its xdg-popups: tooltips and a window's menu |
-| `amane.taskbar.wifi` | the Wi‑Fi panel |
-| `amane.taskbar.power` | the power panel |
-| `amane.taskbar.bluetooth` | the Bluetooth panel (its device menu is a frosted xdg-popup of it) |
-| `amane.taskbar.audio` | the Sound panel |
 | `amane.quick-settings` | Quick Settings: a clear surface that frosts its own modules through a blur region; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
 | `amane.notifications.toast` | each notification toast (one surface per banner, radius `notification.card.radius`) |
 | `amane.notifications.center` | the notification center sidebar (its Do Not Disturb menu is a frosted xdg-popup of it) |

@@ -1,22 +1,28 @@
 //! Power — GNOME's Power Mode as a round button with its page, and the
-//! battery's page (opened from the battery tile), which is the power
-//! panel's body.
+//! battery's page (opened from the battery tile): the power-profile picker
+//! and the batteries of connected peripherals. Read from the fork's
+//! `Battery` (UPower) and `PowerProfile` (power-profiles-daemon) services.
 //!
 //! As in GNOME, Power Mode is "on" while it isn't Balanced; a click goes to
 //! Balanced, or back to the mode last picked.
 
 use std::cell::RefCell;
+use std::time::Duration;
 
-use amane::{Battery, PowerProfile, Service, Widget};
+use amane::{
+    Battery, BatteryState, Column, Parent, PowerDevice, PowerProfile, ScrollArea, Service, Size,
+    Text, Widget,
+};
 
 use super::super::{Page, open};
-use crate::components::icons::power_profile_glyph;
+use crate::components::buttons::{Segment, SegmentedButton};
+use crate::components::icons::{peripheral_glyph, power_profile_glyph};
 use crate::components::layout::{boxed, caption};
 use crate::components::list::{self, List, ListItem};
-use crate::components::quick_settings::detail::DetailPage;
+use crate::components::quick_settings::detail::{DetailPage, page_width};
 use crate::components::quick_settings::tile::QuickToggle;
-use crate::components::taskbar::power;
-use crate::tokens::sys;
+use crate::components::taskbar::{Indicator, battery_color};
+use crate::tokens::{Styled, sys};
 
 const BALANCED: &str = "balanced";
 
@@ -25,9 +31,14 @@ thread_local! {
     static LAST: RefCell<String> = RefCell::new(String::from("power-saver"));
 }
 
-/// GNOME's names for the profiles, the panel's too.
-fn label(profile: &str) -> &str {
-    power::profile_label(profile)
+/// GNOME's names for the profiles.
+fn label(name: &str) -> &str {
+    match name {
+        "power-saver" => "Power Saver",
+        "balanced" => "Balanced",
+        "performance" => "Performance",
+        other => other,
+    }
 }
 
 pub(crate) fn mode_toggle() -> Option<QuickToggle> {
@@ -107,22 +118,123 @@ pub(crate) fn mode_page() -> DetailPage {
 pub(crate) fn battery_page() -> DetailPage {
     let battery = Battery::read();
     let percent = battery.percent();
-    let detail = power::battery_detail(&battery);
+    let detail = battery_detail(&battery);
     drop(battery);
 
-    let mut page =
-        DetailPage::new("amane.qs.battery.page", format!("Battery {percent}%")).body(|height| {
+    let mut page = DetailPage::new("amane.qs.battery.page", format!("Battery {percent}%"))
+        .taskbar(Indicator::Battery)
+        .body(|height| {
             let mut body = Vec::new();
             let mut left = height;
             if PowerProfile::read().present() {
-                body.push(power::profile_section());
+                body.push(profile_section());
                 left -= sys::size::control::height() + sys::space::gap::l();
             }
-            body.push(power::peripheral_section_in(left));
+            body.push(peripheral_section(left));
             body
         });
     if !detail.is_empty() {
         page = page.subtitle(detail);
     }
     page
+}
+
+/// "2 h 10 min left", "full in 45 min", "on AC" …
+pub(crate) fn battery_detail(battery: &Battery) -> String {
+    match battery.state() {
+        BatteryState::Discharging => battery
+            .time_to_empty()
+            .map(|left| format!("{} left", duration(left)))
+            .unwrap_or_else(|| String::from("on battery")),
+        BatteryState::Charging => battery
+            .time_to_full()
+            .map(|left| format!("full in {}", duration(left)))
+            .unwrap_or_else(|| String::from("charging")),
+        BatteryState::Full => String::from("full"),
+        _ if battery.on_ac() => String::from("on AC"),
+        _ => String::new(),
+    }
+}
+
+fn duration(duration: Duration) -> String {
+    let minutes = duration.as_secs() / 60;
+    match (minutes / 60, minutes % 60) {
+        (0, m) => format!("{m} min"),
+        (h, 0) => format!("{h} h"),
+        (h, m) => format!("{h} h {m} min"),
+    }
+}
+
+/// The profile picker, and why performance is held back if it is.
+fn profile_section() -> Box<dyn Widget> {
+    let profile = PowerProfile::read();
+    let active = profile.active().to_string();
+    let available = profile.available().to_vec();
+    let degraded = profile.degraded().map(String::from);
+    drop(profile);
+
+    // only what this machine offers, so a 2-profile laptop shows no "performance"
+    let segments = available
+        .iter()
+        .map(|name| Segment::new(label(name)))
+        .collect();
+    let selected = available.iter().position(|name| *name == active);
+
+    let picker = SegmentedButton::new("amane.qs.battery.profile", segments, selected)
+        .width(page_width())
+        .on_select(move |index, _| PowerProfile::set(&available[index]))
+        .build();
+
+    let mut rows = vec![boxed(picker)];
+
+    if let Some(reason) = degraded {
+        rows.push(boxed(
+            caption(format!("Performance is limited: {reason}"))
+                .color(sys::color::status::critical::text()),
+        ));
+    }
+
+    boxed(Column::new(rows).gap(sys::space::gap::s()).width(Parent))
+}
+
+/// The batteries of connected devices, scrolling in `height`.
+fn peripheral_section(height: f32) -> Box<dyn Widget> {
+    let battery = Battery::read();
+    let items: Vec<ListItem> = battery.peripherals().iter().map(peripheral_item).collect();
+    drop(battery);
+
+    boxed(
+        ScrollArea::new(
+            "amane.qs.battery.devices",
+            List::new(items)
+                .header("Devices")
+                .empty("No devices with a battery")
+                .build(),
+        )
+        .height(Size::Fixed(height.max(1.0))),
+    )
+}
+
+fn peripheral_item(device: &PowerDevice) -> ListItem {
+    let model = match device.model() {
+        "" => String::from("Unknown device"),
+        model => model.to_string(),
+    };
+    let charging = device.state() == BatteryState::Charging;
+    let percent = device.percent();
+
+    // nothing to pick, so full-strength like a selected item, but unfilled
+    ListItem::new(format!("amane.qs.battery.device.{model}"), model)
+        .leading(peripheral_glyph(device))
+        .color(sys::color::surface::panel::fg())
+        .trailing(
+            // percentages are numeric (manual §11.4)
+            Text::new(format!("{percent}%"))
+                .style(sys::r#type::numeric())
+                .color(battery_color(
+                    percent,
+                    charging,
+                    sys::color::content::secondary(),
+                )),
+        )
 }

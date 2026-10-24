@@ -3,8 +3,8 @@
 A custom Wayland desktop bar for the [niri](https://github.com/YaLTeR/niri) compositor, built on the
 [amane](https://github.com/098765434/amane) shell library (a fork). macOS-flavoured: a clean
 opaque bar with rounded pills and generous spacing — compact and ambient in normal use, expanding
-into an interactive dock while niri's overview is open. Its floating surfaces (context menus, the
-panels, notification toasts and the notification center) are the frosted, compositor-blurred
+into an interactive dock while niri's overview is open. Its floating surfaces (context menus, Quick
+Settings, notification toasts and the notification center) are the frosted, compositor-blurred
 ones — the bar itself is not.
 
 > **Requires a forked niri** for its signature feature (the overview smooth-expand needs live
@@ -20,8 +20,9 @@ ones — the bar itself is not.
   - **Overview smooth-expand**: the bar height eases between compact and tall in lockstep with
     niri's overview zoom, driven by the amane `Gestures::overview_progress()` value (requires the
     [niri gesture-IPC fork](https://github.com/098765434/niri)).
-- **Panels** — the status items open frosted cards: Sound (volume and devices), Bluetooth
-  (connect, pair, forget), Wi‑Fi (scan and join) and power (battery, power profile, peripherals).
+- **Status icons** — volume, Bluetooth, network and battery, each optional and opening its
+  Quick Settings page: Sound (volume, microphone and devices), Bluetooth (connect, pair, forget),
+  Wi‑Fi (scan and join) and Battery (power profile, peripherals).
 - **Context menus** ([docs/context-menu.md](docs/context-menu.md)) — right-click a window pill for focus/close/fullscreen/float/move-to-workspace,
   built on amane's xdg-popup support (nested submenus, outside-click dismiss).
 - **Notifications** ([docs/notifications.md](docs/notifications.md)) — the shell is the
@@ -73,7 +74,7 @@ the library together, check `amane` out beside this repo and add a git-ignored
 
 ## niri layer-rules (for the frosted popups)
 
-The shell's **floating** surfaces (context menus, the panels, Quick Settings, notification toasts and the center) get their blur + corner
+The shell's **floating** surfaces (context menus, Quick Settings, notification toasts and the center) get their blur + corner
 rounding from matching `layer-rule` blocks in your niri config. The bar itself is opaque and needs
 no rule. `niri-layer-rule.kdl` holds those blocks, generated from the design tokens
 (`cargo run -q -- layer-rules > niri-layer-rule.kdl`), so the blur's corners follow the cards'
@@ -110,8 +111,8 @@ src/
   theme.rs                      runtime inputs: mode, accent, density, text scale
   tokens/                       Penpot token resolver and the manual's checks
   components/
-    taskbar/                    the bar (mod.rs), its panels (panel.rs: audio, bluetooth,
-                                wifi, power) and the clock
+    taskbar/                    the bar (mod.rs), its optional status icons (indicators.rs),
+                                the shared overlay state (panel.rs) and the clock
     context_menu/               reusable nested context menu on xdg-popups
     notifications/              toasts, the notification center and Do Not Disturb
     buttons/                    push, icon and segmented buttons, and a switch

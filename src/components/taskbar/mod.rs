@@ -11,12 +11,9 @@
 //! the root rectangle), rounded pills, and generous spacing. Everything is
 //! driven by the Penpot tokens in `design-tokens/tokens.json` via [`tokens`].
 
-pub(crate) mod audio;
-pub(crate) mod bluetooth;
 mod clock;
+mod indicators;
 mod panel;
-pub(crate) mod power;
-pub(crate) mod wifi;
 
 use std::path::PathBuf;
 
@@ -49,12 +46,10 @@ use crate::services::rfkill::Rfkill;
 use crate::tokens::{Styled, bar, sys};
 
 pub(crate) use clock::Clock;
+pub(crate) use indicators::Indicator;
 pub(crate) use panel::{Panel, close, dismissable, is_open, overlay, popover_margin, toggle};
 
-pub use audio::{AUDIO_NS, panel as audio_panel};
-pub use bluetooth::{BLUETOOTH_NS, panel as bluetooth_panel};
-pub use power::{POWER_NS, panel as power_panel};
-pub use wifi::{WIFI_NS, panel as wifi_panel};
+pub use indicators::ipc;
 
 /// The taskbar's layer-surface namespace. The niri `layer-rule` matches this
 /// for blur + corner rounding, and menus opened from a window pill hang under
@@ -436,6 +431,9 @@ fn open_window_menu(id: u64, floating: bool) {
 // ───── right: status cluster ─────────────────────────────────────────────────
 
 fn volume_module() -> Box<dyn Widget> {
+    if !Indicator::Volume.shown() {
+        return nothing();
+    }
     let audio = Audio::read();
     let muted = audio.muted();
     let volume = audio.volume();
@@ -459,8 +457,7 @@ fn volume_module() -> Box<dyn Widget> {
             .on_scroll(move |scroll: Scroll| {
                 Audio::set_volume(slider::scrolled(volume, scroll, slider::STEP))
             })
-            .on_press(|| panel::toggle(Panel::Audio))
-            .on_secondary(|| quick_settings::open(Page::Sound))
+            .on_press(|| quick_settings::open(Page::Sound))
             .tooltip(BAR_NS, tip)
             .build(),
     )
@@ -470,7 +467,7 @@ fn bluetooth_indicator() -> Box<dyn Widget> {
     let bluetooth = Bluetooth::read();
 
     // no adapter, nothing to control
-    if !bluetooth.available() {
+    if !bluetooth.available() || !Indicator::Bluetooth.shown() {
         return nothing();
     }
 
@@ -485,13 +482,15 @@ fn bluetooth_indicator() -> Box<dyn Widget> {
     };
     boxed(
         bar_icon("amane.bar.bluetooth", glyph, status_color(connected))
-            .on_press(|| panel::toggle(Panel::Bluetooth))
-            .on_secondary(|| quick_settings::open(Page::Bluetooth))
+            .on_press(|| quick_settings::open(Page::Bluetooth))
             .build(),
     )
 }
 
 fn network_indicator() -> Box<dyn Widget> {
+    if !Indicator::Network.shown() {
+        return nothing();
+    }
     let net = Network::read();
     let link = net.link();
     let strength = net.strength();
@@ -509,8 +508,7 @@ fn network_indicator() -> Box<dyn Widget> {
     boxed(
         // grey like its neighbours: the glyph already shows the link
         bar_icon("amane.bar.network", glyph, sys::color::content::secondary())
-            .on_press(|| panel::toggle(Panel::Wifi))
-            .on_secondary(|| quick_settings::open(Page::Wifi))
+            .on_press(|| quick_settings::open(Page::Wifi))
             .build(),
     )
 }
@@ -518,7 +516,7 @@ fn network_indicator() -> Box<dyn Widget> {
 fn battery_module() -> Box<dyn Widget> {
     let battery = Battery::read();
 
-    if !battery.present() {
+    if !battery.present() || !Indicator::Battery.shown() {
         return nothing();
     }
 
@@ -542,7 +540,7 @@ fn battery_module() -> Box<dyn Widget> {
 
     boxed(
         bar_icon("amane.bar.battery", battery_glyph(pct, on_ac), color)
-            .on_press(|| panel::toggle(Panel::Power))
+            .on_press(|| quick_settings::open(Page::Power))
             .tooltip(BAR_NS, tip)
             .build(),
     )

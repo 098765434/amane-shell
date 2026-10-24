@@ -1,9 +1,10 @@
 //! Sound — Control Center's Sound card: GNOME's output slider (the glyph
-//! mutes; the chevron picks the device when there's more than one) and,
-//! while something records, the microphone's under it, as in GNOME. Its
-//! page is the device lists from the Sound panel.
+//! mutes; the chevron opens the page) and its page: the output's and the
+//! microphone's levels, each with the devices to pick from, the default
+//! checked. Read from the fork's `Audio` service, which follows the sound
+//! server live.
 
-use amane::{Audio, Column, Parent, ScrollArea, Service, Size, Widget};
+use amane::{Audio, AudioDevice, Column, Parent, ScrollArea, Service, Size, Text, Widget};
 
 use super::super::grid::Span;
 use super::super::slider_card::{self, SliderRow};
@@ -13,12 +14,13 @@ use crate::components::buttons::{IconButton, Shape, Style, expect, optimistic};
 use crate::components::icons::{
     ICON_CHEVRON_RIGHT, ICON_MIC, ICON_MIC_OFF, ICON_VOLUME_DOWN, ICON_VOLUME_OFF, audio_glyph,
 };
-use crate::components::layout::{boxed, caption};
+use crate::components::layout::{boxed, caption, split_row};
+use crate::components::list::{self, List, ListItem};
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::detail::page_width;
 use crate::components::slider::Slider;
-use crate::components::taskbar::audio;
-use crate::tokens::sys;
+use crate::components::taskbar::Indicator;
+use crate::tokens::{Styled, sys};
 
 pub(in crate::components::quick_settings) fn cell(
     span: Span,
@@ -38,7 +40,7 @@ pub(in crate::components::quick_settings) fn cell(
 
     // the small glyph before the track mutes, and says how loud it is
     let glyph = level_glyph(muted, volume, audio_glyph(kind, false));
-    let mut output = SliderRow::new("Sound", glyph, audio_glyph(kind, false), move |width| {
+    let output = SliderRow::new("Sound", glyph, audio_glyph(kind, false), move |width| {
         Slider::new(volume, width)
             .dimmed(muted)
             .inert(inert)
@@ -47,18 +49,17 @@ pub(in crate::components::quick_settings) fn cell(
     .leading(mute_button(MUTE_ID, glyph, inert, move || {
         expect(MUTE_ID, !muted);
         Audio::toggle_mute();
-    }));
-    if outputs > 1 {
-        output = output.trailing(
-            IconButton::new("amane.qs.volume.devices", ICON_CHEVRON_RIGHT)
-                .style(Style::Plain)
-                .shape(Shape::Round)
-                .color(sys::color::content::secondary())
-                .disabled(inert)
-                .on_press(|| open(Page::Sound))
-                .build(),
-        );
-    }
+    }))
+    // the page has the microphone and the devices
+    .trailing(
+        IconButton::new("amane.qs.volume.devices", ICON_CHEVRON_RIGHT)
+            .style(Style::Plain)
+            .shape(Shape::Round)
+            .color(sys::color::content::secondary())
+            .disabled(inert)
+            .on_press(|| open(Page::Sound))
+            .build(),
+    );
     // a right click opens the page, as on a tile
     Some(
         slider_card::card(output, span)
@@ -79,6 +80,7 @@ fn level_glyph(muted: bool, volume: u8, loud: char) -> char {
 }
 
 const MUTE_ID: &str = "amane.qs.volume.mute";
+const OUTPUT_MUTE_ID: &str = "amane.qs.sound.mute.output";
 const MIC_MUTE_ID: &str = "amane.qs.microphone.mute";
 
 /// The glyph before a track, which mutes.
@@ -96,45 +98,89 @@ fn mute_button(
         .build()
 }
 
+/// One side's level: what it is and how loud over a slider whose glyph
+/// mutes.
+struct Level {
+    title: &'static str,
+    glyph: char,
+    volume: u8,
+    muted: bool,
+    mute_id: &'static str,
+    toggle_mute: fn(),
+    set_volume: fn(u8),
+}
+
+impl Level {
+    fn build(self) -> Box<dyn Widget> {
+        // percentages are numeric (manual §11.4)
+        let percent = Text::new(format!("{}%", self.volume))
+            .style(sys::r#type::numeric())
+            .color(sys::color::content::secondary());
+        boxed(
+            Column::new(vec![
+                boxed(split_row(caption(self.title), vec![boxed(percent)])),
+                boxed(
+                    Slider::new(self.volume, page_width())
+                        .large(self.glyph)
+                        .dimmed(self.muted)
+                        .on_icon_press(self.mute_id, self.toggle_mute)
+                        .on_value_change(self.set_volume)
+                        .build(),
+                ),
+            ])
+            .gap(sys::space::gap::xs())
+            .width(Parent),
+        )
+    }
+}
+
 pub(in crate::components::quick_settings) fn page() -> DetailPage {
     let audio = Audio::read();
-    let volume = audio.volume();
-    let muted = audio.muted();
-    let has_input = !audio.inputs().is_empty();
-    let mic_volume = audio.microphone_volume();
-    let mic_muted = audio.microphone_muted();
+    let output = Level {
+        title: "Output",
+        glyph: if audio.muted() {
+            ICON_VOLUME_OFF
+        } else {
+            audio_glyph(audio.output_kind(), false)
+        },
+        volume: audio.volume(),
+        muted: audio.muted(),
+        mute_id: OUTPUT_MUTE_ID,
+        toggle_mute: Audio::toggle_mute,
+        set_volume: Audio::set_volume,
+    };
+    let microphone = (!audio.inputs().is_empty()).then(|| Level {
+        title: "Microphone",
+        glyph: if audio.microphone_muted() {
+            ICON_MIC_OFF
+        } else {
+            ICON_MIC
+        },
+        volume: audio.microphone_volume(),
+        muted: audio.microphone_muted(),
+        mute_id: MIC_MUTE_ID,
+        toggle_mute: Audio::toggle_microphone_mute,
+        set_volume: Audio::set_microphone_volume,
+    });
+    let outputs = audio.outputs().to_vec();
+    let inputs = audio.inputs().to_vec();
     drop(audio);
 
     let page = DetailPage::new("amane.qs.sound.page", "Sound")
-        .subtitle(if muted {
+        .subtitle(if output.muted {
             String::from("Muted")
         } else {
-            format!("{volume}%")
+            format!("{}%", output.volume)
         })
+        .taskbar(Indicator::Volume)
         .body(move |height| {
-            let width = page_width();
-            let mut sections: Vec<Box<dyn Widget>> = Vec::new();
-            // the microphone's level, as Control Center's Sound module
-            // shows it while something records
-            if has_input {
-                let glyph = if mic_muted { ICON_MIC_OFF } else { ICON_MIC };
-                sections.push(boxed(
-                    Column::new(vec![
-                        boxed(caption("Microphone")),
-                        boxed(
-                            Slider::new(mic_volume, width)
-                                .large(glyph)
-                                .dimmed(mic_muted)
-                                .on_icon_press(MIC_MUTE_ID, Audio::toggle_microphone_mute)
-                                .on_value_change(Audio::set_microphone_volume)
-                                .build(),
-                        ),
-                    ])
-                    .gap(sys::space::gap::xs())
-                    .width(Parent),
-                ));
+            let mut sections = vec![output.build()];
+            sections.extend(device_section(&outputs, false));
+            // a machine without a microphone has nothing to set
+            if let Some(microphone) = microphone {
+                sections.push(microphone.build());
+                sections.extend(device_section(&inputs, true));
             }
-            sections.extend([false, true].into_iter().filter_map(audio::device_section));
             vec![boxed(
                 ScrollArea::new(
                     "amane.qs.sound.devices",
@@ -146,4 +192,44 @@ pub(in crate::components::quick_settings) fn page() -> DetailPage {
             )]
         });
     settings_link(page, "Sound Settings…", "pavucontrol")
+}
+
+/// Where sound goes to (or, with `input`, comes from), the default
+/// checked; `None` with nothing to pick.
+fn device_section(devices: &[AudioDevice], input: bool) -> Option<Box<dyn Widget>> {
+    if devices.is_empty() {
+        return None;
+    }
+    let items = devices
+        .iter()
+        .map(|device| device_item(device, input))
+        .collect();
+    Some(boxed(List::new(items).build()))
+}
+
+fn device_item(device: &AudioDevice, input: bool) -> ListItem {
+    let selected = device.default();
+    let name = device.name().to_string();
+    let side = if input { "input" } else { "output" };
+
+    let mut item = ListItem::new(
+        format!("amane.qs.sound.{side}.{name}"),
+        device.description(),
+    )
+    .leading(audio_glyph(device.kind(), input))
+    .selected(selected);
+    if selected {
+        item = item.trailing(list::check());
+    }
+
+    item.on_press(move || {
+        if selected {
+            return;
+        }
+        if input {
+            Audio::set_input(&name);
+        } else {
+            Audio::set_output(&name);
+        }
+    })
 }

@@ -133,10 +133,6 @@ fn main() -> ExitCode {
 
     let mut app = App::new()
         .window(taskbar::bar)
-        .window(taskbar::audio_panel)
-        .window(taskbar::bluetooth_panel)
-        .window(taskbar::wifi_panel)
-        .window(taskbar::power_panel)
         .window(quick_settings::surface)
         .window(notifications::side_sheet)
         .window(context_menu::anchor);
@@ -174,6 +170,8 @@ fn main() -> ExitCode {
     .ipc("notifications", notifications::ipc)
     // `printf 'quick-settings\nopen\nwifi\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("quick-settings", quick_settings::ipc)
+    // `printf 'taskbar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    .ipc("taskbar", taskbar::ipc)
     .ipc("close", |_| {
         context_menu::close();
         String::from("ok")

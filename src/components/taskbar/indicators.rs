@@ -1,0 +1,117 @@
+//! Which status icons the bar shows: volume, Bluetooth, network and
+//! battery are each optional, switched from their Quick Settings page
+//! ("Show in Taskbar") or over IPC. Kept in
+//! `$XDG_STATE_HOME/amane-shell/taskbar` as the hidden ones' names, one per
+//! line; a missing file shows them all.
+
+use std::cell::RefCell;
+use std::collections::HashSet;
+
+use amane::mark_all;
+
+use crate::services::{save_state, state_file};
+
+const FILE: &str = "taskbar";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Indicator {
+    Volume,
+    Bluetooth,
+    Network,
+    Battery,
+}
+
+impl Indicator {
+    const ALL: [Indicator; 4] = [Self::Volume, Self::Bluetooth, Self::Network, Self::Battery];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Volume => "volume",
+            Self::Bluetooth => "bluetooth",
+            Self::Network => "network",
+            Self::Battery => "battery",
+        }
+    }
+
+    pub fn named(name: &str) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|indicator| indicator.name() == name)
+    }
+
+    pub fn shown(self) -> bool {
+        HIDDEN.with_borrow(|hidden| !hidden.contains(&self))
+    }
+
+    pub fn set_shown(self, shown: bool) {
+        let changed = HIDDEN.with_borrow_mut(|hidden| {
+            if shown {
+                hidden.remove(&self)
+            } else {
+                hidden.insert(self)
+            }
+        });
+        if changed {
+            HIDDEN.with_borrow(|hidden| save_state(FILE, &format(hidden)));
+            mark_all();
+        }
+    }
+}
+
+thread_local! {
+    static HIDDEN: RefCell<HashSet<Indicator>> = RefCell::new(
+        std::fs::read_to_string(state_file(FILE))
+            .map(|text| parse(&text))
+            .unwrap_or_default(),
+    );
+}
+
+fn parse(text: &str) -> HashSet<Indicator> {
+    text.lines()
+        .filter_map(|line| Indicator::named(line.trim()))
+        .collect()
+}
+
+/// In a fixed order, so the file doesn't churn.
+fn format(hidden: &HashSet<Indicator>) -> String {
+    Indicator::ALL
+        .into_iter()
+        .filter(|indicator| hidden.contains(indicator))
+        .map(|indicator| format!("{}\n", indicator.name()))
+        .collect()
+}
+
+/// `amane-shell` IPC: `taskbar (show | hide | toggle) <indicator>`.
+pub fn ipc(args: &[String]) -> String {
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    let (action, name) = match args.as_slice() {
+        [action @ ("show" | "hide" | "toggle"), name] => (*action, *name),
+        _ => {
+            return String::from(
+                "usage: taskbar (show | hide | toggle) (volume | bluetooth | network | battery)",
+            );
+        }
+    };
+    let Some(indicator) = Indicator::named(name) else {
+        return format!("unknown indicator {name}; volume, bluetooth, network or battery");
+    };
+    indicator.set_shown(match action {
+        "show" => true,
+        "hide" => false,
+        _ => !indicator.shown(),
+    });
+    String::from("ok")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_file_round_trips_and_ignores_what_it_doesnt_know() {
+        let hidden: HashSet<_> = [Indicator::Battery, Indicator::Volume].into();
+        assert_eq!(format(&hidden), "volume\nbattery\n");
+        assert_eq!(parse(&format(&hidden)), hidden);
+        assert_eq!(parse("wifi\n network \n"), [Indicator::Network].into());
+    }
+}

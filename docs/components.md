@@ -1,13 +1,13 @@
 # Shared components
 
-The building blocks the panels, the notification center and the context menu are made of. Like the
+The building blocks Quick Settings, the notification center and the context menu are made of. Like the
 [buttons](buttons.md), each is named and structured after its Material 3 counterpart and drawn in
 the shell's macOS look. They read `sys.*` tokens only, so any component can use them.
 
 | Component | File | M3 counterpart | Used for |
 |---|---|---|---|
-| `Card` | `card.rs` | [Cards](https://m3.material.io/components/cards/overview) | every panel, the notification center's sheet, context menus |
-| `TopAppBar` | `app_bar.rs` | [Top app bar](https://m3.material.io/components/app-bars/overview) (small) | the title row of each panel and of the center |
+| `Card` | `card.rs` | [Cards](https://m3.material.io/components/cards/overview) | the notification center's sheet, context menus, tooltips |
+| `TopAppBar` | `app_bar.rs` | [Top app bar](https://m3.material.io/components/app-bars/overview) (small) | the title row of each Quick Settings page and of the center |
 | `List`, `ListItem` | `list.rs` | [Lists](https://m3.material.io/components/lists/overview) | networks, Bluetooth devices, audio devices, peripherals |
 | `Divider` | `divider.rs` | [Divider](https://m3.material.io/components/divider/overview) | context-menu separators |
 | `Slider` | `slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume, Quick Settings' sliders |
@@ -37,10 +37,9 @@ content can anchor a menu.
 ## TopAppBar
 
 `TopAppBar::new(title)` has M3's slots: `.back(id, action)` (a back chevron, for a page drilled
-into, like Quick Settings'), `.navigation_icon(glyph)` (here the panel's glyph),
-`.subtitle(…)`, and `.actions(…)` at the trailing end. It uses its surface's `fg` and secondary,
-`Surface::Panel` by default, and `.color(…)` overrides the title (the power panel turns it
-critical on a low battery). Unlike M3's, it has no fill and is no taller than its content.
+into, like Quick Settings'), `.subtitle(…)`, and `.actions(…)` at the trailing end. It uses its
+surface's `fg` and secondary, `Surface::Panel` by default. Unlike M3's, it has no fill and is no
+taller than its content.
 
 ## List
 

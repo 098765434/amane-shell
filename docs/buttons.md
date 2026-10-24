@@ -39,13 +39,13 @@ unless given `.width(…)`. An `IconButton` is a control-height square. Bar item
 amane rebuilds the view every frame, so a button can't hold state of its own. Hover, and the
 switch's and segmented button's motion, are kept in tables in the module, keyed by each
 control's **id**. Ids must be unique and stable,
-for example `amane.wifi.connect` or `amane.notification.{id}.close`. While hovered, the fill
+for example `amane.qs.wifi.connect` or `amane.notification.{id}.close`. While hovered, the fill
 is `sys.color.state.hover` composited over it (`over()`). This is the state-layer rule from
 the token manual (§6.1, §11.3), and it also works on `Plain` buttons and translucent
 surfaces. Disabled buttons are drawn at 38 % opacity and take no input. Segments show the same
 hover layer, and so do clickable [list items](components.md#list).
 
-The `Switch` and `SegmentedButton` reflect a service's state the same way the panels do. A
+The `Switch` and `SegmentedButton` reflect a service's state the same way Quick Settings' tiles do. A
 click shows the new state at once, and if the service hasn't agreed within 1.5 s the control
 goes back to what the service says.
 

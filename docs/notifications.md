@@ -41,7 +41,7 @@ changes, and keeps what the list can't say: swiped toasts, hover, grace times.
 A full-height frosted sidebar at the right edge (namespace `amane.notifications.center`), M3's
 modal side sheet (`side_sheet()`). It
 springs in when the **clock** is clicked and closes with Escape, the clock, or the IPC call. It
-shares the bar panels' one-open-at-a-time state (`Panel::Notifications`). Its header shows Do Not
+shares Quick Settings' one-open-at-a-time state (`Panel::Notifications`). Its header shows Do Not
 Disturb's state, **Clear All**, and the Do Not Disturb button, which opens the timed menu.
 
 Notifications are grouped by app (`desktop-entry`, else the app name), newest group first.

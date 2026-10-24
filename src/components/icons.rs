@@ -12,7 +12,6 @@ pub(crate) const ICON_VOLUME_DOWN: char = '\u{e04d}';
 pub(crate) const ICON_LOCK: char = '\u{e897}';
 pub(crate) const ICON_CHECK: char = '\u{e5ca}';
 pub(crate) const ICON_CLOSE: char = '\u{e5cd}';
-pub(crate) const ICON_REFRESH: char = '\u{e5d5}';
 pub(crate) const ICON_REMOVE: char = '\u{e15b}';
 pub(crate) const ICON_ADD: char = '\u{e145}';
 pub(crate) const ICON_RESIZE: char = '\u{f1ce}';
@@ -63,7 +62,7 @@ const ICON_CAR: char = '\u{e531}';
 const ICON_WEBCAM: char = '\u{e04b}';
 
 /// The glyph for what a sound goes to (or, with `input`, comes from), so the
-/// bar, the Sound panel's header and its device rows all agree. Built-in
+/// bar, the Sound card and page and its device rows all agree. Built-in
 /// devices show the plain speaker / microphone.
 pub(crate) fn audio_glyph(kind: AudioKind, input: bool) -> char {
     match kind {

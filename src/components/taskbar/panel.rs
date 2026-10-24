@@ -1,38 +1,20 @@
-//! Shared scaffolding for the bar's popover panels — Wi-Fi, Bluetooth, Sound
-//! and power — and the overlay surfaces the notification center and toasts
-//! share with them.
+//! The one-open-at-a-time state Quick Settings and the notification center
+//! share, and the overlay-surface helpers they and the toasts are built on.
 //!
-//! Only one panel is open at a time: each is a frosted
-//! [`Card`](crate::components::card::Card) on its own bottom-right
-//! `LayerWindow` (`Keyboard::OnDemand`, so a panel's text field can take keys
-//! while the bar never steals focus), toggled by its bar indicator and
-//! dismissed with Escape or by toggling again. The notification center and
-//! Quick Settings share the one-open-at-a-time state.
+//! Opening one closes the other; Escape or toggling again closes it.
 
 use std::cell::Cell;
 
-use amane::{
-    Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Rectangle, Vertical, Widget, Zone,
-    mark_all,
-};
+use amane::{Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Vertical, Zone, mark_all};
 
-use super::{bluetooth, wifi};
-use crate::components::card::{Card, Surface};
-use crate::components::layout::blank;
 use crate::components::{context_menu, notifications, quick_settings};
 use crate::tokens::sys;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Panel {
-    Wifi,
-    Bluetooth,
-    Audio,
-    Power,
-    /// The notification center: not one of the bottom-right cards, but
-    /// sharing their one-open-at-a-time state.
+    /// The notification center, a sidebar at the right edge.
     Notifications,
-    /// Quick Settings: a bottom-right card of its own, see
-    /// [`quick_settings`].
+    /// Quick Settings, a bottom-right card, see [`quick_settings`].
     QuickSettings,
 }
 
@@ -62,8 +44,6 @@ fn set(next: Option<Panel>) {
     }
 
     match previous {
-        Some(Panel::Wifi) => wifi::reset(),
-        Some(Panel::Bluetooth) => bluetooth::closed(),
         Some(Panel::Notifications) => notifications::center::closed(),
         Some(Panel::QuickSettings) => quick_settings::closed(),
         _ => {}
@@ -73,7 +53,7 @@ fn set(next: Option<Panel>) {
         Some(Panel::QuickSettings) => quick_settings::opened(),
         _ => {}
     }
-    // a device menu belongs to the card it was opened from
+    // a menu belongs to the surface it was opened from
     if previous.is_some() {
         context_menu::close();
     }
@@ -116,43 +96,4 @@ pub(crate) fn popover_margin() -> Margin {
         bottom: (sys::size::panel::height() + sys::space::gap::m()) as i32,
         left: 0,
     }
-}
-
-/// The panel's surface: hidden and empty while closed, else `card()`.
-pub fn surface(
-    namespace: &'static str,
-    panel: Panel,
-    card: impl FnOnce() -> Rectangle,
-) -> LayerWindow {
-    let open = is_open(panel);
-
-    let base = LayerWindow::new()
-        .width(sys::size::popover::width())
-        .height(sys::size::popover::height())
-        .margin(popover_margin())
-        .visible(open);
-    let base = dismissable(overlay(
-        base,
-        namespace,
-        Vertical::Bottom,
-        Horizontal::Right,
-    ));
-
-    if !open {
-        return base.child(blank());
-    }
-
-    base.child(card())
-}
-
-/// The frosted card every panel draws, its sections `gap` apart.
-pub fn card(body: Vec<Box<dyn Widget>>, gap: f32) -> Rectangle {
-    // niri frosts the whole surface (its layer rule), so the card draws no
-    // blur of its own: under the root card the canvas is clear, and blurring
-    // it only costs a GPU pass per frame
-    Card::new(body)
-        .surface(Surface::Panel)
-        .glass(true)
-        .gap(gap)
-        .build()
 }

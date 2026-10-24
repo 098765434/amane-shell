@@ -100,7 +100,8 @@ pub(super) fn available(page: Page) -> bool {
 pub(super) fn left(page: Page) {
     match page {
         Page::Session => session::reset(),
-        Page::Wifi => network::forget_scan(),
+        Page::Wifi => network::left_wifi(),
+        Page::Bluetooth => bluetooth::stop_search(),
         _ => {}
     }
 }

@@ -1,15 +1,53 @@
 //! Bluetooth — GNOME's toggle (hidden without an adapter; it names the
-//! connected device, or how many) as a tile, and
-//! its page, the Bluetooth panel's device lists, searching while shown.
+//! connected device, or how many) as a tile, and its page: "My Devices"
+//! and "Other Devices", searching for new ones while shown, like the macOS
+//! menu. A click connects, disconnects or pairs; a paired device's right
+//! click can forget it. Read from the fork's `Bluetooth` service (BlueZ).
+//! Pairing only works for devices that need no PIN: the fork has no BlueZ
+//! agent to show or type one.
 
-use amane::{Bluetooth, Service};
+use std::cell::{Cell, RefCell};
+use std::time::{Duration, Instant};
+
+use amane::{
+    Bluetooth, BluetoothDevice, Column, Parent, ScrollArea, Service, Size, Widget, mark_all,
+};
 
 use super::super::{Page, QS_NS, open};
 use super::{connected_count, settings_link};
-use crate::components::icons::{ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF};
+use crate::components::context_menu::{self, ContextMenu, MenuItem};
+use crate::components::icons::{
+    ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, device_glyph,
+};
+use crate::components::layout::{boxed, caption, cursor};
+use crate::components::list::{self, List, ListItem};
+use crate::components::motion::redraw_after;
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::tile::QuickToggle;
-use crate::components::taskbar::bluetooth;
+use crate::components::taskbar::{Indicator, battery_color};
+use crate::tokens::sys;
+
+/// Registry key for the rebuilt-per-device right-click menu.
+const DEVICE_MENU_KEY: &str = "amane.qs.bluetooth.device-menu";
+
+/// How long a row says "Connecting…" before giving up on hearing back;
+/// BlueZ answers slow devices within this, or not at all.
+const PENDING_FOR: Duration = Duration::from_secs(15);
+
+/// A connect, pair or disconnect asked for but not yet seen to happen.
+struct Pending {
+    path: String,
+    // the connected state that ends it
+    connected: bool,
+    since: Instant,
+}
+
+thread_local! {
+    // discovery was started for this showing of the page
+    static SEARCHING: Cell<bool> = const { Cell::new(false) };
+
+    static PENDING: RefCell<Option<Pending>> = const { RefCell::new(None) };
+}
 
 pub(crate) fn toggle() -> Option<QuickToggle> {
     let bt = Bluetooth::read();
@@ -55,6 +93,181 @@ pub(crate) fn page() -> DetailPage {
     let page = DetailPage::new("amane.qs.bluetooth.page", "Bluetooth")
         .subtitle(subtitle)
         .switch(powered, Bluetooth::set_powered)
-        .body(|height| vec![bluetooth::devices_in(QS_NS, height)]);
+        .taskbar(Indicator::Bluetooth)
+        .body(|height| vec![devices(height)]);
     settings_link(page, "Bluetooth Settings…", "blueman-manager")
+}
+
+// ───── runtime ───────────────────────────────────────────────────────────────
+
+/// Stops the search the page started; called as the page is left.
+pub(crate) fn stop_search() {
+    if SEARCHING.replace(false) {
+        Bluetooth::stop_scan();
+    }
+}
+
+fn act(device: &BluetoothDevice) {
+    let path = device.path().to_string();
+    let connected = device.connected();
+
+    if connected {
+        Bluetooth::disconnect(&path);
+    } else if device.paired() {
+        Bluetooth::connect(&path);
+    } else {
+        Bluetooth::pair(&path);
+    }
+
+    PENDING.with(|p| {
+        *p.borrow_mut() = Some(Pending {
+            path,
+            connected: !connected,
+            since: Instant::now(),
+        })
+    });
+    // redraw once the wait is over, so a call that never answers stops saying so
+    redraw_after(PENDING_FOR);
+    mark_all();
+}
+
+/// "Connecting…" / "Disconnecting…" while `device` hasn't reached what was
+/// asked for yet.
+fn pending_label(device: &BluetoothDevice) -> Option<&'static str> {
+    PENDING.with(|p| {
+        let p = p.borrow();
+        let pending = p.as_ref()?;
+        let waiting = pending.path == device.path()
+            && pending.connected != device.connected()
+            && pending.since.elapsed() < PENDING_FOR;
+        waiting.then_some(if pending.connected {
+            "Connecting…"
+        } else {
+            "Disconnecting…"
+        })
+    })
+}
+
+fn open_device_menu(device: &BluetoothDevice) {
+    let path = device.path().to_string();
+    let connected = device.connected();
+    let snapshot = device.clone();
+
+    let menu = ContextMenu::new()
+        .item(
+            MenuItem::label(if connected { "Disconnect" } else { "Connect" })
+                .on_select(move || act(&snapshot)),
+        )
+        .separator()
+        .item(
+            MenuItem::label("Forget This Device")
+                .destructive()
+                .on_select(move || Bluetooth::forget(&path)),
+        );
+
+    context_menu::show_under(DEVICE_MENU_KEY, menu, QS_NS, cursor());
+}
+
+// ───── view ──────────────────────────────────────────────────────────────────
+
+/// The devices, scrolling in `height`, searching for new ones while shown
+/// and the radio is on.
+fn devices(height: f32) -> Box<dyn Widget> {
+    let bluetooth = Bluetooth::read();
+    let powered = bluetooth.powered();
+    let scanning = bluetooth.scanning();
+    let (mine, others): (Vec<BluetoothDevice>, Vec<BluetoothDevice>) = bluetooth
+        .devices()
+        .iter()
+        .cloned()
+        .partition(BluetoothDevice::paired);
+    drop(bluetooth);
+
+    // Started from the view rather than on open, so it also starts when the
+    // radio is switched on with the page already shown; the radio going off
+    // ends a search by itself.
+    if !powered {
+        SEARCHING.set(false);
+        return boxed(caption("Bluetooth is off"));
+    }
+    if !SEARCHING.replace(true) {
+        Bluetooth::start_scan();
+    }
+
+    device_list(mine, others, scanning, height)
+}
+
+fn device_list(
+    mine: Vec<BluetoothDevice>,
+    others: Vec<BluetoothDevice>,
+    scanning: bool,
+    height: f32,
+) -> Box<dyn Widget> {
+    // unnamed devices only show their address, which nobody can pick out
+    let others: Vec<BluetoothDevice> = others
+        .into_iter()
+        .filter(|device| device.name() != device.address())
+        .collect();
+
+    let mut sections: Vec<Box<dyn Widget>> = Vec::new();
+
+    if !mine.is_empty() {
+        sections.push(boxed(device_section("My Devices", &mine).build()));
+    }
+
+    let empty_note = if scanning {
+        "Searching…"
+    } else {
+        "No devices found"
+    };
+    sections.push(boxed(
+        device_section("Other Devices", &others)
+            .empty(empty_note)
+            .build(),
+    ));
+
+    let column = Column::new(sections)
+        .gap(sys::space::gap::xl())
+        .width(Parent);
+
+    boxed(
+        ScrollArea::new("amane.qs.bluetooth.devices", column).height(Size::Fixed(height.max(1.0))),
+    )
+}
+
+fn device_section(title: &str, devices: &[BluetoothDevice]) -> List {
+    List::new(devices.iter().map(device_item).collect()).header(title)
+}
+
+fn device_item(device: &BluetoothDevice) -> ListItem {
+    let mut item = ListItem::new(
+        format!("amane.qs.bluetooth.device.{}", device.path()),
+        device.name(),
+    )
+    .leading(device_glyph(device.icon()))
+    .selected(device.connected());
+
+    if let Some(label) = pending_label(device) {
+        item = item.trailing(caption(label));
+    } else {
+        if let Some(percent) = device.battery() {
+            // a caption, smaller than the bar's numeric percentages (manual §11.4)
+            item = item.trailing(list::trailing_text(
+                format!("{percent}%"),
+                battery_color(percent, false, sys::color::content::secondary()),
+            ));
+        }
+        if device.connected() {
+            item = item.trailing(list::check());
+        }
+    }
+
+    let pressed = device.clone();
+    item = item.on_press(move || act(&pressed));
+    // only a paired device has anything to forget
+    if device.paired() {
+        let clicked = device.clone();
+        item = item.on_secondary(move || open_device_menu(&clicked));
+    }
+    item
 }

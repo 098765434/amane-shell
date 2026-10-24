@@ -23,9 +23,11 @@
 //! surface is resized only at rest, when the grid gains or loses a row, or
 //! edit mode changes it.
 //!
-//! It shares the bar panels' one-open-at-a-time state
-//! ([`Panel::QuickSettings`]), opened from the bar's Control Center button,
-//! by right-clicking a status icon (straight to its page), or over IPC:
+//! It's the one place for sound, Wi‑Fi, Bluetooth and power: the bar's
+//! status icons (each optional, see the pages' "Show in Taskbar") open
+//! straight to their page. It shares the notification center's
+//! one-open-at-a-time state ([`Panel::QuickSettings`]), opened from the
+//! bar's Control Center button, a status icon, or over IPC:
 //! `quick-settings [toggle | open <page> | close]`. See
 //! `docs/quick-settings.md`.
 
@@ -50,9 +52,7 @@ use amane::{
 
 use crate::components::layout::{blank, boxed, pad};
 use crate::components::motion;
-use crate::components::taskbar::{
-    self, Panel, bluetooth, close, is_open, overlay, popover_margin, wifi,
-};
+use crate::components::taskbar::{self, Panel, close, is_open, overlay, popover_margin};
 use crate::tokens::quick;
 
 pub use pages::Page;
@@ -111,7 +111,7 @@ fn go(page: Page) {
     if previous == page {
         return;
     }
-    leave(previous);
+    pages::left(previous);
     // a page has no business over the canvas being edited
     if page != Page::Grid {
         edit::leave();
@@ -138,16 +138,6 @@ fn go(page: Page) {
     mark_all();
 }
 
-/// What a page started that shouldn't outlive it.
-fn leave(page: Page) {
-    match page {
-        Page::Wifi => wifi::reset(),
-        Page::Bluetooth => bluetooth::closed(),
-        _ => {}
-    }
-    pages::left(page);
-}
-
 /// Escape: lets go of a drag, then out of edit mode, back to the grid
 /// from a page, else close.
 fn escape() {
@@ -168,7 +158,7 @@ pub(crate) fn opened() {}
 /// The panel closed: its page's searches stop now; the page itself, and
 /// edit mode's canvas, stay drawn as they were while the card fades away.
 pub(crate) fn closed() {
-    leave(PAGE.get());
+    pages::left(PAGE.get());
 }
 
 /// Gone from the screen: the next opening starts on the grid, out of edit
@@ -176,7 +166,7 @@ pub(crate) fn closed() {
 fn hidden() {
     if PAGE.replace(Page::Grid) != Page::Grid {
         // what the page drew while fading away may have started a search again
-        leave(DETAIL.get());
+        pages::left(DETAIL.get());
     }
     DETAIL.set(Page::Grid);
     SWAP.set(Page::Grid);

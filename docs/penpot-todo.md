@@ -54,6 +54,10 @@ whose output is static: it can't follow the mode, so it holds one value for both
 - `menu.label.advance-ratio` is no longer read: menus measure their text now. Delete it.
 - `bar.volume.width` is no longer read: the volume is a glyph button now, its level in a tooltip.
   Delete it.
+- The bar's Wi‑Fi, Bluetooth, Sound and power panels are gone (Quick Settings has their pages), so
+  `wifi.button.width`, `wifi.icon-button.width`, `sys.size.popover.height` and
+  `sys.size.list.max-height` are no longer read. Delete them, and the `wifi` and `power`
+  component prefixes with them (`tokens::COMPONENTS`, manual §3).
 - `sys.color.accent.text` isn't read by any code yet (the report in
   `tokens check` lists it). Keep it if something is coming that needs it.
 

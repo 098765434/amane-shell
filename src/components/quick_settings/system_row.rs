@@ -5,12 +5,12 @@
 use amane::{Battery, BatteryState, Service, Windows};
 
 use super::tile::QuickToggle;
+use super::tiles::power::battery_detail;
 use super::{Page, open};
 use crate::components::icons::{ICON_LOCK, ICON_POWER, ICON_SCREENSHOT, battery_glyph};
 use crate::components::motion;
 use crate::components::taskbar::battery_low;
 use crate::components::taskbar::close;
-use crate::components::taskbar::power::battery_detail;
 use crate::services::session::Session;
 
 /// The battery, when there is one: its charge and how long it lasts.

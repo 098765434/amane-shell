@@ -3,7 +3,8 @@
 //!
 //! A back chevron and the setting's name (and what it's doing), an optional
 //! switch for it, a hairline, then its body — networks, devices, choices —
-//! and, pinned at the bottom, an optional link to the app that has the rest
+//! and, pinned at the bottom, an optional "Show in Taskbar" switch for the
+//! setting's status icon and an optional link to the app that has the rest
 //! of its settings. Every page is as tall as the grid, so the card never
 //! changes size while a page slides in (see the module docs): the body is
 //! told how much room it has.
@@ -20,6 +21,7 @@ use crate::components::divider::Divider;
 use crate::components::icons::ICON_CHEVRON_RIGHT;
 use crate::components::layout::{boxed, icon};
 use crate::components::list::{self, ListItem};
+use crate::components::taskbar::Indicator;
 use crate::tokens::{quick, sys};
 
 /// How wide a page's content is: the grid's width less the sheet's padding
@@ -41,6 +43,7 @@ pub struct DetailPage {
     subtitle: Option<String>,
     switch: Option<HeaderSwitch>,
     body: Option<Body>,
+    taskbar: Option<Indicator>,
     footer: Option<(String, Rc<dyn Fn()>)>,
 }
 
@@ -53,6 +56,7 @@ impl DetailPage {
             subtitle: None,
             switch: None,
             body: None,
+            taskbar: None,
             footer: None,
         }
     }
@@ -72,6 +76,12 @@ impl DetailPage {
     /// that), `gap.l` apart.
     pub fn body(mut self, body: impl FnOnce(f32) -> Vec<Box<dyn Widget>> + 'static) -> Self {
         self.body = Some(Box::new(body));
+        self
+    }
+
+    /// A row near the bottom that shows or hides `indicator` in the bar.
+    pub fn taskbar(mut self, indicator: Indicator) -> Self {
+        self.taskbar = Some(indicator);
         self
     }
 
@@ -113,7 +123,8 @@ impl DetailPage {
             .align_child(Start, Center)
             .child(bar.build());
 
-        let footer_h = if self.footer.is_some() { row } else { 0.0 };
+        let pinned = usize::from(self.taskbar.is_some()) + usize::from(self.footer.is_some());
+        let footer_h = row * pinned as f32;
         let body_h = (height - row - Divider::height() - gap - footer_h).max(0.0);
         let body = list::with_row_width(width, || {
             self.body.map_or_else(Vec::new, |body| body(body_h))
@@ -127,6 +138,19 @@ impl DetailPage {
             .child(Column::new(body).gap(sys::space::gap::l()).width(Parent));
 
         let mut rows = vec![boxed(header), boxed(Divider::build()), boxed(body)];
+        if let Some(indicator) = self.taskbar {
+            let shown = indicator.shown();
+            rows.push(boxed(
+                ListItem::new(format!("{}.taskbar", self.id), "Show in Taskbar")
+                    .trailing(
+                        Switch::new(format!("{}.taskbar.switch", self.id), shown)
+                            .on_toggle(move |on| indicator.set_shown(on))
+                            .build(),
+                    )
+                    .on_press(move || indicator.set_shown(!shown))
+                    .build(),
+            ));
+        }
         if let Some((label, open)) = self.footer {
             rows.push(boxed(
                 ListItem::new(format!("{}.footer", self.id), label)
