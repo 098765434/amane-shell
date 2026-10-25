@@ -38,12 +38,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "amane-kit"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "fontconfig",
+ "serde_json",
+]
+
+[[package]]
 name = "amane-shell"
 version = "0.1.0"
 dependencies = [
  "amane",
+ "amane-kit",
  "chrono",
- "fontconfig",
  "serde_json",
  "zbus",
 ]

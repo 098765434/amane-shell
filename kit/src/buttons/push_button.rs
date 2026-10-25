@@ -8,7 +8,7 @@
 use amane::Rectangle;
 
 use super::{ButtonBuilder, Shape, Style, label_row};
-use crate::components::layout::fixed_width;
+use crate::layout::fixed_width;
 use crate::tokens::{TextStyle, sys};
 
 /// A labelled button. `id` keys its hover state, so it must be unique and

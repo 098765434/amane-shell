@@ -12,8 +12,8 @@
 
 use amane::{Color, Column, Parent, Rectangle, Widget};
 
-use crate::components::glass;
-use crate::components::layout::{pad, track_cursor};
+use crate::glass;
+use crate::layout::{pad, track_cursor};
 use crate::tokens::sys;
 
 /// The surface role a card is drawn on: one `bg` / `fg` / `stroke` set, so

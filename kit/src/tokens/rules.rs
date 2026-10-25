@@ -626,20 +626,28 @@ mod tests {
             }
         }
 
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/components");
-        let mut files = Vec::new();
-        walk(&root, &mut files);
-        files
-            .into_iter()
-            .map(|f| {
+        // the shell's components, and the kit's shared ones, which belong to no component
+        let kit = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let roots = [kit.join("../src/components"), kit.join("src")];
+
+        let mut sources = Vec::new();
+        for root in roots {
+            let mut files = Vec::new();
+            walk(&root, &mut files);
+            for f in files {
                 let rel = f
                     .strip_prefix(&root)
                     .unwrap()
                     .to_string_lossy()
                     .replace('\\', "/");
-                (rel, std::fs::read_to_string(&f).unwrap())
-            })
-            .collect()
+                // the token system itself is no component
+                if rel.starts_with("tokens/") {
+                    continue;
+                }
+                sources.push((rel, std::fs::read_to_string(&f).unwrap()));
+            }
+        }
+        sources
     }
 
     #[test]

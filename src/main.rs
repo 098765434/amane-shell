@@ -1,7 +1,9 @@
 mod components;
 mod services;
-mod theme;
 mod tokens;
+
+// the theme lives in the kit, so apps share it
+use amane_kit::theme;
 
 use std::process::ExitCode;
 

@@ -10,10 +10,10 @@ use std::rc::Rc;
 
 use amane::{Center, Column, Row, Start, Text, Widget};
 
-use crate::components::buttons::IconButton;
-use crate::components::card::Surface;
-use crate::components::icons::ICON_CHEVRON_LEFT;
-use crate::components::layout::{boxed, clipped_label, split_row};
+use crate::buttons::IconButton;
+use crate::card::Surface;
+use crate::icons::ICON_CHEVRON_LEFT;
+use crate::layout::{boxed, clipped_label, split_row};
 use crate::tokens::{Styled, sys};
 
 pub struct TopAppBar {

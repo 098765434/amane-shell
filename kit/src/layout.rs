@@ -11,12 +11,12 @@ use amane::{
 
 use crate::tokens::{Styled, TextStyle, sys};
 
-pub(crate) fn boxed(widget: impl Widget + 'static) -> Box<dyn Widget> {
+pub fn boxed(widget: impl Widget + 'static) -> Box<dyn Widget> {
     Box::new(widget)
 }
 
 /// `x` either side, `y` above and below.
-pub(crate) fn pad(x: f32, y: f32) -> Padding {
+pub fn pad(x: f32, y: f32) -> Padding {
     Padding {
         top: y,
         right: x,
@@ -26,13 +26,13 @@ pub(crate) fn pad(x: f32, y: f32) -> Padding {
 }
 
 /// Nothing at all, for a slot that shows nothing this frame.
-pub(crate) fn nothing() -> Box<dyn Widget> {
+pub fn nothing() -> Box<dyn Widget> {
     boxed(Row::new(Vec::new()))
 }
 
 /// A transparent rectangle filling its parent: an empty surface's child, or
 /// a frame to align something in.
-pub(crate) fn blank() -> Rectangle {
+pub fn blank() -> Rectangle {
     Rectangle::new()
         .width(Parent)
         .height(Parent)
@@ -40,7 +40,7 @@ pub(crate) fn blank() -> Rectangle {
 }
 
 /// A transparent `side`-square slot that centers its child.
-pub(crate) fn slot(side: f32) -> Rectangle {
+pub fn slot(side: f32) -> Rectangle {
     Rectangle::new()
         .width(side)
         .height(side)
@@ -53,7 +53,7 @@ pub(crate) fn slot(side: f32) -> Rectangle {
 /// Every glyph in the shell goes through here, so they all share one font
 /// instance (weight, grade, optical size); keep picking glyphs from the same
 /// drawing family so their visual weight matches too.
-pub(crate) fn icon(glyph: char, size: f32, color: Color) -> Text {
+pub fn icon(glyph: char, size: f32, color: Color) -> Text {
     Text::new(glyph.to_string())
         .font(sys::r#type::icon())
         .size(size)
@@ -62,7 +62,7 @@ pub(crate) fn icon(glyph: char, size: f32, color: Color) -> Text {
 }
 
 /// A secondary caption: a section title, or a note like "Searching…".
-pub(crate) fn caption(text: impl Into<String>) -> Text {
+pub fn caption(text: impl Into<String>) -> Text {
     Text::new(text.into())
         .style(sys::r#type::caption())
         .color(sys::color::content::secondary())
@@ -70,7 +70,7 @@ pub(crate) fn caption(text: impl Into<String>) -> Text {
 
 /// `leading` at the start, `trailing` (`gap.s` apart) at the end, across the
 /// parent's width.
-pub(crate) fn split_row(leading: impl Widget + 'static, trailing: Vec<Box<dyn Widget>>) -> Row {
+pub fn split_row(leading: impl Widget + 'static, trailing: Vec<Box<dyn Widget>>) -> Row {
     Row::new(vec![
         boxed(leading),
         boxed(Row::new(trailing).gap(sys::space::gap::s()).align(Center)),
@@ -81,7 +81,7 @@ pub(crate) fn split_row(leading: impl Widget + 'static, trailing: Vec<Box<dyn Wi
 }
 
 /// One line of text `width` wide, elided and clipped to it.
-pub(crate) fn clipped_label(
+pub fn clipped_label(
     text: impl Into<String>,
     style: TextStyle,
     color: Color,
@@ -106,17 +106,17 @@ thread_local! {
 }
 
 /// Records the pointer's position over `rect` for [`cursor`].
-pub(crate) fn track_cursor(rect: Rectangle) -> Rectangle {
+pub fn track_cursor(rect: Rectangle) -> Rectangle {
     rect.on_move(|p: Point| CURSOR.with(|c| c.set((p.x as i32, p.y as i32))))
 }
 
 /// Where the pointer last was over a tracked surface, for anchoring a menu.
-pub(crate) fn cursor() -> (i32, i32) {
+pub fn cursor() -> (i32, i32) {
     CURSOR.with(Cell::get)
 }
 
 /// How wide `text` is in `style`, measured.
-pub(crate) fn text_width(text: &str, style: TextStyle) -> f32 {
+pub fn text_width(text: &str, style: TextStyle) -> f32 {
     fixed_width(&Text::new(text).style(style))
 }
 
@@ -124,7 +124,7 @@ pub(crate) fn text_width(text: &str, style: TextStyle) -> f32 {
 /// the spaces, the last line elided to what's left over. amane's `Text`
 /// can't centre each line of wrapped text, so a caption centred under a
 /// tile is drawn a line at a time from this.
-pub(crate) fn wrapped_lines(
+pub fn wrapped_lines(
     text: &str,
     style: TextStyle,
     width: f32,
@@ -166,7 +166,7 @@ pub(crate) fn wrapped_lines(
 }
 
 /// How tall one line of text in `style` is, measured.
-pub(crate) fn text_height(style: TextStyle) -> f32 {
+pub fn text_height(style: TextStyle) -> f32 {
     match Text::new("").style(style).height() {
         Size::Fixed(height) => height,
         Size::Parent => 0.0,
@@ -174,7 +174,7 @@ pub(crate) fn text_height(style: TextStyle) -> f32 {
 }
 
 /// A widget's fixed width; 0 for one that takes its parent's.
-pub(crate) fn fixed_width(widget: &impl Widget) -> f32 {
+pub fn fixed_width(widget: &impl Widget) -> f32 {
     match widget.width() {
         Size::Fixed(width) => width,
         Size::Parent => 0.0,
@@ -182,6 +182,6 @@ pub(crate) fn fixed_width(widget: &impl Widget) -> f32 {
 }
 
 /// The room inside a surface `outer` wide, less its `inset.l` either side.
-pub(crate) fn inner_width(outer: f32) -> f32 {
+pub fn inner_width(outer: f32) -> f32 {
     outer - sys::space::inset::l() * 2.0
 }

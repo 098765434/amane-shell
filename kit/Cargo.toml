@@ -1,0 +1,18 @@
+[package]
+name = "amane-kit"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "The controls, design tokens and theme of amane-shell, for building apps that look like the shell."
+license = "MIT"
+repository = "https://github.com/098765434/amane-shell"
+authors = ["ocbk"]
+
+[dependencies]
+# the same pinned amane as the shell, overridden the same way during co-development
+amane = { workspace = true }
+serde_json = "1.0"
+fontconfig = "0.11"
+
+[build-dependencies]
+serde_json = "1.0"

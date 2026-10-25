@@ -89,9 +89,9 @@
               fileset = lib.fileset.unions [
                 ./Cargo.toml
                 ./Cargo.lock
-                ./build.rs
                 ./rustfmt.toml
                 ./src
+                ./kit
                 ./design-tokens
                 ./tests
                 ./niri-layer-rule.kdl

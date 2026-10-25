@@ -15,9 +15,9 @@ use std::rc::Rc;
 
 use amane::{Center, Color, Column, Parent, Rectangle, Row, Size, Start, Text, Widget};
 
-use crate::components::buttons::{Actions, interactive, state_fill};
-use crate::components::icons::ICON_CHECK;
-use crate::components::layout::{boxed, caption, clipped_label, icon, pad, split_row};
+use crate::buttons::{Actions, interactive, state_fill};
+use crate::icons::ICON_CHECK;
+use crate::layout::{boxed, caption, clipped_label, icon, pad, split_row};
 use crate::tokens::{Styled, sys};
 
 thread_local! {
@@ -28,7 +28,7 @@ thread_local! {
 /// Builds `f` with every row in it `width` wide (the headline is elided to
 /// what's left after the trailing items), for a surface that isn't a
 /// popover's width.
-pub(crate) fn with_row_width<R>(width: f32, f: impl FnOnce() -> R) -> R {
+pub fn with_row_width<R>(width: f32, f: impl FnOnce() -> R) -> R {
     let previous = ROW_WIDTH.replace(Some(width));
     let out = f();
     ROW_WIDTH.set(previous);

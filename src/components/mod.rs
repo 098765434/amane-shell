@@ -17,7 +17,8 @@
 //!   search, category pills and a grid of the installed apps.
 //!
 //! The building blocks they share read `sys.*` only, so any component can
-//! use them. Like the buttons, each is named and structured after its
+//! use them. Most live in the kit (`amane-kit`), so apps can use them too,
+//! and are re-exported here under their old paths. Like the buttons, each is named and structured after its
 //! Material 3 counterpart and drawn in the shell's macOS look:
 //!
 //! - [`card`] — M3's card: a filled or outlined surface, optionally frosted.
@@ -52,33 +53,19 @@
 //! - [`edge_reveal`] — a surface hiding at a screen edge until the pointer
 //!   touches it.
 
-pub mod app_bar;
-pub mod app_icon;
 pub mod battery;
-pub mod buttons;
-pub mod card;
-pub mod color;
 pub mod context_menu;
-pub mod divider;
 pub mod dock;
-pub mod edge_reveal;
-pub mod flow;
-pub mod glass;
-pub mod glass_region;
-pub mod icons;
-pub mod kinetic;
 pub mod launcher;
-pub mod layout;
-pub mod list;
-pub mod motion;
 pub mod notifications;
-pub mod pager;
 pub mod panel;
 pub mod quick_settings;
-pub mod scroll_view;
 pub mod search_field;
-pub mod slider;
 pub mod status_bar;
 pub mod text_edit;
-pub mod tooltip;
 pub mod workspace_menu;
+
+pub use amane_kit::{
+    app_bar, app_icon, buttons, card, color, divider, edge_reveal, flow, glass, glass_region, icons,
+    kinetic, layout, list, motion, pager, scroll_view, slider, tooltip,
+};

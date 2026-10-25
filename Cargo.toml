@@ -16,20 +16,14 @@ name = "amane-shell"
 path = 'src/main.rs'
 
 [dependencies]
-# amane is consumed as a pinned git-dependency on the maintained fork (not a
-# submodule / path dep): reproducible for published builds, while a git-ignored
-# `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
-# sibling checkout during local co-development. See README.
-amane = { git = "https://github.com/098765434/amane", rev = "c0291845bfb34dcddb3695bd98364c6b33fe6c07" }
+# pinned in [workspace.dependencies], shared with the kit
+amane = { workspace = true }
+amane-kit = { path = "kit" }
 serde_json = "1.0"
 # for the one bus call that hands back a file descriptor (logind's Inhibit),
 # which amane's Bus can't carry; the same zbus amane already pulls in
 zbus = "5.19.0"
-fontconfig = "0.11"
 chrono = "0.4"
-
-[build-dependencies]
-serde_json = "1.0"
 
 [profile.dev]
 debug = "line-tables-only"
@@ -40,3 +34,11 @@ debug = false
 incremental = false
 
 [workspace]
+members = ["kit"]
+
+[workspace.dependencies]
+# amane is consumed as a pinned git-dependency on the maintained fork (not a
+# submodule / path dep): reproducible for published builds, while a git-ignored
+# `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
+# sibling checkout during local co-development. See README.
+amane = { git = "https://github.com/098765434/amane", rev = "c0291845bfb34dcddb3695bd98364c6b33fe6c07" }

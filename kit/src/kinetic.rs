@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 use amane::{Animation, Easing, Scroll, ScrollSource};
 
-use crate::components::motion;
+use crate::motion;
 
 /// A gesture whose fingers haven't been heard of for this long has ended,
 /// for a compositor that doesn't say when they lift.

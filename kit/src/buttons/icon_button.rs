@@ -9,7 +9,7 @@
 use amane::Rectangle;
 
 use super::{ButtonBuilder, Shape, Style};
-use crate::components::icons::{Glyph, glyph};
+use crate::icons::{Glyph, glyph};
 use crate::tokens::sys;
 
 /// A glyph button. `id` keys its hover state, so it must be unique and

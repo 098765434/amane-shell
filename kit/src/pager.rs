@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 use amane::{Animation, Easing, Scroll, ScrollSource};
 
-use crate::components::kinetic::{Axis, Tracker, banded};
+use crate::kinetic::{Axis, Tracker, banded};
 
 /// How a pager moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -198,7 +198,7 @@ fn last(count: usize) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::components::kinetic::STALE;
+    use crate::kinetic::STALE;
 
     /// Paging that arrives at once.
     fn still() -> PagerMotion {

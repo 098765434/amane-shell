@@ -17,9 +17,8 @@ use std::time::{Duration, Instant};
 
 use amane::{ConstraintAdjustment, Gravity, Popup, PopupAnchor, Text, request_frame};
 
-use crate::components::card::{Card, Surface};
-use crate::components::layout::{blank, boxed, cursor, text_height, text_width};
-use crate::components::status_bar::BAR_NS;
+use crate::card::{Card, Surface};
+use crate::layout::{blank, boxed, cursor, text_height, text_width};
 use crate::tokens::{Styled, sys};
 
 /// The tooltip's xdg-popup namespace.
@@ -54,7 +53,7 @@ thread_local! {
 
 /// Control `id`, on the surface `parent`, is hovered and would show `text`.
 /// Call it every frame the control is built while hovered.
-pub(crate) fn offer(id: &str, parent: &'static str, text: impl Into<String>) {
+pub fn offer(id: &str, parent: &'static str, text: impl Into<String>) {
     let text = text.into();
     STATE.with_borrow_mut(|state| {
         if state.suppressed.as_deref() == Some(id) {
@@ -79,7 +78,7 @@ pub(crate) fn offer(id: &str, parent: &'static str, text: impl Into<String>) {
 }
 
 /// The pointer left control `id`: hides its tooltip, if it's the one shown.
-pub(crate) fn dismiss(id: &str) {
+pub fn dismiss(id: &str) {
     STATE.with_borrow_mut(|state| {
         if state.suppressed.as_deref() == Some(id) {
             state.suppressed = None;
@@ -89,7 +88,7 @@ pub(crate) fn dismiss(id: &str) {
 }
 
 /// Control `id` was clicked: hides its tooltip until the pointer leaves it.
-pub(crate) fn suppress(id: &str) {
+pub fn suppress(id: &str) {
     STATE.with_borrow_mut(|state| {
         state.suppressed = Some(id.to_string());
         hide(state, id);
@@ -165,7 +164,8 @@ fn hidden() -> Popup {
     Popup::new(TOOLTIP_NS)
         .size(1, 1)
         .anchor_rect(0, 0, 1, 1)
-        .parent(BAR_NS)
+        // a hidden popup is never opened, so it needs no real parent
+        .parent("")
         .visible(false)
         .child(blank())
 }
@@ -183,15 +183,15 @@ mod tests {
 
     #[test]
     fn offering_again_keeps_the_delay_and_updates_the_text() {
-        offer("a", BAR_NS, "Volume 40%");
+        offer("a", "amane.bar", "Volume 40%");
         let (_, _, since) = shown().unwrap();
 
-        offer("a", BAR_NS, "Volume 45%");
+        offer("a", "amane.bar", "Volume 45%");
         let (id, text, again) = shown().unwrap();
         assert_eq!((id.as_str(), text.as_str()), ("a", "Volume 45%"));
         assert_eq!(since, again);
 
-        offer("b", BAR_NS, "Battery 80%");
+        offer("b", "amane.bar", "Battery 80%");
         let (id, _, other) = shown().unwrap();
         assert_eq!(id, "b");
         assert!(other >= since);
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn dismissing_another_control_keeps_the_tooltip() {
-        offer("a", BAR_NS, "Volume 40%");
+        offer("a", "amane.bar", "Volume 40%");
         dismiss("b");
         assert!(shown().is_some());
 
@@ -209,15 +209,15 @@ mod tests {
 
     #[test]
     fn a_click_hides_the_tooltip_until_the_pointer_leaves() {
-        offer("a", BAR_NS, "Volume 40%");
+        offer("a", "amane.bar", "Volume 40%");
         suppress("a");
         assert!(shown().is_none());
 
-        offer("a", BAR_NS, "Volume 40%");
+        offer("a", "amane.bar", "Volume 40%");
         assert!(shown().is_none());
 
         dismiss("a");
-        offer("a", BAR_NS, "Volume 40%");
+        offer("a", "amane.bar", "Volume 40%");
         assert!(shown().is_some());
     }
 }

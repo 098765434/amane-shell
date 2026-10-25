@@ -11,23 +11,23 @@
 
 use amane::{BlurShape, Color, Rectangle};
 
-use crate::components::card::Surface;
-use crate::components::glass;
+use crate::card::Surface;
+use crate::glass;
 
 // TODO(token): `sys.glass.material` once Penpot has it (manual §1.1).
 /// The compositor's material the glass asks for: niri's liquid glass where
 /// its config names one so, plain frost otherwise.
-pub(crate) const MATERIAL: &str = "glass";
+pub const MATERIAL: &str = "glass";
 
 /// Whether the compositor draws the glass itself (its tint and lit edge,
 /// with the frost, on one edge): the surface then leaves both out.
-pub(crate) fn compositor_glass() -> bool {
+pub fn compositor_glass() -> bool {
     amane::material_available(MATERIAL)
 }
 
 /// The frost behind a piece of glass drawn at (`x`, `y`), `width` by
 /// `height`, with `radius` corners, at `opacity`.
-pub(crate) fn module(
+pub fn module(
     x: f32,
     y: f32,
     width: f32,
@@ -43,7 +43,7 @@ pub(crate) fn module(
 
 /// What the glass drawn in the surface is tinted: the panels' tint, unless
 /// the compositor lays it on with the frost.
-pub(crate) fn tint() -> Color {
+pub fn tint() -> Color {
     if compositor_glass() {
         Color::TRANSPARENT
     } else {
@@ -53,7 +53,7 @@ pub(crate) fn tint() -> Color {
 
 /// `surface`, a piece of glass with `radius` corners, with the lit edge the
 /// compositor would otherwise draw.
-pub(crate) fn lit(surface: Rectangle, radius: f32) -> Rectangle {
+pub fn lit(surface: Rectangle, radius: f32) -> Rectangle {
     if compositor_glass() {
         surface
     } else {
@@ -63,7 +63,7 @@ pub(crate) fn lit(surface: Rectangle, radius: f32) -> Rectangle {
 
 /// `shapes` scaled by `scale` about `origin`, then moved by `offset`: where
 /// a layer drawn with that transform puts them.
-pub(crate) fn transformed(
+pub fn transformed(
     shapes: Vec<BlurShape>,
     scale: f32,
     origin: (f32, f32),
@@ -76,7 +76,7 @@ pub(crate) fn transformed(
 }
 
 /// `shapes` under a layer at `opacity`.
-pub(crate) fn faded(shapes: Vec<BlurShape>, opacity: f32) -> Vec<BlurShape> {
+pub fn faded(shapes: Vec<BlurShape>, opacity: f32) -> Vec<BlurShape> {
     shapes
         .into_iter()
         .map(|shape| shape.fade(opacity))

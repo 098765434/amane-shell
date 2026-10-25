@@ -7,7 +7,7 @@
 
 use amane::{Color, Rectangle, Size, Stack, Widget};
 
-use crate::components::layout::boxed;
+use crate::layout::boxed;
 
 /// Where an item was put, in the flow's own coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]

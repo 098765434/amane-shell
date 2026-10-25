@@ -5,7 +5,7 @@ use amane::Color;
 
 /// `top` painted over `bottom` (source-over), so a translucent state layer
 /// can be one fill instead of another rectangle.
-pub(crate) fn over(top: Color, bottom: Color) -> Color {
+pub fn over(top: Color, bottom: Color) -> Color {
     let top_a = f32::from(top.alpha()) / 255.0;
     let bottom_a = f32::from(bottom.alpha()) / 255.0 * (1.0 - top_a);
     let alpha = top_a + bottom_a;
@@ -24,13 +24,13 @@ pub(crate) fn over(top: Color, bottom: Color) -> Color {
 }
 
 /// `color` at `amount` of its own opacity.
-pub(crate) fn faded(color: Color, amount: f32) -> Color {
+pub fn faded(color: Color, amount: f32) -> Color {
     let alpha = (f32::from(color.alpha()) * amount.clamp(0.0, 1.0)).round() as u8;
     Color::rgba(color.red(), color.green(), color.blue(), alpha)
 }
 
 /// `color` at opacity `alpha`, whatever its own.
-pub(crate) fn with_alpha(color: Color, alpha: f32) -> Color {
+pub fn with_alpha(color: Color, alpha: f32) -> Color {
     let alpha = (alpha.clamp(0.0, 1.0) * 255.0).round() as u8;
     Color::rgba(color.red(), color.green(), color.blue(), alpha)
 }

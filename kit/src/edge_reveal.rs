@@ -17,7 +17,7 @@ use std::time::{Duration, Instant};
 
 use amane::{Animation, InputArea};
 
-use crate::components::motion;
+use crate::motion;
 
 pub struct EdgeReveal {
     // 0 hidden … 1 out, on the motion it was made with

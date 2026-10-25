@@ -13,13 +13,13 @@ use amane::{Apps, Center, DesktopApp, Image, Rectangle, Service, Size, Text};
 use crate::tokens::{Styled, sys};
 
 /// A window's app icon, or a first-letter placeholder when none resolves.
-pub(crate) fn tile(app: &str, title: &str, side: f32) -> Rectangle {
+pub fn tile(app: &str, title: &str, side: f32) -> Rectangle {
     drawn(icon_for(app), first_letter(app, title), side)
 }
 
 /// A desktop entry's icon, or the first letter of its name, for a list of
 /// installed apps rather than open windows.
-pub(crate) fn entry_tile(app: &DesktopApp, side: f32) -> Rectangle {
+pub fn entry_tile(app: &DesktopApp, side: f32) -> Rectangle {
     let path = app.icon_path().map(|path| path.to_path_buf());
     drawn(path, first_letter("", app.name()), side)
 }
@@ -54,7 +54,7 @@ fn drawn(path: Option<PathBuf>, letter: String, side: f32) -> Rectangle {
 /// id (and its last dotted segment) against each app's icon name, exec
 /// basename, or name — case-insensitively — else to a theme icon named
 /// after either.
-pub(crate) fn icon_for(app_id: &str) -> Option<PathBuf> {
+pub fn icon_for(app_id: &str) -> Option<PathBuf> {
     if app_id.is_empty() {
         return None;
     }
@@ -71,7 +71,7 @@ pub(crate) fn icon_for(app_id: &str) -> Option<PathBuf> {
 
 /// The name an app with this app_id goes by: its desktop entry's, else the
 /// id's last dotted segment.
-pub(crate) fn name_for(app_id: &str) -> Option<String> {
+pub fn name_for(app_id: &str) -> Option<String> {
     if let Some(app) = entry_for(app_id) {
         return Some(app.name().to_string());
     }
@@ -84,7 +84,7 @@ pub(crate) fn name_for(app_id: &str) -> Option<String> {
 
 /// The desktop entry a window's app_id belongs to, matched as [`icon_for`]
 /// says.
-pub(crate) fn entry_for(app_id: &str) -> Option<DesktopApp> {
+pub fn entry_for(app_id: &str) -> Option<DesktopApp> {
     if app_id.is_empty() {
         return None;
     }

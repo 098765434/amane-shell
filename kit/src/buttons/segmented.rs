@@ -22,9 +22,9 @@ use amane::{
 };
 
 use super::{Actions, Pending, interactive, label_row, state_fill, with_existing, with_state};
-use crate::components::color::faded;
-use crate::components::layout::{boxed, inner_width, pad};
-use crate::components::motion::{self, FADE};
+use crate::color::faded;
+use crate::layout::{boxed, inner_width, pad};
+use crate::motion::{self, FADE};
 use crate::tokens::sys;
 
 /// One button's motion, kept across rebuilds under its id.

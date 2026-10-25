@@ -21,7 +21,7 @@ mod error;
 
 use envelope::{Library, TokenType};
 
-const SOURCE: &str = "design-tokens/tokens.json";
+const SOURCE: &str = "../design-tokens/tokens.json";
 
 fn main() {
     println!("cargo::rerun-if-changed={SOURCE}");

@@ -17,8 +17,8 @@ use amane::{
     Center, Color, Point, Pointer, Radius, Rectangle, Row, Scroll, Size, Stack, Start, Widget,
 };
 
-use crate::components::buttons::{Actions, interactive, state_fill};
-use crate::components::layout::{boxed, icon, slot};
+use crate::buttons::{Actions, interactive, state_fill};
+use crate::layout::{boxed, icon, slot};
 use crate::tokens::sys;
 
 /// How far one scroll notch moves a level, the bar's volume button included.

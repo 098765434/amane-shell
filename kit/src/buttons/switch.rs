@@ -18,8 +18,8 @@ use std::time::Instant;
 use amane::{Animation, Blend, Center, Color, Radius, Rectangle, Size, Start, request_frame};
 
 use super::{Actions, Pending, interactive, state_fill, with_existing, with_state};
-use crate::components::layout::pad;
-use crate::components::motion;
+use crate::layout::pad;
+use crate::motion;
 use crate::tokens::sys;
 
 /// One switch's motion, kept across rebuilds under its id.

@@ -7,12 +7,12 @@
 //! Where it's scrolled to is the caller's (a [`Kinetic`], usually), so it
 //! can follow fingers, coast and ease.
 //!
-//! [`Kinetic`]: crate::components::kinetic::Kinetic
+//! [`Kinetic`]: crate::kinetic::Kinetic
 
 use amane::{Center, Color, Padding, Rectangle, Scroll, Stack, Start, Widget};
 
-use crate::components::kinetic::Axis;
-use crate::components::layout::boxed;
+use crate::kinetic::Axis;
+use crate::layout::boxed;
 use crate::tokens::sys;
 
 // TODO(token): `sys.scrollbar.*` once Penpot has them (manual §1.1).

@@ -6,7 +6,7 @@
 
 use amane::{Color, Parent, Rectangle};
 
-use crate::components::layout::pad;
+use crate::layout::pad;
 use crate::tokens::sys;
 
 pub struct Divider;

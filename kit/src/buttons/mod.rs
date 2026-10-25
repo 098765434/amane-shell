@@ -44,9 +44,9 @@ pub use push_button::PushButton;
 pub use segmented::{Segment, SegmentedButton};
 pub use switch::Switch;
 
-use crate::components::color::over;
-use crate::components::layout::{boxed, icon};
-use crate::components::{motion, tooltip};
+use crate::color::over;
+use crate::layout::{boxed, icon};
+use crate::{motion, tooltip};
 use crate::tokens::{Styled, TextStyle, sys};
 
 /// M3's disabled-content opacity. TODO(token): `sys.opacity.disabled` once
@@ -286,13 +286,13 @@ fn label_row(
 /// A click's new state, shown before the service agrees, until it does or
 /// [`PENDING_TIMEOUT`] passes.
 #[derive(Clone, Copy)]
-pub(crate) struct Pending<T>(Option<(T, Instant)>);
+pub struct Pending<T>(Option<(T, Instant)>);
 
 impl<T: Copy + PartialEq> Pending<T> {
-    pub(crate) const NONE: Self = Self(None);
+    pub const NONE: Self = Self(None);
 
     /// What to show while the service says `actual`.
-    pub(crate) fn shown(&mut self, actual: T, now: Instant) -> T {
+    pub fn shown(&mut self, actual: T, now: Instant) -> T {
         if let Some((wanted, at)) = self.0
             && (actual == wanted || now - at > PENDING_TIMEOUT)
         {
@@ -301,7 +301,7 @@ impl<T: Copy + PartialEq> Pending<T> {
         self.0.map_or(actual, |(wanted, _)| wanted)
     }
 
-    pub(crate) fn set(&mut self, wanted: T, now: Instant) {
+    pub fn set(&mut self, wanted: T, now: Instant) {
         self.0 = Some((wanted, now));
     }
 }
@@ -309,7 +309,7 @@ impl<T: Copy + PartialEq> Pending<T> {
 /// What a toggle `id` should show while the service says `actual`: the
 /// state a click asked for ([`expect`]), until the service agrees or
 /// gives up waiting.
-pub(crate) fn optimistic(id: &str, actual: bool) -> bool {
+pub fn optimistic(id: &str, actual: bool) -> bool {
     with_state(
         &format!("{id}.pending"),
         || Pending::<bool>::NONE,
@@ -318,7 +318,7 @@ pub(crate) fn optimistic(id: &str, actual: bool) -> bool {
 }
 
 /// A click on toggle `id` asked for `wanted`: show it right away.
-pub(crate) fn expect(id: &str, wanted: bool) {
+pub fn expect(id: &str, wanted: bool) {
     with_state(
         &format!("{id}.pending"),
         || Pending::<bool>::NONE,
@@ -338,7 +338,7 @@ thread_local! {
 
 /// Runs `f` on control `id`'s state, made with `init` the first time (or
 /// when the control changed what it keeps).
-pub(crate) fn with_state<S: 'static, R>(
+pub fn with_state<S: 'static, R>(
     id: &str,
     init: impl FnOnce() -> S,
     f: impl FnOnce(&mut S) -> R,
@@ -355,13 +355,13 @@ pub(crate) fn with_state<S: 'static, R>(
 }
 
 /// Runs `f` on control `id`'s state, if it has one yet.
-pub(crate) fn with_existing<S: 'static, R>(id: &str, f: impl FnOnce(&mut S) -> R) -> Option<R> {
+pub fn with_existing<S: 'static, R>(id: &str, f: impl FnOnce(&mut S) -> R) -> Option<R> {
     STATES.with_borrow_mut(|states| states.get_mut(id)?.downcast_mut::<S>().map(f))
 }
 
 /// The pointer entered or left the button `id`. amane redraws after any
 /// hover change, so this only records it.
-pub(crate) fn hover(id: &str, inside: bool) {
+pub fn hover(id: &str, inside: bool) {
     HOVERED.with_borrow_mut(|hovered| {
         if inside {
             if !hovered.iter().any(|h| h == id) {
@@ -373,12 +373,12 @@ pub(crate) fn hover(id: &str, inside: bool) {
     });
 }
 
-pub(crate) fn hovered(id: &str) -> bool {
+pub fn hovered(id: &str) -> bool {
     HOVERED.with_borrow(|hovered| hovered.iter().any(|h| h == id))
 }
 
 /// `fill` with the hover layer fading over it while `id` is hovered.
-pub(crate) fn state_fill(id: &str, fill: Color, disabled: bool) -> Color {
+pub fn state_fill(id: &str, fill: Color, disabled: bool) -> Color {
     let amount = fade(&format!("{id}.hover"), !disabled && hovered(id));
     Color::blend(fill, over(sys::color::state::hover(), fill), amount)
 }
@@ -405,7 +405,7 @@ struct Press(Animation);
 /// The scale to draw control `id` at, shrinking to `scale` on a press and
 /// springing back. amane reports a press as the start of a drag, not its
 /// release, so the pulse is timed rather than held.
-pub(crate) fn press_scale(id: &str, scale: f32) -> f32 {
+pub fn press_scale(id: &str, scale: f32) -> f32 {
     let progress = with_state(
         &format!("{id}.press"),
         || Press(motion::spring(1.0)),
@@ -434,17 +434,17 @@ fn pressed(id: &str) {
 /// secondary action (usually a menu), the middle one a shortcut. Scrolling
 /// is optional too.
 #[derive(Clone, Default)]
-pub(crate) struct Actions {
-    pub(crate) press: Option<Rc<dyn Fn()>>,
-    pub(crate) secondary: Option<Rc<dyn Fn()>>,
-    pub(crate) middle: Option<Rc<dyn Fn()>>,
-    pub(crate) scroll: Option<Rc<dyn Fn(Scroll)>>,
+pub struct Actions {
+    pub press: Option<Rc<dyn Fn()>>,
+    pub secondary: Option<Rc<dyn Fn()>>,
+    pub middle: Option<Rc<dyn Fn()>>,
+    pub scroll: Option<Rc<dyn Fn(Scroll)>>,
 }
 
 /// Makes `base` a button: pointer cursor, hover tracking and the clicks.
 /// Leaving or clicking it hides its tooltip. A disabled one is dimmed and
 /// takes none of them.
-pub(crate) fn interactive(
+pub fn interactive(
     base: Rectangle,
     id: String,
     disabled: bool,
