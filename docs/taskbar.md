@@ -55,7 +55,7 @@ A battery reads low from UPower's warning level, or at 15 % and below when nothi
 ## Related
 
 - Window actions and the `Windows`/`Gestures` services are documented in the library:
-  [../../amane/docs/compositor.md](../../amane/docs/compositor.md).
+  [../../amane/docs/fork/compositor.md](../../amane/docs/fork/compositor.md).
 - The per-window menu is the shell's context menu: [context-menu.md](context-menu.md).
 - Sizes and colours are Penpot design tokens: [design-token-manual.md](design-token-manual.md).
 - Surface namespaces & niri layer-rules: [layer-rules.md](layer-rules.md).

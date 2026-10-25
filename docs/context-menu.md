@@ -194,6 +194,6 @@ hidden when the stack is shallower. Every state change calls `request_frame()`.
 
 ## Related
 
-- amane's popup support: [../../amane/docs/popups.md](../../amane/docs/popups.md)
+- amane's popup support: [../../amane/docs/fork/popups.md](../../amane/docs/fork/popups.md)
 - niri layer rules and namespaces: [layer-rules.md](layer-rules.md)
 - The taskbar's per-window menu: [taskbar.md](taskbar.md)

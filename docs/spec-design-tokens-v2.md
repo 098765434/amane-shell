@@ -506,7 +506,7 @@ KDL is regenerated in the same PR.
  
 ### 9.3 Later
  
-When the fork gains `write_niri_rules` (amane `docs/spec-write-own-layer-rules.md`), `rules()`
+When the fork gains `write_niri_rules` (amane `docs/fork/spec-write-own-layer-rules.md`), `rules()`
 maps onto `NiriLayerRule` one to one and the shell writes its own `amane.kdl` include at
 startup. The KDL file and the script can then be removed.
  
@@ -809,6 +809,6 @@ PRs 1–2 change no pixels; 3–7 each change one thing.
 - `design-token-manual.md` — the rules this spec implements and enforces.
 - Penpot 2.18.4 source (`common/src/app/common/types/token.cljc`, `tokens_lib.cljc`,
   `frontend/src/app/main/data/style_dictionary.cljs`) — token types, file format and quirks.
-- amane `docs/appearance.md` — the Appearance service §7 reads.
-- amane `docs/spec-write-own-layer-rules.md` — `write_niri_rules`, the later home for §9.
+- amane `docs/fork/appearance.md` — the Appearance service §7 reads.
+- amane `docs/fork/spec-write-own-layer-rules.md` — `write_niri_rules`, the later home for §9.
 - `amane-design-values-and-feature-fit.md` — the rubric in §15.
