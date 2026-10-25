@@ -9,7 +9,7 @@
 //! tint and lit edge too, so the glass drawn in the surface is clear
 //! ([`fill`]) and goes without the shader's edge ([`lit`]).
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 
 use amane::{Backdrop, BlurShape, Color, Rectangle, Service};
@@ -46,9 +46,11 @@ pub fn level(tint: Color) -> Color {
     if !see_through() {
         return with_alpha(tint, 1.0);
     }
+    // glass whose backdrop already reads as its mode needs less of its tint
+    let backed = if BACKED.get() { BACKED_TINT } else { 1.0 };
     match theme::glass() {
-        Glass::Clear => color::faded(tint, CLEAR),
-        Glass::Tinted | Glass::Solid => tint,
+        Glass::Clear => color::faded(tint, CLEAR * backed),
+        Glass::Tinted | Glass::Solid => color::faded(tint, backed),
     }
 }
 
@@ -131,9 +133,20 @@ const TURN_LIGHT: f32 = 0.65;
 /// Over a backdrop dimmer than this, small glass turns dark again.
 const TURN_DARK: f32 = 0.35;
 
+/// How much of its tint adaptive glass keeps where its backdrop is clearly
+/// on its side (brighter than [`TURN_LIGHT`] under light glass, dimmer than
+/// [`TURN_DARK`] under dark). The tints are made for the worst backdrop,
+/// light glass over a black wallpaper, and niri's `adaptive-tint` thickens
+/// them further over a backdrop close in brightness, which adapted glass
+/// always has: at the full tint, light glass over a bright sky came out
+/// nearly opaque. The backdrop carries the labels' contrast there instead.
+const BACKED_TINT: f32 = 0.45;
+
 thread_local! {
     // the mode each piece of adaptive glass took last, by shape id
     static ADAPTED: RefCell<HashMap<u32, Mode>> = RefCell::new(HashMap::new());
+    // whether the glass being built has a backdrop clearly on its side
+    static BACKED: Cell<bool> = const { Cell::new(false) };
 }
 
 /// A shape id for the piece of glass named `name` (unique across the
@@ -151,14 +164,20 @@ pub fn shape_id(name: &str) -> u32 {
 /// over a dim one, as Apple's small glass flips with what's behind it. The
 /// gap between the two thresholds keeps it from flickering at the edge.
 pub fn mode_for(id: u32) -> Mode {
+    adaptation(id).0
+}
+
+/// The mode glass `id` takes, and whether its backdrop is clearly on that
+/// mode's side, past the threshold, rather than in the band between.
+fn adaptation(id: u32) -> (Mode, bool) {
     let theme = Key::current().mode;
     if !theme::adaptive_glass() || !see_through() {
-        return theme;
+        return (theme, false);
     }
     let Some(luminance) = Backdrop::read().luminance(id) else {
-        return theme;
+        return (theme, false);
     };
-    ADAPTED.with_borrow_mut(|adapted| {
+    let mode = ADAPTED.with_borrow_mut(|adapted| {
         let before = *adapted.get(&id).unwrap_or(&theme);
         let mode = if luminance > TURN_LIGHT {
             Mode::Light
@@ -169,17 +188,27 @@ pub fn mode_for(id: u32) -> Mode {
         };
         adapted.insert(id, mode);
         mode
-    })
+    });
+    let backed = match mode {
+        Mode::Light => luminance > TURN_LIGHT,
+        Mode::Dark => luminance < TURN_DARK,
+    };
+    (mode, backed)
 }
 
 /// Builds `f`, a piece of small glass and what's on it, in the mode glass
-/// `id` takes ([`mode_for`]): its tint and labels flip together.
+/// `id` takes ([`mode_for`]): its tint and labels flip together, and the
+/// tint thins where the backdrop is clearly on its side ([`BACKED_TINT`]).
 pub fn adapted<T>(id: u32, f: impl FnOnce() -> T) -> T {
+    let (mode, backed) = adaptation(id);
     let key = Key {
-        mode: mode_for(id),
+        mode,
         ..Key::current()
     };
-    with_key(key, f)
+    let before = BACKED.replace(backed);
+    let out = with_key(key, f);
+    BACKED.set(before);
+    out
 }
 
 /// `shapes` scaled by `scale` about `origin`, then moved by `offset`: where
