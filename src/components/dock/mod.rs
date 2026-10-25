@@ -30,7 +30,6 @@ mod item;
 mod magnify;
 mod model;
 pub mod motion;
-mod pager;
 mod window_menu;
 
 use std::cell::RefCell;
@@ -49,10 +48,11 @@ use crate::components::layout::{blank, boxed};
 use crate::components::page_dots::PageDots;
 use crate::tokens::sys;
 
+use crate::components::kinetic::Axis;
+use crate::components::pager::Pager;
 use magnify::{Rest, Swollen};
 use model::{App, Page, Space, Win};
 use motion::{DockMotion, anim};
-use pager::Pager;
 use window_menu::open_window_menu;
 
 /// The dock's layer-surface namespace; the niri `layer-rule` matches it
@@ -102,7 +102,7 @@ impl Dock {
     fn new(motion: &DockMotion) -> Self {
         Self {
             reveal: EdgeReveal::new(anim(&motion.reveal, 0.0), motion.hide_delay),
-            pager: Pager::new(motion),
+            pager: Pager::new(Axis::Vertical, &motion.pager()),
             swell: anim(&swell_anim(motion), 0.0),
             pointer: None,
             last_at: None,
@@ -277,18 +277,18 @@ fn build(
     // coming out, it shows the workspace that's showing
     let active = pages.iter().position(|page| page.active);
     if out && !dock.out {
-        dock.pager.jump(active.unwrap_or(0), motion);
+        dock.pager.jump(active.unwrap_or(0), &motion.pager());
         dock.swell = anim(&swell_anim(motion), 0.0);
     }
     dock.out = out;
     if dock.pager.page() >= count && count > 0 {
-        dock.pager.jump(count - 1, motion);
+        dock.pager.jump(count - 1, &motion.pager());
     }
-    dock.pager.settle_stale(count, motion);
+    dock.pager.settle_stale(count, &motion.pager());
     let offset = if count == 0 {
         0.0
     } else {
-        dock.pager.offset(count, motion)
+        dock.pager.offset(count, &motion.pager())
     };
 
     let laid = lay_out(dock, pages, at, motion);
@@ -374,7 +374,7 @@ fn build(
         let dots_h = dots.size().1;
         let pick_on = output.to_string();
         let dots = dots.on_pick(move |page| {
-            with_dock(&pick_on, |dock| dock.pager.go(page, count, motion));
+            with_dock(&pick_on, |dock| dock.pager.go(page, count, &motion.pager()));
         });
         layers.push(place(
             item::frame(dots_width(), dots_h).child(Row::new(vec![dots.build()])),
@@ -625,7 +625,7 @@ fn still_layer(
         .on_scroll(move |scroll: Scroll| {
             with_dock(&scroll_on, |dock| {
                 if dock.out {
-                    dock.pager.scroll(scroll, at.card, count, motion);
+                    dock.pager.scroll(scroll, at.card, count, &motion.pager());
                 }
             });
         })

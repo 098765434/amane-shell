@@ -57,13 +57,14 @@ when it's off.
 |---|---|
 | `mod.rs` | the surface, per-monitor state and the frame's layout |
 | `model.rs` | pages and apps from niri's windows and workspaces; which window a click focuses (pure, tested) |
-| `pager.rs` | swipe, wheel and snapping (pure, tested) |
 | `magnify.rs` | swell and spread (pure, tested) |
 | `item.rs` | an icon, its running dots and its name label (inert) |
-| `motion.rs` | `DockMotion` |
+| `motion.rs` | `DockMotion`, and the `PagerMotion` its pages turn with |
+| `window_menu.rs` | a window's right-click menu |
 
-It reuses the shared [`EdgeReveal`, `PageDots`, `app_icon`, `Divider::vertical` and
-`glass_region`](components.md).
+It reuses the shared [`EdgeReveal`, `PageDots`, `Pager`, `workspace_menu`, `app_icon`,
+`Divider::vertical` and `glass_region`](components.md). The swipe, wheel and snapping between
+workspaces is the shared `Pager`, turning vertically.
 
 - **One size.** The surface spans the monitor and is as tall as the card plus room for the swell
   and the name, so it never resizes; a resize every frame costs a compositor round-trip. It is

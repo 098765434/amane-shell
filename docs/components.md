@@ -15,6 +15,10 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `PageDots` | `page_dots.rs` | none (iOS's page control) | the dock's workspaces |
 | `app_icon` | `app_icon.rs` | none | the dock's icons, notification cards' app icons, the launcher's apps |
 | `EdgeReveal` | `edge_reveal.rs` | none | the dock hiding at the bottom edge |
+| `ScrollView` | `scroll_view.rs` | none | the launcher's grid, results and pill bar |
+| `Kinetic`, `AxisLock` | `kinetic.rs` | none (iOS's scroll physics) | the launcher's scrolling |
+| `Pager` | `pager.rs` | none | the dock's workspaces, the launcher's categories |
+| `workspace_menu` | `workspace_menu.rs` | none | the dock's "Move to Workspace", the launcher's "Open in Workspace" |
 
 ## Card
 
@@ -125,6 +129,51 @@ onto the surface and leaves it, reads `progress(hold)` once a frame (0 hidden �
 input region from `input_region(width, height, strip, progress, shown)`: only the `strip` along
 the bottom edge while hidden, and `shown` too while any of it is out. Once the pointer has been
 gone for `delay`, it goes back in.
+
+## ScrollView
+
+`ScrollView::new(axis, width, height)` is a clipped viewport onto content longer than it.
+`.content(length)` says how long the content runs along `axis`, `.offset(px)` how far it's
+scrolled (past the ends too, for a rubber band), `.on_scroll(…)` takes the scrolls over it, and
+`.scrollbar(opacity)` draws a thin thumb while the content overflows (vertical only). `build(child)`
+gives the viewport. It scrolls by a negative padding inside the clip, so the content's hover and
+click areas move with it. Where it's scrolled to is the caller's: usually a `Kinetic`.
+
+## Kinetic and AxisLock
+
+`Kinetic` is one axis of scrolling from 0 to `set_max(max)`, in pixels:
+
+- `follow(moved, stop, now)` follows fingers one to one, pulling on a rubber band past the ends.
+- When the fingers lift, it coasts as far as their speed carries it (an iOS-like projection eased
+  out over a short coast) or springs back from past an end. Fingers that rested before lifting
+  leave no momentum.
+- `scroll(&scroll, axis, wheel_step)` does either from an amane `Scroll`: fingers are followed, a
+  wheel eases on a notch at a time.
+- `go(to)` eases there (bringing something into view), `jump(to)` puts it there at once.
+- `value()` is where it is this frame; call `settle_stale()` once a frame for a compositor that
+  never says the fingers lifted.
+
+`Tracker` is the smoothed finger velocity underneath, shared with `Pager`. `AxisLock` lets one
+two-finger gesture either scroll or turn the page: the first few pixels pick the axis, and it
+keeps to it until the fingers lift.
+
+## Pager
+
+Turning pages with the fingers (`pager.rs`): `Pager::new(axis, &motion)`, then `scroll(…)` or
+`follow(moved, stop, page_px, count, &motion)` while two fingers slide. The page follows them one
+to one and settles on the nearest page when they lift, or the next one on a flick (never more
+than one). A wheel steps a page a notch (`step`), and `go(page)` / `jump(page)` move there with or
+without the spring. `offset(count, &motion)` is the fractional page to draw, rubber-banded past
+the ends. `PagerMotion` holds the settle's duration and easing, the flick speed and the rubber
+band. The dock turns it vertically through workspaces; the launcher sideways through its
+categories.
+
+## workspace_menu
+
+`workspace_menu::all(pick)` is a submenu of every workspace, `pick` run with the chosen one's
+id. `workspace_menu::on_focused_output(pick)` is the focused monitor's workspaces, the empty one
+niri keeps after the last called "New Workspace". Workspaces are named as niri names them, or
+"Workspace N".
 
 ## Under the components
 

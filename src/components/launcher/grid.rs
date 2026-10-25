@@ -1,60 +1,104 @@
 //! The grid of apps: a cell an app, its icon over its name, one highlight
-//! gliding under the icons to the app picked, and a scrollbar while there
-//! are more rows than fit.
+//! gliding under the icons to the app picked, and a scrollbar while the
+//! grid moves.
 //!
-//! The grid scrolls by a negative top padding inside a clipped viewport,
-//! as amane's `ScrollArea` does: the cells really move, so the clip keeps
-//! just the ones in view and their hover and click areas stay where they
-//! are drawn.
+//! Each category is a page of its own. At rest only the category showing
+//! is drawn; while two fingers turn the page sideways, the one it's
+//! turning to is drawn beside it, both sliding under the fingers.
 
 use amane::{
     Center, Color, Column, DesktopApp, Padding, Rectangle, Row, Stack, Start, Text, Widget,
 };
 
 use crate::components::app_icon;
+use crate::components::kinetic::Axis;
 use crate::components::layout::{boxed, text_height, text_width};
-use crate::components::panel::close;
+use crate::components::scroll_view::ScrollView;
 use crate::tokens::{Styled, sys};
 
-use super::{BODY, CELL, COLS, ICON, ICON_BOX, WIDTH, hover, on_scroll};
+use super::results::{self, Empty};
+use super::{
+    BODY, CELL, COLS, ICON, ICON_BOX, Layout, View, WIDTH, bucket, hover, on_app_click,
+    on_body_scroll, under,
+};
 
-// TODO(token): `launcher.highlight.radius` and `launcher.scrollbar.*` once
-// Penpot has them (manual §1.1).
+// TODO(token): `launcher.highlight.radius` once Penpot has it (manual §1.1).
 /// The highlight's corners.
 pub(super) const HIGHLIGHT_RADIUS: f32 = 14.0;
-/// How wide the scrollbar is, and how short its thumb gets.
-const SCROLLBAR: f32 = 6.0;
-const THUMB_MIN: f32 = 32.0;
 
 /// Where this frame draws things: the body scrolled by `scroll`, the
-/// highlight at `x`, `y`, the whole body at `fade`.
+/// highlight at `x`, `y` and as strong as `highlight`, the whole body at
+/// `fade`, and the scrollbar at `scrollbar`.
 #[derive(Clone, Copy)]
 pub(super) struct At {
     pub(super) scroll: f32,
     pub(super) x: f32,
     pub(super) y: f32,
+    pub(super) highlight: f32,
     pub(super) fade: f32,
+    pub(super) scrollbar: f32,
 }
 
-/// Content scrolled up by `scroll`, as geometry.
-pub(super) fn scrolled_by(scroll: f32) -> Padding {
-    Padding {
-        top: -scroll,
-        right: 0.0,
-        bottom: 0.0,
-        left: 0.0,
+/// The category showing and, while turning, the one beside it, `offset`
+/// the page they've turned to.
+pub(super) fn pages(view: &View, offset: f32, at: At) -> Rectangle {
+    let last = view.buckets.len().saturating_sub(1);
+    let below = (offset.floor().max(0.0) as usize).min(last);
+    let above = (offset.ceil().max(0.0) as usize).min(last);
+    let mut shown = vec![below];
+    if above != below {
+        shown.push(above);
     }
+
+    let layers: Vec<Box<dyn Widget>> = shown
+        .into_iter()
+        .map(|page| {
+            let body = if page == view.page {
+                page_of(&view.shown, Some(at))
+            } else {
+                // the one turning in: at its top, not yet live
+                page_of(&under(view.all, bucket(&view.buckets, page)), None)
+            };
+            boxed(body.translate((page as f32 - offset) * WIDTH, 0.0))
+        })
+        .collect();
+
+    Rectangle::new()
+        .width(WIDTH)
+        .height(BODY)
+        .fill(Color::TRANSPARENT)
+        .clip()
+        // the strip takes the scrolls, not a page: a page sliding out from
+        // under the fingers mustn't take the gesture with it
+        .on_scroll(on_body_scroll)
+        .align_child(Start, Start)
+        .opacity(at.fade)
+        .child(Stack::new(layers))
 }
 
-pub(super) fn grid(apps: &[&DesktopApp], at: At) -> Rectangle {
-    let rows = apps.len().div_ceil(COLS).max(1);
-    let content = rows as f32 * CELL;
+/// One category's page: its grid, or a note when it's empty. Without `at`
+/// it's one turning in, drawn at its top with no highlight, scrollbar or
+/// hover.
+fn page_of(apps: &[&DesktopApp], at: Option<At>) -> Rectangle {
+    if apps.is_empty() {
+        return results::empty(Empty::Category);
+    }
+    let live = at.is_some();
+    let at = at.unwrap_or(At {
+        scroll: 0.0,
+        x: 0.0,
+        y: 0.0,
+        highlight: 0.0,
+        fade: 1.0,
+        scrollbar: 0.0,
+    });
 
     let highlight = Rectangle::new()
         .width(ICON_BOX)
         .height(ICON_BOX)
         .radius(HIGHLIGHT_RADIUS)
         .fill(sys::color::state::selected())
+        .opacity(at.highlight)
         .translate(at.x, at.y);
 
     let lines: Vec<Box<dyn Widget>> = apps
@@ -64,56 +108,26 @@ pub(super) fn grid(apps: &[&DesktopApp], at: At) -> Rectangle {
             let cells = line
                 .iter()
                 .enumerate()
-                .map(|(col, app)| boxed(cell(app, row * COLS + col)))
+                .map(|(col, app)| boxed(cell(app, row * COLS + col, live)))
                 .collect();
             boxed(Row::new(cells))
         })
         .collect();
 
-    let viewport = Rectangle::new()
-        .width(WIDTH)
-        .height(BODY)
-        .fill(Color::TRANSPARENT)
-        .clip()
-        .padding(scrolled_by(at.scroll))
-        .on_scroll(on_scroll)
-        .align_child(Start, Start)
-        .child(
-            Rectangle::new()
-                .width(WIDTH)
-                .height(content)
-                .fill(Color::TRANSPARENT)
-                .align_child(Start, Start)
-                .child(Stack::new(vec![
-                    boxed(highlight),
-                    boxed(Column::new(lines)),
-                ])),
-        );
-
-    let max = content - BODY;
-    if max <= 0.0 {
-        return viewport.opacity(at.fade);
-    }
-    let thumb_height = (BODY * BODY / content).max(THUMB_MIN);
-    let thumb = Rectangle::new()
-        .width(SCROLLBAR)
-        .height(thumb_height)
-        .radius(SCROLLBAR / 2.0)
-        .fill(sys::color::content::secondary())
-        .translate(WIDTH - SCROLLBAR, at.scroll / max * (BODY - thumb_height));
-    Rectangle::new()
-        .width(WIDTH)
-        .height(BODY)
-        .fill(Color::TRANSPARENT)
-        .align_child(Start, Start)
-        .opacity(at.fade)
-        .child(Stack::new(vec![boxed(viewport), boxed(thumb)]))
+    ScrollView::new(Axis::Vertical, WIDTH, BODY)
+        .content(Layout::Grid.content(apps.len()))
+        .offset(at.scroll)
+        .scrollbar(at.scrollbar)
+        .build(Stack::new(vec![
+            boxed(highlight),
+            boxed(Column::new(lines)),
+        ]))
 }
 
 /// One app: its icon in the highlight's box, its name under it on one
-/// line. Hovering highlights it; a click launches it.
-fn cell(app: &DesktopApp, index: usize) -> Rectangle {
-    let launched = app.clone();
+/// line. Hovering highlights it; a click launches it, a right-click opens
+/// its menu.
+fn cell(app: &DesktopApp, index: usize, live: bool) -> Rectangle {
     let gap = sys::space::gap::s();
     let icon = Rectangle::new()
         .width(ICON_BOX)
@@ -137,7 +151,7 @@ fn cell(app: &DesktopApp, index: usize) -> Rectangle {
                 .elide(),
         );
 
-    Rectangle::new()
+    let cell = Rectangle::new()
         .width(CELL)
         .height(CELL)
         .fill(Color::TRANSPARENT)
@@ -148,14 +162,15 @@ fn cell(app: &DesktopApp, index: usize) -> Rectangle {
             left: gap,
         })
         .align_child(Center, Start)
-        .on_hover(hover(index))
-        .on_click(move |_| {
-            close();
-            launched.launch();
-        })
         .child(
             Column::new(vec![boxed(icon), boxed(name)])
                 .gap(gap)
                 .align(Center),
-        )
+        );
+    if live {
+        cell.on_hover(hover(index))
+            .on_click(on_app_click(app.clone()))
+    } else {
+        cell
+    }
 }

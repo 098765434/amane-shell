@@ -28,6 +28,9 @@
 //! - [`slider`] — M3's slider: a 0–100 level along a track.
 //! - [`tooltip`] — M3's plain tooltip: a hovered control's label.
 //! - [`page_dots`] — iOS's page control: which of several pages shows.
+//! - [`scroll_view`] — a clipped viewport scrolled along one axis, with a
+//!   scrollbar.
+//! - [`workspace_menu`] — a submenu of workspaces to send something to.
 //! - [`app_icon`] — an app's icon from its desktop entry, by app_id.
 //! - [`panel`] — the one-open-at-a-time state of Quick Settings, the
 //!   notification center and the launcher, and their overlay surfaces.
@@ -39,6 +42,8 @@
 //! - [`icons`] — the Material Symbols glyphs and their pickers.
 //! - [`color`] — colour arithmetic (`over`, `faded`, `with_alpha`).
 //! - [`motion`] — the shared springs and fades, and keyed list motion.
+//! - [`kinetic`] — following fingers, and the momentum a flick leaves.
+//! - [`pager`] — turning pages with the fingers, a flick or a wheel.
 //! - [`glass_region`] — where the compositor frosts behind clear glass.
 //! - [`edge_reveal`] — a surface hiding at a screen edge until the pointer
 //!   touches it.
@@ -56,14 +61,18 @@ pub mod edge_reveal;
 pub mod glass;
 pub mod glass_region;
 pub mod icons;
+pub mod kinetic;
 pub mod launcher;
 pub mod layout;
 pub mod list;
 pub mod motion;
 pub mod notifications;
 pub mod page_dots;
+pub mod pager;
 pub mod panel;
 pub mod quick_settings;
+pub mod scroll_view;
 pub mod slider;
 pub mod status_bar;
 pub mod tooltip;
+pub mod workspace_menu;

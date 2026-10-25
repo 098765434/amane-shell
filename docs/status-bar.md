@@ -87,7 +87,8 @@ old `taskbar` file is read instead.
   when nothing gives one (`battery::low`, `battery::LOW`), so the bar and Quick Settings agree.
   `battery::color` and `battery::tint` give the colour that says so.
 - `services/clock.rs`: the `Clock` service (time and date), also read by the notification center.
-- `dock/window_menu.rs`: a window's context menu, opened from the dock.
+- `dock/window_menu.rs`: a window's context menu, opened from the dock. Its "Move to Workspace"
+  submenu is the shared `components/workspace_menu.rs`, which the launcher's app menu uses too.
 
 ## Related
 

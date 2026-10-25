@@ -37,8 +37,10 @@ ones — the bar itself is not.
   privacy icons (screen shared, camera, microphone) and the settings that are on.
 - **Launcher** ([docs/launcher.md](docs/launcher.md)) — a Launchpad-style app launcher on a
   glass panel in the middle of the screen, from a keybind (`launcher toggle` over IPC): category
-  pills, a grid of the installed apps, and a search that also does sums, session actions, URLs
-  and a web search.
+  pills, a grid of the installed apps that scrolls with momentum and swipes sideways between
+  categories, a right-click menu to open an app on a workspace or run its desktop actions,
+  keyboard focus moving between search, pills and apps, and a search that also does sums,
+  session actions, URLs and a web search. A click outside the panel closes it.
 - **Buttons** ([docs/buttons.md](docs/buttons.md)) and **components**
   ([docs/components.md](docs/components.md)) — shared push and icon buttons, a switch, a
   segmented button, cards, top app bars, lists, dividers and a slider, each after its Material 3
@@ -121,6 +123,9 @@ src/
     buttons/                    push, icon, drawn and segmented buttons, and a switch
     card.rs app_bar.rs list.rs  shared M3-style components (docs/components.md)
     divider.rs slider.rs
+    scroll_view.rs kinetic.rs   scrolling: a clipped viewport, momentum, paging with the fingers
+    pager.rs
+    workspace_menu.rs           a submenu of workspaces (the dock's and the launcher's menus)
     layout.rs icons.rs          layout primitives, glyphs, colour arithmetic, motion
     color.rs motion.rs
 build.rs                        generates `tokens::sys::…`, `tokens::bar::…`, … from tokens.json

@@ -12,6 +12,8 @@ use std::time::Duration;
 
 use amane::{Animation, Blend, Easing};
 
+use crate::components::pager::PagerMotion;
+
 // TODO(token): these become `dock.motion.*` tokens once Penpot has them
 // (manual §1.1; docs/penpot-todo.md).
 /// The dock's motion as shipped.
@@ -63,6 +65,24 @@ pub struct DockMotion {
     pub magnify: Option<Magnify>,
     /// The app's name over the icon under the pointer; `None` shows none.
     pub tooltip: Option<Anim>,
+}
+
+impl DockMotion {
+    /// How the pages turn: [`page`](Self::page), arriving at once when it
+    /// or the dock's motion is off.
+    pub fn pager(&self) -> PagerMotion {
+        let runs = self.page.on && motion().enabled;
+        PagerMotion {
+            duration: if runs {
+                self.page.duration
+            } else {
+                Duration::ZERO
+            },
+            easing: self.page.easing,
+            flick: self.flick,
+            rubber_band: self.rubber_band,
+        }
+    }
 }
 
 /// One animation: how long, how bouncy, and whether it runs at all.

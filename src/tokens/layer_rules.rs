@@ -96,12 +96,12 @@ pub fn rules() -> Vec<LayerRule> {
         LayerRule {
             namespace: LAUNCHER_NS,
             comment: String::from(
-                "Launcher: a clear surface in the middle of the screen whose glass panel is\n\
-                      frosted where the surface says (ext-background-effect). Toggled over IPC\n\
-                      from a keybind.",
+                "Launcher: a clear surface over the output whose glass panel, in the middle,\n\
+                      is frosted where the surface says (ext-background-effect). Toggled over IPC\n\
+                      from a keybind. An app's menu is an xdg-popup of it.",
             ),
             radius: None,
-            popups: None,
+            popups: Some(popover),
             clear: true,
         },
         LayerRule {
