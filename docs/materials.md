@@ -47,6 +47,17 @@ A piece of glass is built with its material's methods:
 - `stroke(..)` is a hairline, there only where niri draws no edge.
 - `adapted(id, ..)` builds the piece in the mode its backdrop asks for, if the material adapts.
 
+## App windows
+
+- **Window frost.** An amane app's window frosts what's behind it in niri's `frost` material.
+  The rule comes from `layer-rules`, which writes a `window-rule` for each app in
+  `layer_rules::APP_IDS`. The window draws `Material::Window`'s tint over it, and stays solid
+  wherever `frost` isn't offered: without the generated config there is no rule to frost it.
+- **Inactive windows.** While another window has the focus, `Window`, `Sidebar` and `Header` go
+  halfway to opaque, calmer, as AppKit's inactive windows are.
+- **Sidebar and Header.** Both are defined, but amane's windows can't send blur shapes yet, so the
+  sidebar sits on the window's frost. No page scrolls under a header yet either.
+
 ## Rules
 
 - **Pick by role.** Choose the material for what the piece is for, not for how it looks: the

@@ -150,6 +150,10 @@ pub fn rules() -> Vec<LayerRule> {
     ]
 }
 
+/// The amane apps whose windows are frosted behind, in the window
+/// material, their popups in the menu's (`kit::app::app` names them).
+pub const APP_IDS: &[&str] = &["amane-settings"];
+
 /// The line `gen-layer-rules.sh` looks for; everything after it goes into
 /// the niri config.
 const SENTINEL: &str = "//<<<GENERATED-RULES-BELOW>>>";
@@ -223,7 +227,45 @@ pub fn render(rules: &[LayerRule]) -> String {
         out.push_str("}\n");
     }
 
+    out.push_str(&render_windows(APP_IDS));
     out.push_str(&render_materials(&materials()));
+    out
+}
+
+/// A rule for each amane app's windows: frost behind them in the window
+/// material, which the window tints itself (`kit::app::window_bg`), and
+/// its popups (dropdowns, menus) frosted like the shell's.
+fn render_windows(app_ids: &[&str]) -> String {
+    // radii don't vary with mode or density (a contract test checks it)
+    let popover = with_key(
+        Key::new(Mode::Dark, Density::Comfortable),
+        sys::radius::popover,
+    );
+
+    let mut out = String::new();
+    for app_id in app_ids {
+        out.push_str(
+            "\n// An amane app's windows: frosted behind, the window drawing its own tint\n\
+             // over the frost (the window material), and its popups like the shell's.\n",
+        );
+        out.push_str("window-rule {\n");
+        let _ = writeln!(
+            out,
+            "    match app-id=\"{}\"",
+            kdl_string(&anchored(app_id))
+        );
+        out.push_str("    background-effect {\n        blur true\n");
+        let _ = writeln!(out, "        material \"{}\"", Material::Window.niri_name());
+        out.push_str("    }\n\n    popups {\n");
+        let _ = writeln!(out, "        geometry-corner-radius {popover}");
+        out.push_str("        background-effect {\n            blur true\n");
+        let _ = writeln!(
+            out,
+            "            material \"{}\"",
+            Material::Menu.niri_name()
+        );
+        out.push_str("        }\n    }\n}\n");
+    }
     out
 }
 
@@ -362,6 +404,17 @@ mod tests {
             assert_eq!(
                 twin.settings[base.settings.len()..],
                 [(String::from("materialize"), String::from("false"))]
+            );
+        }
+    }
+
+    #[test]
+    fn every_amane_app_has_a_window_rule() {
+        let settings = include_str!("../../apps/settings/src/main.rs");
+        for app_id in APP_IDS {
+            assert!(
+                settings.contains(&format!("app(\"{app_id}\")")),
+                "{app_id} isn't an app id any app uses"
             );
         }
     }

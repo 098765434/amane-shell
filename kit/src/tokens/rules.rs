@@ -21,12 +21,6 @@ pub const SECONDARY_FLOOR: f64 = 2.0;
 
 /// The surfaces checked for contrast: (background, primary, secondary).
 const SURFACES: &[(&str, &str, &str)] = &[
-    // an app window's solid background, until it's a material too
-    (
-        "sys.color.surface.popover.bg",
-        "sys.color.surface.popover.fg",
-        "sys.color.surface.popover.fg-secondary",
-    ),
     // every material's tint, under the vibrant labels the material hands out
     (
         "sys.color.material.ultra-thin",

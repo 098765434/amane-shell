@@ -153,6 +153,11 @@ impl Thickness {
     }
 }
 
+// TODO(token): `sys.material.inactive` once Penpot has it.
+/// How far an app window's materials go toward opaque while another window
+/// has the focus: calmer, as AppKit's inactive windows are.
+const INACTIVE: f32 = 0.5;
+
 // TODO(token): `sys.material.clear-fade` once Penpot has it.
 /// How much of its tint Clear glass keeps over a backdrop that isn't
 /// bright. Over a bright one it keeps all of it: Apple's 35% dimming layer
@@ -269,7 +274,8 @@ impl Material {
         self.niri().is_some()
     }
 
-    /// The tint, at the glass level.
+    /// The tint, at the glass level. An app window's materials calm down
+    /// while another window has the focus.
     pub fn tint(self) -> Color {
         match self {
             Self::Prominent => glass_region::level(sys::color::accent::bg()),
@@ -279,6 +285,15 @@ impl Material {
                     tint
                 } else {
                     faded(tint, CLEAR_FADE)
+                }
+            }
+            Self::Window | Self::Sidebar | Self::Header => {
+                let tint = self.spec().thickness.tint();
+                if amane::window_state().focused {
+                    tint
+                } else {
+                    let alpha = opacity(tint);
+                    with_alpha(tint, alpha + (1.0 - alpha) * INACTIVE)
                 }
             }
             _ => self.spec().thickness.tint(),

@@ -25,6 +25,7 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `quick.page.tile-fade`, `quick.page.grid-fade` | 0.25, 0.6 | `quick_settings/mod.rs` (`TILE_FADE`, `GRID_FADE`: shares of the zoom) |
 | `quick.page.reveal.*` (header, body, step, span, rise) | 0.35–0.7, 0.45, 0.06, 0.35, 8 | `quick_settings/detail.rs` (`REVEAL_*`: a page's content coming in) |
 | `sys.glass.material` | `glass` | `components/glass_region.rs` (`MATERIAL`: the stand-in compositor material where a material's own isn't configured) |
+| `sys.material.inactive` | 0.5 | `material.rs` (`INACTIVE`: how far an app window's materials go toward opaque while another window has the focus) |
 | `sys.material.clear-fade` | 0.7 | `material.rs` (`CLEAR_FADE`: how much of its tint Clear glass keeps over a backdrop that isn't bright) |
 | `dock.icon.size`, `dock.icon.least`, `dock.radius`, `dock.reveal.strip` | 44, 20, 18, 2 | `dock/mod.rs` (`ICON`, `LEAST_ICON`, `RADIUS`, `STRIP`) |
 | `dock.running.size` | 4 | `dock/item.rs` (`RUNNING`) |
@@ -105,10 +106,9 @@ whose output is static: it can't follow the mode, so it holds one value for both
   Penpot, or the next export puts SF Pro Text back.
 - The materials replace the glass's surface roles, so these are no longer read. Delete them:
   `sys.color.surface.panel.*`, `sys.color.surface.notification.*`,
-  `sys.color.surface.popover.fg`, `.fg-secondary` and `.stroke`, `sys.color.surface.raised.bg`,
-  `sys.color.content.secondary` and `sys.color.separator`. The vibrant labels, fills and separator
-  take their place. `sys.color.surface.popover.bg` is still an app window's background until
-  windows are a material too. The hand-added `sys.color.glass.thin` and `.thick` are gone
+  `sys.color.surface.popover.*`, `sys.color.surface.raised.bg`, `sys.color.content.secondary` and
+  `sys.color.separator`. The vibrant labels, fills and separator take their place, and an app
+  window is `Material::Window`. The hand-added `sys.color.glass.thin` and `.thick` are gone
   already.
 - `menu.label.advance-ratio` is no longer read: menus measure their text now. Delete it.
 - `bar.volume.width` is no longer read: the volume is a glyph button now, its level in a tooltip.

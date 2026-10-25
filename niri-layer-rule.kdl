@@ -151,6 +151,24 @@ layer-rule {
     }
 }
 
+// An amane app's windows: frosted behind, the window drawing its own tint
+// over the frost (the window material), and its popups like the shell's.
+window-rule {
+    match app-id="^amane-settings$"
+    background-effect {
+        blur true
+        material "frost"
+    }
+
+    popups {
+        geometry-corner-radius 10
+        background-effect {
+            blur true
+            material "glass"
+        }
+    }
+}
+
 // The shell's materials (material.* tokens), by the names it asks for: liquid
 // glass, its clear variant for media, and frost without a lens; each `-still`
 // twin is for reduced motion. They replace a hand-written `materials {}` of

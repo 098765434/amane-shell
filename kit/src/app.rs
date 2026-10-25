@@ -28,7 +28,7 @@ use amane::{
 use crate::buttons::{Actions, PushButton, Shape, Style, interactive, state_fill};
 use crate::color::with_alpha;
 use crate::layout::{boxed, icon, pad};
-use crate::material::{self, FillLevel, Level};
+use crate::material::{self, FillLevel, Level, Material};
 use crate::tokens::{Styled, sys};
 
 /// An app with this app-id: its windows, IPC socket and settings folder go
@@ -37,11 +37,19 @@ pub fn app(app_id: &str) -> App {
     App::new().app_id(app_id)
 }
 
-/// The surface an app window is drawn on. TODO(token):
-/// `sys.color.surface.window.bg` once Penpot has it; the shell's surfaces
-/// are translucent for the frost behind its layers, a window's is solid.
+/// What an app window is drawn on: the window material's tint where the
+/// compositor frosts behind the window, else the tint made solid, as
+/// there's nothing frosted to see through to. The window's own material
+/// being offered is the sign: the shell's generated config defines it with
+/// the window rule that frosts the window; a stand-in material doesn't
+/// count.
 pub fn window_bg() -> Color {
-    with_alpha(sys::color::surface::popover::bg(), 1.0)
+    let tint = Material::Window.tint();
+    if Material::Window.niri() == Some(Material::Window.niri_name()) {
+        tint
+    } else {
+        with_alpha(tint, 1.0)
+    }
 }
 
 /// A normal window in the shell's look: its surface and padding behind

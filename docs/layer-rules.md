@@ -48,7 +48,8 @@ generated from (2), not hand-edited, so neither can drift.
 
 ## Generating the rules
 
-The generated file holds the layer rules and, after them, a `materials {}` block. It defines one
+The generated file holds the layer rules, a `window-rule` for each amane app (`APP_IDS`: its
+window frosted behind in `frost`, its popups in `glass`) and, last, a `materials {}` block. It defines one
 niri material per `material.<name>.*` token group: `glass`, `glass-clear` and `frost`, each
 with a `-still` twin (`materialize false`) for reduced motion. The shell asks for these by name
 (`amane_kit::material`), so the niri config must not define them by hand as well. niri merges
