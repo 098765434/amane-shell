@@ -10,8 +10,9 @@ use crate::components::icons::{
     ICON_SEARCH, ICON_SLEEP,
 };
 use crate::components::panel::close;
+use crate::components::text_edit;
+use crate::services::run_now;
 use crate::services::session::Session;
-use crate::services::{run, run_now};
 
 use super::model::{self, SessionAction};
 
@@ -134,20 +135,8 @@ pub(super) fn run_action(action: &Action) {
         Action::SessionAction(SessionAction::Restart) => Session::reboot(),
         Action::SessionAction(SessionAction::PowerOff) => Session::power_off(),
         Action::Open(url) => open(url.clone()),
-        Action::Copy(value) => copy(value),
+        Action::Copy(value) => text_edit::copy(value),
     }
-}
-
-/// Puts `text` on the clipboard (`wl-copy`).
-pub(super) fn copy(text: &str) {
-    if !text.is_empty() {
-        run("wl-copy", vec![String::from("--"), text.to_string()]);
-    }
-}
-
-/// The clipboard's text (`wl-paste`). Blocks for as long as it takes.
-pub(super) fn paste() -> Option<String> {
-    run_now("wl-paste", &[String::from("--no-newline")])
 }
 
 /// Opens `url` in the default browser and focuses it, as launching an app

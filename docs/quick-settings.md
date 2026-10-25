@@ -24,11 +24,11 @@ when the machine has what it drives, as in GNOME, and the grid packs around what
 | Wi‑Fi | the network joined, "Connecting…", "Not Connected", "Off" or "Hardware switch off"; "<ssid> Hotspot" while the machine is one | the disc switches the radio (or stops the hotspot); the tile opens the page | the networks (rescanned every 15 s while shown; "Searching…" or "Wi‑Fi is off" while there are none), joining with a password; the page stays open and the row says "Connecting…" |
 | Bluetooth | the device connected, or how many | the disc switches the adapter; the tile opens the page | the device lists, searching while shown |
 | Airplane Mode | a round button (or a tile) | switches every radio | — |
-| Tailscale | a tile with Tailscale's mark (drawn, as the font hasn't got it), waiting in the Add list by default; "via <exit node>", this device's address, "Connecting…", "Not logged in", "Disconnected" or "Daemon not running"; hidden without the `tailscale` binary | the disc connects or disconnects (`tailscale up` / `down`), or logs in when logged out; the tile opens the page | what's wrong (no daemon; **Log In…**, which opens the browser once the control plane hands out the URL; no operator grant, with the command to copy; a failed change; tailscaled's own warnings), This Device (a click copies the address), Exit Node (None or a peer that offers itself; offline ones can't be picked), Accept Routes, Accept DNS and Block Incoming switches, and the tailnet's Devices, online first (a click copies the address); Show in Status Bar; Admin Console… |
-| VPN, Wired | tiles, waiting in the Add list by default; VPN says "Off", the tunnel that's up or how many are; Wired the connection or "Not Connected" | the disc switches; the VPN tile opens its page | VPN: a switch in the header for the preferred tunnel, and one per profile |
+| Tailscale | a tile with Tailscale's mark (drawn, as the font hasn't got it), waiting in the window's Suggestions by default; "via <exit node>", this device's address, "Connecting…", "Not logged in", "Disconnected" or "Daemon not running"; hidden without the `tailscale` binary | the disc connects or disconnects (`tailscale up` / `down`), or logs in when logged out; the tile opens the page | what's wrong (no daemon; **Log In…**, which opens the browser once the control plane hands out the URL; no operator grant, with the command to copy; a failed change; tailscaled's own warnings), This Device (a click copies the address), Exit Node (None or a peer that offers itself; offline ones can't be picked), Accept Routes, Accept DNS and Block Incoming switches, and the tailnet's Devices, online first (a click copies the address); Show in Status Bar; Admin Console… |
+| VPN, Wired | tiles, waiting in the window's Suggestions by default; VPN says "Off", the tunnel that's up or how many are; Wired the connection or "Not Connected" | the disc switches; the VPN tile opens its page | VPN: a switch in the header for the preferred tunnel, and one per profile |
 | Now Playing | the active player's art (from a file or the web), title and artist, how far through the track, or "Not Playing" | previous, play/pause, next | — |
 | Focus | Do Not Disturb: what's on, until when, or off | the disc switches it; the tile opens the page | Focus: For 1 Hour, Until This Evening, Until Tomorrow, the one that's on checked |
-| Keep Awake | a tile with a cup, waiting in the Add list by default; "Off", "No limit", the time left ("1 h 24 min"), "Lid ignored" or "Lid · 1 h 24 min"; lit while anything is held | the disc holds the screen on with no limit, or lets go of everything, the lid too; the tile opens the page | how long (No limit, 15 min, 30 min, 1 h, 2 h; picking one starts it now), Keep screen on and Ignore lid close (hidden without logind; the last one off turns it all off), Turn the screen off now (the monitors go off a second later, nothing is let go, and input brings them back); Show in Status Bar |
+| Keep Awake | a tile with a cup, waiting in the window's Suggestions by default; "Off", "No limit", the time left ("1 h 24 min"), "Lid ignored" or "Lid · 1 h 24 min"; lit while anything is held | the disc holds the screen on with no limit, or lets go of everything, the lid too; the tile opens the page | how long (No limit, 15 min, 30 min, 1 h, 2 h; picking one starts it now), Keep screen on and Ignore lid close (hidden without logind; the last one off turns it all off), Turn the screen off now (the monitors go off a second later, nothing is let go, and input brings them back); Show in Status Bar |
 | Dark Style, Night Light | round buttons, accent while on | switch; a right click on Night Light opens its page | Night Light: how warm |
 | Display | only with a backlight; the brightness slider between a dim and a bright glyph | drag or scroll | — |
 | Sound | the default output's level; the small glyph says how loud (off, down, up) | the small glyph mutes; drag or scroll sets the level; the chevron or a right click opens the page | Sound: the output's level and percentage (its glyph mutes it) and its devices, then the microphone's level and its devices (with a microphone); the default device checked, a click makes another the default |
@@ -67,9 +67,59 @@ Clicking any of them opens Quick Settings.
 
 ## Edit Controls
 
-In edit mode the chrome (ghost discs, badges, handles) fades in, a control added grows into its
-cells and one removed shrinks away, and when the grid gains or loses rows at rest the controls
-slide to their new place rather than jump.
+"Edit Controls" under the grid enters edit mode, as does a right click on the canvas's empty
+space and `quick-settings edit` over IPC. As on macOS Tahoe, editing opens the **Customize
+window** beside the card (`customize/`): a frosted sheet in the middle of the screen, moved left
+of the card when the screen has the room and no taller than the screen allows, with a sidebar and
+a pane. The card stays open at the bottom-right in edit mode: it grows to the whole canvas, the
+controls go inert, every free cell shows as a faint disc, and each control gets a remove badge at
+its top-left and, when it comes in more than one size, a resize handle at its bottom-right. The
+chrome fades in, a control added grows into its cells and one removed shrinks away, and when the
+grid gains or loses rows at rest the controls slide to their new place rather than jump.
+
+The window:
+
+- **The sidebar**: a search field ("Search Controls") over the categories, each a row with an
+  accent tile — All Controls, Battery, Connectivity, Display & Brightness, Focus, Keyboards, Lock
+  Screen, Now Playing, Power, Screenshot, Sounds and Utilities (`customize/catalog.rs` says which
+  control is under which). The picked row is filled.
+- **The pane**: every control of the picked category at its real size — a round button, a tile,
+  the square Now Playing, the slider cards — on a plain tint rather than glass (`tile::plain`),
+  its name centred under it on up to two lines, under a header per section with a hairline between
+  sections. All Controls starts with **Suggestions**, the controls not on the card, then every
+  category. A control this machine hasn't got shows dimmed, as it does on the canvas. Typing
+  anywhere searches by name or category; the pane shows the results. The pane scrolls with
+  momentum, a scrollbar showing while it moves.
+- **The footer**: the hint, then **Undo Remove** (while there's something to undo), **Reset
+  Layout** and **Done**, the one main action, in the accent.
+
+Using it:
+
+- **Add**: drag a control from the pane onto the card. It lifts under the pointer at
+  `quick.drag.scale` and, once it's over the canvas, the cell its top-left is nearest takes it and
+  the others make way live; an accent outline shows the cells it will land in. Let go there and it
+  stays; let go anywhere else and it goes back to the pane. A control already on the card, dragged
+  from the pane, lifts off its cells and follows the pointer the same way.
+- **Move**: drag a control on the card; the cell its top-left is nearest takes it, and the others
+  make way live: one control of the same size under it changes places with it, anything else goes
+  to the first free cells. Where nothing fits, the arrangement stays as it last fit. Every preview
+  is worked out from the layout as it was when the drag began, and the held control sits exactly
+  where the pointer took it (the pointer less where it was grabbed), so the cell under it never
+  shifts because of what the preview moved (the same cell always gives the same arrangement, and
+  moving back restores the start). A control keeps its cell until it's clearly in the next (half
+  a pitch and a tenth more), so a hand resting on a boundary doesn't make the grid flap. Escape
+  lets go of it where it started.
+- **Remove**: drag a control off the card (more than half a cell past its edge) and let go, as a
+  module is dragged out of Control Center, or click its badge. Dragged off, the others close up
+  behind it as it goes.
+- **Resize**: drag the handle; the pull picks the nearest size the control comes in, by width
+  and height (a round button becomes a tile, a tile three or four cells wide, Now Playing a
+  full row). An outline follows the hand, the control snaps between its sizes (holding the one
+  it has until another is clearly nearer), and the others make way the same way.
+- **Undo Remove** puts the last removed control back where it was; **Reset Layout** restores
+  Control Center's order (as `quick-settings reset-layout` does).
+- **Done** (in the window's footer, or the card's capsule, or Escape) leaves edit mode and closes
+  the window. Escape clears the search first when there is one.
 
 The grid is iOS Control Center's canvas: `quick.grid.cols` × `quick.grid.rows` (4 × 8) cells of
 `quick.grid.cell` (74 px) with `quick.grid.gap` (16 px) between them, so a row is 344 px. A
@@ -80,33 +130,20 @@ its disc (`quick.tile.disc`, 40) and its two lines (`quick.type.title` 14 px and
 on a `quick.type.line` 17 px line), so a 1×1 is exactly the disc and its padding. Out of edit
 mode the card shows the rows in use; holes inside stay empty.
 
-"Edit Controls" under the grid enters edit mode, as on iOS: the card grows to the whole canvas,
-the controls go inert, every free cell shows as a faint disc, and each control gets a remove
-badge at its top-left and, when it comes in more than one size, a resize handle at its
-bottom-right.
+### One surface for the card and the window
 
-- **Move**: drag a control; the cell its top-left is nearest takes it, and the others make way
-  live: one control of the same size under it changes places with it, anything else goes to the
-  first free cells. Where nothing fits, the arrangement stays as it last fit. Every preview is
-  worked out from the layout as it was when the drag began, and the held control sits exactly
-  where the pointer took it (the pointer less where it was grabbed), so the cell under it never
-  shifts because of what the preview moved (the same cell always gives the same arrangement, and
-  moving back restores the start). A control keeps its cell until it's clearly in the next (half
-  a pitch and a tenth more), so a hand resting on a boundary doesn't make the grid flap; an
-  accent outline shows the cells it will land in. Escape lets go of it where it started.
-- **Resize**: drag the handle; the pull picks the nearest size the control comes in, by width
-  and height (a round button becomes a tile, a tile three or four cells wide, Now Playing a
-  full row). An outline follows the hand, the control snaps between its sizes (holding the one
-  it has until another is clearly nearer), and the others make way the same way.
-- **Remove**: the badge hides it. **Add**: the hidden controls list under the grid, each with a
-  `+`, puts one back in the first free cells (at its smallest size if only that fits). One
-  whose hardware is missing ("Not available") goes on the canvas as a dimmed placeholder that
-  shows in edit mode only, waiting for its hardware; outside edit mode its cells count as
-  empty. The list scrolls past six rows, and says so when every control is on the canvas.
-- **Undo Remove** puts the last removed control back where it was; **Reset Layout** restores
-  Control Center's order (as `quick-settings reset-layout` does). Both are under the Add list.
-- **Done** (the accent capsule, or Escape) leaves edit mode. A right click on the canvas's
-  empty space enters it.
+amane can't carry a drag from one layer surface to another: each surface keeps its own hit areas
+and the compositor only sends a drag's motion to the surface it began on. So while editing the
+Quick Settings surface covers the output (as the launcher's does), and holds both the card, drawn
+where it always is at the bottom-right, and the window. Its input region is the two of them, so
+clicks anywhere else go through to what's under them. One still layer under both
+(`customize::drag_layer`) is what every drag is measured on: a press on a control in the pane
+takes hold of it (`edit::lift`), a press on the canvas picks up or resizes what's there, and the
+control in hand is drawn by the surface over card and window alike (`customize::ghost`), its grid
+copy clear, so it's never cut off at the card's edge. The surface grows to the output as edit
+mode begins and shrinks back to the card once the window has faded out, both at rest. The card's
+place on the surface is worked out from the surface's size in both modes, so the one frame amane
+draws at the old size as the mode changes draws the card where it is.
 
 The layout is kept in `$XDG_STATE_HOME/amane-shell/quick-settings`:
 
@@ -116,12 +153,13 @@ The layout is kept in `$XDG_STATE_HOME/amane-shell/quick-settings`:
 
 The ids are `wifi`, `bluetooth`, `now-playing`, `vpn`, `wired`, `focus`, `dark-style`,
 `night-light`, `display`, `sound`, `battery`, `power-mode`, `keyboard`, `airplane`,
-`background-apps`, `screenshot`, `lock`, `power-off` and `tailscale`. A control without `col`/`row` is
-hidden. A file from an older version is ignored. One that places something off the canvas or
-over another control moves it to the first free cells (or hides it); a control the file doesn't
-name is added hidden, so a control that arrives with an update or new hardware waits in the Add
-list rather than tearing a hole in the canvas. The default packs Control Center's order onto the
-canvas for the controls this machine has, with VPN and Wired hidden. `quick-settings reset-layout` over IPC
+`background-apps`, `screenshot`, `lock`, `power-off`, `tailscale` and `keep-awake`. A control
+without `col`/`row` is hidden (it waits in the window's Suggestions). A file from an older
+version is ignored. One that places something off the canvas or over another control moves it to
+the first free cells (or hides it); a control the file doesn't name is added hidden, so a control
+that arrives with an update or new hardware waits in Suggestions rather than tearing a hole in
+the canvas. The default packs Control Center's order onto the canvas for the controls this machine
+has, with VPN, Wired, Tailscale and Keep Awake hidden. `quick-settings reset-layout` over IPC
 restores it.
 
 ## Motion
@@ -166,25 +204,29 @@ at `quick.drag.scale`, springing back to size when let go. The cursor a drag sta
 until the drop (amane keeps the dragged target's cursor): a resize handle doesn't follow the
 pointer, and a cursor flipping on every motion made niri redraw every output each time.
 
-A drag is measured on one still layer over the canvas (`edit::drag_layer`), not on the control.
-amane measures a drag against the hit areas of the last frame drawn, and a control on the move
-is drawn somewhere new each frame; a drag measured on it counted the pointer's motion against
-where the control *was*, several times a frame with a mouse that reports faster than the screen
-refreshes, so the control overshot and snapped back every frame. amane also keeps the target
-being dragged by its position in the frame's hit areas, so the layer comes before the controls,
-after layers whose shape never changes under a drag (one ghost disc per cell, one drop outline).
-The frost behind a moving control is the control as drawn, scaled about its centre, the same
-shape its glass edge is lit on.
+A drag is measured on one still layer over the whole surface (`customize::drag_layer`), not on
+the control. amane measures a drag against the hit areas of the last frame drawn, and a control on
+the move is drawn somewhere new each frame; a drag measured on it counted the pointer's motion
+against where the control *was*, several times a frame with a mouse that reports faster than the
+screen refreshes, so the control overshot and snapped back every frame. amane also keeps the
+target being dragged by its position in the frame's hit areas, so the layer comes first on the
+surface, before anything that changes under a drag. Buttons and rows keep their own presses
+(amane hands a press to the innermost hit area that listens for a drag, and every button does, for
+its press pulse), so only a press on an inert control or the canvas reaches the layer. The frost
+behind a moving control is the control as drawn, scaled about its centre, the same shape its glass
+edge is lit on.
 
 ## Frost
 
 niri frosts a layer surface where the surface asks, or its whole geometry when it doesn't ask.
 The Quick Settings surface asks with one rounded shape per piece of glass
 (`LayerWindow::blur_shapes`, `glass_region.rs`): the grid's modules, the Edit Controls capsule,
-the Add list, and a page's sheet. The shapes go over niri-blur-shapes, a protocol of our niri
+the Customize window's sheet and the control in hand, and a page's sheet. The shapes go over niri-blur-shapes, a protocol of our niri
 fork: each is a rounded rectangle in fractional surface coordinates with its own alpha, which
 niri draws through its corner-rounding shader, half a pixel inside the module's own antialiased
-edge, so no frost strays past a corner. Each also names the material `glass` and carries the
+edge, so no frost strays past a corner. While editing, the Customize window's sheet and the
+control in hand are shapes of their own; the controls in the window's pane ask for none, which is
+why they're drawn on a plain tint. Each also names the material `glass` and carries the
 modules' tint. When niri's config defines a `glass` material (`materials {}`, see niri's
 Window-Effects wiki page), niri draws the modules' tint and lit edge itself, from the real
 backdrop and on the frost's own edge: the modules then leave out their tint fill and the grid
@@ -215,8 +257,9 @@ printf 'quick-settings\nclose\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
 ```
 
 The pages are `grid`, `sound`, `wifi`, `vpn`, `bluetooth`, `power-mode`, `power`, `night-light`,
-`do-not-disturb`, `keyboard`, `session`, `background-apps`, `tailscale` and `keep-awake`. `quick-settings edit` opens the
-grid in edit mode, and `quick-settings reset-layout` restores the default layout. A niri keybind:
+`do-not-disturb`, `keyboard`, `session`, `background-apps`, `tailscale` and `keep-awake`. `quick-settings edit` (or
+`customize`) opens the grid in edit mode with the Customize window, and `quick-settings
+reset-layout` restores the default layout. A niri keybind:
 
 ```kdl
 Mod+S { spawn "sh" "-c" "printf 'quick-settings\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock"; }
@@ -234,7 +277,7 @@ The parts are in `src/components/quick_settings/`:
   (`Style`): a `Card` (a glass capsule two, three or four cells wide), a `Row` (one line of a module), a
   `Round` button (the disc alone in a glass circle, named by a tooltip), a bare `Disc` inside a
   module. `module` is the glass piece every control sits in; `sheet` the page's, with the full
-  glass edge; `capsule_button` the labelled capsules.
+  glass edge; `capsule_button` the labelled capsules; `plain` builds modules on a flat tint for the window.
   - A round disc holding the glyph. It springs to the accent when the setting is on, like the
     `Switch` knob.
   - A title and an elided subtitle beside the disc.
@@ -245,10 +288,14 @@ The parts are in `src/components/quick_settings/`:
   nearest place to a point) and `Occupancy` (which control each cell holds; the first free
   place for a span, what a rect covers, the rows in use). amane has no grid widget, on purpose.
 - **`controls.rs` (`ControlId`)**: every control, the sizes it comes in, and how to build it.
-- **`layout.rs` (`Layout`)**: where each control sits and how big it is; the file; `moved` and
-  `resized` give the layout a drag would leave (swap or push), `show` the first free cells.
-- **`edit.rs`**: edit mode: the drag in hand and the layout it previews from the base, the
-  resize ghost, the badge and handle, the ghost discs, the add list's actions.
+- **`layout.rs` (`Layout`)**: where each control sits and how big it is; the file; `moved`,
+  `placed_at` (a control from the window too) and `resized` give the layout a drag would leave
+  (swap or push), `show` the first free cells.
+- **`edit.rs`**: edit mode: the drag in hand (from the canvas or the window) and the layout it
+  previews from the base, the resize ghost, the badge and handle, the ghost discs, undo and reset.
+- **`customize/`**: the Customize window: `mod.rs` the sheet, the sidebar, the pane (every
+  control on a plain tint, named), the footer, the still drag layer and the control in hand;
+  `catalog.rs` the categories, what each shows and the search (pure, tested).
 - **`glass_region.rs`**: the frost behind a piece of glass as a blur shape, and its transforms.
 - **`tiles/media.rs`**: the square Now Playing module.
 - **`slider_card.rs`**: the Display and Sound cards: a title over each thin slider, a small
@@ -268,6 +315,9 @@ The parts are in `src/components/quick_settings/`:
 
 It reuses the shared components:
 
+- **`SearchField`**, **`Flow`**, **`List`** (its `leading_tile` and `bare` rows),
+  **`PushButton`**, **`ScrollView`** and **`Kinetic`** in the Customize window, and
+  **`text_edit::Field`** for its search.
 - **`Slider`**: the thin slider, with `fill` and `thickness` for the cards and `inert` for
   edit mode; `Slider::large` (a control-tall track with the glyph as its knob, which can mute)
   on the pages.

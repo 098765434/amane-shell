@@ -1,10 +1,16 @@
-//! The search field's text: a caret and a selection, kept in characters,
-//! edited the way a one-line text field is. The launcher draws the text
-//! itself rather than focusing a `TextInput`, so every key reaches its
-//! `on_key`, and this is the editing it does there.
+//! A one-line text field's text: a caret and a selection, kept in
+//! characters, edited the way a one-line text field is. A surface that
+//! draws its search text itself rather than focusing a `TextInput` (so
+//! every key reaches its `on_key`) keeps one of these and hands it the keys
+//! ([`Field::handle`]); the launcher and Quick Settings' Customize window
+//! do. Copying and pasting go through wl-clipboard ([`copy`], [`paste`]).
+
+use amane::{Key, Modifiers};
+
+use crate::services::{run, run_now};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(super) struct Field {
+pub(crate) struct Field {
     text: String,
     // where the caret is, in characters
     caret: usize,
@@ -13,7 +19,7 @@ pub(super) struct Field {
 }
 
 impl Field {
-    pub(super) const fn new() -> Self {
+    pub(crate) const fn new() -> Self {
         Self {
             text: String::new(),
             caret: 0,
@@ -21,20 +27,20 @@ impl Field {
         }
     }
 
-    pub(super) fn text(&self) -> &str {
+    pub(crate) fn text(&self) -> &str {
         &self.text
     }
 
-    pub(super) fn caret(&self) -> usize {
+    pub(crate) fn caret(&self) -> usize {
         self.caret
     }
 
-    pub(super) fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.text.chars().count()
     }
 
     /// The selection as an ordered range, empty at the caret without one.
-    pub(super) fn selection(&self) -> (usize, usize) {
+    pub(crate) fn selection(&self) -> (usize, usize) {
         match self.anchor {
             Some(anchor) => (anchor.min(self.caret), anchor.max(self.caret)),
             None => (self.caret, self.caret),
@@ -42,16 +48,16 @@ impl Field {
     }
 
     /// Characters `from` up to `to`.
-    pub(super) fn slice(&self, from: usize, to: usize) -> String {
+    pub(crate) fn slice(&self, from: usize, to: usize) -> String {
         self.text.chars().skip(from).take(to - from).collect()
     }
 
-    pub(super) fn selected(&self) -> String {
+    pub(crate) fn selected(&self) -> String {
         let (from, to) = self.selection();
         self.slice(from, to)
     }
 
-    pub(super) fn select_all(&mut self) {
+    pub(crate) fn select_all(&mut self) {
         self.anchor = Some(0);
         self.caret = self.len();
         self.settle();
@@ -59,7 +65,7 @@ impl Field {
 
     /// Moves the caret to `to`, extending the selection with Shift held,
     /// else dropping it.
-    pub(super) fn move_to(&mut self, to: usize, extend: bool) {
+    pub(crate) fn move_to(&mut self, to: usize, extend: bool) {
         if extend {
             self.anchor.get_or_insert(self.caret);
         } else {
@@ -70,7 +76,7 @@ impl Field {
     }
 
     /// Left: a step back, or without Shift to the selection's start.
-    pub(super) fn left(&mut self, extend: bool) {
+    pub(crate) fn left(&mut self, extend: bool) {
         match (extend, self.anchor) {
             (false, Some(_)) => self.move_to(self.selection().0, false),
             _ => self.move_to(self.caret.saturating_sub(1), extend),
@@ -78,7 +84,7 @@ impl Field {
     }
 
     /// Right: a step on, or without Shift to the selection's end.
-    pub(super) fn right(&mut self, extend: bool) {
+    pub(crate) fn right(&mut self, extend: bool) {
         match (extend, self.anchor) {
             (false, Some(_)) => self.move_to(self.selection().1, false),
             _ => self.move_to(self.caret + 1, extend),
@@ -87,7 +93,7 @@ impl Field {
 
     /// Types `text` at the caret, over the selection. Line breaks and other
     /// control characters are left out: the field is one line.
-    pub(super) fn insert(&mut self, text: &str) {
+    pub(crate) fn insert(&mut self, text: &str) {
         let clean: String = text.chars().filter(|c| !c.is_control()).collect();
         if clean.is_empty() {
             return;
@@ -99,7 +105,7 @@ impl Field {
     }
 
     /// Removes the selection, if there is one; whether it did.
-    pub(super) fn delete_selection(&mut self) -> bool {
+    pub(crate) fn delete_selection(&mut self) -> bool {
         let (from, to) = self.selection();
         self.anchor = None;
         if from == to {
@@ -113,7 +119,7 @@ impl Field {
 
     /// Backspace: the selection, else the character before the caret;
     /// whether anything went.
-    pub(super) fn backspace(&mut self) -> bool {
+    pub(crate) fn backspace(&mut self) -> bool {
         if self.delete_selection() {
             return true;
         }
@@ -123,6 +129,49 @@ impl Field {
         let at = self.byte(self.caret - 1);
         self.text.remove(at);
         self.caret -= 1;
+        true
+    }
+
+    /// Edits for `key` with `held`, as a one-line field does: characters
+    /// and Space type, Backspace deletes, Left/Right/Home/End move the
+    /// caret (Shift extends the selection), and Ctrl+A/C/X/V select all,
+    /// copy, cut and paste. Other chords (Alt, Super) are swallowed, not
+    /// typed. Whether the key was one of the field's at all.
+    pub(crate) fn handle(&mut self, key: Key, held: Modifiers) -> bool {
+        if held.ctrl
+            && let Key::Character(letter) = key
+        {
+            match letter.to_ascii_lowercase() {
+                'a' => self.select_all(),
+                'c' => copy(&self.selected()),
+                'x' => {
+                    copy(&self.selected());
+                    self.delete_selection();
+                }
+                'v' => {
+                    if let Some(text) = paste() {
+                        self.insert(&text);
+                    }
+                }
+                _ => return false,
+            }
+            return true;
+        }
+        if held.command() {
+            return false;
+        }
+        match key {
+            Key::Character(letter) => self.insert(&letter.to_string()),
+            Key::Space => self.insert(" "),
+            Key::Backspace => {
+                self.backspace();
+            }
+            Key::Left => self.left(held.shift),
+            Key::Right => self.right(held.shift),
+            Key::Home => self.move_to(0, held.shift),
+            Key::End => self.move_to(usize::MAX, held.shift),
+            _ => return false,
+        }
         true
     }
 
@@ -140,6 +189,18 @@ impl Field {
             .nth(at)
             .map_or(self.text.len(), |(i, _)| i)
     }
+}
+
+/// Puts `text` on the clipboard (`wl-copy`).
+pub(crate) fn copy(text: &str) {
+    if !text.is_empty() {
+        run("wl-copy", vec![String::from("--"), text.to_string()]);
+    }
+}
+
+/// The clipboard's text (`wl-paste`). Blocks for as long as it takes.
+pub(crate) fn paste() -> Option<String> {
+    run_now("wl-paste", &[String::from("--no-newline")])
 }
 
 #[cfg(test)]
@@ -206,6 +267,35 @@ mod tests {
     fn pasted_line_breaks_are_dropped() {
         let field = typed("one\ntwo");
         assert_eq!(field.text(), "onetwo");
+    }
+
+    #[test]
+    fn the_keys_edit_as_a_field_does() {
+        let none = Modifiers::default();
+        let shift = Modifiers {
+            shift: true,
+            ..Modifiers::default()
+        };
+        let mut field = Field::new();
+        assert!(field.handle(Key::Character('h'), none));
+        assert!(field.handle(Key::Character('i'), none));
+        assert!(field.handle(Key::Space, none));
+        assert_eq!(field.text(), "hi ");
+        assert!(field.handle(Key::Backspace, none));
+        assert!(field.handle(Key::Home, none));
+        assert!(field.handle(Key::Right, shift));
+        assert_eq!(field.selected(), "h");
+        assert!(field.handle(Key::End, none));
+        assert_eq!(field.caret(), 2);
+        // not the field's: Enter, Escape, a Super chord
+        assert!(!field.handle(Key::Enter, none));
+        assert!(!field.handle(Key::Escape, none));
+        let logo = Modifiers {
+            logo: true,
+            ..Modifiers::default()
+        };
+        assert!(!field.handle(Key::Character('q'), logo));
+        assert_eq!(field.text(), "hi");
     }
 
     #[test]

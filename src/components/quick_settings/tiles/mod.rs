@@ -21,8 +21,8 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use amane::{
-    Blend, BlurShape, Button, Center, Color, Column, End, Parent, Rectangle, Row, ScrollArea, Size,
-    Stack, Start, Text, Widget,
+    Blend, BlurShape, Button, Center, Color, Column, Parent, Rectangle, Size, Stack, Start, Text,
+    Widget,
 };
 
 use super::controls::{self, ControlId, Ctx};
@@ -32,16 +32,11 @@ use super::tile::{capsule_button, capsule_width, module};
 use super::{edit, layout};
 use crate::components::glass::{self, Rim};
 use crate::components::glass_region;
-use crate::components::icons::ICON_ADD;
-use crate::components::layout::{boxed, icon, pad, text_height};
-use crate::components::list::{self, List, ListItem};
+use crate::components::layout::boxed;
 use crate::components::motion::{self, Arrive, Item, Pose};
 use crate::components::panel::close;
 use crate::services::installed;
 use crate::tokens::{Styled, quick, sys};
-
-/// How many cells wide the Add list beside the canvas is in edit mode.
-const ADD_LIST_CELLS: u8 = 3;
 
 /// Every control's motion is kept under this scope.
 pub(super) const SCOPE: &str = "amane.qs.grid";
@@ -98,7 +93,7 @@ fn arriving(pose: Pose, arrived: f32) -> Pose {
 /// compositor should frost behind it (in the grid's own coordinates).
 pub(super) struct Grid {
     pub widget: Box<dyn Widget>,
-    /// The canvas's width, and the Add list's beside it in edit mode.
+    /// The canvas's width.
     pub width: f32,
     pub height: f32,
     pub shapes: Vec<BlurShape>,
@@ -178,26 +173,17 @@ pub(super) fn grid(look: Motion) -> Grid {
     };
     let grid_h = px.extent(rows);
 
-    // in edit mode the Add list sits to the left of the canvas, which
-    // moves right by its width
     let gap = sys::space::gap::l();
-    let canvas_x = if editing {
-        px.extent(ADD_LIST_CELLS) + gap
-    } else {
-        0.0
-    };
     let mut shapes = Vec::new();
     // every module's glass edge, lit in one pass over the whole grid
     let mut rims: Vec<Rim> = Vec::new();
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
-    // in edit mode the places a control can go show through, as on iOS,
-    // and the layer every drag is measured on comes before the controls:
-    // amane keeps the target being dragged by its place in the frame's hit
-    // areas, so nothing that changes shape under a drag may come before it
+    // in edit mode the places a control can go show through, as on iOS.
+    // The layer every drag is measured on is the surface's own, under the
+    // card and the Customize window alike (`customize::drag_layer`).
     if editing {
         layers.push(edit::ghost_grid(&px, &canvas, &shown_layout.occupancy()));
         layers.push(edit::drop_outline(&px, &shown_layout));
-        layers.push(edit::drag_layer());
     }
     // the control in hand draws last, over the rest
     let held = edit::held();
@@ -235,6 +221,13 @@ pub(super) fn grid(look: Motion) -> Grid {
         if let Some((_, shows)) = focused {
             pose.opacity *= shows;
         }
+        // the control in hand is drawn by the surface over the card and
+        // the Customize window both (`customize::ghost`), frost and all; its
+        // place here stays, clear, so nothing else in the frame moves
+        let in_hand = held == Some(id);
+        if in_hand {
+            pose.opacity = 0.0;
+        }
         let widget = if editing && !item.leaving {
             dressings.push(edit::dressing(id, slot, pose));
             edit::body(widget, slot)
@@ -247,17 +240,19 @@ pub(super) fn grid(look: Motion) -> Grid {
         let radius = radius_of(id, rect.span, slot) * pose.scale;
         // frosted and lit as drawn: scaled about its centre, fading with it
         let drawn = Rim {
-            x: canvas_x + pose.x + slot.width * (1.0 - pose.scale) / 2.0,
+            x: pose.x + slot.width * (1.0 - pose.scale) / 2.0,
             y: pose.y + slot.height * (1.0 - pose.scale) / 2.0,
             width: slot.width * pose.scale,
             height: slot.height * pose.scale,
             radius,
             opacity: pose.opacity.clamp(0.0, 1.0),
         };
-        if focused.is_none() {
+        if focused.is_none() && !in_hand {
             shapes.push(frost(&drawn));
         }
-        rims.push(drawn);
+        if !in_hand {
+            rims.push(drawn);
+        }
         layers.push(boxed(
             Rectangle::new()
                 .width(Size::Fixed(slot.width))
@@ -293,7 +288,7 @@ pub(super) fn grid(look: Motion) -> Grid {
     let button_h = sys::size::control::height();
     let label = if editing { "Done" } else { "Edit Controls" };
     let button_w = capsule_width(label, false);
-    let button_x = canvas_x + (width - button_w) / 2.0;
+    let button_x = (width - button_w) / 2.0;
     // it arrives last, after the controls above it
     let pose = arriving(Pose::at(0.0), look.arrival(1.0));
     let capsule = Rim {
@@ -333,39 +328,10 @@ pub(super) fn grid(look: Motion) -> Grid {
         .gap(gap)
         .width(Size::Fixed(width));
 
-    // what's been removed, to add back, and the layout's own actions, on a
-    // sheet beside the canvas, its bottom in line with the canvas's
-    let widget: Box<dyn Widget> = if editing {
-        let hidden: Vec<ControlId> = layout::with(|layout| layout.hidden().collect());
-        let list_w = px.extent(ADD_LIST_CELLS);
-        let (list, list_h) = add_list(hidden, list_w, grid_h);
-        let sheet = Rim {
-            x: 0.0,
-            y: grid_h - list_h,
-            width: list_w,
-            height: list_h,
-            radius: quick::card::radius(),
-            opacity: 1.0,
-        };
-        shapes.push(frost(&sheet));
-        rims.push(sheet);
-        let beside = Rectangle::new()
-            .width(Size::Fixed(list_w))
-            .height(Size::Fixed(grid_h))
-            .fill(Color::TRANSPARENT)
-            .align_child(Start, End)
-            .child(Stack::new(vec![list]));
-        boxed(
-            Row::new(vec![boxed(beside), boxed(column)])
-                .gap(gap)
-                .align(Start),
-        )
-    } else {
-        boxed(column)
-    };
+    let widget: Box<dyn Widget> = boxed(column);
 
     // the glass over everything: one layer lights every module's edge
-    let total_w = canvas_x + width;
+    let total_w = width;
     let mut lit: Vec<Box<dyn Widget>> = vec![widget];
     if !glass_region::compositor_glass() {
         lit.extend(glass::rim_layers(&rims).into_iter().map(boxed));
@@ -400,83 +366,10 @@ fn frost(drawn: &Rim) -> BlurShape {
     )
 }
 
-/// The controls hidden from the grid, each a row that adds it back (one
-/// whose hardware is missing waits on the canvas for it), then Undo
-/// Remove and Reset Layout, on a glass sheet `width` wide and no taller
-/// than `max_height`; and how tall it is. A long list scrolls.
-fn add_list(hidden: Vec<ControlId>, width: f32, max_height: f32) -> (Box<dyn Widget>, f32) {
-    let inset = sys::space::gap::s();
-    let row_h = sys::size::row::height();
-    let row_gap = sys::space::gap::xs();
-    let header_h = text_height(sys::r#type::caption());
-    let list_rows = hidden.len().max(1) as f32;
-    let actions_h = row_h * 2.0 + row_gap;
-    let frame_h = sys::space::gap::l() + actions_h + inset * 2.0;
-    let wanted = header_h + row_gap + list_rows * row_h + (list_rows - 1.0) * row_gap;
-    let list_h = wanted.min((max_height - frame_h).max(row_h));
-    let height = list_h + frame_h;
-
-    let (list, actions) = list::with_row_width(width - inset * 2.0, || {
-        let items: Vec<ListItem> = hidden
-            .into_iter()
-            .map(|id| {
-                let item = ListItem::new(format!("amane.qs.add.{}", id.name()), id.title());
-                // one without its hardware says so in place of the plus;
-                // it still goes on the canvas, to wait there
-                let item = if controls::available(id) {
-                    item.trailing(icon(
-                        ICON_ADD,
-                        sys::size::icon::m(),
-                        sys::color::accent::bg(),
-                    ))
-                } else {
-                    item.trailing(
-                        Text::new("Unavailable")
-                            .style(sys::r#type::caption())
-                            .color(sys::color::content::secondary()),
-                    )
-                };
-                item.on_press(move || edit::add(id))
-            })
-            .collect();
-        let list = List::new(items)
-            .header("Add a Control")
-            .empty("Every control is on the canvas")
-            .build();
-        let list = ScrollArea::new("amane.qs.add", list).height(Size::Fixed(list_h));
-
-        let mut undo = ListItem::new("amane.qs.edit.undo", "Undo Remove");
-        if edit::can_undo() {
-            undo = undo
-                .color(sys::color::surface::panel::fg())
-                .on_press(edit::undo);
-        }
-        let reset = ListItem::new("amane.qs.edit.reset", "Reset Layout")
-            .color(sys::color::surface::panel::fg())
-            .on_press(edit::reset);
-        (list, List::new(vec![undo, reset]).build())
-    });
-
-    let inner = Rectangle::new()
-        .width(Parent)
-        .height(Size::Fixed(height))
-        .fill(Color::TRANSPARENT)
-        .padding(pad(inset, inset))
-        .align_child(Start, Start)
-        .child(
-            Column::new(vec![boxed(list), boxed(actions)])
-                .gap(sys::space::gap::l())
-                .width(Parent),
-        );
-    (
-        boxed(module(width, height, quick::card::radius(), inner)),
-        height,
-    )
-}
-
-/// What a control waiting for its hardware shows in edit mode: its
-/// module's outline and name, dimmed, so it can be moved or removed.
-fn placeholder(id: ControlId, slot: Slot) -> Box<dyn Widget> {
+/// What a control waiting for its hardware shows in edit mode and in the
+/// Customize window: its module's outline and name, dimmed, so it can be
+/// moved or removed.
+pub(super) fn placeholder(id: ControlId, slot: Slot) -> Box<dyn Widget> {
     let span = Span {
         cols: 1,
         rows: if slot.height > Metrics::tokens().cell * 1.5 {
@@ -501,7 +394,7 @@ fn placeholder(id: ControlId, slot: Slot) -> Box<dyn Widget> {
 // TODO(token): `sys.opacity.disabled` once Penpot has it (manual §1.1);
 // `buttons/mod.rs` holds the same value.
 /// How faint a placeholder is.
-const DIMMED: f32 = 0.38;
+pub(super) const DIMMED: f32 = 0.38;
 
 /// How round a control's module is: one cell tall it's a capsule, taller
 /// it has the card's corners, and the slider cards (Sound, Display) keep

@@ -40,8 +40,10 @@ ones — the bar itself is not.
   (battery, screenshot, lock, power menu), Now Playing, volume, microphone and brightness
   sliders, and tiles for wired, Wi‑Fi (and hotspot), VPN, Bluetooth, power mode, night light,
   dark style, Do Not Disturb, keyboard light, airplane mode and background apps. Each shows only
-  when the machine has it, and each opens a page of its own that slides in. The bar shows GNOME's
-  privacy icons (screen shared, camera, microphone) and the settings that are on.
+  when the machine has it, and each opens a page of its own that slides in. Edit Controls opens
+  a Customize window beside the card, after macOS's: a search, the controls by category, and a
+  drag onto the card to add one or off it to remove one. The bar shows GNOME's privacy icons
+  (screen shared, camera, microphone) and the settings that are on.
 - **Launcher** ([docs/launcher.md](docs/launcher.md)) — a Launchpad-style app launcher on a
   glass panel in the middle of the screen, from a keybind (`launcher toggle` over IPC): category
   pills, a grid of the installed apps that scrolls with momentum and swipes sideways between

@@ -120,6 +120,51 @@ pub(crate) fn text_width(text: &str, style: TextStyle) -> f32 {
     fixed_width(&Text::new(text).style(style))
 }
 
+/// `text` broken onto at most `max_lines` lines no wider than `width`, at
+/// the spaces, the last line elided to what's left over. amane's `Text`
+/// can't centre each line of wrapped text, so a caption centred under a
+/// tile is drawn a line at a time from this.
+pub(crate) fn wrapped_lines(
+    text: &str,
+    style: TextStyle,
+    width: f32,
+    max_lines: usize,
+) -> Vec<String> {
+    let fits = |line: &str| text_width(line, style) <= width;
+    let mut lines: Vec<String> = Vec::new();
+    let mut line = String::new();
+    for word in text.split_whitespace() {
+        let joined = if line.is_empty() {
+            word.to_string()
+        } else {
+            format!("{line} {word}")
+        };
+        if line.is_empty() || fits(&joined) {
+            line = joined;
+        } else {
+            lines.push(std::mem::replace(&mut line, word.to_string()));
+            if lines.len() == max_lines {
+                break;
+            }
+        }
+    }
+    if lines.len() < max_lines {
+        if !line.is_empty() {
+            lines.push(line);
+        }
+    } else if let Some(last) = lines.last_mut() {
+        // the rest didn't fit: the last line says so
+        let mut elided = format!("{last}…");
+        while !fits(&elided) && elided.chars().count() > 1 {
+            elided.pop();
+            elided.pop();
+            elided.push('…');
+        }
+        *last = elided;
+    }
+    lines
+}
+
 /// How tall one line of text in `style` is, measured.
 pub(crate) fn text_height(style: TextStyle) -> f32 {
     match Text::new("").style(style).height() {

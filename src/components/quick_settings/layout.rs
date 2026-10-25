@@ -219,6 +219,14 @@ impl Layout {
             .and_then(Entry::rect)
     }
 
+    /// The size `id` has, on the canvas or waiting in the Add list.
+    pub fn span_of(&self, id: ControlId) -> Option<Span> {
+        self.entries
+            .iter()
+            .find(|entry| entry.id == id)
+            .map(|entry| entry.span)
+    }
+
     pub fn occupancy(&self) -> Occupancy<ControlId> {
         Occupancy::of(self.canvas, self.placed())
     }
@@ -264,7 +272,17 @@ impl Layout {
     /// in its way swapped or pushed aside; `None` when that can't be done.
     pub fn moved(&self, id: ControlId, at: Place) -> Option<Layout> {
         let rect = self.rect_of(id)?;
-        self.settled(id, Rect::new(at, rect.span))
+        self.settled(id, Rect::new(at, rect.span), Some(rect))
+    }
+
+    /// This layout with `id` at `at`, `span` big (or the nearest size it
+    /// comes in), the controls in its way swapped or pushed aside as
+    /// [`moved`](Self::moved) does: a control from the Add list put on the
+    /// canvas by hand, or one on it moved. `None` when that can't be done.
+    pub fn placed_at(&self, id: ControlId, span: Span, at: Place) -> Option<Layout> {
+        self.span_of(id)?;
+        let span = id.clamp(span);
+        self.settled(id, Rect::new(at, span), self.rect_of(id))
     }
 
     /// This layout with `id` at `span` (or the nearest size it comes in),
@@ -275,19 +293,19 @@ impl Layout {
         let at = self
             .canvas
             .clamp(i32::from(rect.at.col), i32::from(rect.at.row), span);
-        self.settled(id, Rect::new(at, span))
+        self.settled(id, Rect::new(at, span), Some(rect))
     }
 
-    /// This layout with `id` at `rect`, making room for it.
-    fn settled(&self, id: ControlId, rect: Rect) -> Option<Layout> {
+    /// This layout with `id` at `rect`, making room for it; `before` is
+    /// where it was, or `None` for one coming from the Add list.
+    fn settled(&self, id: ControlId, rect: Rect, before: Option<Rect>) -> Option<Layout> {
         if !self.canvas.fits(&rect) {
             return None;
         }
-        let before = self.rect_of(id)?;
         let mut next = self.clone();
         next.entry(id)?.span = rect.span;
         next.entry(id)?.at = Some(rect.at);
-        if before == rect {
+        if before == Some(rect) {
             return Some(next);
         }
 
@@ -296,6 +314,7 @@ impl Layout {
 
         // one control its own size under it changes places with it
         if let [other] = covered[..]
+            && let Some(before) = before
             && let Some(theirs) = self.rect_of(other)
             && theirs.span == before.span
             && rect.span == before.span
@@ -481,6 +500,46 @@ mod tests {
         // Now Playing (2×2) onto Focus, a button and Display: Display has
         // no whole row left to go to, so nothing moves
         assert_eq!(layout.moved(ControlId::NowPlaying, Place::new(1, 2)), None);
+    }
+
+    #[test]
+    fn a_hidden_control_is_placed_by_hand_pushing_or_refusing() {
+        let layout = default();
+        assert_eq!(at(&layout, ControlId::Vpn), None);
+        // onto free cells it just goes there, at the size asked for
+        let placed = layout
+            .placed_at(ControlId::Vpn, Span::M, Place::new(0, 7))
+            .unwrap();
+        assert_eq!(
+            placed.rect_of(ControlId::Vpn),
+            Some(Rect::new(Place::new(0, 7), Span::M))
+        );
+        // onto the two round buttons: they go to the first free cells, at
+        // the bottom (it had no cells of its own to give them)
+        let placed = layout
+            .placed_at(ControlId::Vpn, Span::M, Place::new(2, 2))
+            .unwrap();
+        assert_eq!(at(&placed, ControlId::Vpn), Some(Place::new(2, 2)));
+        assert_eq!(at(&placed, ControlId::DarkStyle), Some(Place::new(1, 7)));
+        assert_eq!(at(&placed, ControlId::NightLight), Some(Place::new(2, 7)));
+        // a size it lacks snaps to one it has
+        let placed = layout
+            .placed_at(ControlId::Vpn, Span::S, Place::new(0, 7))
+            .unwrap();
+        assert_eq!(placed.span_of(ControlId::Vpn), Some(Span::M));
+        // off the canvas it can't go
+        assert_eq!(
+            layout.placed_at(ControlId::Vpn, Span::M, Place::new(3, 7)),
+            None
+        );
+        // one already on the canvas is simply moved
+        let moved = layout
+            .placed_at(ControlId::Wifi, Span::M, Place::new(0, 1))
+            .unwrap();
+        assert_eq!(
+            moved,
+            layout.moved(ControlId::Wifi, Place::new(0, 1)).unwrap()
+        );
     }
 
     #[test]

@@ -95,7 +95,7 @@ pub(crate) fn audio_glyph(kind: AudioKind, input: bool) -> char {
 const ICON_BATTERY_LEVELS: [char; 7] = [
     '\u{f30d}', '\u{f30c}', '\u{f30b}', '\u{f30a}', '\u{f309}', '\u{f308}', '\u{f307}',
 ];
-const ICON_BATTERY_FULL: char = '\u{f304}';
+pub(crate) const ICON_BATTERY_FULL: char = '\u{f304}';
 const ICON_BATTERY_BOLT: char = '\u{f305}';
 
 /// The battery glyph for a charge: a bolt while charging, otherwise filled to

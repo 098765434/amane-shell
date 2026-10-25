@@ -185,10 +185,10 @@ surface is hidden, so it never blocks anything.
 | `app_menu.rs` | an app's right-click menu |
 | `entries.rs` | what a search finds and what each entry does |
 | `model.rs` | categories, sums, URLs and session-action names (pure, tested) |
-| `edit.rs` | the search text, caret and selection (pure, tested) |
+| `components/text_edit.rs` | the search text, caret and selection (pure, tested; shared with Quick Settings' Customize window) |
 
-It's built on the shared [`ScrollView`, `Kinetic`, `AxisLock`, `Pager`, `workspace_menu` and
-`app_icon`](components.md).
+It's built on the shared [`ScrollView`, `Kinetic`, `AxisLock`, `Pager`, `workspace_menu`,
+`app_icon` and `text_edit`](components.md).
 
 Sizes particular to the launcher are `TODO(token)` constants until Penpot has a `launcher.*` set
 (see [penpot-todo.md](penpot-todo.md)). Everything else reads `sys.*`, so the launcher follows the

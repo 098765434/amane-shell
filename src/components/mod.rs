@@ -29,6 +29,9 @@
 //! - [`tooltip`] — M3's plain tooltip: a hovered control's label.
 //! - [`scroll_view`] — a clipped viewport scrolled along one axis, with a
 //!   scrollbar.
+//! - [`search_field`] — a search capsule: a magnifier, the query with its
+//!   caret and selection, and a clear button.
+//! - [`flow`] — fixed-size items flowing into rows, wrapping at a width.
 //! - [`workspace_menu`] — a submenu of workspaces to send something to.
 //! - [`app_icon`] — an app's icon from its desktop entry, by app_id.
 //! - [`panel`] — the one-open-at-a-time state of Quick Settings, the
@@ -42,6 +45,8 @@
 //! - [`color`] — colour arithmetic (`over`, `faded`, `with_alpha`).
 //! - [`motion`] — the shared springs and fades, and keyed list motion.
 //! - [`kinetic`] — following fingers, and the momentum a flick leaves.
+//! - [`text_edit`] — a one-line field's text, caret and selection, and the
+//!   keys that edit it.
 //! - [`pager`] — turning pages with the fingers, a flick or a wheel.
 //! - [`glass_region`] — where the compositor frosts behind clear glass.
 //! - [`edge_reveal`] — a surface hiding at a screen edge until the pointer
@@ -57,6 +62,7 @@ pub mod context_menu;
 pub mod divider;
 pub mod dock;
 pub mod edge_reveal;
+pub mod flow;
 pub mod glass;
 pub mod glass_region;
 pub mod icons;
@@ -70,7 +76,9 @@ pub mod pager;
 pub mod panel;
 pub mod quick_settings;
 pub mod scroll_view;
+pub mod search_field;
 pub mod slider;
 pub mod status_bar;
+pub mod text_edit;
 pub mod tooltip;
 pub mod workspace_menu;

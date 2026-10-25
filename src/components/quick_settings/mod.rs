@@ -30,8 +30,17 @@
 //! bar's Control Center button, a status icon, or over IPC:
 //! `quick-settings [toggle | open <page> | close]`. See
 //! `docs/quick-settings.md`.
+//!
+//! Edit mode opens the Customize window (`customize`) beside the card, as
+//! macOS's Customize Control Center does. amane can't carry a drag from one
+//! surface to another, so while editing this one surface covers the output
+//! and holds both: the card where it always is, at the bottom-right, and
+//! the window in the middle, with one still layer under both that every
+//! drag is measured on. Clicks outside the two go through to what's under
+//! them (`input_region`).
 
 mod controls;
+mod customize;
 mod detail;
 mod edit;
 mod grid;
@@ -46,12 +55,12 @@ use std::cell::{Cell, RefCell};
 use std::time::Instant;
 
 use amane::{
-    Animation, Blend, BlurShape, Color, End, Horizontal, Key, Keyboard, LayerWindow, Parent,
-    Rectangle, Size, Stack, Start, Vertical, Widget, mark_all,
+    Animation, Blend, BlurShape, Color, End, Horizontal, InputArea, Key, Keyboard, LayerWindow,
+    Parent, Rectangle, Size, Stack, Start, Vertical, Widget, WindowSize, mark_all, window_size,
 };
 
 use crate::components::glass_region;
-use crate::components::layout::{blank, boxed, pad};
+use crate::components::layout::{blank, boxed, pad, track_cursor};
 use crate::components::motion;
 use crate::components::panel::{self, Panel, close, is_open, overlay, popover_margin};
 use crate::tokens::quick;
@@ -149,14 +158,18 @@ fn go(page: Page) {
     mark_all();
 }
 
-/// Escape: lets go of a drag, then out of edit mode, back to the grid
-/// from a page, else close.
+/// Escape: lets go of a drag, then clears the Customize window's search,
+/// then out of edit mode, back to the grid from a page, else close.
 fn escape() {
     if edit::cancel() {
         return;
     }
     if edit::editing() {
-        edit::leave();
+        if customize::has_query() {
+            customize::clear_query();
+        } else {
+            edit::leave();
+        }
     } else if PAGE.get() == Page::Grid {
         close();
     } else {
@@ -186,6 +199,7 @@ fn hidden() {
     SHIFT.with_borrow_mut(|shift| *shift = motion::spring(0.0));
     LAST_INNER.set(0.0);
     edit::leave();
+    customize::hidden();
     motion::forget(tiles::SCOPE);
 }
 
@@ -210,7 +224,8 @@ pub fn ipc(args: &[String]) -> String {
                 close();
             }
         }
-        ["edit"] => {
+        // the Customize window opens with edit mode
+        ["edit"] | ["customize"] => {
             open(Page::Grid);
             edit::enter();
         }
@@ -222,7 +237,7 @@ pub fn ipc(args: &[String]) -> String {
         }
         _ => {
             return String::from(
-                "usage: quick-settings [toggle | open <page> | close | edit | reset-layout]",
+                "usage: quick-settings [toggle | open <page> | close | edit | customize | reset-layout]",
             );
         }
     }
@@ -456,7 +471,7 @@ pub fn surface() -> LayerWindow {
         (1.0 - scale) * width / 2.0,
         (1.0 - scale) * outer / 2.0 + lift,
     );
-    let frost = if open || fades {
+    let mut frost = if open || fades {
         glass_region::faded(
             glass_region::transformed(shapes, scale, (width, outer), (0.0, lift)),
             opacity,
@@ -464,10 +479,82 @@ pub fn surface() -> LayerWindow {
     } else {
         Vec::new()
     };
-    window(width, outer.round())
+
+    // Where the card is on the surface. In card mode the surface is the
+    // card, so this is (0, 0); while editing the surface covers the output
+    // and the card keeps its place at the bottom-right, the same place its
+    // margins give it. Worked out from the surface's size rather than the
+    // mode, so the one frame amane draws at the old size as the mode
+    // changes (the view runs before the new size is sent) draws the card
+    // where it is either way.
+    let (screen_w, screen_h) = window_size();
+    let margin = popover_margin();
+    let card_at = (
+        (screen_w - margin.right as f32 - width).max(0.0),
+        (screen_h - margin.bottom as f32 - outer).max(0.0),
+    );
+    let canvas_at = (card_at.0 + inset, card_at.1 + inset + grid_top + shift);
+    customize::set_canvas_origin(canvas_at.0, canvas_at.1);
+
+    let full = edit::editing() || customize::visible();
+    if !full {
+        return window(width, outer.round())
+            .visible(true)
+            .blur_shapes(frost)
+            .child(card);
+    }
+
+    // editing: the surface covers the output; the card is drawn where it
+    // always is, the Customize window beside it, the control in hand over
+    // both, and the one still layer every drag is measured on under all of
+    // it (first, so nothing that changes under a drag comes before it)
+    frost = glass_region::transformed(frost, 1.0, (0.0, 0.0), card_at);
+    let card = Rectangle::new()
+        .width(Size::Fixed(width))
+        .height(Size::Fixed(outer))
+        .fill(Color::TRANSPARENT)
+        .translate(card_at.0, card_at.1)
+        .child(card);
+    let card_area = customize::Area {
+        x: card_at.0,
+        y: card_at.1,
+        width,
+        height: outer,
+    };
+    let mut root: Vec<Box<dyn Widget>> = vec![customize::drag_layer(), boxed(card)];
+    let mut input = vec![input_area(card_area)];
+    if let Some(built) = customize::view((screen_w, screen_h), card_area) {
+        root.push(built.widget);
+        frost.extend(built.frost);
+        input.push(input_area(built.area));
+    }
+    if let Some((ghost, shape)) = customize::ghost(canvas_at) {
+        root.push(ghost);
+        frost.push(shape);
+    }
+    let surface = Rectangle::new()
+        .width(Parent)
+        .height(Parent)
+        .fill(Color::TRANSPARENT)
+        .child(Stack::new(root).width(Parent).height(Parent));
+    full_window()
         .visible(true)
+        .input_region(input)
         .blur_shapes(frost)
-        .child(card)
+        .child(track_cursor(surface))
+}
+
+/// `area` as a part of the surface that takes the pointer, rounded
+/// outwards so no rim of it is missed.
+fn input_area(area: customize::Area) -> InputArea {
+    let x = area.x.floor();
+    let y = area.y.floor();
+    InputArea {
+        x: x as i32,
+        y: y as i32,
+        width: ((area.x + area.width).ceil() - x) as i32,
+        height: ((area.y + area.height).ceil() - y) as i32,
+    }
 }
 
 // TODO(token): `quick.open.lift`, `quick.page.tile-fade` and
@@ -554,14 +641,28 @@ fn window(width: f32, height: f32) -> LayerWindow {
     let base = LayerWindow::new()
         .width(width)
         .height(height)
-        .margin(popover_margin())
-        // the card is modal while open, so Escape works from the first
-        // moment, however it was opened
-        .keyboard(Keyboard::Exclusive)
-        .on_key(|key| {
-            if matches!(key, Key::Escape) {
-                escape();
-            }
-        });
-    overlay(base, QS_NS, Vertical::Bottom, Horizontal::Right)
+        .margin(popover_margin());
+    overlay(keyed(base), QS_NS, Vertical::Bottom, Horizontal::Right)
+}
+
+/// The surface over the whole output while editing (clear of what the bar
+/// reserves, as the card is): the card and the Customize window on it.
+fn full_window() -> LayerWindow {
+    let base = LayerWindow::new()
+        .width(WindowSize::Full)
+        .height(WindowSize::Full);
+    overlay(keyed(base), QS_NS, Vertical::Bottom, Horizontal::Right)
+}
+
+/// `base` taking the keyboard: the card is modal while open, so Escape
+/// works from the first moment, however it was opened; while editing, the
+/// rest of the keys type into the Customize window's search.
+fn keyed(base: LayerWindow) -> LayerWindow {
+    base.keyboard(Keyboard::Exclusive).on_key(|key| {
+        if matches!(key, Key::Escape) {
+            escape();
+        } else if edit::editing() {
+            customize::key(key);
+        }
+    })
 }

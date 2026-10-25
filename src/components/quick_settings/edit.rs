@@ -3,8 +3,9 @@
 //! their badge and added back from a list. The layout they end up in is
 //! kept (`layout.rs`).
 //!
-//! A drag is measured on one still layer over the whole canvas
-//! (`drag_layer`), never on the control itself: amane measures a drag
+//! A drag is measured on one still layer over the whole surface
+//! (`customize::drag_layer`, under the card and the Customize window
+//! both), never on the control itself: amane measures a drag
 //! against the hit areas of the last frame drawn, and a control on the
 //! move is drawn somewhere new each frame, so a drag measured on it
 //! counts the pointer's motion against where the control *was*. With a
@@ -24,9 +25,8 @@
 //!
 //! amane finds the target being dragged by its position in the frame's hit
 //! areas, which has to stay the same from frame to frame while a drag is
-//! in flight. The layer comes before the controls, after the ghost discs
-//! (one per cell, whether free or not) and the drop outline (always one),
-//! so nothing that changes under a drag comes before it.
+//! in flight. The layer comes first on the surface, so nothing that
+//! changes under a drag comes before it.
 
 use std::cell::{Cell, RefCell};
 
@@ -35,6 +35,7 @@ use amane::{
 };
 
 use super::controls::ControlId;
+use super::customize;
 use super::grid::{Canvas, Metrics, Occupancy, Place, Rect, Slot, Span};
 use super::layout::{self, Layout};
 use super::tiles::{SCOPE, radius_of};
@@ -50,17 +51,30 @@ use crate::tokens::{quick, sys};
 /// the hand rests on a boundary.
 const BAND: f32 = 0.1;
 
+/// Where a control on the move was taken from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Origin {
+    /// Its cells on the canvas.
+    Canvas,
+    /// The Customize window's catalog: it has no cells until the preview
+    /// gives it some, and goes back to the catalog if let go elsewhere.
+    Window,
+}
+
 /// What the pointer holds.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) enum Drag {
     /// A control on the move: where on it the pointer took hold (from its
     /// top-left), where the pointer has its top-left now, in the grid's
-    /// pixels, and the cell the preview has it in.
+    /// pixels, the cell the preview has it in, where it came from, and
+    /// where the pointer last was (the grid's pixels too).
     Move {
         id: ControlId,
         grab: Point,
         at: (f32, f32),
         place: Option<Place>,
+        origin: Origin,
+        pointer: Point,
     },
     /// A control's corner handle: where the pointer took hold, the control
     /// as it was then, how big the pull has made it, and the size the
@@ -125,6 +139,7 @@ pub(super) fn enter() {
             *chrome = motion::fade(0.0, motion::FADE);
             chrome.to(1.0);
         });
+        customize::open();
         mark_all();
     }
 }
@@ -146,6 +161,7 @@ pub(super) fn leave() {
     PREVIEW.with_borrow_mut(|preview| *preview = None);
     UNDO.with_borrow_mut(|undo| *undo = None);
     layout::with(|layout| layout.save());
+    customize::close();
     mark_all();
 }
 
@@ -183,6 +199,41 @@ pub(super) fn held_pose(id: ControlId) -> Option<Pose> {
         }),
         _ => None,
     }
+}
+
+/// The control on the move and where its top-left is, in the grid's
+/// pixels, for whoever draws it outside the grid.
+pub(super) fn held_at() -> Option<(ControlId, (f32, f32))> {
+    match DRAG.get() {
+        Some(Drag::Move { id, at, .. }) => Some((id, at)),
+        _ => None,
+    }
+}
+
+/// Takes hold of `id` from the Customize window's catalog: the pointer at
+/// `point` (in the grid's pixels, wherever that is) holds it `grab` in
+/// from its top-left. On the canvas it's the same as a control picked up
+/// there; off the canvas it has no cells yet. A control already on the
+/// canvas is picked up from its cells.
+pub(super) fn lift(id: ControlId, grab: Point, point: Point) {
+    if DRAG.get().is_some() {
+        return;
+    }
+    begin();
+    let origin = if layout::with(|layout| layout.rect_of(id).is_some()) {
+        Origin::Canvas
+    } else {
+        Origin::Window
+    };
+    DRAG.set(Some(Drag::Move {
+        id,
+        grab,
+        at: follow(grab, point),
+        place: None,
+        origin,
+        pointer: point,
+    }));
+    drag_move(point);
 }
 
 /// A drag begins: the layout as it is now is what every preview starts from.
@@ -235,6 +286,8 @@ pub(super) fn drag_at(point: Point) {
                         },
                         at: (slot.x, slot.y),
                         place: None,
+                        origin: Origin::Canvas,
+                        pointer: point,
                     }));
                     drag_move(point);
                 }
@@ -255,25 +308,56 @@ pub(super) fn drag_at(point: Point) {
     }
 }
 
-/// The button came up.
+/// The button came up. A control let go off the canvas (by more than half
+/// a cell beyond its edge) doesn't land: one from the canvas is removed,
+/// as a module dragged out of Control Center is, and one from the
+/// Customize window goes back to it.
 pub(super) fn release() {
     match DRAG.get() {
-        Some(Drag::Move { id, at, .. }) => {
-            // the control springs from where it was let go, lift and all
-            motion::jump(
-                SCOPE,
-                id.key(),
-                Pose {
-                    scale: quick::drag::scale(),
-                    ..Pose::at(at.1).moved(at.0)
-                },
-            );
-            commit();
+        Some(Drag::Move {
+            id,
+            at,
+            origin,
+            pointer,
+            place,
+            ..
+        }) => {
+            let canvas = BASE.with_borrow(|base| base.as_ref().map(|b| b.canvas));
+            let off = canvas.is_some_and(|canvas| {
+                off_canvas(&Metrics::tokens(), &canvas, pointer) || place.is_none()
+            });
+            if off {
+                cancel();
+                if origin == Origin::Canvas {
+                    hide(id);
+                }
+            } else {
+                // the control springs from where it was let go, lift and all
+                motion::jump(
+                    SCOPE,
+                    id.key(),
+                    Pose {
+                        scale: quick::drag::scale(),
+                        ..Pose::at(at.1).moved(at.0)
+                    },
+                );
+                commit();
+            }
         }
         Some(Drag::Resize { .. }) => commit(),
         None => {}
     }
     mark_all();
+}
+
+/// Whether `point` (in the grid's pixels) is clearly off the canvas: more
+/// than half a cell beyond any edge.
+pub(super) fn off_canvas(px: &Metrics, canvas: &Canvas, point: Point) -> bool {
+    let margin = px.cell / 2.0;
+    point.x < -margin
+        || point.y < -margin
+        || point.x > px.extent(canvas.cols) + margin
+        || point.y > px.extent(canvas.rows) + margin
 }
 
 /// What `point` on the canvas lands on this frame: the corner handle of a
@@ -317,7 +401,11 @@ fn handle_side() -> f32 {
 
 fn drag_move(point: Point) {
     let Some(Drag::Move {
-        id, grab, place, ..
+        id,
+        grab,
+        place,
+        origin,
+        ..
     }) = DRAG.get()
     else {
         return;
@@ -326,16 +414,31 @@ fn drag_move(point: Point) {
 
     let (canvas, span) = BASE.with_borrow(|base| {
         let base = base.as_ref();
-        (
-            base.map(|b| b.canvas),
-            base.and_then(|b| b.rect_of(id)).map(|rect| rect.span),
-        )
+        (base.map(|b| b.canvas), base.and_then(|b| b.span_of(id)))
     });
     let mut place = place;
     if let (Some(canvas), Some(span)) = (canvas, span) {
-        let nearest = Metrics::tokens().settle(&canvas, at.0, at.1, span, place, BAND);
-        if place != Some(nearest) && preview(|base| base.moved(id, nearest)) {
-            place = Some(nearest);
+        let px = Metrics::tokens();
+        if off_canvas(&px, &canvas, point) {
+            // off the canvas it has no cells: the others go back to where
+            // they were, and a control from the canvas leaves a hole
+            if place.is_some() {
+                place = None;
+                PREVIEW.with_borrow_mut(|preview| {
+                    *preview = BASE.with_borrow(|base| {
+                        base.as_ref().map(|base| {
+                            let mut lifted = base.clone();
+                            lifted.hide(id);
+                            lifted
+                        })
+                    });
+                });
+            }
+        } else {
+            let nearest = px.settle(&canvas, at.0, at.1, span, place, BAND);
+            if place != Some(nearest) && preview(|base| base.placed_at(id, span, nearest)) {
+                place = Some(nearest);
+            }
         }
     }
     DRAG.set(Some(Drag::Move {
@@ -343,6 +446,8 @@ fn drag_move(point: Point) {
         grab,
         at,
         place,
+        origin,
+        pointer: point,
     }));
     mark_all();
 }
@@ -448,35 +553,7 @@ pub(super) fn reset() {
     mark_all();
 }
 
-/// Back onto the canvas, in the first free cells; nothing when it's full.
-pub(super) fn add(id: ControlId) {
-    layout::with(|layout| {
-        if layout.show(id) {
-            layout.save();
-        }
-    });
-    mark_all();
-}
-
 // ───── the layers ───────────────────────────────────────────────────────────
-
-/// The still layer over the canvas that every drag is measured on. It
-/// shows the hand's cursor while a drag is in flight; at rest the controls
-/// under it name their own.
-pub(super) fn drag_layer() -> Box<dyn Widget> {
-    let layer = Rectangle::new()
-        .width(Parent)
-        .height(Parent)
-        .fill(Color::TRANSPARENT)
-        .on_drag(drag_at)
-        .on_release(|_| release());
-    let layer = match DRAG.get() {
-        Some(Drag::Move { .. }) => layer.cursor(Cursor::Grabbing),
-        Some(Drag::Resize { .. }) => layer.cursor(Cursor::ResizeBottomRight),
-        None => layer,
-    };
-    boxed(layer)
-}
 
 /// `control` as edit mode shows it: inert, under a surface that only names
 /// the grab cursor (the drag layer beneath takes the drag).

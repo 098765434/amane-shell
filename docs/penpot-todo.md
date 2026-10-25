@@ -38,6 +38,10 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `launcher.highlight.unfocused`, `launcher.scrollbar.idle`, `launcher.paging.*` | 0.45, 800 ms, 450 ms spring 0.08 / flick 1.2 / band 0.3 | `launcher/mod.rs` (`UNFOCUSED`, `SCROLLBAR_IDLE`, `PAGING`) |
 | `launcher.focus-ring.width`, `.gap`, `.opacity`, `launcher.empty.icon` | 2, 2, 0.55, 40 | `launcher/header.rs` (`RING`, `RING_GAP`, `RING_ALPHA`), `launcher/results.rs` (`EMPTY_ICON`) |
 | `sys.scrollbar.width`, `.thumb-min` | 6, 32 | `scroll_view.rs` (`SCROLLBAR`, `THUMB_MIN`) |
+| `sys.caret.width` | 2 | `search_field.rs` (`CARET`) |
+| `customize.window.width`, `.height` | 860, 960 | `quick_settings/customize/mod.rs` (`WIDTH`, `HEIGHT`: the Customize window, shorter on a short display) |
+| `customize.sidebar.width`, `customize.pane.inset` | 300, 24 | `quick_settings/customize/mod.rs` (`SIDEBAR`, `INSET`) |
+| `customize.open.scale`, `customize.scroll.wheel-step`, `customize.scrollbar.idle` | 0.96, 60, 800 ms | `quick_settings/customize/mod.rs` (`OPEN_SCALE`, `WHEEL_STEP`, `SCROLLBAR_IDLE`); add `customize` to `tokens::COMPONENTS` with the first `customize.*` token |
 | `sys.motion.coast.decay`, `.duration`, `.min-fling`, `.held`, `.rubber-band` | 0.325 s, 850 ms, 60 px/s, 80 ms, 0.3 | `kinetic.rs` (`DECAY`, `COAST`, `MIN_FLING`, `HELD`, `RUBBER_BAND`) |
 | `sys.opacity.disabled` (also) | 0.38 | `quick_settings/tiles/mod.rs` (`DIMMED`: a placeholder for a control without its hardware) |
 | `sys.opacity.disabled` | 0.38 | `buttons/mod.rs` (`DISABLED_OPACITY`) |

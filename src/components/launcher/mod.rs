@@ -16,7 +16,7 @@
 //! text itself rather than focusing a `TextInput`, so every key reaches
 //! it. Tab moves between the search field, the pills and the apps, and
 //! the arrows move within whichever has the focus; in the list Left and
-//! Right move the caret, Shift selects and Ctrl+A/C/X/V edit ([`edit`],
+//! Right move the caret, Shift selects and Ctrl+A/C/X/V edit (`text_edit::Field`,
 //! amane's `modifiers()`). Right-clicking an app opens its menu
 //! ([`app_menu`]).
 //!
@@ -33,7 +33,6 @@
 //! `docs/launcher.md`.
 
 mod app_menu;
-mod edit;
 mod entries;
 mod grid;
 mod header;
@@ -57,8 +56,9 @@ use crate::components::motion;
 use crate::components::pager::{Pager, PagerMotion};
 use crate::components::panel::{self, Panel, close, is_open, overlay};
 
-use edit::Field;
 use entries::Entry;
+
+use crate::components::text_edit::{self, Field};
 
 /// Layer-surface namespace; the niri `layer-rule` matches it (a clear
 /// surface that says where to frost).
@@ -532,13 +532,13 @@ fn on_key(key: Key) {
     {
         match letter.to_ascii_lowercase() {
             'a' if searching => with(|state| state.field.select_all()),
-            'c' if searching => entries::copy(&view.field.selected()),
+            'c' if searching => text_edit::copy(&view.field.selected()),
             'x' if searching => {
-                entries::copy(&view.field.selected());
+                text_edit::copy(&view.field.selected());
                 type_into(Field::delete_selection);
             }
             'v' => {
-                if let Some(text) = entries::paste() {
+                if let Some(text) = text_edit::paste() {
                     type_into(|field| {
                         field.insert(&text);
                         true

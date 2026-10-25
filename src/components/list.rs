@@ -40,8 +40,12 @@ pub struct ListItem {
     id: String,
     headline: String,
     leading: Option<char>,
+    // the leading glyph on an accent tile, as a sidebar names a section
+    tile: bool,
     trailing: Vec<Box<dyn Widget>>,
     selected: bool,
+    // no fill of its own: only the selected and hover fills
+    bare: bool,
     color: Option<Color>,
     actions: Actions,
 }
@@ -52,8 +56,10 @@ impl ListItem {
             id: id.into(),
             headline: headline.into(),
             leading: None,
+            tile: false,
             trailing: Vec::new(),
             selected: false,
+            bare: false,
             color: None,
             actions: Actions::default(),
         }
@@ -62,6 +68,21 @@ impl ListItem {
     /// A Material Symbols glyph before the headline.
     pub fn leading(mut self, glyph: char) -> Self {
         self.leading = Some(glyph);
+        self
+    }
+
+    /// A Material Symbols glyph on a small accent tile before the headline,
+    /// as the rows of a sidebar name their sections.
+    pub fn leading_tile(mut self, glyph: char) -> Self {
+        self.leading = Some(glyph);
+        self.tile = true;
+        self
+    }
+
+    /// No fill until selected or hovered, for rows on a surface that reads
+    /// as one piece (a sidebar) rather than a list of raised rows.
+    pub fn bare(mut self, bare: bool) -> Self {
+        self.bare = bare;
         self
     }
 
@@ -107,7 +128,20 @@ impl ListItem {
 
         let mut leading = Vec::new();
         if let Some(glyph) = self.leading {
-            leading.push(boxed(icon(glyph, sys::size::icon::m(), color)));
+            if self.tile {
+                let side = sys::size::icon::m() + sys::space::gap::xs() * 2.0;
+                leading.push(boxed(
+                    Rectangle::new()
+                        .width(Size::Fixed(side))
+                        .height(Size::Fixed(side))
+                        .radius(sys::radius::raised())
+                        .fill(sys::color::accent::bg())
+                        .align_child(Center, Center)
+                        .child(icon(glyph, sys::size::icon::s(), sys::color::accent::fg())),
+                ));
+            } else {
+                leading.push(boxed(icon(glyph, sys::size::icon::m(), color)));
+            }
         }
         leading.push(boxed(clipped_label(
             self.headline,
@@ -123,6 +157,8 @@ impl ListItem {
 
         let fill = if self.selected {
             sys::color::state::selected()
+        } else if self.bare {
+            Color::TRANSPARENT
         } else {
             sys::color::surface::raised::bg()
         };

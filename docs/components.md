@@ -14,7 +14,10 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `tooltip` | `tooltip.rs` | [Tooltips](https://m3.material.io/components/tooltips/overview) (plain) | the bar's volume level and battery charge |
 | `app_icon` | `app_icon.rs` | none | the dock's icons, notification cards' app icons, the launcher's apps |
 | `EdgeReveal` | `edge_reveal.rs` | none | the dock hiding at the bottom edge |
-| `ScrollView` | `scroll_view.rs` | none | the launcher's grid, results and pill bar |
+| `ScrollView` | `scroll_view.rs` | none | the launcher's grid, results and pill bar, the Customize window's panes |
+| `SearchField` | `search_field.rs` | [Search](https://m3.material.io/components/search/overview) (bar) | the Customize window's "Search Controls" |
+| `Flow` | `flow.rs` | none | the Customize window's controls, flowing into rows |
+| `text_edit::Field` | `text_edit.rs` | none | the launcher's and the Customize window's search text |
 | `Kinetic`, `AxisLock` | `kinetic.rs` | none (iOS's scroll physics) | the launcher's scrolling |
 | `Pager` | `pager.rs` | none | the launcher's categories |
 | `workspace_menu` | `workspace_menu.rs` | none | the dock's "Move to Workspace" and "Open in Workspace", the launcher's "Open in Workspace" |
@@ -49,13 +52,16 @@ taller than its content.
 
 ## List
 
-`ListItem::new(id, headline)` is a one-line M3 list item. It has a `.leading(glyph)`, the
+`ListItem::new(id, headline)` is a one-line M3 list item. It has a `.leading(glyph)` (or
+`.leading_tile(glyph)`, the glyph on a small accent tile, as a sidebar names its sections), the
 headline (elided), and `.trailing(…)` items such as `list::check()`, a lock glyph, or
 `list::trailing_text(…)`. A `.selected(true)` item is filled `sys.color.state.selected` and its
 headline is full-strength. The rest read `sys.color.content.secondary`, and `.color(…)`
 overrides that. With `.on_press` or `.on_secondary` it's clickable and shows the
-`sys.color.state.hover` layer, keyed by `id` like a button's. Supporting and overline text are
-the next M3 slots to add when a list needs them.
+`sys.color.state.hover` layer, keyed by `id` like a button's. `.bare(true)` leaves out the
+`surface.raised` fill, for rows on a surface that reads as one piece (the Customize window's
+sidebar): only the selected and hover fills show. Supporting and overline text are the next M3
+slots to add when a list needs them.
 
 `List::new(items)` stacks items `sys.space.gap.xs` apart, under an optional `.header(…)`
 caption, with an `.empty(…)` note while there are none.
@@ -133,6 +139,30 @@ scrolled (past the ends too, for a rubber band), `.on_scroll(…)` takes the scr
 gives the viewport. It scrolls by a negative padding inside the clip, so the content's hover and
 click areas move with it. Where it's scrolled to is the caller's: usually a `Kinetic`.
 
+## SearchField and text_edit
+
+`SearchField::new(id, &field, focused)` is a `surface.raised` capsule a control tall: a magnifier,
+the query (or a `.placeholder(…)`, "Search" by default) in `sys.type.label` with its caret (accent,
+while `focused`) and selection (a `state.selected` wash), and a clear (×) button while there's a
+query and an `.on_clear(…)`. `.width(…)` sets its width. It draws the text itself rather than
+focusing a `TextInput`, so every key reaches the surface's `on_key`.
+
+The text is a `text_edit::Field`: the characters, the caret and the selection's other end, with
+`insert`, `backspace`, `delete_selection`, `left`/`right`/`move_to` (extending the selection with
+Shift) and `select_all`, and `handle(key, modifiers)`, which applies the keys a one-line field
+takes — characters, Space, Backspace, Left/Right/Home/End with or without Shift, Ctrl+A/C/X/V
+through wl-clipboard (`text_edit::copy`, `paste`) — and says whether the key was the field's.
+Line breaks never go in. It's pure and tested; the launcher types into one with its own key
+routing, the Customize window through `handle`.
+
+## Flow
+
+`Flow::new(width, gap_x, gap_y)` lays fixed-size `.item(width, height, widget)`s out in rows:
+each row takes items until the next wouldn't fit (an item wider than the row has a row to
+itself), the items at the top of their row, the rows as tall as their tallest. `build()` gives
+the widget, how tall it is and where each item went (`Placed`), so a caller can record where its
+items are drawn. The row breaking is `flow::place`, pure and tested.
+
 ## Kinetic and AxisLock
 
 `Kinetic` is one axis of scrolling from 0 to `set_max(max)`, in pixels:
@@ -171,8 +201,9 @@ niri keeps after the last called "New Workspace". Workspaces are named as niri n
 ## Under the components
 
 - `layout.rs` holds the layout primitives: `boxed`, `pad`, `icon` (every Material Symbols
-  glyph), `caption`, `split_row`, `clipped_label`, `blank`, `slot`, `text_width` (measured),
-  `inner_width` and cursor tracking.
+  glyph), `caption`, `split_row`, `clipped_label`, `wrapped_lines` (text broken onto a few
+  lines at the spaces, measured, for a caption centred a line at a time), `blank`, `slot`,
+  `text_width` (measured), `inner_width` and cursor tracking.
 - `icons.rs` holds the glyphs and their pickers (`battery_glyph`, `wifi_glyph`, `audio_glyph` …).
 - `color.rs` holds `over`, `faded` and `with_alpha`.
 - `motion.rs` holds the shared springs and fades (`spring`, `sheet`, `fade`) and the keyed list

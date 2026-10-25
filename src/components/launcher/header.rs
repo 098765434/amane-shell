@@ -15,8 +15,8 @@ use crate::components::layout::{boxed, icon, slot, text_width};
 use crate::components::scroll_view::ScrollView;
 use crate::tokens::{Styled, TextStyle, sys};
 
-use super::edit::Field;
 use super::{HEADER, PILL_SCROLL, PILLS, WIDTH, model, on_pill_scroll, turn_to, type_into, with};
+use crate::components::text_edit::Field;
 
 // TODO(token): `launcher.search.size`, `launcher.search.caret`,
 // `launcher.logo.size` and `launcher.focus-ring.*` once Penpot has them

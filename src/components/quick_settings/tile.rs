@@ -17,6 +17,7 @@
 //! within the pending timeout. In edit mode a control is inert: it draws,
 //! but takes nothing.
 
+use std::cell::Cell;
 use std::rc::Rc;
 use std::time::Instant;
 
@@ -30,6 +31,7 @@ use super::grid::{Metrics, Span};
 use crate::components::buttons::{
     Actions, Pending, hovered, interactive, press_scale, state_fill, with_existing, with_state,
 };
+use crate::components::card::Surface;
 use crate::components::glass_region;
 use crate::components::icons::{Glyph, glyph};
 use crate::components::layout::{boxed, icon, pad, text_height, text_width};
@@ -106,9 +108,29 @@ pub(super) fn sheet(
     glass_region::lit(surface, radius)
 }
 
+thread_local! {
+    // whether the modules being built are plain: tinted, never frosted
+    static PLAIN: Cell<bool> = const { Cell::new(false) };
+}
+
+/// Builds `f` with every module in it plain: the panels' tint laid on by
+/// the module itself, whether or not the compositor would frost it, for a
+/// control shown somewhere it isn't glass (the Customize window's catalog,
+/// where the surface asks for no frost behind it).
+pub(super) fn plain<R>(f: impl FnOnce() -> R) -> R {
+    let previous = PLAIN.replace(true);
+    let out = f();
+    PLAIN.set(previous);
+    out
+}
+
 /// The modules' tint, unless the compositor lays it on with the glass.
 fn tint() -> Color {
-    glass_region::tint()
+    if PLAIN.get() {
+        Surface::Panel.bg()
+    } else {
+        glass_region::tint()
+    }
 }
 
 /// One tile's motion, kept across rebuilds under its id.
