@@ -840,7 +840,8 @@ fn on_app_click(app: DesktopApp) -> impl Fn(Button) + 'static {
     move |button| match button {
         Button::Left => launch(&app),
         Button::Right => app_menu::open(&app),
-        Button::Middle => {}
+        #[allow(unreachable_patterns)]
+        _ => {}
     }
 }
 

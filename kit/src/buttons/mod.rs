@@ -477,6 +477,9 @@ pub fn interactive(
                 Button::Left => &press,
                 Button::Right => &secondary,
                 Button::Middle => &middle,
+                // side buttons, once amane reports them
+                #[allow(unreachable_patterns)]
+                _ => return,
             };
             tooltip::suppress(&clicked);
             if let Some(action) = action {
