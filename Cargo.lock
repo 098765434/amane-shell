@@ -17,7 +17,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amane"
 version = "0.1.2"
-source = "git+https://github.com/098765434/amane?rev=c0291845bfb34dcddb3695bd98364c6b33fe6c07#c0291845bfb34dcddb3695bd98364c6b33fe6c07"
+source = "git+https://github.com/098765434/amane?rev=df2346897b2adc21a4b673ad930d1729316b408b#df2346897b2adc21a4b673ad930d1729316b408b"
 dependencies = [
  "bitflags",
  "fontconfig",
@@ -25,6 +25,7 @@ dependencies = [
  "libpulse-binding",
  "png",
  "resvg",
+ "serde",
  "serde_json",
  "smithay-client-toolkit",
  "swash",
