@@ -24,7 +24,8 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `quick.open.cascade`, `.cascade-scale`, `.cascade-rise` | 90 ms, 0.9, 10 | `quick_settings/tiles/mod.rs` (`CASCADE*`: the modules arriving in a wave) |
 | `quick.page.tile-fade`, `quick.page.grid-fade` | 0.25, 0.6 | `quick_settings/mod.rs` (`TILE_FADE`, `GRID_FADE`: shares of the zoom) |
 | `quick.page.reveal.*` (header, body, step, span, rise) | 0.35–0.7, 0.45, 0.06, 0.35, 8 | `quick_settings/detail.rs` (`REVEAL_*`: a page's content coming in) |
-| `sys.glass.material` | `glass` | `components/glass_region.rs` (`MATERIAL`: the compositor material the glass's frost asks for; shared by Quick Settings and the dock) |
+| `sys.glass.material` | `glass` | `components/glass_region.rs` (`MATERIAL`: the stand-in compositor material where a material's own isn't configured) |
+| `sys.material.clear-fade` | 0.7 | `material.rs` (`CLEAR_FADE`: how much of its tint Clear glass keeps over a backdrop that isn't bright) |
 | `dock.icon.size`, `dock.icon.least`, `dock.radius`, `dock.reveal.strip` | 44, 20, 18, 2 | `dock/mod.rs` (`ICON`, `LEAST_ICON`, `RADIUS`, `STRIP`) |
 | `dock.running.size` | 4 | `dock/item.rs` (`RUNNING`) |
 | `dock.drag.threshold` | 6 | `dock/drag.rs` (`THRESHOLD`) |
@@ -77,7 +78,20 @@ whose output is static: it can't follow the mode, so it holds one value for both
 - `sys.color.glass.thin`, `.thick`, `.rim` and `.glow` were added to `tokens.json` by hand, in
   both modes: the tints of small and large glass (thin is the panels' old tint; thick is more
   opaque, for glass that holds text) and the glass edge's light, which `components/glass.rs` held
-  as constants. Recreate them in Penpot under the same names.
+  as constants. Recreate them in Penpot under the same names. `.thin` and `.thick` are now
+  aliases of `sys.color.material.thin` and `.thick`, and go once nothing reads them.
+- The materials were added to `tokens.json` by hand (see [materials.md](materials.md)), in both
+  modes. Recreate them in Penpot under the same names:
+  - `sys.color.material.ultra-thin`, `.thin`, `.regular`, `.thick`, `.ultra-thick` and `.bar` are
+    the tints, thinnest first. `.bar` is `{sys.color.material.thick}`.
+  - `sys.color.vibrant.label.primary`, `.secondary`, `.tertiary` and `.quaternary`,
+    `sys.color.vibrant.fill.primary`, `.secondary` and `.tertiary`, and
+    `sys.color.vibrant.separator` are the monochrome, translucent labels, fills and separator
+    on every material, as Apple's are.
+  - The `material.glass.*`, `material.glass-clear.*` and `material.frost.*` component tokens are
+    niri's material settings (refraction, bevel, dispersion, rim, far-rim, specular, tint,
+    adaptive-tint, report-backdrop). `material` is a new component prefix, read only by the niri
+    config generator (`src/tokens/layer_rules.rs`).
 - The `quick.*` tokens (`quick.grid.cell`, `.cols`, `.rows`, `.gap`, `.margin`, `quick.tile.pad`,
   `.gap`, `.disc`, `quick.card.radius`, `quick.media.art`, `.art-radius`, `.play`,
   `quick.slider.track`, `quick.shadow`, `quick.type.title`, `.caption`, `.line`,

@@ -31,14 +31,41 @@ const SURFACES: &[(&str, &str, &str)] = &[
         "sys.color.surface.popover.fg",
         "sys.color.surface.popover.fg-secondary",
     ),
-    // the glass tints, under the panels' text
+    // every material's tint, under the vibrant labels the material hands out
     (
-        "sys.color.glass.thin",
+        "sys.color.material.ultra-thin",
+        "sys.color.vibrant.label.primary",
+        "sys.color.vibrant.label.secondary",
+    ),
+    (
+        "sys.color.material.thin",
+        "sys.color.vibrant.label.primary",
+        "sys.color.vibrant.label.secondary",
+    ),
+    (
+        "sys.color.material.regular",
+        "sys.color.vibrant.label.primary",
+        "sys.color.vibrant.label.secondary",
+    ),
+    (
+        "sys.color.material.thick",
+        "sys.color.vibrant.label.primary",
+        "sys.color.vibrant.label.secondary",
+    ),
+    (
+        "sys.color.material.ultra-thick",
+        "sys.color.vibrant.label.primary",
+        "sys.color.vibrant.label.secondary",
+    ),
+    // the panels' own text is still on the glass until it moves to the
+    // vibrant labels
+    (
+        "sys.color.material.thin",
         "sys.color.surface.panel.fg",
         "sys.color.content.secondary",
     ),
     (
-        "sys.color.glass.thick",
+        "sys.color.material.thick",
         "sys.color.surface.panel.fg",
         "sys.color.content.secondary",
     ),

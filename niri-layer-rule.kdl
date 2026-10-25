@@ -18,14 +18,15 @@
 //<<<GENERATED-RULES-BELOW>>>  (gen-layer-rules.sh injects everything past this line)
 
 // Status bar: one uniform frosted strip along the bottom, macOS 27's toolbar:
-// plain frost, no glass material. It reserves its zone, so only the wallpaper
-// is behind it and niri's xray blur is enough. Its xdg-popups (tooltips, Do
-// Not Disturb's menu) are frosted cards.
+// frost, the standard material without a lens. It reserves its zone, so only
+// the wallpaper is behind it and niri's xray blur is enough. Its xdg-popups
+// (tooltips, Do Not Disturb's menu) are frosted cards.
 layer-rule {
     match namespace="^amane\\.status-bar$"
     geometry-corner-radius 0
     background-effect {
         blur true
+        material "frost"
     }
 
     popups {
@@ -147,5 +148,75 @@ layer-rule {
             blur true
             material "glass"
         }
+    }
+}
+
+// The shell's materials (material.* tokens), by the names it asks for: liquid
+// glass, its clear variant for media, and frost without a lens; each `-still`
+// twin is for reduced motion. They replace a hand-written `materials {}` of
+// the same names. See the niri fork's docs/wiki/Window-Effects.md.
+materials {
+    material "frost" {
+        bevel 8
+        dispersion 0
+        far-rim 0
+        refraction 0
+        rim 0.12
+        specular 0
+        tint 1
+    }
+    material "glass" {
+        adaptive-tint 0.6
+        bevel 30
+        dispersion 0.6
+        far-rim 0.15
+        refraction 24
+        report-backdrop true
+        rim 0.25
+        specular 0.15
+        tint 1
+    }
+    material "glass-clear" {
+        bevel 30
+        dispersion 0.8
+        far-rim 0.2
+        refraction 32
+        report-backdrop true
+        rim 0.3
+        specular 0.25
+        tint 1
+    }
+    material "frost-still" {
+        bevel 8
+        dispersion 0
+        far-rim 0
+        refraction 0
+        rim 0.12
+        specular 0
+        tint 1
+        materialize false
+    }
+    material "glass-still" {
+        adaptive-tint 0.6
+        bevel 30
+        dispersion 0.6
+        far-rim 0.15
+        refraction 24
+        report-backdrop true
+        rim 0.25
+        specular 0.15
+        tint 1
+        materialize false
+    }
+    material "glass-clear-still" {
+        bevel 30
+        dispersion 0.8
+        far-rim 0.2
+        refraction 32
+        report-backdrop true
+        rim 0.3
+        specular 0.25
+        tint 1
+        materialize false
     }
 }

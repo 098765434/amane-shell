@@ -6,6 +6,8 @@
 //! - [`buttons`] — push, icon and segmented buttons, a switch, a checkbox
 //!   and radio buttons.
 //! - [`card`] — M3's card: a filled or outlined surface, optionally frosted.
+//! - [`material`] — Apple's materials: glass by role, its thickness and
+//!   the vibrant labels on it.
 //! - [`glass`] — the lit edge and glow every translucent surface wears.
 //! - [`app_bar`] — M3's small top app bar: a panel's or sheet's title row.
 //! - [`list`] — M3's list: one-line items with leading and trailing slots.
@@ -49,6 +51,7 @@ pub mod icons;
 pub mod kinetic;
 pub mod layout;
 pub mod list;
+pub mod material;
 pub mod motion;
 pub mod pager;
 pub mod scroll_view;

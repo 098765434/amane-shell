@@ -1,5 +1,6 @@
-//! niri layer rules from tokens: the compositor's blur corners come from the
-//! same radius role the shell draws its cards with, so they can't drift.
+//! niri layer rules and materials from tokens: the compositor's blur
+//! corners come from the same radius role the shell draws its cards with,
+//! and its materials from the `material.*` tokens, so neither can drift.
 //! `amane-shell layer-rules` prints the file; `niri-layer-rule.kdl` is its
 //! committed output, checked by a golden test.
 
@@ -7,13 +8,14 @@ use std::fmt::Write;
 
 use crate::components::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
 use crate::components::dock::DOCK_NS;
-use crate::components::glass_region;
 use crate::components::launcher::LAUNCHER_NS;
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
 use crate::components::quick_settings::QS_NS;
 use crate::components::status_bar::BAR_NS;
 use crate::theme::{Density, Mode};
-use crate::tokens::{Key, bar, notification, sys, with_key};
+use amane_kit::material::Material;
+
+use crate::tokens::{Key, Value, bar, library, notification, resolved, sys, with_key};
 
 pub struct LayerRule {
     pub namespace: &'static str,
@@ -22,13 +24,14 @@ pub struct LayerRule {
     /// shell can't draw it, as the surface is only as big as its card.
     /// `None` leaves it alone.
     pub radius: Option<f32>,
-    /// The surface is frosted whole with these corners, with no shadow,
-    /// blurring the wallpaper (niri's xray): for a surface that reserves its
-    /// zone, so nothing but the wallpaper is ever behind it.
+    /// The surface is frosted whole with these corners, in the bar's
+    /// material, with no shadow, blurring the wallpaper (niri's xray): for a
+    /// surface that reserves its zone, so nothing but the wallpaper is ever
+    /// behind it.
     pub frost: Option<f32>,
     /// Its xdg-popups are frosted cards with these corners, drawn in the
-    /// glass material (they can't send blur shapes of their own). niri gives
-    /// popups no shadow.
+    /// menu's material (they can't send blur shapes of their own). niri
+    /// gives popups no shadow.
     pub popups: Option<f32>,
     /// A clear surface that asks for frost itself, where its modules are
     /// (ext-background-effect): no corners, no shadow, only `xray false`,
@@ -59,9 +62,9 @@ pub fn rules() -> Vec<LayerRule> {
             namespace: BAR_NS,
             comment: String::from(
                 "Status bar: one uniform frosted strip along the bottom, macOS 27's toolbar:\n\
-                 plain frost, no glass material. It reserves its zone, so only the wallpaper\n\
-                 is behind it and niri's xray blur is enough. Its xdg-popups (tooltips, Do\n\
-                 Not Disturb's menu) are frosted cards.",
+                 frost, the standard material without a lens. It reserves its zone, so only\n\
+                 the wallpaper is behind it and niri's xray blur is enough. Its xdg-popups\n\
+                 (tooltips, Do Not Disturb's menu) are frosted cards.",
             ),
             radius: None,
             frost: Some(strip),
@@ -197,7 +200,9 @@ pub fn render(rules: &[LayerRule]) -> String {
         }
         if let Some(radius) = rule.frost {
             let _ = writeln!(out, "    geometry-corner-radius {radius}");
-            out.push_str("    background-effect {\n        blur true\n    }\n");
+            out.push_str("    background-effect {\n        blur true\n");
+            let _ = writeln!(out, "        material \"{}\"", Material::Bar.niri_name());
+            out.push_str("    }\n");
         }
         if rule.clear {
             // the surface sets its own blur region; without `xray false`
@@ -208,12 +213,83 @@ pub fn render(rules: &[LayerRule]) -> String {
             out.push_str("\n    popups {\n");
             let _ = writeln!(out, "        geometry-corner-radius {radius}");
             out.push_str("        background-effect {\n            blur true\n");
-            let _ = writeln!(out, "            material \"{}\"", glass_region::MATERIAL);
+            let _ = writeln!(out, "            material \"{}\"", Material::Menu.niri_name());
             out.push_str("        }\n    }\n");
         }
         out.push_str("}\n");
     }
 
+    out.push_str(&render_materials(&materials()));
+    out
+}
+
+/// One of niri's materials: its name and its settings, in token order.
+pub struct NiriMaterial {
+    pub name: String,
+    pub settings: Vec<(String, String)>,
+}
+
+/// The `material.<name>.<setting>` tokens, one material a name, each with
+/// its twin for reduced motion: the same, without the lens building up.
+pub fn materials() -> Vec<NiriMaterial> {
+    // they don't vary with mode or density (a contract test checks it)
+    let tokens = &resolved(Key::new(Mode::Dark, Density::Comfortable)).tokens;
+
+    let mut out: Vec<NiriMaterial> = Vec::new();
+    for token in library().sets.iter().flat_map(|s| &s.tokens) {
+        let ["material", name, setting] = token.name.split('.').collect::<Vec<_>>()[..] else {
+            continue;
+        };
+        let value = match &tokens[&token.name].value {
+            Value::Number(n) => n.value.to_string(),
+            Value::Bool(b) => b.to_string(),
+            other => panic!("{}: niri takes numbers and booleans, not {other:?}", token.name),
+        };
+        let at = match out.iter().position(|m| m.name == name) {
+            Some(at) => at,
+            None => {
+                out.push(NiriMaterial {
+                    name: name.to_string(),
+                    settings: Vec::new(),
+                });
+                out.len() - 1
+            }
+        };
+        out[at].settings.push((setting.to_string(), value));
+    }
+
+    let still: Vec<NiriMaterial> = out
+        .iter()
+        .map(|m| NiriMaterial {
+            name: format!("{}-still", m.name),
+            settings: m
+                .settings
+                .iter()
+                .cloned()
+                .chain([(String::from("materialize"), String::from("false"))])
+                .collect(),
+        })
+        .collect();
+    out.extend(still);
+    out
+}
+
+fn render_materials(materials: &[NiriMaterial]) -> String {
+    let mut out = String::from(
+        "\n// The shell's materials (material.* tokens), by the names it asks for: liquid\n\
+         // glass, its clear variant for media, and frost without a lens; each `-still`\n\
+         // twin is for reduced motion. They replace a hand-written `materials {}` of\n\
+         // the same names. See the niri fork's docs/wiki/Window-Effects.md.\n\
+         materials {\n",
+    );
+    for material in materials {
+        let _ = writeln!(out, "    material \"{}\" {{", kdl_string(&material.name));
+        for (setting, value) in &material.settings {
+            let _ = writeln!(out, "        {setting} {value}");
+        }
+        out.push_str("    }\n");
+    }
+    out.push_str("}\n");
     out
 }
 
@@ -252,6 +328,35 @@ mod tests {
     fn the_script_splices_after_the_same_sentinel() {
         let script = include_str!("../../gen-layer-rules.sh");
         assert!(script.contains(&format!("SENTINEL=\"{SENTINEL}\"")));
+    }
+
+    #[test]
+    fn every_material_the_shell_asks_for_is_generated() {
+        let names: Vec<String> = materials().into_iter().map(|m| m.name).collect();
+        for m in Material::ALL {
+            let name = m.niri_name();
+            assert!(names.iter().any(|n| n == name), "{name} isn't generated");
+            assert!(
+                names.iter().any(|n| *n == format!("{name}-still")),
+                "{name}-still isn't generated"
+            );
+        }
+    }
+
+    #[test]
+    fn still_twins_only_add_materialize_false() {
+        let all = materials();
+        for twin in all.iter().filter(|m| m.name.ends_with("-still")) {
+            let base = all
+                .iter()
+                .find(|m| format!("{}-still", m.name) == twin.name)
+                .expect("each twin has its material");
+            assert_eq!(twin.settings[..base.settings.len()], base.settings[..]);
+            assert_eq!(
+                twin.settings[base.settings.len()..],
+                [(String::from("materialize"), String::from("false"))]
+            );
+        }
     }
 
     #[test]

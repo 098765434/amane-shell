@@ -48,8 +48,14 @@ generated from (2), not hand-edited, so neither can drift.
 
 ## Generating the rules
 
-First bring the KDL up to date with the tokens (needed whenever a radius changes in Penpot; CI
-tells you):
+The generated file holds the layer rules and, after them, a `materials {}` block. It defines one
+niri material per `material.<name>.*` token group: `glass`, `glass-clear` and `frost`, each
+with a `-still` twin (`materialize false`) for reduced motion. The shell asks for these by name
+(`amane_kit::material`), so the niri config must not define them by hand as well. niri merges
+`materials {}` blocks by name and the last one wins.
+
+First bring the KDL up to date with the tokens (needed whenever a radius or a material changes in
+Penpot; CI tells you):
 
 ```sh
 cargo run -q -- layer-rules > niri-layer-rule.kdl

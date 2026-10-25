@@ -17,7 +17,7 @@ use amane::{Backdrop, BlurShape, Color, Rectangle, Service};
 use crate::color::{self, with_alpha};
 use crate::glass;
 use crate::theme::{self, Glass, Mode};
-use crate::tokens::{Key, sys, with_key};
+use crate::tokens::{Key, with_key};
 
 // TODO(token): `sys.glass.material` once Penpot has it (manual §1.1).
 /// The compositor's material the glass asks for: niri's liquid glass where
@@ -54,26 +54,8 @@ pub fn level(tint: Color) -> Color {
     }
 }
 
-/// How thick a piece of glass is. Apple's rule: the larger the glass and
-/// the more text it holds, the thicker and more opaque it is.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Thickness {
-    /// Small glass: modules, the dock, toasts, menus.
-    Thin,
-    /// Large glass that holds text: the launcher, the notification center,
-    /// a Quick Settings page, the Customize window, the bar.
-    Thick,
-}
-
-impl Thickness {
-    /// The glass's tint, at the glass level ([`level`]).
-    pub fn tint(self) -> Color {
-        level(match self {
-            Self::Thin => sys::color::glass::thin(),
-            Self::Thick => sys::color::glass::thick(),
-        })
-    }
-}
+/// How thick a piece of glass is; see [`material`](crate::material).
+pub use crate::material::Thickness;
 
 /// The frost behind a piece of glass drawn at (`x`, `y`), `width` by
 /// `height`, with `radius` corners, at `opacity`, tinted `tint` (a
@@ -194,6 +176,15 @@ fn adaptation(id: u32) -> (Mode, bool) {
         Mode::Dark => luminance < TURN_DARK,
     };
     (mode, backed)
+}
+
+/// Whether niri's latest reading puts the backdrop behind glass `id`
+/// past the turn to light: bright enough that Clear glass dims over it.
+pub(crate) fn bright(id: u32) -> bool {
+    see_through()
+        && Backdrop::read()
+            .luminance(id)
+            .is_some_and(|luminance| luminance > TURN_LIGHT)
 }
 
 /// Builds `f`, a piece of small glass and what's on it, in the mode glass

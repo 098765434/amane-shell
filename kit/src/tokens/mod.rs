@@ -50,6 +50,8 @@ pub const COMPONENTS: &[&str] = &[
     "osd",
     "notification",
     "quick",
+    // niri's materials, for the config generator (src/tokens/layer_rules.rs)
+    "material",
 ];
 
 #[derive(Clone, Debug)]
