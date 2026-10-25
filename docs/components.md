@@ -13,7 +13,7 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `Slider` | `slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume, Quick Settings' sliders |
 | `tooltip` | `tooltip.rs` | [Tooltips](https://m3.material.io/components/tooltips/overview) (plain) | the bar's volume level and battery charge |
 | `PageDots` | `page_dots.rs` | none (iOS's page control) | the dock's workspaces |
-| `app_icon` | `app_icon.rs` | none | the dock's icons, notification cards' app icons |
+| `app_icon` | `app_icon.rs` | none | the dock's icons, notification cards' app icons, the launcher's apps |
 | `EdgeReveal` | `edge_reveal.rs` | none | the dock hiding at the bottom edge |
 
 ## Card
@@ -111,6 +111,10 @@ thick they run before they're built.
 names, else a theme icon named after the app_id or its last dotted part, else a first-letter
 placeholder on a raised tile (also shown while the image decodes). `icon_for(app_id)` and
 `name_for(app_id)` give the icon file and the name an app goes by.
+
+`app_icon::entry_tile(app, side)` draws an installed app from its `DesktopApp` instead of a window's
+app_id: the entry's icon, else the first letter of its name on the same placeholder. The launcher
+draws its grid and results with it.
 
 ## EdgeReveal
 
