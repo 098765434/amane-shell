@@ -1,0 +1,13 @@
+[package]
+name = "amane-settings"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "Settings for amane-shell: how it looks, changed live while it runs."
+license = "MIT"
+repository = "https://github.com/098765434/amane-shell"
+authors = ["ocbk"]
+
+[dependencies]
+amane = { workspace = true }
+amane-kit = { path = "../../kit" }

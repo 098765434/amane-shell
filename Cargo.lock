@@ -47,6 +47,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "amane-settings"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "amane-kit",
+]
+
+[[package]]
 name = "amane-shell"
 version = "0.1.0"
 dependencies = [

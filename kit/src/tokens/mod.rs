@@ -107,7 +107,7 @@ impl Key {
         }
 
         Self {
-            accent: theme::system_accent().map(|c| [c.red(), c.green(), c.blue()]),
+            accent: theme::accent().map(|c| [c.red(), c.green(), c.blue()]),
             text_scale: (theme::text_scale() * 100.0).round() as u16,
             ..Self::new(theme::mode(), theme::density())
         }

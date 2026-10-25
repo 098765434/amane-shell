@@ -29,6 +29,7 @@
 //! - [`glass_region`] — where the compositor frosts behind clear glass.
 //! - [`edge_reveal`] — a surface hiding at a screen edge until the pointer
 //!   touches it.
+//! - [`settings`] — the shell's settings file, which a settings app changes.
 //! - [`tokens`] and [`theme`] — the design tokens and the mode, density,
 //!   accent and text scale they resolve with.
 
@@ -51,6 +52,7 @@ pub mod list;
 pub mod motion;
 pub mod pager;
 pub mod scroll_view;
+pub mod settings;
 pub mod slider;
 pub mod theme;
 pub mod tokens;

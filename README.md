@@ -116,13 +116,32 @@ systemd.user.services.amane-shell = {
 
 Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery).
 
+## Shell Settings
+
+`amane-settings` is a settings app for the shell, built on the [kit](kit/README.md). Its
+Appearance page picks light or dark (or the system's), the accent, the density and the text size.
+It saves them to `~/.config/amane-shell/appearance.json`, and the running shell follows the file at
+once; editing the file by hand works too. `AMANE_THEME`, `AMANE_DENSITY` and `AMANE_TEXT_SCALE`
+still win when set.
+
+Only one copy runs: launching it again brings the open one forward. The flake installs it with a
+`.desktop` entry, so the launcher lists it as *Shell Settings*. Its window draws its own solid
+surface, so it needs no layer rule; a niri window rule can still round it like other apps:
+
+```kdl
+window-rule {
+    match app-id="^amane-settings$"
+    geometry-corner-radius 12
+    clip-to-geometry true
+}
+```
+
 ## Layout
 
 ```
 src/
   main.rs                       App builder: windows, popups, IPC handlers, `tokens` CLI
-  theme.rs                      runtime inputs: mode, accent, density, text scale
-  tokens/                       Penpot token resolver and the manual's checks
+  tokens/layer_rules.rs         the niri layer rules generated from the tokens
   components/
     status_bar/                 the bar (mod.rs) and its optional status icons (indicators.rs)
     panel.rs                    the one-open-at-a-time overlay state the panels share
@@ -130,20 +149,23 @@ src/
     notifications/              toasts, the notification center and Do Not Disturb
     launcher/                   the app launcher: search, category pills and the app grid
     dock/                       the dock: workspaces' windows and pins, drag, file drops (docs/dock.md)
-    buttons/                    push, icon, drawn and segmented buttons, and a switch
-    card.rs app_bar.rs list.rs  shared M3-style components (docs/components.md)
-    divider.rs slider.rs
-    scroll_view.rs kinetic.rs   scrolling: a clipped viewport, momentum, paging with the fingers
-    pager.rs edge_reveal.rs     …and a surface that hides at the screen edge (the dock's)
+    quick_settings/             Quick Settings: tiles, sliders and their pages
     workspace_menu.rs           a submenu of workspaces (the dock's and the launcher's menus)
-    layout.rs icons.rs          layout primitives, glyphs, colour arithmetic, motion
-    color.rs motion.rs
-build.rs                        generates `tokens::sys::…`, `tokens::bar::…`, … from tokens.json
+    mod.rs                      re-exports the kit's controls under their old paths
+kit/                            amane-kit: the look as a library, for the shell and its apps
+  build.rs                      generates `tokens::sys::…`, `tokens::bar::…`, … from tokens.json
+  src/tokens/ theme.rs          Penpot token resolver, the manual's checks, mode/accent/density/scale
+  src/settings.rs               appearance.json, which theme.rs reads
+  src/buttons/                  push, icon, drawn and segmented buttons, switch, checkbox, radio
+  src/card.rs list.rs …         shared M3-style components (docs/components.md)
+  src/app.rs dropdown.rs        an app's window, fields, sidebar and dialog; the dropdown
+  examples/gallery.rs           every control in one window
+apps/settings/                  Shell Settings (amane-settings)
 design-tokens/tokens.json       Penpot export (normalized); edit in Penpot, not here
-tests/fixtures/                 token exports the resolver is tested against
+tests/fixtures/                 service fixtures (the token ones are in kit/tests/fixtures/)
 niri-layer-rule.kdl             layer rules generated from the tokens (see docs/layer-rules.md)
 gen-layer-rules.sh              injects those rules into the niri config
-flake.nix                       devShell (Rust toolchain + wayland/vulkan/pulse libs)
+flake.nix                       the package (shell and apps) and the devShell
 ```
 
 ## License

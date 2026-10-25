@@ -92,6 +92,7 @@
                 ./rustfmt.toml
                 ./src
                 ./kit
+                ./apps
                 ./design-tokens
                 ./tests
                 ./niri-layer-rule.kdl
@@ -109,6 +110,10 @@
               };
             };
 
+            # the shell, and the apps beside it (Shell Settings)
+            cargoBuildFlags = [ "--workspace" ];
+            cargoTestFlags = [ "--workspace" ];
+
             nativeBuildInputs = [
               pkgs.pkg-config
               pkgs.makeWrapper
@@ -118,10 +123,16 @@
             # Reproduce the devShell's runtime wiring in the installed binary
             # (LD_LIBRARY_PATH + a Vulkan ICD fallback), with no hardcoded
             # /nix/store hashes beyond what makeLibraryPath computes.
+            postInstall = ''
+              install -Dm644 apps/settings/amane-settings.desktop -t $out/share/applications
+            '';
+
             postFixup = ''
-              wrapProgram $out/bin/amane-shell \
-                --prefix LD_LIBRARY_PATH : "${ldLibraryPath pkgs}" \
-                --run ${lib.escapeShellArg vulkanIcdFallback}
+              for program in amane-shell amane-settings; do
+                wrapProgram $out/bin/$program \
+                  --prefix LD_LIBRARY_PATH : "${ldLibraryPath pkgs}" \
+                  --run ${lib.escapeShellArg vulkanIcdFallback}
+              done
             '';
 
             meta = {
