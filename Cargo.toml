@@ -20,7 +20,7 @@ path = 'src/main.rs'
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
 # sibling checkout during local co-development. See README.
-amane = { git = "https://github.com/098765434/amane", rev = "6bfdba8fb387feea0aba102e0b81aa50fb720e95" }
+amane = { git = "https://github.com/098765434/amane", rev = "bc9729eb0f525ebee6c99e276d9be5773792a744" }
 serde_json = "1.0"
 # for the one bus call that hands back a file descriptor (logind's Inhibit),
 # which amane's Bus can't carry; the same zbus amane already pulls in
