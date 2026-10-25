@@ -7,20 +7,27 @@ use std::fmt::Write;
 
 use crate::components::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
 use crate::components::dock::DOCK_NS;
+use crate::components::glass_region;
 use crate::components::launcher::LAUNCHER_NS;
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
 use crate::components::quick_settings::QS_NS;
 use crate::components::status_bar::BAR_NS;
 use crate::theme::{Density, Mode};
-use crate::tokens::{Key, notification, sys, with_key};
+use crate::tokens::{Key, bar, notification, sys, with_key};
 
 pub struct LayerRule {
     pub namespace: &'static str,
     pub comment: String,
-    /// The surface is a frosted card with these corners, casting a shadow;
+    /// The surface is a card with these corners, casting niri's shadow: the
+    /// shell can't draw it, as the surface is only as big as its card.
     /// `None` leaves it alone.
     pub radius: Option<f32>,
-    /// Its xdg-popups are frosted cards with these corners. niri gives
+    /// The surface is frosted whole with these corners, with no shadow,
+    /// blurring the wallpaper (niri's xray): for a surface that reserves its
+    /// zone, so nothing but the wallpaper is ever behind it.
+    pub frost: Option<f32>,
+    /// Its xdg-popups are frosted cards with these corners, drawn in the
+    /// glass material (they can't send blur shapes of their own). niri gives
     /// popups no shadow.
     pub popups: Option<f32>,
     /// A clear surface that asks for frost itself, where its modules are
@@ -38,22 +45,26 @@ const SHADOW_SOFTNESS: f32 = 16.0;
 const SHADOW_Y: f32 = 8.0;
 const SHADOW_COLOR: &str = "#00000073";
 
-/// One rule per frosted surface. The bar's own is for its popups only: the
-/// bar itself is deliberately not blurred.
+/// One rule per frosted surface.
 pub fn rules() -> Vec<LayerRule> {
     // radii don't vary with mode or density (a contract test checks it)
     let key = Key::new(Mode::Dark, Density::Comfortable);
     let popover = with_key(key, sys::radius::popover);
     let toast = with_key(key, notification::card::radius);
+    let center = with_key(key, notification::center::radius);
+    let strip = with_key(key, bar::radius);
 
     vec![
         LayerRule {
             namespace: BAR_NS,
             comment: String::from(
-                "Status bar: only its xdg-popups (tooltips, Do Not Disturb's menu) are\n\
-                 frosted; the bar itself is deliberately NOT blurred.",
+                "Status bar: one uniform frosted strip along the bottom, macOS 27's toolbar:\n\
+                 plain frost, no glass material. It reserves its zone, so only the wallpaper\n\
+                 is behind it and niri's xray blur is enough. Its xdg-popups (tooltips, Do\n\
+                 Not Disturb's menu) are frosted cards.",
             ),
             radius: None,
+            frost: Some(strip),
             popups: Some(popover),
             clear: false,
         },
@@ -68,6 +79,7 @@ pub fn rules() -> Vec<LayerRule> {
                 MAX_DEPTH - 1
             ),
             radius: None,
+            frost: None,
             popups: Some(popover),
             clear: false,
         },
@@ -79,6 +91,7 @@ pub fn rules() -> Vec<LayerRule> {
                       Quick Settings button. A Bluetooth device's menu is an xdg-popup of it.",
             ),
             radius: None,
+            frost: None,
             popups: Some(popover),
             clear: true,
         },
@@ -90,6 +103,7 @@ pub fn rules() -> Vec<LayerRule> {
                       bottom edge; a window's menu is an xdg-popup of it.",
             ),
             radius: None,
+            frost: None,
             popups: Some(popover),
             clear: true,
         },
@@ -101,6 +115,7 @@ pub fn rules() -> Vec<LayerRule> {
                       from a keybind. An app's menu is an xdg-popup of it.",
             ),
             radius: None,
+            frost: None,
             popups: Some(popover),
             clear: true,
         },
@@ -108,21 +123,26 @@ pub fn rules() -> Vec<LayerRule> {
             namespace: TOAST_NS,
             comment: String::from(
                 "Notification toasts: one surface per banner, sized to its card, sliding in\n\
-                      at the top-right.",
+                      at the top-right. Each frosts its card itself (blur shapes, in the glass\n\
+                      material); the rule rounds it and gives it niri's shadow.",
             ),
             radius: Some(toast),
+            frost: None,
             popups: None,
-            clear: false,
+            clear: true,
         },
         LayerRule {
             namespace: CENTER_NS,
             comment: String::from(
-                "Notification center: a full-height frosted sidebar at the right edge,\n\
-                      opened from the clock. Its Do Not Disturb menu is an xdg-popup of it.",
+                "Notification center: a full-height glass sidebar at the right edge, opened\n\
+                      from the clock, frosting itself (blur shapes, in the glass material); the\n\
+                      rule rounds it and gives it niri's shadow. Its Do Not Disturb menu is an\n\
+                      xdg-popup of it.",
             ),
-            radius: Some(popover),
+            radius: Some(center),
+            frost: None,
             popups: Some(popover),
-            clear: false,
+            clear: true,
         },
     ]
 }
@@ -133,8 +153,8 @@ const SENTINEL: &str = "//<<<GENERATED-RULES-BELOW>>>";
 
 const HEADER: &str = "\
 // GENERATED by `cargo run -q -- layer-rules > niri-layer-rule.kdl` from the
-// design tokens (radii: sys.radius.popover, notification.card.radius) — do not
-// edit by hand.
+// design tokens (radii: sys.radius.popover, notification.card.radius,
+// notification.center.radius) — do not edit by hand.
 //
 // The amane shell's niri layer-rules (compositor-side blur, rounding and
 // shadow on its surfaces). Each rule matches an anchored regex on a
@@ -169,15 +189,15 @@ pub fn render(rules: &[LayerRule]) -> String {
         );
         if let Some(radius) = rule.radius {
             let _ = writeln!(out, "    geometry-corner-radius {radius}");
-            // niri gives a layer-surface's blur xray by default, which shows
-            // only the wallpaper; these cards float over windows, so they blur
-            // what's below (popups already default to that)
-            out.push_str("    background-effect {\n        blur true\n        xray false\n    }\n");
             out.push_str("    shadow {\n        on\n");
             let _ = writeln!(out, "        softness {SHADOW_SOFTNESS}");
             let _ = writeln!(out, "        offset x=0 y={SHADOW_Y}");
             let _ = writeln!(out, "        color \"{SHADOW_COLOR}\"");
             out.push_str("    }\n");
+        }
+        if let Some(radius) = rule.frost {
+            let _ = writeln!(out, "    geometry-corner-radius {radius}");
+            out.push_str("    background-effect {\n        blur true\n    }\n");
         }
         if rule.clear {
             // the surface sets its own blur region; without `xray false`
@@ -187,8 +207,9 @@ pub fn render(rules: &[LayerRule]) -> String {
         if let Some(radius) = rule.popups {
             out.push_str("\n    popups {\n");
             let _ = writeln!(out, "        geometry-corner-radius {radius}");
-            out.push_str("        background-effect {\n            blur true\n        }\n");
-            out.push_str("    }\n");
+            out.push_str("        background-effect {\n            blur true\n");
+            let _ = writeln!(out, "            material \"{}\"", glass_region::MATERIAL);
+            out.push_str("        }\n    }\n");
         }
         out.push_str("}\n");
     }

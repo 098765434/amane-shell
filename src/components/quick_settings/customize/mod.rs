@@ -36,7 +36,7 @@ use super::{edit, layout, tile, tiles};
 use crate::components::buttons::{PushButton, Shape, Style};
 use crate::components::divider::Divider;
 use crate::components::flow::Flow;
-use crate::components::glass_region;
+use crate::components::glass_region::{self, Thickness};
 use crate::components::kinetic::{Axis, Kinetic};
 use crate::components::layout::{boxed, caption, pad, split_row, text_height, wrapped_lines};
 use crate::components::list::{self, List, ListItem};
@@ -313,6 +313,7 @@ pub(super) fn ghost(origin: (f32, f32)) -> Option<(Box<dyn Widget>, BlurShape)> 
         slot.height * scale,
         radius * scale,
         1.0,
+        Thickness::Thin.tint(),
     );
     let widget = Rectangle::new()
         .width(Size::Fixed(slot.width))
@@ -372,18 +373,32 @@ pub(super) fn view(screen: (f32, f32), card: Area) -> Option<Built> {
     let area = place(screen, card);
     let radius = quick::card::radius();
 
-    let sheet = tile::sheet(area.width, area.height, radius, content(&area));
+    let sheet = tile::sheet(
+        area.width,
+        area.height,
+        radius,
+        Thickness::Thick.tint(),
+        content(&area),
+    );
 
     // it swells in about its centre, the frost with it (see the launcher)
     let fades = amane::blur_fades();
-    let scale = f32::blend(OPEN_SCALE, 1.0, unfolded);
+    let scale = f32::blend(motion::scale(OPEN_SCALE), 1.0, unfolded);
     let opacity = if OPENING.get() && !fades {
         1.0
     } else {
         unfolded.clamp(0.0, 1.0)
     };
     let frost = if OPENING.get() || fades {
-        let glass = glass_region::module(area.x, area.y, area.width, area.height, radius, 1.0);
+        let glass = glass_region::module(
+            area.x,
+            area.y,
+            area.width,
+            area.height,
+            radius,
+            1.0,
+            Thickness::Thick.tint(),
+        );
         let centre = (area.x + area.width / 2.0, area.y + area.height / 2.0);
         glass_region::faded(
             glass_region::transformed(vec![glass], scale, centre, (0.0, 0.0)),

@@ -12,7 +12,7 @@
 
 use amane::{Color, Column, Parent, Rectangle, Widget};
 
-use crate::glass;
+use crate::glass_region;
 use crate::layout::{pad, track_cursor};
 use crate::tokens::sys;
 
@@ -81,6 +81,8 @@ pub struct Card {
     variant: Variant,
     blur: bool,
     glass: bool,
+    fill: Option<Color>,
+    radius: f32,
     gap: f32,
     padding: f32,
 }
@@ -93,6 +95,8 @@ impl Card {
             variant: Variant::Filled,
             blur: false,
             glass: false,
+            fill: None,
+            radius: sys::radius::popover(),
             gap: 0.0,
             padding: sys::space::inset::l(),
         }
@@ -115,9 +119,23 @@ impl Card {
     }
 
     /// Light the edge like glass, for a card that is its surface's whole
-    /// translucent window.
+    /// translucent window: the shader's edge, unless the compositor draws
+    /// the glass material behind it (`glass_region::lit`), and then no
+    /// hairline either.
     pub fn glass(mut self, glass: bool) -> Self {
         self.glass = glass;
+        self
+    }
+
+    /// The fill in place of the surface's own: a glass tint, say.
+    pub fn fill(mut self, fill: Color) -> Self {
+        self.fill = Some(fill);
+        self
+    }
+
+    /// The corners; `sys.radius.popover` by default.
+    pub fn radius(mut self, radius: f32) -> Self {
+        self.radius = radius;
         self
     }
 
@@ -133,24 +151,39 @@ impl Card {
         self
     }
 
+    /// The surface's fill, at the glass level for a glass card.
+    fn background(&self) -> Color {
+        if self.glass {
+            glass_region::level(self.surface.bg())
+        } else {
+            self.surface.bg()
+        }
+    }
+
     pub fn build(self) -> Rectangle {
         let mut card = Rectangle::new()
             .width(Parent)
             .height(Parent)
-            .radius(sys::radius::popover())
-            .fill(self.surface.bg())
+            .radius(self.radius)
+            .fill(self.fill.unwrap_or_else(|| self.background()))
             .padding(pad(self.padding, self.padding));
 
         if self.variant == Variant::Outlined
             && let Some(stroke) = self.surface.stroke()
         {
+            // glass draws no hairline where the compositor's material is its edge
+            let stroke = if self.glass {
+                glass_region::stroke(stroke)
+            } else {
+                stroke
+            };
             card = card.border(sys::border::hairline(), stroke);
         }
         if self.blur {
             card = card.blur(sys::effect::backdrop_blur());
         }
         if self.glass {
-            card = glass::apply(card, sys::radius::popover());
+            card = glass_region::lit(card, self.radius);
         }
 
         track_cursor(card).child(Column::new(self.content).gap(self.gap).width(Parent))

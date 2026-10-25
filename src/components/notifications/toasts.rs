@@ -24,6 +24,8 @@ use amane::{
 
 use super::card::{self, Measured, Place, critical};
 use super::dnd::DoNotDisturb;
+use crate::components::card::Surface;
+use crate::components::glass_region;
 use crate::components::layout::blank;
 use crate::components::motion::{self, Arrive, Item, Pose, Shown};
 use crate::components::panel::{Panel, is_open, overlay};
@@ -244,6 +246,14 @@ fn frame(now: SystemTime) -> Vec<(usize, Shown<Measured>)> {
     };
 
     let off = Place::Toast.width() + sys::space::gap::m();
+    // where motion is reduced, a toast fades in and out in its place
+    let away = |pose: Pose| {
+        if motion::travel(off) == 0.0 {
+            pose.faded()
+        } else {
+            pose.moved(off)
+        }
+    };
     let mut y = 0.0;
     let items = list
         .into_iter()
@@ -257,8 +267,8 @@ fn frame(now: SystemTime) -> Vec<(usize, Shown<Measured>)> {
                 value: m,
                 height,
                 pose,
-                enter: pose.moved(off),
-                exit: pose.moved(off),
+                enter: away(pose),
+                exit: away(pose),
             }
         })
         .collect();
@@ -376,7 +386,10 @@ fn slot(index: usize) -> LayerWindow {
     let gap = sys::space::gap::m();
     let offset = swipe_offset(id);
 
-    let mut view = card::card(&m, Place::Toast, now, 1.0);
+    // a toast is small glass, light or dark with its backdrop
+    let glass = glass_region::shape_id(&format!("amane.toast.{id}"));
+    let mut view = glass_region::adapted(glass, || card::card(&m, Place::Toast, now, 1.0))
+        .opacity(pose.opacity);
     if !toast.leaving {
         view = card::interactive(
             view,
@@ -407,7 +420,22 @@ fn slot(index: usize) -> LayerWindow {
         // None so a toast never takes focus from the app being typed in
         .keyboard(Keyboard::None)
         .visible(true);
-    overlay(base, TOAST_NS, Vertical::Top, Horizontal::Right).child(view)
+    // the whole surface is the card's glass; it slides with the surface
+    let frost = glass_region::adapted(glass, || {
+        glass_region::module(
+            0.0,
+            0.0,
+            Place::Toast.width(),
+            toast.height,
+            notification::card::radius(),
+            pose.opacity,
+            glass_region::level(Surface::Notification.bg()),
+        )
+    })
+    .id(glass);
+    overlay(base, TOAST_NS, Vertical::Top, Horizontal::Right)
+        .blur_shapes(vec![frost])
+        .child(view)
 }
 
 #[cfg(test)]

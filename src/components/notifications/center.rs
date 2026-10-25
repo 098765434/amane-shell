@@ -16,6 +16,7 @@ use std::time::SystemTime;
 use amane::{
     Animation, Center, Color, Column, Full, Horizontal, LayerWindow, Margin, Notification,
     Notifications, Parent, Rectangle, ScrollArea, Service, Size, Stack, Text, Vertical, Widget,
+    window_size,
 };
 
 use super::card::{self, Measured, Place};
@@ -23,6 +24,7 @@ use super::dnd::{DoNotDisturb, Until};
 use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::{IconButton, PushButton, Shape, Style};
 use crate::components::card::{Card, Surface};
+use crate::components::glass_region::{self, Thickness};
 use crate::components::icons::ICON_DND;
 use crate::components::layout::{blank, boxed, cursor, split_row};
 use crate::components::motion::{self, Arrive, Item, Pose};
@@ -128,8 +130,15 @@ pub fn side_sheet() -> LayerWindow {
 
     let width = notification::center::width();
     let gap = sys::space::gap::m();
-    // slides from just past the right edge to `gap` in from it
-    let right = gap - (1.0 - progress) * (width + gap);
+    // slides from just past the right edge to `gap` in from it, or fades in
+    // there where motion is reduced
+    let travel = motion::travel(width + gap);
+    let right = gap - (1.0 - progress) * travel;
+    let opacity = if travel == 0.0 {
+        progress.clamp(0.0, 1.0)
+    } else {
+        1.0
+    };
 
     let base = LayerWindow::new()
         .width(width)
@@ -149,7 +158,18 @@ pub fn side_sheet() -> LayerWindow {
         return base.child(blank());
     }
 
-    base.child(sheet())
+    // the whole surface is the sheet's glass; it slides with the surface
+    let frost = glass_region::module(
+        0.0,
+        0.0,
+        width,
+        window_size().1,
+        notification::center::radius(),
+        opacity,
+        Thickness::Thick.tint(),
+    );
+    base.blur_shapes(vec![frost])
+        .child(sheet().opacity(opacity))
 }
 
 fn sheet() -> Rectangle {
@@ -196,8 +216,11 @@ fn sheet() -> Rectangle {
         )));
     }
 
+    // nested about its cards: their corners plus the inset around them
     Card::new(rows)
         .surface(Surface::Panel)
+        .radius(notification::center::radius())
+        .fill(glass_region::fill(Thickness::Thick.tint()))
         .glass(true)
         .gap(sys::space::gap::l())
         .build()
@@ -303,7 +326,7 @@ fn group_view(
             value: Entry::Card(Box::new(m)),
             pose: *pose,
             enter: Pose {
-                scale: motion::ENTER_SCALE,
+                scale: motion::scale(motion::ENTER_SCALE),
                 ..pose.faded()
             },
             exit: pose.moved(width).faded(),

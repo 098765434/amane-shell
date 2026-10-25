@@ -12,9 +12,11 @@ cards stack, what Do Not Disturb hides.
 
 A banner slides in at the top-right for each arriving notification, newest on top, at most
 `notification.toast.max-visible` at once. Each toast is **its own layer surface** (namespace
-`amane.notifications.toast`, one of `SLOTS` windows) sized to its card. niri's layer-rule
-blur frosts a whole surface, so one surface per card frosts exactly the card. Sliding in, sliding
-out and swiping move the surface itself (its margin), not a widget inside it.
+`amane.notifications.toast`, one of `SLOTS` windows) sized to its card, so niri's shadow, which
+its layer rule gives the surface, falls under exactly the card. The card is glass: the surface
+asks for one blur shape the size of the card, in the `glass` material, tinted
+`sys.color.surface.notification.bg` (`glass_region::module`). Sliding in, sliding out and swiping
+move the surface itself (its margin), not a widget inside it.
 
 Which toasts show is computed fresh from the notification list and the clock (`alive`):
 
@@ -38,8 +40,9 @@ changes, and keeps what the list can't say: swiped toasts, hover, grace times.
 
 ## Notification center (`center.rs`)
 
-A full-height frosted sidebar at the right edge (namespace `amane.notifications.center`), M3's
-modal side sheet (`side_sheet()`). It
+A full-height sidebar of thick glass at the right edge (namespace `amane.notifications.center`),
+M3's modal side sheet (`side_sheet()`). The surface frosts itself as one blur shape in the `glass`
+material, tinted `sys.color.glass.thick`, as it holds the most text of any glass. It
 springs in when the **clock** is clicked and closes with Escape, the clock, or the IPC call. It
 shares Quick Settings' one-open-at-a-time state (`Panel::Notifications`). Its header shows Do Not
 Disturb's state, **Clear All**, and the Do Not Disturb button, which opens the timed menu.
@@ -99,9 +102,10 @@ constants until `sys.motion.*` tokens exist in Penpot. A card is measured once
 ## Tokens
 
 Colours are the `sys.color.surface.notification.*` pair for toasts (`bg`, `fg`, `fg-secondary`,
-`stroke`; checked for contrast over black and white wallpaper). The center is a panel [`Card`](components.md#card), tinted like the bar's panels, with
+`stroke`; checked for contrast over black and white wallpaper). The center is a panel [`Card`](components.md#card) filled with thick glass's tint, with
 `raised` cards on it, in the panel's colours, under a `TopAppBar`. Sizes are `notification.*`: `toast.width`, `toast.max-visible`,
-`center.width`, `card.radius`, `card.icon-size`, `card.badge-size`, and `stack.peek`,
+`center.width`, `center.radius` (the cards' radius plus the inset around them, so the corners nest),
+`card.radius`, `card.icon-size`, `card.badge-size`, and `stack.peek`,
 `max-peek`, `scale-step`, `fade-step`.
 
 > These tokens were added to `tokens.json` by hand, before they existed in Penpot. Recreate them

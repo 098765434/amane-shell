@@ -226,7 +226,6 @@ fn menu(id: &str, parent: &Parent, at: Point) -> Popup {
 
     let card = Card::new(vec![boxed(Column::new(rows).width(Size::Parent))])
         .surface(Surface::Popover)
-        .blur(true)
         .glass(true)
         .padding(card_padding)
         .build();

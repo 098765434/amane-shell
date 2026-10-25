@@ -1,5 +1,6 @@
 //! How the shell looks: light or dark, the accent, how dense and how big
-//! the text is. Each control changes `appearance.json`, and the shell
+//! the text is, how see-through the glass is, and whether motion is
+//! reduced. Each control changes `appearance.json`, and the shell
 //! redraws in the new look while this window shows it too.
 
 use amane::{Column, Widget};
@@ -7,7 +8,7 @@ use amane_kit::buttons::Radio;
 use amane_kit::dropdown::Dropdown;
 use amane_kit::layout::boxed;
 use amane_kit::settings::{appearance, change_appearance};
-use amane_kit::theme::{Density, Mode};
+use amane_kit::theme::{Density, Glass, Mode};
 use amane_kit::tokens::sys;
 
 use crate::setting;
@@ -35,10 +36,17 @@ const TEXT_SIZES: [(&str, f32); 5] = [
 ];
 
 pub fn page() -> Column {
-    let (mode, accent, density, text_scale) = {
+    let (mode, accent, density, text_scale, glass, reduce_motion) = {
         let now = appearance();
 
-        (now.mode, now.accent.clone(), now.density, now.text_scale)
+        (
+            now.mode,
+            now.accent.clone(),
+            now.density,
+            now.text_scale,
+            now.glass,
+            now.reduce_motion,
+        )
     };
 
     let modes = [
@@ -73,6 +81,44 @@ pub fn page() -> Column {
                 Radio::new(format!("settings.density.{index}"), density == choice)
                     .label(label)
                     .on_select(move || change_appearance(|now| now.density = choice))
+                    .build(),
+            )
+        })
+        .collect();
+
+    let glasses = [
+        ("Clear", Glass::Clear),
+        ("Tinted", Glass::Tinted),
+        ("Solid", Glass::Solid),
+    ];
+
+    let glass_radios: Vec<Box<dyn Widget>> = glasses
+        .into_iter()
+        .enumerate()
+        .map(|(index, (label, choice))| {
+            boxed(
+                Radio::new(format!("settings.glass.{index}"), glass == choice)
+                    .label(label)
+                    .on_select(move || change_appearance(|now| now.glass = choice))
+                    .build(),
+            )
+        })
+        .collect();
+
+    let motions = [
+        ("Follow the system", None),
+        ("Reduce motion", Some(true)),
+        ("Full motion", Some(false)),
+    ];
+
+    let motion_radios: Vec<Box<dyn Widget>> = motions
+        .into_iter()
+        .enumerate()
+        .map(|(index, (label, choice))| {
+            boxed(
+                Radio::new(format!("settings.motion.{index}"), reduce_motion == choice)
+                    .label(label)
+                    .on_select(move || change_appearance(|now| now.reduce_motion = choice))
                     .build(),
             )
         })
@@ -125,6 +171,8 @@ pub fn page() -> Column {
         boxed(setting("Accent colour", accents.build())),
         boxed(setting("Density", Column::new(density_radios))),
         boxed(setting("Text size", sizes.build())),
+        boxed(setting("Glass", Column::new(glass_radios))),
+        boxed(setting("Motion", Column::new(motion_radios))),
     ])
     .gap(sys::space::gap::l())
 }

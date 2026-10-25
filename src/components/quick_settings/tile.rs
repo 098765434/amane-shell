@@ -31,8 +31,7 @@ use super::grid::{Metrics, Span};
 use crate::components::buttons::{
     Actions, Pending, hovered, interactive, press_scale, state_fill, with_existing, with_state,
 };
-use crate::components::card::Surface;
-use crate::components::glass_region;
+use crate::components::glass_region::{self, Thickness};
 use crate::components::icons::{Glyph, glyph};
 use crate::components::layout::{boxed, icon, pad, text_height, text_width};
 use crate::components::motion;
@@ -77,7 +76,7 @@ pub(super) fn module(
         .width(Size::Fixed(width))
         .height(Size::Fixed(height))
         .radius(radius)
-        .fill(tint())
+        .fill(fill(Thickness::Thin.tint()))
         .clip()
         .child(content);
     match shadow() {
@@ -86,19 +85,20 @@ pub(super) fn module(
     }
 }
 
-/// A whole sheet of glass, the page's: the module tint with the surfaces'
-/// full glass edge.
+/// A whole sheet of glass, the page's, tinted `tint` (thick glass, or on
+/// its way there from a module's), with the surfaces' full glass edge.
 pub(super) fn sheet(
     width: f32,
     height: f32,
     radius: f32,
+    tint: Color,
     content: impl Widget + 'static,
 ) -> Rectangle {
     let surface = Rectangle::new()
         .width(Size::Fixed(width))
         .height(Size::Fixed(height))
         .radius(radius)
-        .fill(tint())
+        .fill(fill(tint))
         .clip()
         .child(content);
     let surface = match shadow() {
@@ -124,12 +124,13 @@ pub(super) fn plain<R>(f: impl FnOnce() -> R) -> R {
     out
 }
 
-/// The modules' tint, unless the compositor lays it on with the glass.
-fn tint() -> Color {
+/// What glass tinted `tint` is filled with: the tint, unless the
+/// compositor lays it on with the frost.
+fn fill(tint: Color) -> Color {
     if PLAIN.get() {
-        Surface::Panel.bg()
+        tint
     } else {
-        glass_region::tint()
+        glass_region::fill(tint)
     }
 }
 
@@ -482,9 +483,11 @@ pub(super) fn capsule_button(
     let height = sys::size::control::height();
     let style = sys::r#type::label();
     let width = capsule_width(label, glyph.is_some());
-    // the one main action of the moment (Done) is filled accent
+    // the one main action of the moment (Done) is in the accent: glass
+    // tinted with it, which the compositor lays on with the frost where it
+    // draws the material (`tiles::grid` asks), else a fill of it
     let (fill, fg) = if accent {
-        (sys::color::accent::bg(), sys::color::accent::fg())
+        (fill(sys::color::accent::bg()), sys::color::accent::fg())
     } else {
         (Color::TRANSPARENT, sys::color::surface::panel::fg())
     };

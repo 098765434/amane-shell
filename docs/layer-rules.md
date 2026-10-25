@@ -9,22 +9,27 @@ backdrop blur and corner rounding. Two things must agree:
    namespace constants and the design tokens (corner radii are `sys.radius.popover`, or
    `notification.card.radius` for toasts: the radius the cards are drawn with).
 
-A blurred surface gets `xray false`: niri's layer-surface blur is xray by default, which shows
-only the wallpaper, so the cards would look opaque over windows. (Popups already default to
-non-xray.)
+Every glass surface but the bar says where to frost itself, through blur shapes
+(`LayerWindow::blur_shapes`, niri-blur-shapes; `glass_region` in the kit), each shape naming the
+`glass` material and carrying the glass's tint: Quick Settings' modules, the dock, the launcher,
+the toasts and the notification center. Their rules are `clear` ones: `xray false`, since niri's
+blur would otherwise show the wallpaper alone, and no blur of their own. Toasts and the center are
+each only as big as their card, so a shadow the shell drew would be cut off at the surface's edge:
+their rules round the surface (`notification.card.radius`, `notification.center.radius`) and give
+it niri's `shadow`.
 
-Because niri frosts the whole surface, a frosted card draws no blur of its own (`Card::blur`
-stays off for the panels), and a surface can't be bigger than its card.
+xdg-popups (menus, tooltips, the dropdowns) can't send blur shapes, so their `popups {}` blocks
+frost them and name the same `glass` material (`background-effect { material "glass" }`, a rule
+option of our niri fork): niri draws them as glass in the shape of their geometry, and the popup
+draws its own tint over it. niri's `popups {}` block has no shadow, so they go without one.
 
-A surface can instead say where to frost (`LayerWindow::blur_region`, ext-background-effect):
-Quick Settings does, for its modules alone, so its rule is a `clear` one — no corner radius,
-blur or shadow, only `xray false`, since niri's blur region would otherwise show the wallpaper
-alone (see [quick-settings.md](quick-settings.md)).
+The bar is the one plain-frost surface (`frost`): niri frosts all of it, square, with xray blur,
+since it reserves its zone and only the wallpaper is ever behind it.
 
-A blurred surface also gets a `shadow`: each surface is only as big as its card, so a shadow
-the shell drew would be cut off at the surface's edge. niri's `popups {}` block has no shadow,
-so context menus and the menus of panels go without one. The shell lights the cards' edges
-itself (`components/glass.rs`).
+Where niri has the `glass` material (`amane::material_available`), it draws the lit edge too, so
+the cards leave out the shader's (`components/glass.rs`) and their hairlines. A niri config
+without the material, or without these rules installed, gets plain frost, and the shell lights
+the edges itself; install the rules after every change (below), or menus lose their edge.
 
 A golden test fails when (2) is out of date with the tokens. The live niri config is in turn
 generated from (2), not hand-edited, so neither can drift.
@@ -33,11 +38,11 @@ generated from (2), not hand-edited, so neither can drift.
 
 | Namespace | Surface |
 |---|---|
-| `amane.status-bar` | the bar (intentionally **not** blurred); its rule only frosts its xdg-popups: tooltips and Do Not Disturb's menu |
+| `amane.status-bar` | the bar: frosted whole, square, without a shadow or `xray false` (`frost`: it reserves its zone, so only the wallpaper is behind it); its xdg-popups, tooltips and Do Not Disturb's menu, are frosted too |
 | `amane.quick-settings` | Quick Settings: a clear surface that frosts its own modules through a blur region; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
 | `amane.launcher` | the app launcher: a clear surface over the output that frosts its glass panel through a blur region; `xray false`, and its popups (an app's menu) frosted |
-| `amane.notifications.toast` | each notification toast (one surface per banner, radius `notification.card.radius`) |
-| `amane.notifications.center` | the notification center sidebar (its Do Not Disturb menu is a frosted xdg-popup of it) |
+| `amane.notifications.toast` | each notification toast: one surface per banner, frosting its card itself; `clear`, rounded `notification.card.radius`, with niri's shadow |
+| `amane.notifications.center` | the notification center sidebar, frosting itself; `clear`, rounded `notification.center.radius`, with niri's shadow (its Do Not Disturb menu is a frosted xdg-popup of it) |
 | `amane.context-menu-anchor` | the context-menu anchor window |
 | `amane.context-menu.0` … `.7` | nested context-menu levels |
 

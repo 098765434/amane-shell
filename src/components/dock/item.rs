@@ -8,7 +8,7 @@ use amane::{Center, Color, Rectangle, Row, Text, Widget};
 
 use super::model::Icon;
 use crate::components::app_icon;
-use crate::components::glass_region;
+use crate::components::glass_region::{self, Thickness};
 use crate::components::layout::{boxed, text_height, text_width};
 use crate::tokens::{Styled, sys};
 
@@ -77,7 +77,7 @@ pub fn label(text: &str) -> (Rectangle, f32, f32) {
         .width(width)
         .height(height)
         .radius(sys::radius::raised())
-        .fill(glass_region::tint())
+        .fill(glass_region::fill(Thickness::Thin.tint()))
         .align_child(Center, Center)
         .child(
             Text::new(text)

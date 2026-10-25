@@ -8,9 +8,10 @@ use std::sync::RwLockReadGuard;
 use amane::serde::{Deserialize, Serialize};
 use amane::{Color, Config, Service, Settings};
 
-use crate::theme::{Density, Mode};
+use crate::theme::{Density, Glass, Mode};
 
-/// How the shell looks: mode, accent, density and text size.
+/// How the shell looks: mode, accent, density, text size, how see-through
+/// its glass is, and whether it moves.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct Appearance {
@@ -24,6 +25,16 @@ pub struct Appearance {
 
     /// Multiplies every font size, kept within 0.5–3.
     pub text_scale: f32,
+
+    /// How see-through the glass is.
+    pub glass: Glass,
+
+    /// Whether to reduce motion, or none to follow the system.
+    pub reduce_motion: Option<bool>,
+
+    /// Whether small glass turns light or dark with what's behind it, from
+    /// niri's readings of the backdrop (an experiment, off by default).
+    pub adaptive_glass: bool,
 }
 
 impl Default for Appearance {
@@ -33,6 +44,9 @@ impl Default for Appearance {
             accent: None,
             density: Density::Comfortable,
             text_scale: 1.0,
+            glass: Glass::Tinted,
+            reduce_motion: None,
+            adaptive_glass: false,
         }
     }
 }
@@ -96,5 +110,7 @@ mod tests {
 
         assert_eq!(appearance.mode, Some(Mode::Light));
         assert_eq!(appearance.text_scale, 1.0);
+        assert_eq!(appearance.glass, Glass::Tinted);
+        assert_eq!(appearance.reduce_motion, None);
     }
 }

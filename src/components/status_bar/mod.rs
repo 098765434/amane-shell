@@ -24,6 +24,7 @@ use crate::components::battery;
 use crate::components::buttons::{
     ButtonBuilder, DrawnButton, IconButton, PushButton, Shape, Style,
 };
+use crate::components::glass_region::Thickness;
 use crate::components::icons::{
     Glyph, ICON_AIRPLANE, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE,
     ICON_CAMERA, ICON_DND, ICON_KEEP_AWAKE, ICON_MIC, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS,
@@ -74,8 +75,9 @@ pub fn bar() -> LayerWindow {
         .width(Parent)
         .height(Parent)
         .radius(bar::radius())
-        .fill(sys::color::surface::panel::bg())
-        .blur(sys::effect::backdrop_blur())
+        // niri frosts the whole strip (its layer rule); the tint is thick
+        // glass, as the bar holds text
+        .fill(Thickness::Thick.tint())
         .padding(pad(sys::space::inset::m(), bar::panel::padding_y()));
     let panel = track_cursor(panel).child(sections);
 

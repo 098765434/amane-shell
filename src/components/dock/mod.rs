@@ -48,7 +48,7 @@ use crate::components::app_icon;
 use crate::components::context_menu;
 use crate::components::divider::Divider;
 use crate::components::edge_reveal::EdgeReveal;
-use crate::components::glass_region;
+use crate::components::glass_region::{self, Thickness};
 use crate::components::layout::{blank, boxed};
 use crate::components::motion::redraw_after;
 use crate::tokens::sys;
@@ -341,9 +341,12 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
         let at = Measures::new(monitor, motion, icons, sections.len().saturating_sub(1));
         let (sections, held) = arrange(dock, sections, at);
         let entries = row(&sections, at.rule);
-        let view = build(
-            dock, &name, &sections, entries, &spaces, held, hold, at, motion,
-        );
+        // the card is small glass, light or dark with its backdrop
+        let view = glass_region::adapted(glass_id(&name), || {
+            build(
+                dock, &name, &sections, entries, &spaces, held, hold, at, motion,
+            )
+        });
         (view, at)
     });
 
@@ -361,6 +364,12 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
         .input_region(view.input)
         .blur_shapes(view.frost)
         .child(view.root)
+}
+
+/// The id of monitor `output`'s dock glass, for niri's readings of its
+/// backdrop.
+fn glass_id(output: &str) -> u32 {
+    glass_region::shape_id(&format!("amane.dock.{output}"))
 }
 
 /// `sections` with a window let go of where it went, until niri has it
@@ -595,16 +604,25 @@ fn build(
             .width(card_w.max(1.0))
             .height(at.card)
             .radius(RADIUS)
-            .fill(glass_region::tint());
+            .fill(glass_region::fill(Thickness::Thin.tint()));
         layers.push(place(
             glass_region::lit(glass, RADIUS),
             card_x,
             top,
             progress,
         ));
-        frost.push(glass_region::module(
-            card_x, top, card_w, at.card, RADIUS, 1.0,
-        ));
+        frost.push(
+            glass_region::module(
+                card_x,
+                top,
+                card_w,
+                at.card,
+                RADIUS,
+                1.0,
+                Thickness::Thin.tint(),
+            )
+            .id(glass_id(output)),
+        );
 
         // the workspace showing, lit behind its icons
         if let Some(active) = sections.iter().position(|section| section.active) {
@@ -740,6 +758,7 @@ fn build(
                     height,
                     sys::radius::raised(),
                     shown,
+                    Thickness::Thin.tint(),
                 ));
                 layers.push(place(label, x, y, shown));
             }

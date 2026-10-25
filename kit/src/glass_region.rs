@@ -7,26 +7,76 @@
 //! Quick Settings frosts each module this way, and the dock its one card.
 //! Where the compositor draws the glass material itself, it lays on the
 //! tint and lit edge too, so the glass drawn in the surface is clear
-//! ([`tint`]) and goes without the shader's edge ([`lit`]).
+//! ([`fill`]) and goes without the shader's edge ([`lit`]).
 
-use amane::{BlurShape, Color, Rectangle};
+use std::cell::RefCell;
+use std::collections::HashMap;
 
-use crate::card::Surface;
+use amane::{Backdrop, BlurShape, Color, Rectangle, Service};
+
+use crate::color::{self, with_alpha};
 use crate::glass;
+use crate::theme::{self, Glass, Mode};
+use crate::tokens::{Key, sys, with_key};
 
 // TODO(token): `sys.glass.material` once Penpot has it (manual §1.1).
 /// The compositor's material the glass asks for: niri's liquid glass where
 /// its config names one so, plain frost otherwise.
 pub const MATERIAL: &str = "glass";
 
+/// How much clearer than its tint Clear glass is.
+const CLEAR: f32 = 0.8;
+
+/// Whether the glass is see-through at all: not where the settings ask for
+/// solid glass, nor where the system asks for higher contrast (Apple's
+/// Reduce Transparency and Increase Contrast).
+pub fn see_through() -> bool {
+    theme::glass() != Glass::Solid && !theme::high_contrast()
+}
+
 /// Whether the compositor draws the glass itself (its tint and lit edge,
 /// with the frost, on one edge): the surface then leaves both out.
 pub fn compositor_glass() -> bool {
-    amane::material_available(MATERIAL)
+    see_through() && amane::material_available(MATERIAL)
+}
+
+/// `tint` as the glass level has it: clearer for Clear glass, opaque where
+/// the glass isn't see-through.
+pub fn level(tint: Color) -> Color {
+    if !see_through() {
+        return with_alpha(tint, 1.0);
+    }
+    match theme::glass() {
+        Glass::Clear => color::faded(tint, CLEAR),
+        Glass::Tinted | Glass::Solid => tint,
+    }
+}
+
+/// How thick a piece of glass is. Apple's rule: the larger the glass and
+/// the more text it holds, the thicker and more opaque it is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Thickness {
+    /// Small glass: modules, the dock, toasts, menus.
+    Thin,
+    /// Large glass that holds text: the launcher, the notification center,
+    /// a Quick Settings page, the Customize window, the bar.
+    Thick,
+}
+
+impl Thickness {
+    /// The glass's tint, at the glass level ([`level`]).
+    pub fn tint(self) -> Color {
+        level(match self {
+            Self::Thin => sys::color::glass::thin(),
+            Self::Thick => sys::color::glass::thick(),
+        })
+    }
 }
 
 /// The frost behind a piece of glass drawn at (`x`, `y`), `width` by
-/// `height`, with `radius` corners, at `opacity`.
+/// `height`, with `radius` corners, at `opacity`, tinted `tint` (a
+/// [`Thickness::tint`], or a blend of them). Glass that isn't see-through
+/// has nothing behind it to frost.
 pub fn module(
     x: f32,
     y: f32,
@@ -34,20 +84,34 @@ pub fn module(
     height: f32,
     radius: f32,
     opacity: f32,
+    tint: Color,
 ) -> BlurShape {
-    BlurShape::new(x, y, width, height, radius)
-        .alpha(opacity)
-        .material(MATERIAL)
-        .tint(Surface::Panel.bg())
+    let shape = BlurShape::new(x, y, width, height, radius).tint(tint);
+    if see_through() {
+        shape.alpha(opacity).material(MATERIAL)
+    } else {
+        shape.alpha(0.0)
+    }
 }
 
-/// What the glass drawn in the surface is tinted: the panels' tint, unless
-/// the compositor lays it on with the frost.
-pub fn tint() -> Color {
+/// What the glass drawn in the surface is filled with: `tint`, unless the
+/// compositor lays it on with the frost.
+pub fn fill(tint: Color) -> Color {
     if compositor_glass() {
         Color::TRANSPARENT
     } else {
-        Surface::Panel.bg()
+        tint
+    }
+}
+
+/// The hairline `stroke` round a glass card: none where the compositor's
+/// material draws the edge itself, so it's back for solid glass and higher
+/// contrast.
+pub fn stroke(stroke: Color) -> Color {
+    if compositor_glass() {
+        Color::TRANSPARENT
+    } else {
+        stroke
     }
 }
 
@@ -59,6 +123,63 @@ pub fn lit(surface: Rectangle, radius: f32) -> Rectangle {
     } else {
         glass::apply(surface, radius)
     }
+}
+
+// TODO(token): `sys.glass.adapt.*` once Penpot has them.
+/// Over a backdrop brighter than this, small glass turns light.
+const TURN_LIGHT: f32 = 0.65;
+/// Over a backdrop dimmer than this, small glass turns dark again.
+const TURN_DARK: f32 = 0.35;
+
+thread_local! {
+    // the mode each piece of adaptive glass took last, by shape id
+    static ADAPTED: RefCell<HashMap<u32, Mode>> = RefCell::new(HashMap::new());
+}
+
+/// A shape id for the piece of glass named `name` (unique across the
+/// shell's windows): the same every frame, so niri's readings of the
+/// backdrop behind it (`amane::Backdrop`) can be found again.
+pub fn shape_id(name: &str) -> u32 {
+    // FNV-1a
+    name.bytes().fold(0x811c_9dc5_u32, |hash, byte| {
+        (hash ^ u32::from(byte)).wrapping_mul(0x0100_0193)
+    })
+}
+
+/// The mode small glass `id` is drawn in: the theme's, or with adaptive
+/// glass on (`theme::adaptive_glass`), light over a bright backdrop and dark
+/// over a dim one, as Apple's small glass flips with what's behind it. The
+/// gap between the two thresholds keeps it from flickering at the edge.
+pub fn mode_for(id: u32) -> Mode {
+    let theme = Key::current().mode;
+    if !theme::adaptive_glass() || !see_through() {
+        return theme;
+    }
+    let Some(luminance) = Backdrop::read().luminance(id) else {
+        return theme;
+    };
+    ADAPTED.with_borrow_mut(|adapted| {
+        let before = *adapted.get(&id).unwrap_or(&theme);
+        let mode = if luminance > TURN_LIGHT {
+            Mode::Light
+        } else if luminance < TURN_DARK {
+            Mode::Dark
+        } else {
+            before
+        };
+        adapted.insert(id, mode);
+        mode
+    })
+}
+
+/// Builds `f`, a piece of small glass and what's on it, in the mode glass
+/// `id` takes ([`mode_for`]): its tint and labels flip together.
+pub fn adapted<T>(id: u32, f: impl FnOnce() -> T) -> T {
+    let key = Key {
+        mode: mode_for(id),
+        ..Key::current()
+    };
+    with_key(key, f)
 }
 
 /// `shapes` scaled by `scale` about `origin`, then moved by `offset`: where

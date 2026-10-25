@@ -37,9 +37,10 @@ the same surface:
 
 `Variant::Filled` is the fill alone, and `Variant::Outlined` adds a `sys.border.hairline` in the
 surface's stroke. M3's elevated card is left out because there's no `sys.shadow` role yet.
-`.blur(true)` frosts what's below with `sys.effect.backdrop-blur`, a macOS departure from M3; the
-bar's panels leave it off, since niri frosts their whole surface through a layer rule and under a
-root card there's nothing of the window's own to blur. A
+`.blur(true)` frosts what's below with `sys.effect.backdrop-blur`, a macOS departure from M3. It
+blurs only what the window has drawn under the card, so a card that is its surface's root (the
+panels, tooltips, dropdowns) leaves it off: niri frosts those through a layer rule. `.radius(..)`
+sets the corners, `sys.radius.popover` by default. A
 card also records where the pointer is over it (`layout::cursor()`), so a right-click on its
 content can anchor a menu.
 
@@ -210,4 +211,16 @@ niri keeps after the last called "New Workspace". Workspaces are named as niri n
   motion the notifications use.
 - `glass_region.rs` says where the compositor frosts behind clear glass (`module`, `transformed`,
   `faded`), and what the glass drawn in the surface is when the compositor lays on the liquid
-  glass material itself (`tint`, `lit`). Quick Settings' modules and the dock's card use it.
+  glass material itself (`fill`, `lit`, `stroke`). Glass comes in two thicknesses
+  (`Thickness::Thin` for modules, the dock, toasts and menus; `Thick`, `sys.color.glass.thick`,
+  for the launcher, the notification center, pages and the bar), and every tint goes through
+  `level`: the settings' glass level (`Clear` 0.8 of the tint, `Tinted`, `Solid` opaque) and the
+  system's high contrast, which, like `Solid`, turns the material off and brings the hairlines
+  back. Quick Settings, the dock, the launcher, the toasts and the notification center use it.
+  **Adaptive glass** (an experiment, off by default: `adaptive_glass` in `appearance.json`, or
+  `AMANE_ADAPTIVE_GLASS=1`) turns small glass light or dark with its backdrop, as Apple's small
+  glass does. Each piece names its shape (`shape_id`, sent as `BlurShape::id`), niri reports how
+  bright the backdrop behind it is (amane's `Backdrop`, for a material with `report-backdrop true`
+  in niri's `materials {}`), and `adapted(id, ..)` builds the piece and its frost with the mode
+  that reading gives (`mode_for`: light above 0.65, dark again below 0.35). The dock's card, each
+  Quick Settings module and each toast do this. Large glass keeps the theme's mode.

@@ -119,7 +119,10 @@ Using it:
 - **Undo Remove** puts the last removed control back where it was; **Reset Layout** restores
   Control Center's order (as `quick-settings reset-layout` does).
 - **Done** (in the window's footer, or the card's capsule, or Escape) leaves edit mode and closes
-  the window. Escape clears the search first when there is one.
+  the window. Escape clears the search first when there is one. The card's capsule is then
+  glass tinted with the accent rather than filled with it: its frost carries the accent as its
+  tint, which niri's material lays on like stained glass (a compositor without the material gets
+  the accent as a fill).
 
 The grid is iOS Control Center's canvas: `quick.grid.cols` × `quick.grid.rows` (4 × 8) cells of
 `quick.grid.cell` (74 px) with `quick.grid.gap` (16 px) between them, so a row is 344 px. A

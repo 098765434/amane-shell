@@ -59,7 +59,7 @@ use amane::{
     Parent, Rectangle, Size, Stack, Start, Vertical, Widget, WindowSize, mark_all, window_size,
 };
 
-use crate::components::glass_region;
+use crate::components::glass_region::{self, Thickness};
 use crate::components::layout::{blank, boxed, pad, track_cursor};
 use crate::components::motion;
 use crate::components::panel::{self, Panel, close, is_open, overlay, popover_margin};
@@ -361,6 +361,7 @@ pub fn surface() -> LayerWindow {
         width: grid_w,
         height: inner,
         radius: quick::card::radius(),
+        tint: Thickness::Thick.tint(),
     };
     let origin = match grid.rest(detail.controls()) {
         Some((slot, radius)) => Sheet {
@@ -369,6 +370,7 @@ pub fn surface() -> LayerWindow {
             width: slot.width,
             height: slot.height,
             radius,
+            tint: Thickness::Thin.tint(),
         },
         None => {
             let cell = grid::Metrics::tokens().extent(1);
@@ -378,6 +380,7 @@ pub fn surface() -> LayerWindow {
                 width: cell,
                 height: cell,
                 radius: cell / 2.0,
+                tint: Thickness::Thin.tint(),
             }
         }
     };
@@ -464,8 +467,8 @@ pub fn surface() -> LayerWindow {
     // the sharp desktop.
     let fades = amane::blur_fades();
     let unfolded_shown = unfolded.clamp(0.0, 1.0);
-    let scale = f32::blend(quick::open::scale(), 1.0, unfolded);
-    let lift = (1.0 - unfolded) * OPEN_LIFT;
+    let scale = f32::blend(motion::scale(quick::open::scale()), 1.0, unfolded);
+    let lift = (1.0 - unfolded) * motion::travel(OPEN_LIFT);
     let opacity = if open && !fades { 1.0 } else { unfolded_shown };
     let card = content.opacity(opacity).scale(scale).translate(
         (1.0 - scale) * width / 2.0,
@@ -581,6 +584,8 @@ struct Sheet {
     width: f32,
     height: f32,
     radius: f32,
+    /// Thin glass as its tile, thickening as it grows into the page.
+    tint: Color,
 }
 
 impl Sheet {
@@ -590,7 +595,15 @@ impl Sheet {
 
     /// Where the compositor frosts behind it.
     fn frost(self) -> BlurShape {
-        glass_region::module(self.x, self.y, self.width, self.height, self.radius, 1.0)
+        glass_region::module(
+            self.x,
+            self.y,
+            self.width,
+            self.height,
+            self.radius,
+            1.0,
+            self.tint,
+        )
     }
 }
 
@@ -602,6 +615,7 @@ impl Blend for Sheet {
             width: f32::blend(from.width, to.width, amount),
             height: f32::blend(from.height, to.height, amount),
             radius: f32::blend(from.radius, to.radius, amount),
+            tint: Color::blend(from.tint, to.tint, amount),
         }
     }
 }
@@ -625,7 +639,7 @@ fn sheet_layer(page: Page, sheet: Sheet, height: f32, reveal: f32) -> Rectangle 
         .fill(Color::TRANSPARENT)
         .align_child(Start, Start)
         .child(
-            tile::sheet(sheet.width, sheet.height, sheet.radius, content)
+            tile::sheet(sheet.width, sheet.height, sheet.radius, sheet.tint, content)
                 .translate(sheet.x, sheet.y),
         )
 }

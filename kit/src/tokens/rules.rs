@@ -31,6 +31,17 @@ const SURFACES: &[(&str, &str, &str)] = &[
         "sys.color.surface.popover.fg",
         "sys.color.surface.popover.fg-secondary",
     ),
+    // the glass tints, under the panels' text
+    (
+        "sys.color.glass.thin",
+        "sys.color.surface.panel.fg",
+        "sys.color.content.secondary",
+    ),
+    (
+        "sys.color.glass.thick",
+        "sys.color.surface.panel.fg",
+        "sys.color.content.secondary",
+    ),
     (
         "sys.color.surface.notification.bg",
         "sys.color.surface.notification.fg",

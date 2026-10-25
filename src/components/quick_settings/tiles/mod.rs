@@ -31,7 +31,7 @@ use super::grid::{Metrics, Occupancy, Rect, Slot, Span};
 use super::tile::{capsule_button, capsule_width, module};
 use super::{edit, layout};
 use crate::components::glass::{self, Rim};
-use crate::components::glass_region;
+use crate::components::glass_region::{self, Thickness};
 use crate::components::layout::boxed;
 use crate::components::motion::{self, Arrive, Item, Pose};
 use crate::components::panel::close;
@@ -82,8 +82,8 @@ impl Motion {
 /// `pose` as the cascade has it, `arrived` of the way in.
 fn arriving(pose: Pose, arrived: f32) -> Pose {
     Pose {
-        y: pose.y + (1.0 - arrived) * CASCADE_RISE,
-        scale: pose.scale * f32::blend(CASCADE_SCALE, 1.0, arrived),
+        y: pose.y + (1.0 - arrived) * motion::travel(CASCADE_RISE),
+        scale: pose.scale * f32::blend(motion::scale(CASCADE_SCALE), 1.0, arrived),
         opacity: pose.opacity * arrived.clamp(0.0, 1.0),
         ..pose
     }
@@ -129,7 +129,9 @@ pub(super) fn grid(look: Motion) -> Grid {
     let mut widgets: HashMap<ControlId, Box<dyn Widget>> = HashMap::new();
     let mut slots: Vec<(ControlId, Rect, Slot)> = Vec::new();
     for (id, rect) in &placed {
-        let widget = match controls::build(*id, rect.span, &ctx) {
+        // each module is small glass of its own, light or dark with its backdrop
+        let built = glass_region::adapted(glass_id(*id), || controls::build(*id, rect.span, &ctx));
+        let widget = match built {
             Some(widget) => widget,
             // a control waiting for its hardware takes no room, except in
             // edit mode, where it shows as a placeholder to move or remove
@@ -147,7 +149,7 @@ pub(super) fn grid(look: Motion) -> Grid {
             let pose = Pose::at(slot.y).moved(slot.x);
             // a control added grows into its cells; one removed shrinks away
             let away = Pose {
-                scale: motion::ENTER_SCALE,
+                scale: motion::scale(motion::ENTER_SCALE),
                 ..pose.faded()
             };
             Item {
@@ -203,10 +205,12 @@ pub(super) fn grid(look: Motion) -> Grid {
         // a control on its way out is drawn as it was until it has gone
         let widget = match widgets.remove(&id) {
             Some(widget) => widget,
-            None if item.leaving => match controls::build(id, rect.span, &ctx) {
-                Some(widget) => widget,
-                None => continue,
-            },
+            None if item.leaving => {
+                match glass_region::adapted(glass_id(id), || controls::build(id, rect.span, &ctx)) {
+                    Some(widget) => widget,
+                    None => continue,
+                }
+            }
             None => continue,
         };
         let distance = (width - (slot.x + slot.width / 2.0))
@@ -248,7 +252,8 @@ pub(super) fn grid(look: Motion) -> Grid {
             opacity: pose.opacity.clamp(0.0, 1.0),
         };
         if focused.is_none() && !in_hand {
-            shapes.push(frost(&drawn));
+            let glass = glass_id(id);
+            shapes.push(glass_region::adapted(glass, || frost(&drawn)).id(glass));
         }
         if !in_hand {
             rims.push(drawn);
@@ -284,7 +289,7 @@ pub(super) fn grid(look: Motion) -> Grid {
     };
 
     // the Edit Controls capsule, centred under the canvas; Done is the one
-    // action of the moment, in the accent
+    // action of the moment, glass tinted with the accent
     let button_h = sys::size::control::height();
     let label = if editing { "Done" } else { "Edit Controls" };
     let button_w = capsule_width(label, false);
@@ -299,7 +304,12 @@ pub(super) fn grid(look: Motion) -> Grid {
         radius: button_h * pose.scale / 2.0,
         opacity: pose.opacity,
     };
-    shapes.push(frost(&capsule));
+    let tint = if editing {
+        glass_region::level(sys::color::accent::bg())
+    } else {
+        Thickness::Thin.tint()
+    };
+    shapes.push(frost_tinted(&capsule, tint));
     rims.push(capsule);
     let button = Rectangle::new()
         .width(Size::Fixed(width))
@@ -354,8 +364,18 @@ pub(super) fn grid(look: Motion) -> Grid {
     }
 }
 
+/// The id of control `id`'s glass, for niri's readings of its backdrop.
+fn glass_id(id: ControlId) -> u32 {
+    glass_region::shape_id(&format!("amane.quick-settings.{id:?}"))
+}
+
 /// The frost behind a piece of glass, where it's drawn.
 fn frost(drawn: &Rim) -> BlurShape {
+    frost_tinted(drawn, Thickness::Thin.tint())
+}
+
+/// The frost behind a piece of glass tinted `tint`, where it's drawn.
+fn frost_tinted(drawn: &Rim, tint: Color) -> BlurShape {
     glass_region::module(
         drawn.x,
         drawn.y,
@@ -363,6 +383,7 @@ fn frost(drawn: &Rim) -> BlurShape {
         drawn.height,
         drawn.radius,
         drawn.opacity,
+        tint,
     )
 }
 

@@ -45,8 +45,7 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `sys.motion.coast.decay`, `.duration`, `.min-fling`, `.held`, `.rubber-band` | 0.325 s, 850 ms, 60 px/s, 80 ms, 0.3 | `kinetic.rs` (`DECAY`, `COAST`, `MIN_FLING`, `HELD`, `RUBBER_BAND`) |
 | `sys.opacity.disabled` (also) | 0.38 | `quick_settings/tiles/mod.rs` (`DIMMED`: a placeholder for a control without its hardware) |
 | `sys.opacity.disabled` | 0.38 | `buttons/mod.rs` (`DISABLED_OPACITY`) |
-| `sys.color.glass.rim`, `sys.color.glass.glow` | light `#ffffffe6`, `#ffffffbf`; dark `#ffffff4d`, `#ffffff14` | `components/glass.rs` (`LIGHT`, `DARK`) |
-| `sys.effect.glass.far`, `sys.effect.glass.bloom` | light 0.5, 0.3; dark 0.2, 0.05 | `components/glass.rs` (`LIGHT`, `DARK`) |
+| `sys.effect.glass.far`, `sys.effect.glass.bloom` | light 0.3, 0.08; dark 0.1, 0.01 | `components/glass.rs` (`Light::now`). These differ by mode but aren't colours, so §1.4 needs them folded into the rim colour or made mode-free first |
 | `sys.effect.glass.rim-width`, `.bloom-width`, `.glow-blur` | 1.5, 14, 5 | `components/glass.rs` |
 | `sys.shadow.popover` | `0 8 16 #00000073` | `tokens/layer_rules.rs` (`SHADOW_*`) |
 | `sys.motion.duration.tooltip` | 500 ms | `components/tooltip.rs` (`DELAY`) |
@@ -72,7 +71,13 @@ whose output is static: it can't follow the mode, so it holds one value for both
   was raised by hand from 18 to 28 to give the highlight room. Recreate them in Penpot.
 - The `notification.*` tokens and the `sys.color.surface.notification.*` pair were added to
   `tokens.json` by hand (see [notifications.md](notifications.md)). Recreate them in Penpot under
-  the same names, or the next export drops them.
+  the same names, or the next export drops them. `notification.center.radius` (26: the cards'
+  16 plus the 10 of `sys.space.inset.l` around them, so their corners nest) came later the same
+  way. It's a number, not an expression, because radii mustn't vary with density (§8.2).
+- `sys.color.glass.thin`, `.thick`, `.rim` and `.glow` were added to `tokens.json` by hand, in
+  both modes: the tints of small and large glass (thin is the panels' old tint; thick is more
+  opaque, for glass that holds text) and the glass edge's light, which `components/glass.rs` held
+  as constants. Recreate them in Penpot under the same names.
 - The `quick.*` tokens (`quick.grid.cell`, `.cols`, `.rows`, `.gap`, `.margin`, `quick.tile.pad`,
   `.gap`, `.disc`, `quick.card.radius`, `quick.media.art`, `.art-radius`, `.play`,
   `quick.slider.track`, `quick.shadow`, `quick.type.title`, `.caption`, `.line`,

@@ -29,10 +29,15 @@ pub struct PagerMotion {
 }
 
 impl PagerMotion {
+    /// The page's motion, an ease-out without overshoot where motion is
+    /// reduced.
     fn anim(&self, value: f32) -> Animation {
-        Animation::new(value)
-            .duration(self.duration)
-            .easing(self.easing)
+        let easing = if crate::theme::reduced_motion() {
+            Easing::Out
+        } else {
+            self.easing
+        };
+        Animation::new(value).duration(self.duration).easing(easing)
     }
 }
 

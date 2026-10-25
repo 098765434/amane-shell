@@ -2,6 +2,13 @@
 //! ([`spring`], [`sheet`], [`fade`]), and keyed motion for lists of cards —
 //! the toasts and the center's stacks ([`animate`]).
 //!
+//! Where motion is reduced (the settings, else the system:
+//! [`theme::reduced_motion`]), every spring is a short fade instead, and
+//! what swells or travels in ([`scale`], [`travel`]) arrives in place. An
+//! `Animation` takes its curve when it's made, so one kept for the shell's
+//! life (a panel's opening) follows a change after a restart; [`scale`] and
+//! [`travel`] follow it at once.
+//!
 //! For a list, the view says where each item should be (a [`Pose`]) every time it
 //! runs; this springs each item there from wherever it is, keeping its
 //! `Animation` across rebuilds under its key, like the segmented button's
@@ -16,6 +23,8 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use amane::{Animation, Blend, Easing, mark_all};
+
+use crate::theme;
 
 // iOS-like motion. TODO(token): these become `sys.motion.*` tokens once
 // Penpot has them (manual §1.1: no style literals in component code).
@@ -41,8 +50,28 @@ pub const CLOSE: Duration = Duration::from_millis(160);
 /// How small a card is as it enters, growing to its size.
 pub const ENTER_SCALE: f32 = 0.9;
 
+/// Whether motion is reduced.
+fn reduced() -> bool {
+    theme::reduced_motion()
+}
+
+/// `from`, the scale something swells in from, or 1 where motion is
+/// reduced: it fades in at its size.
+pub fn scale(from: f32) -> f32 {
+    if reduced() { 1.0 } else { from }
+}
+
+/// `distance`, how far something travels in, or 0 where motion is reduced:
+/// it fades in in its place.
+pub fn travel(distance: f32) -> f32 {
+    if reduced() { 0.0 } else { distance }
+}
+
 /// The spring things move on, starting at rest at `value`.
 pub fn spring<T: Blend>(value: T) -> Animation<T> {
+    if reduced() {
+        return fade(value, FADE);
+    }
     Animation::new(value)
         .duration(SPRING)
         .easing(Easing::Spring {
@@ -52,6 +81,9 @@ pub fn spring<T: Blend>(value: T) -> Animation<T> {
 
 /// The spring a whole sheet slides in on.
 pub fn sheet<T: Blend>(value: T) -> Animation<T> {
+    if reduced() {
+        return fade(value, FADE);
+    }
     Animation::new(value)
         .duration(SHEET)
         .easing(Easing::Spring {
@@ -65,6 +97,9 @@ const ZOOM_BOUNCE: f32 = 0.05;
 
 /// The spring a page grows out of its control on.
 pub fn zoom<T: Blend>(value: T) -> Animation<T> {
+    if reduced() {
+        return fade(value, FADE);
+    }
     Animation::new(value)
         .duration(SHEET)
         .easing(Easing::Spring {
@@ -74,6 +109,9 @@ pub fn zoom<T: Blend>(value: T) -> Animation<T> {
 
 /// The spring a popover swells in on.
 pub fn pop<T: Blend>(value: T) -> Animation<T> {
+    if reduced() {
+        return fade(value, FADE);
+    }
     Animation::new(value)
         .duration(POP)
         .easing(Easing::Spring { bounce: POP_BOUNCE })
@@ -87,6 +125,9 @@ pub const fn settle() -> Duration {
 /// The spring's curve at `progress` (0 … 1 of [`settle`]), for motion that
 /// runs on its own clock rather than an `Animation`.
 pub fn spring_curve(progress: f32) -> f32 {
+    if reduced() {
+        return Easing::Out.apply(progress.clamp(0.0, 1.0));
+    }
     Easing::Spring {
         bounce: SPRING_BOUNCE,
     }

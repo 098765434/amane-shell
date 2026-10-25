@@ -17,11 +17,12 @@ use std::sync::OnceLock;
 
 use amane::{Color, Rectangle, Shadow};
 
-use crate::theme::{self, Mode};
+use crate::theme::Mode;
+use crate::tokens::{Key, sys};
 
-// TODO(token): these become `sys.color.glass.*` and `sys.effect.glass.*`
-// tokens once Penpot has them (docs/penpot-todo.md; manual §1.1: no style
-// literals in component code).
+// TODO(token): these become `sys.effect.glass.*` tokens once Penpot has
+// them (docs/penpot-todo.md; manual §1.1: no style literals in component
+// code). The rim's and glow's colours are `sys.color.glass.*` already.
 /// The rim's thickness.
 const RIM_WIDTH: f32 = 1.5;
 /// How far in from the lit edge the bloom reaches.
@@ -44,29 +45,27 @@ struct Light {
     glow: Color,
 }
 
-// barely there: the edge should be felt more than seen
-const LIGHT: Light = Light {
-    rim: Color::rgba(255, 255, 255, 90),
-    far: 0.3,
-    bloom: 0.08,
-    glow: Color::rgba(255, 255, 255, 50),
-};
-
-const DARK: Light = Light {
-    rim: Color::rgba(255, 255, 255, 22),
-    far: 0.1,
-    bloom: 0.01,
-    glow: Color::rgba(255, 255, 255, 5),
-};
+impl Light {
+    /// This mode's light: barely there, the edge felt more than seen.
+    fn now() -> Self {
+        let (far, bloom) = match Key::current().mode {
+            Mode::Light => (0.3, 0.08),
+            Mode::Dark => (0.1, 0.01),
+        };
+        Self {
+            rim: sys::color::glass::rim(),
+            far,
+            bloom,
+            glow: sys::color::glass::glow(),
+        }
+    }
+}
 
 const SOURCE: &str = include_str!("glass.wgsl");
 
 /// `surface`, its corners `radius`, in glass. Replaces any shadow it has.
 pub fn apply(surface: Rectangle, radius: f32) -> Rectangle {
-    let light = match theme::mode() {
-        Mode::Light => &LIGHT,
-        Mode::Dark => &DARK,
-    };
+    let light = &Light::now();
 
     let surface = surface.shadow(Shadow::inner(light.glow).blur(GLOW_BLUR));
 
@@ -104,10 +103,7 @@ pub fn rims(rims: &[Rim]) -> Rectangle {
     let Some(shader) = shader() else {
         return layer;
     };
-    let light = match theme::mode() {
-        Mode::Light => &LIGHT,
-        Mode::Dark => &DARK,
-    };
+    let light = &Light::now();
     let rims = &rims[..rims.len().min(RIMS_PER_PASS)];
     // no glow: the shader's stand-in for the panels' inner shadow read as a
     // band inside small modules; the lit rim, far catch and bloom carry it

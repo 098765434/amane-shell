@@ -1,7 +1,8 @@
 //! The runtime inputs the token system may vary on top of Penpot's values
 //! (manual §2): light/dark mode and density select theme sets, the system
 //! accent replaces the accent primitives, and text scale multiplies font
-//! sizes. Env overrides are read once; the system values are read per
+//! sizes. The glass level, high contrast and reduced motion change how
+//! glass is tinted and how things move (`glass_region`, `motion`). Env overrides are read once; the system values are read per
 //! frame through amane's `Appearance` service, so a change redraws.
 
 use std::sync::OnceLock;
@@ -23,6 +24,31 @@ pub enum Mode {
 pub enum Density {
     Comfortable,
     Compact,
+}
+
+/// How see-through the glass is, as Apple's Liquid Glass setting has it.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum Glass {
+    /// Clearer than the tokens: more of what's behind shows through.
+    Clear,
+    /// The tokens' tints.
+    Tinted,
+    /// Opaque, without the glass material: Reduce Transparency.
+    Solid,
+}
+
+impl Glass {
+    pub const ALL: [Glass; 3] = [Glass::Clear, Glass::Tinted, Glass::Solid];
+
+    /// The name in settings and `AMANE_GLASS`.
+    pub fn name(self) -> &'static str {
+        match self {
+            Glass::Clear => "clear",
+            Glass::Tinted => "tinted",
+            Glass::Solid => "solid",
+        }
+    }
 }
 
 impl Mode {
@@ -80,6 +106,43 @@ pub fn accent() -> Option<Color> {
     settings::appearance()
         .accent_color()
         .or_else(|| Appearance::read().accent())
+}
+
+/// `AMANE_GLASS=clear|tinted|solid`, else the settings file's.
+pub fn glass() -> Glass {
+    static OVERRIDE: OnceLock<Option<Glass>> = OnceLock::new();
+    let forced = OVERRIDE.get_or_init(|| {
+        let var = std::env::var("AMANE_GLASS").ok();
+        Glass::ALL
+            .into_iter()
+            .find(|g| var.as_deref() == Some(g.name()))
+    });
+
+    forced.unwrap_or_else(|| settings::appearance().glass)
+}
+
+/// `AMANE_HIGH_CONTRAST=1`, else whether the system asks for higher
+/// contrast.
+pub fn high_contrast() -> bool {
+    static OVERRIDE: OnceLock<bool> = OnceLock::new();
+    *OVERRIDE.get_or_init(|| std::env::var("AMANE_HIGH_CONTRAST").as_deref() == Ok("1"))
+        || Appearance::read().high_contrast()
+}
+
+/// `AMANE_ADAPTIVE_GLASS=1`, else the settings file's: whether small glass
+/// turns light or dark with its backdrop.
+pub fn adaptive_glass() -> bool {
+    static OVERRIDE: OnceLock<bool> = OnceLock::new();
+    *OVERRIDE.get_or_init(|| std::env::var("AMANE_ADAPTIVE_GLASS").as_deref() == Ok("1"))
+        || settings::appearance().adaptive_glass
+}
+
+/// Whether to reduce motion: the settings file's choice, else the
+/// system's.
+pub fn reduced_motion() -> bool {
+    settings::appearance()
+        .reduce_motion
+        .unwrap_or_else(|| Appearance::read().reduced_motion())
 }
 
 /// `AMANE_TEXT_SCALE`, else the settings file's, else 1.

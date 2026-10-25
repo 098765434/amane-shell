@@ -143,7 +143,6 @@ pub fn popup() -> Popup {
         Text::new(text).style(style).color(Surface::Panel.fg()),
     )])
     .surface(Surface::Panel)
-    .blur(true)
     .glass(true)
     .padding(inset)
     .build();

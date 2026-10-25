@@ -49,7 +49,7 @@ use amane::{
 };
 
 use crate::components::divider::Divider;
-use crate::components::glass_region;
+use crate::components::glass_region::{self, Thickness};
 use crate::components::kinetic::{Axis, AxisLock, Kinetic};
 use crate::components::layout::{blank, boxed, pad, track_cursor};
 use crate::components::motion;
@@ -683,14 +683,22 @@ pub fn surface() -> LayerWindow {
     // that can't fade frost only shows or hides it, so there the panel
     // arrives whole rather than fading in over frost at full strength.
     let fades = amane::blur_fades();
-    let scale = f32::blend(OPEN_SCALE, 1.0, unfolded);
+    let scale = f32::blend(motion::scale(OPEN_SCALE), 1.0, unfolded);
     let opacity = if open && !fades {
         1.0
     } else {
         unfolded.clamp(0.0, 1.0)
     };
     let frost = if open || fades {
-        let glass = glass_region::module(origin.0, origin.1, width, height, RADIUS, 1.0);
+        let glass = glass_region::module(
+            origin.0,
+            origin.1,
+            width,
+            height,
+            RADIUS,
+            1.0,
+            Thickness::Thick.tint(),
+        );
         let centre = (origin.0 + width / 2.0, origin.1 + height / 2.0);
         glass_region::faded(
             glass_region::transformed(vec![glass], scale, centre, (0.0, 0.0)),
@@ -798,7 +806,7 @@ fn panel(width: f32, height: f32) -> Rectangle {
         .width(width)
         .height(height)
         .radius(RADIUS)
-        .fill(glass_region::tint())
+        .fill(glass_region::fill(Thickness::Thick.tint()))
         // the panel keeps its clicks from the surface under it, which
         // closes the launcher
         .on_click(|_| {});
