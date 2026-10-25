@@ -9,6 +9,8 @@
 //! - [`SegmentedButton`] — a row of 2–5 related options on one track, single-
 //!   or multi-select (M3's segmented buttons).
 //! - [`DrawnButton`] — content of its own, drawn in the button's colour.
+//! - [`Checkbox`] — an on/off choice among independent ones (M3's checkbox).
+//! - [`Radio`] — one choice out of a few, all in sight (M3's radio button).
 //!
 //! The push, icon and drawn buttons are one [`ButtonBuilder`] with a different
 //! kind: they share a [`Style`] and a [`Shape`], and show a
@@ -21,9 +23,11 @@
 // yet, so dead_code is allowed module-wide; unused_imports is not.
 #![allow(dead_code)]
 
+mod checkbox;
 mod drawn_button;
 mod icon_button;
 mod push_button;
+mod radio;
 mod segmented;
 mod switch;
 
@@ -38,9 +42,11 @@ use amane::{
     Text, Widget, request_frame,
 };
 
+pub use checkbox::Checkbox;
 pub use drawn_button::DrawnButton;
 pub use icon_button::IconButton;
 pub use push_button::PushButton;
+pub use radio::Radio;
 pub use segmented::{Segment, SegmentedButton};
 pub use switch::Switch;
 

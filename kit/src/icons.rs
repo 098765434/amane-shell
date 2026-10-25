@@ -37,6 +37,7 @@ pub const ICON_NOTIFICATIONS: char = '\u{e7f4}';
 pub const ICON_DND: char = '\u{ef44}';
 pub const ICON_CHEVRON_LEFT: char = '\u{e5cb}';
 pub const ICON_CHEVRON_RIGHT: char = '\u{e5cc}';
+pub const ICON_EXPAND_MORE: char = '\u{e5cf}';
 pub const ICON_TUNE: char = '\u{e429}';
 pub const ICON_POWER: char = '\u{f8c7}';
 pub const ICON_SCREENSHOT: char = '\u{f7d2}';

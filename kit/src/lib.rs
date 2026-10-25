@@ -2,13 +2,16 @@
 //! design tokens from Penpot (`design-tokens/tokens.json`), the theme they
 //! resolve against, and the controls built from them.
 //!
-//! - [`buttons`] — push, icon and segmented buttons, and a switch.
+//! - [`app`] — an app's window, text fields, dialogs and sidebar.
+//! - [`buttons`] — push, icon and segmented buttons, a switch, a checkbox
+//!   and radio buttons.
 //! - [`card`] — M3's card: a filled or outlined surface, optionally frosted.
 //! - [`glass`] — the lit edge and glow every translucent surface wears.
 //! - [`app_bar`] — M3's small top app bar: a panel's or sheet's title row.
 //! - [`list`] — M3's list: one-line items with leading and trailing slots.
 //! - [`divider`] — M3's divider: a hairline between groups.
 //! - [`slider`] — M3's slider: a 0–100 level along a track.
+//! - [`dropdown`] — one choice out of a list, behind a button that shows it.
 //! - [`tooltip`] — M3's plain tooltip: a hovered control's label.
 //! - [`scroll_view`] — a clipped viewport scrolled along one axis, with a
 //!   scrollbar.
@@ -29,12 +32,14 @@
 //! - [`tokens`] and [`theme`] — the design tokens and the mode, density,
 //!   accent and text scale they resolve with.
 
+pub mod app;
 pub mod app_bar;
 pub mod app_icon;
 pub mod buttons;
 pub mod card;
 pub mod color;
 pub mod divider;
+pub mod dropdown;
 pub mod edge_reveal;
 pub mod flow;
 pub mod glass;
