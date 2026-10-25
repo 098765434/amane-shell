@@ -20,12 +20,12 @@ use amane::{
 };
 use chrono::{DateTime, Local};
 
+use crate::components::app_icon::{icon_for, tile as app_icon_tile};
 use crate::components::buttons::{IconButton, PushButton, Style};
 use crate::components::card::Surface;
 use crate::components::glass;
 use crate::components::icons::ICON_CLOSE;
 use crate::components::layout::{blank, boxed, inner_width, pad, split_row};
-use crate::components::taskbar::{app_icon_tile, icon_for};
 use crate::tokens::{Styled, notification, sys};
 
 /// The body is cut after this many lines, like a banner's.

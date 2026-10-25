@@ -62,6 +62,23 @@ layer-rule {
     }
 }
 
+// Dock: a clear surface over the bar, one a monitor, whose card is frosted
+// where the surface says (ext-background-effect). It comes up from the
+// bottom edge; a window's menu is an xdg-popup of it.
+layer-rule {
+    match namespace="^amane\\.dock$"
+    background-effect {
+        xray false
+    }
+
+    popups {
+        geometry-corner-radius 10
+        background-effect {
+            blur true
+        }
+    }
+}
+
 // Notification toasts: one surface per banner, sized to its card, sliding in
 // at the top-right.
 layer-rule {

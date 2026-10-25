@@ -24,7 +24,11 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `quick.open.cascade`, `.cascade-scale`, `.cascade-rise` | 90 ms, 0.9, 10 | `quick_settings/tiles/mod.rs` (`CASCADE*`: the modules arriving in a wave) |
 | `quick.page.tile-fade`, `quick.page.grid-fade` | 0.25, 0.6 | `quick_settings/mod.rs` (`TILE_FADE`, `GRID_FADE`: shares of the zoom) |
 | `quick.page.reveal.*` (header, body, step, span, rise) | 0.35–0.7, 0.45, 0.06, 0.35, 8 | `quick_settings/detail.rs` (`REVEAL_*`: a page's content coming in) |
-| `quick.glass.material` | `glass` | `quick_settings/glass_region.rs` (`MATERIAL`: the compositor material the modules' frost asks for) |
+| `sys.glass.material` | `glass` | `components/glass_region.rs` (`MATERIAL`: the compositor material the glass's frost asks for; shared by Quick Settings and the dock) |
+| `sys.size.page-dot` | 6 | `components/page_dots.rs` (`DOT`) |
+| `dock.icon.size`, `dock.radius`, `dock.reveal.strip` | 44, 18, 2 | `dock/mod.rs` (`ICON`, `RADIUS`, `STRIP`) |
+| `dock.running.size`, `dock.running.max` | 4, 3 | `dock/item.rs` (`RUNNING`, `MOST_RUNNING`) |
+| `dock.motion.*` (reveal, hide delay, page, flick, rubber band, resize, item, magnify scales and lifts, hover, tooltip) | see `DOCK` | `dock/motion.rs` (`DOCK`); add `dock` to `tokens::COMPONENTS` with the first `dock.*` token |
 | `sys.opacity.disabled` (also) | 0.38 | `quick_settings/tiles/mod.rs` (`DIMMED`: a placeholder for a control without its hardware) |
 | `sys.opacity.disabled` | 0.38 | `buttons/mod.rs` (`DISABLED_OPACITY`) |
 | `sys.color.glass.rim`, `sys.color.glass.glow` | light `#ffffffe6`, `#ffffffbf`; dark `#ffffff4d`, `#ffffff14` | `components/glass.rs` (`LIGHT`, `DARK`) |
@@ -43,6 +47,8 @@ whose output is static: it can't follow the mode, so it holds one value for both
 
 ## Tokens to recreate or delete
 
+- `bar.overview.height` is no longer read: the bar keeps its compact height in the overview, where
+  the [dock](dock.md) rises instead. Delete it in Penpot.
 - The `notification.*` tokens and the `sys.color.surface.notification.*` pair were added to
   `tokens.json` by hand (see [notifications.md](notifications.md)). Recreate them in Penpot under
   the same names, or the next export drops them.

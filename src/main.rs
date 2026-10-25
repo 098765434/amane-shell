@@ -8,7 +8,7 @@ use std::process::ExitCode;
 use amane::App;
 
 use components::context_menu::{self, ContextMenu, Icon, MenuItem};
-use components::{notifications, quick_settings, taskbar, tooltip};
+use components::{dock, notifications, quick_settings, taskbar, tooltip};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {
@@ -135,7 +135,8 @@ fn main() -> ExitCode {
         .window(taskbar::bar)
         .window(quick_settings::surface)
         .window(notifications::side_sheet)
-        .window(context_menu::anchor);
+        .window(context_menu::anchor)
+        .window_per_monitor(dock::surface);
     for toast in notifications::TOASTS {
         app = app.window(toast);
     }

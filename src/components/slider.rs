@@ -266,7 +266,10 @@ mod tests {
     use super::*;
 
     fn scroll(y: f32) -> Scroll {
-        Scroll { x: 0.0, y }
+        Scroll {
+            y,
+            ..Scroll::default()
+        }
     }
 
     #[test]

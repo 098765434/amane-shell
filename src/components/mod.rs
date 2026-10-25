@@ -9,8 +9,10 @@
 //!   a sidebar, and Do Not Disturb, over amane's notification daemon.
 //! - [`quick_settings`] — GNOME's quick settings in the macOS Control
 //!   Center look: a grid of tiles and sliders, each with a page.
-//! - [`taskbar`] — a bottom taskbar that is compact in normal use and
-//!   expands into an interactive dock while niri's overview is open.
+//! - [`taskbar`] — a compact bottom taskbar: workspaces, the focused
+//!   window's title and the status cluster.
+//! - [`dock`] — the macOS Big Sur dock for the apps open on each
+//!   workspace, coming up from the bottom edge and with niri's overview.
 //!
 //! The building blocks they share read `sys.*` only, so any component can
 //! use them. Like the buttons, each is named and structured after its
@@ -23,6 +25,8 @@
 //! - [`divider`] — M3's divider: a hairline between groups.
 //! - [`slider`] — M3's slider: a 0–100 level along a track.
 //! - [`tooltip`] — M3's plain tooltip: a hovered control's label.
+//! - [`page_dots`] — iOS's page control: which of several pages shows.
+//! - [`app_icon`] — an app's icon from its desktop entry, by app_id.
 //!
 //! Under those, with no look of their own:
 //!
@@ -30,19 +34,27 @@
 //! - [`icons`] — the Material Symbols glyphs and their pickers.
 //! - [`color`] — colour arithmetic (`over`, `faded`, `with_alpha`).
 //! - [`motion`] — the shared springs and fades, and keyed list motion.
+//! - [`glass_region`] — where the compositor frosts behind clear glass.
+//! - [`edge_reveal`] — a surface hiding at a screen edge until the pointer
+//!   touches it.
 
 pub mod app_bar;
+pub mod app_icon;
 pub mod buttons;
 pub mod card;
 pub mod color;
 pub mod context_menu;
 pub mod divider;
+pub mod dock;
+pub mod edge_reveal;
 pub mod glass;
+pub mod glass_region;
 pub mod icons;
 pub mod layout;
 pub mod list;
 pub mod motion;
 pub mod notifications;
+pub mod page_dots;
 pub mod quick_settings;
 pub mod slider;
 pub mod taskbar;

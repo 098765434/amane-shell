@@ -1,11 +1,13 @@
 //! A bottom taskbar built on the Amane fork.
 //!
-//! Compact and ambient in normal use (matching the previous Waybar's size
-//! and palette), it **expands into an interactive dock while niri's overview
-//! is open** — the fork's `Windows::overview()` drives the switch. It wires
-//! in the fork's smart features: the `Windows` service (list + focused +
-//! overview), window actions (focus/close/fullscreen/float/move/overview),
-//! `Workspaces`, and the reusable [`context_menu`] (right-click a window).
+//! Compact and ambient (matching the previous Waybar's size and palette):
+//! workspaces on the left, the focused window's title in the middle and
+//! the status cluster on the right. The open apps are the
+//! [`dock`](crate::components::dock)'s, which rises over the bar from the
+//! bottom edge and while niri's overview is open. It wires in the fork's
+//! smart features: the `Windows` service, window actions
+//! (focus/close/fullscreen/float/move/overview), `Workspaces`, and the
+//! reusable [`context_menu`] (a window's menu, [`open_window_menu`]).
 //!
 //! Visual language is macOS: a translucent frosted panel (backdrop blur on
 //! the root rectangle), rounded pills, and generous spacing. Everything is
@@ -15,13 +17,11 @@ mod clock;
 mod indicators;
 mod panel;
 
-use std::path::PathBuf;
-
 use amane::{
-    Apps, Audio, Battery, Bluetooth, BluetoothDevice, Button, Center, Color, Column, End, Full,
-    Gestures, Image, Justify, Keyboard, Layer, LayerWindow, Link, Network, Parent, Pointer,
-    PowerProfile, Rectangle, Row, Scroll, Service, Size, Stack, Start, Text, Vertical,
-    WarningLevel, Widget, WindowInfo, Windows, Workspace, Workspaces, Zone,
+    Audio, Battery, Bluetooth, BluetoothDevice, Button, Center, Color, End, Full, Justify,
+    Keyboard, Layer, LayerWindow, Link, Network, Parent, Pointer, PowerProfile, Rectangle, Row,
+    Scroll, Service, Size, Stack, Start, Vertical, WarningLevel, Widget, Windows, Workspace,
+    Workspaces, Zone,
 };
 
 use crate::components::buttons::{IconButton, PushButton, Shape, Style};
@@ -45,7 +45,7 @@ use crate::services::privacy::Privacy;
 use crate::services::rfkill::Rfkill;
 use crate::services::tailscale::{State as TailscaleState, Tailscale};
 
-use crate::tokens::{Styled, bar, sys};
+use crate::tokens::{bar, sys};
 
 pub(crate) use clock::Clock;
 pub(crate) use indicators::Indicator;
@@ -92,21 +92,11 @@ fn status_color(connected: bool) -> Color {
 
 /// The taskbar view. Registered with `App::window`.
 pub fn bar() -> LayerWindow {
-    let overview = Windows::read().overview();
-
-    // The overview open/close progress (0..1) from niri drives a smooth height
-    // grow, in lockstep with the compositor's own overview zoom. The `overview`
-    // bool still decides the center content swap — it flips when the gesture
-    // commits, so the dock appears/disappears cleanly while the height eases.
-    let progress = Gestures::read().overview_progress().clamp(0.0, 1.0) as f32;
-    let height = sys::size::panel::height()
-        + (bar::overview::height() - sys::size::panel::height()) * progress;
-
     // Three zones via a Stack: each layer spans the full width and justifies
     // its own content, so the center never shifts when the sides differ.
     let sections = Stack::new(vec![
         zone(boxed(left_section()), Start.into()),
-        zone(center_section(overview), Center.into()),
+        zone(focused_title(), Center.into()),
         zone(boxed(right_section()), End.into()),
     ])
     .width(Parent)
@@ -123,7 +113,7 @@ pub fn bar() -> LayerWindow {
 
     LayerWindow::new()
         .width(Full)
-        .height(height)
+        .height(sys::size::panel::height())
         .anchor_vertical(Vertical::Bottom)
         .layer(Layer::Top)
         .space(Zone::Reserve)
@@ -159,14 +149,6 @@ fn left_section() -> Row {
     }
 
     Row::new(items).gap(sys::space::gap::s()).align(Center)
-}
-
-fn center_section(overview: bool) -> Box<dyn Widget> {
-    if overview {
-        window_dock()
-    } else {
-        focused_title()
-    }
 }
 
 fn right_section() -> Row {
@@ -230,7 +212,7 @@ fn workspace_pip(ws: &Workspace) -> Rectangle {
         })
 }
 
-// ───── center: focused title (compact) / window dock (overview) ──────────────
+// ───── center: focused title ─────────────────────────────────────────────────
 
 fn focused_title() -> Box<dyn Widget> {
     let windows = Windows::read();
@@ -248,154 +230,10 @@ fn focused_title() -> Box<dyn Widget> {
     ))
 }
 
-fn window_dock() -> Box<dyn Widget> {
-    let windows = Windows::read();
-    let tiles: Vec<Box<dyn Widget>> = windows
-        .list()
-        .iter()
-        .map(|win| boxed(window_tile(win)))
-        .collect();
-
-    boxed(Row::new(tiles).gap(sys::space::gap::s()).align(Center))
-}
-
-fn window_tile(win: &WindowInfo) -> Rectangle {
-    let id = win.id();
-    let floating = win.floating();
-
-    let fill = if win.focused() {
-        sys::color::state::selected()
-    } else {
-        sys::color::surface::raised::bg()
-    };
-
-    let app = win.app_id().unwrap_or("").to_string();
-    let title = win.title().unwrap_or("").to_string();
-    let heading = if app.is_empty() { &title } else { &app };
-
-    let side = sys::size::icon::m() * 2.0;
-    let text_w = (bar::window_item::max_width()
-        - side
-        - sys::space::gap::s()
-        - sys::space::inset::m() * 2.0)
-        .max(1.0);
-
-    let label = Column::new(vec![
-        boxed(
-            Text::new(heading.as_str())
-                .style(sys::r#type::title())
-                .color(sys::color::surface::panel::fg())
-                .elide(),
-        ),
-        boxed(
-            Text::new(title.as_str())
-                .style(sys::r#type::caption())
-                .color(sys::color::content::secondary())
-                .elide(),
-        ),
-    ])
-    .gap(sys::space::gap::_2xs())
-    .width(Size::Fixed(text_w));
-
-    let row = Row::new(vec![boxed(app_icon_tile(&app, &title, side)), boxed(label)])
-        .gap(sys::space::gap::s())
-        .align(Center);
-
-    Rectangle::new()
-        .width(Size::Fixed(bar::window_item::max_width()))
-        .height(Parent)
-        .radius(bar::window_item::radius())
-        .fill(fill)
-        .padding(sys::space::inset::m())
-        .align_child(Start, Center)
-        .clip()
-        .cursor(Pointer)
-        .on_click(move |button| match button {
-            Button::Left => Windows::focus(id),
-            Button::Right => open_window_menu(id, floating),
-            _ => {}
-        })
-        .child(row)
-}
-
-/// A window's app icon, or a first-letter placeholder when none resolves.
-pub(crate) fn app_icon_tile(app: &str, title: &str, side: f32) -> Rectangle {
-    if let Some(path) = icon_for(app) {
-        // `loaded` kicks off the async decode and wakes us when ready; until
-        // then fall through to the placeholder for this frame
-        if Image::loaded(&path) {
-            return Rectangle::new()
-                .width(Size::Fixed(side))
-                .height(Size::Fixed(side))
-                .fill(Image::contain(path));
-        }
-    }
-
-    Rectangle::new()
-        .width(Size::Fixed(side))
-        .height(Size::Fixed(side))
-        .radius(sys::radius::raised())
-        .fill(sys::color::surface::raised::bg())
-        .align_child(Center, Center)
-        .child(
-            Text::new(first_letter(app, title))
-                .style(sys::r#type::title())
-                .color(sys::color::surface::panel::fg())
-                .tight(),
-        )
-}
-
-/// Resolve a niri window app_id to a desktop-entry icon file, matching the
-/// id (and its last dotted segment) against each app's icon name, exec
-/// basename, or name — case-insensitively.
-pub(crate) fn icon_for(app_id: &str) -> Option<PathBuf> {
-    if app_id.is_empty() {
-        return None;
-    }
-
-    let apps = Apps::read();
-    let needle = app_id.to_lowercase();
-    let last = needle.rsplit('.').next().unwrap_or(&needle).to_string();
-
-    let matched = apps.list().iter().find(|app| {
-        let icon = app.icon().unwrap_or("").to_lowercase();
-        let name = app.name().to_lowercase();
-        let exec_base = app
-            .exec()
-            .split_whitespace()
-            .next()
-            .unwrap_or("")
-            .rsplit('/')
-            .next()
-            .unwrap_or("")
-            .to_lowercase();
-
-        [icon, name, exec_base]
-            .iter()
-            .any(|field| *field == needle || *field == last)
-    });
-
-    matched.and_then(|app| app.icon_path().map(|path| path.to_path_buf()))
-}
-
-fn first_letter(app: &str, title: &str) -> String {
-    let base = app
-        .rsplit('.')
-        .next()
-        .filter(|s| !s.is_empty())
-        .unwrap_or(app);
-    let source = if base.is_empty() { title } else { base };
-
-    source
-        .chars()
-        .next()
-        .map(|c| c.to_uppercase().to_string())
-        .unwrap_or_else(|| "?".to_string())
-}
-
-/// Build a per-window menu bound to `id` and open it anchored to the bar at
-/// the last cursor x. The bottom-anchored parent makes it open upward.
-fn open_window_menu(id: u64, floating: bool) {
+/// Build a per-window menu bound to `id` and open it at `at` on the surface
+/// `parent` (the bar's, or the dock's). A bottom-anchored parent makes it
+/// open upward.
+pub(crate) fn open_window_menu(id: u64, floating: bool, parent: &'static str, at: (i32, i32)) {
     let mut move_to = ContextMenu::new();
     {
         let workspaces = Workspaces::read();
@@ -429,7 +267,7 @@ fn open_window_menu(id: u64, floating: bool) {
                 .on_select(move || Windows::close(id)),
         );
 
-    context_menu::show_under(WINDOW_MENU_KEY, menu, BAR_NS, (cursor().0, 0));
+    context_menu::show_under(WINDOW_MENU_KEY, menu, parent, at);
 }
 
 // ───── right: status cluster ─────────────────────────────────────────────────

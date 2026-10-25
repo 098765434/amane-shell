@@ -1,6 +1,6 @@
 # Shared components
 
-The building blocks Quick Settings, the notification center and the context menu are made of. Like the
+The building blocks Quick Settings, the notification center, the context menu and the dock are made of. Like the
 [buttons](buttons.md), each is named and structured after its Material 3 counterpart and drawn in
 the shell's macOS look. They read `sys.*` tokens only, so any component can use them.
 
@@ -9,9 +9,12 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `Card` | `card.rs` | [Cards](https://m3.material.io/components/cards/overview) | the notification center's sheet, context menus, tooltips |
 | `TopAppBar` | `app_bar.rs` | [Top app bar](https://m3.material.io/components/app-bars/overview) (small) | the title row of each Quick Settings page and of the center |
 | `List`, `ListItem` | `list.rs` | [Lists](https://m3.material.io/components/lists/overview) | networks, Bluetooth devices, audio devices, peripherals |
-| `Divider` | `divider.rs` | [Divider](https://m3.material.io/components/divider/overview) | context-menu separators |
+| `Divider` | `divider.rs` | [Divider](https://m3.material.io/components/divider/overview) | context-menu separators, the dock's rule (`Divider::vertical`) |
 | `Slider` | `slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume, Quick Settings' sliders |
 | `tooltip` | `tooltip.rs` | [Tooltips](https://m3.material.io/components/tooltips/overview) (plain) | the bar's volume level and battery charge |
+| `PageDots` | `page_dots.rs` | none (iOS's page control) | the dock's workspaces |
+| `app_icon` | `app_icon.rs` | none | the dock's icons, notification cards' app icons |
+| `EdgeReveal` | `edge_reveal.rs` | none | the dock hiding at the bottom edge |
 
 ## Card
 
@@ -93,6 +96,32 @@ text)` every frame it's built while hovered, `tooltip::suppress(id)` on click an
 which `main.rs` registers. amane never resizes or moves an open popup, so when the text's size or
 the control changes, the tooltip closes for one frame and reopens.
 
+## PageDots
+
+`PageDots::new(count, current)` draws a dot a page, `.vertical()` down instead of across.
+`current` may be fractional while pages slide, and the light moves between dots with it.
+`.marked(Some(i))` rings a second dot (the dock rings the active workspace while another is
+browsed), `.fit(length)` squeezes the dots closer when they'd run past `length`, and
+`.on_pick(|i| …)` makes each dot (and the room around it) clickable. `size()` gives how long and
+thick they run before they're built.
+
+## app_icon
+
+`app_icon::tile(app_id, title, side)` is an app's icon `side` big: the icon its desktop entry
+names, else a theme icon named after the app_id or its last dotted part, else a first-letter
+placeholder on a raised tile (also shown while the image decodes). `icon_for(app_id)` and
+`name_for(app_id)` give the icon file and the name an app goes by.
+
+## EdgeReveal
+
+A surface that hides at a screen edge until the pointer touches it, holding no view of its own.
+`EdgeReveal::new(motion, delay)` starts hidden. The view calls `hover(bool)` as the pointer comes
+onto the surface and leaves it, reads `progress(hold)` once a frame (0 hidden … 1 out, at least
+`hold`, which lets something else bring it out, like niri's overview), and sets the surface's
+input region from `input_region(width, height, strip, progress, shown)`: only the `strip` along
+the bottom edge while hidden, and `shown` too while any of it is out. Once the pointer has been
+gone for `delay`, it goes back in.
+
 ## Under the components
 
 - `layout.rs` holds the layout primitives: `boxed`, `pad`, `icon` (every Material Symbols
@@ -102,3 +131,6 @@ the control changes, the tooltip closes for one frame and reopens.
 - `color.rs` holds `over`, `faded` and `with_alpha`.
 - `motion.rs` holds the shared springs and fades (`spring`, `sheet`, `fade`) and the keyed list
   motion the notifications use.
+- `glass_region.rs` says where the compositor frosts behind clear glass (`module`, `transformed`,
+  `faded`), and what the glass drawn in the surface is when the compositor lays on the liquid
+  glass material itself (`tint`, `lit`). Quick Settings' modules and the dock's card use it.

@@ -34,7 +34,6 @@
 mod controls;
 mod detail;
 mod edit;
-mod glass_region;
 mod grid;
 mod layout;
 mod pages;
@@ -51,6 +50,7 @@ use amane::{
     Rectangle, Size, Stack, Start, Vertical, Widget, mark_all,
 };
 
+use crate::components::glass_region;
 use crate::components::layout::{blank, boxed, pad};
 use crate::components::motion;
 use crate::components::taskbar::{self, Panel, close, is_open, overlay, popover_margin};

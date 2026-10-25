@@ -27,11 +27,11 @@ use amane::{
 
 use super::controls::{self, ControlId, Ctx};
 use super::detail::DetailPage;
-use super::glass_region;
 use super::grid::{Metrics, Occupancy, Rect, Slot, Span};
 use super::tile::{capsule_button, capsule_width, module};
 use super::{edit, layout};
 use crate::components::glass::{self, Rim};
+use crate::components::glass_region;
 use crate::components::icons::ICON_ADD;
 use crate::components::layout::{boxed, icon, pad, text_height};
 use crate::components::list::{self, List, ListItem};

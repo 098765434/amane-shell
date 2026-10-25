@@ -26,13 +26,11 @@ use amane::{
 };
 
 use super::QS_NS;
-use super::glass_region;
 use super::grid::{Metrics, Span};
 use crate::components::buttons::{
     Actions, Pending, hovered, interactive, press_scale, state_fill, with_existing, with_state,
 };
-use crate::components::card::Surface;
-use crate::components::glass;
+use crate::components::glass_region;
 use crate::components::icons::{Glyph, glyph};
 use crate::components::layout::{boxed, icon, pad, text_height, text_width};
 use crate::components::motion;
@@ -105,20 +103,12 @@ pub(super) fn sheet(
         Some(shadow) => surface.shadow(shadow),
         None => surface,
     };
-    if glass_region::compositor_glass() {
-        surface
-    } else {
-        glass::apply(surface, radius)
-    }
+    glass_region::lit(surface, radius)
 }
 
 /// The modules' tint, unless the compositor lays it on with the glass.
 fn tint() -> Color {
-    if glass_region::compositor_glass() {
-        Color::TRANSPARENT
-    } else {
-        Surface::Panel.bg()
-    }
+    glass_region::tint()
 }
 
 /// One tile's motion, kept across rebuilds under its id.

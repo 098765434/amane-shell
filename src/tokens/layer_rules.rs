@@ -6,6 +6,7 @@
 use std::fmt::Write;
 
 use crate::components::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
+use crate::components::dock::DOCK_NS;
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
 use crate::components::quick_settings::QS_NS;
 use crate::components::taskbar::BAR_NS;
@@ -75,6 +76,17 @@ pub fn rules() -> Vec<LayerRule> {
                 "Quick Settings: a clear surface whose modules are frosted one by one, the\n\
                       surface saying where (ext-background-effect). Toggled by the taskbar's\n\
                       Control Center button. A Bluetooth device's menu is an xdg-popup of it.",
+            ),
+            radius: None,
+            popups: Some(popover),
+            clear: true,
+        },
+        LayerRule {
+            namespace: DOCK_NS,
+            comment: String::from(
+                "Dock: a clear surface over the bar, one a monitor, whose card is frosted\n\
+                      where the surface says (ext-background-effect). It comes up from the\n\
+                      bottom edge; a window's menu is an xdg-popup of it.",
             ),
             radius: None,
             popups: Some(popover),
