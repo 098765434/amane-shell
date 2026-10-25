@@ -46,7 +46,7 @@ pub(crate) struct Runtime {
     pub(crate) stack: Vec<Level>,
     /// Parent surface namespace for level 0. `None` → the desktop anchor
     /// (`ANCHOR_NS`); `Some` → a caller-supplied surface the menu
-    /// should hang under (set by `open_under`, e.g. a taskbar pill).
+    /// should hang under (set by `open_under`, e.g. a dock icon).
     pub(crate) root_parent: Option<&'static str>,
 }
 
@@ -92,7 +92,7 @@ pub fn open_at(key: &'static str, x: i32, y: i32) {
 
 /// Open a registered menu hung under a specific parent surface (namespace),
 /// with level 0 anchored to the given rect in that surface's coordinates.
-/// For a bottom-anchored parent (e.g. a taskbar), the popup's `FLIP_Y`
+/// For a bottom-anchored parent (e.g. the dock or the status bar), the popup's `FLIP_Y`
 /// constraint makes the menu open upward automatically. The parent surface
 /// must have non-`None` keyboard interactivity for keyboard nav to work.
 pub fn open_under(key: &'static str, parent_ns: &'static str, x: i32, y: i32, w: i32, h: i32) {

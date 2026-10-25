@@ -10,7 +10,7 @@ use crate::components::dock::DOCK_NS;
 use crate::components::launcher::LAUNCHER_NS;
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
 use crate::components::quick_settings::QS_NS;
-use crate::components::taskbar::BAR_NS;
+use crate::components::status_bar::BAR_NS;
 use crate::theme::{Density, Mode};
 use crate::tokens::{Key, notification, sys, with_key};
 
@@ -50,8 +50,8 @@ pub fn rules() -> Vec<LayerRule> {
         LayerRule {
             namespace: BAR_NS,
             comment: String::from(
-                "Taskbar: only its xdg-popups (tooltips, a window's menu) are frosted; the\n\
-                 bar itself is deliberately NOT blurred.",
+                "Status bar: only its xdg-popups (tooltips, Do Not Disturb's menu) are\n\
+                 frosted; the bar itself is deliberately NOT blurred.",
             ),
             radius: None,
             popups: Some(popover),
@@ -75,8 +75,8 @@ pub fn rules() -> Vec<LayerRule> {
             namespace: QS_NS,
             comment: String::from(
                 "Quick Settings: a clear surface whose modules are frosted one by one, the\n\
-                      surface saying where (ext-background-effect). Toggled by the taskbar's\n\
-                      Control Center button. A Bluetooth device's menu is an xdg-popup of it.",
+                      surface saying where (ext-background-effect). Toggled by the status bar's\n\
+                      Quick Settings button. A Bluetooth device's menu is an xdg-popup of it.",
             ),
             radius: None,
             popups: Some(popover),
@@ -236,8 +236,8 @@ mod tests {
     #[test]
     fn namespaces_are_escaped() {
         assert_eq!(
-            kdl_string(&anchored("amane.taskbar.wifi")),
-            r"^amane\\.taskbar\\.wifi$"
+            kdl_string(&anchored("amane.status-bar.wifi")),
+            r"^amane\\.status-bar\\.wifi$"
         );
         assert_eq!(anchored("a+b(c)"), r"^a\+b\(c\)$");
     }

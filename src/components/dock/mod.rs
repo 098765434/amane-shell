@@ -31,6 +31,7 @@ mod magnify;
 mod model;
 pub mod motion;
 mod pager;
+mod window_menu;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -46,13 +47,13 @@ use crate::components::edge_reveal::EdgeReveal;
 use crate::components::glass_region;
 use crate::components::layout::{blank, boxed};
 use crate::components::page_dots::PageDots;
-use crate::components::taskbar::open_window_menu;
 use crate::tokens::sys;
 
 use magnify::{Rest, Swollen};
 use model::{App, Page, Space, Win};
 use motion::{DockMotion, anim};
 use pager::Pager;
+use window_menu::open_window_menu;
 
 /// The dock's layer-surface namespace; the niri `layer-rule` matches it
 /// (a clear surface that says where to frost), and a window's menu hangs

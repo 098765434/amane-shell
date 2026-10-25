@@ -8,7 +8,7 @@ use std::process::ExitCode;
 use amane::App;
 
 use components::context_menu::{self, ContextMenu, Icon, MenuItem};
-use components::{dock, launcher, notifications, quick_settings, taskbar, tooltip};
+use components::{dock, launcher, notifications, quick_settings, status_bar, tooltip};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {
@@ -132,7 +132,7 @@ fn main() -> ExitCode {
     context_menu::register("file", menu);
 
     let mut app = App::new()
-        .window(taskbar::bar)
+        .window(status_bar::bar)
         .window(quick_settings::surface)
         .window(notifications::side_sheet)
         .window(launcher::surface)
@@ -174,8 +174,10 @@ fn main() -> ExitCode {
     .ipc("quick-settings", quick_settings::ipc)
     // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("launcher", launcher::ipc)
-    // `printf 'taskbar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("taskbar", taskbar::ipc)
+    // `printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    .ipc("status-bar", status_bar::ipc)
+    // its name while it was the taskbar, for scripts and keybinds
+    .ipc("taskbar", status_bar::ipc)
     .ipc("close", |_| {
         context_menu::close();
         String::from("ok")

@@ -11,9 +11,10 @@ use crate::components::buttons::Switch;
 use crate::components::icons::{Glyph, ICON_CHEVRON_RIGHT, ICON_COMPUTER, os_glyph};
 use crate::components::layout::{boxed, caption, icon};
 use crate::components::list::{self, List, ListItem};
+use crate::components::panel::close;
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::tile::QuickToggle;
-use crate::components::taskbar::{Indicator, close};
+use crate::components::status_bar::Indicator;
 use crate::services::run;
 use crate::services::tailscale::{Peer, State, Tailscale};
 use crate::tokens::sys;
@@ -63,7 +64,7 @@ pub(crate) fn page() -> DetailPage {
     DetailPage::new("amane.qs.tailscale.page", "Tailscale")
         .subtitle(subtitle)
         .switch(active, switch)
-        .taskbar(Indicator::Tailscale)
+        .status_bar(Indicator::Tailscale)
         .body(|height| {
             vec![boxed(
                 ScrollArea::new(

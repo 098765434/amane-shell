@@ -15,13 +15,14 @@ use amane::{
 };
 
 use super::super::{Page, open};
+use crate::components::battery;
 use crate::components::buttons::{Segment, SegmentedButton};
 use crate::components::icons::{peripheral_glyph, power_profile_glyph};
 use crate::components::layout::{boxed, caption};
 use crate::components::list::{self, List, ListItem};
 use crate::components::quick_settings::detail::{DetailPage, page_width};
 use crate::components::quick_settings::tile::QuickToggle;
-use crate::components::taskbar::{Indicator, battery_color};
+use crate::components::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
 
 const BALANCED: &str = "balanced";
@@ -122,7 +123,7 @@ pub(crate) fn battery_page() -> DetailPage {
     drop(battery);
 
     let mut page = DetailPage::new("amane.qs.battery.page", format!("Battery {percent}%"))
-        .taskbar(Indicator::Battery)
+        .status_bar(Indicator::Battery)
         .body(|height| {
             let mut body = Vec::new();
             let mut left = height;
@@ -231,7 +232,7 @@ fn peripheral_item(device: &PowerDevice) -> ListItem {
             // percentages are numeric (manual §11.4)
             Text::new(format!("{percent}%"))
                 .style(sys::r#type::numeric())
-                .color(battery_color(
+                .color(battery::color(
                     percent,
                     charging,
                     sys::color::content::secondary(),

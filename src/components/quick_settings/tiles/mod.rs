@@ -36,7 +36,7 @@ use crate::components::icons::ICON_ADD;
 use crate::components::layout::{boxed, icon, pad, text_height};
 use crate::components::list::{self, List, ListItem};
 use crate::components::motion::{self, Arrive, Item, Pose};
-use crate::components::taskbar::close;
+use crate::components::panel::close;
 use crate::services::installed;
 use crate::tokens::{Styled, quick, sys};
 

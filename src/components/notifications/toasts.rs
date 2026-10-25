@@ -26,7 +26,7 @@ use super::card::{self, Measured, Place, critical};
 use super::dnd::DoNotDisturb;
 use crate::components::layout::blank;
 use crate::components::motion::{self, Arrive, Item, Pose, Shown};
-use crate::components::taskbar::{Panel, is_open, overlay};
+use crate::components::panel::{Panel, is_open, overlay};
 use crate::tokens::{notification, sys};
 
 /// Layer-surface namespace of every toast; the niri `layer-rule` matches it.

@@ -27,7 +27,7 @@ use crate::components::motion::redraw_after;
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::detail::page_width;
 use crate::components::quick_settings::tile::QuickToggle;
-use crate::components::taskbar::Indicator;
+use crate::components::status_bar::Indicator;
 use crate::services::connections::Connections;
 use crate::services::connections::Vpn;
 use crate::services::rfkill::Rfkill;
@@ -157,7 +157,7 @@ pub(crate) fn wifi_page() -> DetailPage {
             subtitle.unwrap_or_else(|| String::from(if enabled { "Not Connected" } else { "Off" })),
         )
         .switch(enabled, Network::set_wifi)
-        .taskbar(Indicator::Network)
+        .status_bar(Indicator::Network)
         .body(networks);
     settings_link(page, "Network Settings…", NETWORK_SETTINGS)
 }

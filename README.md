@@ -13,18 +13,15 @@ ones — the bar itself is not.
 
 ## Features
 
-- **Taskbar** ([docs/taskbar.md](docs/taskbar.md)) — bottom bar with three zones:
-  - left: overview toggle + workspace pips;
-  - center: focused-window title (compact) ↔ interactive window dock (overview);
-  - right: volume, Bluetooth, network, battery, notifications, clock.
-  - **Overview smooth-expand**: the bar height eases between compact and tall in lockstep with
-    niri's overview zoom, driven by the amane `Gestures::overview_progress()` value (requires the
-    [niri gesture-IPC fork](https://github.com/098765434/niri)).
+- **Status bar** ([docs/status-bar.md](docs/status-bar.md)) — a compact bottom bar: workspace
+  pips on the left (click or scroll to switch) and the status cluster on the right (privacy,
+  volume, Bluetooth, network, battery, Quick Settings, notifications, clock). Every item has a
+  tooltip and turns into a white rounded tile while hovered or while what it opens is open.
 - **Status icons** — volume, Bluetooth, network, Tailscale and battery, each optional and
   opening its Quick Settings page: Sound (volume, microphone and devices), Bluetooth (connect,
   pair, forget), Wi‑Fi (scan and join), Tailscale (connect, log in, exit node, routes/DNS,
   block incoming, the tailnet's devices) and Battery (power profile, peripherals).
-- **Context menus** ([docs/context-menu.md](docs/context-menu.md)) — right-click a window pill for focus/close/fullscreen/float/move-to-workspace,
+- **Context menus** ([docs/context-menu.md](docs/context-menu.md)) — right-click a window's icon in the dock for focus/close/fullscreen/float/move-to-workspace,
   built on amane's xdg-popup support (nested submenus, outside-click dismiss).
 - **Notifications** ([docs/notifications.md](docs/notifications.md)) — the shell is the
   notification daemon (through amane): macOS-style toasts at the top-right (hover to hold, swipe
@@ -116,12 +113,12 @@ src/
   theme.rs                      runtime inputs: mode, accent, density, text scale
   tokens/                       Penpot token resolver and the manual's checks
   components/
-    taskbar/                    the bar (mod.rs), its optional status icons (indicators.rs),
-                                the shared overlay state (panel.rs) and the clock
+    status_bar/                 the bar (mod.rs) and its optional status icons (indicators.rs)
+    panel.rs                    the one-open-at-a-time overlay state the panels share
     context_menu/               reusable nested context menu on xdg-popups
     notifications/              toasts, the notification center and Do Not Disturb
     launcher/                   the app launcher: search, category pills and the app grid
-    buttons/                    push, icon and segmented buttons, and a switch
+    buttons/                    push, icon, drawn and segmented buttons, and a switch
     card.rs app_bar.rs list.rs  shared M3-style components (docs/components.md)
     divider.rs slider.rs
     layout.rs icons.rs          layout primitives, glyphs, colour arithmetic, motion

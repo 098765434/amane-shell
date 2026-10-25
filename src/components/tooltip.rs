@@ -19,7 +19,7 @@ use amane::{ConstraintAdjustment, Gravity, Popup, PopupAnchor, Text, request_fra
 
 use crate::components::card::{Card, Surface};
 use crate::components::layout::{blank, boxed, cursor, text_height, text_width};
-use crate::components::taskbar::BAR_NS;
+use crate::components::status_bar::BAR_NS;
 use crate::tokens::{Styled, sys};
 
 /// The tooltip's xdg-popup namespace.

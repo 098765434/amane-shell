@@ -43,6 +43,7 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `sys.shadow.popover` | `0 8 16 #00000073` | `tokens/layer_rules.rs` (`SHADOW_*`) |
 | `sys.motion.duration.tooltip` | 500 ms | `components/tooltip.rs` (`DELAY`) |
 | `tooltip.*` (text style, inset) | `sys.type.caption`, `sys.space.inset.s` | `components/tooltip.rs` |
+| `bar.scroll.step` | 3 | `status_bar/mod.rs` (`SCROLL_STEP`: lines of touchpad scroll per workspace) |
 
 `motion` and `opacity` are already `sys` categories in the vocabulary (§4.2). Add `ref.duration.*`
 primitives for the durations first.
@@ -55,6 +56,12 @@ whose output is static: it can't follow the mode, so it holds one value for both
 
 - `bar.overview.height` is no longer read: the bar keeps its compact height in the overview, where
   the [dock](dock.md) rises instead. Delete it in Penpot.
+- `bar.window-item.max-width`, `bar.window-item.radius`, `bar.pill.padding-y` and
+  `bar.volume.width` are no longer read: the [status bar](status-bar.md) has no window title or
+  pills any more. Delete them in Penpot.
+- `bar.indicator.active.bg` (`#ffffff`) and `bar.indicator.active.fg` (`#000000`), the status
+  bar's highlight in both modes, were added to `tokens.json` by hand, and `bar.indicator.width`
+  was raised by hand from 18 to 28 to give the highlight room. Recreate them in Penpot.
 - The `notification.*` tokens and the `sys.color.surface.notification.*` pair were added to
   `tokens.json` by hand (see [notifications.md](notifications.md)). Recreate them in Penpot under
   the same names, or the next export drops them.

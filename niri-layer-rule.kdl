@@ -17,10 +17,10 @@
 
 //<<<GENERATED-RULES-BELOW>>>  (gen-layer-rules.sh injects everything past this line)
 
-// Taskbar: only its xdg-popups (tooltips, a window's menu) are frosted; the
-// bar itself is deliberately NOT blurred.
+// Status bar: only its xdg-popups (tooltips, Do Not Disturb's menu) are
+// frosted; the bar itself is deliberately NOT blurred.
 layer-rule {
-    match namespace="^amane\\.taskbar$"
+    match namespace="^amane\\.status-bar$"
 
     popups {
         geometry-corner-radius 10
@@ -46,8 +46,8 @@ layer-rule {
 }
 
 // Quick Settings: a clear surface whose modules are frosted one by one, the
-// surface saying where (ext-background-effect). Toggled by the taskbar's
-// Control Center button. A Bluetooth device's menu is an xdg-popup of it.
+// surface saying where (ext-background-effect). Toggled by the status bar's
+// Quick Settings button. A Bluetooth device's menu is an xdg-popup of it.
 layer-rule {
     match namespace="^amane\\.quick-settings$"
     background-effect {

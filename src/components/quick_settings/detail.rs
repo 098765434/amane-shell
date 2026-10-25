@@ -3,7 +3,7 @@
 //!
 //! A back chevron and the setting's name (and what it's doing), an optional
 //! switch for it, a hairline, then its body — networks, devices, choices —
-//! and, pinned at the bottom, an optional "Show in Taskbar" switch for the
+//! and, pinned at the bottom, an optional "Show in Status Bar" switch for the
 //! setting's status icon and an optional link to the app that has the rest
 //! of its settings. Every page is as tall as the grid, so the card never
 //! changes size while a page grows in (see the module docs): the body is
@@ -26,7 +26,7 @@ use crate::components::divider::Divider;
 use crate::components::icons::ICON_CHEVRON_RIGHT;
 use crate::components::layout::{boxed, icon};
 use crate::components::list::{self, ListItem};
-use crate::components::taskbar::Indicator;
+use crate::components::status_bar::Indicator;
 use crate::tokens::{quick, sys};
 
 /// How wide a page's content is: the grid's width less the sheet's padding
@@ -76,7 +76,7 @@ pub struct DetailPage {
     subtitle: Option<String>,
     switch: Option<HeaderSwitch>,
     body: Option<Body>,
-    taskbar: Option<Indicator>,
+    status_bar: Option<Indicator>,
     footer: Option<(String, Rc<dyn Fn()>)>,
 }
 
@@ -89,7 +89,7 @@ impl DetailPage {
             subtitle: None,
             switch: None,
             body: None,
-            taskbar: None,
+            status_bar: None,
             footer: None,
         }
     }
@@ -113,8 +113,8 @@ impl DetailPage {
     }
 
     /// A row near the bottom that shows or hides `indicator` in the bar.
-    pub fn taskbar(mut self, indicator: Indicator) -> Self {
-        self.taskbar = Some(indicator);
+    pub fn status_bar(mut self, indicator: Indicator) -> Self {
+        self.status_bar = Some(indicator);
         self
     }
 
@@ -156,7 +156,7 @@ impl DetailPage {
             .align_child(Start, Center)
             .child(bar.build());
 
-        let pinned = usize::from(self.taskbar.is_some()) + usize::from(self.footer.is_some());
+        let pinned = usize::from(self.status_bar.is_some()) + usize::from(self.footer.is_some());
         let footer_h = row * pinned as f32;
         let body_h = (height - row - Divider::height() - gap - footer_h).max(0.0);
         let body: Vec<Box<dyn Widget>> = list::with_row_width(width, || {
@@ -183,12 +183,12 @@ impl DetailPage {
         ];
         // the pinned rows come in after the body's
         let pinned_shown = row_shown(reveal, rows_in);
-        if let Some(indicator) = self.taskbar {
+        if let Some(indicator) = self.status_bar {
             let shown = indicator.shown();
             rows.push(boxed(revealed(
-                ListItem::new(format!("{}.taskbar", self.id), "Show in Taskbar")
+                ListItem::new(format!("{}.status-bar", self.id), "Show in Status Bar")
                     .trailing(
-                        Switch::new(format!("{}.taskbar.switch", self.id), shown)
+                        Switch::new(format!("{}.status-bar.switch", self.id), shown)
                             .on_toggle(move |on| indicator.set_shown(on))
                             .build(),
                     )

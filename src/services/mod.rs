@@ -14,12 +14,14 @@
 //! - [`background_apps`] — apps running without a window (the portal).
 //! - [`tailscale`] — the tailnet, its exit nodes and settings (the CLI).
 //! - [`keep_awake`] — the screen held on and the lid ignored (inhibitors).
+//! - [`clock`] — the wall-clock time and date the bar shows.
 //!
 //! See `docs/quick-settings.md`.
 //!
 //! [`Service`]: amane::Service
 
 pub mod background_apps;
+pub mod clock;
 pub mod connections;
 pub mod dark_style;
 pub mod keep_awake;

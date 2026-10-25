@@ -9,8 +9,8 @@
 //!   a sidebar, and Do Not Disturb, over amane's notification daemon.
 //! - [`quick_settings`] — GNOME's quick settings in the macOS Control
 //!   Center look: a grid of tiles and sliders, each with a page.
-//! - [`taskbar`] — a compact bottom taskbar: workspaces, the focused
-//!   window's title and the status cluster.
+//! - [`status_bar`] — a compact bottom status bar: workspaces and the
+//!   status cluster.
 //! - [`dock`] — the macOS Big Sur dock for the apps open on each
 //!   workspace, coming up from the bottom edge and with niri's overview.
 //! - [`launcher`] — a Launchpad-style app launcher: a glass panel with a
@@ -29,6 +29,9 @@
 //! - [`tooltip`] — M3's plain tooltip: a hovered control's label.
 //! - [`page_dots`] — iOS's page control: which of several pages shows.
 //! - [`app_icon`] — an app's icon from its desktop entry, by app_id.
+//! - [`panel`] — the one-open-at-a-time state of Quick Settings, the
+//!   notification center and the launcher, and their overlay surfaces.
+//! - [`battery`] — when a battery reads low, and the colour that says so.
 //!
 //! Under those, with no look of their own:
 //!
@@ -42,6 +45,7 @@
 
 pub mod app_bar;
 pub mod app_icon;
+pub mod battery;
 pub mod buttons;
 pub mod card;
 pub mod color;
@@ -58,7 +62,8 @@ pub mod list;
 pub mod motion;
 pub mod notifications;
 pub mod page_dots;
+pub mod panel;
 pub mod quick_settings;
 pub mod slider;
-pub mod taskbar;
+pub mod status_bar;
 pub mod tooltip;

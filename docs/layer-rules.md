@@ -33,7 +33,7 @@ generated from (2), not hand-edited, so neither can drift.
 
 | Namespace | Surface |
 |---|---|
-| `amane.taskbar` | the bar (intentionally **not** blurred); its rule only frosts its xdg-popups: tooltips and a window's menu |
+| `amane.status-bar` | the bar (intentionally **not** blurred); its rule only frosts its xdg-popups: tooltips and Do Not Disturb's menu |
 | `amane.quick-settings` | Quick Settings: a clear surface that frosts its own modules through a blur region; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
 | `amane.launcher` | the app launcher: a clear surface that frosts its glass panel through a blur region; only `xray false` |
 | `amane.notifications.toast` | each notification toast (one surface per banner, radius `notification.card.radius`) |

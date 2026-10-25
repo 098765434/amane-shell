@@ -10,13 +10,14 @@ only, so any component can use them.
 | `PushButton` | [Buttons](https://m3.material.io/components/buttons/overview) | "Connect", notification actions, "Clear All", "Show Less", the bar's clock |
 | `IconButton` | [Icon buttons](https://m3.material.io/components/icon-buttons/overview) | mute, Wi-Fi scan, close/clear, Do Not Disturb, the bar's glyph items |
 | `Switch` | [Switch](https://m3.material.io/components/switch/overview) | Wi-Fi and Bluetooth power |
+| `DrawnButton` | — | the bar's workspace pips: content of its own, drawn in the button's colour |
 | `SegmentedButton` | [Segmented buttons](https://m3.material.io/components/segmented-buttons/overview) | the power profile |
 
 ## Style and shape
 
-`PushButton` and `IconButton` are one `ButtonBuilder` with a different kind, so they share every
-builder method (`style`, `shape`, `color`, `height`, `disabled`, `on_press`, `on_secondary`,
-`on_scroll`, `tooltip`). They
+`PushButton`, `IconButton` and `DrawnButton` are one `ButtonBuilder` with a different kind, so
+they share every builder method (`style`, `shape`, `color`, `height`, `disabled`, `on_press`,
+`on_secondary`, `on_middle`, `on_scroll`, `tooltip`, `highlight`, `active`). They
 take a `Style` and a `Shape`:
 
 | `Style` | M3 | Fill | Content by default |
@@ -32,7 +33,13 @@ glyph turns `sys.color.accent.bg`.
 
 A `PushButton` is control height and hugs its label plus `sys.space.inset.m` either side,
 unless given `.width(…)`. An `IconButton` is a control-height square. Bar items pass
-`.height(Parent)`. `.on_press` is the left click and `.on_secondary` the right click.
+`.height(Parent)`. `.on_press` is the left click, `.on_secondary` the right click and
+`.on_middle` the middle click.
+
+`.highlight(bg, fg)` replaces the hover layer: while hovered, or while `.active(true)`, the
+button fades to a `bg` fill with its content in `fg`. The status bar passes
+`bar.indicator.active.*` for its white tiles; the colours come from the caller, so the buttons
+still read `sys.*` only.
 
 ## State
 

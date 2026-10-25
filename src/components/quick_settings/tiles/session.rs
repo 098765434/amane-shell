@@ -13,8 +13,8 @@ use crate::components::icons::{ICON_LOG_OUT, ICON_POWER, ICON_RESTART, ICON_SLEE
 use crate::components::layout::boxed;
 use crate::components::list::{self, List, ListItem};
 use crate::components::motion::redraw_after;
+use crate::components::panel::close;
 use crate::components::quick_settings::detail::DetailPage;
-use crate::components::taskbar::close;
 use crate::services::session::Session;
 use crate::tokens::sys;
 

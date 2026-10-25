@@ -13,7 +13,7 @@ use crate::components::layout::boxed;
 use crate::components::list::{List, ListItem};
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::tile::QuickToggle;
-use crate::components::taskbar::Indicator;
+use crate::components::status_bar::Indicator;
 use crate::services::keep_awake::{KeepAwake, LIMITS};
 
 /// "1 h 24 min", "2 h" or "15 min", to the minute rounded up, so a hold
@@ -106,7 +106,7 @@ pub(crate) fn page() -> DetailPage {
 
             vec![boxed(limits), boxed(List::new(holds).build())]
         })
-        .taskbar(Indicator::KeepAwake)
+        .status_bar(Indicator::KeepAwake)
 }
 
 /// A row with a switch at its end; pressing the row flips it too.

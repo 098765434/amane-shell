@@ -316,7 +316,7 @@ impl QuickToggle {
             Actions {
                 press: disc_press,
                 secondary: self.open.clone(),
-                scroll: None,
+                ..Actions::default()
             },
         );
 
@@ -357,7 +357,7 @@ impl QuickToggle {
         let actions = Actions {
             press: tile_press,
             secondary: self.open.clone(),
-            scroll: None,
+            ..Actions::default()
         };
         let id = self.id.clone();
         self.act(tile, id, actions)
@@ -396,7 +396,7 @@ impl QuickToggle {
         let actions = Actions {
             press,
             secondary: self.open.clone(),
-            scroll: None,
+            ..Actions::default()
         };
         let id = self.id.clone();
         self.act(button, id, actions)

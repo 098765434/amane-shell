@@ -67,7 +67,7 @@ for level in context_menu::LEVELS {
 | Call | Use |
 |------|-----|
 | `arm(name)` | the reliable way from outside the shell (see below); the next right-click opens `name` at the cursor |
-| `show_under(name, menu, parent_ns, (x, y))` | register `menu` and open it hanging under another of the shell's surfaces, at a point in its coordinates: for a menu built fresh for what was clicked. The taskbar's per-window menu, a Bluetooth device's menu and the Do Not Disturb menu use it; a bottom-anchored parent makes the menu open upward |
+| `show_under(name, menu, parent_ns, (x, y))` | register `menu` and open it hanging under another of the shell's surfaces, at a point in its coordinates: for a menu built fresh for what was clicked. The dock's per-window menu, a Bluetooth device's menu and the Do Not Disturb menu use it; a bottom-anchored parent makes the menu open upward |
 | `open_under(name, parent_ns, x, y, w, h)` | the same for a menu already registered, anchored to a rect |
 | `open_at(name, x, y)` / `open_named(name, x, y)` | open at a screen position (logical px) |
 | `close()` | close every level |
@@ -185,15 +185,15 @@ hidden when the stack is shallower. Every state change calls `request_frame()`.
 
 - **Depth:** 8 levels. To go deeper, raise `MAX_DEPTH` and add entries to `NS` and `LEVELS`.
 - **Static menus:** a menu is copied from the registry when it opens. To change a menu's items
-  (like the taskbar's per-window menu), register it again under the same name before opening.
+  (like the dock's per-window menu), register it again under the same name before opening.
 - **Single-threaded:** callbacks are `Rc<dyn Fn()>` and the state is thread-local, so open and
   register from the UI thread (view functions, input handlers, IPC handlers).
-- **Window menus from the bar** use `show_under` with the taskbar as parent. The taskbar is
-  `Keyboard::None` so it never steals focus, which means keyboard navigation doesn't reach those
-  menus; pointer use works.
+- **Menus from the status bar** (Do Not Disturb's) use `show_under` with the bar as parent. The
+  bar is `Keyboard::None` so it never steals focus, which means keyboard navigation doesn't reach
+  those menus; pointer use works.
 
 ## Related
 
 - amane's popup support: [../../amane/docs/fork/popups.md](../../amane/docs/fork/popups.md)
 - niri layer rules and namespaces: [layer-rules.md](layer-rules.md)
-- The taskbar's per-window menu: [taskbar.md](taskbar.md)
+- The dock's per-window menu: [dock.md](dock.md)

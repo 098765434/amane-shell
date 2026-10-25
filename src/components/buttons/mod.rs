@@ -8,8 +8,9 @@
 //!   switch).
 //! - [`SegmentedButton`] — a row of 2–5 related options on one track, single-
 //!   or multi-select (M3's segmented buttons).
+//! - [`DrawnButton`] — content of its own, drawn in the button's colour.
 //!
-//! The push and icon buttons are one [`ButtonBuilder`] with a different
+//! The push, icon and drawn buttons are one [`ButtonBuilder`] with a different
 //! kind: they share a [`Style`] and a [`Shape`], and show a
 //! `sys.color.state.hover` layer under the pointer. amane rebuilds the view
 //! every frame, so that hover, and the switch's and segmented button's
@@ -20,6 +21,7 @@
 // yet, so dead_code is allowed module-wide; unused_imports is not.
 #![allow(dead_code)]
 
+mod drawn_button;
 mod icon_button;
 mod push_button;
 mod segmented;
@@ -36,6 +38,7 @@ use amane::{
     Text, Widget, request_frame,
 };
 
+pub use drawn_button::DrawnButton;
 pub use icon_button::IconButton;
 pub use push_button::PushButton;
 pub use segmented::{Segment, SegmentedButton};
@@ -118,6 +121,9 @@ pub struct ButtonBuilder<K> {
     actions: Actions,
     /// The surface it's on and what its tooltip says.
     tooltip: Option<(&'static str, String)>,
+    /// The fill and content colours it takes while hovered or `active`.
+    highlight: Option<(Color, Color)>,
+    active: bool,
     kind: K,
 }
 
@@ -132,6 +138,8 @@ impl<K> ButtonBuilder<K> {
             disabled: false,
             actions: Actions::default(),
             tooltip: None,
+            highlight: None,
+            active: false,
             kind,
         }
     }
@@ -190,14 +198,53 @@ impl<K> ButtonBuilder<K> {
         self
     }
 
+    /// While hovered or [`active`](Self::active), `bg` fills it and its
+    /// content turns `fg`, in place of the hover layer: the status bar's
+    /// items.
+    pub fn highlight(mut self, bg: Color, fg: Color) -> Self {
+        self.highlight = Some((bg, fg));
+        self
+    }
+
+    /// Held highlighted, such as while what it opens is open.
+    pub fn active(mut self, active: bool) -> Self {
+        self.active = active;
+        self
+    }
+
+    /// What a middle click does, such as muting.
+    pub fn on_middle(mut self, middle: impl Fn() + 'static) -> Self {
+        self.actions.middle = Some(Rc::new(middle));
+        self
+    }
+
     /// The content colour this button draws in.
     fn fg(&self) -> Color {
-        self.color.unwrap_or(self.style.fg())
+        let fg = self.color.unwrap_or(self.style.fg());
+        match self.highlight {
+            Some((_, on)) => Color::blend(fg, on, self.highlighted()),
+            None => fg,
+        }
+    }
+
+    /// The fill under the content: the highlight's, or the hover layer.
+    fn fill(&self) -> Color {
+        let fill = self.style.fill();
+        match self.highlight {
+            Some((bg, _)) => Color::blend(fill, bg, self.highlighted()),
+            None => state_fill(&self.id, fill, self.disabled),
+        }
+    }
+
+    /// How far the highlight has faded in, 0 to 1.
+    fn highlighted(&self) -> f32 {
+        let on = !self.disabled && (self.active || hovered(&self.id));
+        fade(&format!("{}.highlight", self.id), on)
     }
 
     /// The button around `content`, `width` wide.
-    fn finish(self, width: f32, content: impl Widget + 'static) -> Rectangle {
-        if let Some((parent, text)) = self.tooltip
+    fn finish(mut self, width: f32, content: impl Widget + 'static) -> Rectangle {
+        if let Some((parent, text)) = self.tooltip.take()
             && !self.disabled
             && hovered(&self.id)
         {
@@ -208,7 +255,7 @@ impl<K> ButtonBuilder<K> {
             .width(Size::Fixed(width))
             .height(self.height)
             .radius(self.shape.radius())
-            .fill(state_fill(&self.id, self.style.fill(), self.disabled))
+            .fill(self.fill())
             .scale(press_scale(&self.id, PRESS_SCALE))
             .align_child(Center, Center)
             .clip()
@@ -332,19 +379,23 @@ pub(crate) fn hovered(id: &str) -> bool {
 
 /// `fill` with the hover layer fading over it while `id` is hovered.
 pub(crate) fn state_fill(id: &str, fill: Color, disabled: bool) -> Color {
-    let inside = !disabled && hovered(id);
-    let target = if inside { 1.0 } else { 0.0 };
-    // starts where it is, so a control that appears under the pointer
-    // doesn't fade in its hover
-    let amount = with_state(
-        &format!("{id}.hover"),
+    let amount = fade(&format!("{id}.hover"), !disabled && hovered(id));
+    Color::blend(fill, over(sys::color::state::hover(), fill), amount)
+}
+
+/// The fade keyed `key`, 1 while `on` and 0 while not, at hover speed.
+/// It starts where it is, so a control that appears under the pointer
+/// doesn't fade in its hover.
+fn fade(key: &str, on: bool) -> f32 {
+    let target = if on { 1.0 } else { 0.0 };
+    with_state(
+        key,
         || motion::fade(target, motion::HOVER),
         |fade: &mut Animation| {
             fade.to(target);
             fade.value().clamp(0.0, 1.0)
         },
-    );
-    Color::blend(fill, over(sys::color::state::hover(), fill), amount)
+    )
 }
 
 /// A press's pulse: 0 the moment the button is pressed, 1 once it has
@@ -380,11 +431,13 @@ fn pressed(id: &str) {
 }
 
 /// What a click asks for: the left button presses, the right one is the
-/// secondary action (usually a menu). Scrolling is optional too.
+/// secondary action (usually a menu), the middle one a shortcut. Scrolling
+/// is optional too.
 #[derive(Clone, Default)]
 pub(crate) struct Actions {
     pub(crate) press: Option<Rc<dyn Fn()>>,
     pub(crate) secondary: Option<Rc<dyn Fn()>>,
+    pub(crate) middle: Option<Rc<dyn Fn()>>,
     pub(crate) scroll: Option<Rc<dyn Fn(Scroll)>>,
 }
 
@@ -404,6 +457,7 @@ pub(crate) fn interactive(
     let Actions {
         press,
         secondary,
+        middle,
         scroll,
     } = actions;
     let clicked = id.clone();
@@ -422,7 +476,7 @@ pub(crate) fn interactive(
             let action = match button {
                 Button::Left => &press,
                 Button::Right => &secondary,
-                _ => return,
+                Button::Middle => &middle,
             };
             tooltip::suppress(&clicked);
             if let Some(action) = action {

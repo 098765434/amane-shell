@@ -15,6 +15,7 @@ use amane::{
 
 use super::super::{Page, QS_NS, open};
 use super::{connected_count, settings_link};
+use crate::components::battery;
 use crate::components::context_menu::{self, ContextMenu, MenuItem};
 use crate::components::icons::{
     ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, device_glyph,
@@ -24,7 +25,7 @@ use crate::components::list::{self, List, ListItem};
 use crate::components::motion::redraw_after;
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::tile::QuickToggle;
-use crate::components::taskbar::{Indicator, battery_color};
+use crate::components::status_bar::Indicator;
 use crate::tokens::sys;
 
 /// Registry key for the rebuilt-per-device right-click menu.
@@ -93,7 +94,7 @@ pub(crate) fn page() -> DetailPage {
     let page = DetailPage::new("amane.qs.bluetooth.page", "Bluetooth")
         .subtitle(subtitle)
         .switch(powered, Bluetooth::set_powered)
-        .taskbar(Indicator::Bluetooth)
+        .status_bar(Indicator::Bluetooth)
         .body(|height| vec![devices(height)]);
     settings_link(page, "Bluetooth Settings…", "blueman-manager")
 }
@@ -254,7 +255,7 @@ fn device_item(device: &BluetoothDevice) -> ListItem {
             // a caption, smaller than the bar's numeric percentages (manual §11.4)
             item = item.trailing(list::trailing_text(
                 format!("{percent}%"),
-                battery_color(percent, false, sys::color::content::secondary()),
+                battery::color(percent, false, sys::color::content::secondary()),
             ));
         }
         if device.connected() {

@@ -9,7 +9,7 @@ use crate::components::icons::{
     ICON_CALCULATE, ICON_LOCK, ICON_LOG_OUT, ICON_OPEN_IN_NEW, ICON_POWER, ICON_RESTART,
     ICON_SEARCH, ICON_SLEEP,
 };
-use crate::components::taskbar::close;
+use crate::components::panel::close;
 use crate::services::session::Session;
 use crate::services::{run, run_now};
 

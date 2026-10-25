@@ -53,7 +53,7 @@ pub fn level_ns(k: usize) -> &'static str {
 fn parent_ns(k: usize) -> &'static str {
     if k == 0 {
         // level 0 hangs under a caller-supplied surface when one is set
-        // (e.g. a taskbar pill via `open_under`), else the desktop anchor
+        // (e.g. a dock icon via `open_under`), else the desktop anchor
         runtime::root_parent().unwrap_or(ANCHOR_NS)
     } else {
         NS[k - 1]

@@ -608,7 +608,7 @@ mod tests {
     /// are left out on purpose: any component can use them, so they read
     /// `sys` only (manual §10.4).
     const OWNERS: &[(&str, &str)] = &[
-        ("taskbar/", "bar"),
+        ("status_bar/", "bar"),
         ("context_menu/", "menu"),
         ("notifications/", "notification"),
         ("quick_settings/", "quick"),

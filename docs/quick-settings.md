@@ -11,8 +11,8 @@ It's opened from the bar's Control Center button (the slider glyph, between the 
 notification bell), and closed by the same button, by Escape, or by opening the notification
 center, whose one-open-at-a-time state it shares (`Panel::QuickSettings`). It's the only place
 for sound, Wi‑Fi, Bluetooth and power: the bar's volume, Bluetooth, network and battery icons open
-it straight on their page, and each of those pages has a **Show in Taskbar** switch for its icon
-(see [taskbar.md](taskbar.md#status-icons)).
+it straight on their page, and each of those pages has a **Show in Status Bar** switch for its icon
+(see [status-bar.md](status-bar.md#status-icons)).
 
 ## What's in it
 
@@ -24,11 +24,11 @@ when the machine has what it drives, as in GNOME, and the grid packs around what
 | Wi‑Fi | the network joined, "Connecting…", "Not Connected", "Off" or "Hardware switch off"; "<ssid> Hotspot" while the machine is one | the disc switches the radio (or stops the hotspot); the tile opens the page | the networks (rescanned every 15 s while shown; "Searching…" or "Wi‑Fi is off" while there are none), joining with a password; the page stays open and the row says "Connecting…" |
 | Bluetooth | the device connected, or how many | the disc switches the adapter; the tile opens the page | the device lists, searching while shown |
 | Airplane Mode | a round button (or a tile) | switches every radio | — |
-| Tailscale | a tile with Tailscale's mark (drawn, as the font hasn't got it), waiting in the Add list by default; "via <exit node>", this device's address, "Connecting…", "Not logged in", "Disconnected" or "Daemon not running"; hidden without the `tailscale` binary | the disc connects or disconnects (`tailscale up` / `down`), or logs in when logged out; the tile opens the page | what's wrong (no daemon; **Log In…**, which opens the browser once the control plane hands out the URL; no operator grant, with the command to copy; a failed change; tailscaled's own warnings), This Device (a click copies the address), Exit Node (None or a peer that offers itself; offline ones can't be picked), Accept Routes, Accept DNS and Block Incoming switches, and the tailnet's Devices, online first (a click copies the address); Show in Taskbar; Admin Console… |
+| Tailscale | a tile with Tailscale's mark (drawn, as the font hasn't got it), waiting in the Add list by default; "via <exit node>", this device's address, "Connecting…", "Not logged in", "Disconnected" or "Daemon not running"; hidden without the `tailscale` binary | the disc connects or disconnects (`tailscale up` / `down`), or logs in when logged out; the tile opens the page | what's wrong (no daemon; **Log In…**, which opens the browser once the control plane hands out the URL; no operator grant, with the command to copy; a failed change; tailscaled's own warnings), This Device (a click copies the address), Exit Node (None or a peer that offers itself; offline ones can't be picked), Accept Routes, Accept DNS and Block Incoming switches, and the tailnet's Devices, online first (a click copies the address); Show in Status Bar; Admin Console… |
 | VPN, Wired | tiles, waiting in the Add list by default; VPN says "Off", the tunnel that's up or how many are; Wired the connection or "Not Connected" | the disc switches; the VPN tile opens its page | VPN: a switch in the header for the preferred tunnel, and one per profile |
 | Now Playing | the active player's art (from a file or the web), title and artist, how far through the track, or "Not Playing" | previous, play/pause, next | — |
 | Focus | Do Not Disturb: what's on, until when, or off | the disc switches it; the tile opens the page | Focus: For 1 Hour, Until This Evening, Until Tomorrow, the one that's on checked |
-| Keep Awake | a tile with a cup, waiting in the Add list by default; "Off", "No limit", the time left ("1 h 24 min"), "Lid ignored" or "Lid · 1 h 24 min"; lit while anything is held | the disc holds the screen on with no limit, or lets go of everything, the lid too; the tile opens the page | how long (No limit, 15 min, 30 min, 1 h, 2 h; picking one starts it now), Keep screen on and Ignore lid close (hidden without logind; the last one off turns it all off), Turn the screen off now (the monitors go off a second later, nothing is let go, and input brings them back); Show in Taskbar |
+| Keep Awake | a tile with a cup, waiting in the Add list by default; "Off", "No limit", the time left ("1 h 24 min"), "Lid ignored" or "Lid · 1 h 24 min"; lit while anything is held | the disc holds the screen on with no limit, or lets go of everything, the lid too; the tile opens the page | how long (No limit, 15 min, 30 min, 1 h, 2 h; picking one starts it now), Keep screen on and Ignore lid close (hidden without logind; the last one off turns it all off), Turn the screen off now (the monitors go off a second later, nothing is let go, and input brings them back); Show in Status Bar |
 | Dark Style, Night Light | round buttons, accent while on | switch; a right click on Night Light opens its page | Night Light: how warm |
 | Display | only with a backlight; the brightness slider between a dim and a bright glyph | drag or scroll | — |
 | Sound | the default output's level; the small glyph says how loud (off, down, up) | the small glyph mutes; drag or scroll sets the level; the chevron or a right click opens the page | Sound: the output's level and percentage (its glyph mutes it) and its devices, then the microphone's level and its devices (with a microphone); the default device checked, a click makes another the default |
@@ -61,7 +61,7 @@ The bar also shows GNOME's status icons, each only while it applies:
 - **Glyphs for settings that are on**: night light, a VPN, a power mode other than Balanced, and
   airplane mode.
 - **Keep Awake's cup**, in the accent colour while it holds anything (the time left in its
-  tooltip), unless its page's Show in Taskbar is off.
+  tooltip), unless its page's Show in Status Bar is off.
 
 Clicking any of them opens Quick Settings.
 
@@ -261,7 +261,7 @@ The parts are in `src/components/quick_settings/`:
     chevron and switch leave), and an optional `Switch`.
   - A hairline, then a body built for the room it has (`List` rows are the page's width,
     `list::with_row_width`), at least `MIN_PAGE_ROWS` tall.
-  - Pinned at the bottom: an optional **Show in Taskbar** switch (`DetailPage::taskbar`, for the
+  - Pinned at the bottom: an optional **Show in Status Bar** switch (`DetailPage::status_bar`, for the
     bar's status icon) and an optional link to a settings app.
 - **`system_row.rs`, `tiles/`, `pages.rs`**: the controls and pages themselves. `tiles/` has one
   file per setting, holding its toggle and its page.
@@ -333,7 +333,7 @@ doesn't manage (tailscale) isn't one.
 
 ## Related
 
-- The bar and its panels: [taskbar.md](taskbar.md).
+- The bar and its panels: [status-bar.md](status-bar.md).
 - Its frosted surface's niri layer rule: [layer-rules.md](layer-rules.md).
 - The shared components it's built from: [components.md](components.md) and
   [buttons.md](buttons.md).

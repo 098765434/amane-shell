@@ -13,7 +13,7 @@ use amane::{
 
 use crate::components::app_icon;
 use crate::components::layout::{boxed, text_height, text_width};
-use crate::components::taskbar::close;
+use crate::components::panel::close;
 use crate::tokens::{Styled, sys};
 
 use super::{BODY, CELL, COLS, ICON, ICON_BOX, WIDTH, hover, on_scroll};

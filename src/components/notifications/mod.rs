@@ -24,7 +24,7 @@ pub use center::{CENTER_NS, side_sheet, unseen};
 pub use dnd::DoNotDisturb;
 pub use toasts::{TOAST_NS, TOASTS};
 
-use crate::components::taskbar::{Panel, toggle};
+use crate::components::panel::{Panel, toggle};
 use dnd::Until;
 
 /// `amane-shell` IPC: `notifications [toggle | clear | dnd [on|off|toggle]]`.

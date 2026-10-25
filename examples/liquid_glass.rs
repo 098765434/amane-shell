@@ -272,7 +272,7 @@ fn label(color: Color) -> Rectangle {
 
 // ───── the Wi-Fi panel ───────────────────────────────────────────────────────
 //
-// A lookalike of `src/components/taskbar/wifi.rs` at comfortable density, with
+// A lookalike of the shell's old Wi‑Fi panel at comfortable density, with
 // made-up networks: the shell is a binary, so its components can't be used
 // from here. The real one is frosted by niri; here amane's blur stands in.
 

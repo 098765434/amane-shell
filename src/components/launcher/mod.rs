@@ -41,7 +41,7 @@ use crate::components::divider::Divider;
 use crate::components::glass_region;
 use crate::components::layout::{blank, boxed, pad};
 use crate::components::motion;
-use crate::components::taskbar::{self, Panel, close, is_open, overlay};
+use crate::components::panel::{self, Panel, close, is_open, overlay};
 
 use edit::Field;
 use entries::Entry;
@@ -157,10 +157,10 @@ fn hidden() {
 pub fn ipc(args: &[String]) -> String {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     match args.as_slice() {
-        [] | ["toggle"] => taskbar::toggle(Panel::Launcher),
+        [] | ["toggle"] => panel::toggle(Panel::Launcher),
         ["open"] => {
             if !is_open(Panel::Launcher) {
-                taskbar::toggle(Panel::Launcher);
+                panel::toggle(Panel::Launcher);
             }
         }
         ["close"] => {

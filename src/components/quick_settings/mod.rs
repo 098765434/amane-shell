@@ -24,7 +24,7 @@
 //! edit mode changes it.
 //!
 //! It's the one place for sound, Wi‑Fi, Bluetooth and power: the bar's
-//! status icons (each optional, see the pages' "Show in Taskbar") open
+//! status icons (each optional, see the pages' "Show in Status Bar") open
 //! straight to their page. It shares the notification center's
 //! one-open-at-a-time state ([`Panel::QuickSettings`]), opened from the
 //! bar's Control Center button, a status icon, or over IPC:
@@ -53,7 +53,7 @@ use amane::{
 use crate::components::glass_region;
 use crate::components::layout::{blank, boxed, pad};
 use crate::components::motion;
-use crate::components::taskbar::{self, Panel, close, is_open, overlay, popover_margin};
+use crate::components::panel::{self, Panel, close, is_open, overlay, popover_margin};
 use crate::tokens::quick;
 
 pub use pages::Page;
@@ -100,9 +100,14 @@ thread_local! {
 /// Opens on `page`, or goes there when open already.
 pub fn open(page: Page) {
     if !is_open(Panel::QuickSettings) {
-        taskbar::toggle(Panel::QuickSettings);
+        panel::toggle(Panel::QuickSettings);
     }
     go(page);
+}
+
+/// Whether Quick Settings is open on `page`.
+pub fn showing(page: Page) -> bool {
+    is_open(Panel::QuickSettings) && PAGE.get() == page
 }
 
 /// Back to the grid.
@@ -193,7 +198,7 @@ const MIN_PAGE_ROWS: u8 = 5;
 pub fn ipc(args: &[String]) -> String {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     match args.as_slice() {
-        [] | ["toggle"] => taskbar::toggle(Panel::QuickSettings),
+        [] | ["toggle"] => panel::toggle(Panel::QuickSettings),
         ["open"] => open(Page::Grid),
         ["open", name] => match Page::named(name) {
             Some(page) if pages::available(page) => open(page),

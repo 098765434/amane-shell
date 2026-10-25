@@ -19,7 +19,7 @@ use crate::components::list::{self, List, ListItem};
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::detail::page_width;
 use crate::components::slider::Slider;
-use crate::components::taskbar::Indicator;
+use crate::components::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
 
 pub(in crate::components::quick_settings) fn cell(
@@ -172,7 +172,7 @@ pub(in crate::components::quick_settings) fn page() -> DetailPage {
         } else {
             format!("{}%", output.volume)
         })
-        .taskbar(Indicator::Volume)
+        .status_bar(Indicator::Volume)
         .body(move |height| {
             let mut sections = vec![output.build()];
             sections.extend(device_section(&outputs, false));
