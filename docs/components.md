@@ -25,18 +25,12 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 ## Card
 
 `Card::new(content)` fills its parent and stacks `content` `.gap(…)` apart inside a
-`sys.space.inset.l` inset (`.padding(…)` changes it). It's drawn on a `Surface`, which gives one
-complete `bg` / `fg` / `stroke` set (manual §1.7). Whatever sits on the card takes its colours from
-the same surface:
-
-| `Surface` | Tokens | Drawn on it |
-|---|---|---|
-| `Panel` | `sys.color.surface.panel.*` | the bar's panels (no `stroke` role yet) |
-| `Popover` | `sys.color.surface.popover.*` | menus, the notification center |
-| `Notification` | `sys.color.surface.notification.*` | toasts |
+`sys.space.inset.l` inset (`.padding(…)` changes it). It's made of a `Material`
+(`.material(…)`, `Material::Popover` by default; see [materials.md](materials.md)), whose tint fills
+it. What sits on it takes the vibrant labels and fills (`material::label`, `fill_role`).
 
 `Variant::Filled` is the fill alone, and `Variant::Outlined` adds a `sys.border.hairline` in the
-surface's stroke. M3's elevated card is left out because there's no `sys.shadow` role yet.
+material's separator. M3's elevated card is left out because there's no `sys.shadow` role yet.
 `.blur(true)` frosts what's below with `sys.effect.backdrop-blur`, a macOS departure from M3. It
 blurs only what the window has drawn under the card, so a card that is its surface's root (the
 panels, tooltips, dropdowns) leaves it off: niri frosts those through a layer rule. `.radius(..)`
@@ -48,7 +42,7 @@ content can anchor a menu.
 
 `TopAppBar::new(title)` has M3's slots: `.back(id, action)` (a back chevron, for a page drilled
 into, like Quick Settings'), `.subtitle(…)`, and `.actions(…)` at the trailing end. It uses its
-surface's `fg` and secondary, `Surface::Panel` by default. Unlike M3's, it has no fill and is no
+primary and secondary vibrant labels. Unlike M3's, it has no fill and is no
 taller than its content.
 
 ## List
@@ -57,10 +51,10 @@ taller than its content.
 `.leading_tile(glyph)`, the glyph on a small accent tile, as a sidebar names its sections), the
 headline (elided), and `.trailing(…)` items such as `list::check()`, a lock glyph, or
 `list::trailing_text(…)`. A `.selected(true)` item is filled `sys.color.state.selected` and its
-headline is full-strength. The rest read `sys.color.content.secondary`, and `.color(…)`
+headline is full-strength. The rest read the secondary label, and `.color(…)`
 overrides that. With `.on_press` or `.on_secondary` it's clickable and shows the
 `sys.color.state.hover` layer, keyed by `id` like a button's. `.bare(true)` leaves out the
-`surface.raised` fill, for rows on a surface that reads as one piece (the Customize window's
+secondary fill, for rows on a surface that reads as one piece (the Customize window's
 sidebar): only the selected and hover fills show. Supporting and overline text are the next M3
 slots to add when a list needs them.
 
@@ -91,8 +85,7 @@ Quick Settings' own parts (the tile, the grid, the page) are in
 
 ## Tooltip
 
-A plain tooltip: one `sys.type.caption` line on a frosted, glass-edged `Card` on `Surface::Panel`,
-like the bar's panels, with a `sys.space.inset.s` inset. niri blurs behind it from the bar's
+A plain tooltip: one `sys.type.caption` line on a frosted, glass-edged `Card` of `Material::ToolTip`, with a `sys.space.inset.s` inset. niri blurs behind it from the bar's
 `popups {}` layer rule, which has the same `sys.radius.popover` corners. It shows after the pointer rests on its
 control for half a second. It's an xdg-popup with no grab, so it never takes input or focus. It
 hangs under the control's surface and is centred above the pointer, as macOS's are, sliding inward
@@ -209,18 +202,18 @@ niri keeps after the last called "New Workspace". Workspaces are named as niri n
 - `color.rs` holds `over`, `faded` and `with_alpha`.
 - `motion.rs` holds the shared springs and fades (`spring`, `sheet`, `fade`) and the keyed list
   motion the notifications use.
-- `glass_region.rs` says where the compositor frosts behind clear glass (`module`, `transformed`,
-  `faded`), and what the glass drawn in the surface is when the compositor lays on the liquid
-  glass material itself (`fill`, `lit`, `stroke`). Glass comes in two thicknesses
-  (`Thickness::Thin` for modules, the dock, toasts and menus; `Thick`, `sys.color.glass.thick`,
-  for the launcher, the notification center, pages and the bar), and every tint goes through
-  `level`: the settings' glass level (`Clear` 0.8 of the tint, `Tinted`, `Solid` opaque) and the
-  system's high contrast, which, like `Solid`, turns the material off and brings the hairlines
-  back. Quick Settings, the dock, the launcher, the toasts and the notification center use it.
+- `material.rs` holds the materials, Apple's: glass by role (`Material::Control`, `Sheet` …), the
+  frost it asks niri for (`shape`), what the surface draws where niri lays the tint and edge on
+  itself (`fill`, `lit`, `stroke`), and the vibrant labels, fills and separator on it. See
+  [materials.md](materials.md).
+- `glass_region.rs` is what's under the materials: moving shapes with their layer
+  (`transformed`, `faded`), and the glass level every tint goes through (`level`: `Clear` 0.8 of
+  the tint, `Tinted`, `Solid` opaque, and the system's high contrast, which, like `Solid`, turns
+  the material off and brings the hairlines back).
   **Adaptive glass** (an experiment, off by default: `adaptive_glass` in `appearance.json`, or
   `AMANE_ADAPTIVE_GLASS=1`) turns small glass light or dark with its backdrop, as Apple's small
   glass does. Each piece names its shape (`shape_id`, sent as `BlurShape::id`), niri reports how
   bright the backdrop behind it is (amane's `Backdrop`, for a material with `report-backdrop true`
-  in niri's `materials {}`), and `adapted(id, ..)` builds the piece and its frost with the mode
-  that reading gives (`mode_for`: light above 0.65, dark again below 0.35). The dock's card, each
+  in niri's `materials {}`), and `Material::adapted(id, ..)` builds the piece and its frost with
+  the mode that reading gives (light above 0.65, dark again below 0.35). The dock's card, each
   Quick Settings module and each toast do this. Large glass keeps the theme's mode.

@@ -24,9 +24,9 @@ use amane::{
 
 use super::card::{self, Measured, Place, critical};
 use super::dnd::DoNotDisturb;
-use crate::components::card::Surface;
 use crate::components::glass_region;
 use crate::components::layout::blank;
+use crate::components::material::Material;
 use crate::components::motion::{self, Arrive, Item, Pose, Shown};
 use crate::components::panel::{Panel, is_open, overlay};
 use crate::tokens::{notification, sys};
@@ -388,7 +388,8 @@ fn slot(index: usize) -> LayerWindow {
 
     // a toast is small glass, light or dark with its backdrop
     let glass = glass_region::shape_id(&format!("amane.toast.{id}"));
-    let mut view = glass_region::adapted(glass, || card::card(&m, Place::Toast, now, 1.0))
+    let mut view = Material::Banner
+        .adapted(glass, || card::card(&m, Place::Toast, now, 1.0))
         .opacity(pose.opacity);
     if !toast.leaving {
         view = card::interactive(
@@ -421,18 +422,18 @@ fn slot(index: usize) -> LayerWindow {
         .keyboard(Keyboard::None)
         .visible(true);
     // the whole surface is the card's glass; it slides with the surface
-    let frost = glass_region::adapted(glass, || {
-        glass_region::module(
-            0.0,
-            0.0,
-            Place::Toast.width(),
-            toast.height,
-            notification::card::radius(),
-            pose.opacity,
-            glass_region::level(Surface::Notification.bg()),
-        )
-    })
-    .id(glass);
+    let frost = Material::Banner
+        .adapted(glass, || {
+            Material::Banner.shape(
+                0.0,
+                0.0,
+                Place::Toast.width(),
+                toast.height,
+                notification::card::radius(),
+                pose.opacity,
+            )
+        })
+        .id(glass);
     overlay(base, TOAST_NS, Vertical::Top, Horizontal::Right)
         .blur_shapes(vec![frost])
         .child(view)

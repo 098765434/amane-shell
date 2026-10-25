@@ -484,7 +484,11 @@ mod tests {
         for m in Material::ALL {
             assert_eq!(m.wanted(false).last(), Some(&"glass"), "{m:?}");
             assert_eq!(m.wanted(false)[0], m.niri_name(), "{m:?}");
-            assert_eq!(m.wanted(true)[0], format!("{}-still", m.niri_name()), "{m:?}");
+            assert_eq!(
+                m.wanted(true)[0],
+                format!("{}-still", m.niri_name()),
+                "{m:?}"
+            );
         }
     }
 
@@ -564,7 +568,10 @@ mod tests {
                     Level::Quaternary,
                 ]
                 .map(|l| label(l).alpha());
-                assert!(alphas.windows(2).all(|w| w[0] > w[1]), "{mode:?}: {alphas:?}");
+                assert!(
+                    alphas.windows(2).all(|w| w[0] > w[1]),
+                    "{mode:?}: {alphas:?}"
+                );
             });
         }
     }

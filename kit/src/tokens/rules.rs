@@ -21,11 +21,7 @@ pub const SECONDARY_FLOOR: f64 = 2.0;
 
 /// The surfaces checked for contrast: (background, primary, secondary).
 const SURFACES: &[(&str, &str, &str)] = &[
-    (
-        "sys.color.surface.panel.bg",
-        "sys.color.surface.panel.fg",
-        "sys.color.content.secondary",
-    ),
+    // an app window's solid background, until it's a material too
     (
         "sys.color.surface.popover.bg",
         "sys.color.surface.popover.fg",
@@ -56,23 +52,6 @@ const SURFACES: &[(&str, &str, &str)] = &[
         "sys.color.material.ultra-thick",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
-    ),
-    // the panels' own text is still on the glass until it moves to the
-    // vibrant labels
-    (
-        "sys.color.material.thin",
-        "sys.color.surface.panel.fg",
-        "sys.color.content.secondary",
-    ),
-    (
-        "sys.color.material.thick",
-        "sys.color.surface.panel.fg",
-        "sys.color.content.secondary",
-    ),
-    (
-        "sys.color.surface.notification.bg",
-        "sys.color.surface.notification.fg",
-        "sys.color.surface.notification.fg-secondary",
     ),
 ];
 
@@ -701,7 +680,11 @@ mod tests {
             for part in source.split("crate::tokens::").skip(1) {
                 let names = match part.strip_prefix('{') {
                     Some(list) => list.split('}').next().unwrap_or(""),
-                    None => part.split("::").next().unwrap_or(""),
+                    // one path: its first segment alone, not the text after it
+                    None => part
+                        .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+                        .next()
+                        .unwrap_or(""),
                 };
                 for name in names.split(',') {
                     let name: String = name

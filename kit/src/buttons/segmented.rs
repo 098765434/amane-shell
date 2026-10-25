@@ -24,6 +24,7 @@ use amane::{
 use super::{Actions, Pending, interactive, label_row, state_fill, with_existing, with_state};
 use crate::color::faded;
 use crate::layout::{boxed, inner_width, pad};
+use crate::material::{self, FillLevel, Level};
 use crate::motion::{self, FADE};
 use crate::tokens::sys;
 
@@ -212,7 +213,7 @@ impl SegmentedButton {
             .width(Size::Fixed(self.width))
             .height(Size::Fixed(height))
             .radius(self.radius)
-            .fill(sys::color::surface::raised::bg())
+            .fill(material::fill_role(FillLevel::Secondary))
             .padding(pad(inset, inset))
             .align_child(Center, Center)
             .child(Stack::new(layers))
@@ -286,8 +287,8 @@ fn segment_view(
     click: impl Fn() + 'static,
 ) -> Rectangle {
     let color = Color::blend(
-        sys::color::content::secondary(),
-        sys::color::surface::panel::fg(),
+        material::label(Level::Secondary),
+        material::label(Level::Primary),
         lit,
     );
 

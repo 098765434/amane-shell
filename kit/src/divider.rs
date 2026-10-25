@@ -7,6 +7,7 @@
 use amane::{Color, Parent, Rectangle};
 
 use crate::layout::pad;
+use crate::material;
 use crate::tokens::sys;
 
 pub struct Divider;
@@ -27,7 +28,7 @@ impl Divider {
                 Rectangle::new()
                     .width(Parent)
                     .height(sys::border::hairline())
-                    .fill(sys::color::separator()),
+                    .fill(material::separator()),
             )
     }
 
@@ -47,7 +48,7 @@ impl Divider {
                 Rectangle::new()
                     .width(sys::border::hairline())
                     .height(Parent)
-                    .fill(sys::color::separator()),
+                    .fill(material::separator()),
             )
     }
 }

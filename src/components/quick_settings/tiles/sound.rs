@@ -16,6 +16,7 @@ use crate::components::icons::{
 };
 use crate::components::layout::{boxed, caption, split_row};
 use crate::components::list::{self, List, ListItem};
+use crate::components::material;
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::detail::page_width;
 use crate::components::slider::Slider;
@@ -55,7 +56,7 @@ pub(in crate::components::quick_settings) fn cell(
         IconButton::new("amane.qs.volume.devices", ICON_CHEVRON_RIGHT)
             .style(Style::Plain)
             .shape(Shape::Round)
-            .color(sys::color::content::secondary())
+            .color(material::label(material::Level::Secondary))
             .disabled(inert)
             .on_press(|| open(Page::Sound))
             .build(),
@@ -92,7 +93,7 @@ fn mute_button(
 ) -> amane::Rectangle {
     IconButton::new(id, glyph)
         .size(sys::size::icon::s())
-        .color(sys::color::surface::panel::fg())
+        .color(material::label(material::Level::Primary))
         .disabled(inert)
         .on_press(press)
         .build()
@@ -115,7 +116,7 @@ impl Level {
         // percentages are numeric (manual §11.4)
         let percent = Text::new(format!("{}%", self.volume))
             .style(sys::r#type::numeric())
-            .color(sys::color::content::secondary());
+            .color(material::label(material::Level::Secondary));
         boxed(
             Column::new(vec![
                 boxed(split_row(caption(self.title), vec![boxed(percent)])),

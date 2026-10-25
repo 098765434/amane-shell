@@ -31,9 +31,9 @@ use super::grid::{Metrics, Span};
 use crate::components::buttons::{
     Actions, Pending, hovered, interactive, press_scale, state_fill, with_existing, with_state,
 };
-use crate::components::glass_region::{self, Thickness};
 use crate::components::icons::{Glyph, glyph};
 use crate::components::layout::{boxed, icon, pad, text_height, text_width};
+use crate::components::material::{self, Level, Material};
 use crate::components::motion;
 use crate::components::tooltip;
 use crate::tokens::{Styled, TextStyle, quick, sys};
@@ -57,7 +57,7 @@ fn shadow() -> Option<Shadow> {
     })
 }
 
-/// A frosted module: the panels' tint and a soft shadow, `width` by
+/// A frosted module, in the Control material: its tint and a soft shadow, `width` by
 /// `height` with `radius` corners, holding `content`. The compositor
 /// frosts behind it where the surface says so (see `glass_region`); where
 /// it draws the glass material, the tint and lit edge are its too, and
@@ -76,7 +76,7 @@ pub(super) fn module(
         .width(Size::Fixed(width))
         .height(Size::Fixed(height))
         .radius(radius)
-        .fill(fill(Thickness::Thin.tint()))
+        .fill(fill(Material::Control, Material::Control.tint()))
         .clip()
         .child(content);
     match shadow() {
@@ -85,12 +85,13 @@ pub(super) fn module(
     }
 }
 
-/// A whole sheet of glass, the page's, tinted `tint` (thick glass, or on
+/// A whole sheet of `material`, tinted `tint` (the material's own, or on
 /// its way there from a module's), with the surfaces' full glass edge.
 pub(super) fn sheet(
     width: f32,
     height: f32,
     radius: f32,
+    material: Material,
     tint: Color,
     content: impl Widget + 'static,
 ) -> Rectangle {
@@ -98,14 +99,14 @@ pub(super) fn sheet(
         .width(Size::Fixed(width))
         .height(Size::Fixed(height))
         .radius(radius)
-        .fill(fill(tint))
+        .fill(fill(material, tint))
         .clip()
         .child(content);
     let surface = match shadow() {
         Some(shadow) => surface.shadow(shadow),
         None => surface,
     };
-    glass_region::lit(surface, radius)
+    material.lit(surface, radius)
 }
 
 thread_local! {
@@ -124,13 +125,13 @@ pub(super) fn plain<R>(f: impl FnOnce() -> R) -> R {
     out
 }
 
-/// What glass tinted `tint` is filled with: the tint, unless the
+/// What `material` tinted `tint` is filled with: the tint, unless the
 /// compositor lays it on with the frost.
-fn fill(tint: Color) -> Color {
-    if PLAIN.get() {
+fn fill(material: Material, tint: Color) -> Color {
+    if PLAIN.get() || !material.compositor_draws() {
         tint
     } else {
-        glass_region::fill(tint)
+        Color::TRANSPARENT
     }
 }
 
@@ -290,7 +291,7 @@ impl QuickToggle {
                     progress,
                 ),
                 Color::blend(
-                    sys::color::surface::panel::fg(),
+                    material::label(Level::Primary),
                     sys::color::accent::fg(),
                     progress,
                 ),
@@ -348,14 +349,14 @@ impl QuickToggle {
         let mut labels = vec![boxed(line(
             self.title.clone(),
             quick::r#type::title(),
-            sys::color::surface::panel::fg(),
+            material::label(Level::Primary),
             label_w,
         ))];
         if let Some(subtitle) = &self.subtitle {
             labels.push(boxed(line(
                 subtitle.clone(),
                 quick::r#type::caption(),
-                sys::color::content::secondary(),
+                material::label(Level::Secondary),
                 label_w,
             )));
         }
@@ -487,9 +488,12 @@ pub(super) fn capsule_button(
     // tinted with it, which the compositor lays on with the frost where it
     // draws the material (`tiles::grid` asks), else a fill of it
     let (fill, fg) = if accent {
-        (fill(sys::color::accent::bg()), sys::color::accent::fg())
+        (
+            fill(Material::Prominent, Material::Prominent.tint()),
+            sys::color::accent::fg(),
+        )
     } else {
-        (Color::TRANSPARENT, sys::color::surface::panel::fg())
+        (Color::TRANSPARENT, material::label(Level::Primary))
     };
 
     let mut content: Vec<Box<dyn Widget>> = Vec::new();

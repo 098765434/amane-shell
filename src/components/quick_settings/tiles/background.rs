@@ -9,6 +9,7 @@ use crate::components::buttons::{IconButton, Style};
 use crate::components::icons::{ICON_BACKGROUND_APPS, ICON_CLOSE};
 use crate::components::layout::{boxed, caption};
 use crate::components::list::{self, List, ListItem};
+use crate::components::material::{self, Level};
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::tile::QuickToggle;
 use crate::services::background_apps::BackgroundApps;
@@ -56,7 +57,7 @@ pub(crate) fn page() -> DetailPage {
                     if !app.message.is_empty() {
                         item = item.trailing(list::trailing_text(
                             app.message.clone(),
-                            sys::color::content::secondary(),
+                            material::label(Level::Secondary),
                         ));
                     }
                     item.trailing(

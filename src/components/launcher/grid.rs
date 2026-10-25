@@ -21,6 +21,7 @@ use super::{
     BODY, CELL, COLS, ICON, ICON_BOX, Layout, View, WIDTH, bucket, hover, on_app_click,
     on_body_scroll, under,
 };
+use crate::components::material::{self, Level};
 
 // TODO(token): `launcher.highlight.radius` once Penpot has it (manual §1.1).
 /// The highlight's corners.
@@ -147,7 +148,7 @@ fn cell(app: &DesktopApp, index: usize, live: bool) -> Rectangle {
         .child(
             Text::new(app.name())
                 .style(style)
-                .color(sys::color::surface::panel::fg())
+                .color(material::label(Level::Primary))
                 .elide(),
         );
 

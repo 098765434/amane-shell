@@ -14,6 +14,7 @@ use amane::{Center, Color, Radius, Rectangle, Size};
 
 use super::checkbox::row;
 use super::{Actions, interactive};
+use crate::material::{self, Level};
 use crate::tokens::sys;
 
 /// A radio button. `id` keys its hover, so it must be unique and stable.
@@ -62,7 +63,7 @@ impl Radio {
         let (color, dot) = if self.selected {
             (sys::color::accent::bg(), side / 2.0)
         } else {
-            (sys::color::content::secondary(), 0.0)
+            (material::label(Level::Secondary), 0.0)
         };
 
         let mark = Rectangle::new()

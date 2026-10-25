@@ -213,7 +213,11 @@ pub fn render(rules: &[LayerRule]) -> String {
             out.push_str("\n    popups {\n");
             let _ = writeln!(out, "        geometry-corner-radius {radius}");
             out.push_str("        background-effect {\n            blur true\n");
-            let _ = writeln!(out, "            material \"{}\"", Material::Menu.niri_name());
+            let _ = writeln!(
+                out,
+                "            material \"{}\"",
+                Material::Menu.niri_name()
+            );
             out.push_str("        }\n    }\n");
         }
         out.push_str("}\n");
@@ -243,7 +247,10 @@ pub fn materials() -> Vec<NiriMaterial> {
         let value = match &tokens[&token.name].value {
             Value::Number(n) => n.value.to_string(),
             Value::Bool(b) => b.to_string(),
-            other => panic!("{}: niri takes numbers and booleans, not {other:?}", token.name),
+            other => panic!(
+                "{}: niri takes numbers and booleans, not {other:?}",
+                token.name
+            ),
         };
         let at = match out.iter().position(|m| m.name == name) {
             Some(at) => at,

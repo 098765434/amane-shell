@@ -9,6 +9,7 @@ use amane::{
     Align, Center, Color, Padding, Parent, Point, Rectangle, Row, Size, SpaceBetween, Text, Widget,
 };
 
+use crate::material::{self, Level};
 use crate::tokens::{Styled, TextStyle, sys};
 
 pub fn boxed(widget: impl Widget + 'static) -> Box<dyn Widget> {
@@ -65,7 +66,7 @@ pub fn icon(glyph: char, size: f32, color: Color) -> Text {
 pub fn caption(text: impl Into<String>) -> Text {
     Text::new(text.into())
         .style(sys::r#type::caption())
-        .color(sys::color::content::secondary())
+        .color(material::label(Level::Secondary))
 }
 
 /// `leading` at the start, `trailing` (`gap.s` apart) at the end, across the
@@ -124,12 +125,7 @@ pub fn text_width(text: &str, style: TextStyle) -> f32 {
 /// the spaces, the last line elided to what's left over. amane's `Text`
 /// can't centre each line of wrapped text, so a caption centred under a
 /// tile is drawn a line at a time from this.
-pub fn wrapped_lines(
-    text: &str,
-    style: TextStyle,
-    width: f32,
-    max_lines: usize,
-) -> Vec<String> {
+pub fn wrapped_lines(text: &str, style: TextStyle, width: f32, max_lines: usize) -> Vec<String> {
     let fits = |line: &str| text_width(line, style) <= width;
     let mut lines: Vec<String> = Vec::new();
     let mut line = String::new();

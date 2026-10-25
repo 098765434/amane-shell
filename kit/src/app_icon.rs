@@ -10,6 +10,7 @@ use std::path::PathBuf;
 
 use amane::{Apps, Center, DesktopApp, Image, Rectangle, Service, Size, Text};
 
+use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, sys};
 
 /// A window's app icon, or a first-letter placeholder when none resolves.
@@ -40,12 +41,12 @@ fn drawn(path: Option<PathBuf>, letter: String, side: f32) -> Rectangle {
         .width(Size::Fixed(side))
         .height(Size::Fixed(side))
         .radius(sys::radius::raised())
-        .fill(sys::color::surface::raised::bg())
+        .fill(material::fill_role(FillLevel::Secondary))
         .align_child(Center, Center)
         .child(
             Text::new(letter)
                 .style(sys::r#type::title())
-                .color(sys::color::surface::panel::fg())
+                .color(material::label(Level::Primary))
                 .tight(),
         )
 }

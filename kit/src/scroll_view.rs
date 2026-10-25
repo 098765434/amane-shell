@@ -13,7 +13,7 @@ use amane::{Center, Color, Padding, Rectangle, Scroll, Stack, Start, Widget};
 
 use crate::kinetic::Axis;
 use crate::layout::boxed;
-use crate::tokens::sys;
+use crate::material::{self, Level};
 
 // TODO(token): `sys.scrollbar.*` once Penpot has them (manual §1.1).
 /// How wide the scrollbar is, and how short its thumb gets.
@@ -134,7 +134,7 @@ impl ScrollView {
             .width(SCROLLBAR)
             .height(thumb_height)
             .radius(SCROLLBAR / 2.0)
-            .fill(sys::color::content::secondary())
+            .fill(material::label(Level::Secondary))
             .opacity(opacity)
             .translate(self.width - SCROLLBAR, along * (self.height - thumb_height));
         Rectangle::new()

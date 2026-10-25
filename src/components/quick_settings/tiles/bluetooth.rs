@@ -22,6 +22,7 @@ use crate::components::icons::{
 };
 use crate::components::layout::{boxed, caption, cursor};
 use crate::components::list::{self, List, ListItem};
+use crate::components::material::{self, Level};
 use crate::components::motion::redraw_after;
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::tile::QuickToggle;
@@ -255,7 +256,7 @@ fn device_item(device: &BluetoothDevice) -> ListItem {
             // a caption, smaller than the bar's numeric percentages (manual §11.4)
             item = item.trailing(list::trailing_text(
                 format!("{percent}%"),
-                battery::color(percent, false, sys::color::content::secondary()),
+                battery::color(percent, false, material::label(Level::Secondary)),
             ));
         }
         if device.connected() {

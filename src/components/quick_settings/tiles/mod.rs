@@ -31,8 +31,9 @@ use super::grid::{Metrics, Occupancy, Rect, Slot, Span};
 use super::tile::{capsule_button, capsule_width, module};
 use super::{edit, layout};
 use crate::components::glass::{self, Rim};
-use crate::components::glass_region::{self, Thickness};
+use crate::components::glass_region;
 use crate::components::layout::boxed;
+use crate::components::material::{self, Level, Material};
 use crate::components::motion::{self, Arrive, Item, Pose};
 use crate::components::panel::close;
 use crate::services::installed;
@@ -130,7 +131,8 @@ pub(super) fn grid(look: Motion) -> Grid {
     let mut slots: Vec<(ControlId, Rect, Slot)> = Vec::new();
     for (id, rect) in &placed {
         // each module is small glass of its own, light or dark with its backdrop
-        let built = glass_region::adapted(glass_id(*id), || controls::build(*id, rect.span, &ctx));
+        let built =
+            Material::Control.adapted(glass_id(*id), || controls::build(*id, rect.span, &ctx));
         let widget = match built {
             Some(widget) => widget,
             // a control waiting for its hardware takes no room, except in
@@ -206,7 +208,9 @@ pub(super) fn grid(look: Motion) -> Grid {
         let widget = match widgets.remove(&id) {
             Some(widget) => widget,
             None if item.leaving => {
-                match glass_region::adapted(glass_id(id), || controls::build(id, rect.span, &ctx)) {
+                match Material::Control
+                    .adapted(glass_id(id), || controls::build(id, rect.span, &ctx))
+                {
                     Some(widget) => widget,
                     None => continue,
                 }
@@ -253,7 +257,7 @@ pub(super) fn grid(look: Motion) -> Grid {
         };
         if focused.is_none() && !in_hand {
             let glass = glass_id(id);
-            shapes.push(glass_region::adapted(glass, || frost(&drawn)).id(glass));
+            shapes.push(Material::Control.adapted(glass, || frost(&drawn)).id(glass));
         }
         if !in_hand {
             rims.push(drawn);
@@ -304,12 +308,12 @@ pub(super) fn grid(look: Motion) -> Grid {
         radius: button_h * pose.scale / 2.0,
         opacity: pose.opacity,
     };
-    let tint = if editing {
-        glass_region::level(sys::color::accent::bg())
+    let capsule_glass = if editing {
+        Material::Prominent
     } else {
-        Thickness::Thin.tint()
+        Material::Control
     };
-    shapes.push(frost_tinted(&capsule, tint));
+    shapes.push(frost_in(&capsule, capsule_glass));
     rims.push(capsule);
     let button = Rectangle::new()
         .width(Size::Fixed(width))
@@ -343,7 +347,7 @@ pub(super) fn grid(look: Motion) -> Grid {
     // the glass over everything: one layer lights every module's edge
     let total_w = width;
     let mut lit: Vec<Box<dyn Widget>> = vec![widget];
-    if !glass_region::compositor_glass() {
+    if !Material::Control.compositor_draws() {
         lit.extend(glass::rim_layers(&rims).into_iter().map(boxed));
     }
     let widget = boxed(
@@ -369,21 +373,20 @@ fn glass_id(id: ControlId) -> u32 {
     glass_region::shape_id(&format!("amane.quick-settings.{id:?}"))
 }
 
-/// The frost behind a piece of glass, where it's drawn.
+/// The frost behind a module, where it's drawn.
 fn frost(drawn: &Rim) -> BlurShape {
-    frost_tinted(drawn, Thickness::Thin.tint())
+    frost_in(drawn, Material::Control)
 }
 
-/// The frost behind a piece of glass tinted `tint`, where it's drawn.
-fn frost_tinted(drawn: &Rim, tint: Color) -> BlurShape {
-    glass_region::module(
+/// The frost behind a piece of `material`, where it's drawn.
+fn frost_in(drawn: &Rim, material: Material) -> BlurShape {
+    material.shape(
         drawn.x,
         drawn.y,
         drawn.width,
         drawn.height,
         drawn.radius,
         drawn.opacity,
-        tint,
     )
 }
 
@@ -407,7 +410,7 @@ pub(super) fn placeholder(id: ControlId, slot: Slot) -> Box<dyn Widget> {
         .child(
             Text::new(id.title())
                 .style(quick::r#type::caption())
-                .color(sys::color::content::secondary()),
+                .color(material::label(Level::Secondary)),
         );
     boxed(module(slot.width, slot.height, radius_of(id, span, slot), inner).opacity(DIMMED))
 }

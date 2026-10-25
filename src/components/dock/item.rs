@@ -8,8 +8,8 @@ use amane::{Center, Color, Rectangle, Row, Text, Widget};
 
 use super::model::Icon;
 use crate::components::app_icon;
-use crate::components::glass_region::{self, Thickness};
 use crate::components::layout::{boxed, text_height, text_width};
+use crate::components::material::{self, Level, Material};
 use crate::tokens::{Styled, sys};
 
 // TODO(token): `dock.running.size` once Penpot has it (manual §1.1).
@@ -28,9 +28,9 @@ pub fn icon(icon: &Icon, side: f32) -> Rectangle {
 pub fn running(icon: &Icon) -> (Box<dyn Widget>, f32) {
     let count = usize::from(matches!(icon, Icon::Window(_)));
     let color = if icon.focused() {
-        sys::color::surface::panel::fg()
+        material::label(Level::Primary)
     } else {
-        sys::color::content::secondary()
+        material::label(Level::Secondary)
     };
     let gap = sys::space::gap::_2xs();
     let dots: Vec<Box<dyn Widget>> = (0..count)
@@ -77,12 +77,12 @@ pub fn label(text: &str) -> (Rectangle, f32, f32) {
         .width(width)
         .height(height)
         .radius(sys::radius::raised())
-        .fill(glass_region::fill(Thickness::Thin.tint()))
+        .fill(Material::Control.fill())
         .align_child(Center, Center)
         .child(
             Text::new(text)
                 .style(style)
-                .color(sys::color::surface::panel::fg())
+                .color(material::label(Level::Primary))
                 .tight(),
         );
     (label, width, height)

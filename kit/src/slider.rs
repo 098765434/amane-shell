@@ -19,6 +19,7 @@ use amane::{
 
 use crate::buttons::{Actions, interactive, state_fill};
 use crate::layout::{boxed, icon, slot};
+use crate::material::{self, FillLevel, Level};
 use crate::tokens::sys;
 
 /// How far one scroll notch moves a level, the bar's volume button included.
@@ -132,7 +133,7 @@ impl Slider {
         } = self;
         let track_h = thickness.unwrap_or_else(sys::size::slider::height);
         let active = if dimmed {
-            sys::color::content::secondary()
+            material::label(Level::Secondary)
         } else {
             fill.unwrap_or_else(sys::color::accent::bg)
         };
@@ -141,7 +142,7 @@ impl Slider {
             .width(Size::Fixed(width))
             .height(Size::Fixed(track_h))
             .radius(track_h / 2.0)
-            .fill(sys::color::surface::raised::bg())
+            .fill(material::fill_role(FillLevel::Secondary))
             .clip()
             .child(
                 Rectangle::new()
@@ -182,9 +183,9 @@ impl Slider {
             ..
         } = self;
         let height = sys::size::control::height();
-        let track = sys::color::surface::raised::bg();
+        let track = material::fill_role(FillLevel::Secondary);
         let active = if dimmed {
-            sys::color::content::secondary()
+            material::label(Level::Secondary)
         } else {
             sys::color::accent::bg()
         };

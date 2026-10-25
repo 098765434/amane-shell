@@ -158,10 +158,11 @@ binds {
 ## Glass
 
 The panel is the same glass as Quick Settings and the dock:
-- The surface is clear, and tells the compositor to frost behind the panel (`glass_region::module`).
+- The surface is clear, and tells the compositor to frost behind the panel
+  (`Material::Sheet.shape`).
 - The frost swells and fades in with the panel.
 - Where the compositor has no glass material of its own, the panel draws the shader's lit edge
-  (`glass_region::lit`).
+  (`Material::Sheet.lit`).
 
 The `amane.launcher` layer rule in `niri-layer-rule.kdl` sets `xray false`, so the frost blurs
 the windows under it rather than the wallpaper, and frosts its popups, so an app's menu is a

@@ -105,8 +105,8 @@ It reuses the shared [`EdgeReveal`, `workspace_menu`, `app_icon`, `Divider::vert
 - **File drops** come from amane's `on_files_over` (the files are read as they come in, so an
   icon can say whether its app opens them, and the pointer shows it) and `on_drop`. Files open
   with the entry's `Exec`, its `%f`/`%F`/`%u`/`%U` filled in (`DesktopApp::commands_with`).
-- **Glass** is Quick Settings': `glass_region::module` frosts behind the card (and the name
-  label), and `glass_region::lit` adds the shader's edge where the compositor has no glass
+- **Glass** is Quick Settings': `Material::Control.shape` frosts behind the card (and the name
+  label), and `Material::Control.lit` adds the shader's edge where the compositor has no glass
   material. The niri layer rule is `clear` (`xray false` only); the surface says where to frost.
 
 ## Known limits

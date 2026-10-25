@@ -23,10 +23,10 @@ use super::card::{self, Measured, Place};
 use super::dnd::{DoNotDisturb, Until};
 use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::{IconButton, PushButton, Shape, Style};
-use crate::components::card::{Card, Surface};
-use crate::components::glass_region::{self, Thickness};
+use crate::components::card::Card;
 use crate::components::icons::ICON_DND;
 use crate::components::layout::{blank, boxed, cursor, split_row};
+use crate::components::material::{self, Level, Material};
 use crate::components::motion::{self, Arrive, Item, Pose};
 use crate::components::panel::{Panel, dismissable, is_open, overlay};
 use crate::services::clock::Clock;
@@ -159,14 +159,13 @@ pub fn side_sheet() -> LayerWindow {
     }
 
     // the whole surface is the sheet's glass; it slides with the surface
-    let frost = glass_region::module(
+    let frost = Material::Sheet.shape(
         0.0,
         0.0,
         width,
         window_size().1,
         notification::center::radius(),
         opacity,
-        Thickness::Thick.tint(),
     );
     base.blur_shapes(vec![frost])
         .child(sheet().opacity(opacity))
@@ -206,7 +205,7 @@ fn sheet() -> Rectangle {
             blank().align_child(Center, Center).child(
                 Text::new("No Notifications")
                     .style(sys::r#type::label())
-                    .color(Surface::Panel.fg_secondary()),
+                    .color(material::label(Level::Secondary)),
             ),
         ));
     } else {
@@ -218,9 +217,9 @@ fn sheet() -> Rectangle {
 
     // nested about its cards: their corners plus the inset around them
     Card::new(rows)
-        .surface(Surface::Panel)
+        .material(Material::Sheet)
         .radius(notification::center::radius())
-        .fill(glass_region::fill(Thickness::Thick.tint()))
+        .fill(Material::Sheet.fill())
         .glass(true)
         .gap(sys::space::gap::l())
         .build()
@@ -233,7 +232,7 @@ fn header(any: bool) -> amane::Row {
     let open_menu = || DoNotDisturb::open_menu(CENTER_NS, cursor());
     let dnd = IconButton::new("amane.notifications.dnd", ICON_DND)
         .style(Style::Tonal)
-        .color(Surface::Panel.fg_secondary())
+        .color(material::label(Level::Secondary))
         .selected(until.is_some())
         .on_press(open_menu)
         .on_secondary(open_menu)
@@ -249,9 +248,7 @@ fn header(any: bool) -> amane::Row {
     }
     trailing.push(boxed(dnd));
 
-    let mut bar = TopAppBar::new("Notifications")
-        .surface(Surface::Panel)
-        .actions(trailing);
+    let mut bar = TopAppBar::new("Notifications").actions(trailing);
     if let Some(until) = until {
         bar = bar.subtitle(dnd_status(until));
     }
@@ -273,7 +270,7 @@ fn text_button(
 ) -> Rectangle {
     PushButton::new(id, label)
         .shape(Shape::Round)
-        .color(Surface::Panel.fg())
+        .color(material::label(Level::Primary))
         .on_press(press)
         .build()
 }
@@ -454,7 +451,7 @@ fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32)
     let clear = card::close_button(
         format!("amane.notifications.group.{group}.clear"),
         height,
-        Surface::Panel.fg(),
+        material::label(Level::Primary),
         move || {
             for id in &ids {
                 Notifications::dismiss(*id);
@@ -477,7 +474,7 @@ fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32)
             split_row(
                 Text::new(name.to_string())
                     .style(sys::r#type::title())
-                    .color(Surface::Panel.fg()),
+                    .color(material::label(Level::Primary)),
                 vec![boxed(less), boxed(clear)],
             )
             .height(Parent),

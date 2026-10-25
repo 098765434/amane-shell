@@ -4,8 +4,9 @@ A bottom layer-shell bar (`src/components/status_bar/mod.rs`), full-width, ancho
 on the `Top` layer with `Zone::Reserve`. Namespace `amane.status-bar`. The root is a rounded
 `Rectangle` holding one `Row` justified `SpaceBetween`: workspaces on the left and the status
 cluster on the right. The bar is one uniform frosted strip, like macOS 27's toolbar: its layer
-rule frosts the whole surface (plain frost, no glass material, square corners), and the bar fills
-it with thick glass's tint (`sys.color.glass.thick`), since it holds text. It reserves its zone,
+rule frosts the whole surface in niri's `frost` material (no lens, square corners), and the bar
+fills it with `Material::Bar`'s tint (`sys.color.material.bar`, as thick as a sheet's), since it
+holds text. It reserves its zone,
 so only the wallpaper is ever behind it, and niri's cheaper xray blur is enough. The dock's glass
 rises over it. Its popups (tooltips, Do Not Disturb's menu) are frosted too. It is `Keyboard::None`, so clicking it never takes
 focus from the active app.

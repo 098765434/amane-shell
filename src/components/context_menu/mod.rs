@@ -17,10 +17,11 @@ use amane::{
 
 pub use runtime::{arm, close, open_named, register, show_under};
 
-use crate::components::card::{Card, Surface, Variant};
+use crate::components::card::{Card, Variant};
 use crate::components::color::with_alpha;
 use crate::components::divider::Divider;
 use crate::components::layout::{blank, boxed, pad, slot, split_row, text_width};
+use crate::components::material::{self, Level, Material};
 use crate::tokens::{Styled, menu, sys};
 use runtime::{FocusSource, with, with_mut};
 
@@ -311,7 +312,7 @@ fn card_widget(entries: &[Entry], level: usize) -> Rectangle {
         .collect();
 
     Card::new(rows)
-        .surface(Surface::Popover)
+        .material(Material::Menu)
         .variant(Variant::Outlined)
         .glass(true)
         .padding(menu::card::padding())
@@ -419,24 +420,24 @@ fn row_colors(item: &MenuItem, focused: bool, keyboard: bool) -> (Color, Color, 
     };
 
     let fg = if !item.enabled {
-        sys::color::surface::popover::fg_secondary()
+        material::label(Level::Secondary)
     } else if keyboard && !item.destructive {
         sys::color::accent::fg()
     } else if item.destructive {
         sys::color::status::critical::text()
     } else {
-        sys::color::surface::popover::fg()
+        material::label(Level::Primary)
     };
 
     let shortcut_color = if keyboard && !item.destructive {
         with_alpha(sys::color::accent::fg(), menu::shortcut::hover_opacity())
     } else if focused {
         with_alpha(
-            sys::color::surface::popover::fg(),
+            material::label(Level::Primary),
             menu::shortcut::hover_opacity(),
         )
     } else {
-        sys::color::surface::popover::fg_secondary()
+        material::label(Level::Secondary)
     };
 
     (fill, fg, shortcut_color)

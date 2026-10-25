@@ -6,12 +6,13 @@ use amane_kit::settings::Appearance;
 use amane_kit::tokens::{Styled, sys};
 
 use crate::setting;
+use amane_kit::material::{self, Level};
 
 pub fn page() -> Column {
     let line = |text: String| {
         Text::new(text)
             .style(sys::r#type::label())
-            .color(sys::color::surface::popover::fg())
+            .color(material::label(Level::Primary))
     };
 
     Column::new(vec![

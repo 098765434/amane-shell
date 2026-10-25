@@ -22,10 +22,9 @@ use chrono::{DateTime, Local};
 
 use crate::components::app_icon::{icon_for, tile as app_icon_tile};
 use crate::components::buttons::{IconButton, PushButton, Style};
-use crate::components::card::Surface;
-use crate::components::glass_region;
 use crate::components::icons::ICON_CLOSE;
 use crate::components::layout::{blank, boxed, inner_width, pad, split_row};
+use crate::components::material::{self, FillLevel, Level, Material};
 use crate::tokens::{Styled, notification, sys};
 
 /// The body is cut after this many lines, like a banner's.
@@ -57,21 +56,20 @@ impl Place {
 
     fn look(self) -> Look {
         match self {
-            // glass of its own: the compositor frosts behind it (`toasts::slot`)
-            // and, where it has the glass material, lays on the tint and edge
+            // a banner of its own: the compositor frosts behind it
+            // (`toasts::slot`) and, where it has the material, lays on the
+            // tint and edge
             Place::Toast => Look {
-                fill: glass_region::fill(glass_region::level(Surface::Notification.bg())),
-                fg: Surface::Notification.fg(),
-                secondary: Surface::Notification.fg_secondary(),
-                stroke: glass_region::stroke(
-                    Surface::Notification.stroke().unwrap_or(Color::TRANSPARENT),
-                ),
+                fill: Material::Banner.fill(),
+                fg: material::label(Level::Primary),
+                secondary: material::label(Level::Secondary),
+                stroke: Material::Banner.stroke(material::separator()),
             },
             // a raised card on the center's panel sheet, in its colours
             Place::Center => Look {
-                fill: sys::color::surface::raised::bg(),
-                fg: Surface::Panel.fg(),
-                secondary: Surface::Panel.fg_secondary(),
+                fill: material::fill_role(FillLevel::Secondary),
+                fg: material::label(Level::Primary),
+                secondary: material::label(Level::Secondary),
                 stroke: Color::TRANSPARENT,
             },
         }
@@ -293,7 +291,7 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
 
     // a toast is its own translucent surface; a card in the center sits on one
     match place {
-        Place::Toast => glass_region::lit(card, notification::card::radius()),
+        Place::Toast => Material::Banner.lit(card, notification::card::radius()),
         Place::Center => card,
     }
 }

@@ -18,6 +18,7 @@ use amane::{Center, Color, Column, Parent, Rectangle, Row, Size, Start, Text, Wi
 use crate::buttons::{Actions, interactive, state_fill};
 use crate::icons::ICON_CHECK;
 use crate::layout::{boxed, caption, clipped_label, icon, pad, split_row};
+use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, sys};
 
 thread_local! {
@@ -119,9 +120,9 @@ impl ListItem {
 
     pub fn build(self) -> Rectangle {
         let color = self.color.unwrap_or(if self.selected {
-            sys::color::surface::panel::fg()
+            material::label(Level::Primary)
         } else {
-            sys::color::content::secondary()
+            material::label(Level::Secondary)
         });
         let row_w = ROW_WIDTH.get().unwrap_or_else(sys::size::popover::width);
         let headline_w = (row_w - sys::size::row::trailing_width()).max(1.0);
@@ -160,7 +161,7 @@ impl ListItem {
         } else if self.bare {
             Color::TRANSPARENT
         } else {
-            sys::color::surface::raised::bg()
+            material::fill_role(FillLevel::Secondary)
         };
         let clickable = self.actions.press.is_some() || self.actions.secondary.is_some();
         let fill = if clickable {

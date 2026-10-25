@@ -24,7 +24,9 @@ lives in `src/tokens/`. Where this manual says "must", a check in CI enforces it
    the user's accent; everything that references them follows. Never name an accent after a
    hue.
 7. **Surfaces come in pairs.** Every surface has `bg`, `fg` and `stroke`. Use the `fg` of the
-   surface you're drawing on.
+   surface you're drawing on. The shell's glass is the exception: a material's tint
+   (`sys.color.material.*`) pairs with the one vibrant set (`sys.color.vibrant.*`), which reads
+   on every material ([materials.md](materials.md)).
 8. **Component tokens are the exception.** Add one only for a value unique to that component
    or a deliberate departure from its surface role — never to rename a `sys` token.
 9. **Use Penpot's specific types** (`spacing`, `sizing`, `borderRadius`, …) so tokens show up
@@ -187,10 +189,12 @@ dimension role may follow density.
  
 | Token | Meaning |
 |-------|---------|
-| `sys.color.surface.panel.bg / .fg / .stroke` | the bar |
+| `sys.color.material.ultra-thin / .thin / .regular / .thick / .ultra-thick / .bar` | the tints of the materials, thinnest first ([materials.md](materials.md)) |
+| `sys.color.vibrant.label.primary … .quaternary`, `.fill.primary … .tertiary`, `.separator` | labels, fills and the separator on any material |
+| `sys.color.surface.panel.bg / .fg / .stroke` | the bar (no longer read: the materials replace it) |
 | `sys.color.surface.popover.bg / .fg / .stroke` | context menus, Wi-Fi panel, other popovers |
 | `sys.color.surface.osd.bg / .fg / .stroke` | volume/brightness OSD (reserved) |
-| `sys.color.surface.notification.bg / .fg / .fg-secondary / .stroke` | notification toasts |
+| `sys.color.surface.notification.bg / .fg / .fg-secondary / .stroke` | notification toasts (no longer read: `Material::Banner`) |
 | `sys.color.surface.raised.bg` | chips, rows and cards inside any surface (the bar's pill) |
 | `sys.color.surface.popover.fg-secondary` | secondary text in menus (differs from `content.secondary` until converged) |
 | `sys.color.content.secondary / .tertiary / .disabled` | less important text and icons on any surface |

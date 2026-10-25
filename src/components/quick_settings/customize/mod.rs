@@ -36,10 +36,11 @@ use super::{edit, layout, tile, tiles};
 use crate::components::buttons::{PushButton, Shape, Style};
 use crate::components::divider::Divider;
 use crate::components::flow::Flow;
-use crate::components::glass_region::{self, Thickness};
+use crate::components::glass_region;
 use crate::components::kinetic::{Axis, Kinetic};
 use crate::components::layout::{boxed, caption, pad, split_row, text_height, wrapped_lines};
 use crate::components::list::{self, List, ListItem};
+use crate::components::material::{self, Level, Material};
 use crate::components::motion;
 use crate::components::scroll_view::ScrollView;
 use crate::components::search_field::SearchField;
@@ -306,14 +307,13 @@ pub(super) fn ghost(origin: (f32, f32)) -> Option<(Box<dyn Widget>, BlurShape)> 
     let scale = quick::drag::scale();
     let (x, y) = (origin.0 + at.0, origin.1 + at.1);
     let radius = tiles::radius_of(id, span, slot);
-    let frost = glass_region::module(
+    let frost = Material::Control.shape(
         x + slot.width * (1.0 - scale) / 2.0,
         y + slot.height * (1.0 - scale) / 2.0,
         slot.width * scale,
         slot.height * scale,
         radius * scale,
         1.0,
-        Thickness::Thin.tint(),
     );
     let widget = Rectangle::new()
         .width(Size::Fixed(slot.width))
@@ -377,7 +377,8 @@ pub(super) fn view(screen: (f32, f32), card: Area) -> Option<Built> {
         area.width,
         area.height,
         radius,
-        Thickness::Thick.tint(),
+        Material::Sheet,
+        Material::Sheet.tint(),
         content(&area),
     );
 
@@ -390,15 +391,7 @@ pub(super) fn view(screen: (f32, f32), card: Area) -> Option<Built> {
         unfolded.clamp(0.0, 1.0)
     };
     let frost = if OPENING.get() || fades {
-        let glass = glass_region::module(
-            area.x,
-            area.y,
-            area.width,
-            area.height,
-            radius,
-            1.0,
-            Thickness::Thick.tint(),
-        );
+        let glass = Material::Sheet.shape(area.x, area.y, area.width, area.height, radius, 1.0);
         let centre = (area.x + area.width / 2.0, area.y + area.height / 2.0);
         glass_region::faded(
             glass_region::transformed(vec![glass], scale, centre, (0.0, 0.0)),
@@ -551,7 +544,7 @@ fn pane(category: Category, query: &str, viewport: Area, searching: bool) -> Rec
                 .child(
                     Text::new(section.title)
                         .style(title_style)
-                        .color(sys::color::surface::panel::fg()),
+                        .color(material::label(Level::Primary)),
                 ),
         ));
         y += title_h + gap_m;
@@ -682,7 +675,7 @@ fn catalog_item(id: ControlId, px: &Metrics) -> (Rectangle, f32, f32, Slot) {
                     .child(
                         Text::new(line)
                             .style(style)
-                            .color(sys::color::surface::panel::fg()),
+                            .color(material::label(Level::Primary)),
                     ),
             )
         })

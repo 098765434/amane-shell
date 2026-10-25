@@ -42,6 +42,7 @@ use super::tiles::{SCOPE, radius_of};
 use crate::components::buttons::{IconButton, Shape, Style};
 use crate::components::icons::{ICON_REMOVE, ICON_RESIZE};
 use crate::components::layout::{boxed, icon};
+use crate::components::material::{self, FillLevel, Level};
 use crate::components::motion::{self, Pose};
 use crate::tokens::{quick, sys};
 
@@ -578,7 +579,7 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
         .size(sys::size::icon::s())
         .height(side)
         .width(side)
-        .color(sys::color::surface::panel::fg())
+        .color(material::label(Level::Primary))
         .on_press(move || hide(id))
         .build();
     let badge = Rectangle::new()
@@ -622,13 +623,13 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
             .width(Size::Fixed(side))
             .height(Size::Fixed(side))
             .radius(Radius::Full)
-            .fill(sys::color::surface::raised::bg())
+            .fill(material::fill_role(FillLevel::Secondary))
             .align_child(amane::Center, amane::Center)
             .cursor(Cursor::ResizeBottomRight)
             .child(icon(
                 ICON_RESIZE,
                 sys::size::icon::s(),
-                sys::color::surface::panel::fg(),
+                material::label(Level::Primary),
             ));
         layers.push(boxed(
             Rectangle::new()

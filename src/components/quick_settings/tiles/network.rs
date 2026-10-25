@@ -23,6 +23,7 @@ use crate::components::icons::{
 };
 use crate::components::layout::{boxed, caption, fixed_width, icon, nothing, text_height};
 use crate::components::list::{self, List, ListItem};
+use crate::components::material::{self, Level};
 use crate::components::motion::redraw_after;
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::detail::page_width;
@@ -240,7 +241,7 @@ fn ap_item(ap: &AccessPoint, connecting: Option<&str>) -> ListItem {
         item = item.trailing(icon(
             ICON_LOCK,
             sys::size::icon::s(),
-            sys::color::content::secondary(),
+            material::label(Level::Secondary),
         ));
     }
     if active {
@@ -277,7 +278,7 @@ fn password_section() -> Box<dyn Widget> {
         .focused()
         .placeholder("Password")
         .size(sys::r#type::label().size)
-        .color(sys::color::surface::panel::fg())
+        .color(material::label(Level::Primary))
         .width(Size::Fixed(input_w))
         .on_change(|text| PASSWORD.with_borrow_mut(|p| p.typed = text))
         .on_submit(move |pw| join_with_password(&submit_ssid, &pw));

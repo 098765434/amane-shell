@@ -23,8 +23,8 @@ take a `Style` and a `Shape`:
 | `Style` | M3 | Fill | Content by default |
 |---|---|---|---|
 | `Filled` | filled | `sys.color.accent.bg` | `sys.color.accent.fg` |
-| `Tonal` | tonal | `sys.color.surface.raised.bg` | `sys.color.surface.panel.fg` |
-| `Plain` | text / standard | none | `sys.color.surface.panel.fg` |
+| `Tonal` | tonal | `sys.color.vibrant.fill.secondary` | `sys.color.vibrant.label.primary` |
+| `Plain` | text / standard | none | `sys.color.vibrant.label.primary` |
 
 `Shape::Round` is a capsule (a circle when square). `Shape::Square` is the rounded rectangle
 chips and rows use (`sys.radius.raised`). A button on another surface passes that surface's

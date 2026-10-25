@@ -52,8 +52,9 @@ pub use switch::Switch;
 
 use crate::color::over;
 use crate::layout::{boxed, icon};
-use crate::{motion, tooltip};
+use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, TextStyle, sys};
+use crate::{motion, tooltip};
 
 /// M3's disabled-content opacity. TODO(token): `sys.opacity.disabled` once
 /// Penpot has it (manual §1.1).
@@ -82,7 +83,7 @@ impl Style {
     fn fill(self) -> Color {
         match self {
             Self::Filled => sys::color::accent::bg(),
-            Self::Tonal => sys::color::surface::raised::bg(),
+            Self::Tonal => material::fill_role(FillLevel::Secondary),
             Self::Plain => Color::TRANSPARENT,
         }
     }
@@ -92,7 +93,7 @@ impl Style {
     fn fg(self) -> Color {
         match self {
             Self::Filled => sys::color::accent::fg(),
-            _ => sys::color::surface::panel::fg(),
+            _ => material::label(Level::Primary),
         }
     }
 }
@@ -450,12 +451,7 @@ pub struct Actions {
 /// Makes `base` a button: pointer cursor, hover tracking and the clicks.
 /// Leaving or clicking it hides its tooltip. A disabled one is dimmed and
 /// takes none of them.
-pub fn interactive(
-    base: Rectangle,
-    id: String,
-    disabled: bool,
-    actions: Actions,
-) -> Rectangle {
+pub fn interactive(base: Rectangle, id: String, disabled: bool, actions: Actions) -> Rectangle {
     if disabled {
         return base.opacity(DISABLED_OPACITY);
     }

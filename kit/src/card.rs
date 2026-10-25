@@ -1,83 +1,35 @@
 //! Card — a surface that holds one subject's content.
 //!
 //! Modelled on Material 3's cards: filled and outlined variants on a
-//! surface role, content stacked inside an inset. Drawn in the shell's
-//! macOS look: `sys.radius.popover` corners, and frosted when the
-//! compositor can blur what's below (a departure from M3, which has no
-//! translucent material), its edge lit like [`glass`](super::glass) when
-//! asked. M3's elevated card is left out: there's no `sys.shadow` role yet.
+//! [`Material`], content stacked inside an inset; what's on it takes the
+//! vibrant labels and fills ([`material::label`]). Drawn in the shell's macOS look: `sys.radius.popover` corners,
+//! and frosted when the compositor can blur what's below (a departure from
+//! M3, which has no translucent material), its edge lit like
+//! [`glass`](super::glass) when asked. M3's elevated card is left out:
+//! there's no `sys.shadow` role yet.
 //!
 //! A card records where the pointer is over it ([`layout::cursor`]), so a
 //! right-click on its content can anchor a menu.
 
 use amane::{Color, Column, Parent, Rectangle, Widget};
 
-use crate::glass_region;
 use crate::layout::{pad, track_cursor};
+use crate::material::{self, Material};
 use crate::tokens::sys;
-
-/// The surface role a card is drawn on: one `bg` / `fg` / `stroke` set, so
-/// what's on it takes its colours from the same pair (manual §1.7).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Surface {
-    /// `sys.color.surface.panel.*`: the bar and its panels.
-    Panel,
-    /// `sys.color.surface.popover.*`: menus and the notification center.
-    Popover,
-    /// `sys.color.surface.notification.*`: banners.
-    Notification,
-}
-
-impl Surface {
-    pub fn bg(self) -> Color {
-        match self {
-            Self::Panel => sys::color::surface::panel::bg(),
-            Self::Popover => sys::color::surface::popover::bg(),
-            Self::Notification => sys::color::surface::notification::bg(),
-        }
-    }
-
-    pub fn fg(self) -> Color {
-        match self {
-            Self::Panel => sys::color::surface::panel::fg(),
-            Self::Popover => sys::color::surface::popover::fg(),
-            Self::Notification => sys::color::surface::notification::fg(),
-        }
-    }
-
-    /// Text that reads secondary on this surface.
-    pub fn fg_secondary(self) -> Color {
-        match self {
-            // the panel has no secondary of its own yet
-            Self::Panel => sys::color::content::secondary(),
-            Self::Popover => sys::color::surface::popover::fg_secondary(),
-            Self::Notification => sys::color::surface::notification::fg_secondary(),
-        }
-    }
-
-    /// The edge an outlined card draws; the panel has none yet.
-    pub fn stroke(self) -> Option<Color> {
-        match self {
-            Self::Panel => None,
-            Self::Popover => Some(sys::color::surface::popover::stroke()),
-            Self::Notification => Some(sys::color::surface::notification::stroke()),
-        }
-    }
-}
 
 /// M3's card variants that the shell draws.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Variant {
-    /// The surface's fill alone.
+    /// The material's fill alone.
     Filled,
-    /// The fill and a hairline in the surface's `stroke`.
+    /// The fill and a hairline in the material's separator.
     Outlined,
 }
 
 /// A card filling its parent, its content stacked `gap` apart.
 pub struct Card {
     content: Vec<Box<dyn Widget>>,
-    surface: Surface,
+    material: Material,
     variant: Variant,
     blur: bool,
     glass: bool,
@@ -91,7 +43,7 @@ impl Card {
     pub fn new(content: Vec<Box<dyn Widget>>) -> Self {
         Self {
             content,
-            surface: Surface::Popover,
+            material: Material::Popover,
             variant: Variant::Filled,
             blur: false,
             glass: false,
@@ -102,8 +54,9 @@ impl Card {
         }
     }
 
-    pub fn surface(mut self, surface: Surface) -> Self {
-        self.surface = surface;
+    /// What the card is made of; `Material::Popover` by default.
+    pub fn material(mut self, material: Material) -> Self {
+        self.material = material;
         self
     }
 
@@ -120,14 +73,14 @@ impl Card {
 
     /// Light the edge like glass, for a card that is its surface's whole
     /// translucent window: the shader's edge, unless the compositor draws
-    /// the glass material behind it (`glass_region::lit`), and then no
-    /// hairline either.
+    /// the material behind it ([`Material::lit`]), and then no hairline
+    /// either.
     pub fn glass(mut self, glass: bool) -> Self {
         self.glass = glass;
         self
     }
 
-    /// The fill in place of the surface's own: a glass tint, say.
+    /// The fill in place of the material's tint.
     pub fn fill(mut self, fill: Color) -> Self {
         self.fill = Some(fill);
         self
@@ -151,31 +104,20 @@ impl Card {
         self
     }
 
-    /// The surface's fill, at the glass level for a glass card.
-    fn background(&self) -> Color {
-        if self.glass {
-            glass_region::level(self.surface.bg())
-        } else {
-            self.surface.bg()
-        }
-    }
-
     pub fn build(self) -> Rectangle {
         let mut card = Rectangle::new()
             .width(Parent)
             .height(Parent)
             .radius(self.radius)
-            .fill(self.fill.unwrap_or_else(|| self.background()))
+            .fill(self.fill.unwrap_or_else(|| self.material.tint()))
             .padding(pad(self.padding, self.padding));
 
-        if self.variant == Variant::Outlined
-            && let Some(stroke) = self.surface.stroke()
-        {
+        if self.variant == Variant::Outlined {
             // glass draws no hairline where the compositor's material is its edge
             let stroke = if self.glass {
-                glass_region::stroke(stroke)
+                self.material.stroke(material::separator())
             } else {
-                stroke
+                material::separator()
             };
             card = card.border(sys::border::hairline(), stroke);
         }
@@ -183,7 +125,7 @@ impl Card {
             card = card.blur(sys::effect::backdrop_blur());
         }
         if self.glass {
-            card = glass_region::lit(card, self.radius);
+            card = self.material.lit(card, self.radius);
         }
 
         track_cursor(card).child(Column::new(self.content).gap(self.gap).width(Parent))

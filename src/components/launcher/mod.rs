@@ -49,9 +49,10 @@ use amane::{
 };
 
 use crate::components::divider::Divider;
-use crate::components::glass_region::{self, Thickness};
+use crate::components::glass_region;
 use crate::components::kinetic::{Axis, AxisLock, Kinetic};
 use crate::components::layout::{blank, boxed, pad, track_cursor};
+use crate::components::material::Material;
 use crate::components::motion;
 use crate::components::pager::{Pager, PagerMotion};
 use crate::components::panel::{self, Panel, close, is_open, overlay};
@@ -690,15 +691,7 @@ pub fn surface() -> LayerWindow {
         unfolded.clamp(0.0, 1.0)
     };
     let frost = if open || fades {
-        let glass = glass_region::module(
-            origin.0,
-            origin.1,
-            width,
-            height,
-            RADIUS,
-            1.0,
-            Thickness::Thick.tint(),
-        );
+        let glass = Material::Sheet.shape(origin.0, origin.1, width, height, RADIUS, 1.0);
         let centre = (origin.0 + width / 2.0, origin.1 + height / 2.0);
         glass_region::faded(
             glass_region::transformed(vec![glass], scale, centre, (0.0, 0.0)),
@@ -806,11 +799,12 @@ fn panel(width: f32, height: f32) -> Rectangle {
         .width(width)
         .height(height)
         .radius(RADIUS)
-        .fill(glass_region::fill(Thickness::Thick.tint()))
+        .fill(Material::Sheet.fill())
         // the panel keeps its clicks from the surface under it, which
         // closes the launcher
         .on_click(|_| {});
-    glass_region::lit(glass, RADIUS)
+    Material::Sheet
+        .lit(glass, RADIUS)
         .padding(pad(INSET, INSET))
         .align_child(Start, Start)
         .child(column)

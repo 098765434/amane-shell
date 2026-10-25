@@ -19,9 +19,10 @@ use amane::{
 };
 
 use crate::buttons::{Actions, interactive, state_fill};
-use crate::card::{Card, Surface};
+use crate::card::Card;
 use crate::icons::{ICON_CHECK, ICON_EXPAND_MORE};
 use crate::layout::{boxed, icon, pad, text_width};
+use crate::material::{self, FillLevel, Level, Material};
 use crate::tokens::{Styled, sys};
 
 /// What an open menu needs once its dropdown has been rebuilt away.
@@ -96,7 +97,7 @@ impl Dropdown {
 
     pub fn build(self) -> Rectangle {
         let style = sys::r#type::label();
-        let fg = sys::color::surface::panel::fg();
+        let fg = material::label(Level::Primary);
         let inset = sys::space::inset::s();
         let glyph = sys::size::icon::s();
 
@@ -118,7 +119,7 @@ impl Dropdown {
             boxed(icon(
                 ICON_EXPAND_MORE,
                 glyph,
-                sys::color::content::secondary(),
+                material::label(Level::Secondary),
             )),
         ])
         .width(Size::Parent)
@@ -131,10 +132,10 @@ impl Dropdown {
             .radius(Radius::Fixed(sys::radius::raised()))
             .fill(state_fill(
                 &self.id,
-                sys::color::surface::raised::bg(),
+                material::fill_role(FillLevel::Secondary),
                 self.disabled,
             ))
-            .border(sys::border::hairline(), sys::color::separator())
+            .border(sys::border::hairline(), material::separator())
             .padding(pad(inset, 0.0))
             .align_child(amane::Start, Center)
             .child(content);
@@ -225,7 +226,7 @@ fn menu(id: &str, parent: &Parent, at: Point) -> Popup {
         .collect();
 
     let card = Card::new(vec![boxed(Column::new(rows).width(Size::Parent))])
-        .surface(Surface::Popover)
+        .material(Material::Popover)
         .glass(true)
         .padding(card_padding)
         .build();
@@ -262,7 +263,7 @@ fn menu(id: &str, parent: &Parent, at: Point) -> Popup {
 }
 
 fn row(id: &str, index: usize, option: &str, chosen: bool) -> Rectangle {
-    let fg = sys::color::surface::popover::fg();
+    let fg = material::label(Level::Primary);
     let glyph = sys::size::icon::s();
     let key = format!("{id}.option.{index}");
 

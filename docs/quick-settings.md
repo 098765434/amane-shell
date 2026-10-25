@@ -229,11 +229,12 @@ fork: each is a rounded rectangle in fractional surface coordinates with its own
 niri draws through its corner-rounding shader, half a pixel inside the module's own antialiased
 edge, so no frost strays past a corner. While editing, the Customize window's sheet and the
 control in hand are shapes of their own; the controls in the window's pane ask for none, which is
-why they're drawn on a plain tint. Each also names the material `glass` and carries the
-modules' tint. When niri's config defines a `glass` material (`materials {}`, see niri's
+why they're drawn on a plain tint. Each is a `Material::Control` shape (a page's sheet is a
+`Popover`, the Done capsule `Prominent`), which names niri's `glass` material and carries the
+tint. When niri's config defines a `glass` material (`materials {}`, see niri's
 Window-Effects wiki page), niri draws the modules' tint and lit edge itself, from the real
 backdrop and on the frost's own edge: the modules then leave out their tint fill and the grid
-its rim pass (`glass_region::compositor_glass`), and a page's sheet its `glass::apply`. Without
+its rim pass (`Material::compositor_draws`), and a page's sheet its `glass::apply`. Without
 the material the shell draws both as before. On a compositor without the protocol, amane
 sends the shapes as an `ext-background-effect-v1` region instead: strips that step in at the
 corners, rounded inwards. Its layer rule therefore carries no corner radius, blur or shadow, only

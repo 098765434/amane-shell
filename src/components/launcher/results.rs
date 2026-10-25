@@ -15,6 +15,7 @@ use crate::tokens::{Styled, sys};
 use super::entries::{Action, Entry, Icon, run_action};
 use super::grid::At;
 use super::{BODY, Layout, ROW, ROW_GAP, WIDTH, app_menu, hover, on_body_scroll};
+use crate::components::material::{self, FillLevel, Level};
 
 // TODO(token): `launcher.result.icon` and `launcher.empty.icon` once Penpot
 // has them (manual §1.1).
@@ -56,17 +57,17 @@ fn row(entry: &Entry, index: usize) -> Rectangle {
         Icon::Glyph(glyph) => boxed(
             slot(RESULT_ICON)
                 .radius(sys::radius::raised())
-                .fill(sys::color::surface::raised::bg())
+                .fill(material::fill_role(FillLevel::Secondary))
                 .child(icon(
                     *glyph,
                     RESULT_ICON / 2.0,
-                    sys::color::surface::panel::fg(),
+                    material::label(Level::Primary),
                 )),
         ),
     };
     let title = Text::new(entry.title.clone())
         .style(sys::r#type::title())
-        .color(sys::color::surface::panel::fg())
+        .color(material::label(Level::Primary))
         .elide();
     let text: Box<dyn Widget> = match &entry.subtitle {
         Some(subtitle) => boxed(
@@ -75,7 +76,7 @@ fn row(entry: &Entry, index: usize) -> Rectangle {
                 boxed(
                     Text::new(subtitle.clone())
                         .style(sys::r#type::caption())
-                        .color(sys::color::content::secondary())
+                        .color(material::label(Level::Secondary))
                         .elide(),
                 ),
             ])
@@ -119,7 +120,7 @@ pub(super) fn empty(why: Empty) -> Rectangle {
         Empty::Loading => (ICON_SEARCH, "Loading…"),
         Empty::Category => (ICON_APPS, "Nothing in this category"),
     };
-    let secondary = sys::color::content::secondary();
+    let secondary = material::label(Level::Secondary);
     Rectangle::new()
         .width(WIDTH)
         .height(BODY)

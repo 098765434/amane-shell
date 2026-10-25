@@ -17,8 +17,9 @@ use std::time::{Duration, Instant};
 
 use amane::{ConstraintAdjustment, Gravity, Popup, PopupAnchor, Text, request_frame};
 
-use crate::card::{Card, Surface};
+use crate::card::Card;
 use crate::layout::{blank, boxed, cursor, text_height, text_width};
+use crate::material::{self, Level, Material};
 use crate::tokens::{Styled, sys};
 
 /// The tooltip's xdg-popup namespace.
@@ -140,9 +141,11 @@ pub fn popup() -> Popup {
     // frosted and tinted like the panels; niri blurs behind it from the
     // parent's `popups {}` rule, with the same corners
     let card = Card::new(vec![boxed(
-        Text::new(text).style(style).color(Surface::Panel.fg()),
+        Text::new(text)
+            .style(style)
+            .color(material::label(Level::Primary)),
     )])
-    .surface(Surface::Panel)
+    .material(Material::ToolTip)
     .glass(true)
     .padding(inset)
     .build();

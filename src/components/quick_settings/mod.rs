@@ -59,8 +59,9 @@ use amane::{
     Parent, Rectangle, Size, Stack, Start, Vertical, Widget, WindowSize, mark_all, window_size,
 };
 
-use crate::components::glass_region::{self, Thickness};
+use crate::components::glass_region;
 use crate::components::layout::{blank, boxed, pad, track_cursor};
+use crate::components::material::Material;
 use crate::components::motion;
 use crate::components::panel::{self, Panel, close, is_open, overlay, popover_margin};
 use crate::tokens::quick;
@@ -361,7 +362,7 @@ pub fn surface() -> LayerWindow {
         width: grid_w,
         height: inner,
         radius: quick::card::radius(),
-        tint: Thickness::Thick.tint(),
+        tint: Material::Popover.tint(),
     };
     let origin = match grid.rest(detail.controls()) {
         Some((slot, radius)) => Sheet {
@@ -370,7 +371,7 @@ pub fn surface() -> LayerWindow {
             width: slot.width,
             height: slot.height,
             radius,
-            tint: Thickness::Thin.tint(),
+            tint: Material::Control.tint(),
         },
         None => {
             let cell = grid::Metrics::tokens().extent(1);
@@ -380,7 +381,7 @@ pub fn surface() -> LayerWindow {
                 width: cell,
                 height: cell,
                 radius: cell / 2.0,
-                tint: Thickness::Thin.tint(),
+                tint: Material::Control.tint(),
             }
         }
     };
@@ -595,7 +596,7 @@ impl Sheet {
 
     /// Where the compositor frosts behind it.
     fn frost(self) -> BlurShape {
-        glass_region::module(
+        Material::Popover.shape_tinted(
             self.x,
             self.y,
             self.width,
@@ -639,8 +640,15 @@ fn sheet_layer(page: Page, sheet: Sheet, height: f32, reveal: f32) -> Rectangle 
         .fill(Color::TRANSPARENT)
         .align_child(Start, Start)
         .child(
-            tile::sheet(sheet.width, sheet.height, sheet.radius, sheet.tint, content)
-                .translate(sheet.x, sheet.y),
+            tile::sheet(
+                sheet.width,
+                sheet.height,
+                sheet.radius,
+                Material::Popover,
+                sheet.tint,
+                content,
+            )
+            .translate(sheet.x, sheet.y),
         )
 }
 

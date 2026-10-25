@@ -16,6 +16,7 @@ use crate::components::scroll_view::ScrollView;
 use crate::tokens::{Styled, TextStyle, sys};
 
 use super::{HEADER, PILL_SCROLL, PILLS, WIDTH, model, on_pill_scroll, turn_to, type_into, with};
+use crate::components::material::{self, FillLevel, Level};
 use crate::components::text_edit::Field;
 
 // TODO(token): `launcher.search.size`, `launcher.search.caret`,
@@ -45,7 +46,7 @@ fn search_style() -> TextStyle {
 /// the field (`focused`).
 pub(super) fn search_row(field: &Field, focused: bool) -> Rectangle {
     let gap = sys::space::gap::xl();
-    let logo = icon(ICON_APPS, LOGO, sys::color::surface::panel::fg());
+    let logo = icon(ICON_APPS, LOGO, material::label(Level::Primary));
     let typed = !field.text().is_empty();
     let field_width = WIDTH - LOGO - gap - if typed { LOGO + gap } else { 0.0 };
     let mut parts = vec![
@@ -67,7 +68,7 @@ pub(super) fn search_row(field: &Field, focused: bool) -> Rectangle {
 fn clear_button() -> Rectangle {
     slot(LOGO)
         .radius(LOGO / 2.0)
-        .fill(sys::color::surface::raised::bg())
+        .fill(material::fill_role(FillLevel::Secondary))
         .on_click(|_| {
             type_into(|field| {
                 *field = Field::new();
@@ -78,7 +79,7 @@ fn clear_button() -> Rectangle {
         .child(icon(
             ICON_CLOSE,
             LOGO * 0.6,
-            sys::color::content::secondary(),
+            material::label(Level::Secondary),
         ))
 }
 
@@ -86,7 +87,7 @@ fn clear_button() -> Rectangle {
 /// selection washed behind its run, or a placeholder while it's empty.
 fn search_field(field: &Field, focused: bool, width: f32) -> Rectangle {
     let style = search_style();
-    let fg = sys::color::surface::panel::fg();
+    let fg = material::label(Level::Primary);
     let run = |text: String| Text::new(text).style(style).color(fg);
     let caret = || {
         Rectangle::new()
@@ -106,7 +107,7 @@ fn search_field(field: &Field, focused: bool, width: f32) -> Rectangle {
         parts.push(boxed(
             Text::new("Search")
                 .style(style)
-                .color(sys::color::content::secondary()),
+                .color(material::label(Level::Secondary)),
         ));
     } else {
         let len = field.len();
@@ -209,7 +210,7 @@ pub(super) fn pill_bar(buckets: &[usize], offset: f32, focused: bool) -> Rectang
                     .width(widths[page])
                     .height(height)
                     .radius(sys::radius::raised())
-                    .fill(sys::color::surface::raised::bg())
+                    .fill(material::fill_role(FillLevel::Secondary))
                     .on_click(move |_| turn_to(page)),
             )
         })
@@ -221,7 +222,7 @@ pub(super) fn pill_bar(buckets: &[usize], offset: f32, focused: bool) -> Rectang
             // the accent's colour, as much as the fill is under it
             let near = (1.0 - (page as f32 - offset).abs()).clamp(0.0, 1.0);
             let fg = Color::blend(
-                sys::color::surface::panel::fg(),
+                material::label(Level::Primary),
                 sys::color::accent::fg(),
                 near,
             );

@@ -12,6 +12,7 @@ use super::grid::{Metrics, Span};
 use super::tile::module;
 use crate::components::color::with_alpha;
 use crate::components::layout::{boxed, icon, pad};
+use crate::components::material::{self, Level};
 use crate::components::slider::Slider;
 use crate::tokens::{Styled, quick, sys};
 
@@ -38,7 +39,7 @@ impl SliderRow {
             leading: boxed(icon(
                 small,
                 sys::size::icon::s(),
-                sys::color::surface::panel::fg(),
+                material::label(Level::Primary),
             )),
             large,
             slider: Box::new(slider),
@@ -92,13 +93,13 @@ pub(super) fn card(row: SliderRow, span: Span) -> Card {
 
     let title = Text::new(row.title)
         .style(quick::r#type::title())
-        .color(sys::color::surface::panel::fg());
+        .color(material::label(Level::Primary));
     let mut slider_w = inner - control - gap - large_w - gap;
     if row.trailing.is_some() {
         slider_w -= control + gap;
     }
     let slider = (row.slider)(slider_w.max(1.0))
-        .fill(sys::color::surface::panel::fg())
+        .fill(material::label(Level::Primary))
         .thickness(quick::slider::track())
         .build();
     let leading = Rectangle::new()
@@ -110,7 +111,7 @@ pub(super) fn card(row: SliderRow, span: Span) -> Card {
     let large = icon(
         row.large,
         large_w,
-        with_alpha(sys::color::surface::panel::fg(), 0.5),
+        with_alpha(material::label(Level::Primary), 0.5),
     );
     let mut line: Vec<Box<dyn Widget>> = vec![boxed(leading), boxed(slider), boxed(large)];
     line.extend(row.trailing);

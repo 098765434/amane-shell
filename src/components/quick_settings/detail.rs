@@ -26,6 +26,7 @@ use crate::components::divider::Divider;
 use crate::components::icons::ICON_CHEVRON_RIGHT;
 use crate::components::layout::{boxed, icon};
 use crate::components::list::{self, ListItem};
+use crate::components::material::{self, Level};
 use crate::components::status_bar::Indicator;
 use crate::tokens::{quick, sys};
 
@@ -203,7 +204,7 @@ impl DetailPage {
                     .trailing(icon(
                         ICON_CHEVRON_RIGHT,
                         sys::size::icon::m(),
-                        sys::color::content::secondary(),
+                        material::label(Level::Secondary),
                     ))
                     .on_press(move || open())
                     .build(),

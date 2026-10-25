@@ -103,6 +103,13 @@ whose output is static: it can't follow the mode, so it holds one value for both
 - `ref.font.family.ui` was reordered by hand to put "Atkinson Hyperlegible Next" first
   (then "Atkinson Hyperlegible", "Inter", `sans-serif`). Make the same change to the stack in
   Penpot, or the next export puts SF Pro Text back.
+- The materials replace the glass's surface roles, so these are no longer read. Delete them:
+  `sys.color.surface.panel.*`, `sys.color.surface.notification.*`,
+  `sys.color.surface.popover.fg`, `.fg-secondary` and `.stroke`, `sys.color.surface.raised.bg`,
+  `sys.color.content.secondary` and `sys.color.separator`. The vibrant labels, fills and separator
+  take their place. `sys.color.surface.popover.bg` is still an app window's background until
+  windows are a material too. The hand-added `sys.color.glass.thin` and `.thick` are gone
+  already.
 - `menu.label.advance-ratio` is no longer read: menus measure their text now. Delete it.
 - `bar.volume.width` is no longer read: the volume is a glyph button now, its level in a tooltip.
   Delete it.

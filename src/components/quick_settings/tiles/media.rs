@@ -23,6 +23,7 @@ use crate::components::icons::{
     ICON_MUSIC, ICON_PAUSE, ICON_PLAY, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS,
 };
 use crate::components::layout::{boxed, icon, pad};
+use crate::components::material::{self, FillLevel, Level};
 use crate::tokens::{quick, sys};
 
 /// What the card shows.
@@ -158,7 +159,7 @@ pub(crate) fn cell(span: Span, inert: bool) -> Box<dyn Widget> {
             .child(icon(
                 ICON_MUSIC,
                 sys::size::icon::m(),
-                sys::color::surface::panel::fg(),
+                material::label(Level::Primary),
             )),
     };
 
@@ -168,9 +169,9 @@ pub(crate) fn cell(span: Span, inert: bool) -> Box<dyn Widget> {
     };
     let progress = now.as_ref().and_then(|now| now.progress);
     let title_color = if idle {
-        sys::color::content::secondary()
+        material::label(Level::Secondary)
     } else {
-        sys::color::surface::panel::fg()
+        material::label(Level::Primary)
     };
 
     let controls_w = sys::size::control::height() * 3.0 + sys::space::gap::xs() * 2.0;
@@ -191,7 +192,7 @@ pub(crate) fn cell(span: Span, inert: bool) -> Box<dyn Widget> {
         lines.push(boxed(line(
             artist,
             quick::r#type::caption(),
-            sys::color::content::secondary(),
+            material::label(Level::Secondary),
             label_w,
         )));
     }
@@ -242,14 +243,14 @@ pub(crate) fn cell(span: Span, inert: bool) -> Box<dyn Widget> {
                     .width(Size::Fixed(inner_w))
                     .height(Size::Fixed(track_h))
                     .radius(track_h / 2.0)
-                    .fill(sys::color::surface::raised::bg())
+                    .fill(material::fill_role(FillLevel::Secondary))
                     .align_child(Start, Center)
                     .child(
                         Rectangle::new()
                             .width(Size::Fixed((inner_w * progress).max(track_h)))
                             .height(Size::Fixed(track_h))
                             .radius(track_h / 2.0)
-                            .fill(sys::color::content::secondary()),
+                            .fill(material::label(Level::Secondary)),
                     ),
             ));
         }
@@ -296,7 +297,7 @@ fn control(
 ) -> Rectangle {
     let button = IconButton::new(id, glyph)
         .size(size)
-        .color(sys::color::surface::panel::fg())
+        .color(material::label(Level::Primary))
         .disabled(disabled || inert);
     button.on_press(press).build()
 }

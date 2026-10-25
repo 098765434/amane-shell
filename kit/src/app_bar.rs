@@ -4,23 +4,23 @@
 //! subtitle, and trailing action items. A page drilled into from another (Quick Settings' pages)
 //! leads with M3's back button too, a chevron as on macOS. Unlike M3's it's
 //! no taller than its content and has no fill of its own: it sits at the
-//! top of a [`Card`](super::card::Card), in that card's surface colours.
+//! top of a [`Card`](super::card::Card), in the vibrant labels of the
+//! material it's on.
 
 use std::rc::Rc;
 
 use amane::{Center, Column, Row, Start, Text, Widget};
 
 use crate::buttons::IconButton;
-use crate::card::Surface;
 use crate::icons::ICON_CHEVRON_LEFT;
 use crate::layout::{boxed, clipped_label, split_row};
+use crate::material::{Level, label};
 use crate::tokens::{Styled, sys};
 
 pub struct TopAppBar {
     title: String,
     subtitle: Option<String>,
     back: Option<(String, Rc<dyn Fn()>)>,
-    surface: Surface,
     actions: Vec<Box<dyn Widget>>,
     // the title's and subtitle's width, when they're to be elided
     text_width: Option<f32>,
@@ -32,7 +32,6 @@ impl TopAppBar {
             title: title.into(),
             subtitle: None,
             back: None,
-            surface: Surface::Panel,
             actions: Vec::new(),
             text_width: None,
         }
@@ -51,13 +50,6 @@ impl TopAppBar {
         self
     }
 
-    /// The surface it sits on, whose `fg` and secondary it uses;
-    /// `Surface::Panel` by default.
-    pub fn surface(mut self, surface: Surface) -> Self {
-        self.surface = surface;
-        self
-    }
-
     /// The controls at the trailing end, `gap.s` apart.
     pub fn actions(mut self, actions: Vec<Box<dyn Widget>>) -> Self {
         self.actions = actions;
@@ -72,7 +64,7 @@ impl TopAppBar {
     }
 
     pub fn build(self) -> Row {
-        let color = self.surface.fg();
+        let color = label(Level::Primary);
 
         let line = |text: String, style, color| -> Box<dyn Widget> {
             match self.text_width {
@@ -85,11 +77,7 @@ impl TopAppBar {
             Some(subtitle) => boxed(
                 Column::new(vec![
                     title,
-                    line(
-                        subtitle,
-                        sys::r#type::caption(),
-                        self.surface.fg_secondary(),
-                    ),
+                    line(subtitle, sys::r#type::caption(), label(Level::Secondary)),
                 ])
                 .gap(sys::space::gap::_2xs()),
             ),

@@ -48,8 +48,9 @@ use crate::components::app_icon;
 use crate::components::context_menu;
 use crate::components::divider::Divider;
 use crate::components::edge_reveal::EdgeReveal;
-use crate::components::glass_region::{self, Thickness};
+use crate::components::glass_region;
 use crate::components::layout::{blank, boxed};
+use crate::components::material::Material;
 use crate::components::motion::redraw_after;
 use crate::tokens::sys;
 
@@ -342,7 +343,7 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
         let (sections, held) = arrange(dock, sections, at);
         let entries = row(&sections, at.rule);
         // the card is small glass, light or dark with its backdrop
-        let view = glass_region::adapted(glass_id(&name), || {
+        let view = Material::Control.adapted(glass_id(&name), || {
             build(
                 dock, &name, &sections, entries, &spaces, held, hold, at, motion,
             )
@@ -604,24 +605,17 @@ fn build(
             .width(card_w.max(1.0))
             .height(at.card)
             .radius(RADIUS)
-            .fill(glass_region::fill(Thickness::Thin.tint()));
+            .fill(Material::Control.fill());
         layers.push(place(
-            glass_region::lit(glass, RADIUS),
+            Material::Control.lit(glass, RADIUS),
             card_x,
             top,
             progress,
         ));
         frost.push(
-            glass_region::module(
-                card_x,
-                top,
-                card_w,
-                at.card,
-                RADIUS,
-                1.0,
-                Thickness::Thin.tint(),
-            )
-            .id(glass_id(output)),
+            Material::Control
+                .shape(card_x, top, card_w, at.card, RADIUS, 1.0)
+                .id(glass_id(output)),
         );
 
         // the workspace showing, lit behind its icons
@@ -751,14 +745,13 @@ fn build(
                     - sys::space::gap::s()
                     - height;
                 let shown = dock.tip.value() * progress;
-                frost.push(glass_region::module(
+                frost.push(Material::Control.shape(
                     x,
                     y,
                     width,
                     height,
                     sys::radius::raised(),
                     shown,
-                    Thickness::Thin.tint(),
                 ));
                 layers.push(place(label, x, y, shown));
             }

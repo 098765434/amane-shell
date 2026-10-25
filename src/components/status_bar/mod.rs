@@ -24,7 +24,6 @@ use crate::components::battery;
 use crate::components::buttons::{
     ButtonBuilder, DrawnButton, IconButton, PushButton, Shape, Style,
 };
-use crate::components::glass_region::Thickness;
 use crate::components::icons::{
     Glyph, ICON_AIRPLANE, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE,
     ICON_CAMERA, ICON_DND, ICON_KEEP_AWAKE, ICON_MIC, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS,
@@ -32,6 +31,7 @@ use crate::components::icons::{
     ICON_WIFI_OFF, audio_glyph, battery_glyph, power_profile_glyph, wifi_glyph,
 };
 use crate::components::layout::{boxed, cursor, fixed_width, pad, text_width, track_cursor};
+use crate::components::material::{self, Level, Material};
 use crate::components::notifications::{self, DoNotDisturb};
 use crate::components::panel::{self, Panel, is_open};
 use crate::components::quick_settings::{self, Page};
@@ -75,9 +75,8 @@ pub fn bar() -> LayerWindow {
         .width(Parent)
         .height(Parent)
         .radius(bar::radius())
-        // niri frosts the whole strip (its layer rule); the tint is thick
-        // glass, as the bar holds text
-        .fill(Thickness::Thick.tint())
+        // niri frosts the whole strip (its layer rule) in the bar's material
+        .fill(Material::Bar.tint())
         .padding(pad(sys::space::inset::m(), bar::panel::padding_y()));
     let panel = track_cursor(panel).child(sections);
 
@@ -124,9 +123,9 @@ fn workspace_pip(workspace: &Workspace) -> Rectangle {
     let color = if workspace.urgent() {
         sys::color::status::critical::bg()
     } else if lit {
-        sys::color::surface::panel::fg()
+        material::label(Level::Primary)
     } else {
-        sys::color::content::secondary()
+        material::label(Level::Secondary)
     };
     let width = if lit {
         bar::workspace_dot::active_size()
@@ -257,7 +256,7 @@ fn volume() -> Option<Box<dyn Widget>> {
     let icon = status_icon(
         "amane.bar.volume",
         glyph,
-        sys::color::content::secondary(),
+        material::label(Level::Secondary),
         Page::Sound,
         tip,
     )
@@ -315,7 +314,7 @@ fn network() -> Option<Box<dyn Widget>> {
         status_icon(
             "amane.bar.network",
             glyph,
-            sys::color::content::secondary(),
+            material::label(Level::Secondary),
             Page::Wifi,
             tip,
         )
@@ -383,7 +382,7 @@ fn battery() -> Option<Box<dyn Widget>> {
         )
     } else {
         (
-            battery::tint(low, sys::color::content::secondary()),
+            battery::tint(low, material::label(Level::Secondary)),
             format!("Battery {pct}%"),
         )
     };
@@ -406,7 +405,7 @@ fn quick_settings_button() -> Box<dyn Widget> {
         bar_icon(
             "amane.bar.quick-settings",
             ICON_TUNE,
-            sys::color::content::secondary(),
+            material::label(Level::Secondary),
         )
         .active(is_open(Panel::QuickSettings))
         .on_press(|| panel::toggle(Panel::QuickSettings))
@@ -475,7 +474,7 @@ fn on_icons() -> Vec<Box<dyn Widget>> {
         glyphs.push(("amane.bar.airplane", ICON_AIRPLANE, "Airplane Mode"));
     }
 
-    grid_icons(glyphs, sys::color::content::secondary())
+    grid_icons(glyphs, material::label(Level::Secondary))
 }
 
 /// Status glyphs in `color`, each opening Quick Settings' grid.
@@ -497,7 +496,7 @@ fn notification_icon() -> Option<Box<dyn Widget>> {
     let unseen = notifications::unseen();
 
     let (glyph, color, tip) = match (dnd, unseen) {
-        (true, _) => (ICON_DND, sys::color::surface::panel::fg(), "Do Not Disturb"),
+        (true, _) => (ICON_DND, material::label(Level::Primary), "Do Not Disturb"),
         (false, true) => (
             ICON_NOTIFICATIONS,
             sys::color::accent::bg(),
@@ -577,7 +576,7 @@ fn status_color(connected: bool) -> Color {
     if connected {
         sys::color::accent::bg()
     } else {
-        sys::color::content::secondary()
+        material::label(Level::Secondary)
     }
 }
 

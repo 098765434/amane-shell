@@ -13,6 +13,7 @@ use amane::{Center, Color, Radius, Rectangle, Row, Size, Start, Text, Widget};
 use crate::components::buttons::{Actions, interactive};
 use crate::components::icons::{ICON_CLOSE, ICON_SEARCH};
 use crate::components::layout::{boxed, icon, pad, slot, text_width};
+use crate::components::material::{self, FillLevel, Level};
 use crate::components::text_edit::Field;
 use crate::tokens::{Styled, TextStyle, sys};
 
@@ -81,7 +82,7 @@ impl<'a> SearchField<'a> {
         let text_w = (self.width - inset * 2.0 - glyph - gap - clear_w).max(1.0);
 
         let mut parts: Vec<Box<dyn Widget>> = vec![
-            boxed(icon(ICON_SEARCH, glyph, sys::color::content::secondary())),
+            boxed(icon(ICON_SEARCH, glyph, material::label(Level::Secondary))),
             boxed(query(
                 self.field,
                 self.focused,
@@ -98,7 +99,7 @@ impl<'a> SearchField<'a> {
                 .child(icon(
                     ICON_CLOSE,
                     glyph * 0.8,
-                    sys::color::content::secondary(),
+                    material::label(Level::Secondary),
                 ));
             parts.push(boxed(interactive(
                 button,
@@ -115,7 +116,7 @@ impl<'a> SearchField<'a> {
             .width(Size::Fixed(self.width))
             .height(Size::Fixed(height))
             .radius(Radius::Full)
-            .fill(sys::color::surface::raised::bg())
+            .fill(material::fill_role(FillLevel::Secondary))
             .padding(pad(inset, 0.0))
             .align_child(Start, Center)
             .clip()
@@ -133,7 +134,7 @@ fn query(
     width: f32,
     height: f32,
 ) -> Rectangle {
-    let fg = sys::color::surface::panel::fg();
+    let fg = material::label(Level::Primary);
     let caret_h = style.size * 1.25;
     let run = |text: String| Text::new(text).style(style).color(fg);
     let caret = || {
@@ -154,7 +155,7 @@ fn query(
         parts.push(boxed(
             Text::new(placeholder)
                 .style(style)
-                .color(sys::color::content::secondary()),
+                .color(material::label(Level::Secondary)),
         ));
     } else {
         let len = field.len();

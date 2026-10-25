@@ -8,6 +8,7 @@ use amane::{Column, Row, Service, Size, Text, Widget, Window};
 use amane_kit::app::{Page, app, app_window, sidebar, standard_shortcut};
 use amane_kit::icons::{ICON_COMPUTER, ICON_DARK_MODE};
 use amane_kit::layout::boxed;
+use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
 
 // which page shows, kept while the app runs
@@ -58,7 +59,7 @@ fn main_window() -> Window {
                 boxed(
                     Text::new(title)
                         .style(sys::r#type::title())
-                        .color(sys::color::surface::popover::fg()),
+                        .color(material::label(Level::Primary)),
                 ),
                 body,
             ])
@@ -83,7 +84,7 @@ pub fn setting(name: &str, control: impl Widget + 'static) -> Column {
         boxed(
             Text::new(name)
                 .style(sys::r#type::caption())
-                .color(sys::color::content::secondary()),
+                .color(material::label(Level::Secondary)),
         ),
         boxed(control),
     ])

@@ -20,6 +20,7 @@ use crate::components::buttons::{Segment, SegmentedButton};
 use crate::components::icons::{peripheral_glyph, power_profile_glyph};
 use crate::components::layout::{boxed, caption};
 use crate::components::list::{self, List, ListItem};
+use crate::components::material::{self, Level};
 use crate::components::quick_settings::detail::{DetailPage, page_width};
 use crate::components::quick_settings::tile::QuickToggle;
 use crate::components::status_bar::Indicator;
@@ -227,7 +228,7 @@ fn peripheral_item(device: &PowerDevice) -> ListItem {
     // nothing to pick, so full-strength like a selected item, but unfilled
     ListItem::new(format!("amane.qs.battery.device.{model}"), model)
         .leading(peripheral_glyph(device))
-        .color(sys::color::surface::panel::fg())
+        .color(material::label(Level::Primary))
         .trailing(
             // percentages are numeric (manual §11.4)
             Text::new(format!("{percent}%"))
@@ -235,7 +236,7 @@ fn peripheral_item(device: &PowerDevice) -> ListItem {
                 .color(battery::color(
                     percent,
                     charging,
-                    sys::color::content::secondary(),
+                    material::label(Level::Secondary),
                 )),
         )
 }

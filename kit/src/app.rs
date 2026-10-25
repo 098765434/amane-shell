@@ -28,6 +28,7 @@ use amane::{
 use crate::buttons::{Actions, PushButton, Shape, Style, interactive, state_fill};
 use crate::color::with_alpha;
 use crate::layout::{boxed, icon, pad};
+use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, sys};
 
 /// An app with this app-id: its windows, IPC socket and settings folder go
@@ -95,7 +96,7 @@ pub fn text_field(id: &'static str, placeholder: &str) -> TextInput {
     TextInput::new(id)
         .placeholder(placeholder)
         .size(sys::r#type::label().size)
-        .color(sys::color::surface::popover::fg())
+        .color(material::label(Level::Primary))
         .selection_color(with_alpha(sys::color::accent::bg(), 0.35))
 }
 
@@ -104,14 +105,14 @@ pub fn field_box(id: &'static str, input: TextInput, width: impl Into<Size>) -> 
     let ring = if TextInput::has_focus(id) {
         (sys::border::hairline() * 2.0, sys::color::accent::bg())
     } else {
-        (sys::border::hairline(), sys::color::separator())
+        (sys::border::hairline(), material::separator())
     };
 
     Rectangle::new()
         .width(width)
         .height(Size::Fixed(sys::size::control::height()))
         .radius(Radius::Fixed(sys::radius::raised()))
-        .fill(sys::color::surface::raised::bg())
+        .fill(material::fill_role(FillLevel::Secondary))
         .border(ring.0, ring.1)
         .padding(pad(sys::space::inset::s(), 0.0))
         .align_child(amane::Start, Center)
@@ -157,7 +158,7 @@ pub fn sidebar(
                 Color::TRANSPARENT
             };
 
-            let fg = sys::color::surface::popover::fg();
+            let fg = material::label(Level::Primary);
 
             let base = Rectangle::new()
                 .width(Size::Parent)
@@ -264,7 +265,7 @@ impl Dialog {
 fn dialog(name: &str, parent: &str, title: &str, message: &str) -> Window {
     let buttons = BUTTONS.with_borrow(|open| open.get(name).cloned().unwrap_or_default());
 
-    let fg = sys::color::surface::popover::fg();
+    let fg = material::label(Level::Primary);
 
     let row: Vec<Box<dyn Widget>> = buttons
         .into_iter()
@@ -292,7 +293,7 @@ fn dialog(name: &str, parent: &str, title: &str, message: &str) -> Window {
         boxed(
             Text::new(message)
                 .style(sys::r#type::label())
-                .color(sys::color::content::secondary())
+                .color(material::label(Level::Secondary))
                 .wrap(),
         ),
         boxed(

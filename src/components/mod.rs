@@ -66,6 +66,6 @@ pub mod text_edit;
 pub mod workspace_menu;
 
 pub use amane_kit::{
-    app_bar, app_icon, buttons, card, color, divider, edge_reveal, flow, glass, glass_region, icons,
-    kinetic, layout, list, motion, pager, scroll_view, slider, tooltip,
+    app_bar, app_icon, buttons, card, color, divider, edge_reveal, flow, glass, glass_region,
+    icons, kinetic, layout, list, material, motion, pager, scroll_view, slider, tooltip,
 };

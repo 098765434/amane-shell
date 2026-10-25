@@ -14,6 +14,7 @@ use amane::{Center, Color, Radius, Rectangle, Row, Size, Text, children};
 use super::{Actions, interactive, state_fill};
 use crate::icons::ICON_CHECK;
 use crate::layout::{icon, pad};
+use crate::material::{self, Level};
 use crate::tokens::{Styled, sys};
 
 /// A checkbox. `id` keys its hover, so it must be unique and stable.
@@ -74,7 +75,7 @@ impl Checkbox {
         } else {
             mark.fill(Color::TRANSPARENT).border(
                 sys::border::hairline() * 1.5,
-                sys::color::content::secondary(),
+                material::label(Level::Secondary),
             )
         };
 
@@ -100,7 +101,7 @@ pub(super) fn row(id: &str, mark: Rectangle, label: Option<String>, disabled: bo
             mark,
             Text::new(label)
                 .style(sys::r#type::label())
-                .color(sys::color::surface::panel::fg()),
+                .color(material::label(Level::Primary)),
         ])
         .gap(gap)
         .align(Center),

@@ -11,6 +11,7 @@ use crate::components::buttons::Switch;
 use crate::components::icons::{Glyph, ICON_CHEVRON_RIGHT, ICON_COMPUTER, os_glyph};
 use crate::components::layout::{boxed, caption, icon};
 use crate::components::list::{self, List, ListItem};
+use crate::components::material::{self, Level};
 use crate::components::panel::close;
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::tile::QuickToggle;
@@ -134,7 +135,7 @@ fn notices(tailscale: &Tailscale) -> Vec<Box<dyn Widget>> {
                     .trailing(icon(
                         ICON_CHEVRON_RIGHT,
                         sys::size::icon::m(),
-                        sys::color::content::secondary(),
+                        material::label(Level::Secondary),
                     ))
                     .on_press(Tailscale::login),
             ])
@@ -156,12 +157,12 @@ fn this_device(tailscale: &Tailscale) -> Box<dyn Widget> {
     let ip = tailscale.ip().unwrap_or_default().to_string();
     let mut item = ListItem::new("amane.qs.tailscale.self", tailscale.hostname())
         .leading(ICON_COMPUTER)
-        .color(sys::color::surface::panel::fg());
+        .color(material::label(Level::Primary));
     if !ip.is_empty() {
         item = item
             .trailing(list::trailing_text(
                 ip.clone(),
-                sys::color::content::secondary(),
+                material::label(Level::Secondary),
             ))
             .on_press(move || Tailscale::copy(&ip));
     }
@@ -194,7 +195,7 @@ fn exit_nodes(tailscale: &Tailscale) -> Box<dyn Widget> {
             .leading(os_glyph(&peer.os));
         let item = match (&peer.ip, peer.online) {
             (_, false) => item
-                .color(sys::color::content::secondary())
+                .color(material::label(Level::Secondary))
                 .trailing(caption("Offline")),
             (Some(ip), true) => {
                 let (ip, active) = (ip.clone(), peer.exit_active);
@@ -272,15 +273,15 @@ fn devices(peers: &[Peer]) -> Box<dyn Widget> {
             )
             .leading(os_glyph(&peer.os))
             .color(if peer.online {
-                sys::color::surface::panel::fg()
+                material::label(Level::Primary)
             } else {
-                sys::color::content::secondary()
+                material::label(Level::Secondary)
             });
             if let Some(ip) = peer.ip.clone() {
                 item = item
                     .trailing(list::trailing_text(
                         ip.clone(),
-                        sys::color::content::secondary(),
+                        material::label(Level::Secondary),
                     ))
                     .on_press(move || Tailscale::copy(&ip));
             }
