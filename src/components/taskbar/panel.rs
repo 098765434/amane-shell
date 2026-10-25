@@ -1,13 +1,14 @@
-//! The one-open-at-a-time state Quick Settings and the notification center
-//! share, and the overlay-surface helpers they and the toasts are built on.
+//! The one-open-at-a-time state Quick Settings, the notification center
+//! and the launcher share, and the overlay-surface helpers they and the
+//! toasts are built on.
 //!
-//! Opening one closes the other; Escape or toggling again closes it.
+//! Opening one closes the others; Escape or toggling again closes it.
 
 use std::cell::Cell;
 
 use amane::{Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Vertical, Zone, mark_all};
 
-use crate::components::{context_menu, notifications, quick_settings};
+use crate::components::{context_menu, launcher, notifications, quick_settings};
 use crate::tokens::sys;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -16,6 +17,8 @@ pub enum Panel {
     Notifications,
     /// Quick Settings, a bottom-right card, see [`quick_settings`].
     QuickSettings,
+    /// The app launcher, a panel in the middle, see [`launcher`].
+    Launcher,
 }
 
 thread_local! {
@@ -46,11 +49,13 @@ fn set(next: Option<Panel>) {
     match previous {
         Some(Panel::Notifications) => notifications::center::closed(),
         Some(Panel::QuickSettings) => quick_settings::closed(),
+        Some(Panel::Launcher) => launcher::closed(),
         _ => {}
     }
     match next {
         Some(Panel::Notifications) => notifications::center::opened(),
         Some(Panel::QuickSettings) => quick_settings::opened(),
+        Some(Panel::Launcher) => launcher::opened(),
         _ => {}
     }
     // a menu belongs to the surface it was opened from

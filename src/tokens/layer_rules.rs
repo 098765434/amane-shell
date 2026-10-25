@@ -7,6 +7,7 @@ use std::fmt::Write;
 
 use crate::components::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
 use crate::components::dock::DOCK_NS;
+use crate::components::launcher::LAUNCHER_NS;
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
 use crate::components::quick_settings::QS_NS;
 use crate::components::taskbar::BAR_NS;
@@ -90,6 +91,17 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             radius: None,
             popups: Some(popover),
+            clear: true,
+        },
+        LayerRule {
+            namespace: LAUNCHER_NS,
+            comment: String::from(
+                "Launcher: a clear surface in the middle of the screen whose glass panel is\n\
+                      frosted where the surface says (ext-background-effect). Toggled over IPC\n\
+                      from a keybind.",
+            ),
+            radius: None,
+            popups: None,
             clear: true,
         },
         LayerRule {

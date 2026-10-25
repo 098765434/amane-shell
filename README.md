@@ -38,6 +38,10 @@ ones — the bar itself is not.
   dark style, Do Not Disturb, keyboard light, airplane mode and background apps. Each shows only
   when the machine has it, and each opens a page of its own that slides in. The bar shows GNOME's
   privacy icons (screen shared, camera, microphone) and the settings that are on.
+- **Launcher** ([docs/launcher.md](docs/launcher.md)) — a Launchpad-style app launcher on a
+  glass panel in the middle of the screen, from a keybind (`launcher toggle` over IPC): category
+  pills, a grid of the installed apps, and a search that also does sums, session actions, URLs
+  and a web search.
 - **Buttons** ([docs/buttons.md](docs/buttons.md)) and **components**
   ([docs/components.md](docs/components.md)) — shared push and icon buttons, a switch, a
   segmented button, cards, top app bars, lists, dividers and a slider, each after its Material 3
@@ -116,6 +120,7 @@ src/
                                 the shared overlay state (panel.rs) and the clock
     context_menu/               reusable nested context menu on xdg-popups
     notifications/              toasts, the notification center and Do Not Disturb
+    launcher/                   the app launcher: search, category pills and the app grid
     buttons/                    push, icon and segmented buttons, and a switch
     card.rs app_bar.rs list.rs  shared M3-style components (docs/components.md)
     divider.rs slider.rs

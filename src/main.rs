@@ -8,7 +8,7 @@ use std::process::ExitCode;
 use amane::App;
 
 use components::context_menu::{self, ContextMenu, Icon, MenuItem};
-use components::{dock, notifications, quick_settings, taskbar, tooltip};
+use components::{dock, launcher, notifications, quick_settings, taskbar, tooltip};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {
@@ -135,6 +135,7 @@ fn main() -> ExitCode {
         .window(taskbar::bar)
         .window(quick_settings::surface)
         .window(notifications::side_sheet)
+        .window(launcher::surface)
         .window(context_menu::anchor)
         .window_per_monitor(dock::surface);
     for toast in notifications::TOASTS {
@@ -171,6 +172,8 @@ fn main() -> ExitCode {
     .ipc("notifications", notifications::ipc)
     // `printf 'quick-settings\nopen\nwifi\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("quick-settings", quick_settings::ipc)
+    // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    .ipc("launcher", launcher::ipc)
     // `printf 'taskbar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("taskbar", taskbar::ipc)
     .ipc("close", |_| {

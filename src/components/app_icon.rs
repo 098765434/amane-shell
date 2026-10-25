@@ -3,7 +3,8 @@
 //! The dock and the notification cards draw apps this way: the icon its
 //! desktop entry names, else a theme icon named after the app_id, else a
 //! first-letter placeholder on a raised tile while nothing resolves (or the
-//! image is still decoding).
+//! image is still decoding). The launcher draws installed apps from their
+//! entries the same way ([`entry_tile`]).
 
 use std::path::PathBuf;
 
@@ -13,7 +14,18 @@ use crate::tokens::{Styled, sys};
 
 /// A window's app icon, or a first-letter placeholder when none resolves.
 pub(crate) fn tile(app: &str, title: &str, side: f32) -> Rectangle {
-    if let Some(path) = icon_for(app) {
+    drawn(icon_for(app), first_letter(app, title), side)
+}
+
+/// A desktop entry's icon, or the first letter of its name, for a list of
+/// installed apps rather than open windows.
+pub(crate) fn entry_tile(app: &DesktopApp, side: f32) -> Rectangle {
+    let path = app.icon_path().map(|path| path.to_path_buf());
+    drawn(path, first_letter("", app.name()), side)
+}
+
+fn drawn(path: Option<PathBuf>, letter: String, side: f32) -> Rectangle {
+    if let Some(path) = path {
         // `loaded` kicks off the async decode and wakes us when ready; until
         // then fall through to the placeholder for this frame
         if Image::loaded(&path) {
@@ -31,7 +43,7 @@ pub(crate) fn tile(app: &str, title: &str, side: f32) -> Rectangle {
         .fill(sys::color::surface::raised::bg())
         .align_child(Center, Center)
         .child(
-            Text::new(first_letter(app, title))
+            Text::new(letter)
                 .style(sys::r#type::title())
                 .color(sys::color::surface::panel::fg())
                 .tight(),

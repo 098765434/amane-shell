@@ -35,6 +35,7 @@ generated from (2), not hand-edited, so neither can drift.
 |---|---|
 | `amane.taskbar` | the bar (intentionally **not** blurred); its rule only frosts its xdg-popups: tooltips and a window's menu |
 | `amane.quick-settings` | Quick Settings: a clear surface that frosts its own modules through a blur region; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
+| `amane.launcher` | the app launcher: a clear surface that frosts its glass panel through a blur region; only `xray false` |
 | `amane.notifications.toast` | each notification toast (one surface per banner, radius `notification.card.radius`) |
 | `amane.notifications.center` | the notification center sidebar (its Do Not Disturb menu is a frosted xdg-popup of it) |
 | `amane.context-menu-anchor` | the context-menu anchor window |

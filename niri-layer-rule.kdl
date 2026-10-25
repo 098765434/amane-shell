@@ -79,6 +79,16 @@ layer-rule {
     }
 }
 
+// Launcher: a clear surface in the middle of the screen whose glass panel is
+// frosted where the surface says (ext-background-effect). Toggled over IPC
+// from a keybind.
+layer-rule {
+    match namespace="^amane\\.launcher$"
+    background-effect {
+        xray false
+    }
+}
+
 // Notification toasts: one surface per banner, sized to its card, sliding in
 // at the top-right.
 layer-rule {

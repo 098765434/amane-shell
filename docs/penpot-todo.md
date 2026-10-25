@@ -29,6 +29,12 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `dock.icon.size`, `dock.radius`, `dock.reveal.strip` | 44, 18, 2 | `dock/mod.rs` (`ICON`, `RADIUS`, `STRIP`) |
 | `dock.running.size`, `dock.running.max` | 4, 3 | `dock/item.rs` (`RUNNING`, `MOST_RUNNING`) |
 | `dock.motion.*` (reveal, hide delay, page, flick, rubber band, resize, item, magnify scales and lifts, hover, tooltip) | see `DOCK` | `dock/motion.rs` (`DOCK`); add `dock` to `tokens::COMPONENTS` with the first `dock.*` token |
+| `launcher.grid.cols`, `.rows`, `.cell`, `.icon`, `.highlight` | 5, 4, 150, 64, 84 | `launcher/mod.rs` (`COLS`, `ROWS`, `CELL`, `ICON`, `ICON_BOX`) |
+| `launcher.panel.inset`, `.radius`, `launcher.header.height`, `launcher.pills.height` | 15, 22, 40, 40 | `launcher/mod.rs` (`INSET`, `RADIUS`, `HEADER`, `PILLS`) |
+| `launcher.result.height`, `.gap`, `.icon` | 56, 6, 40 | `launcher/mod.rs` (`ROW`, `ROW_GAP`), `launcher/results.rs` (`RESULT_ICON`) |
+| `launcher.open.scale`, `launcher.scroll.wheel-step` | 0.96, 60 | `launcher/mod.rs` (`OPEN_SCALE`, `WHEEL_STEP`) |
+| `launcher.search.size`, `.caret`, `launcher.logo.size` | 18, 2×22, 24 | `launcher/header.rs` (`SEARCH_TEXT`, `CARET`, `LOGO`) |
+| `launcher.highlight.radius`, `launcher.scrollbar.width`, `.thumb-min` | 14, 6, 32 | `launcher/grid.rs` (`HIGHLIGHT_RADIUS`, `SCROLLBAR`, `THUMB_MIN`); add `launcher` to `tokens::COMPONENTS` with the first `launcher.*` token |
 | `sys.opacity.disabled` (also) | 0.38 | `quick_settings/tiles/mod.rs` (`DIMMED`: a placeholder for a control without its hardware) |
 | `sys.opacity.disabled` | 0.38 | `buttons/mod.rs` (`DISABLED_OPACITY`) |
 | `sys.color.glass.rim`, `sys.color.glass.glow` | light `#ffffffe6`, `#ffffffbf`; dark `#ffffff4d`, `#ffffff14` | `components/glass.rs` (`LIGHT`, `DARK`) |

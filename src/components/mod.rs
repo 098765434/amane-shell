@@ -13,6 +13,8 @@
 //!   window's title and the status cluster.
 //! - [`dock`] — the macOS Big Sur dock for the apps open on each
 //!   workspace, coming up from the bottom edge and with niri's overview.
+//! - [`launcher`] — a Launchpad-style app launcher: a glass panel with a
+//!   search, category pills and a grid of the installed apps.
 //!
 //! The building blocks they share read `sys.*` only, so any component can
 //! use them. Like the buttons, each is named and structured after its
@@ -50,6 +52,7 @@ pub mod edge_reveal;
 pub mod glass;
 pub mod glass_region;
 pub mod icons;
+pub mod launcher;
 pub mod layout;
 pub mod list;
 pub mod motion;
