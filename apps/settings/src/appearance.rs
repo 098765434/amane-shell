@@ -1,10 +1,10 @@
 //! How the shell looks: light or dark, the accent, how dense and how big
-//! the text is, how see-through the glass is, and whether motion is
-//! reduced. Each control changes `appearance.json`, and the shell
+//! the text is, how see-through the glass is, whether small glass adapts
+//! to its backdrop, and whether motion is reduced. Each control changes `appearance.json`, and the shell
 //! redraws in the new look while this window shows it too.
 
 use amane::{Column, Widget};
-use amane_kit::buttons::Radio;
+use amane_kit::buttons::{Radio, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::layout::boxed;
 use amane_kit::settings::{appearance, change_appearance};
@@ -36,7 +36,7 @@ const TEXT_SIZES: [(&str, f32); 5] = [
 ];
 
 pub fn page() -> Column {
-    let (mode, accent, density, text_scale, glass, reduce_motion) = {
+    let (mode, accent, density, text_scale, glass, reduce_motion, adaptive_glass) = {
         let now = appearance();
 
         (
@@ -46,6 +46,7 @@ pub fn page() -> Column {
             now.text_scale,
             now.glass,
             now.reduce_motion,
+            now.adaptive_glass,
         )
     };
 
@@ -104,6 +105,13 @@ pub fn page() -> Column {
             )
         })
         .collect();
+
+    // small glass turning light or dark with what's behind it; solid glass
+    // has no backdrop to follow
+    let adaptive = Switch::new("settings.adaptive-glass", adaptive_glass)
+        .disabled(glass == Glass::Solid)
+        .on_toggle(|on| change_appearance(|now| now.adaptive_glass = on))
+        .build();
 
     let motions = [
         ("Follow the system", None),
@@ -172,6 +180,7 @@ pub fn page() -> Column {
         boxed(setting("Density", Column::new(density_radios))),
         boxed(setting("Text size", sizes.build())),
         boxed(setting("Glass", Column::new(glass_radios))),
+        boxed(setting("Adaptive glass", adaptive)),
         boxed(setting("Motion", Column::new(motion_radios))),
     ])
     .gap(sys::space::gap::l())
