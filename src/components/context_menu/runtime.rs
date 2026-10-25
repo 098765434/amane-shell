@@ -155,6 +155,11 @@ pub fn close() {
     request_frame();
 }
 
+/// Whether a menu is open hung under the surface `parent_ns`.
+pub fn is_open_under(parent_ns: &str) -> bool {
+    with(|r| r.phase == Phase::Open && r.root_parent == Some(parent_ns))
+}
+
 /// The parent surface namespace for level 0 (see `open_under`).
 pub(crate) fn root_parent() -> Option<&'static str> {
     with(|r| r.root_parent)

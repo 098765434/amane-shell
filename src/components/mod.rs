@@ -27,7 +27,6 @@
 //! - [`divider`] — M3's divider: a hairline between groups.
 //! - [`slider`] — M3's slider: a 0–100 level along a track.
 //! - [`tooltip`] — M3's plain tooltip: a hovered control's label.
-//! - [`page_dots`] — iOS's page control: which of several pages shows.
 //! - [`scroll_view`] — a clipped viewport scrolled along one axis, with a
 //!   scrollbar.
 //! - [`workspace_menu`] — a submenu of workspaces to send something to.
@@ -67,7 +66,6 @@ pub mod layout;
 pub mod list;
 pub mod motion;
 pub mod notifications;
-pub mod page_dots;
 pub mod pager;
 pub mod panel;
 pub mod quick_settings;

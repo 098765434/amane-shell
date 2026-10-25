@@ -25,10 +25,10 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `quick.page.tile-fade`, `quick.page.grid-fade` | 0.25, 0.6 | `quick_settings/mod.rs` (`TILE_FADE`, `GRID_FADE`: shares of the zoom) |
 | `quick.page.reveal.*` (header, body, step, span, rise) | 0.35–0.7, 0.45, 0.06, 0.35, 8 | `quick_settings/detail.rs` (`REVEAL_*`: a page's content coming in) |
 | `sys.glass.material` | `glass` | `components/glass_region.rs` (`MATERIAL`: the compositor material the glass's frost asks for; shared by Quick Settings and the dock) |
-| `sys.size.page-dot` | 6 | `components/page_dots.rs` (`DOT`) |
-| `dock.icon.size`, `dock.radius`, `dock.reveal.strip` | 44, 18, 2 | `dock/mod.rs` (`ICON`, `RADIUS`, `STRIP`) |
-| `dock.running.size`, `dock.running.max` | 4, 3 | `dock/item.rs` (`RUNNING`, `MOST_RUNNING`) |
-| `dock.motion.*` (reveal, hide delay, page, flick, rubber band, resize, item, magnify scales and lifts, hover, tooltip) | see `DOCK` | `dock/motion.rs` (`DOCK`); add `dock` to `tokens::COMPONENTS` with the first `dock.*` token |
+| `dock.icon.size`, `dock.icon.least`, `dock.radius`, `dock.reveal.strip` | 44, 20, 18, 2 | `dock/mod.rs` (`ICON`, `LEAST_ICON`, `RADIUS`, `STRIP`) |
+| `dock.running.size` | 4 | `dock/item.rs` (`RUNNING`) |
+| `dock.drag.threshold` | 6 | `dock/drag.rs` (`THRESHOLD`) |
+| `dock.motion.*` (reveal, hide delay, resize, item, magnify scales and lifts, hover, tooltip, spring load) | see `DOCK` | `dock/motion.rs` (`DOCK`); add `dock` to `tokens::COMPONENTS` with the first `dock.*` token |
 | `launcher.grid.cols`, `.rows`, `.cell`, `.icon`, `.highlight` | 5, 4, 150, 64, 84 | `launcher/mod.rs` (`COLS`, `ROWS`, `CELL`, `ICON`, `ICON_BOX`) |
 | `launcher.panel.inset`, `.radius`, `launcher.header.height`, `launcher.pills.height` | 15, 22, 40, 40 | `launcher/mod.rs` (`INSET`, `RADIUS`, `HEADER`, `PILLS`) |
 | `launcher.result.height`, `.gap`, `.icon` | 56, 6, 40 | `launcher/mod.rs` (`ROW`, `ROW_GAP`), `launcher/results.rs` (`RESULT_ICON`) |

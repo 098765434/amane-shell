@@ -70,7 +70,7 @@ Two fingers on the grid either scroll it or turn the category: the first few pix
   they lift, it coasts as far as their speed carries it and slows to a stop, or springs back from
   past an end (`Kinetic`). Fingers that rested before lifting leave no momentum.
 - **Sideways**, the next category's apps slide in beside the current ones. When the fingers lift
-  it settles on the nearer category, or the next one on a flick (`Pager`, the dock's paging). A
+  it settles on the nearer category, or the next one on a flick (`Pager`). A
   pill clicked next door slides the same way; one further away fades in instead.
 
 The compositor only reports the fingers moving and lifting, so the momentum is the launcher's

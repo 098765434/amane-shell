@@ -24,6 +24,8 @@ pub struct EdgeReveal {
     motion: Animation,
     // the pointer is on the strip, or on what came out
     hovered: bool,
+    // something keeps it out whatever the pointer does (the dock's menu)
+    kept: bool,
     // when the pointer left, while the delay runs
     left: Option<Instant>,
     delay: Duration,
@@ -36,6 +38,7 @@ impl EdgeReveal {
         Self {
             motion,
             hovered: false,
+            kept: false,
             left: None,
             delay,
         }
@@ -56,10 +59,24 @@ impl EdgeReveal {
         }
     }
 
-    /// Whether it's out or coming out for the pointer: on the surface, or
-    /// gone for less than the delay.
+    /// Keeps it out (`true`) whether or not the pointer is on it, as the
+    /// dock stays up while its menu is open; let go, it goes back in the
+    /// delay after, unless the pointer is on it.
+    pub fn keep_out(&mut self, kept: bool) {
+        if kept == self.kept {
+            return;
+        }
+        self.kept = kept;
+        if !kept && !self.hovered {
+            self.left = Some(Instant::now());
+            motion::redraw_after(self.delay + Duration::from_millis(10));
+        }
+    }
+
+    /// Whether it's out or coming out: kept out, the pointer on the surface,
+    /// or gone for less than the delay.
     pub fn wanted(&self) -> bool {
-        self.hovered || self.left.is_some_and(|left| left.elapsed() < self.delay)
+        self.kept || self.hovered || self.left.is_some_and(|left| left.elapsed() < self.delay)
     }
 
     /// Steps towards out or in and gives how far out it is, at least
@@ -89,7 +106,7 @@ impl EdgeReveal {
             width: width.max(1.0) as i32,
             height: strip.max(1.0) as i32,
         };
-        if progress > 0.001 || self.hovered {
+        if progress > 0.001 || self.hovered || self.kept {
             vec![edge, shown]
         } else {
             vec![edge]
@@ -148,6 +165,21 @@ mod tests {
         let mut edge = reveal(30);
         assert_eq!(edge.progress(0.4), 0.4);
         assert_eq!(edge.progress(1.0), 1.0);
+    }
+
+    #[test]
+    fn kept_out_it_stays_without_the_pointer_and_goes_the_delay_after() {
+        let mut edge = reveal(30);
+        edge.hover(true);
+        edge.keep_out(true);
+        edge.hover(false);
+        std::thread::sleep(Duration::from_millis(40));
+        assert_eq!(edge.progress(0.0), 1.0, "the pointer left long ago");
+
+        edge.keep_out(false);
+        assert_eq!(edge.progress(0.0), 1.0, "it waits out the delay");
+        std::thread::sleep(Duration::from_millis(40));
+        assert_eq!(edge.progress(0.0), 0.0);
     }
 
     #[test]

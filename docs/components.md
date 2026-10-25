@@ -9,16 +9,15 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `Card` | `card.rs` | [Cards](https://m3.material.io/components/cards/overview) | the notification center's sheet, context menus, tooltips |
 | `TopAppBar` | `app_bar.rs` | [Top app bar](https://m3.material.io/components/app-bars/overview) (small) | the title row of each Quick Settings page and of the center |
 | `List`, `ListItem` | `list.rs` | [Lists](https://m3.material.io/components/lists/overview) | networks, Bluetooth devices, audio devices, peripherals |
-| `Divider` | `divider.rs` | [Divider](https://m3.material.io/components/divider/overview) | context-menu separators, the dock's rule (`Divider::vertical`) |
+| `Divider` | `divider.rs` | [Divider](https://m3.material.io/components/divider/overview) | context-menu separators, the dock's rules between workspaces (`Divider::vertical`) |
 | `Slider` | `slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume, Quick Settings' sliders |
 | `tooltip` | `tooltip.rs` | [Tooltips](https://m3.material.io/components/tooltips/overview) (plain) | the bar's volume level and battery charge |
-| `PageDots` | `page_dots.rs` | none (iOS's page control) | the dock's workspaces |
 | `app_icon` | `app_icon.rs` | none | the dock's icons, notification cards' app icons, the launcher's apps |
 | `EdgeReveal` | `edge_reveal.rs` | none | the dock hiding at the bottom edge |
 | `ScrollView` | `scroll_view.rs` | none | the launcher's grid, results and pill bar |
 | `Kinetic`, `AxisLock` | `kinetic.rs` | none (iOS's scroll physics) | the launcher's scrolling |
-| `Pager` | `pager.rs` | none | the dock's workspaces, the launcher's categories |
-| `workspace_menu` | `workspace_menu.rs` | none | the dock's "Move to Workspace", the launcher's "Open in Workspace" |
+| `Pager` | `pager.rs` | none | the launcher's categories |
+| `workspace_menu` | `workspace_menu.rs` | none | the dock's "Move to Workspace" and "Open in Workspace", the launcher's "Open in Workspace" |
 
 ## Card
 
@@ -100,15 +99,6 @@ text)` every frame it's built while hovered, `tooltip::suppress(id)` on click an
 which `main.rs` registers. amane never resizes or moves an open popup, so when the text's size or
 the control changes, the tooltip closes for one frame and reopens.
 
-## PageDots
-
-`PageDots::new(count, current)` draws a dot a page, `.vertical()` down instead of across.
-`current` may be fractional while pages slide, and the light moves between dots with it.
-`.marked(Some(i))` rings a second dot (the dock rings the active workspace while another is
-browsed), `.fit(length)` squeezes the dots closer when they'd run past `length`, and
-`.on_pick(|i| â€¦)` makes each dot (and the room around it) clickable. `size()` gives how long and
-thick they run before they're built.
-
 ## app_icon
 
 `app_icon::tile(app_id, title, side)` is an app's icon `side` big: the icon its desktop entry
@@ -129,6 +119,10 @@ onto the surface and leaves it, reads `progress(hold)` once a frame (0 hidden â€
 input region from `input_region(width, height, strip, progress, shown)`: only the `strip` along
 the bottom edge while hidden, and `shown` too while any of it is out. Once the pointer has been
 gone for `delay`, it goes back in.
+
+`keep_out(bool)` holds it out whatever the pointer does: the dock calls it every frame with
+whether its menu is open, an icon is held, or files are held over it. Once let go, it goes back in
+`delay` later unless the pointer is on it.
 
 ## ScrollView
 
@@ -165,8 +159,7 @@ to one and settles on the nearest page when they lift, or the next one on a flic
 than one). A wheel steps a page a notch (`step`), and `go(page)` / `jump(page)` move there with or
 without the spring. `offset(count, &motion)` is the fractional page to draw, rubber-banded past
 the ends. `PagerMotion` holds the settle's duration and easing, the flick speed and the rubber
-band. The dock turns it vertically through workspaces; the launcher sideways through its
-categories.
+band. The launcher turns it sideways through its categories.
 
 ## workspace_menu
 

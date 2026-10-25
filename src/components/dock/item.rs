@@ -1,33 +1,33 @@
-//! One app in the dock, drawn: its icon, a dot under it for each window it
-//! has open, and its name over it while the pointer is on it. All of it is
+//! One icon in the dock, drawn: a window's app icon with a dot under it,
+//! or a pinned app's without, and its name over it while the pointer is on
+//! it. All of it is
 //! inert: the dock's still layer takes the pointer for every icon (see
 //! [`super`]), so nothing here moves a hit area as the icons swell.
 
 use amane::{Center, Color, Rectangle, Row, Text, Widget};
 
-use super::model::App;
+use super::model::Icon;
 use crate::components::app_icon;
 use crate::components::glass_region;
 use crate::components::layout::{boxed, text_height, text_width};
 use crate::tokens::{Styled, sys};
 
-// TODO(token): `dock.running.size` and `dock.running.max` once Penpot has
-// them (manual §1.1).
+// TODO(token): `dock.running.size` once Penpot has it (manual §1.1).
 /// How big a running dot is.
 pub const RUNNING: f32 = 4.0;
-/// The most dots an app shows, however many windows it has.
-const MOST_RUNNING: usize = 3;
+/// How much of a window's title its name label shows.
+const TITLE_CHARS: usize = 48;
 
-/// `app`'s icon, `side` big.
-pub fn icon(app: &App, side: f32) -> Rectangle {
-    app_icon::tile(&app.app_id, &app.title, side)
+/// `icon`'s app icon, `side` big.
+pub fn icon(icon: &Icon, side: f32) -> Rectangle {
+    app_icon::tile(icon.app_id(), icon.title(), side)
 }
 
-/// A dot for each of `app`'s windows, up to three, brighter while one of
-/// them has the focus.
-pub fn running(app: &App) -> (Box<dyn Widget>, f32) {
-    let count = app.windows.len().min(MOST_RUNNING);
-    let color = if app.focused() {
+/// The dot under a window's icon, brighter while it has the focus; a
+/// pinned app that isn't open there has none.
+pub fn running(icon: &Icon) -> (Box<dyn Widget>, f32) {
+    let count = usize::from(matches!(icon, Icon::Window(_)));
+    let color = if icon.focused() {
         sys::color::surface::panel::fg()
     } else {
         sys::color::content::secondary()
@@ -48,10 +48,22 @@ pub fn running(app: &App) -> (Box<dyn Widget>, f32) {
     (boxed(Row::new(dots).gap(gap).align(Center)), width)
 }
 
-/// What an app is called over its icon: its desktop entry's name, else
-/// its app_id's last part, else its window's title.
-pub fn name(app: &App) -> String {
-    app_icon::name_for(&app.app_id).unwrap_or_else(|| app.title.clone())
+/// What an icon is called over it: its window's title, else its desktop
+/// entry's name, else its app_id's last part.
+pub fn name(icon: &Icon) -> String {
+    match icon {
+        Icon::Window(window) if !window.title.is_empty() => short(&window.title),
+        _ => app_icon::name_for(icon.app_id()).unwrap_or_else(|| icon.app_id().to_string()),
+    }
+}
+
+/// `title` cut to what a label over an icon has room for.
+fn short(title: &str) -> String {
+    if title.chars().count() <= TITLE_CHARS {
+        return title.to_string();
+    }
+    let cut: String = title.chars().take(TITLE_CHARS - 1).collect();
+    format!("{}…", cut.trim_end())
 }
 
 /// The name label, and its size: a line of caption text on a small piece

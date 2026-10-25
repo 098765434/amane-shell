@@ -9,7 +9,9 @@ ones — the bar itself is not.
 
 > **Requires a forked niri** for its signature feature (the overview smooth-expand needs live
 > gesture-IPC events): [098765434/niri](https://github.com/098765434/niri). It runs on
-> stock niri without that animation.
+> stock niri without that animation. Dragging a window's icon in the dock to reorder it needs
+> the fork too (`MoveColumnToIndex` with a `window_id`); stock niri would move the focused
+> column instead.
 
 ## Features
 
@@ -21,7 +23,12 @@ ones — the bar itself is not.
   opening its Quick Settings page: Sound (volume, microphone and devices), Bluetooth (connect,
   pair, forget), Wi‑Fi (scan and join), Tailscale (connect, log in, exit node, routes/DNS,
   block incoming, the tailnet's devices) and Battery (power profile, peripherals).
-- **Context menus** ([docs/context-menu.md](docs/context-menu.md)) — right-click a window's icon in the dock for focus/close/fullscreen/float/move-to-workspace,
+- **Dock** ([docs/dock.md](docs/dock.md)) — a macOS-style dock that rises from the bottom edge
+  (and with niri's overview), showing every workspace of its monitor side by side with a rule
+  between them and an icon per window. Pin apps to a workspace, drag icons to reorder windows or
+  move them between workspaces, and drop files on an icon to open them with that app (hold them
+  there and its window comes into view).
+- **Context menus** ([docs/context-menu.md](docs/context-menu.md)) — right-click a window's icon in the dock for focus/close/fullscreen/float/move-to-workspace/pin,
   built on amane's xdg-popup support (nested submenus, outside-click dismiss).
 - **Notifications** ([docs/notifications.md](docs/notifications.md)) — the shell is the
   notification daemon (through amane): macOS-style toasts at the top-right (hover to hold, swipe
@@ -120,11 +127,12 @@ src/
     context_menu/               reusable nested context menu on xdg-popups
     notifications/              toasts, the notification center and Do Not Disturb
     launcher/                   the app launcher: search, category pills and the app grid
+    dock/                       the dock: workspaces' windows and pins, drag, file drops (docs/dock.md)
     buttons/                    push, icon, drawn and segmented buttons, and a switch
     card.rs app_bar.rs list.rs  shared M3-style components (docs/components.md)
     divider.rs slider.rs
     scroll_view.rs kinetic.rs   scrolling: a clipped viewport, momentum, paging with the fingers
-    pager.rs
+    pager.rs edge_reveal.rs     …and a surface that hides at the screen edge (the dock's)
     workspace_menu.rs           a submenu of workspaces (the dock's and the launcher's menus)
     layout.rs icons.rs          layout primitives, glyphs, colour arithmetic, motion
     color.rs motion.rs

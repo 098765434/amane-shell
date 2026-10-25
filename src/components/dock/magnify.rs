@@ -125,13 +125,6 @@ fn size_at(magnify: &Magnify, distance: f32) -> (f32, f32) {
     )
 }
 
-/// Which icon is under the pointer at `at` slots along the row at rest.
-pub fn under(rests: &[Rest], at: f32) -> Option<usize> {
-    rests
-        .iter()
-        .position(|rest| at >= rest.slot && at < rest.slot + 1.0)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,14 +202,5 @@ mod tests {
             assert_eq!(xs, [0.0, 12.0, 24.0]);
             assert_eq!(swollen.before + swollen.after, 0.0);
         }
-    }
-
-    #[test]
-    fn the_pointer_is_over_the_icon_whose_slot_it_is_in() {
-        let rests = row(3);
-        assert_eq!(under(&rests, 0.0), Some(0));
-        assert_eq!(under(&rests, 2.99), Some(2));
-        assert_eq!(under(&rests, 3.0), None);
-        assert_eq!(under(&rests, -0.1), None);
     }
 }

@@ -84,7 +84,7 @@ pub(crate) fn name_for(app_id: &str) -> Option<String> {
 
 /// The desktop entry a window's app_id belongs to, matched as [`icon_for`]
 /// says.
-fn entry_for(app_id: &str) -> Option<DesktopApp> {
+pub(crate) fn entry_for(app_id: &str) -> Option<DesktopApp> {
     if app_id.is_empty() {
         return None;
     }

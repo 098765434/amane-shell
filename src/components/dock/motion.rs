@@ -12,8 +12,6 @@ use std::time::Duration;
 
 use amane::{Animation, Blend, Easing};
 
-use crate::components::pager::PagerMotion;
-
 // TODO(token): these become `dock.motion.*` tokens once Penpot has them
 // (manual §1.1; docs/penpot-todo.md).
 /// The dock's motion as shipped.
@@ -22,9 +20,6 @@ pub const DOCK: DockMotion = DockMotion {
     reveal: Anim::spring(380, 0.08),
     hide_delay: Duration::from_millis(400),
     follow_overview: true,
-    page: Anim::spring(450, 0.12),
-    flick: 1.2,
-    rubber_band: Some(0.3),
     resize: Anim::spring(450, 0.1),
     item: Anim::spring(450, 0.15),
     magnify: Some(Magnify {
@@ -34,6 +29,7 @@ pub const DOCK: DockMotion = DockMotion {
         hover: Anim::ease(120),
     }),
     tooltip: Some(Anim::ease(120)),
+    spring_load: Some(Duration::from_millis(700)),
 };
 
 /// Every animation the dock runs, and whether it runs.
@@ -48,41 +44,18 @@ pub struct DockMotion {
     pub hide_delay: Duration,
     /// Whether the dock rises with niri's overview, in step with its zoom.
     pub follow_overview: bool,
-    /// Snapping to a workspace's apps when the fingers lift, or stepping
-    /// there by a wheel notch or a dot.
-    pub page: Anim,
-    /// How fast a swipe (pages a second) turns the page however far it got.
-    pub flick: f32,
-    /// How far past the first and last page a swipe pulls, as a share of
-    /// the fingers' travel; `None` stops at the ends.
-    pub rubber_band: Option<f32>,
-    /// The card widening and narrowing as apps come and go.
+    /// The card widening and narrowing as windows come and go.
     pub resize: Anim,
-    /// An app's icon growing in as it opens, and its neighbours making
+    /// A window's icon growing in as it opens, and its neighbours making
     /// room or closing up.
     pub item: Anim,
     /// The icons swelling under the pointer; `None` keeps them still.
     pub magnify: Option<Magnify>,
     /// The app's name over the icon under the pointer; `None` shows none.
     pub tooltip: Option<Anim>,
-}
-
-impl DockMotion {
-    /// How the pages turn: [`page`](Self::page), arriving at once when it
-    /// or the dock's motion is off.
-    pub fn pager(&self) -> PagerMotion {
-        let runs = self.page.on && motion().enabled;
-        PagerMotion {
-            duration: if runs {
-                self.page.duration
-            } else {
-                Duration::ZERO
-            },
-            easing: self.page.easing,
-            flick: self.flick,
-            rubber_band: self.rubber_band,
-        }
-    }
+    /// How long files held over an icon wait before its window comes into
+    /// view, so they can be let go in it; `None` waits for the drop.
+    pub spring_load: Option<Duration>,
 }
 
 /// One animation: how long, how bouncy, and whether it runs at all.
@@ -192,11 +165,11 @@ mod tests {
 
     #[test]
     fn an_animation_that_is_off_arrives_at_once() {
-        let mut off = anim(&DOCK.page.off(), 0.0);
+        let mut off = anim(&DOCK.item.off(), 0.0);
         off.to(1.0);
         assert_eq!(off.value(), 1.0);
 
-        let mut on = anim(&DOCK.page, 0.0);
+        let mut on = anim(&DOCK.item, 0.0);
         on.to(1.0);
         if motion().enabled {
             assert!(on.value() < 1.0, "a running one takes its time");
