@@ -446,8 +446,14 @@ pub fn surface() -> LayerWindow {
         // a page is one glass sheet that grows from its tile's glass to the
         // card's, the frost with it at full strength: it takes over from
         // the tile's own, so the card never shows through half-frosted
-        let sheet = Sheet::blend(origin, full, slide);
-        shapes.push(sheet.frost());
+        // where motion is reduced it fades in at its size instead, its frost
+        // with it, rather than animating out of the tile's (Apple: no
+        // animating into and out of blurs)
+        let reduced = crate::theme::reduced_motion();
+        let from = if reduced { full } else { origin };
+        let sheet = Sheet::blend(from, full, slide);
+        let frost = sheet.frost();
+        shapes.push(if reduced { frost.fade(slide) } else { frost });
         layers.push(boxed(sheet_layer(detail, sheet, inner, slide)));
     }
 
