@@ -72,6 +72,7 @@ Building and running are in the [README](../README.md); contributing in
 |---|---|
 | Dev shell, checks, the token workflow | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | What makes a window draw, and the rules that keep an idle desktop still | [development/performance.md](development/performance.md) |
+| What the desktop holds in GPU memory, how to measure it, and what has been cut (the vello fork) | [development/memory.md](development/memory.md) |
 | Trying shader effects live, and porting Figma shaders | [development/shader-lab.md](development/shader-lab.md) |
 
 ## Archive

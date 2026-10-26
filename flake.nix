@@ -100,13 +100,15 @@
               ];
             };
 
-            # amane is a git-dependency (see Cargo.toml); Nix needs its content
-            # hash to fetch it reproducibly. After a rev bump, update this — the
-            # first build prints the expected `sha256-…` on mismatch.
+            # amane and amane's vello fork (vello_encoding, see Cargo.toml's
+            # [patch.crates-io]) are git-dependencies; Nix needs their content
+            # hashes to fetch them reproducibly. After a rev bump, update the
+            # entry — the first build prints the expected `sha256-…` on mismatch.
             cargoLock = {
               lockFile = ./Cargo.lock;
               outputHashes = {
                 "amane-0.1.2" = "sha256-gZFx+iJKa/JeSOs4+UsDqMrgh4B1xbh/lCGVRvlFgII=";
+                "vello_encoding-0.11.0" = "sha256-sLIDkOcrV/vU5P01Ek35hmluT21cGhiETPKieMN4rsA=";
               };
             };
 

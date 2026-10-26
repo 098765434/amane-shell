@@ -44,3 +44,10 @@ members = ["kit", "apps/settings", "apps/shader-lab"]
 # `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
 # sibling checkout during local co-development. See README.
 amane = { git = "https://github.com/098765434/amane", rev = "916aecd65fefa7bf4655413fe9c9b61636dab8c5" }
+
+# amane's vello fork: scratch buffers sized for a shell (about 26 MB a set
+# instead of 165). A patch only applies from the root manifest, so amane's own
+# entry does nothing for this build; this one must match it. The nix build
+# needs the fork's hash in flake.nix outputHashes. See docs/development/memory.md.
+[patch.crates-io]
+vello_encoding = { git = "https://github.com/098765434/vello", branch = "ocbk" }
