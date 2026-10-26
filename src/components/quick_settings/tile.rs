@@ -33,7 +33,7 @@ use crate::components::buttons::{
 };
 use crate::components::icons::{Glyph, glyph};
 use crate::components::layout::{boxed, icon, pad, text_height, text_width};
-use crate::components::material::{self, Level, Material};
+use crate::components::material::{self, FillLevel, Level, Material};
 use crate::components::motion;
 use crate::components::tooltip;
 use crate::tokens::{Styled, TextStyle, quick, sys};
@@ -79,9 +79,10 @@ pub(super) fn module(
         .fill(fill(Material::Control, Material::Control.tint()))
         .clip()
         .child(content);
+    // a plain module sits in its sheet, casting nothing on it
     match shadow() {
-        Some(shadow) => module.shadow(shadow),
-        None => module,
+        Some(shadow) if !PLAIN.get() => module.shadow(shadow),
+        _ => module,
     }
 }
 
@@ -126,9 +127,13 @@ pub(super) fn plain<R>(f: impl FnOnce() -> R) -> R {
 }
 
 /// What `material` tinted `tint` is filled with: the tint, unless the
-/// compositor lays it on with the frost.
+/// compositor lays it on with the frost. A plain module on a sheet is a
+/// translucent fill on it instead, as Control Center's catalog shows its
+/// controls: the sheet's colour comes through, not a milky tint over it.
 fn fill(material: Material, tint: Color) -> Color {
-    if PLAIN.get() || !material.compositor_draws() {
+    if PLAIN.get() && material != Material::Prominent {
+        material::fill_role(FillLevel::Secondary)
+    } else if PLAIN.get() || !material.compositor_draws() {
         tint
     } else {
         Color::TRANSPARENT

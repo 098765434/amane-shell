@@ -201,10 +201,10 @@ materials {
         refraction 16
         report-backdrop true
         rim 0.35
-        saturation 2
+        saturation 1.5
         specular 0.4
         tint 1
-        tone 0.85
+        tone 1
     }
     material "glass-clear" {
         bevel 16
@@ -234,10 +234,10 @@ materials {
         refraction 16
         report-backdrop true
         rim 0.35
-        saturation 2
+        saturation 1.8
         specular 0.4
         tint 1
-        tone 0.6
+        tone 0.9
     }
     material "glass-small" {
         adaptive-tint 0.25
@@ -251,10 +251,10 @@ materials {
         refraction 12
         report-backdrop true
         rim 0.35
-        saturation 2
+        saturation 1.5
         specular 0.4
         tint 1
-        tone 0.85
+        tone 1
     }
     material "frost-still" {
         bevel 8
@@ -284,10 +284,10 @@ materials {
         refraction 16
         report-backdrop true
         rim 0.35
-        saturation 2
+        saturation 1.5
         specular 0.4
         tint 1
-        tone 0.85
+        tone 1
         materialize false
     }
     material "glass-clear-still" {
@@ -319,10 +319,10 @@ materials {
         refraction 16
         report-backdrop true
         rim 0.35
-        saturation 2
+        saturation 1.8
         specular 0.4
         tint 1
-        tone 0.6
+        tone 0.9
         materialize false
     }
     material "glass-small-still" {
@@ -337,10 +337,10 @@ materials {
         refraction 12
         report-backdrop true
         rim 0.35
-        saturation 2
+        saturation 1.5
         specular 0.4
         tint 1
-        tone 0.85
+        tone 1
         materialize false
     }
 }
