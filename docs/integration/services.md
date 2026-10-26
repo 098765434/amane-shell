@@ -44,7 +44,8 @@ temperature until turned off. Its state (`on 4000`) is kept in
 `$XDG_STATE_HOME/amane-shell/night-light`, so it comes back on after a restart. A last-used VPN
 is kept beside it, in `vpn`.
 
-**Keep Awake never writes a power setting.** Each hold is an inhibitor tied to the shell: the
+**Keep Awake never writes a power setting** (amane's idle support:
+[`system/idle.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/idle.md)). Each hold is an inhibitor tied to the shell: the
 screen's is on amane's one session-bus connection (niri serves `org.freedesktop.ScreenSaver`, and
 hypridle honours its inhibits, so nothing dims, locks or turns the monitors off), and the lid's
 is the file descriptor logind hands back, which needs no root (`HandleLidSwitch` in `/etc` is
@@ -66,19 +67,21 @@ doesn't manage (tailscale) isn't one.
 ## amane's services
 
 The shell reads these from the amane fork. Each is an amane `Service`, so a view that reads one
-draws again when it changes.
+draws again when it changes. amane documents them: the niri-backed ones in
+[`compositor/services.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md), the system ones under `system/` (below), the
+backdrop readings in [`graphics/blur.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md).
 
 | Service | What reads it |
 |---|---|
 | `Workspaces`, `Windows` | the bar's workspace pips, the dock, the widgets' monitor; window actions (focus, move, close) |
 | `Overview` | the dock rising with niri's overview, from its progress |
 | `Desktop`, `WorkspaceSwitch` | the widgets: frozen while the desktop is hidden, fading with a workspace switch |
-| `Notifications` | toasts and the notification center; amane owns `org.freedesktop.Notifications` |
-| `Audio` | the bar's volume, the Sound card and page |
+| `Notifications` | toasts and the notification center; amane owns `org.freedesktop.Notifications` ([`system/notifications.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md)) |
+| `Audio` | the bar's volume, the Sound card and page ([`system/audio.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/audio.md)) |
 | `Network`, `Bluetooth` | the bar's icons, the Wi‑Fi and Bluetooth tiles and pages |
-| `Battery`, `PowerProfile` | the bar's battery, the Battery page, power mode, the battery widgets |
+| `Battery`, `PowerProfile` | the bar's battery, the Battery page, power mode, the battery widgets ([`system/battery.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/battery.md), [`system/power-profile.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/power-profile.md)) |
 | `Brightness`, `Media` | the Display slider, Now Playing |
-| `Appearance` | the system's light/dark, accent, contrast and reduced motion (`amane_kit::theme`), Dark Style |
+| `Appearance` | the system's light/dark, accent, contrast and reduced motion (`amane_kit::theme`), Dark Style ([`system/appearance.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/appearance.md)) |
 | `Backdrop` | adaptive glass: how bright the backdrop behind a blur shape is ([materials.md](../design-system/materials.md)) |
 
 ## Settings and state

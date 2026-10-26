@@ -130,7 +130,8 @@ A piece of glass is built with its material's methods:
   labels on every tint over black and white wallpaper (`tokens::rules`): toned by the niri
   material that draws the tint, and again untoned and thickened by `UNTONED`, the tint the kit
   uses without niri's material.
-- `material.<name>.*` (component tokens) are niri's material settings. `amane-shell layer-rules`
+- `material.<name>.*` (component tokens) are niri's material settings (niri's
+  [`effects/materials.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md) says what each does). `amane-shell layer-rules`
   writes one niri material for each of them into `niri-layer-rule.kdl`, with a `-still` twin
   (`materialize false`) for reduced motion; see [layer-rules.md](../integration/layer-rules.md).
 
@@ -145,13 +146,14 @@ A piece of glass is built with its material's methods:
   instead of building up (Apple: avoid animating into and out of blurs).
 - **Vibrant labels** (an experiment, off by default: `vibrancy` in `appearance.json`, the
   Settings switch, or `AMANE_VIBRANCY=1`) makes every shell surface, popup and app window
-  vibrant (`material::vibrant`, amane's `.vibrant(true)`). On niri with `niri-vibrancy-v1`,
+  vibrant (`material::vibrant`, amane's `.vibrant(true)`). On niri with `niri-vibrancy-v1`
+  ([`effects/vibrancy.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/vibrancy.md)),
   light grey labels, glyphs and fills are then added to the frosted backdrop and dark grey ones
   subtracted from it (Apple's plus-lighter and plus-darker), so they take on its colour, as
   Apple's vibrancy does. Solid glass and higher
   contrast turn it off. Elsewhere the translucent label colours stand in.
 - **Adaptive glass** (an experiment, off by default) lets `Control` and `Banner` follow niri's
-  readings of their backdrop; see `glass_region` and [components.md](../kit/components.md).
+  readings of their backdrop (amane's `Backdrop`, [`graphics/blur.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md)); see `glass_region` and [components.md](../kit/components.md).
 
 ## Look test
 

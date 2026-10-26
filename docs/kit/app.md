@@ -48,6 +48,7 @@ an opaque panel (`sys.color.sidebar.bg.active`), paler with greyer labels
 (`sys.color.sidebar.bg.inactive`, `sys.color.sidebar.label.inactive`) while another window has the
 focus.
 
+amane's side, its normal windows, is [`windows/app-windows.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/windows/app-windows.md).
 Whether the window is frosted is read from the config: the shell's generated niri config defines
 the window material with the `window-rule` that frosts an amane app's windows
 (`layer_rules::APP_IDS`; see [layer-rules.md](../integration/layer-rules.md)). An app that should

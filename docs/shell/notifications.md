@@ -3,7 +3,7 @@
 Toasts, a notification center and Do Not Disturb, in the style of macOS and iOS
 (`src/components/notifications/`). amane is the notification daemon: its `Notifications`
 service owns `org.freedesktop.Notifications`, keeps the list and talks to senders (see
-`amane/docs/fork/notifications.md`). Everything here is presentation: how long a toast shows, how
+[amane `system/notifications.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md)). Everything here is presentation: how long a toast shows, how
 cards stack, what Do Not Disturb hides.
 
 > Only one notification daemon can run. Stop mako, dunst or swaync before starting the shell.

@@ -89,14 +89,15 @@ the windows (and its edit surface, above), covering the output (`Zone::Ignore`; 
 namespace is `amane.widgets.<output>`, so a card's menu hangs under the surface on its own monitor
 (amane parents a popup to the first surface with the namespace asked for). niri hands a
 background surface the pointer wherever no window is, so the desktop's clicks reach it, and
-the fork's `desktop` layer rule draws it once, on the wallpaper (the overview's backdrop) under
+the fork's `desktop` layer rule ([`layout/desktop-layer.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md)) draws it once, on the wallpaper (the overview's backdrop) under
 the workspaces, rather than with each workspace: the cards stay put while workspaces slide over
 them, keep their size as the overview opens, and fade out with it, frost and all, in step with the
 gesture, with no frame of the shell's. They take no input in the overview. A card's menu still
 shows above the windows. The workspaces must be transparent (`layout { background-color
 "transparent" }`) for the backdrop to show, as for the wallpaper.
 
-While nothing under the windows shows on its monitor (niri's `DesktopObscured`: the overview fully
+While nothing under the windows shows on its monitor (niri's `DesktopObscured`, through amane's
+`Desktop` service, [`compositor/services.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md): the overview fully
 open, or windows, each with its gap, covering the screen with no switch going on), the surface is
 frozen (`LayerWindow::frozen`): its last frame stays up and nothing is drawn or committed, as the
 view reads only what says when it shows again. The readings go on gathering, so when the desktop
@@ -172,4 +173,8 @@ Tokens: the code holds its sizes as `TODO(token)` constants until Penpot has a `
 ## Related
 
 - Quick Settings, whose grid this is: [quick-settings.md](quick-settings.md).
-- The niri layer rule: [layer-rules.md](../integration/layer-rules.md).
+- The niri layer rule: [layer-rules.md](../integration/layer-rules.md); niri's desktop layer:
+  [`layout/desktop-layer.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md); its `DesktopObscured` and workspace-switch
+  events: [`ipc/events.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/events.md).
+- amane's `Desktop` and `WorkspaceSwitch` services and frozen layer windows:
+  [`compositor/services.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md).

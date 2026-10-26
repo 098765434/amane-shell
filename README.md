@@ -11,7 +11,8 @@ compositor.
 > layer rules use options only the fork has (named `materials {}`, `background-effect { material }`
 > and the `desktop` layer the widgets sit on), the dock rises with the overview from the fork's
 > live overview progress, and dragging a window's icon in the dock to reorder it needs
-> `MoveColumnToIndex` with a `window_id` (stock niri would move the focused column instead).
+> `MoveColumnToIndex` with a `window_id` (stock niri would move the focused column instead). What
+the forks add is in their docs: [niri](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md), [amane](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md).
 
 ## Features
 

@@ -97,6 +97,6 @@ old `taskbar` file is read instead.
 ## Related
 
 - Window actions and the `Windows`/`Gestures` services are documented in the library:
-  [../../amane/docs/fork/compositor.md](../../amane/docs/fork/compositor.md).
+  [amane `compositor/services.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md).
 - Sizes and colours are Penpot design tokens: [tokens.md](../design-system/tokens.md).
 - Surface namespaces & niri layer-rules: [layer-rules.md](../integration/layer-rules.md).

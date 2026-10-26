@@ -33,10 +33,16 @@ cargo test
 
 CI runs these three inside the devShell.
 
+Before adding a component, read [docs/development/performance.md](docs/development/performance.md):
+what makes a window draw, and the rules that keep an idle desktop from drawing at all. Every doc
+is listed in [docs/README.md](docs/README.md).
+
 ## Scope notes
 
 - Library-level changes (popups, compositor services) belong in
-  [amane](https://github.com/098765434/amane), not here.
+  [amane](https://github.com/098765434/amane), not here; compositor changes in
+  [niri](https://github.com/098765434/niri). Each fork documents what it adds
+  ([amane](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md), [niri](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md)).
 - Design values (sizing/colour/type) are Penpot tokens. Change them in Penpot, export, then
   `cargo run -q -- tokens normalize export.json > design-tokens/tokens.json` and
   `cargo run -q -- tokens check design-tokens/tokens.json`; never hand-edit the file or hardcode a

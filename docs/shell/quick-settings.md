@@ -226,14 +226,14 @@ niri frosts a layer surface where the surface asks, or its whole geometry when i
 The Quick Settings surface asks with one rounded shape per piece of glass
 (`LayerWindow::blur_shapes`, `glass_region.rs`): the grid's modules, the Edit Controls capsule,
 the Customize window's sheet and the control in hand, and a page's sheet. The shapes go over niri-blur-shapes, a protocol of our niri
-fork: each is a rounded rectangle in fractional surface coordinates with its own alpha, which
+fork ([`effects/blur-shapes.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/blur-shapes.md); amane's side is [`graphics/blur.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md)): each is a rounded rectangle in fractional surface coordinates with its own alpha, which
 niri draws through its corner-rounding shader, half a pixel inside the module's own antialiased
 edge, so no frost strays past a corner. While editing, the Customize window's sheet and the
 control in hand are shapes of their own; the controls in the window's pane ask for none, which is
 why they're drawn on a plain tint. Each is a `Material::Control` shape (a page's sheet is a
 `Popover`, the Done capsule `Prominent`), which names niri's `glass` material and carries the
 tint. When niri's config defines a `glass` material (`materials {}`, see niri's
-Window-Effects wiki page), niri draws the modules' tint and lit edge itself, from the real
+[`effects/materials.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md)), niri draws the modules' tint and lit edge itself, from the real
 backdrop and on the frost's own edge: the modules then leave out their tint fill and the grid
 its rim pass (`Material::compositor_draws`), and a page's sheet its `glass::apply`. Without
 the material the shell draws both as before. On a compositor without the protocol, amane

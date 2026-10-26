@@ -191,7 +191,7 @@ hidden when the stack is shallower. Every state change calls `request_frame()`.
 
 ## Related
 
-- amane's popup support: [../../amane/docs/fork/popups.md](../../amane/docs/fork/popups.md)
+- amane's popup support: [amane `windows/popups.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/windows/popups.md)
 - niri layer rules and namespaces: [layer-rules.md](../integration/layer-rules.md)
 - The dock's window and pinned-app menus: [dock.md](dock.md)
 - The launcher's app menu: [launcher.md](launcher.md#app-menu)

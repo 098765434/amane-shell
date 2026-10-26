@@ -12,8 +12,14 @@ amane fork (Rust UI library: layer windows, popups, services, blur regions)
 amane-shell (this repo: src/ the shell, kit/ amane-kit, apps/settings/ Shell Settings)
 ```
 
-- niri fork: <https://github.com/098765434/niri> (branch `ocbk`)
-- amane fork: <https://github.com/098765434/amane> (branch `ocbk`)
+- niri fork: <https://github.com/098765434/niri> (branch `ocbk`); what it adds:
+  [docs/fork/README.md](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md). Not the shell's, but part of the same desktop: the workspace
+  mat, a backing niri paints behind the scrolling layout's windows ([layout/workspace-mat.md](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/workspace-mat.md)).
+- amane fork: <https://github.com/098765434/amane> (branch `ocbk`); what it adds:
+  [docs/fork/README.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md).
+
+A feature's docs live where its code lives: these docs link to the forks' rather than repeat
+them.
 
 Building and running are in the [README](../README.md); contributing in
 [CONTRIBUTING.md](../CONTRIBUTING.md).
@@ -52,11 +58,11 @@ Building and running are in the [README](../README.md); contributing in
 
 ## Integration
 
-| Topic | Doc |
-|---|---|
-| niri layer rules and surface namespaces, generated from the tokens | [integration/layer-rules.md](integration/layer-rules.md) |
-| Every CLI and IPC command, and the socket they go over | [integration/ipc.md](integration/ipc.md) |
-| The shell's services and amane's, the settings files and the state files | [integration/services.md](integration/services.md) |
+| Topic | Doc | The forks' side |
+|---|---|---|
+| niri layer rules and surface namespaces, generated from the tokens | [integration/layer-rules.md](integration/layer-rules.md) | niri [materials](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md), [desktop layer](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md); amane [blur](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md) |
+| Every CLI and IPC command, and the socket they go over | [integration/ipc.md](integration/ipc.md) | niri [IPC events](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/events.md), [actions](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/actions.md) |
+| The shell's services and amane's, the settings files and the state files | [integration/services.md](integration/services.md) | amane [compositor services](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md), [system services](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/idle.md) (`system/`) |
 
 ## Development
 

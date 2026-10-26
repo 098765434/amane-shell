@@ -23,7 +23,7 @@ frosted glass card over the bar on every monitor (`App::window_per_monitor`), na
 | Do | What happens |
 |---|---|
 | Touch the bottom edge | It comes up over the bar; it goes back down 400 ms after the pointer leaves |
-| Open niri's overview | It rises in step with the overview's zoom (`Overview::progress`) |
+| Open niri's overview | It rises in step with the overview's zoom (`Overview::progress`, from the niri fork's overview events: [`ipc/events.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/events.md)) |
 | Click a window's icon | Focuses it |
 | Click a pinned app | Focuses its latest window, wherever it is; with none open, opens it on the pin's workspace |
 | Right-click a window's icon | Its menu: focus, fullscreen, float, move to workspace, **Pin to Dock** / **Unpin from Dock**, close |
@@ -96,7 +96,7 @@ It reuses the kit's [`EdgeReveal`, `app_icon`, `Divider::vertical` and
 - **Dragging** starts 6 px from the press, so a click still clicks; the release that ends a drag
   isn't taken as a click. Where the held window goes is worked out from the row without it, never
   from the last preview, and the preview is that row with the window put there. Let go, it's sent
-  with `Windows::move_to` (niri's `MoveWindowToWorkspace` with `focus: false`, then
+  with `Windows::move_to` (amane's [`compositor/services.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md); niri's `MoveWindowToWorkspace` with `focus: false`, then
   `MoveColumnToIndex` with the window's id), and shown where it went until niri reports it there
   (or 800 ms pass), so it doesn't jump back for a frame.
 - **Opening on a workspace** focuses the workspace and spawns the app through amane's worker, in
@@ -120,8 +120,8 @@ niri keeps after the last called "New Workspace". Workspaces are named as niri n
 
 ## Known limits
 
-- Reordering needs the niri fork (`MoveColumnToIndex` with a `window_id`). Stock niri ignores the
-  id and moves the focused column.
+- Reordering needs the niri fork (`MoveColumnToIndex` with a `window_id`,
+  [`ipc/actions.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/actions.md)). Stock niri ignores the id and moves the focused column.
 - Dragging a window that shares its column with others moves the whole column, as niri does.
 - After spring-loading, the dock goes down once the files leave it, like after the pointer.
 - The name label is drawn inside the surface, not as a [tooltip](../kit/components.md#tooltip) popup.
