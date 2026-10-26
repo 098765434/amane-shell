@@ -6,6 +6,8 @@
 //! image is still decoding). The launcher draws installed apps from their
 //! entries the same way ([`entry_tile`]).
 
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use amane::{Apps, Center, DesktopApp, Image, Rectangle, Service, Size, Text};
@@ -92,11 +94,38 @@ pub fn entry_for(app_id: &str) -> Option<DesktopApp> {
 
     let apps = Apps::read();
     let needle = app_id.to_lowercase();
-    let last = needle.rsplit('.').next().unwrap_or(&needle).to_string();
+    let last = needle.rsplit('.').next().unwrap_or(&needle);
 
-    let matched = apps.list().iter().find(|app| {
-        let icon = app.icon().unwrap_or("").to_lowercase();
-        let name = app.name().to_lowercase();
+    // the first app any of whose names is the app_id, or its last part
+    let index = INDEX.with_borrow_mut(|index| {
+        let list = apps.list();
+        let made_for = (list.as_ptr() as usize, list.len());
+        if index.as_ref().is_none_or(|(made, _)| *made != made_for) {
+            *index = Some((made_for, names(list)));
+        }
+        let (_, names) = index.as_ref()?;
+        match (names.get(&needle), names.get(last)) {
+            (Some(a), Some(b)) => Some(*a.min(b)),
+            (a, b) => a.or(b).copied(),
+        }
+    })?;
+
+    apps.list().get(index).cloned()
+}
+
+thread_local! {
+    /*
+     * each app's names (icon, name, executable) lowercased, to the first
+     * app in the list that has it, for the list it was made from: the dock
+     * and the notifications look an app up for every icon on every frame
+     */
+    static INDEX: RefCell<Option<((usize, usize), HashMap<String, usize>)>> =
+        const { RefCell::new(None) };
+}
+
+fn names(apps: &[DesktopApp]) -> HashMap<String, usize> {
+    let mut names = HashMap::new();
+    for (index, app) in apps.iter().enumerate() {
         let exec_base = app
             .exec()
             .split_whitespace()
@@ -106,13 +135,15 @@ pub fn entry_for(app_id: &str) -> Option<DesktopApp> {
             .next()
             .unwrap_or("")
             .to_lowercase();
-
-        [icon, name, exec_base]
-            .iter()
-            .any(|field| *field == needle || *field == last)
-    });
-
-    matched.cloned()
+        for name in [
+            app.icon().unwrap_or("").to_lowercase(),
+            app.name().to_lowercase(),
+            exec_base,
+        ] {
+            names.entry(name).or_insert(index);
+        }
+    }
+    names
 }
 
 fn first_letter(app: &str, title: &str) -> String {
