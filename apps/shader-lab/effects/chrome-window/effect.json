@@ -1,0 +1,15 @@
+{
+  "extends": "../chrome",
+  "name": "Reflective chrome (window)",
+  "passes": [
+    { "shader": "../chrome/blur_x.wgsl", "inputs": ["content"] },
+    { "shader": "../chrome/blur_y.wgsl", "inputs": [0] },
+    { "shader": "../chrome/chrome.wgsl", "inputs": ["content", 1, "backdrop"] }
+  ],
+  "constants": [{ "slot": [14, 2], "value": 0 }],
+  "params": [
+    { "key": "reflect", "label": "Reflect", "default": 70, "min": 0, "max": 100, "step": 1, "unit": "%", "slot": [14, 0] },
+    { "key": "warp", "label": "Warp", "default": 24, "min": 0, "max": 120, "step": 1, "unit": "px", "slot": [14, 1] },
+    { "key": "soften", "label": "Soften", "default": 2, "min": 0, "max": 20, "step": 0.5, "unit": "px", "slot": [14, 3] }
+  ]
+}

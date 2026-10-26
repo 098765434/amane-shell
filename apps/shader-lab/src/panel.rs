@@ -9,8 +9,10 @@ use amane::{Clipboard, Color, Column, Row, Service, Size, Text, TextInput, Widge
 use amane_kit::app::{field_box, text_field};
 use amane_kit::buttons::{PushButton, Switch};
 use amane_kit::dropdown::Dropdown;
-use amane_kit::layout::boxed;
+use amane_kit::kinetic::Axis;
+use amane_kit::layout::{boxed, text_height};
 use amane_kit::material::{self, Level};
+use amane_kit::scroll_view::ScrollView;
 use amane_kit::slider::Slider;
 use amane_kit::tokens::{Styled, sys};
 
@@ -22,8 +24,14 @@ const LABEL_WIDTH: f32 = 92.0;
 const SLIDER_WIDTH: f32 = 170.0;
 const FIELD_WIDTH: f32 = 72.0;
 
-pub fn panel(effects: &Effects, lab: &Lab) -> Column {
+/// The controls, scrolled when they're taller than the window.
+pub fn panel(effects: &Effects, lab: &Lab) -> amane::Rectangle {
     let mut rows: Vec<Box<dyn Widget>> = Vec::new();
+
+    // how tall the rows are, added up as they go in, for the scroll view
+    let control = sys::size::control::height();
+    let captioned = text_height(sys::r#type::caption()) + sys::space::gap::xs() + control;
+    let mut length = captioned * 2.0 + control;
 
     let names: Vec<String> = effects.list.iter().map(|entry| entry.title()).collect();
 
@@ -67,6 +75,10 @@ pub fn panel(effects: &Effects, lab: &Lab) -> Column {
         _ => {}
     }
 
+    if matches!(lab.subject, 3 | 4) {
+        length += control;
+    }
+
     let entry = effects.list.get(lab.effect);
 
     if let Some(Ok(manifest)) = entry.map(|entry| &entry.manifest) {
@@ -87,7 +99,12 @@ pub fn panel(effects: &Effects, lab: &Lab) -> Column {
                     })
                     .build(),
             )));
+
+            length += captioned;
         }
+
+        // the params, then the buttons
+        length += control * (manifest.params.len() + 1) as f32;
 
         for param in &manifest.params {
             rows.push(boxed(param_row(
@@ -104,14 +121,31 @@ pub fn panel(effects: &Effects, lab: &Lab) -> Column {
         )));
     }
 
-    if let Some(errors) = errors(entry.and_then(|entry| entry.manifest.as_ref().err())) {
+    if let Some((errors, lines)) = errors(entry.and_then(|entry| entry.manifest.as_ref().err())) {
         rows.push(boxed(errors));
+
+        length += lines as f32 * (ERROR_LINE + ERROR_GAP);
     }
 
-    Column::new(rows)
-        .gap(sys::space::gap::m())
-        .width(Size::Fixed(WIDTH))
-        .height(Size::Parent)
+    let gap = sys::space::gap::m();
+
+    length += gap * rows.len().saturating_sub(1) as f32;
+
+    // the window's padding is above and below the panel
+    let viewport = (amane::window_size().1 - sys::space::inset::l() * 2.0).max(1.0);
+    let furthest = (length - viewport).max(0.0);
+
+    let column = Column::new(rows).gap(gap).width(Size::Fixed(WIDTH));
+
+    ScrollView::new(Axis::Vertical, WIDTH, viewport)
+        .content(length)
+        .offset(lab.scroll.clamp(0.0, furthest))
+        .scrollbar(if furthest > 0.0 { 1.0 } else { 0.0 })
+        .on_scroll(move |scroll| {
+            let mut lab = Lab::write();
+            lab.scroll = (lab.scroll.clamp(0.0, furthest) + scroll.y).clamp(0.0, furthest);
+        })
+        .build(column)
 }
 
 /// A setting's name over its control.
@@ -279,14 +313,7 @@ fn rust_snippet(manifest: &Manifest, lab: &Lab, dir: &std::path::Path) -> String
     let mut text = String::from("Effect::new()\n");
 
     for pass in &manifest.passes {
-        let inputs: Vec<String> = pass
-            .inputs
-            .iter()
-            .map(|input| match input {
-                crate::effects::InputSpec::Pass(index) => format!("Input::Pass({index})"),
-                crate::effects::InputSpec::Named(_) => "Input::Content".into(),
-            })
-            .collect();
+        let inputs: Vec<String> = pass.inputs.iter().map(|input| input.rust()).collect();
 
         let _ = writeln!(
             text,
@@ -311,8 +338,11 @@ fn rust_snippet(manifest: &Manifest, lab: &Lab, dir: &std::path::Path) -> String
     text
 }
 
-/// The manifest's error and each shader that failed, in red.
-fn errors(manifest: Option<&String>) -> Option<Column> {
+const ERROR_LINE: f32 = 14.0;
+const ERROR_GAP: f32 = 2.0;
+
+/// The manifest's error and each shader that failed, in red, and how many lines that is.
+fn errors(manifest: Option<&String>) -> Option<(Column, usize)> {
     let mut messages: Vec<String> = manifest.cloned().into_iter().collect();
 
     for (_, error) in amane::shader_errors() {
@@ -336,7 +366,12 @@ fn errors(manifest: Option<&String>) -> Option<Column> {
         })
         .collect();
 
-    Some(Column::new(lines).gap(2.0).width(Size::Fixed(WIDTH)))
+    let count = lines.len();
+
+    Some((
+        Column::new(lines).gap(ERROR_GAP).width(Size::Fixed(WIDTH)),
+        count,
+    ))
 }
 
 /// Puts the value in the field, unless it's being typed into.

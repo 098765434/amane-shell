@@ -1,0 +1,19 @@
+{
+  "extends": "../chrome",
+  "name": "Reflective chrome (wallpaper)",
+  "passes": [
+    { "shader": "../chrome/blur_x.wgsl", "inputs": ["content"] },
+    { "shader": "../chrome/blur_y.wgsl", "inputs": [0] },
+    { "shader": "../chrome/chrome.wgsl", "inputs": ["content", 1, { "image": "~/Pictures/overview.jpg", "blur": 4 }] }
+  ],
+  "constants": [{ "slot": [14, 2], "value": 1 }],
+  "params": [
+    { "key": "reflect", "label": "Reflect", "default": 70, "min": 0, "max": 100, "step": 1, "unit": "%", "slot": [14, 0] },
+    { "key": "warp", "label": "Warp", "default": 24, "min": 0, "max": 120, "step": 1, "unit": "px", "slot": [14, 1] },
+    { "key": "soften", "label": "Soften", "default": 2, "min": 0, "max": 20, "step": 0.5, "unit": "px", "slot": [14, 3] },
+    { "key": "windowX", "label": "Window x", "default": 0, "min": 0, "max": 3000, "step": 1, "unit": "px", "slot": [15, 0] },
+    { "key": "windowY", "label": "Window y", "default": 0, "min": 0, "max": 2000, "step": 1, "unit": "px", "slot": [15, 1] },
+    { "key": "outputWidth", "label": "Output w", "default": 1645, "min": 0, "max": 4000, "step": 1, "unit": "px", "slot": [15, 2] },
+    { "key": "outputHeight", "label": "Output h", "default": 1028, "min": 0, "max": 3000, "step": 1, "unit": "px", "slot": [15, 3] }
+  ]
+}

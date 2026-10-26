@@ -9,6 +9,11 @@
 //   row 11      stop count, depth %, rgb split %, scale %
 //   row 12      phase %, evolution %, angle in degrees, stretch %
 //   row 13      offset %, repeats, roughness %
+//   row 14      reflect %, warp in logical pixels, where input2 sits (0 under the
+//               drawing, as a backdrop, 1 placed on the screen, as the wallpaper),
+//               soften in logical pixels
+//   row 15      where input2 sits: the window's x and y on the output, the output's
+//               width and height, all logical; the image covers the output
 //
 // changed from the Figma original: it returns plain alpha, not premultiplied;
 // the blur is in logical pixels times scale and reaches 64 pixels, not 32,
@@ -84,7 +89,78 @@ fn main(@location(0) uv: vec2<f32>, @location(1) canvas_uv: vec2<f32>) -> @locat
 
     let alpha = smoothstep(0.45, 0.55, edge);
 
-    return vec4<f32>(red, green, blue, alpha);
+    let chrome = vec3<f32>(red, green, blue);
+
+    let mirror = saturate(values[14].x / 100.0);
+
+    if (mirror <= 0.0) {
+        return vec4<f32>(chrome, alpha);
+    }
+
+    // which way the surface faces: the bevel's slope, steepest at the rim, plus the noise's ripples
+    let pixel = 1.0 / placement.canvas.xy;
+    let sigma = max(values[0].x * scale, 1.0);
+
+    let bevel = vec2<f32>(
+        textureSampleLevel(input1, input_sampler, canvas_uv + vec2<f32>(pixel.x, 0.0), 0.0).a
+            - textureSampleLevel(input1, input_sampler, canvas_uv - vec2<f32>(pixel.x, 0.0), 0.0).a,
+        textureSampleLevel(input1, input_sampler, canvas_uv + vec2<f32>(0.0, pixel.y), 0.0).a
+            - textureSampleLevel(input1, input_sampler, canvas_uv - vec2<f32>(0.0, pixel.y), 0.0).a,
+    ) * 0.5 * sigma * 2.5;
+
+    let facing = -bevel + slope / (2.0 * eps) * 0.15 * depth;
+
+    // in logical pixels, how far off the reflection is read
+    let bend = facing * values[14].y;
+
+    var seen = vec3<f32>(0.0);
+
+    // a small ring of reads around the point, so the reflection is soft, not sharp
+    let soften = values[14].w;
+
+    for (var tap = 0; tap < 7; tap++) {
+        var around = vec2<f32>(0.0);
+
+        if (tap > 0) {
+            let turn = f32(tap) * 1.0471976;
+            around = vec2<f32>(cos(turn), sin(turn)) * soften;
+        }
+
+        seen += environment(canvas_uv, bend + around).rgb;
+    }
+
+    seen /= 7.0;
+
+    // the bands still shape it: dark bands darken what's reflected, bright ones lift it
+    let light = dot(chrome, vec3<f32>(0.299, 0.587, 0.114));
+    let reflected = seen * mix(0.25, 1.3, light);
+
+    return vec4<f32>(mix(chrome, reflected, mirror), alpha);
+}
+
+// what input2 shows at this point, moved by `bend` logical pixels
+fn environment(canvas_uv: vec2<f32>, bend: vec2<f32>) -> vec4<f32> {
+    let canvas = placement.canvas.xy;
+
+    if (values[14].z < 0.5) {
+        return textureSampleLevel(input2, input_sampler, canvas_uv + bend * scale / canvas, 0.0);
+    }
+
+    // the window's place on the output, and the image scaled to cover the output
+    var output = values[15].zw;
+
+    if (output.x <= 0.0 || output.y <= 0.0) {
+        output = canvas / scale;
+    }
+
+    let on_screen = values[15].xy + canvas_uv * canvas / scale + bend;
+
+    let image = vec2<f32>(textureDimensions(input2));
+    let cover = max(output.x / image.x, output.y / image.y);
+    let shown = image * cover;
+    let corner = (output - shown) * 0.5;
+
+    return textureSampleLevel(input2, input_sampler, (on_screen - corner) / shown, 0.0);
 }
 
 fn height(at: vec3<f32>, depth: f32, edge: f32, eps: f32) -> f32 {

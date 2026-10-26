@@ -14,8 +14,26 @@ shows the change straight away. Without it, the built-in effects are written to
 `$XDG_RUNTIME_DIR/amane-shader-lab/`. Shader compile errors and manifest errors show in red under
 the controls. A broken shader keeps its last good version on screen.
 
+`--effect <folder>`, `--subject <n>` and `--backdrop <n>` set what it starts on, which is handy
+for screenshots.
+
 **Copy as Rust** puts the effect, with the values as they're set, on the clipboard as an
 `Effect::new()…` expression to paste into the shell.
+
+## The effects
+
+| Folder | Shows |
+|---|---|
+| `chrome` | the metallic chrome ported from Figma |
+| `chrome-window` | the chrome, reflecting what the window drew behind it (`"backdrop"`); try it over the Wallpaper backdrop |
+| `chrome-wallpaper` | the chrome, reflecting the wallpaper file, placed by the window's position on the output (Window x/y, Output w/h) |
+
+The reflection reads the surface's slope from the blurred alpha (steepest at the rim) plus the
+noise's ripples, and looks up the environment that far away (Warp). Soften spreads a ring of
+reads, and Reflect blends the environment, shaped by the gradient's bands, over the plain
+chrome. At Reflect 0 the shader returns the plain chrome unchanged. A normal window never learns
+where it is on screen, so in the lab the wallpaper variant can't line up with the real
+wallpaper. On the desktop layer, a widget knows its own position.
 
 ## An effect folder
 
@@ -31,10 +49,12 @@ effects/chrome/
 
 | Field | Means |
 |---|---|
-| `passes` | each pass's `shader` file and its `inputs`: `"content"` or the number of an earlier pass |
+| `extends` | a folder whose manifest fills in every field this one leaves out; this one's `params` come first |
+| `passes` | each pass's `shader` file and its `inputs`: `"content"`, `"backdrop"`, the number of an earlier pass, or `{ "image": "~/path", "blur": px }` |
 | `params` | `key`, `label`, `default`, `min`, `max`, `step`, `unit` and the `slot` it fills, `[row, lane]` of `values` |
 | `gradient` | gradient presets: eight color rows from `colors_row`, two position rows from `positions_row`, the stop count in `count_slot` |
 | `animate` | the param the Animate switch sweeps from `from` to `to` every `seconds` |
+| `constants` | values no control changes: `slot` and `value` |
 | `margin` | logical pixels the passes reach past the subject |
 
 ## Porting a Figma shader

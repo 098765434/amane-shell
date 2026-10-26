@@ -37,6 +37,16 @@ const BUILT_IN: &[(&str, &str, &str)] = &[
         "chrome.wgsl",
         include_str!("../effects/chrome/chrome.wgsl"),
     ),
+    (
+        "chrome-window",
+        "effect.json",
+        include_str!("../effects/chrome-window/effect.json"),
+    ),
+    (
+        "chrome-wallpaper",
+        "effect.json",
+        include_str!("../effects/chrome-wallpaper/effect.json"),
+    ),
 ];
 
 #[derive(Deserialize, Clone)]
@@ -50,6 +60,16 @@ pub struct Manifest {
     pub params: Vec<Param>,
     pub gradient: Option<GradientSpec>,
     pub animate: Option<Animate>,
+    /// Values no control changes.
+    #[serde(default)]
+    pub constants: Vec<Constant>,
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct Constant {
+    pub slot: [usize; 2],
+    pub value: f32,
 }
 
 #[derive(Deserialize, Clone)]
@@ -59,12 +79,51 @@ pub struct PassSpec {
     pub inputs: Vec<InputSpec>,
 }
 
-/// `"content"`, or the index of an earlier pass.
+/// `"content"`, `"backdrop"`, the index of an earlier pass, or an image
+/// file as `{ "image": path, "blur": pixels }`; a path may start with `~/`.
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde", untagged)]
 pub enum InputSpec {
     Pass(usize),
+    Image {
+        image: String,
+        #[serde(default)]
+        blur: u32,
+    },
     Named(String),
+}
+
+impl InputSpec {
+    pub fn input(&self) -> Input {
+        match self {
+            Self::Pass(earlier) => Input::Pass(*earlier),
+            Self::Image { image, blur } => Input::blurred_image(home(image), *blur),
+            Self::Named(name) if name == "backdrop" => Input::Backdrop,
+            Self::Named(_) => Input::Content,
+        }
+    }
+
+    /// The same input written as Rust.
+    pub fn rust(&self) -> String {
+        match self {
+            Self::Pass(earlier) => format!("Input::Pass({earlier})"),
+            Self::Image { image, blur } => {
+                format!(
+                    "Input::blurred_image({:?}, {blur})",
+                    home(image).display().to_string()
+                )
+            }
+            Self::Named(name) if name == "backdrop" => "Input::Backdrop".into(),
+            Self::Named(_) => "Input::Content".into(),
+        }
+    }
+}
+
+fn home(path: &str) -> PathBuf {
+    match (path.strip_prefix("~/"), std::env::var_os("HOME")) {
+        (Some(rest), Some(home)) => PathBuf::from(home).join(rest),
+        _ => PathBuf::from(path),
+    }
 }
 
 #[derive(Deserialize, Clone)]
@@ -116,7 +175,8 @@ pub struct Animate {
 pub struct Entry {
     pub dir: PathBuf,
     pub manifest: Result<Manifest, String>,
-    modified: Option<SystemTime>,
+    /// When its manifest, and any it extends, were last saved.
+    modified: Vec<Option<SystemTime>>,
 }
 
 impl Entry {
@@ -144,9 +204,9 @@ impl Service for Effects {
     }
 
     fn update(&mut self) -> bool {
-        let stamps = |list: &[Entry]| -> Vec<(PathBuf, Option<SystemTime>)> {
+        let stamps = |list: &[Entry]| -> Vec<(PathBuf, Vec<Option<SystemTime>>)> {
             list.iter()
-                .map(|entry| (entry.dir.clone(), entry.modified))
+                .map(|entry| (entry.dir.clone(), entry.modified.clone()))
                 .collect()
         };
 
@@ -212,15 +272,12 @@ fn scan() -> Vec<Entry> {
 
     dirs.into_iter()
         .map(|dir| {
-            let path = dir.join("effect.json");
+            let mut modified = Vec::new();
 
-            let modified = fs::metadata(&path).and_then(|meta| meta.modified()).ok();
-
-            let manifest = fs::read_to_string(&path)
-                .map_err(|error| error.to_string())
-                .and_then(|text| serde_json::from_str(&text).map_err(|error| error.to_string()))
+            let manifest = read_manifest(&dir, &mut modified, 0)
+                .and_then(|value| serde_json::from_value(value).map_err(|error| error.to_string()))
                 .and_then(|manifest: Manifest| manifest.check().map(|()| manifest))
-                .map_err(|error| format!("{}: {error}", path.display()));
+                .map_err(|error| format!("{}: {error}", dir.join("effect.json").display()));
 
             Entry {
                 dir,
@@ -229,6 +286,59 @@ fn scan() -> Vec<Entry> {
             }
         })
         .collect()
+}
+
+/// The manifest as JSON, with what it `extends` filled in: every field it
+/// leaves out comes from the folder it names, and its own `params` go before
+/// that folder's.
+fn read_manifest(
+    dir: &Path,
+    modified: &mut Vec<Option<SystemTime>>,
+    depth: usize,
+) -> Result<serde_json::Value, String> {
+    let path = dir.join("effect.json");
+
+    modified.push(fs::metadata(&path).and_then(|meta| meta.modified()).ok());
+
+    let text = fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let mut manifest: serde_json::Value =
+        serde_json::from_str(&text).map_err(|error| error.to_string())?;
+
+    let Some(base) = manifest.get("extends").and_then(|base| base.as_str()) else {
+        return Ok(manifest);
+    };
+
+    if depth >= 4 {
+        return Err("\"extends\" goes more than 4 deep".into());
+    }
+
+    let mut base = read_manifest(&dir.join(base), modified, depth + 1)
+        .map_err(|error| format!("extends {base}: {error}"))?;
+
+    let (Some(own), Some(inherited)) = (manifest.as_object_mut(), base.as_object_mut()) else {
+        return Err("a manifest is a JSON object".into());
+    };
+
+    let own_params = own.remove("params");
+    let inherited_params = inherited.remove("params");
+
+    for (key, value) in std::mem::take(own) {
+        if key != "extends" {
+            inherited.insert(key, value);
+        }
+    }
+
+    let mut params: Vec<serde_json::Value> = Vec::new();
+
+    for list in [own_params, inherited_params].into_iter().flatten() {
+        if let serde_json::Value::Array(list) = list {
+            params.extend(list);
+        }
+    }
+
+    inherited.insert("params".into(), serde_json::Value::Array(params));
+
+    Ok(base)
 }
 
 fn folder_name(dir: &Path) -> String {
@@ -257,9 +367,9 @@ impl Manifest {
                         ));
                     }
 
-                    InputSpec::Named(name) if name != "content" => {
+                    InputSpec::Named(name) if name != "content" && name != "backdrop" => {
                         return Err(format!(
-                            "pass {index} reads \"{name}\", only \"content\" or a pass number"
+                            "pass {index} reads \"{name}\": an input is \"content\", \"backdrop\", a pass number or an image"
                         ));
                     }
 
@@ -268,7 +378,12 @@ impl Manifest {
             }
         }
 
-        let mut last_row = self.params.iter().map(|param| param.slot[0]).max();
+        let slots = self.params.iter().map(|param| param.slot);
+        let slots: Vec<[usize; 2]> = slots
+            .chain(self.constants.iter().map(|constant| constant.slot))
+            .collect();
+
+        let mut last_row = slots.iter().map(|slot| slot[0]).max();
 
         if let Some(gradient) = &self.gradient {
             let rows = [
@@ -284,7 +399,7 @@ impl Manifest {
             return Err(format!("values only have {VALUE_ROWS} rows"));
         }
 
-        let lanes = self.params.iter().map(|param| param.slot[1]);
+        let lanes = slots.iter().map(|slot| slot[1]);
 
         if lanes
             .chain(self.gradient.iter().map(|g| g.count_slot[1]))
@@ -301,14 +416,7 @@ impl Manifest {
         let mut effect = Effect::new();
 
         for pass in &self.passes {
-            let inputs: Vec<Input> = pass
-                .inputs
-                .iter()
-                .map(|input| match input {
-                    InputSpec::Pass(earlier) => Input::Pass(*earlier),
-                    InputSpec::Named(_) => Input::Content,
-                })
-                .collect();
+            let inputs: Vec<Input> = pass.inputs.iter().map(InputSpec::input).collect();
 
             effect = effect.pass(dir.join(&pass.shader), inputs);
         }
@@ -325,6 +433,10 @@ impl Manifest {
             rows[row][lane] = number;
             used = used.max(row + 1);
         };
+
+        for constant in &self.constants {
+            put(constant.slot[0], constant.slot[1], constant.value);
+        }
 
         for param in &self.params {
             put(param.slot[0], param.slot[1], value(param));
@@ -401,6 +513,30 @@ mod tests {
 
         assert_eq!(rounding.snap(7.3), 7.5);
         assert_eq!(rounding.snap(12.0), 10.0);
+    }
+
+    #[test]
+    fn a_variant_takes_what_it_leaves_out_from_what_it_extends() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("effects/chrome-wallpaper");
+        let mut modified = Vec::new();
+
+        let value = read_manifest(&dir, &mut modified, 0).unwrap();
+        let manifest: Manifest = serde_json::from_value(value).unwrap();
+
+        manifest.check().unwrap();
+        assert_eq!(manifest.name, "Reflective chrome (wallpaper)");
+        assert_eq!(modified.len(), 2);
+        // its own params first, then chrome's
+        assert_eq!(manifest.params[0].key, "reflect");
+        assert_eq!(manifest.params.last().unwrap().key, "evolution");
+        assert!(manifest.gradient.is_some());
+        assert!(matches!(
+            manifest.passes[2].inputs[2].input(),
+            Input::Image { blur: 4, .. }
+        ));
+
+        let rows = manifest.pack(|param| param.default, None);
+        assert_eq!(rows[14], [70.0, 24.0, 1.0, 2.0]);
     }
 
     #[test]

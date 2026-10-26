@@ -1,7 +1,8 @@
 //! Shader Lab: tries amane shader effects on a shape, text or an icon, with
 //! a control for every parameter the effect's manifest lists. Shaders and
 //! manifests reload when saved; run it with `--effects <dir>` to edit a
-//! source tree, as in `--effects apps/shader-lab/effects`.
+//! source tree, as in `--effects apps/shader-lab/effects`. `--effect
+//! <folder>`, `--subject <n>` and `--backdrop <n>` set what it starts on.
 
 mod effects;
 mod panel;
@@ -37,14 +38,42 @@ pub struct Lab {
     pub presets: HashMap<String, usize>,
     pub animate: bool,
     pub started: Instant,
+    /// How far the controls are scrolled.
+    pub scroll: f32,
 }
 
 impl Service for Lab {
     fn new() -> Self {
+        let flag = |name: &str| {
+            let mut args = std::env::args().skip(1);
+
+            while let Some(arg) = args.next() {
+                if arg == name {
+                    return args.next();
+                }
+            }
+
+            None
+        };
+
+        let index = |name: &str| flag(name).and_then(|value| value.parse().ok()).unwrap_or(0);
+
+        // `--effect <folder>` picks an effect by its folder's name
+        let effect = flag("--effect")
+            .and_then(|folder| {
+                let effects = Effects::read();
+
+                effects
+                    .list
+                    .iter()
+                    .position(|entry| entry.dir.file_name().is_some_and(|name| *name == *folder))
+            })
+            .unwrap_or(0);
+
         Self {
-            effect: 0,
-            subject: 0,
-            backdrop: 0,
+            effect,
+            subject: index("--subject"),
+            backdrop: index("--backdrop"),
             size: 120.0,
             text: "chrome".into(),
             image: default_image(),
@@ -52,6 +81,7 @@ impl Service for Lab {
             presets: HashMap::new(),
             animate: false,
             started: Instant::now(),
+            scroll: 0.0,
         }
     }
 
@@ -125,13 +155,23 @@ fn main_window() -> Window {
         subject = subject.effect(effect);
     }
 
+    /*
+     * the clip holds the backdrop's fill as well as the subject: a clip
+     * holding an effect draws on its own canvas, and an effect reading the
+     * backdrop sees only what that canvas holds
+     */
     let preview = Rectangle::new()
         .width(Size::Parent)
         .height(Size::Parent)
-        .fill(backdrop(lab.backdrop))
-        .align_child(Center, Center)
         .clip()
-        .child(subject);
+        .child(
+            Rectangle::new()
+                .width(Size::Parent)
+                .height(Size::Parent)
+                .fill(backdrop(lab.backdrop))
+                .align_child(Center, Center)
+                .child(subject),
+        );
 
     let content = Row::new(vec![boxed(preview), boxed(panel::panel(&effects, &lab))])
         .gap(sys::space::gap::l())
