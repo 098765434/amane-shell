@@ -26,6 +26,7 @@ for screenshots.
 |---|---|
 | `chrome` | the metallic chrome ported from Figma |
 | `chrome-window` | the chrome, reflecting what the window drew behind it (`"backdrop"`); try it over the Wallpaper backdrop |
+| `spectral` | the animated spectral background from the Figma Community file "Shader Dash", drawn inside the subject's shape; try the Fill preview subject |
 | `chrome-wallpaper` | the chrome, reflecting the wallpaper file, placed by the window's position on the output (Window x/y, Output w/h) |
 
 The reflection reads the surface's slope from the blurred alpha (steepest at the rim) plus the
@@ -54,6 +55,7 @@ effects/chrome/
 | `params` | `key`, `label`, `default`, `min`, `max`, `step`, `unit` and the `slot` it fills, `[row, lane]` of `values` |
 | `gradient` | gradient presets: eight color rows from `colors_row`, two position rows from `positions_row`, the stop count in `count_slot` |
 | `animate` | the param the Animate switch sweeps from `from` to `to` every `seconds` |
+| `presets` | named sets of param values, `{ "name", "values": { key: value } }`, picked from the Preset dropdown |
 | `constants` | values no control changes: `slot` and `value` |
 | `margin` | logical pixels the passes reach past the subject |
 
@@ -69,7 +71,10 @@ the passes for you, so a port keeps only the WGSL fragment code:
   real pixels, so multiply logical sizes by `scale`.
 - Return plain alpha. Figma's examples return premultiplied color.
 - Hoist `fwidth` out of loops instead of turning off `derivative_uniformity`.
-- Drive animation from the manifest's `animate`, not from `time`. A shader whose source says
-  `time` redraws every frame.
+- A WebGL (GLSL ES) shader ports the same way: its `gl_FragCoord` is `vec2(uv.x, 1.0 - uv.y) * size`
+  (GL counts up from the bottom), its `iResolution` is `size`, and its `iTime` is amane's `time`.
+  `spectral/spectral.wgsl` is an example.
+- For a loop that should rest when nobody's watching, drive it from the manifest's `animate`
+  instead of `time`: a shader whose source says `time` redraws every frame.
 
 The chrome port (`effects/chrome/chrome.wgsl`) has notes on what changed from the original.

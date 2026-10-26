@@ -1,0 +1,23 @@
+{
+  "name": "Spectral flow (Shader Dash)",
+  "passes": [
+    { "shader": "spectral.wgsl", "inputs": ["content"] }
+  ],
+  "params": [
+    { "key": "hueShift", "label": "Hue shift", "default": 240, "min": 0, "max": 360, "step": 1, "unit": "°", "slot": [0, 0] },
+    { "key": "saturation", "label": "Saturation", "default": 150, "min": 0, "max": 200, "step": 1, "unit": "%", "slot": [0, 1] },
+    { "key": "brightness", "label": "Brightness", "default": 150, "min": 0, "max": 200, "step": 1, "unit": "%", "slot": [0, 2] },
+    { "key": "speed", "label": "Speed", "default": 100, "min": 0, "max": 300, "step": 1, "unit": "%", "slot": [0, 3] },
+    { "key": "zoom", "label": "Zoom", "default": 200, "min": 25, "max": 600, "step": 1, "unit": "%", "slot": [1, 0] },
+    { "key": "steps", "label": "Warp steps", "default": 8, "min": 0, "max": 16, "step": 1, "slot": [1, 1] }
+  ],
+  "presets": [
+    { "name": "Original", "values": { "hueShift": 240, "saturation": 150, "brightness": 150 } },
+    { "name": "Warm shift", "values": { "hueShift": 16, "saturation": 150, "brightness": 140 } },
+    { "name": "Cool shift", "values": { "hueShift": 180, "saturation": 123, "brightness": 147 } },
+    { "name": "Vibrant", "values": { "hueShift": 330, "saturation": 150, "brightness": 150 } },
+    { "name": "Muted", "values": { "hueShift": 210, "saturation": 50, "brightness": 133 } },
+    { "name": "Sunset", "values": { "hueShift": 9, "saturation": 150, "brightness": 100 } },
+    { "name": "Ocean", "values": { "hueShift": 180, "saturation": 120, "brightness": 144 } }
+  ]
+}

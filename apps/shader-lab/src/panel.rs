@@ -63,7 +63,12 @@ pub fn panel(effects: &Effects, lab: &Lab) -> amane::Rectangle {
         .gap(12.0),
     ));
 
-    rows.push(boxed(size_row(lab)));
+    // a subject filling the preview has no size of its own
+    if lab.subject != 5 {
+        rows.push(boxed(size_row(lab)));
+    } else {
+        length -= control;
+    }
 
     match lab.subject {
         3 => rows.push(boxed(text_row("lab.text", "Text", &lab.text, |text| {
@@ -82,6 +87,12 @@ pub fn panel(effects: &Effects, lab: &Lab) -> amane::Rectangle {
     let entry = effects.list.get(lab.effect);
 
     if let Some(Ok(manifest)) = entry.map(|entry| &entry.manifest) {
+        if !manifest.presets.is_empty() {
+            rows.push(boxed(setting("Preset", presets(manifest, lab))));
+
+            length += captioned;
+        }
+
         if let Some(gradient) = &manifest.gradient {
             let presets = gradient
                 .presets
@@ -146,6 +157,44 @@ pub fn panel(effects: &Effects, lab: &Lab) -> amane::Rectangle {
             lab.scroll = (lab.scroll.clamp(0.0, furthest) + scroll.y).clamp(0.0, furthest);
         })
         .build(column)
+}
+
+/// The manifest's named sets of values; "Custom" while the values match none.
+fn presets(manifest: &Manifest, lab: &Lab) -> amane::Rectangle {
+    let matches = |preset: &crate::effects::ParamPreset| {
+        preset.values.iter().all(|(key, value)| {
+            let param = manifest.params.iter().find(|param| &param.key == key);
+
+            param.is_some_and(|param| (lab.value(manifest, param) - value).abs() < 0.01)
+        })
+    };
+
+    let chosen = manifest
+        .presets
+        .iter()
+        .position(matches)
+        .map_or(0, |index| index + 1);
+
+    let names = std::iter::once("Custom".to_owned())
+        .chain(manifest.presets.iter().map(|preset| preset.name.clone()))
+        .collect();
+
+    let (name, presets) = (manifest.name.clone(), manifest.presets.clone());
+
+    Dropdown::new("lab.param-preset", names, chosen)
+        .width(WIDTH)
+        .on_select(move |index| {
+            let Some(preset) = index.checked_sub(1).and_then(|index| presets.get(index)) else {
+                return;
+            };
+
+            let mut lab = Lab::write();
+
+            for (key, value) in &preset.values {
+                lab.set(&name, key, *value);
+            }
+        })
+        .build()
 }
 
 /// A setting's name over its control.

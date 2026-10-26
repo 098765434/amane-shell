@@ -38,6 +38,16 @@ const BUILT_IN: &[(&str, &str, &str)] = &[
         include_str!("../effects/chrome/chrome.wgsl"),
     ),
     (
+        "spectral",
+        "effect.json",
+        include_str!("../effects/spectral/effect.json"),
+    ),
+    (
+        "spectral",
+        "spectral.wgsl",
+        include_str!("../effects/spectral/spectral.wgsl"),
+    ),
+    (
         "chrome-window",
         "effect.json",
         include_str!("../effects/chrome-window/effect.json"),
@@ -63,6 +73,17 @@ pub struct Manifest {
     /// Values no control changes.
     #[serde(default)]
     pub constants: Vec<Constant>,
+    /// Named sets of parameter values, picked from a dropdown.
+    #[serde(default)]
+    pub presets: Vec<ParamPreset>,
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct ParamPreset {
+    pub name: String,
+    /// By parameter key; those left out keep their value.
+    pub values: std::collections::HashMap<String, f32>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -537,6 +558,24 @@ mod tests {
 
         let rows = manifest.pack(|param| param.default, None);
         assert_eq!(rows[14], [70.0, 24.0, 1.0, 2.0]);
+    }
+
+    #[test]
+    fn the_spectral_presets_name_real_params() {
+        let manifest: Manifest =
+            serde_json::from_str(include_str!("../effects/spectral/effect.json")).unwrap();
+
+        manifest.check().unwrap();
+
+        for preset in &manifest.presets {
+            for key in preset.values.keys() {
+                assert!(
+                    manifest.params.iter().any(|param| &param.key == key),
+                    "{} sets {key}, which isn't a param",
+                    preset.name
+                );
+            }
+        }
     }
 
     #[test]

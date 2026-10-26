@@ -20,7 +20,14 @@ use amane_kit::tokens::sys;
 
 use effects::{Effects, Manifest, Param};
 
-const SUBJECTS: [&str; 5] = ["Rounded rectangle", "Pill", "Circle", "Text", "Image"];
+const SUBJECTS: [&str; 6] = [
+    "Rounded rectangle",
+    "Pill",
+    "Circle",
+    "Text",
+    "Image",
+    "Fill preview",
+];
 
 const BACKDROPS: [&str; 4] = ["Dark", "Light", "Grey", "Wallpaper"];
 
@@ -220,10 +227,16 @@ fn subject(lab: &Lab) -> Rectangle {
                     .color(Color::WHITE),
             ),
 
-        _ => Rectangle::new()
+        4 => Rectangle::new()
             .width(size * 1.6)
             .height(size * 1.6)
             .fill(Image::contain(lab.image.clone())),
+
+        // the whole preview, for effects that are backgrounds
+        _ => Rectangle::new()
+            .width(Size::Parent)
+            .height(Size::Parent)
+            .fill(Color::WHITE),
     }
 }
 
