@@ -4,7 +4,7 @@
 //! inert: the dock's still layer takes the pointer for every icon (see
 //! [`super`]), so nothing here moves a hit area as the icons swell.
 
-use amane::{Center, Color, Rectangle, Row, Text, Widget};
+use amane::{Center, Color, Rectangle, Row, Service, Text, Widget, Windows};
 
 use super::model::Icon;
 use crate::components::app_icon;
@@ -51,8 +51,16 @@ pub fn running(icon: &Icon) -> (Box<dyn Widget>, f32) {
 /// What an icon is called over it: its window's title, else its desktop
 /// entry's name, else its app_id's last part.
 pub fn name(icon: &Icon) -> String {
-    match icon {
-        Icon::Window(window) if !window.title.is_empty() => short(&window.title),
+    let title = match icon {
+        Icon::Window(window) => Windows::read()
+            .list()
+            .iter()
+            .find(|w| w.id() == window.id)
+            .and_then(|w| w.title().map(str::to_string)),
+        Icon::Pin(_) => None,
+    };
+    match title {
+        Some(title) if !title.is_empty() => short(&title),
         _ => app_icon::name_for(icon.app_id()).unwrap_or_else(|| icon.app_id().to_string()),
     }
 }

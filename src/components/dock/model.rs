@@ -14,6 +14,9 @@ use super::pins::{Pin, Place};
 pub struct Win {
     pub id: u64,
     pub app_id: String,
+    /// Only for a window without an app_id, whose icon is its title's
+    /// first letter: reading every title would redraw the dock whenever
+    /// any changed. The name label looks its window's up itself.
     pub title: String,
     pub workspace: Option<i64>,
     pub focused: bool,
@@ -24,10 +27,16 @@ pub struct Win {
 
 impl From<&WindowInfo> for Win {
     fn from(window: &WindowInfo) -> Self {
+        let app_id = window.app_id().unwrap_or("").to_string();
+        let title = if app_id.is_empty() {
+            window.title().unwrap_or("").to_string()
+        } else {
+            String::new()
+        };
         Self {
             id: window.id(),
-            app_id: window.app_id().unwrap_or("").to_string(),
-            title: window.title().unwrap_or("").to_string(),
+            app_id,
+            title,
             workspace: window.workspace(),
             focused: window.focused(),
             floating: window.floating(),
