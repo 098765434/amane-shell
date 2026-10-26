@@ -79,9 +79,15 @@ fn gallery() -> Window {
         .size(720.0, 480.0)
         .min_size(560.0, 360.0)
         .on_shortcut(|key| {
-            // Ctrl+D opens the dialog from the keyboard too
+            // Ctrl+D opens the dialog from the keyboard too, Ctrl+S the
+            // stacked one
             if modifiers().ctrl && key == Key::Character('d') {
                 ask();
+
+                return true;
+            }
+            if modifiers().ctrl && key == Key::Character('s') {
+                ask_stacked();
 
                 return true;
             }
@@ -161,6 +167,13 @@ fn controls(state: &Gallery) -> Column {
                         .build(),
                 ),
                 boxed(
+                    PushButton::new("gallery.ask-stacked", "Three answers (Ctrl+S)")
+                        .style(Style::Tonal)
+                        .shape(Shape::Round)
+                        .on_press(ask_stacked)
+                        .build(),
+                ),
+                boxed(
                     Text::new(state.answer.clone())
                         .style(sys::r#type::label())
                         .color(sys::color::surface::popover::fg()),
@@ -199,5 +212,20 @@ fn ask() {
         .main_button("Discard", || {
             Gallery::write().answer = String::from("discarded")
         })
+        .open("gallery");
+}
+
+/// Three answers, which stack: the default on top, the destructive one
+/// under it, and Cancel at the bottom.
+fn ask_stacked() {
+    Dialog::new("gallery.dialog.stacked", "Save changes to the gallery?")
+        .message("If you don't save, your changes will be lost.")
+        .button("Cancel", || {
+            Gallery::write().answer = String::from("cancelled")
+        })
+        .destructive("Don't Save", || {
+            Gallery::write().answer = String::from("not saved")
+        })
+        .main_button("Save", || Gallery::write().answer = String::from("saved"))
         .open("gallery");
 }

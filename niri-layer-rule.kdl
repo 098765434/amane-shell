@@ -170,6 +170,23 @@ layer-rule {
     }
 }
 
+// Alert: a question in the middle of the screen ("Restart now?"), on a surface
+// as big as its card, which frosts itself (a blur shape, in thick glass); the
+// rule rounds it and gives it niri's shadow, spread wide and falling far.
+layer-rule {
+    match namespace="^amane\\.alert$"
+    geometry-corner-radius 34
+    shadow {
+        on
+        softness 48
+        offset x=0 y=18
+        color "#00000073"
+    }
+    background-effect {
+        xray false
+    }
+}
+
 // An amane app's windows: frosted behind, the window drawing its own tint
 // over the frost (the window material), and its popups like the shell's.
 window-rule {
@@ -185,6 +202,24 @@ window-rule {
             blur true
             material "glass"
         }
+    }
+}
+
+// Its dialogs, which float over their window: thick glass, the alert's corners
+// and shadow. (A window floated by hand takes this look too.)
+window-rule {
+    match app-id="^amane-settings$" is-floating=true
+    geometry-corner-radius 34
+    clip-to-geometry true
+    shadow {
+        on
+        softness 48
+        offset x=0 y=18
+        color "#00000073"
+    }
+    background-effect {
+        blur true
+        material "glass-large"
     }
 }
 

@@ -17,6 +17,8 @@
 //!   search, category pills and a grid of the installed apps.
 //! - [`widgets`] — macOS's desktop widgets on the wallpaper: batteries and
 //!   the system's readings, on Quick Settings' grid, with a gallery.
+//! - [`alert`] — macOS's alert in the middle of the screen: a [`dialog`]
+//!   on a surface of thick glass, for questions like "Restart now?".
 //!
 //! The building blocks they share read `sys.*` only, so any component can
 //! use them. Most live in the kit (`amane-kit`), so apps can use them too,
@@ -24,6 +26,8 @@
 //! Material 3 counterpart and drawn in the shell's macOS look:
 //!
 //! - [`card`] — M3's card: a filled or outlined surface, optionally frosted.
+//! - [`dialog`] — macOS's alert: a title, a message and buttons side by
+//!   side or stacked, in an app's modal window or the shell's [`alert`].
 //! - [`glass`] — the lit edge and glow every translucent surface wears.
 //! - [`app_bar`] — M3's small top app bar: a panel's or sheet's title row.
 //! - [`list`] — M3's list: one-line items with leading and trailing slots.
@@ -57,6 +61,7 @@
 //! - [`edge_reveal`] — a surface hiding at a screen edge until the pointer
 //!   touches it.
 
+pub mod alert;
 pub mod battery;
 pub mod context_menu;
 pub mod dock;
@@ -72,7 +77,7 @@ pub mod widgets;
 pub mod workspace_menu;
 
 pub use amane_kit::{
-    app_bar, app_icon, buttons, card, color, control_size, divider, edge_reveal, flow, glass,
-    glass_region,
-    icons, kinetic, layout, list, material, motion, pager, scroll_view, slider, tooltip,
+    app_bar, app_icon, buttons, card, color, control_size, dialog, divider, edge_reveal, flow,
+    glass, glass_region, icons, kinetic, layout, list, material, motion, pager, scroll_view,
+    slider, tooltip,
 };

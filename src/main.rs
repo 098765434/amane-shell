@@ -10,7 +10,9 @@ use std::process::ExitCode;
 use amane::App;
 
 use components::context_menu::{self, ContextMenu, Icon, MenuItem};
-use components::{dock, launcher, notifications, quick_settings, status_bar, tooltip, widgets};
+use components::{
+    alert, dock, launcher, notifications, quick_settings, status_bar, tooltip, widgets,
+};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {
@@ -51,6 +53,27 @@ fn cli(args: &[String]) -> Option<ExitCode> {
     } else {
         ExitCode::FAILURE
     })
+}
+
+/// Shows a sample alert, side by side or `stacked`, whose answers do
+/// nothing: for seeing the alert without ending the session. Debug builds
+/// only.
+fn alert_test(args: &[String]) -> String {
+    if !cfg!(debug_assertions) {
+        return String::from("only in debug builds");
+    }
+    let sample = components::dialog::Dialog::new("amane.alert.test", "Discard changes?")
+        .message("Your changes to this document will be lost if you don't save them.")
+        .button("Cancel", || eprintln!("alert-test: cancel"));
+    let sample = if args.first().map(String::as_str) == Some("stacked") {
+        sample
+            .destructive("Don't Save", || eprintln!("alert-test: don't save"))
+            .main_button("Save", || eprintln!("alert-test: save"))
+    } else {
+        sample.main_button("Discard", || eprintln!("alert-test: discard"))
+    };
+    alert::show(sample);
+    String::from("ok")
 }
 
 fn main() -> ExitCode {
@@ -138,6 +161,7 @@ fn main() -> ExitCode {
         .window(quick_settings::surface)
         .window(notifications::side_sheet)
         .window(launcher::surface)
+        .window(alert::surface)
         .window(context_menu::anchor)
         .window_per_monitor(widgets::surface)
         .window_per_monitor(widgets::edit_surface)
@@ -184,6 +208,9 @@ fn main() -> ExitCode {
     .ipc("status-bar", status_bar::ipc)
     // its name while it was the taskbar, for scripts and keybinds
     .ipc("taskbar", status_bar::ipc)
+    // a sample alert for trying it out, in debug builds:
+    // `printf 'alert-test\nstacked\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    .ipc("alert-test", alert_test)
     .ipc("close", |_| {
         context_menu::close();
         String::from("ok")

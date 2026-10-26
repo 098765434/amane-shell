@@ -78,6 +78,9 @@ pub enum Style {
     Tonal,
     /// No fill until hovered: bar items, and M3's "standard" icon buttons.
     Plain,
+    /// A faint red fill under a red label: an action that destroys or
+    /// can't be undone ("Delete", "Log Out"), as in macOS's alerts.
+    Destructive,
 }
 
 impl Style {
@@ -86,6 +89,7 @@ impl Style {
             Self::Filled => sys::color::accent::bg(),
             Self::Tonal => material::fill_role(FillLevel::Secondary),
             Self::Plain => Color::TRANSPARENT,
+            Self::Destructive => sys::color::status::critical::hover(),
         }
     }
 
@@ -94,6 +98,7 @@ impl Style {
     fn fg(self) -> Color {
         match self {
             Self::Filled => sys::color::accent::fg(),
+            Self::Destructive => sys::color::status::critical::text(),
             _ => material::label(Level::Primary),
         }
     }

@@ -43,14 +43,17 @@ generated from (2), not hand-edited, so neither can drift.
 | `amane.widgets.<output>` | the desktop widgets, one surface a monitor on the background layer (matched by the prefix `^amane\.widgets\.`): a clear surface that frosts its own cards; `xray false`, and its popups (a card's menu) frosted |
 | `amane.launcher` | the app launcher: a clear surface over the output that frosts its glass panel through a blur region; `xray false`, and its popups (an app's menu) frosted |
 | `amane.notifications.toast` | each notification toast: one surface per banner, frosting its card itself; `clear`, rounded `notification.card.radius`, with niri's shadow at softness 48 (the banner design's `0 8 48`; other surfaces use 16) |
+| `amane.alert` | the shell's alert in the middle of the screen, as big as its card, frosting itself in thick glass; `clear`, rounded `dialog.radius`, with niri's shadow at softness 48 and offset 18 (the dialog design's `0 18 48`) |
 | `amane.notifications.center` | the notification center sidebar, frosting itself; `clear`, rounded `notification.center.radius`, with niri's shadow (its Do Not Disturb menu is a frosted xdg-popup of it) |
 | `amane.context-menu-anchor` | the context-menu anchor window |
 | `amane.context-menu.0` … `.7` | nested context-menu levels |
 
 ## Generating the rules
 
-The generated file holds the layer rules, a `window-rule` for each amane app (`APP_IDS`: its
-window frosted behind in `frost`, its popups in `glass`) and, last, a `materials {}` block. It defines one
+The generated file holds the layer rules, two `window-rule`s for each amane app (`APP_IDS`: its
+window frosted behind in `frost`, its popups in `glass`; and its floating windows, its dialogs,
+in `glass-large` with the alert's 34 corners and `0 18 48` shadow, which a window floated by hand
+takes too) and, last, a `materials {}` block. It defines one
 niri material per `material.<name>.*` token group: `glass`, `glass-small`, `glass-clear` and
 `frost`, each with a `-still` twin (`materialize false`) for reduced motion. `glass` blurs with
 passes and an offset of its own (`blur-passes`, `blur-offset`), more than `blur {}`, and

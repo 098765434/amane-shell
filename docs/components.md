@@ -187,6 +187,33 @@ without the spring. `offset(count, &motion)` is the fractional page to draw, rub
 the ends. `PagerMotion` holds the settle's duration and easing, the flick speed and the rubber
 band. The launcher turns it sideways through its categories.
 
+## Dialog and alert
+
+`kit::dialog::Dialog` is macOS 26's alert (`dialog/dialog-*.css`): a 260-wide card of thick glass
+(`Material::Sheet`, radius `dialog.radius`) with an optional icon (`Icon::App(path)` or
+`Icon::Symbol(glyph)`, `dialog.icon-size`), a bold title (`dialog.title`), a message
+(`dialog.message`), and its buttons. Each button has a role:
+
+- `.button(label, f)` is **cancel**, tonal. Escape answers with it.
+- `.main_button(label, f)` is the **default**, in the accent. Return answers with it.
+- `.destructive(label, f)` is red on a faint red fill (`Style::Destructive`).
+
+The buttons sit **side by side** when there are at most two and every label fits half the row.
+They're 32 tall, with cancel on the left and the default on the right. Otherwise they **stack**:
+28 tall, the default on top, then the destructive one, with cancel at the bottom.
+`.side_by_side()` and `.stacked()` choose for it. `height()` measures the card from its text,
+so it's as tall as its content: 152 for the design's side-by-side sample, 216 stacked.
+
+It shows in two places, both drawing `Dialog::content` on their glass:
+
+- **An app's dialog:** `.open(parent)` puts it in a modal window over the app's window. niri's
+  generated rule for a floating window of an amane app (a dialog floats) gives it the corners,
+  the shadow (`0 18 48`) and the thick glass. Without that rule it's on the window background.
+- **The shell's alert:** `alert::show(dialog)` puts it in the middle of the screen, on the
+  `amane.alert` surface, which frosts itself and holds the keyboard until answered. Quick
+  Settings' Restart…, Power Off… and Log Out… ask with it. In debug builds,
+  `printf 'alert-test\nstacked\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock` shows a sample.
+
 ## workspace_menu
 
 `workspace_menu::all(pick)` is a submenu of every workspace, `pick` run with the chosen one's

@@ -1,5 +1,6 @@
 //! What an app beside the shell needs to look like the shell: its window,
-//! its text fields, a dialog and a sidebar to move between pages.
+//! its text fields, a dialog ([`Dialog`], from [`crate::dialog`]) and a
+//! sidebar to move between pages.
 //!
 //! ```ignore
 //! fn main() {
@@ -16,20 +17,20 @@
 //! }
 //! ```
 
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 use amane::{
-    App, Center, Color, Column, End, Key, Mask, Radius, Rectangle, Row, Size, Text, TextInput, Widget,
-    Window, close_window, current_window, modifiers, open_window_with, window_state,
+    App, Center, Color, Column, Key, Mask, Radius, Rectangle, Row, Size, Text, TextInput, Widget,
+    Window, close_window, current_window, modifiers, window_state,
 };
 
-use crate::buttons::{Actions, PushButton, Shape, Style, interactive, state_fill};
+use crate::buttons::{Actions, interactive, state_fill};
 use crate::color::with_alpha;
 use crate::layout::{boxed, icon, pad};
 use crate::material::{self, FillLevel, Level, Material};
 use crate::tokens::{Styled, sys};
+
+pub use crate::dialog::Dialog;
 
 /// An app with this app-id: its windows, IPC socket and settings folder go
 /// by it, and only one copy of it runs.
@@ -48,7 +49,7 @@ pub fn window_bg() -> Color {
 /// material being offered is the sign: the shell's generated config defines
 /// it with the window rule that frosts the window; a stand-in material
 /// doesn't count.
-fn frosted() -> bool {
+pub(crate) fn frosted() -> bool {
     Material::Window.niri() == Some(Material::Window.niri_name())
 }
 
@@ -228,132 +229,4 @@ pub fn sidebar(
         .radius(radius)
         .fill(Mask)
         .child(sidebar)
-}
-
-/// A question over a window, answered with one of its buttons: "Discard
-/// unsaved changes?" with Cancel and Discard. It keeps the user out of its
-/// window until answered, where the compositor can.
-pub struct Dialog {
-    name: String,
-    title: String,
-    message: String,
-    buttons: Vec<(String, Style, Rc<dyn Fn()>)>,
-}
-
-thread_local! {
-    // each open dialog's buttons, which its view reads after it's built
-    static BUTTONS: RefCell<HashMap<String, Vec<(String, Style, Rc<dyn Fn()>)>>> =
-        RefCell::new(HashMap::new());
-}
-
-impl Dialog {
-    /// `name` is the dialog's window's name, so it must be unique.
-    pub fn new(name: impl Into<String>, title: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            title: title.into(),
-            message: String::new(),
-            buttons: Vec::new(),
-        }
-    }
-
-    pub fn message(mut self, message: impl Into<String>) -> Self {
-        self.message = message.into();
-        self
-    }
-
-    /// A button that closes the dialog and runs `action`; plain.
-    pub fn button(mut self, label: impl Into<String>, action: impl Fn() + 'static) -> Self {
-        self.buttons
-            .push((label.into(), Style::Tonal, Rc::new(action)));
-        self
-    }
-
-    /// The one main answer, in the accent; it goes last, on the right.
-    pub fn main_button(mut self, label: impl Into<String>, action: impl Fn() + 'static) -> Self {
-        self.buttons
-            .push((label.into(), Style::Filled, Rc::new(action)));
-        self
-    }
-
-    /// Opens it over the window with this name.
-    pub fn open(self, parent: &str) {
-        let Self {
-            name,
-            title,
-            message,
-            buttons,
-        } = self;
-
-        BUTTONS.with_borrow_mut(|open| {
-            open.insert(name.clone(), buttons);
-        });
-
-        let parent = parent.to_string();
-        let key = name.clone();
-
-        open_window_with(name, move || dialog(&key, &parent, &title, &message));
-    }
-}
-
-fn dialog(name: &str, parent: &str, title: &str, message: &str) -> Window {
-    let buttons = BUTTONS.with_borrow(|open| open.get(name).cloned().unwrap_or_default());
-
-    let fg = material::label(Level::Primary);
-
-    let row: Vec<Box<dyn Widget>> = buttons
-        .into_iter()
-        .enumerate()
-        .map(|(index, (label, style, action))| {
-            let closing = name.to_string();
-
-            boxed(
-                PushButton::new(format!("{name}.button.{index}"), label)
-                    .style(style)
-                    .shape(Shape::Round)
-                    .on_press(move || {
-                        close_window(&closing);
-                        BUTTONS.with_borrow_mut(|open| open.remove(&closing));
-
-                        action();
-                    })
-                    .build(),
-            )
-        })
-        .collect();
-
-    let content = Column::new(vec![
-        boxed(Text::new(title).style(sys::r#type::title()).color(fg)),
-        boxed(
-            Text::new(message)
-                .style(sys::r#type::label())
-                .color(material::label(Level::Secondary))
-                .wrap(),
-        ),
-        boxed(
-            Row::new(row)
-                .gap(sys::space::gap::s())
-                .justify(End)
-                .width(Size::Parent),
-        ),
-    ])
-    .gap(sys::space::gap::m())
-    .width(Size::Parent)
-    .height(Size::Parent);
-
-    let closed = name.to_string();
-
-    app_window(content)
-        .title(title)
-        .size(380.0, 170.0)
-        .resizable(false)
-        .parent(parent)
-        .modal(true)
-        // closing it from the compositor is the same as no answer
-        .on_close(move || {
-            BUTTONS.with_borrow_mut(|open| open.remove(&closed));
-
-            true
-        })
-        .on_shortcut(standard_shortcut)
 }

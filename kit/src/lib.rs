@@ -42,6 +42,7 @@ pub mod buttons;
 pub mod card;
 pub mod color;
 pub mod control_size;
+pub mod dialog;
 pub mod divider;
 pub mod dropdown;
 pub mod edge_reveal;

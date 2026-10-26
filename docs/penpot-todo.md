@@ -95,6 +95,13 @@ whose output is static: it can't follow the mode, so it holds one value for both
   - `notification.card.radius` went from 16 to 20, `notification.center.radius` from 26 to 30 to
     keep the corners nested, and `notification.toast.width` from 360 to 344.
   - `notification.card.badge-size` was removed.
+- For the dialog design (2026-10-26), these were added to `tokens.json` by hand, so recreate them
+  in Penpot:
+  - `ref.radius.34`.
+  - The `dialog` component: `width`, `radius`, `padding-top`, `padding-x`, `gap`, `icon-size`,
+    `text.inset`, `text.inset-bottom`, `text.gap`, `button.height`, `button.height-stacked`,
+    `button.gap`, `button.gap-stacked` and `button.inset`, plus the `title`, `message` and
+    `button.label` typographies.
 - `sys.color.glass.thin`, `.thick`, `.rim` and `.glow` were added to `tokens.json` by hand, in
   both modes: the tints of small and large glass (thin is the panels' old tint; thick is more
   opaque, for glass that holds text) and the glass edge's light, which `components/glass.rs` held

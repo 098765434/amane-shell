@@ -693,6 +693,9 @@ mod tests {
         ("context_menu/", "menu"),
         ("notifications/", "notification"),
         ("quick_settings/", "quick"),
+        // the kit's dialog, and the shell's alert that shows it
+        ("dialog.rs", "dialog"),
+        ("alert.rs", "dialog"),
     ];
 
     fn component_sources() -> Vec<(String, String)> {

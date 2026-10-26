@@ -7,6 +7,7 @@
 use std::fmt::Write;
 
 use crate::components::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
+use crate::components::alert::ALERT_NS;
 use crate::components::dock::DOCK_NS;
 use crate::components::launcher::LAUNCHER_NS;
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
@@ -16,7 +17,7 @@ use crate::components::widgets::WIDGETS_NS;
 use crate::theme::{Density, Mode};
 use amane_kit::material::Material;
 
-use crate::tokens::{Key, Value, bar, library, notification, resolved, sys, with_key};
+use crate::tokens::{Key, Value, bar, dialog, library, notification, resolved, sys, with_key};
 
 pub struct LayerRule {
     pub namespace: &'static str,
@@ -40,11 +41,13 @@ pub struct LayerRule {
     pub clear: bool,
 }
 
-/// A card surface's corners and how soft its shadow is.
+/// A card surface's corners, and how soft its shadow is and how far down
+/// it falls.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Card {
     pub radius: f32,
     pub softness: f32,
+    pub y: f32,
 }
 
 // TODO(token): `sys.shadow.popover` once Penpot has it (docs/penpot-todo.md).
@@ -61,6 +64,11 @@ const SHADOW_COLOR: &str = "#00000073";
 /// banner design (`0 8 48`).
 const BANNER_SHADOW_SOFTNESS: f32 = 48.0;
 
+/// An alert floats highest of all, its shadow spread wide and falling far,
+/// as in the dialog design (`0 18 48`).
+const ALERT_SHADOW_SOFTNESS: f32 = 48.0;
+const ALERT_SHADOW_Y: f32 = 18.0;
+
 /// One rule per frosted surface.
 pub fn rules() -> Vec<LayerRule> {
     // radii don't vary with mode or density (a contract test checks it)
@@ -69,6 +77,7 @@ pub fn rules() -> Vec<LayerRule> {
     let toast = with_key(key, notification::card::radius);
     let center = with_key(key, notification::center::radius);
     let strip = with_key(key, bar::radius);
+    let alert = with_key(key, dialog::radius);
 
     vec![
         LayerRule {
@@ -158,6 +167,7 @@ pub fn rules() -> Vec<LayerRule> {
             card: Some(Card {
                 radius: toast,
                 softness: BANNER_SHADOW_SOFTNESS,
+                y: SHADOW_Y,
             }),
             frost: None,
             popups: None,
@@ -174,9 +184,26 @@ pub fn rules() -> Vec<LayerRule> {
             card: Some(Card {
                 radius: center,
                 softness: SHADOW_SOFTNESS,
+                y: SHADOW_Y,
             }),
             frost: None,
             popups: Some(popover),
+            clear: true,
+        },
+        LayerRule {
+            namespace: ALERT_NS,
+            comment: String::from(
+                "Alert: a question in the middle of the screen (\"Restart now?\"), on a surface\n\
+                      as big as its card, which frosts itself (a blur shape, in thick glass); the\n\
+                      rule rounds it and gives it niri's shadow, spread wide and falling far.",
+            ),
+            card: Some(Card {
+                radius: alert,
+                softness: ALERT_SHADOW_SOFTNESS,
+                y: ALERT_SHADOW_Y,
+            }),
+            frost: None,
+            popups: None,
             clear: true,
         },
     ]
@@ -230,7 +257,7 @@ pub fn render(rules: &[LayerRule]) -> String {
             let _ = writeln!(out, "    geometry-corner-radius {}", card.radius);
             out.push_str("    shadow {\n        on\n");
             let _ = writeln!(out, "        softness {}", card.softness);
-            let _ = writeln!(out, "        offset x=0 y={SHADOW_Y}");
+            let _ = writeln!(out, "        offset x=0 y={}", card.y);
             let _ = writeln!(out, "        color \"{SHADOW_COLOR}\"");
             out.push_str("    }\n");
         }
@@ -266,13 +293,15 @@ pub fn render(rules: &[LayerRule]) -> String {
 
 /// A rule for each amane app's windows: frost behind them in the window
 /// material, which the window tints itself (`kit::app::window_bg`), and
-/// its popups (dropdowns, menus) frosted like the shell's.
+/// its popups (dropdowns, menus) frosted like the shell's. A second rule
+/// makes its floating windows, its dialogs (a window with a parent floats),
+/// cards of thick glass with the alert's corners and shadow
+/// (`kit::dialog`).
 fn render_windows(app_ids: &[&str]) -> String {
     // radii don't vary with mode or density (a contract test checks it)
-    let popover = with_key(
-        Key::new(Mode::Dark, Density::Comfortable),
-        sys::radius::popover,
-    );
+    let key = Key::new(Mode::Dark, Density::Comfortable);
+    let popover = with_key(key, sys::radius::popover);
+    let dialog_radius = with_key(key, dialog::radius);
 
     let mut out = String::new();
     for app_id in app_ids {
@@ -297,6 +326,27 @@ fn render_windows(app_ids: &[&str]) -> String {
             Material::Menu.niri_name()
         );
         out.push_str("        }\n    }\n}\n");
+
+        out.push_str(
+            "\n// Its dialogs, which float over their window: thick glass, the alert's corners\n\
+             // and shadow. (A window floated by hand takes this look too.)\n",
+        );
+        out.push_str("window-rule {\n");
+        let _ = writeln!(
+            out,
+            "    match app-id=\"{}\" is-floating=true",
+            kdl_string(&anchored(app_id))
+        );
+        let _ = writeln!(out, "    geometry-corner-radius {dialog_radius}");
+        out.push_str("    clip-to-geometry true\n");
+        out.push_str("    shadow {\n        on\n");
+        let _ = writeln!(out, "        softness {ALERT_SHADOW_SOFTNESS}");
+        let _ = writeln!(out, "        offset x=0 y={ALERT_SHADOW_Y}");
+        let _ = writeln!(out, "        color \"{SHADOW_COLOR}\"");
+        out.push_str("    }\n");
+        out.push_str("    background-effect {\n        blur true\n");
+        let _ = writeln!(out, "        material \"{}\"", Material::Sheet.niri_name());
+        out.push_str("    }\n}\n");
     }
     out
 }

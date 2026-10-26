@@ -39,9 +39,10 @@ A control works like a macOS Control Center module. A click on the round disc sw
 setting, and a click anywhere else on a tile or a module row opens its page. A control with no
 page switches from anywhere. A right click opens the page too; a round button has no label, so a
 tooltip names it, and a tile whose lines are too long for it names itself the same way. The
-Power Off page's Restart…, Power Off… and Log Out… ask for a second click within five seconds
-(the row turns into "Click to Restart" in the critical colour), which stands in for GNOME's
-confirmation dialog. Switch User is left out because greetd has no user switching.
+Power Off page's Restart…, Power Off… and Log Out… close Quick Settings and ask first, in the
+shell's alert (macOS's "Are you sure you want to restart your computer now?"; see
+[components.md](components.md#dialog-and-alert)). Log Out's answer is destructive, in red. Switch
+User is left out because greetd has no user switching.
 
 A page is at least five rows tall, however short the grid is, and its lists scroll in the room
 they have. A page whose setting goes away while it's open (the adapter unplugged) gives way to
