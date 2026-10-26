@@ -17,7 +17,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amane"
 version = "0.1.2"
-source = "git+https://github.com/098765434/amane?rev=06ead81835b5498f581684ef2c4672225c8a70cc#06ead81835b5498f581684ef2c4672225c8a70cc"
+source = "git+https://github.com/098765434/amane?rev=1d60d4e10998394a08414b1b2593343d75218ec5#1d60d4e10998394a08414b1b2593343d75218ec5"
 dependencies = [
  "bitflags",
  "inotify",
