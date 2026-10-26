@@ -74,15 +74,15 @@ whose output is static: it can't follow the mode, so it holds one value for both
 ## Tokens to recreate or delete
 
 - `bar.overview.height` is no longer read: the bar keeps its compact height in the overview, where
-  the [dock](dock.md) rises instead. Delete it in Penpot.
+  the [dock](../shell/dock.md) rises instead. Delete it in Penpot.
 - `bar.window-item.max-width`, `bar.window-item.radius`, `bar.pill.padding-y` and
-  `bar.volume.width` are no longer read: the [status bar](status-bar.md) has no window title or
+  `bar.volume.width` are no longer read: the [status bar](../shell/status-bar.md) has no window title or
   pills any more. Delete them in Penpot.
 - `bar.indicator.active.bg` (`#ffffff`) and `bar.indicator.active.fg` (`#000000`), the status
   bar's highlight in both modes, were added to `tokens.json` by hand, and `bar.indicator.width`
   was raised by hand from 18 to 28 to give the highlight room. Recreate them in Penpot.
 - The `notification.*` tokens and the `sys.color.surface.notification.*` pair were added to
-  `tokens.json` by hand (see [notifications.md](notifications.md)). Recreate them in Penpot under
+  `tokens.json` by hand (see [notifications.md](../shell/notifications.md)). Recreate them in Penpot under
   the same names, or the next export drops them. `notification.center.radius` (now 30: the cards'
   20 plus the 10 of `sys.space.inset.l` around them, so their corners nest) came later the same
   way. It's a number, not an expression, because radii mustn't vary with density (§8.2).
@@ -125,7 +125,7 @@ whose output is static: it can't follow the mode, so it holds one value for both
   `quick.page.recede`, `quick.open.scale`, `quick.press.scale`, `quick.drag.scale`,
   `quick.tile.glyph`, `quick.button.glyph`) and
   `ref.font.size.14` were added to `tokens.json` by hand too (see
-  [quick-settings.md](quick-settings.md)). Recreate them in Penpot under the same names.
+  [quick-settings.md](../shell/quick-settings.md)). Recreate them in Penpot under the same names.
   `quick.open.scale` has since been retuned by hand from 0.98 to 0.92, so the card's swell reads.
 - `ref.font.family.ui` was reordered by hand to put "Atkinson Hyperlegible Next" first
   (then "Atkinson Hyperlegible", "Inter", `sans-serif`). Make the same change to the stack in
@@ -137,7 +137,7 @@ whose output is static: it can't follow the mode, so it holds one value for both
   is gone from `tokens.json` already, and `sys.color.separator` is read again, below.) The hand-added `sys.color.glass.thin` and `.thick` are gone
   already.
 - The macOS 27 kit's values were added to `tokens.json` by hand
-  ([spec-macos27-variables.md](spec-macos27-variables.md)). Recreate them in Penpot under the same
+  ([spec-macos27-variables.md](../spec-macos27-variables.md)). Recreate them in Penpot under the same
   names:
   - `sys.color.label.primary` … `.quaternary` (85, 50/55, 25, 10 %), `sys.color.fill.primary` …
     `.tertiary` (10, 8, 5 %) and `sys.color.separator` (10 %, light raised from 8 %): labels,

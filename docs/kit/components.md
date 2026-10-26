@@ -1,7 +1,7 @@
 # Shared components
 
 The building blocks Quick Settings, the notification center, the context menu and the dock are made of. Like the
-[buttons](buttons.md), each is named and structured after its Material 3 counterpart and drawn in
+[buttons](controls.md), each is named and structured after its Material 3 counterpart and drawn in
 the shell's macOS look. They read `sys.*` tokens only, so any component can use them.
 
 | Component | File | M3 counterpart | Used for |
@@ -26,7 +26,7 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 
 `Card::new(content)` fills its parent and stacks `content` `.gap(…)` apart inside a
 `sys.space.inset.l` inset (`.padding(…)` changes it). It's made of a `Material`
-(`.material(…)`, `Material::Popover` by default; see [materials.md](materials.md)), whose tint fills
+(`.material(…)`, `Material::Popover` by default; see [materials.md](../design-system/materials.md)), whose tint fills
 it. What sits on it takes the vibrant labels and fills (`material::label`, `fill_role`).
 
 `Variant::Filled` is the fill alone, and `Variant::Outlined` adds a `sys.border.hairline` in the
@@ -83,7 +83,7 @@ inside it, at the start of a fill that's never narrower than the glyph's circle,
 the knob. `.on_icon_press(id, action)` makes the glyph a button (Quick Settings' mute).
 
 Quick Settings' own parts (the tile, the grid, the page) are in
-[quick-settings.md](quick-settings.md).
+[quick-settings.md](../shell/quick-settings.md).
 
 ## Tooltip
 
@@ -234,7 +234,7 @@ niri keeps after the last called "New Workspace". Workspaces are named as niri n
 - `material.rs` holds the materials, Apple's: glass by role (`Material::Control`, `Sheet` …), the
   frost it asks niri for (`shape`), what the surface draws where niri lays the tint and edge on
   itself (`fill`, `lit`, `stroke`), and the vibrant labels, fills and separator on it. See
-  [materials.md](materials.md).
+  [materials.md](../design-system/materials.md).
 - `glass_region.rs` is what's under the materials: moving shapes with their layer
   (`transformed`, `faded`), and the glass level every tint goes through (`level`: `Clear` 0.8 of
   the tint, `Tinted`, `Solid` opaque, and the system's high contrast, which, like `Solid`, turns

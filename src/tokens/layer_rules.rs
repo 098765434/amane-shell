@@ -54,7 +54,7 @@ pub struct Card {
     pub y: f32,
 }
 
-// TODO(token): `sys.shadow.popover` once Penpot has it (docs/penpot-todo.md).
+// TODO(token): `sys.shadow.popover` once Penpot has it (docs/design-system/penpot-backlog.md).
 // The rules are static, so the shadow can't follow the mode: this is the
 // dark one, which also reads in light (the banner design's light shadow is
 // lighter, `#00000040`).

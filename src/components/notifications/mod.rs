@@ -11,7 +11,7 @@
 //! - [`card`] — the card both draw; [`motion`](crate::components::motion)
 //!   moves their cards.
 //!
-//! See `docs/notifications.md`.
+//! See `docs/shell/notifications.md`.
 
 pub mod card;
 pub mod center;

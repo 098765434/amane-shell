@@ -15,7 +15,7 @@ ones — the bar itself is not.
 
 ## Features
 
-- **Status bar** ([docs/status-bar.md](docs/status-bar.md)) — a compact bottom bar: workspace
+- **Status bar** ([docs/shell/status-bar.md](docs/shell/status-bar.md)) — a compact bottom bar: workspace
   pips on the left (click or scroll to switch) and the status cluster on the right (privacy,
   volume, Bluetooth, network, battery, Quick Settings, notifications, clock). Every item has a
   tooltip and turns into a white rounded tile while hovered or while what it opens is open.
@@ -23,19 +23,19 @@ ones — the bar itself is not.
   opening its Quick Settings page: Sound (volume, microphone and devices), Bluetooth (connect,
   pair, forget), Wi‑Fi (scan and join), Tailscale (connect, log in, exit node, routes/DNS,
   block incoming, the tailnet's devices) and Battery (power profile, peripherals).
-- **Dock** ([docs/dock.md](docs/dock.md)) — a macOS-style dock that rises from the bottom edge
+- **Dock** ([docs/shell/dock.md](docs/shell/dock.md)) — a macOS-style dock that rises from the bottom edge
   (and with niri's overview), showing every workspace of its monitor side by side with a rule
   between them and an icon per window. Pin apps to a workspace, drag icons to reorder windows or
   move them between workspaces, and drop files on an icon to open them with that app (hold them
   there and its window comes into view).
-- **Context menus** ([docs/context-menu.md](docs/context-menu.md)) — right-click a window's icon in the dock for focus/close/fullscreen/float/move-to-workspace/pin,
+- **Context menus** ([docs/shell/context-menu.md](docs/shell/context-menu.md)) — right-click a window's icon in the dock for focus/close/fullscreen/float/move-to-workspace/pin,
   built on amane's xdg-popup support (nested submenus, outside-click dismiss).
-- **Notifications** ([docs/notifications.md](docs/notifications.md)) — the shell is the
+- **Notifications** ([docs/shell/notifications.md](docs/shell/notifications.md)) — the shell is the
   notification daemon (through amane): macOS-style toasts at the top-right (hover to hold, swipe
   to put away), a notification center sidebar opened from the clock with iOS-style stacks per
   app, and Do Not Disturb (on, for an hour, until this evening or tomorrow; critical
   notifications still show).
-- **Quick Settings** ([docs/quick-settings.md](docs/quick-settings.md)) — GNOME's quick
+- **Quick Settings** ([docs/shell/quick-settings.md](docs/shell/quick-settings.md)) — GNOME's quick
   settings in the macOS Control Center look, from the bar's slider button. The system row
   (battery, screenshot, lock, power menu), Now Playing, volume, microphone and brightness
   sliders, and tiles for wired, Wi‑Fi (and hotspot), VPN, Bluetooth, power mode, night light,
@@ -44,7 +44,7 @@ ones — the bar itself is not.
   a Customize window beside the card, after macOS's: a search, the controls by category, and a
   drag onto the card to add one or off it to remove one. The bar shows GNOME's privacy icons
   (screen shared, camera, microphone) and the settings that are on.
-- **Launcher** ([docs/launcher.md](docs/launcher.md)) — macOS Tahoe's Spotlight, from a keybind
+- **Launcher** ([docs/shell/launcher.md](docs/shell/launcher.md)) — macOS Tahoe's Spotlight, from a keybind
   (`launcher toggle` over IPC): a glass search pill with round buttons beside it for its modes,
   growing into a panel as you type. The search ranks apps and actions by a fuzzy match and by
   how much they're used, answers sums and unit conversions in a card, finds URLs and a web
@@ -53,19 +53,19 @@ ones — the bar itself is not.
   from once it's turned on, finds files by name (and by content with LocalSearch), narrows to an app's own actions with Tab, and brings back past searches with Up.
   Applications is a Launchpad grid with category pills, the apps used most on top, momentum
   scrolling and sideways swipes between categories.
-- **Desktop widgets** ([docs/widgets.md](docs/widgets.md)) — macOS's widgets on the
+- **Desktop widgets** ([docs/shell/widgets.md](docs/shell/widgets.md)) — macOS's widgets on the
   wallpaper, for watching: batteries, CPU, memory, temperature, network, disks and a System card,
   on Quick Settings' grid across each monitor. Drag them anywhere at any time, place the same
   kind more than once with its own settings, right-click for sizes and what each shows, and
   Edit Widgets for a gallery to drag new ones from. They fade back while windows are open.
-- **Buttons** ([docs/buttons.md](docs/buttons.md)) and **components**
-  ([docs/components.md](docs/components.md)) — shared push and icon buttons, a switch, a
+- **Buttons** ([docs/kit/controls.md](docs/kit/controls.md)) and **components**
+  ([docs/kit/components.md](docs/kit/components.md)) — shared push and icon buttons, a switch, a
   segmented button, cards, top app bars, lists, dividers and a slider, each after its Material 3
   counterpart but drawn in the shell's macOS/iOS look.
 - **Design tokens** — every colour, size, gap and font is a token designed in Penpot and exported
   to `design-tokens/tokens.json`, compiled in with `include_str!` and resolved the way Penpot does
-  (`src/tokens/`). See [docs/design-token-manual.md](docs/design-token-manual.md).
-- **Keeping it cheap** ([docs/performance.md](docs/performance.md)) — what makes a window draw,
+  (`src/tokens/`). See [docs/design-system/tokens.md](docs/design-system/tokens.md).
+- **Keeping it cheap** ([docs/development/performance.md](docs/development/performance.md)) — what makes a window draw,
   what a frame costs, and the rules (scoped markers, quiet services, animations made once,
   opacity) that keep an idle desktop from drawing at all; read it before adding a component.
 
@@ -109,7 +109,7 @@ comments, so the two never drift (no hand-copying):
 ./gen-layer-rules.sh /path/to/your/niri/config.kdl   # e.g. ~/.config/niri/config.kdl
 ```
 
-See [docs/layer-rules.md](docs/layer-rules.md) — the namespaces must match the Rust
+See [docs/integration/layer-rules.md](docs/integration/layer-rules.md) — the namespaces must match the Rust
 `LayerWindow::namespace(...)` calls.
 
 ## Running it persistently
@@ -160,10 +160,10 @@ src/
     context_menu/               reusable nested context menu on xdg-popups
     notifications/              toasts, the notification center and Do Not Disturb
     launcher/                   the launcher: Spotlight's search pill, its modes and the app grid
-    dock/                       the dock: workspaces' windows and pins, drag, file drops (docs/dock.md)
+    dock/                       the dock: workspaces' windows and pins, drag, file drops (docs/shell/dock.md)
     quick_settings/             Quick Settings: tiles, sliders and their pages
     grid/                       the grid Quick Settings and the widgets share: cells, layout, drag
-    widgets/                    desktop widgets, their faces and the gallery (docs/widgets.md)
+    widgets/                    desktop widgets, their faces and the gallery (docs/shell/widgets.md)
     workspace_menu.rs           a submenu of workspaces (the dock's and the launcher's menus)
     mod.rs                      re-exports the kit's controls under their old paths
 kit/                            amane-kit: the look as a library, for the shell and its apps
@@ -171,13 +171,13 @@ kit/                            amane-kit: the look as a library, for the shell 
   src/tokens/ theme.rs          Penpot token resolver, the manual's checks, mode/accent/density/scale
   src/settings.rs               appearance.json, which theme.rs reads, and desktop.json
   src/buttons/                  push, icon, drawn and segmented buttons, switch, checkbox, radio
-  src/card.rs list.rs …         shared M3-style components (docs/components.md)
+  src/card.rs list.rs …         shared M3-style components (docs/kit/components.md)
   src/app.rs dropdown.rs        an app's window, fields, sidebar and dialog; the dropdown
   examples/gallery.rs           every control in one window
 apps/settings/                  Shell Settings (amane-settings)
 design-tokens/tokens.json       Penpot export (normalized); edit in Penpot, not here
 tests/fixtures/                 service fixtures (the token ones are in kit/tests/fixtures/)
-niri-layer-rule.kdl             layer rules generated from the tokens (see docs/layer-rules.md)
+niri-layer-rule.kdl             layer rules generated from the tokens (see docs/integration/layer-rules.md)
 gen-layer-rules.sh              injects those rules into the niri config
 flake.nix                       the package (shell and apps) and the devShell
 ```

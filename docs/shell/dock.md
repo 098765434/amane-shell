@@ -77,7 +77,7 @@ when it's off.
 | `window_menu.rs` | a window's and a pinned app's right-click menus |
 
 It reuses the shared [`EdgeReveal`, `workspace_menu`, `app_icon`, `Divider::vertical` and
-`glass_region`](components.md).
+`glass_region`](../kit/components.md).
 
 - **One size.** The surface spans the monitor and is as tall as the card at full icon size plus
   room for the swell and the name, so it never resizes, even as icons shrink to fit; a resize every
@@ -115,7 +115,7 @@ It reuses the shared [`EdgeReveal`, `workspace_menu`, `app_icon`, `Divider::vert
   id and moves the focused column.
 - Dragging a window that shares its column with others moves the whole column, as niri does.
 - After spring-loading, the dock goes down once the files leave it, like after the pointer.
-- The name label is drawn inside the surface, not as a [tooltip](components.md#tooltip) popup.
+- The name label is drawn inside the surface, not as a [tooltip](../kit/components.md#tooltip) popup.
   amane hangs a popup under the first surface with the parent's namespace, and every monitor's
   dock shares `amane.dock`. For the same reason, an icon's menu opened from a dock on a second
   monitor may open on the first.

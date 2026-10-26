@@ -3,7 +3,7 @@
 A reusable, macOS-style context menu with arbitrarily nested submenus
 (`src/components/context_menu/`). Each menu level is an **xdg-popup**, so the compositor positions
 it, keeps it on screen, grabs input for it and dismisses it on an outside click. The cards are
-frosted by the niri layer rule for `amane.context-menu-anchor` ([layer-rules.md](layer-rules.md)).
+frosted by the niri layer rule for `amane.context-menu-anchor` ([layer-rules.md](../integration/layer-rules.md)).
 
 | File | Contents |
 |------|----------|
@@ -130,7 +130,7 @@ overlay. Destructive rows use the destructive hover fill for both. Keyboard navi
 
 ## Styling
 
-Every value is a design token from Penpot ([design-token-manual.md](design-token-manual.md)), read
+Every value is a design token from Penpot ([tokens.md](../design-system/tokens.md)), read
 through the generated functions (`sys::…`, `menu::…`). Menus follow light/dark mode, the system
 accent, density and text scale while open.
 
@@ -144,8 +144,8 @@ accent, density and text scale while open.
 | Keyboard selection | fill `sys.color.accent.bg`, text `sys.color.accent.fg` |
 | Shortcut text | `…popover.fg-secondary`; on a keyboard-selected row `sys.color.accent.fg`, on any other focused row `…popover.fg`, both at `menu.shortcut.hover-opacity` |
 | Icon and chevron slots | `menu.icon-slot.width`, `menu.chevron-slot.width`; gap after the icon `sys.space.gap.m` |
-| Card | an outlined popover [`Card`](components.md#card), padding `menu.card.padding` |
-| Separator | a [`Divider`](components.md#divider-and-slider): `sys.color.separator`, `sys.border.hairline`, margin `sys.space.gap.xs` |
+| Card | an outlined popover [`Card`](../kit/components.md#card), padding `menu.card.padding` |
+| Separator | a [`Divider`](../kit/components.md#divider-and-slider): `sys.color.separator`, `sys.border.hairline`, margin `sys.space.gap.xs` |
 | Submenu offset | `menu.submenu.offset` |
 | Width limits | `menu.min-width`, `menu.max-width` |
 
@@ -197,6 +197,6 @@ hidden when the stack is shallower. Every state change calls `request_frame()`.
 ## Related
 
 - amane's popup support: [../../amane/docs/fork/popups.md](../../amane/docs/fork/popups.md)
-- niri layer rules and namespaces: [layer-rules.md](layer-rules.md)
+- niri layer rules and namespaces: [layer-rules.md](../integration/layer-rules.md)
 - The dock's window and pinned-app menus: [dock.md](dock.md)
 - The launcher's app menu: [launcher.md](launcher.md#app-menu)

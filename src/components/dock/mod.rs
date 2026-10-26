@@ -23,7 +23,7 @@
 //! frame costs a compositor round-trip and a second draw. It takes the
 //! pointer only where the card is, and along the bottom edge. Every
 //! animation is in [`motion::DOCK`], each with its own switch, and
-//! `AMANE_DOCK_ANIMATIONS=off` turns them all off. See `docs/dock.md`.
+//! `AMANE_DOCK_ANIMATIONS=off` turns them all off. See `docs/shell/dock.md`.
 
 mod drag;
 mod item;

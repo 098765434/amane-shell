@@ -15,7 +15,7 @@ use amane::{Animation, Blend, Easing};
 use crate::theme;
 
 // TODO(token): these become `dock.motion.*` tokens once Penpot has them
-// (manual §1.1; docs/penpot-todo.md).
+// (manual §1.1; docs/design-system/penpot-backlog.md).
 /// The dock's motion as shipped.
 pub const DOCK: DockMotion = DockMotion {
     enabled: true,

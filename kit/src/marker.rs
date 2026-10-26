@@ -25,7 +25,7 @@
 //! }
 //! ```
 //!
-//! See `docs/performance.md`.
+//! See `docs/development/performance.md`.
 
 /// Declares a marker: a service holding nothing, with `watch()` for the
 /// views that show some state and `changed()` for what changes it.

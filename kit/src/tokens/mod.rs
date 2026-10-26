@@ -14,7 +14,7 @@
 //!
 //! Each returns the value for the current mode, density, accent and text
 //! scale. There is no `ref` module: code never reads primitives. The rules
-//! live in `docs/design-token-manual.md`.
+//! live in `docs/design-system/tokens.md`.
 
 pub mod accent;
 pub mod check;

@@ -41,7 +41,7 @@ page switches from anywhere. A right click opens the page too; a round button ha
 tooltip names it, and a tile whose lines are too long for it names itself the same way. The
 Power Off page's Restart…, Power Off… and Log Out… close Quick Settings and ask first, in the
 shell's alert (macOS's "Are you sure you want to restart your computer now?"; see
-[components.md](components.md#dialog-and-alert)). Log Out's answer is destructive, in red. Switch
+[components.md](../kit/components.md#dialog-and-alert)). Log Out's answer is destructive, in red. Switch
 User is left out because greetd has no user switching.
 
 A page is at least five rows tall, however short the grid is, and its lists scroll in the room
@@ -240,7 +240,7 @@ the material the shell draws both as before. On a compositor without the protoco
 sends the shapes as an `ext-background-effect-v1` region instead: strips that step in at the
 corners, rounded inwards. Its layer rule therefore carries no corner radius, blur or shadow, only
 `xray false` (niri's blur shows the wallpaper alone otherwise); see
-[layer-rules.md](layer-rules.md).
+[layer-rules.md](../integration/layer-rules.md).
 
 A module is the panels' tint, the panels' glass edge and a soft drop shadow (`tile::module`,
 `quick.shadow`); vello draws the shadow analytically in the module's own pass, so sixteen of
@@ -338,7 +338,7 @@ It reuses the shared components:
 Tokens: `quick.grid.{cell,cols,rows,gap,margin}`, `quick.tile.{pad,gap,disc}`,
 `quick.card.radius`, `quick.media.{art,art-radius,play}`, `quick.slider.track`, `quick.shadow`,
 `quick.type.{title,caption,line}`, `quick.page.recede`, `quick.open.scale`, `quick.press.scale`
-and `quick.drag.scale` (see [penpot-todo.md](penpot-todo.md)). Everything else is `sys.*`.
+and `quick.drag.scale` (see [penpot-backlog.md](../design-system/penpot-backlog.md)). Everything else is `sys.*`.
 
 ## Backends
 
@@ -394,7 +394,7 @@ doesn't manage (tailscale) isn't one.
 ## Related
 
 - The bar and its panels: [status-bar.md](status-bar.md).
-- Its frosted surface's niri layer rule: [layer-rules.md](layer-rules.md).
+- Its frosted surface's niri layer rule: [layer-rules.md](../integration/layer-rules.md).
 - The desktop widgets, on the same grid: [widgets.md](widgets.md).
-- The shared components it's built from: [components.md](components.md) and
-  [buttons.md](buttons.md).
+- The shared components it's built from: [components.md](../kit/components.md) and
+  [controls.md](../kit/controls.md).

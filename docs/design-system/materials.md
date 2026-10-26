@@ -132,7 +132,7 @@ A piece of glass is built with its material's methods:
   uses without niri's material.
 - `material.<name>.*` (component tokens) are niri's material settings. `amane-shell layer-rules`
   writes one niri material for each of them into `niri-layer-rule.kdl`, with a `-still` twin
-  (`materialize false`) for reduced motion; see [layer-rules.md](layer-rules.md).
+  (`materialize false`) for reduced motion; see [layer-rules.md](../integration/layer-rules.md).
 
 ## Settings
 
@@ -151,4 +151,4 @@ A piece of glass is built with its material's methods:
   Apple's vibrancy does. Solid glass and higher
   contrast turn it off. Elsewhere the translucent label colours stand in.
 - **Adaptive glass** (an experiment, off by default) lets `Control` and `Banner` follow niri's
-  readings of their backdrop; see `glass_region` and [components.md](components.md).
+  readings of their backdrop; see `glass_region` and [components.md](../kit/components.md).

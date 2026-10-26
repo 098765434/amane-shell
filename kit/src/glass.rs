@@ -21,7 +21,7 @@ use crate::theme::Mode;
 use crate::tokens::{Key, sys};
 
 // TODO(token): these become `sys.effect.glass.*` tokens once Penpot has
-// them (docs/penpot-todo.md; manual §1.1: no style literals in component
+// them (docs/design-system/penpot-backlog.md; manual §1.1: no style literals in component
 // code). The rim's and glow's colours are `sys.color.glass.*` already.
 /// The rim's thickness.
 const RIM_WIDTH: f32 = 1.5;

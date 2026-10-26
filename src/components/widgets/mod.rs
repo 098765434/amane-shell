@@ -20,7 +20,7 @@
 //! amane measures a drag against the hit areas of the last frame and finds
 //! the dragged target by its place among them, so every drag is measured on
 //! one still layer over the whole surface that comes first, and the cards
-//! take no input of their own. See `docs/widgets.md`.
+//! take no input of their own. See `docs/shell/widgets.md`.
 
 mod catalog;
 mod edit;

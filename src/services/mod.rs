@@ -23,7 +23,7 @@
 //! - [`system_stats`] — processor, memory, network, temperature and disks,
 //!   and their recent history, for the desktop's widgets.
 //!
-//! See `docs/quick-settings.md` and `docs/widgets.md`.
+//! See `docs/shell/quick-settings.md` and `docs/shell/widgets.md`.
 //!
 //! [`Service`]: amane::Service
 

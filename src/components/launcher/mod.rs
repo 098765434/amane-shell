@@ -27,7 +27,7 @@
 //! It shares the notification center's and Quick Settings'
 //! one-open-at-a-time state ([`Panel::Launcher`]), opened over IPC:
 //! `launcher [toggle | open | close] [apps | files | actions | clipboard]`,
-//! which a niri keybind sends. See `docs/launcher.md`.
+//! which a niri keybind sends. See `docs/shell/launcher.md`.
 
 mod actions;
 mod answers;

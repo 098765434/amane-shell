@@ -23,7 +23,7 @@ glass, so a click anywhere but the glass closes it.
 
 ### Searching
 
-From the pill, a query lists ([`provider.rs`](../src/components/launcher/provider.rs)):
+From the pill, a query lists ([`provider.rs`](../../src/components/launcher/provider.rs)):
 
 1. **An answer**, in an accent card over the list. Enter copies it.
    - A sum: `+ - * / ( )` over numbers.
@@ -333,7 +333,7 @@ is, so growing reveals the rows rather than squeezing them.
 The `amane.launcher` layer rule in `niri-layer-rule.kdl` sets `xray false`, so the frost blurs
 the windows under it rather than the wallpaper, and frosts its popups, so an app's menu is a
 frosted card. Install it with `./gen-layer-rules.sh` (see
-[layer-rules.md](layer-rules.md)).
+[layer-rules.md](../integration/layer-rules.md)).
 
 The surface covers the output (clear of what the bar reserves) and keeps that size, open or
 closing, so it is never resized while it moves. Outside the glass the surface takes clicks,
@@ -362,10 +362,10 @@ never blocks anything.
 | `components/text_edit.rs` | the search text, caret and selection (pure, tested; shared with Quick Settings' Customize window) |
 
 It's built on the shared [`ScrollView`, `Kinetic`, `AxisLock`, `Pager`, `workspace_menu`,
-`app_icon` and `text_edit`](components.md).
+`app_icon` and `text_edit`](../kit/components.md).
 
 Sizes particular to the launcher are `TODO(token)` constants until Penpot has a `launcher.*` set
-(see [penpot-todo.md](penpot-todo.md)). Everything else reads `sys.*`, so the launcher follows the
+(see [penpot-backlog.md](../design-system/penpot-backlog.md)). Everything else reads `sys.*`, so the launcher follows the
 light and dark themes and the density.
 
 ## Known limits

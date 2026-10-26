@@ -39,6 +39,6 @@ fn main_window() -> amane::Window {
 
 Controls read `sys.*` tokens only (manual §10.4), so they fit any surface. Their ids key hover and motion state across rebuilds, so each must be unique and stable.
 
-The tokens are generated at build time from `../design-tokens/tokens.json`. See `docs/design-token-manual.md` in the shell for how they're made and read.
+The tokens are generated at build time from `../design-tokens/tokens.json`. See [docs/design-system/tokens.md](../docs/design-system/tokens.md) for how they're made and read.
 
 An app window's surface is `app::window_bg()`: the popover colour made solid, until Penpot has a window surface token.

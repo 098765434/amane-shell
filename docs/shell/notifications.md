@@ -15,7 +15,7 @@ A banner slides in at the top-right for each arriving notification, newest on to
 `amane.notifications.toast`, one of `SLOTS` windows) sized to its card, so niri's shadow, which
 its layer rule gives the surface, falls under exactly the card. The card is glass: the surface
 asks for one blur shape the size of the card, a `Material::Banner`: thin glass that turns light or
-dark with its backdrop, as Apple's banners do (see [materials.md](materials.md)). Sliding in, sliding out and swiping
+dark with its backdrop, as Apple's banners do (see [materials.md](../design-system/materials.md)). Sliding in, sliding out and swiping
 move the surface itself (its margin), not a widget inside it.
 
 ### The card (`card.rs`)
@@ -126,14 +126,14 @@ constants until `sys.motion.*` tokens exist in Penpot. A card is measured once
 ## Tokens
 
 Colours are the `sys.color.surface.notification.*` pair for toasts (`bg`, `fg`, `fg-secondary`,
-`stroke`; checked for contrast over black and white wallpaper). The center is a panel [`Card`](components.md#card) filled with thick glass's tint, with
+`stroke`; checked for contrast over black and white wallpaper). The center is a panel [`Card`](../kit/components.md#card) filled with thick glass's tint, with
 `raised` cards on it, in the panel's colours, under a `TopAppBar`. Sizes are `notification.*`: `toast.width`, `toast.max-visible`,
 `center.width`, `center.radius` (the cards' 20 plus the inset of 10 around them, so the corners
 nest), `card.radius`, `card.icon-size`, `card.icon-frame`, `card.thumbnail-size`,
 `card.thumbnail-radius`, `card.padding-block`, `card.padding-start`, `card.padding-end`,
 `card.trailing-gap`, the `card.title`, `card.body` and `card.time` typographies, and `stack.peek`,
 `max-peek`, `scale-step`, `fade-step`. A toast's shadow is softer than other surfaces' (niri
-softness 48, the design's `0 8 48`; see [layer-rules.md](layer-rules.md)).
+softness 48, the design's `0 8 48`; see [layer-rules.md](../integration/layer-rules.md)).
 
 > These tokens were added to `tokens.json` by hand, before they existed in Penpot. Recreate them
 > there under the same names, or the next export drops them.
@@ -141,5 +141,5 @@ softness 48, the design's `0 8 48`; see [layer-rules.md](layer-rules.md)).
 ## Not yet
 
 - Toasts look see-through until the generated layer rules are in niri's config (see
-  [layer-rules.md](layer-rules.md)).
+  [layer-rules.md](../integration/layer-rules.md)).
 - No sounds, inline reply, per-app settings, or Focus schedules.

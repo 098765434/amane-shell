@@ -42,7 +42,7 @@ CI runs these three inside the devShell.
   `cargo run -q -- tokens check design-tokens/tokens.json`; never hand-edit the file or hardcode a
   value. Code reads tokens through functions generated from the file
   (`sys::color::surface::popover::bg()`), so a renamed token is a compile error. Rules and
-  workflow: [docs/design-token-manual.md](docs/design-token-manual.md).
+  workflow: [docs/design-system/tokens.md](docs/design-system/tokens.md).
 
 ## License
 

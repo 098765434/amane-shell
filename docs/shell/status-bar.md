@@ -29,7 +29,7 @@ black (`bar.indicator.active.fg`). It stays that way while what it opens is open
 
 The glyphs that open Quick Settings' grid (privacy, the "on" glyphs) only light on hover, or
 opening Quick Settings would light them all. The look comes from `ButtonBuilder::highlight` and
-`::active` ([buttons.md](buttons.md)); the bar's `item()` helper applies it to every item.
+`::active` ([controls.md](../kit/controls.md)); the bar's `item()` helper applies it to every item.
 
 ### Left: workspaces (`workspaces`)
 
@@ -99,5 +99,5 @@ old `taskbar` file is read instead.
 
 - Window actions and the `Windows`/`Gestures` services are documented in the library:
   [../../amane/docs/fork/compositor.md](../../amane/docs/fork/compositor.md).
-- Sizes and colours are Penpot design tokens: [design-token-manual.md](design-token-manual.md).
-- Surface namespaces & niri layer-rules: [layer-rules.md](layer-rules.md).
+- Sizes and colours are Penpot design tokens: [tokens.md](../design-system/tokens.md).
+- Surface namespaces & niri layer-rules: [layer-rules.md](../integration/layer-rules.md).

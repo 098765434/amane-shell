@@ -437,7 +437,7 @@ Text::new("Open").style(sys::r#type::label());  // family, size and weight of a 
 
 - A new component writes no token code: import `sys` and its own component's module.
 - The shared components (buttons, cards, lists, the top app bar, dividers, the slider; see
-  `docs/components.md`) read `sys` only, so any component can use them. A value one of them
+  `docs/kit/components.md`) read `sys` only, so any component can use them. A value one of them
   needs from a component is passed in, never read from that component's tokens.
 - Each call returns the value for the current mode, density, accent and text scale, with the
   Rust type of the token's Penpot type (`Color`, `f32`, `TextStyle`, …).
@@ -449,7 +449,7 @@ Text::new("Open").style(sys::r#type::label());  // family, size and weight of a 
   tokens: read `sys.*` and your own prefix only.
 - Missing a token? Ask design to add it in Penpot. Don't hard-code a value "for now". The few
   that are still constants are marked `TODO(token)` in the code and listed in
-  [penpot-todo.md](penpot-todo.md).
+  [penpot-backlog.md](penpot-backlog.md).
 - Layout arithmetic (`/ 2.0`, `* 2.0`) stays in code; style values don't.
 ### 10.5 PR checklist
  

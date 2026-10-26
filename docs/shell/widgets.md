@@ -173,9 +173,9 @@ printf 'widgets\nlist\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
 - **`edit.rs`** and **`gallery.rs`**: Edit Widgets and the gallery.
 
 Tokens: the code holds its sizes as `TODO(token)` constants until Penpot has a `widget.*` group
-(see [penpot-todo.md](penpot-todo.md)); everything else is `sys.*`.
+(see [penpot-backlog.md](../design-system/penpot-backlog.md)); everything else is `sys.*`.
 
 ## Related
 
 - Quick Settings, whose grid this is: [quick-settings.md](quick-settings.md).
-- The niri layer rule: [layer-rules.md](layer-rules.md).
+- The niri layer rule: [layer-rules.md](../integration/layer-rules.md).

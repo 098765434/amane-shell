@@ -17,7 +17,7 @@
 //! The thicker a material, the more opaque its tint: small glass is thin,
 //! large glass that holds text is thick. The vibrant labels are one set for
 //! every material, as Apple's are; the contrast floors check each against
-//! each tint (`tokens::rules`). See `docs/materials.md`.
+//! each tint (`tokens::rules`). See `docs/design-system/materials.md`.
 
 use std::cell::Cell;
 

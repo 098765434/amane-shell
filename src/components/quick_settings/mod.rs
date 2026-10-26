@@ -29,7 +29,7 @@
 //! one-open-at-a-time state ([`Panel::QuickSettings`]), opened from the
 //! bar's Control Center button, a status icon, or over IPC:
 //! `quick-settings [toggle | open <page> | close]`. See
-//! `docs/quick-settings.md`.
+//! `docs/shell/quick-settings.md`.
 //!
 //! Edit mode opens the Customize window (`customize`) beside the card, as
 //! macOS's Customize Control Center does. amane can't carry a drag from one

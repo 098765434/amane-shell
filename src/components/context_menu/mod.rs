@@ -1,4 +1,4 @@
-// This module is a reusable context-menu component (docs/context-menu.md). Its
+// This module is a reusable context-menu component (docs/shell/context-menu.md). Its
 // public API (icon constructors, `open_at`, `open_under` …) is intentionally
 // broader than the shell uses, so dead_code is allowed module-wide.
 // `unused_imports` is deliberately NOT allowed — imports must stay honest.

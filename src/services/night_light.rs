@@ -6,7 +6,7 @@
 //! temperature all day (its day and night temperatures a degree apart), and
 //! turning off stops it, which gives the screens their colours back. A
 //! `wlsunset` the compositor starts by itself would fight this one, so it
-//! shouldn't (see `docs/quick-settings.md`).
+//! shouldn't (see `docs/shell/quick-settings.md`).
 //!
 //! Whether it's on and how warm are kept in `$XDG_STATE_HOME/amane-shell/
 //! night-light`, so the shell turns it back on after a restart.
