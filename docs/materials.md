@@ -108,7 +108,8 @@ A piece of glass is built with its material's methods:
 - **The edge.** niri's lens bends the backdrop in from past the shape's edge, as the recovered
   macOS 26 glass shaders do, so a rim continues what lies beside it (no stretched ring). The
   light comes from the top (`light-angle 270`) with an opposite fill (`far-rim 0.5`), Apple's
-  preset, on a crisp hairline (`rim 0.35`) with next to no `glow` over the bevel. Glass is
+  preset, kept faint (`rim 0.12`, `far-rim 0.25`, `specular 0.1`: a hint of an edge, not a
+  lit one) with next to no `glow` over the bevel. Glass is
   saturated 2.0, at the top of Apple's 1.6–2.4, so the backdrop comes through vivid.
 - **Labels are vibrant and monochrome.** Text and glyphs on a material take `label(Level::..)`.
   The levels are primary, secondary, tertiary and quaternary, plus `fill_role(..)` and
