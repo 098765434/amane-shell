@@ -242,7 +242,7 @@ const HEADER: &str = "\
 //
 // Don't hand-copy these into the niri config. gen-layer-rules.sh injects
 // everything below the sentinel into the config between its
-// `>>> amane layer-rules` / `<<<` markers (see docs/layer-rules.md); then:
+// `>>> amane layer-rules` / `<<<` markers (see docs/integration/layer-rules.md); then:
 //
 //     niri validate -c ~/.config/niri/config.kdl
 //     niri msg action load-config-file
@@ -427,7 +427,7 @@ fn render_materials(materials: &[NiriMaterial]) -> String {
         "\n// The shell's materials (material.* tokens), by the names it asks for: liquid\n\
          // glass, its clear variant for media, and frost without a lens; each `-still`\n\
          // twin is for reduced motion. They replace a hand-written `materials {}` of\n\
-         // the same names. See the niri fork's docs/wiki/Window-Effects.md.\n\
+         // the same names. See the niri fork's docs/fork/effects/materials.md.\n\
          materials {\n",
     );
     for material in materials {
