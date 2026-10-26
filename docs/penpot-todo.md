@@ -27,6 +27,7 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `sys.glass.material` | `glass` | `components/glass_region.rs` (`MATERIAL`: the stand-in compositor material where a material's own isn't configured) |
 | `sys.material.inactive` | 0.5 | `material.rs` (`INACTIVE`: how far an app window's materials go toward opaque while another window has the focus) |
 | `sys.material.small-glass` | 44 | `material.rs` (`SMALL_GLASS`: the short side at or under which glass is small and frosts with `glass-small`) |
+| `sys.material.untoned` | 0.4 | `material.rs` (`UNTONED`: how far a tint goes toward opaque where niri doesn't tone the backdrop under it) |
 | `sys.material.clear-fade` | 0.7 | `material.rs` (`CLEAR_FADE`: how much of its tint Clear glass keeps over a backdrop that isn't bright) |
 | `dock.icon.size`, `dock.icon.least`, `dock.radius`, `dock.reveal.strip` | 44, 20, 18, 2 | `dock/mod.rs` (`ICON`, `LEAST_ICON`, `RADIUS`, `STRIP`) |
 | `dock.running.size` | 4 | `dock/item.rs` (`RUNNING`) |
@@ -135,6 +136,14 @@ whose output is static: it can't follow the mode, so it holds one value for both
   - `material.glass-small.*`, the same settings as `material.glass`, and
     `material.glass.blur-passes` (2) and `material.glass.blur-offset` (1.5): big glass frosts
     more than small ([materials.md](materials.md)).
+  - macOS's blur, saturation and tone ([materials.md](materials.md)): `material.frost.blur-passes`
+    4, `.blur-offset` 2, `.saturation` 1.8, `.tone` 0.6; `material.glass` 3, 2, 1.6, 0.6 with
+    `.bevel` 16, `.refraction` 12, `.adaptive-tint` 0.25; `material.glass-small` 2, 1.5, 1.6, 0.6
+    with `.bevel` 12, `.refraction` 10, `.adaptive-tint` 0.25; `material.glass-clear` 3, 2, 1.6,
+    `.tone` 0.8.
+  - Lighter tints, dark / light: `sys.color.material.ultra-thin` `#00000059` / `#f6f6f659`,
+    `.thin` `#1c1c1e5c` / `#f6f6f65c`, `.regular` `#1c1c1e70` / `#f6f6f673`, `.thick`
+    `#1c1c1e8c` / `#f6f6f699`. New: `sys.color.material.sidebar` `#1e1e1ecc` / `#f6f6f6d6`.
 - `menu.label.advance-ratio` is no longer read: menus measure their text now. Delete it.
 - `bar.volume.width` is no longer read: the volume is a glyph button now, its level in a tooltip.
   Delete it.

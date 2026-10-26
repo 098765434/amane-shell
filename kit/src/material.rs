@@ -169,6 +169,12 @@ pub const SMALL_GLASS: f32 = 44.0;
 /// (the ultra-thin tint is darker still).
 const CLEAR_FADE: f32 = 0.7;
 
+// TODO(token): `sys.material.untoned` once Penpot has it.
+/// How far a material's tint goes toward opaque where niri doesn't tone the
+/// backdrop under it (its `tone`): a tint the window draws itself, or no
+/// niri material at all. The thin tints count on the tone to stay readable.
+pub const UNTONED: f32 = 0.4;
+
 thread_local! {
     // the material what's being built sits on
     static CURRENT: Cell<Option<Material>> = const { Cell::new(None) };
@@ -311,7 +317,11 @@ impl Material {
                 }
             }
             Self::Window | Self::Sidebar | Self::Header => {
-                let tint = self.spec().thickness.tint();
+                let tint = match self {
+                    // Apple's sidebar recipe, drawn by the window over niri's frost
+                    Self::Sidebar => glass_region::level(sys::color::material::sidebar()),
+                    _ => untoned(self.spec().thickness.tint()),
+                };
                 if amane::window_state().focused {
                     tint
                 } else {
@@ -319,7 +329,10 @@ impl Material {
                     with_alpha(tint, alpha + (1.0 - alpha) * INACTIVE)
                 }
             }
-            _ => self.spec().thickness.tint(),
+            // the bar's layer rule frosts it; the bar fills its own tint
+            Self::Bar => untoned(self.spec().thickness.tint()),
+            _ if self.compositor_draws() => self.spec().thickness.tint(),
+            _ => untoned(self.spec().thickness.tint()),
         }
     }
 
@@ -529,6 +542,12 @@ fn separator_in(high_contrast: bool, content: bool) -> Color {
     } else {
         color
     }
+}
+
+// a tint thickened for a backdrop niri doesn't tone ([`UNTONED`])
+fn untoned(tint: Color) -> Color {
+    let alpha = opacity(tint);
+    with_alpha(tint, alpha + (1.0 - alpha) * UNTONED)
 }
 
 fn opacity(color: Color) -> f32 {

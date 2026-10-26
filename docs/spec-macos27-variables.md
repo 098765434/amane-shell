@@ -184,7 +184,7 @@ inactive window.
 
 | Token | Light | Dark | Replaces or is used by |
 |---|---|---|---|
-| `window.bg` | `#ffffff` | `#1e1e1e` | `window_bg()`'s solid path |
+| `window.bg` | `#ffffff` | `#1e1e1e` | `window_bg()`, an app window's content |
 | `sidebar.bg.active` | `#dae6f2` | `#141517` | `Material::Sidebar` solid and high contrast |
 | `sidebar.bg.inactive` | `#edf4fa` | `#131414` | `Material::Sidebar` while unfocused, in place of the computed `INACTIVE` mix when opaque |
 | `sidebar.label.inactive` | `#878787` | `#666666` | sidebar rows while unfocused |

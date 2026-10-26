@@ -176,92 +176,120 @@ window-rule {
 materials {
     material "frost" {
         bevel 8
+        blur-offset 2
+        blur-passes 4
         dispersion 0
         far-rim 0
         refraction 0
         rim 0.12
+        saturation 1.8
         specular 0
         tint 1
+        tone 0.6
     }
     material "glass" {
-        adaptive-tint 0.6
-        bevel 30
-        blur-offset 1.5
-        blur-passes 2
+        adaptive-tint 0.25
+        bevel 16
+        blur-offset 2
+        blur-passes 3
         dispersion 0.6
         far-rim 0.15
-        refraction 24
+        refraction 12
         report-backdrop true
         rim 0.25
+        saturation 1.6
         specular 0.15
         tint 1
+        tone 0.6
     }
     material "glass-clear" {
         bevel 30
+        blur-offset 2
+        blur-passes 3
         dispersion 0.8
         far-rim 0.2
         refraction 32
         report-backdrop true
         rim 0.3
+        saturation 1.6
         specular 0.25
         tint 1
+        tone 0.8
     }
     material "glass-small" {
-        adaptive-tint 0.6
-        bevel 30
-        dispersion 0.6
-        far-rim 0.15
-        refraction 24
-        report-backdrop true
-        rim 0.25
-        specular 0.15
-        tint 1
-    }
-    material "frost-still" {
-        bevel 8
-        dispersion 0
-        far-rim 0
-        refraction 0
-        rim 0.12
-        specular 0
-        tint 1
-        materialize false
-    }
-    material "glass-still" {
-        adaptive-tint 0.6
-        bevel 30
+        adaptive-tint 0.25
+        bevel 12
         blur-offset 1.5
         blur-passes 2
         dispersion 0.6
         far-rim 0.15
-        refraction 24
+        refraction 10
         report-backdrop true
         rim 0.25
+        saturation 1.6
         specular 0.15
         tint 1
+        tone 0.6
+    }
+    material "frost-still" {
+        bevel 8
+        blur-offset 2
+        blur-passes 4
+        dispersion 0
+        far-rim 0
+        refraction 0
+        rim 0.12
+        saturation 1.8
+        specular 0
+        tint 1
+        tone 0.6
+        materialize false
+    }
+    material "glass-still" {
+        adaptive-tint 0.25
+        bevel 16
+        blur-offset 2
+        blur-passes 3
+        dispersion 0.6
+        far-rim 0.15
+        refraction 12
+        report-backdrop true
+        rim 0.25
+        saturation 1.6
+        specular 0.15
+        tint 1
+        tone 0.6
         materialize false
     }
     material "glass-clear-still" {
         bevel 30
+        blur-offset 2
+        blur-passes 3
         dispersion 0.8
         far-rim 0.2
         refraction 32
         report-backdrop true
         rim 0.3
+        saturation 1.6
         specular 0.25
         tint 1
+        tone 0.8
         materialize false
     }
     material "glass-small-still" {
-        adaptive-tint 0.6
-        bevel 30
+        adaptive-tint 0.25
+        bevel 12
+        blur-offset 1.5
+        blur-passes 2
         dispersion 0.6
         far-rim 0.15
-        refraction 24
+        refraction 10
         report-backdrop true
         rim 0.25
+        saturation 1.6
         specular 0.15
         tint 1
+        tone 0.6
         materialize false
     }
 }

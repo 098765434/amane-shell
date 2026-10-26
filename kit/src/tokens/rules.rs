@@ -19,33 +19,46 @@ use crate::theme::{Density, Mode};
 pub const FG_FLOOR: f64 = 3.4;
 pub const SECONDARY_FLOOR: f64 = 2.0;
 
-/// The surfaces checked for contrast: (background, primary, secondary).
-const SURFACES: &[(&str, &str, &str)] = &[
+/// The surfaces checked for contrast: (background, primary, secondary, the
+/// niri material whose `tone` the compositor lays under it, if any).
+const SURFACES: &[(&str, &str, &str, Option<&str>)] = &[
     // every material's tint, under the vibrant labels the material hands out
     (
         "sys.color.material.ultra-thin",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
+        Some("material.glass-clear.tone"),
     ),
     (
         "sys.color.material.thin",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
+        Some("material.glass.tone"),
     ),
     (
         "sys.color.material.regular",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
+        Some("material.glass.tone"),
     ),
     (
         "sys.color.material.thick",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
+        Some("material.glass.tone"),
     ),
     (
         "sys.color.material.ultra-thick",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
+        None,
+    ),
+    // drawn by the window over niri's frost, which has no tint to tone toward
+    (
+        "sys.color.material.sidebar",
+        "sys.color.vibrant.label.primary",
+        "sys.color.vibrant.label.secondary",
+        None,
     ),
 ];
 
@@ -429,10 +442,19 @@ pub fn invariants(lib: &Library, resolved: &[(Key, Resolved)]) -> Vec<String> {
 
 /// The lowest contrast of `fg` on `bg` over black and over white wallpaper.
 pub fn worst_contrast(bg: Rgba, fg: Rgba) -> f64 {
+    toned_contrast(bg, fg, 1.0)
+}
+
+/// [`worst_contrast`] with the wallpaper toned as niri's material `tone`
+/// does: squeezed toward the tint's side.
+pub fn toned_contrast(bg: Rgba, fg: Rgba, tone: f64) -> f64 {
+    let dark = bg.luminance() < Rgba::opaque(0.5, 0.5, 0.5).luminance();
     [Rgba::BLACK, Rgba::WHITE]
         .into_iter()
         .map(|wallpaper| {
-            let surface = bg.over(wallpaper);
+            let c = |c: f64| if dark { c * tone } else { 1.0 - (1.0 - c) * tone };
+            let toned = Rgba::opaque(c(wallpaper.r), c(wallpaper.g), c(wallpaper.b));
+            let surface = bg.over(toned);
             fg.over(surface).contrast(surface)
         })
         .fold(f64::INFINITY, f64::min)
@@ -450,23 +472,40 @@ pub fn contrast(resolved: &[(Key, Resolved)]) -> Vec<String> {
             _ => None,
         };
 
-        for (bg, fg, secondary) in SURFACES {
+        for (bg, fg, secondary, tone) in SURFACES {
             let Some(bg_c) = color(bg) else {
                 out.push(format!("manual §6.1: {bg} is missing or not a colour"));
                 continue;
+            };
+            let tone = match tone.map(|name| r.tokens.get(name).map(|t| &t.value)) {
+                None => 1.0,
+                Some(Some(Value::Number(n))) => n.value,
+                Some(_) => {
+                    out.push(format!("manual §6.1: {} is missing or not a number", tone.unwrap()));
+                    continue;
+                }
+            };
+            // with niri's material: toned; without it, the kit thickens the tint
+            let untoned = Rgba {
+                a: bg_c.a + (1.0 - bg_c.a) * f64::from(crate::material::UNTONED),
+                ..bg_c
             };
             for (content, floor) in [(fg, FG_FLOOR), (secondary, SECONDARY_FLOOR)] {
                 let Some(c) = color(content) else {
                     out.push(format!("manual §6.1: {content} is missing or not a colour"));
                     continue;
                 };
-                let worst = worst_contrast(bg_c, c);
-                if worst < floor {
-                    out.push(format!(
-                        "manual §11.1: [{}] {content} on {bg} reaches {worst:.2}:1 over \
-                         black or white wallpaper; the floor is {floor}:1",
-                        key.mode.theme()
-                    ));
+                for (how, worst) in [
+                    ("toned", toned_contrast(bg_c, c, tone)),
+                    ("without niri's material", worst_contrast(untoned, c)),
+                ] {
+                    if worst < floor {
+                        out.push(format!(
+                            "manual §11.1: [{}] {content} on {bg} ({how}) reaches {worst:.2}:1 \
+                             over black or white wallpaper; the floor is {floor}:1",
+                            key.mode.theme()
+                        ));
+                    }
                 }
             }
         }

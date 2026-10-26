@@ -21,7 +21,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use amane::{
-    App, Center, Color, Column, End, Key, Radius, Rectangle, Row, Size, Text, TextInput, Widget,
+    App, Center, Color, Column, End, Key, Mask, Radius, Rectangle, Row, Size, Text, TextInput, Widget,
     Window, close_window, current_window, modifiers, open_window_with, window_state,
 };
 
@@ -37,15 +37,11 @@ pub fn app(app_id: &str) -> App {
     App::new().app_id(app_id)
 }
 
-/// What an app window is drawn on: the window material's tint where the
-/// compositor frosts behind the window, else the opaque window background
-/// (`sys.color.window.bg`), as there's nothing frosted to see through to.
+/// What an app window is drawn on: the opaque window background
+/// (`sys.color.window.bg`), as macOS draws a window's content. Only the
+/// [`sidebar`] shows the compositor's frost behind the window.
 pub fn window_bg() -> Color {
-    if frosted() {
-        Material::Window.tint()
-    } else {
-        sys::color::window::bg()
-    }
+    sys::color::window::bg()
 }
 
 /// Whether the compositor frosts behind app windows. The window's own
@@ -57,27 +53,17 @@ fn frosted() -> bool {
 }
 
 /// A normal window in the shell's look: its surface and padding behind
-/// `content`, dimmed a little while another window has the focus. Set the
-/// rest (title, size, shortcuts …) on the `Window` it gives back.
+/// `content`. Set the rest (title, size, shortcuts …) on the `Window` it
+/// gives back. A [`sidebar`] in `content` cuts itself out of the surface,
+/// so nothing between the two may be a `Rectangle`.
 pub fn app_window(content: impl Widget + 'static) -> Window {
-    let focused = window_state().focused;
-
-    // TODO(token): `sys.opacity.inactive` once Penpot has it
-    let opacity = if focused { 1.0 } else { 0.85 };
-
     Window::new().vibrant(material::vibrant()).child(
         Rectangle::new()
             .width(Size::Parent)
             .height(Size::Parent)
             .fill(window_bg())
             .padding(pad(sys::space::inset::l(), sys::space::inset::l()))
-            .child(
-                Rectangle::new()
-                    .width(Size::Parent)
-                    .height(Size::Parent)
-                    .opacity(opacity)
-                    .child(content),
-            ),
+            .child(content),
     )
 }
 
@@ -212,22 +198,36 @@ pub fn sidebar(
         .collect();
 
     let bg = match (opaque, focused) {
-        (false, _) => Color::TRANSPARENT,
+        (false, _) => Material::Sidebar.tint(),
         (true, true) => sys::color::sidebar::bg::active(),
         (true, false) => sys::color::sidebar::bg::inactive(),
     };
 
-    Rectangle::new()
+    let radius = Radius::Fixed(sys::radius::popover());
+    let sidebar = Rectangle::new()
         .width(Size::Parent)
         .height(Size::Parent)
-        .radius(Radius::Fixed(sys::radius::popover()))
+        .radius(radius)
         .fill(bg)
         .padding(pad(sys::space::inset::s(), sys::space::inset::s()))
         .child(
             Column::new(rows)
                 .gap(sys::space::gap::_2xs())
                 .width(Size::Parent),
-        )
+        );
+
+    if opaque {
+        return sidebar;
+    }
+
+    // a hole in the window's opaque surface, down to the frost behind the
+    // window, as a macOS sidebar is the one behind-window part
+    Rectangle::new()
+        .width(Size::Parent)
+        .height(Size::Parent)
+        .radius(radius)
+        .fill(Mask)
+        .child(sidebar)
 }
 
 /// A question over a window, answered with one of its buttons: "Discard

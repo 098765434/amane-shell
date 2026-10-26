@@ -18,12 +18,21 @@ The glass setting, reduced motion and higher contrast change every material at o
   only: it is dark whatever the theme, keeps 0.7 of its tint, and keeps all of it over a bright
   backdrop. That is Apple's 35% dimming layer.
 - **Small glass frosts less.** A piece of Regular glass no more than `SMALL_GLASS` (44) across its
-  short side, a button or a chip, asks for niri's `glass-small`, which blurs with `blur {}`'s own
-  light blur. Larger glass, the modules, menus and sheets, takes `glass`, which sets a heavier blur
-  of its own (`blur-passes`, `blur-offset`). This is the macOS 27 kit's frost: 6 for small glass,
-  16 for medium and large. Without `glass-small` in the config, small glass takes `glass`.
+  short side, a button or a chip, asks for niri's `glass-small`. It frosts at about 6 (2 passes,
+  offset 1.5) with a narrower lens (bevel 12). Larger glass, the modules, menus and sheets, takes
+  `glass`: about 16 (3 passes, offset 2) with bevel 16, so a module isn't all lens edge. This is
+  the macOS 27 kit's frost: 6 for small glass, 16 for medium and large. Without `glass-small` in
+  the config, small glass takes `glass`.
 - **Standard** materials frost without a lens (`frost`). They are used inside the content layer:
-  the bar, tooltips and app windows.
+  the bar, tooltips and app windows. `frost` blurs at about 32 (4 passes, offset 2) and saturates
+  1.8, as macOS's materials do (Gaussian 30 pt, saturation 1.6 to 2.4).
+- **Tone, not opacity.** The tints are thin (the glass's around 36% to 55%). They stay readable
+  because niri's `tone` (0.6) squeezes the backdrop's brightness toward the tint's side first:
+  under dark glass a white wallpaper reads as 60% grey, and under light glass a black one reads
+  as 40%. Apple's materials do the same with a darken or lighten layer. Where niri doesn't tone the
+  backdrop (a tint the surface fills itself, such as the bar's, or no niri material), the tint goes
+  `UNTONED` (0.4) of the way to opaque instead. `adaptive-tint` is 0.25, so glass over a backdrop
+  near its own brightness thickens only a little, not to milky white.
 
 ## Roles
 
@@ -38,8 +47,8 @@ The glass setting, reduced motion and higher contrast change every material at o
 | `ToolTip` | toolTip | standard | thick | no | tooltips |
 | `Bar` | bar | standard | bar | no | the status bar |
 | `Media` | Clear glass | glass, clear | ultra-thin | dims | nothing yet. The media module's art is inside it, not behind it. |
-| `Window` | windowBackground | standard | thick | no | an app window |
-| `Sidebar` | sidebar | standard | regular | no | an app's sidebar |
+| `Window` | windowBackground | standard | opaque | no | an app window's content |
+| `Sidebar` | sidebar | standard | `material.sidebar` | no | an app's sidebar |
 | `Header` | headerView | standard, within the window | regular | no | an app's header over its scrolling page |
 | `Content` | contentBackground | standard | ultra-thick | no | grouped content inside a material |
 
@@ -56,12 +65,14 @@ A piece of glass is built with its material's methods:
 
 - **Window frost.** An amane app's window frosts what's behind it in niri's `frost` material.
   The rule comes from `layer-rules`, which writes a `window-rule` for each app in
-  `layer_rules::APP_IDS`. The window draws `Material::Window`'s tint over it, and stays solid
-  wherever `frost` isn't offered: without the generated config there is no rule to frost it.
-- **Inactive windows.** While another window has the focus, `Window`, `Sidebar` and `Header` go
-  halfway to opaque, calmer, as AppKit's inactive windows are.
-- **Sidebar and Header.** Both are defined, but amane's windows can't send blur shapes yet, so the
-  sidebar sits on the window's frost. No page scrolls under a header yet either.
+  `layer_rules::APP_IDS`. As in macOS's System Settings, only the sidebar shows it: the window
+  draws its content on the opaque `sys.color.window.bg`, and the sidebar cuts itself out of that
+  (a `Mask` fill) and lays `sys.color.material.sidebar` over the frost. That is Apple's sidebar
+  recipe: grey 0.965 at 84% in light. Without the generated config there is no rule to frost
+  the window, and the sidebar is the opaque `sys.color.sidebar.bg.*`.
+- **Inactive windows.** While another window has the focus, `Sidebar` and `Header` go halfway to
+  opaque, calmer, as AppKit's inactive windows are. The window itself doesn't fade.
+- **Header.** It is defined, but no page scrolls under a header yet.
 
 ## Rules
 
@@ -82,13 +93,16 @@ A piece of glass is built with its material's methods:
 ## Tokens
 
 - `sys.color.material.ultra-thin` … `.ultra-thick` and `.bar` are the tints, thinnest first.
+  `.sidebar` is an app sidebar's, over the window's frost.
 - `sys.color.vibrant.label.*`, `.fill.*` and `.separator` are the labels, fills and separator.
   The values are the macOS 27 kit's vibrant greys as translucent white (dark) and black (light),
   which blend the same way and still sort onto the right vibrancy layer. On an opaque surface
   (solid glass, `Material::Content`) labels and fills come from `sys.color.label.*` and
   `sys.color.fill.*` instead, a little weaker, as the kit's content area is. The vibrant set is
   one set for every material, and the contrast floors check primary and secondary
-  labels on every tint over black and white wallpaper (`tokens::rules`).
+  labels on every tint over black and white wallpaper (`tokens::rules`): toned by the niri
+  material that draws the tint, and again untoned and thickened by `UNTONED`, the tint the kit
+  uses without niri's material.
 - `material.<name>.*` (component tokens) are niri's material settings. `amane-shell layer-rules`
   writes one niri material for each of them into `niri-layer-rule.kdl`, with a `-still` twin
   (`materialize false`) for reduced motion; see [layer-rules.md](layer-rules.md).

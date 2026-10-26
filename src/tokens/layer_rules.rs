@@ -393,20 +393,32 @@ mod tests {
     }
 
     #[test]
-    fn small_glass_is_glass_at_the_lighter_blur() {
+    fn small_glass_is_glass_at_a_lighter_blur_and_lens() {
         let all = materials();
         let find = |name: &str| {
             all.iter()
                 .find(|m| m.name == name)
                 .unwrap_or_else(|| panic!("{name} isn't generated"))
         };
+        let number = |m: &NiriMaterial, name: &str| -> f64 {
+            let (_, value) = m.settings.iter().find(|(s, _)| s == name).expect(name);
+            value.parse().expect("a number")
+        };
         for (big, small) in [("glass", "glass-small"), ("glass-still", "glass-small-still")] {
-            let blur = |(setting, _): &&(String, String)| setting.starts_with("blur-");
             let (big, small) = (find(big), find(small));
-            assert!(big.settings.iter().any(|s| blur(&s)), "{} frosts more", big.name);
-            assert!(!small.settings.iter().any(|s| blur(&s)), "{} keeps blur {{}}'s", small.name);
-            let rest: Vec<_> = big.settings.iter().filter(|s| !blur(s)).collect();
-            assert_eq!(rest, small.settings.iter().collect::<Vec<_>>());
+            for setting in ["blur-passes", "bevel", "refraction"] {
+                assert!(
+                    number(small, setting) < number(big, setting),
+                    "{} has less {setting} than {}",
+                    small.name,
+                    big.name
+                );
+            }
+            let sized = |(setting, _): &&(String, String)| {
+                setting.starts_with("blur-") || setting == "bevel" || setting == "refraction"
+            };
+            let rest: Vec<_> = big.settings.iter().filter(|s| !sized(s)).collect();
+            assert_eq!(rest, small.settings.iter().filter(|s| !sized(s)).collect::<Vec<_>>());
         }
     }
 
