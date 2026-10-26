@@ -10,11 +10,14 @@ use std::collections::BTreeMap;
 use amane::DesktopApp;
 use amane_kit::settings::{QuickKey, launcher};
 
-use crate::components::icons::{ICON_CALCULATE, ICON_OPEN_IN_NEW, ICON_SEARCH, ICON_SWAP};
+use crate::components::icons::{
+    ICON_CALCULATE, ICON_CONTENT_COPY, ICON_FOLDER, ICON_OPEN_IN_NEW, ICON_SEARCH, ICON_SWAP,
+};
+use crate::services::clipboard_history::{self, Clip, Kind as ClipKind};
 
 use super::actions::{self, Param, Spec, Value};
 use super::answers;
-use super::entries::{Action, Entry, Icon, Scope, app_key};
+use super::entries::{self, Action, Entry, Icon, Preview, Scope, app_key};
 use super::mode::Mode;
 use super::model;
 use super::rank;
@@ -87,8 +90,8 @@ pub(super) struct Found {
 }
 
 /// Every provider, in the order their fallbacks list.
-fn providers() -> [&'static dyn Provider; 5] {
-    [&Answers, &Apps, &Actions, &Url, &Web]
+fn providers() -> [&'static dyn Provider; 6] {
+    [&Answers, &Apps, &Actions, &Clipboard, &Url, &Web]
 }
 
 /// What `query` finds in its mode, narrowed to `scope` if there is one,
@@ -428,6 +431,79 @@ fn asking(spec: &Spec, query: &Query, out: &mut Vec<Candidate>) {
         }
         None => {}
     }
+}
+
+/// The clipboard's history, newest first, narrowed to the copies with what's
+/// typed in them.
+struct Clipboard;
+
+impl Provider for Clipboard {
+    fn id(&self) -> &'static str {
+        "clipboard"
+    }
+
+    fn modes(&self) -> &'static [Mode] {
+        &[Mode::Clipboard]
+    }
+
+    fn find(&self, query: &Query, out: &mut Vec<Candidate>) {
+        let now = usage::now();
+        for clip in clipboard_history::clips() {
+            if !query.needle.is_empty() && !clip.preview.to_lowercase().contains(&query.needle) {
+                continue;
+            }
+            out.push(Candidate {
+                entry: clip_entry(clip, now),
+                matched: 1.0,
+                group: Group::Listed,
+            });
+        }
+    }
+}
+
+/// How much of a copy its row's title shows.
+const CLIP_TITLE: usize = 90;
+
+/// A copy's row: its start or its image, what it is, and how long ago.
+fn clip_entry(clip: Clip, now: u64) -> Entry {
+    let (title, subtitle, icon, preview) = match clip.kind {
+        ClipKind::Text => (
+            entries::truncate(&clip.preview, CLIP_TITLE),
+            format!("Text · {}", model::size(clip.bytes)),
+            Icon::Glyph(ICON_CONTENT_COPY),
+            Preview::Text(clip.preview.clone()),
+        ),
+        ClipKind::Image => (
+            String::from("Image"),
+            format!(
+                "{} image · {}",
+                if clip.mime == "image/png" {
+                    "PNG"
+                } else {
+                    "JPEG"
+                },
+                model::size(clip.bytes)
+            ),
+            Icon::Image(clip.path()),
+            Preview::Image(clip.path()),
+        ),
+        ClipKind::Files => (
+            entries::truncate(&clip.preview, CLIP_TITLE),
+            String::from("Files"),
+            Icon::Glyph(ICON_FOLDER),
+            Preview::Text(clip.preview.clone()),
+        ),
+    };
+    let subtitle = match &clip.app {
+        Some(app) => format!("{subtitle} · {app}"),
+        None => subtitle,
+    };
+    let mut entry =
+        Entry::new(format!("clip:{:016x}", clip.id), title, icon, Action::Hint).subtitle(subtitle);
+    entry.trailing = Some(model::ago(now.saturating_sub(clip.at)));
+    entry.preview = Some(preview);
+    entry.action = Action::Paste(Box::new(clip));
+    entry
 }
 
 /// The URL typed, opened in the browser.

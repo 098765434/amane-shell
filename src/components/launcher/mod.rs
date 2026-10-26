@@ -49,8 +49,8 @@ use std::time::{Duration, Instant};
 
 use amane::{
     Animation, Apps, Blend, Button, Color, Column, DesktopApp, Easing, Horizontal, Key, Keyboard,
-    LayerWindow, Parent, Rectangle, Scroll, ScrollSource, Service, Stack, Start, Vertical, Widget,
-    WindowSize, mark_all, modifiers, window_size,
+    LayerWindow, Parent, Rectangle, Row, Scroll, ScrollSource, Service, Stack, Start, Vertical,
+    Widget, WindowSize, mark_all, modifiers, window_size,
 };
 
 use crate::components::divider::Divider;
@@ -62,6 +62,7 @@ use crate::components::motion;
 use crate::components::pager::{Pager, PagerMotion};
 use crate::components::panel::{self, Panel, close, is_open, overlay};
 use crate::components::text_edit::{self, Field};
+use crate::services::clipboard_history;
 use amane_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
 
 use entries::{Entry, Scope};
@@ -99,6 +100,8 @@ const HEADING: f32 = 36.0;
 /// The answer card over the results, and the chips under it.
 const ANSWER_H: f32 = 88.0;
 const CHIP_H: f32 = 32.0;
+/// How wide Clipboard's list is, beside the preview of the copy picked.
+const CLIP_LIST_W: f32 = 420.0;
 /// How tall a mode with nothing to show yet is under its search row.
 const EMPTY_H: f32 = 200.0;
 /// How far one wheel notch scrolls.
@@ -271,6 +274,8 @@ enum Kind {
     Apps,
     /// A mode with nothing to show yet.
     Empty,
+    /// Clipboard, before its history is turned on: asking to.
+    Ask,
 }
 
 /// How the body lays its items out: the grid, or a list of rows, the first
@@ -390,7 +395,9 @@ impl<'a> View<'a> {
             Mode::Apps if typed => Kind::Results,
             Mode::Apps => Kind::Apps,
             Mode::Actions => Kind::Results,
-            Mode::Files | Mode::Clipboard => Kind::Empty,
+            Mode::Clipboard if settings.clipboard.enabled => Kind::Results,
+            Mode::Clipboard => Kind::Ask,
+            Mode::Files => Kind::Empty,
         };
 
         let buckets = model::active_buckets(
@@ -415,7 +422,7 @@ impl<'a> View<'a> {
                     found.rows = shown.iter().map(|app| Entry::app(app)).collect();
                 }
             }
-            Kind::Idle | Kind::Empty => {}
+            Kind::Idle | Kind::Empty | Kind::Ask => {}
         }
         drop(settings);
 
@@ -460,7 +467,7 @@ impl<'a> View<'a> {
             Kind::Results | Kind::Apps => {
                 usize::from(self.found.answer.is_some()) + self.found.rows.len()
             }
-            Kind::Idle | Kind::Empty => 0,
+            Kind::Idle | Kind::Empty | Kind::Ask => 0,
         }
     }
 
@@ -480,10 +487,20 @@ impl<'a> View<'a> {
 
     /// How wide the panel is, and what's on it inside its inset.
     fn width(&self) -> f32 {
-        if self.mode == Mode::Apps {
+        if matches!(self.mode, Mode::Apps | Mode::Clipboard) {
             APPS_W
         } else {
             PILL_W
+        }
+    }
+
+    /// How wide the list is: Clipboard shares its width with a preview of
+    /// the copy picked.
+    fn list_width(&self) -> f32 {
+        if self.mode == Mode::Clipboard {
+            CLIP_LIST_W
+        } else {
+            self.inner()
         }
     }
 
@@ -497,7 +514,7 @@ impl<'a> View<'a> {
         if self.kind == Kind::Apps {
             return BODY;
         }
-        if self.mode == Mode::Actions {
+        if matches!(self.mode, Mode::Actions | Mode::Clipboard) {
             return MAX_ROWS as f32 * (ROW + ROW_GAP) - ROW_GAP;
         }
         let rows = self.found.rows.len().clamp(1, MAX_ROWS);
@@ -508,7 +525,7 @@ impl<'a> View<'a> {
     fn height(&self) -> f32 {
         let under = match self.kind {
             Kind::Idle => return PILL_H,
-            Kind::Empty => EMPTY_H,
+            Kind::Empty | Kind::Ask => EMPTY_H,
             Kind::Apps => PILLS + GAP + BODY + INSET * 2.0,
             Kind::Results => {
                 let answer = if self.found.answer.is_some() {
@@ -979,11 +996,7 @@ fn on_key(key: Key) {
                     && let Some(title) = &entry.action_title
                     && !matches!(entry.action, entries::Action::Hint)
                 {
-                    start_capture(
-                        &entry.key,
-                        title,
-                        entry.quick_keys.as_deref().unwrap_or(""),
-                    );
+                    start_capture(&entry.key, title, entry.quick_keys.as_deref().unwrap_or(""));
                 }
             }
             digit => {
@@ -1038,10 +1051,26 @@ fn on_key(key: Key) {
             back();
         }
         (Key::Enter, Zone::Pills) => set_focus(Zone::Body),
+        // Shift+Return puts a copy back on the clipboard, without pasting it
+        (Key::Enter, _) if held.shift && view.mode == Mode::Clipboard => {
+            if let Some(entries::Action::Paste(clip)) =
+                view.entry(selected).map(|entry| entry.action.clone())
+            {
+                close();
+                clipboard_history::put_back(&clip, false);
+            }
+        }
         (Key::Enter, _) => {
             drop(view);
             drop(apps);
             run_selected();
+        }
+        (Key::Delete, _) if view.mode == Mode::Clipboard => {
+            if let Some(entries::Action::Paste(clip)) =
+                view.entry(selected).map(|entry| entry.action.clone())
+            {
+                clipboard_history::delete(clip.id);
+            }
         }
 
         // the searches run before, from an empty field
@@ -1130,6 +1159,9 @@ fn ease(anim: &'static std::thread::LocalKey<RefCell<Animation>>, to: f32) -> f3
 /// The surface: hidden while closed, else the glass high on a clear
 /// surface that closes the launcher when clicked.
 pub fn surface() -> LayerWindow {
+    // the clipboard's history follows its setting, whether or not the
+    // launcher is open
+    clipboard_history::sync(&launcher().clipboard);
     let open = is_open(Panel::Launcher);
     let unfolded = unfold(open);
 
@@ -1350,16 +1382,48 @@ fn panel(view: &View) -> Column {
             if !view.found.scopes.is_empty() {
                 body.push(boxed(results::scope_chips(&view.found.scopes, width)));
             }
-            body.push(boxed(results::list(
-                &view.found.rows,
-                at,
-                width,
-                body_height,
-                &layout,
-                &query,
-                view.mode == Mode::Actions,
-            )));
+            let list_w = view.list_width();
+            let list: Box<dyn Widget> =
+                if view.mode == Mode::Clipboard && view.found.rows.is_empty() {
+                    boxed(results::empty(
+                        if query.is_empty() {
+                            results::Empty::NothingCopied
+                        } else {
+                            results::Empty::NoMatch
+                        },
+                        width,
+                        body_height,
+                    ))
+                } else {
+                    boxed(results::list(
+                        &view.found.rows,
+                        at,
+                        list_w,
+                        body_height,
+                        &layout,
+                        &query,
+                        view.mode == Mode::Actions,
+                    ))
+                };
+            if view.mode == Mode::Clipboard && !view.found.rows.is_empty() {
+                // the copy picked, beside the list
+                let preview = view.entry(selected).and_then(|entry| entry.preview.clone());
+                body.push(boxed(
+                    Row::new(vec![
+                        list,
+                        boxed(results::preview(
+                            preview.as_ref(),
+                            width - list_w - GAP,
+                            body_height,
+                        )),
+                    ])
+                    .gap(GAP),
+                ));
+            } else {
+                body.push(list);
+            }
         }
+        Kind::Ask => body.push(boxed(results::ask_clipboard(width, EMPTY_H - INSET * 2.0))),
         Kind::Apps => {
             body.push(boxed(header::pill_bar(
                 &view.buckets,

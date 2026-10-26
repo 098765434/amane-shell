@@ -3,12 +3,14 @@
 //! and its [`Action`] on Enter or a click. Running one counts it in the
 //! launcher's [`usage`](super::usage), so what's used rises.
 
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use amane::DesktopApp;
 
 use crate::components::panel::close;
 use crate::components::text_edit;
+use crate::services::clipboard_history::{self, Clip};
 use crate::services::run_now;
 
 use super::usage;
@@ -17,6 +19,15 @@ use super::usage;
 pub(super) enum Icon {
     App(Box<DesktopApp>),
     Glyph(char),
+    /// An image file, shown small: a copied image.
+    Image(PathBuf),
+}
+
+/// What the side of Clipboard shows of the row picked.
+#[derive(Clone, Debug, PartialEq)]
+pub(super) enum Preview {
+    Text(String),
+    Image(PathBuf),
 }
 
 /// Somewhere a search can be narrowed to: Tab on a row that has one, or a
@@ -67,6 +78,9 @@ pub(super) enum Action {
     Ask(Scope),
     /// A row that only says something, like what to type.
     Hint,
+    /// A copy from the clipboard's history, pasted into the window the
+    /// launcher was over.
+    Paste(Box<Clip>),
 }
 
 #[derive(Clone)]
@@ -92,6 +106,8 @@ pub(super) struct Entry {
     /// saved with, and the quick keys that run it.
     pub(super) action_title: Option<String>,
     pub(super) quick_keys: Option<String>,
+    /// What Clipboard shows of it beside the list.
+    pub(super) preview: Option<Preview>,
 }
 
 impl Entry {
@@ -114,6 +130,7 @@ impl Entry {
             section: None,
             action_title: None,
             quick_keys: None,
+            preview: None,
         }
     }
 
@@ -170,6 +187,11 @@ pub(super) fn run(entry: &Entry, query: &str) {
             super::enter_scope(scope.clone());
             return;
         }
+        Action::Paste(clip) => {
+            close();
+            clipboard_history::put_back(clip, true);
+            return;
+        }
         _ => {}
     }
     usage::record(&entry.key, query);
@@ -184,7 +206,7 @@ pub(super) fn run(entry: &Entry, query: &str) {
         Action::Open(url) => open(url.clone()),
         Action::Copy(value) => text_edit::copy(value),
         Action::Run(run) => run(),
-        Action::Ask(_) | Action::Hint => {}
+        Action::Ask(_) | Action::Hint | Action::Paste(_) => {}
     }
 }
 

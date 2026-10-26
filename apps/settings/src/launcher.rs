@@ -1,5 +1,6 @@
 //! Spotlight, the shell's launcher: which sources its search draws on, how
-//! Applications lays the apps out, and the quick keys set for its actions.
+//! Applications lays the apps out, its clipboard history, and the quick
+//! keys set for its actions.
 //! Each control changes `launcher.json`, which the shell follows at once.
 
 use amane::{Center, Column, Row, Text, Widget};
@@ -21,14 +22,40 @@ const PROVIDERS: [(&str, &str); 5] = [
 ];
 
 pub fn page() -> Column {
-    let (excluded, layout, quick_keys) = {
+    let (excluded, layout, quick_keys, clipboard) = {
         let now = launcher();
         (
             now.excluded_providers.clone(),
             now.apps_layout,
             now.quick_keys.clone(),
+            now.clipboard.clone(),
         )
     };
+
+    let history = Column::new(vec![
+        boxed(labelled(
+            "Keep what's copied, for Clipboard",
+            Switch::new("settings.launcher.clipboard", clipboard.enabled)
+                .on_toggle(|on| change_launcher(|now| now.clipboard.enabled = on))
+                .build(),
+        )),
+        boxed(labelled(
+            "Keep copied images too",
+            Switch::new("settings.launcher.clipboard.images", clipboard.images)
+                .on_toggle(|on| change_launcher(|now| now.clipboard.images = on))
+                .build(),
+        )),
+        boxed(
+            Text::new(format!(
+                "Keeps the last {} copies. Copies from password managers, and from {}, are left out.",
+                clipboard.max_items,
+                clipboard.exclude_apps.join(", ")
+            ))
+            .style(sys::r#type::caption())
+            .color(material::label(Level::Secondary)),
+        ),
+    ])
+    .gap(sys::space::gap::s());
 
     let sources: Vec<Box<dyn Widget>> = PROVIDERS
         .into_iter()
@@ -103,6 +130,7 @@ pub fn page() -> Column {
             Column::new(sources).gap(sys::space::gap::s()),
         )),
         boxed(setting("Show applications as", Column::new(layout_radios))),
+        boxed(setting("Clipboard history", history)),
         boxed(setting(
             "Quick keys",
             Column::new(keys).gap(sys::space::gap::s()),

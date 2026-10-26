@@ -25,6 +25,7 @@ use crate::components::material::{self, FillLevel, Level, Material};
 use crate::components::motion;
 use crate::components::scroll_view::ScrollView;
 use crate::components::text_edit::Field;
+use crate::services::clipboard_history;
 use crate::tokens::{Styled, TextStyle, sys};
 
 use super::entries::Scope;
@@ -124,6 +125,9 @@ pub(super) fn search_row(
     } else if view.mode == Mode::Apps {
         used += LEADING + gap;
         Some(boxed(round_button(ICON_MORE_HORIZ, more_menu)))
+    } else if view.mode == Mode::Clipboard && amane_kit::settings::launcher().clipboard.enabled {
+        used += LEADING + gap;
+        Some(boxed(round_button(ICON_MORE_HORIZ, clipboard_menu)))
     } else {
         None
     };
@@ -253,6 +257,23 @@ fn more_menu() {
         .item(MenuItem::label("View Content As").disabled())
         .item(item("Grid", AppsLayout::Grid))
         .item(item("List", AppsLayout::List));
+    context_menu::show_under(MORE_MENU_KEY, menu, LAUNCHER_NS, cursor());
+}
+
+/// Clipboard's ⋯ menu: forgetting every copy, or turning the history off.
+fn clipboard_menu() {
+    let menu = ContextMenu::new()
+        .item(
+            MenuItem::label("Clear History")
+                .destructive()
+                .on_select(|| {
+                    clipboard_history::clear();
+                }),
+        )
+        .item(MenuItem::label("Turn Off Clipboard History").on_select(|| {
+            change_launcher(|settings| settings.clipboard.enabled = false);
+            mark_all();
+        }));
     context_menu::show_under(MORE_MENU_KEY, menu, LAUNCHER_NS, cursor());
 }
 

@@ -77,7 +77,9 @@ pointer, the glyph turns into a back button (a chevron on a soft square), back t
   - Typing searches the apps only.
 - **Actions** (`Ctrl+3`): every action, a section at a time (see [Actions](#actions)), in a
   panel of one size. Typing searches the actions only.
-- **Files** and **Clipboard** (`Ctrl+2`, `Ctrl+4`): not there yet. Each says so.
+- **Clipboard** (`Ctrl+4`): what's been copied, newest first (see
+  [Clipboard](#clipboard)), in a panel as wide as Applications'.
+- **Files** (`Ctrl+2`): not there yet. It says so.
 
 ## Actions
 
@@ -113,6 +115,44 @@ it on Enter:
 bar shows a ⏱ chip counting down by the second, which opens Actions. When it runs out, a
 notification says so.
 
+## Clipboard
+
+Spotlight's clipboard history (`services/clipboard_history.rs`). It's **off until asked for**:
+the first time, Clipboard explains what it would keep, with **Not Now** (back to the pill) and
+**Enable**.
+
+Once on:
+- **What's kept.** Each new copy, in its best kind: a PNG or JPEG image, a list of files, or
+  text.
+  - Up to 200, newest first. A copy made again moves to the top.
+  - Copies over 4 MB aren't kept, and all of them together stay under 64 MB.
+  - A copy a password manager marks as one (`x-kde-passwordManagerHint`) isn't kept, nor one
+    made while an app it's told to leave out has the focus (KeePassXC, Bitwarden and 1Password
+    by default).
+  - They're kept in `$XDG_STATE_HOME/amane-shell/clipboard/`: `index.json` and a file a copy.
+- **The list.** Each row is its start, or the image small, what it is and how big, the app it
+  was copied in, and how long ago. Typing narrows it to the copies with that in them.
+- **The preview.** The copy picked shows beside the list: its text wrapped, or its image
+  fitted.
+- **Return** pastes it: puts it back on the clipboard (`wl-copy`), closes the launcher, and
+  once the window under it has the keyboard again types Ctrl+V into it (`wtype`; Ctrl+Shift+V
+  in a terminal).
+- **Shift+Return** only puts it back on the clipboard.
+- **Delete** forgets it.
+- The **⋯** menu clears the history, or turns it off.
+
+It watches the clipboard through wl-clipboard (`wl-paste --watch`), which follows the
+compositor's selection without needing the keyboard. It starts and stops as the setting
+changes (`clipboard.enabled` in `launcher.json`, or Shell Settings' Spotlight page).
+
+To open it from a key, bind `launcher toggle clipboard`, in place of another history's picker:
+
+```kdl
+Mod+Ctrl+V hotkey-overlay-title="Clipboard" {
+    spawn "sh" "-c" "printf 'launcher\\ntoggle\\nclipboard\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+}
+```
+
 ## Using it
 
 | Do | What happens |
@@ -127,6 +167,7 @@ notification says so.
 | Left / Right (pills) | The previous or next category, sliding there |
 | Tab | Narrows to the row picked when it narrows to anything; else moves the focus (search field → pills → apps) |
 | Ctrl+K (an action) | Starts typing its quick keys |
+| Shift+Return / Delete (a copy) | Puts it back on the clipboard without pasting / forgets it |
 | Shift+Tab | Moves the focus back |
 | Enter | Runs the highlighted row or app, else the first |
 | Escape | Clears the query, then leaves the scope, then the mode; then closes the launcher |
@@ -203,10 +244,12 @@ fuller lines.
   followed live:
   - `apps_layout`: `grid` or `list`.
   - `excluded_providers`: the sources the search leaves out, by id: `answers`, `apps`,
-    `actions`, `url`, `web`.
+    `actions`, `clipboard`, `url`, `web`.
   - `quick_keys`: each action's quick keys, with its key and name.
+  - `clipboard`: whether the history is on, how many copies it keeps, whether images too,
+    and the apps it leaves out.
 
-  Shell Settings' **Spotlight** page changes all three.
+  Shell Settings' **Spotlight** page changes them.
 
 ## IPC
 
@@ -287,7 +330,10 @@ light and dark themes and the density.
 
 ## Known limits
 
-- Files and Clipboard are scaffolded, not built: picking one shows that it isn't there yet.
+- Files is scaffolded, not built: picking it shows that it isn't there yet.
+- The clipboard history needs wl-clipboard (`wl-paste`, `wl-copy`), and pasting needs `wtype`
+  and niri's IPC. Images other than PNG and JPEG are kept only as the text or files offered
+  with them, since amane can't show them.
 - Quick Settings' toggles act through the same callbacks as their tiles, so one that only
   opens its page (Power Off…, Display, Sound) isn't an action.
 - The grid scrolls by a negative top padding inside a clipped viewport (`ScrollView`), as amane's

@@ -16,6 +16,8 @@
 //! - [`keep_awake`] — the screen held on and the lid ignored (inhibitors).
 //! - [`clock`] — the wall-clock time and date the bar shows.
 //! - [`timer`] — the launcher's countdown, which the bar shows while it runs.
+//! - [`clipboard_history`] — what's been copied, for the launcher's Clipboard
+//!   (wl-clipboard), once it's turned on.
 //! - [`system_stats`] — processor, memory, network, temperature and disks,
 //!   and their recent history, for the desktop's widgets.
 //!
@@ -24,6 +26,7 @@
 //! [`Service`]: amane::Service
 
 pub mod background_apps;
+pub mod clipboard_history;
 pub mod clock;
 pub mod connections;
 pub mod dark_style;

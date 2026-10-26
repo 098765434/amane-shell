@@ -8,19 +8,21 @@
 //! in a [`ScrollView`].
 
 use amane::{
-    Button, Center, Color, Column, End, Rectangle, Row, Stack, Start, Text, Widget, mark_all,
+    Button, Center, Color, Column, End, Image, Rectangle, Row, Stack, Start, Text, Widget, mark_all,
 };
+use amane_kit::settings::change_launcher;
 
 use crate::components::app_icon;
+use crate::components::buttons::{PushButton, Style};
 use crate::components::color::with_alpha;
-use crate::components::icons::{ICON_APPS, ICON_SEARCH};
+use crate::components::icons::{ICON_APPS, ICON_CONTENT_PASTE, ICON_SEARCH};
 use crate::components::kinetic::Axis;
-use crate::components::layout::{boxed, icon, pad, slot, text_width};
+use crate::components::layout::{boxed, icon, pad, slot, text_height, text_width, wrapped_lines};
 use crate::components::material::{self, FillLevel, Level};
 use crate::components::scroll_view::ScrollView;
 use crate::tokens::{Styled, TextStyle, sys};
 
-use super::entries::{self, Action, Entry, Icon, Scope};
+use super::entries::{self, Action, Entry, Icon, Preview, Scope};
 use super::grid::At;
 use super::mode::Mode;
 use super::{
@@ -236,6 +238,12 @@ fn capture_box(capture: &Capture) -> Rectangle {
 fn leading(entry: &Entry) -> Rectangle {
     let tile: Box<dyn Widget> = match &entry.icon {
         Icon::App(app) => boxed(app_icon::entry_tile(app, RESULT_ICON)),
+        Icon::Image(path) => boxed(
+            slot(RESULT_ICON)
+                .radius(sys::radius::raised())
+                .fill(Image::cover(path.clone()))
+                .clip(),
+        ),
         Icon::Glyph(glyph) => boxed(
             slot(RESULT_ICON)
                 .radius(sys::radius::raised())
@@ -453,6 +461,10 @@ pub(super) enum Empty {
     Category,
     /// A mode that has nothing to show yet.
     Soon(Mode),
+    /// The clipboard's history is empty.
+    NothingCopied,
+    /// Nothing in it has what was typed.
+    NoMatch,
 }
 
 /// What shows where nothing does, `width` by `height`: a glyph over a note
@@ -462,6 +474,8 @@ pub(super) fn empty(why: Empty, width: f32, height: f32) -> Rectangle {
         Empty::Loading => (ICON_SEARCH, "Loading…"),
         Empty::Category => (ICON_APPS, "Nothing in this category"),
         Empty::Soon(mode) => (mode.glyph(), "Not available yet"),
+        Empty::NothingCopied => (ICON_CONTENT_PASTE, "Nothing copied yet"),
+        Empty::NoMatch => (ICON_SEARCH, "No copies match"),
     };
     let secondary = material::label(Level::Secondary);
     Rectangle::new()
@@ -478,3 +492,100 @@ pub(super) fn empty(why: Empty, width: f32, height: f32) -> Rectangle {
             .align(Center),
         )
 }
+
+/// The copy picked in Clipboard, `width` by `height` beside the list: its
+/// text wrapped, or its image fitted.
+pub(super) fn preview(preview: Option<&Preview>, width: f32, height: f32) -> Rectangle {
+    let inset = sys::space::inset::l();
+    let card = Rectangle::new()
+        .width(width)
+        .height(height)
+        .radius(sys::radius::popover())
+        .fill(material::fill_role(FillLevel::Tertiary))
+        .clip();
+    match preview {
+        Some(Preview::Image(path)) => card.padding(pad(inset, inset)).child(
+            Rectangle::new()
+                .width(width - inset * 2.0)
+                .height(height - inset * 2.0)
+                .fill(Image::contain(path.clone())),
+        ),
+        Some(Preview::Text(text)) => {
+            let style = sys::r#type::label();
+            let lines = (height - inset * 2.0) / text_height(style);
+            let wrapped = wrapped_lines(text, style, width - inset * 2.0, lines.max(1.0) as usize);
+            card.padding(pad(inset, inset))
+                .align_child(Start, Start)
+                .child(Column::new(
+                    wrapped
+                        .into_iter()
+                        .map(|line| {
+                            boxed(
+                                Text::new(line)
+                                    .style(style)
+                                    .color(material::label(Level::Primary)),
+                            )
+                        })
+                        .collect(),
+                ))
+        }
+        None => card,
+    }
+}
+
+/// Clipboard before its history is turned on, `width` by `height`: what
+/// it would keep, and buttons to turn it on or go back.
+pub(super) fn ask_clipboard(width: f32, height: f32) -> Rectangle {
+    let style = sys::r#type::label();
+    let note = wrapped_lines(ASK_NOTE, style, (width * 0.8).min(ASK_W), 4);
+    let mut lines: Vec<Box<dyn Widget>> = note
+        .into_iter()
+        .map(|line| {
+            boxed(
+                Text::new(line)
+                    .style(style)
+                    .color(material::label(Level::Secondary)),
+            )
+        })
+        .collect();
+    // a little more room over the buttons than between the lines
+    lines.push(boxed(
+        Rectangle::new()
+            .width(1.0)
+            .height(sys::space::gap::s())
+            .fill(Color::TRANSPARENT),
+    ));
+    lines.push(boxed(
+        Row::new(vec![
+            boxed(
+                PushButton::new("amane.launcher.clipboard.not-now", "Not Now")
+                    .style(Style::Tonal)
+                    .on_press(|| {
+                        super::switch_mode(Mode::Home);
+                        mark_all();
+                    })
+                    .build(),
+            ),
+            boxed(
+                PushButton::new("amane.launcher.clipboard.enable", "Enable")
+                    .style(Style::Filled)
+                    .on_press(|| change_launcher(|settings| settings.clipboard.enabled = true))
+                    .build(),
+            ),
+        ])
+        .gap(sys::space::gap::m())
+        .align(Center),
+    ));
+    Rectangle::new()
+        .width(width)
+        .height(height)
+        .fill(Color::TRANSPARENT)
+        .align_child(Center, Center)
+        .child(Column::new(lines).gap(sys::space::gap::s()).align(Center))
+}
+
+/// What Clipboard says before its history is turned on, as Spotlight does.
+const ASK_NOTE: &str = "Spotlight can keep what you copy, to paste it again from here. \
+    Copies from password managers are left out, but sensitive information may still be kept.";
+/// How wide that note is at most.
+const ASK_W: f32 = 520.0;
