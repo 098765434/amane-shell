@@ -32,6 +32,9 @@ Toasts and the center share one card, laid out like an iOS banner in three colum
   apart. The column is as wide as the widest time, so the text doesn't move as the time ages. The
   image's room is kept from the moment the card is measured, so the card doesn't grow when the
   image finishes loading.
+  The image is the `image-data`/`image-path` hint, else the app icon when the sender sent it as a
+  file or `file://` url rather than a theme name: the spec ranks it after the hints, and niri
+  sends its screenshots that way. Such an icon then isn't drawn on the left as well.
 
 The insets are `card.padding-block` above and below, `card.padding-start` on the leading side and
 the wider `card.padding-end` on the trailing side, where the time sits. Actions run in a row of

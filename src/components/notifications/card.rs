@@ -459,18 +459,66 @@ fn leading(n: &Notification, height: f32) -> Box<dyn Widget> {
     )
 }
 
-/// The sender's own image, as a path, when it sent one.
+/// The sender's own image, as a path: the image it sent, else an icon it
+/// sent as a file rather than a theme name, which the spec ranks after the
+/// image hints (niri sends its screenshots that way).
 fn image_path(n: &Notification) -> Option<String> {
-    let image = n.image().strip_prefix("file://").unwrap_or(n.image());
-    (!image.is_empty()).then(|| image.to_string())
+    let sent = if n.image().is_empty() {
+        icon_file(n)?
+    } else {
+        n.image()
+    };
+    let path = file_path(sent);
+    (!path.is_empty()).then_some(path)
+}
+
+/// The icon `n` sent, when it's a file (a path or a `file://` url) and not
+/// an icon theme name.
+fn icon_file(n: &Notification) -> Option<&str> {
+    let icon = n.icon();
+    (icon.starts_with('/') || icon.starts_with("file://")).then_some(icon)
+}
+
+/// A path or a `file://` url as a path, its `%20`s and the like decoded.
+fn file_path(sent: &str) -> String {
+    let Some(url) = sent.strip_prefix("file://") else {
+        return sent.to_string();
+    };
+    let bytes = url.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        let hex = bytes
+            .get(i + 1..i + 3)
+            .and_then(|pair| std::str::from_utf8(pair).ok())
+            .and_then(|pair| u8::from_str_radix(pair, 16).ok());
+        match (bytes[i], hex) {
+            (b'%', Some(byte)) => {
+                out.push(byte);
+                i += 3;
+            }
+            (byte, _) => {
+                out.push(byte);
+                i += 1;
+            }
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
 }
 
 /// The sending app's icon, from its desktop entry, its name, or the icon
-/// it sent; a first letter when none loads.
+/// it sent; a first letter when none loads. An icon sent as a file is the
+/// thumbnail instead ([`image_path`]), so it isn't drawn twice.
 fn app_icon(n: &Notification, side: f32) -> Rectangle {
+    let sent = || {
+        icon_file(n)
+            .is_none()
+            .then(|| n.icon_path().map(PathBuf::from))
+            .flatten()
+    };
     let found: Option<PathBuf> = icon_for(n.desktop_entry())
         .or_else(|| icon_for(n.app_name()))
-        .or_else(|| n.icon_path().map(PathBuf::from));
+        .or_else(sent);
 
     if let Some(path) = found
         && Image::loaded(&path)
@@ -549,6 +597,17 @@ pub fn local(time: SystemTime, format: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn file_urls_become_paths() {
+        assert_eq!(
+            file_path("file:///home/me/Screenshot%20from%202026-10-26%2009-09-47.png"),
+            "/home/me/Screenshot from 2026-10-26 09-09-47.png"
+        );
+        assert_eq!(file_path("/plain/path.png"), "/plain/path.png");
+        assert_eq!(file_path("file:///a%2"), "/a%2");
+        assert_eq!(file_path("file:///caf%C3%A9.png"), "/café.png");
+    }
 
     #[test]
     fn markup_is_stripped() {
