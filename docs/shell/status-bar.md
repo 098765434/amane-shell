@@ -76,14 +76,8 @@ stay even.
 ## Status icons
 
 Volume, Bluetooth, network, Tailscale, Keep Awake and battery are optional. Each Quick Settings
-page that has one ends in a **Show in Status Bar** switch, and IPC does the same:
-
-```sh
-printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock   # show | hide | toggle
-```
-
-The names are `volume`, `bluetooth`, `network`, `tailscale`, `battery` and `keep-awake`. The old
-`taskbar` command still works. The hidden ones are kept in `$XDG_STATE_HOME/amane-shell/status-bar`,
+page that has one ends in a **Show in Status Bar** switch, and the `status-bar` IPC command does
+the same ([ipc.md](../integration/ipc.md#status-bar)). The hidden ones are kept in `$XDG_STATE_HOME/amane-shell/status-bar`,
 one per line (`indicators.rs`), and a missing file shows them all. Until that file exists, the
 old `taskbar` file is read instead.
 

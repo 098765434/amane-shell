@@ -253,22 +253,11 @@ module in one pass over them all (`glass::rims`, up to thirty pieces a pass, the
 the shader's values; amane's fork gives a shader 64 rows for that): +2 ms a frame, measured. A
 page's sheet, one piece, wears `glass::apply` itself.
 
-## IPC
+## IPC and the keyboard
 
-```sh
-printf 'quick-settings\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-printf 'quick-settings\nopen\nwifi\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-printf 'quick-settings\nclose\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-```
-
-The pages are `grid`, `sound`, `wifi`, `vpn`, `bluetooth`, `power-mode`, `power`, `night-light`,
-`do-not-disturb`, `keyboard`, `session`, `background-apps`, `tailscale` and `keep-awake`. `quick-settings edit` (or
-`customize`) opens the grid in edit mode with the Customize window, and `quick-settings
-reset-layout` restores the default layout. A niri keybind:
-
-```kdl
-Mod+S { spawn "sh" "-c" "printf 'quick-settings\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock"; }
-```
+`quick-settings [toggle | open [<page>] | close | edit | customize | reset-layout]` opens the card,
+a page of it, or edit mode from a script or a keybind ([ipc.md](../integration/ipc.md#quick-settings),
+with the page names).
 
 The card takes the keyboard while it's open (`Keyboard::Exclusive`: it's modal, as Control
 Center is), so Escape works from the first moment however the card was opened, and the Wi‑Fi
@@ -365,58 +354,14 @@ The Power Off page's Restart…, Power Off… and Log Out… ask first in the sh
 [`Dialog`](../kit/components.md#dialog) on thick glass. `alert::show(dialog)` puts it on the
 `amane.alert` surface, as big as its card, which frosts itself and holds the keyboard until
 answered; its layer rule rounds it (`dialog.radius`) and gives it niri's shadow (`0 18 48`). In
-debug builds the `alert-test` IPC call shows a sample (`printf 'alert-test\nstacked\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`).
+debug builds the `alert-test` IPC call shows a sample ([ipc.md](../integration/ipc.md#alert-test)).
 
 ## Backends
 
-What amane has no service for is a shell service in `src/services/`. Each is an amane `Service`:
-live state a view reads, quiet when nothing changed, and "not present" (its tile hidden) when its
-daemon or device is missing.
-
-| Service | Reads | Changes with |
-|---|---|---|
-| `session` | what logind allows (`CanSuspend`, `CanReboot`, `CanPowerOff`), asked once | logind `Suspend`/`Reboot`/`PowerOff`, `Session.Lock`; logging out quits niri |
-| `night_light` | its own state file | runs `wlsunset` held at one temperature; stopping it gives the screens their colours back |
-| `dark_style` | amane's `Appearance` (the Settings portal) | `dconf write /org/gnome/desktop/interface/color-scheme` |
-| `rfkill` | `/sys/class/rfkill`, polled each second | `rfkill block all` / `unblock all` |
-| `keyboard_backlight` | the first `*::kbd_backlight` LED, polled | logind `SetBrightness("leds", …)` |
-| `connections` | `nmcli -t` every 3 s: VPN profiles, the Ethernet device, a Wi‑Fi profile in access-point mode | `nmcli connection up/down`, `nmcli device connect/disconnect` |
-| `privacy` | `pw-dump --monitor` (recording streams, running v4l2/libcamera sources); `niri msg --json casts` every 2 s | — |
-| `background_apps` | `org.freedesktop.background.Monitor`'s `BackgroundApps`, on each change | the app's `quit` action, else `flatpak kill` |
-| `keep_awake` | what it holds and until when (kept in memory only); `NameHasOwner` on the screensaver and logind's `BlockInhibited`, asked once, say whether it can; logind's `Session.Lock` for this session | `org.freedesktop.ScreenSaver.Inhibit`/`UnInhibit` for the screen; logind `Inhibit("handle-lid-switch", …, "block")` for the lid, held as the fd it hands back; `niri msg action power-off-monitors` |
-| `tailscale` | `tailscale status --json` and `tailscale debug prefs`, read again whenever `tailscale debug watch-ipn` prints (a burst settles for 300 ms first; the stream is restarted with a 1–60 s backoff when the daemon goes) | `tailscale up` (never with flags), `down`, `set --exit-node / --accept-routes / --accept-dns / --shields-up`, `login` (left running; its URL is taken from `status --json` and opened with `xdg-open`); copying is `wl-copy` |
-
-**Tailscale needs the operator grant to change anything.** Reads work for anyone, but `tailscaled`
-refuses writes from a user who isn't root or its operator. Grant it once with
-`sudo tailscale set --operator=$USER`; it's kept in tailscaled's state across reboots. Without it
-the tile and page show the true state read-only (judged from `OperatorUser` in the prefs, so
-without a probe write), and the page has the command to copy. The shell never escalates.
-
-**Night light owns `wlsunset`.** The compositor gives the colour ramps to one program at a time,
-so turning night light on stops any other `wlsunset`. A `spawn-at-startup "wlsunset" …` line in
-the niri config would fight the shell's, so remove it. It's manual only: on at the chosen
-temperature until turned off. Its state (`on 4000`) is kept in
-`$XDG_STATE_HOME/amane-shell/night-light`, so it comes back on after a restart. A last-used VPN
-is kept beside it, in `vpn`.
-
-**Keep Awake never writes a power setting.** Each hold is an inhibitor tied to the shell: the
-screen's is on amane's one session-bus connection (niri serves `org.freedesktop.ScreenSaver`, and
-hypridle honours its inhibits, so nothing dims, locks or turns the monitors off), and the lid's
-is the file descriptor logind hands back, which needs no root (`HandleLidSwitch` in `/etc` is
-left alone). A shell that dies lets go of both, and the machine behaves as normal again by
-itself. That's also why the state isn't kept across a restart. A time limit is a wall-clock
-instant, so one that spans a suspend has run out on waking. Nothing blocks a suspend that's
-asked for.
-
-**Locking lets the screen blank.** On logind's Lock signal for this session the screen hold is
-let go, so the lock screen blanks on hypridle's timers instead of staying lit (burn-in on this
-OLED panel); the lid stays held. swaylock says nothing when it's unlocked, so the hold comes back
-once no `swaylock` process is left (it's given 5 s to start). Locks have to go through logind for
-the shell to see them, so niri's Super+Alt+L runs `loginctl lock-session`, and hypridle's
-`lock_cmd` starts swaylock.
-
-A VPN is a NetworkManager `vpn` or `wireguard` profile, as in GNOME. A tunnel NetworkManager
-doesn't manage (tailscale) isn't one.
+What amane has no service for (logind's session actions, night light, dark style, airplane mode,
+the keyboard light, wired/VPN/hotspot, privacy, background apps, Keep Awake, Tailscale) is a shell
+service in `src/services/`; see [services.md](../integration/services.md), which also has the
+Tailscale operator grant, why night light owns `wlsunset`, and how Keep Awake and locking behave.
 
 ## Related
 

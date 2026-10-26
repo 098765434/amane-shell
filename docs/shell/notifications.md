@@ -94,7 +94,8 @@ Tomorrow** (08:00), **Turn On** / **Turn Off**.
 
 It is kept on disk beside the shell's other state files (the dock's pins, the status icons, the
 Quick Settings and widget layouts, night light, the last VPN, the launcher's use and clipboard
-history): `$XDG_STATE_HOME/amane-shell/dnd` holds `forever` or `until <unix seconds>`. A missing, unreadable
+history; see [services.md](../integration/services.md#settings-and-state)):
+`$XDG_STATE_HOME/amane-shell/dnd` holds `forever` or `until <unix seconds>`. A missing, unreadable
 or past file reads as off.
 
 ## Bar
@@ -106,15 +107,8 @@ or past file reads as off.
 
 ## IPC
 
-One argument per line on amane's socket:
-
-```sh
-printf 'notifications\ntoggle\n'   | nc -U -N $XDG_RUNTIME_DIR/amane.sock   # open/close the center
-printf 'notifications\nclear\n'    | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock   # or on / off
-```
-
-A niri keybind: `Mod+N { spawn "sh" "-c" "printf 'notifications\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock"; }`.
+`notifications [toggle | clear | dnd [on|off|toggle]]` opens or closes the center, clears it, and
+switches Do Not Disturb ([ipc.md](../integration/ipc.md#notifications)).
 
 ## Motion (`amane_kit::motion`, `kit/src/motion.rs`)
 

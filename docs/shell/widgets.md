@@ -153,14 +153,8 @@ charge a connected device reports that UPower doesn't know).
 
 ## IPC
 
-```sh
-printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-printf 'widgets\nlist\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-```
-
-`widgets list` (one line a widget: monitor, id, kind, size, cell), `add <kind> [size] [output]`
-(in the first free cells), `remove <id>`, `reset-layout [output]` (no widgets), `edit [output]` and
-`done`. Without an output it's the focused workspace's monitor.
+`widgets list | add | remove | reset-layout | edit | done` lists, places and removes widgets and
+opens Edit Widgets from a script ([ipc.md](../integration/ipc.md#widgets)).
 
 ## Components
 

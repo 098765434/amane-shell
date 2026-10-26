@@ -51,6 +51,8 @@ Building and running are in the [README](../README.md); contributing in
 | Topic | Doc |
 |---|---|
 | niri layer rules and surface namespaces, generated from the tokens | [integration/layer-rules.md](integration/layer-rules.md) |
+| Every CLI and IPC command, and the socket they go over | [integration/ipc.md](integration/ipc.md) |
+| The shell's services and amane's, the settings files and the state files | [integration/services.md](integration/services.md) |
 
 ## Development
 

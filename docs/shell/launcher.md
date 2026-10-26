@@ -182,13 +182,8 @@ It watches the clipboard through wl-clipboard (`wl-paste --watch`), which follow
 compositor's selection without needing the keyboard. It starts and stops as the setting
 changes (`clipboard.enabled` in `launcher.json`, or Shell Settings' Spotlight page).
 
-To open it from a key, bind `launcher toggle clipboard`, in place of another history's picker:
-
-```kdl
-Mod+Ctrl+V hotkey-overlay-title="Clipboard" {
-    spawn "sh" "-c" "printf 'launcher\\ntoggle\\nclipboard\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
-}
-```
+To open it from a key, bind `launcher toggle clipboard` in place of another history's picker
+([ipc.md](../integration/ipc.md#niri-keybinds)).
 
 ## Using it
 
@@ -292,29 +287,8 @@ fuller lines.
 
 ## IPC
 
-`launcher [toggle | open | close] [apps | files | actions | clipboard]`, one argument per line on
-`$XDG_RUNTIME_DIR/amane.sock`:
-- With a mode, `open` opens the launcher in it.
-- With a mode, `toggle` closes the launcher when that mode is showing, and otherwise switches
-  to it.
-
-```sh
-printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-printf 'launcher\nopen\napps\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-```
-
-As niri keybinds:
-
-```kdl
-binds {
-    Mod+Space hotkey-overlay-title="Spotlight" {
-        spawn "sh" "-c" "printf 'launcher\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
-    }
-    Mod+A hotkey-overlay-title="Applications" {
-        spawn "sh" "-c" "printf 'launcher\\ntoggle\\napps\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
-    }
-}
-```
+`launcher [toggle | open | close] [apps | files | actions | clipboard]`, usually from a niri
+keybind such as `Mod+Space` ([ipc.md](../integration/ipc.md#launcher), with the keybinds).
 
 ## Glass
 

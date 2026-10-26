@@ -76,16 +76,8 @@ for level in context_menu::LEVELS {
 | `open_at(name, x, y)` / `open_named(name, x, y)` | open at a screen position (logical px) |
 | `close()` | close every level |
 
-`main.rs` exposes these over amane's IPC socket:
-
-```sh
-printf 'arm\n'            | nc -U -N $XDG_RUNTIME_DIR/amane.sock   # arm "file"
-printf 'arm file\n'       | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-printf 'open file 240 180\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-printf 'close\n'          | nc -U -N $XDG_RUNTIME_DIR/amane.sock
-```
-
-The niri config binds `Mod+Shift+M` to `arm`.
+`main.rs` exposes `arm`, `open` and `close` over the shell's IPC socket
+([ipc.md](../integration/ipc.md#context-menus)), and registers a sample menu, `file`.
 
 ## Why "arming"
 
