@@ -16,8 +16,8 @@ use amane_kit::scroll_view::ScrollView;
 use amane_kit::slider::Slider;
 use amane_kit::tokens::{Styled, sys};
 
-use crate::effects::{Effects, Manifest, Param};
-use crate::{BACKDROPS, Lab, SUBJECTS};
+use crate::effects::{ColorParam, Effects, Manifest, Param, parse_hex, to_hex};
+use crate::{BACKDROPS, FILL, IMAGE, Lab, PHOTO, SUBJECTS};
 
 pub const WIDTH: f32 = 380.0;
 const LABEL_WIDTH: f32 = 92.0;
@@ -39,7 +39,15 @@ pub fn panel(effects: &Effects, lab: &Lab) -> amane::Rectangle {
         "Effect",
         Dropdown::new("lab.effect", names, lab.effect)
             .width(WIDTH)
-            .on_select(|index| Lab::write().effect = index)
+            .on_select(|index| {
+                let effects = Effects::read();
+                let manifest = effects
+                    .list
+                    .get(index)
+                    .and_then(|entry| entry.manifest.as_ref().ok());
+
+                Lab::write().pick(index, manifest);
+            })
             .build(),
     )));
 
@@ -64,7 +72,7 @@ pub fn panel(effects: &Effects, lab: &Lab) -> amane::Rectangle {
     ));
 
     // a subject filling the preview has no size of its own
-    if lab.subject != 5 {
+    if lab.subject != FILL {
         rows.push(boxed(size_row(lab)));
     } else {
         length -= control;
@@ -74,13 +82,16 @@ pub fn panel(effects: &Effects, lab: &Lab) -> amane::Rectangle {
         3 => rows.push(boxed(text_row("lab.text", "Text", &lab.text, |text| {
             Lab::write().text = text;
         }))),
-        4 => rows.push(boxed(text_row("lab.image", "Image", &lab.image, |path| {
+        IMAGE => rows.push(boxed(text_row("lab.image", "Image", &lab.image, |path| {
             Lab::write().image = path;
+        }))),
+        PHOTO => rows.push(boxed(text_row("lab.photo", "Photo", &lab.photo, |path| {
+            Lab::write().photo = path;
         }))),
         _ => {}
     }
 
-    if matches!(lab.subject, 3 | 4) {
+    if matches!(lab.subject, 3 | IMAGE | PHOTO) {
         length += control;
     }
 
@@ -114,14 +125,24 @@ pub fn panel(effects: &Effects, lab: &Lab) -> amane::Rectangle {
             length += captioned;
         }
 
-        // the params, then the buttons
-        length += control * (manifest.params.len() + 1) as f32;
+        // the params, the colours, then the buttons
+        length += control * (manifest.params.len() + manifest.colors.len() + 1) as f32;
 
         for param in &manifest.params {
-            rows.push(boxed(param_row(
+            let value = lab.value(manifest, param);
+
+            if param.options.is_empty() {
+                rows.push(boxed(param_row(manifest, param, value)));
+            } else {
+                rows.push(boxed(options_row(manifest, param, value)));
+            }
+        }
+
+        for param in &manifest.colors {
+            rows.push(boxed(color_row(
                 manifest,
                 param,
-                lab.value(manifest, param),
+                lab.color(manifest, param),
             )));
         }
 
@@ -162,11 +183,19 @@ pub fn panel(effects: &Effects, lab: &Lab) -> amane::Rectangle {
 /// The manifest's named sets of values; "Custom" while the values match none.
 fn presets(manifest: &Manifest, lab: &Lab) -> amane::Rectangle {
     let matches = |preset: &crate::effects::ParamPreset| {
-        preset.values.iter().all(|(key, value)| {
+        let values = preset.values.iter().all(|(key, value)| {
             let param = manifest.params.iter().find(|param| &param.key == key);
 
             param.is_some_and(|param| (lab.value(manifest, param) - value).abs() < 0.01)
-        })
+        });
+
+        let colors = preset.colors.iter().all(|(key, hex)| {
+            let param = manifest.colors.iter().find(|param| &param.key == key);
+
+            param.is_some_and(|param| to_hex(lab.color(manifest, param)) == hex.to_lowercase())
+        });
+
+        values && colors
     };
 
     let chosen = manifest
@@ -192,6 +221,12 @@ fn presets(manifest: &Manifest, lab: &Lab) -> amane::Rectangle {
 
             for (key, value) in &preset.values {
                 lab.set(&name, key, *value);
+            }
+
+            for (key, hex) in &preset.colors {
+                if let Some(color) = parse_hex(hex) {
+                    lab.set_color(&name, key, color);
+                }
             }
         })
         .build()
@@ -256,6 +291,67 @@ fn text_row(id: &'static str, name: &str, now: &str, set: impl Fn(String) + 'sta
             id,
             text_field(id, "").on_submit(set),
             WIDTH - LABEL_WIDTH - 12.0,
+        )),
+    ])
+    .gap(12.0)
+}
+
+/// A parameter whose values have names, as a dropdown.
+fn options_row(manifest: &Manifest, param: &Param, value: f32) -> Row {
+    let chosen = (value.round().max(0.0) as usize).min(param.options.len() - 1);
+    let (name, key) = (manifest.name.clone(), param.key.clone());
+
+    let id = format!("lab.{}.{}", manifest.name, param.key);
+
+    Row::new(vec![
+        boxed(label(&param.label)),
+        boxed(
+            Dropdown::new(id, param.options.clone(), chosen)
+                .width(WIDTH - LABEL_WIDTH - 12.0)
+                .on_select(move |index| Lab::write().set(&name, &key, index as f32))
+                .build(),
+        ),
+    ])
+    .gap(12.0)
+}
+
+/// A swatch of the colour and a field that takes it as `#rrggbb`.
+fn color_row(manifest: &Manifest, param: &ColorParam, color: [f32; 4]) -> Row {
+    let id = static_id(format!("lab.{}.{}", manifest.name, param.key));
+
+    show(id, &to_hex(color));
+
+    let (name, key) = (manifest.name.clone(), param.key.clone());
+
+    let typed = move |text: String| {
+        if let Some(color) = parse_hex(&text) {
+            Lab::write().set_color(&name, &key, color);
+        }
+    };
+
+    let [red, green, blue, alpha] =
+        color.map(|value| (value.clamp(0.0, 1.0) * 255.0).round() as u8);
+
+    let swatch = amane::Rectangle::new()
+        .width(SLIDER_WIDTH)
+        .height(Size::Fixed(sys::size::control::height() * 0.7))
+        .radius(sys::radius::raised())
+        .fill(Color::rgba(red, green, blue, alpha))
+        .border(sys::border::hairline(), material::separator());
+
+    Row::new(vec![
+        boxed(label(&param.label)),
+        boxed(
+            amane::Rectangle::new()
+                .width(SLIDER_WIDTH)
+                .height(Size::Fixed(sys::size::control::height()))
+                .align_child(amane::Start, amane::Center)
+                .child(swatch),
+        ),
+        boxed(field_box(
+            id,
+            text_field(id, "").on_submit(typed),
+            FIELD_WIDTH + 12.0,
         )),
     ])
     .gap(12.0)
@@ -355,9 +451,7 @@ fn actions(manifest: &Manifest, lab: &Lab, dir: &std::path::Path) -> Row {
 
 /// The effect as it's set now, to paste into the shell.
 fn rust_snippet(manifest: &Manifest, lab: &Lab, dir: &std::path::Path) -> String {
-    let presets = manifest.gradient.as_ref().map(|gradient| &gradient.presets);
-    let preset = presets.and_then(|presets| presets.get(lab.preset(manifest)));
-    let values = manifest.pack(|param| lab.value(manifest, param), preset);
+    let values = lab.rows(manifest);
 
     let mut text = String::from("Effect::new()\n");
 
@@ -473,6 +567,7 @@ mod tests {
             step,
             unit: unit.into(),
             slot: [0, 0],
+            options: Vec::new(),
         }
     }
 

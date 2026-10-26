@@ -68,6 +68,36 @@ const BUILT_IN: &[(&str, &str, &str)] = &[
         include_str!("../effects/rings/rings.wgsl"),
     ),
     (
+        "hatching",
+        "effect.json",
+        include_str!("../effects/hatching/effect.json"),
+    ),
+    (
+        "hatching",
+        "hatching.wgsl",
+        include_str!("../effects/hatching/hatching.wgsl"),
+    ),
+    (
+        "moving-blobs",
+        "effect.json",
+        include_str!("../effects/moving-blobs/effect.json"),
+    ),
+    (
+        "moving-blobs",
+        "field.wgsl",
+        include_str!("../effects/moving-blobs/field.wgsl"),
+    ),
+    (
+        "moving-blobs",
+        "composite.wgsl",
+        include_str!("../effects/moving-blobs/composite.wgsl"),
+    ),
+    (
+        "moving-blobs",
+        "shadow.wgsl",
+        include_str!("../effects/moving-blobs/shadow.wgsl"),
+    ),
+    (
         "chrome-window",
         "effect.json",
         include_str!("../effects/chrome-window/effect.json"),
@@ -98,6 +128,61 @@ pub struct Manifest {
     pub presets: Vec<ParamPreset>,
     /// Presses on the subject, handed to the shader.
     pub clicks: Option<Clicks>,
+    /// Colours, each filling a row with red, green, blue and alpha from 0 to 1.
+    #[serde(default)]
+    pub colors: Vec<ColorParam>,
+    /// What the lab switches to when the effect is picked.
+    #[serde(default)]
+    pub suggest: Suggest,
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct ColorParam {
+    pub key: String,
+    pub label: String,
+    /// `#rrggbb` or `#rrggbbaa`.
+    pub default: String,
+    pub row: usize,
+}
+
+#[derive(Deserialize, Clone, Default)]
+#[serde(crate = "amane::serde")]
+pub struct Suggest {
+    /// The index of a subject, as the Subject dropdown lists them.
+    pub subject: Option<usize>,
+    pub backdrop: Option<usize>,
+}
+
+/// `#rrggbb` or `#rrggbbaa` as red, green, blue and alpha from 0 to 1.
+pub fn parse_hex(text: &str) -> Option<[f32; 4]> {
+    let digits = text.trim().trim_start_matches('#');
+
+    if !matches!(digits.len(), 6 | 8) || !digits.is_ascii() {
+        return None;
+    }
+
+    let channel = |index: usize| {
+        u8::from_str_radix(&digits[index * 2..index * 2 + 2], 16)
+            .ok()
+            .map(|value| f32::from(value) / 255.0)
+    };
+
+    let alpha = if digits.len() == 8 { channel(3)? } else { 1.0 };
+
+    Some([channel(0)?, channel(1)?, channel(2)?, alpha])
+}
+
+pub fn to_hex(color: [f32; 4]) -> String {
+    let byte = |value: f32| (value.clamp(0.0, 1.0) * 255.0).round() as u8;
+
+    let [red, green, blue, alpha] = color.map(byte);
+
+    if alpha == 255 {
+        format!("#{red:02x}{green:02x}{blue:02x}")
+    } else {
+        format!("#{red:02x}{green:02x}{blue:02x}{alpha:02x}")
+    }
 }
 
 /// Each recent press is a row from `rows_from`: x and y from 0 to 1 across
@@ -117,7 +202,11 @@ pub struct Clicks {
 pub struct ParamPreset {
     pub name: String,
     /// By parameter key; those left out keep their value.
+    #[serde(default)]
     pub values: std::collections::HashMap<String, f32>,
+    /// By colour key, as `#rrggbb`.
+    #[serde(default)]
+    pub colors: std::collections::HashMap<String, String>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -195,6 +284,9 @@ pub struct Param {
     pub unit: String,
     /// The row and lane of `values` it fills.
     pub slot: [usize; 2],
+    /// Names for 0, 1, 2…, shown as a dropdown instead of a slider.
+    #[serde(default)]
+    pub options: Vec<String>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -433,7 +525,21 @@ impl Manifest {
             }
         }
 
-        let slots = self.params.iter().map(|param| param.slot);
+        for color in &self.colors {
+            if parse_hex(&color.default).is_none() {
+                return Err(format!(
+                    "colour {} isn't #rrggbb: {}",
+                    color.key, color.default
+                ));
+            }
+        }
+
+        let color_slots = self.colors.iter().map(|color| [color.row, 3]);
+        let slots = self
+            .params
+            .iter()
+            .map(|param| param.slot)
+            .chain(color_slots);
         let slots: Vec<[usize; 2]> = slots
             .chain(self.constants.iter().map(|constant| constant.slot))
             .collect();
@@ -526,6 +632,17 @@ impl Manifest {
 }
 
 impl Manifest {
+    /// Each colour's row, as `color` says it is now.
+    pub fn put_colors(&self, rows: &mut Vec<[f32; 4]>, color: impl Fn(&ColorParam) -> [f32; 4]) {
+        for param in &self.colors {
+            if rows.len() <= param.row {
+                rows.resize(param.row + 1, [0.0; 4]);
+            }
+
+            rows[param.row] = color(param);
+        }
+    }
+
     /// The presses, newest last, as rows from `clicks.rows_from`, the oldest
     /// left out past `clicks.max`.
     pub fn put_clicks(&self, rows: &mut Vec<[f32; 4]>, presses: &[[f32; 3]]) {
@@ -690,6 +807,15 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn hex_colours_read_and_write() {
+        assert_eq!(parse_hex("#ff0080"), Some([1.0, 0.0, 128.0 / 255.0, 1.0]));
+        assert_eq!(parse_hex("00000000"), Some([0.0; 4]));
+        assert_eq!(parse_hex("#fff"), None);
+        assert_eq!(to_hex([1.0, 0.0, 128.0 / 255.0, 1.0]), "#ff0080");
+        assert_eq!(to_hex([0.0, 0.0, 0.0, 0.0]), "#00000000");
     }
 
     #[test]

@@ -1,0 +1,21 @@
+{
+  "name": "Moving blobs",
+  "suggest": { "subject": 6, "backdrop": 0 },
+  "passes": [
+    { "shader": "field.wgsl", "inputs": [] },
+    { "shader": "composite.wgsl", "inputs": ["content", 0] },
+    { "shader": "shadow.wgsl", "inputs": [1] }
+  ],
+  "params": [
+    { "key": "mode", "label": "Mode", "default": 0, "min": 0, "max": 4, "step": 1, "slot": [0, 0], "options": ["Refraction", "Displacement", "Bulge / pinch", "Hue shift", "Invert"] },
+    { "key": "region", "label": "Region", "default": 0, "min": 0, "max": 1, "step": 1, "slot": [0, 1], "options": ["Whole area", "Edges only"] },
+    { "key": "strength", "label": "Strength", "default": 100, "min": -100, "max": 100, "step": 1, "unit": "%", "slot": [0, 2] },
+    { "key": "scale", "label": "Scale", "default": 100, "min": 30, "max": 300, "step": 1, "unit": "%", "slot": [0, 3] },
+    { "key": "detail", "label": "Detail", "default": 10, "min": 0, "max": 100, "step": 1, "unit": "%", "slot": [1, 0] },
+    { "key": "threshold", "label": "Threshold", "default": 60, "min": 0, "max": 100, "step": 0.1, "unit": "%", "slot": [1, 1] },
+    { "key": "softness", "label": "Softness", "default": 0, "min": 0, "max": 100, "step": 1, "unit": "%", "slot": [1, 2] },
+    { "key": "shadow", "label": "Shadow", "default": 20, "min": 0, "max": 100, "step": 1, "unit": "%", "slot": [1, 3] },
+    { "key": "chromaticAberration", "label": "Dispersion", "default": 50, "min": 0, "max": 100, "step": 0.1, "unit": "%", "slot": [2, 0] },
+    { "key": "speed", "label": "Speed", "default": 10, "min": 0, "max": 100, "step": 0.1, "unit": "%", "slot": [2, 1] }
+  ]
+}

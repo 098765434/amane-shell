@@ -1,8 +1,9 @@
 # Shader Lab
 
 `apps/shader-lab` is a playground for amane shader effects (`Rectangle::effect`, see amane's
-`docs/fork/graphics/effects.md`). It shows one effect on a rounded rectangle, pill, circle, text
-or image, over a dark, light, grey or wallpaper backdrop, with a control for every parameter the
+`docs/fork/graphics/effects.md`). It shows one effect on a rounded rectangle, pill, circle, text,
+an icon (Image, fitted in), a picture (Photo, covering; your wallpaper by default) or the whole
+preview, over a dark, light, grey or wallpaper backdrop, with a control for every parameter the
 effect lists.
 
 ```sh
@@ -29,6 +30,8 @@ for screenshots.
 | `spectral` | the animated spectral background from the Figma Community file "Shader Dash", drawn inside the subject's shape; try the Fill preview subject |
 | `grainy-gradient` | the warped, breathing gradient with film grain from the Figma Community file "Gradient Shader Card"; press on the subject for ripples |
 | `rings` | the stepped, colour-fringed light rings from the Figma Community file "Copy Shader Animation Component"; Glow only makes its black clear |
+| `hatching` | the Figma shader "Hatching": the picture redrawn as lines between two colours, as thick as it's bright; starts on the Photo subject |
+| `moving-blobs` | the Figma shader "Moving blobs": liquid blobs that refract, displace, bulge, hue-shift or invert the picture under them, with dispersion and a cast shadow; starts on the Photo subject |
 | `chrome-wallpaper` | the chrome, reflecting the wallpaper file, placed by the window's position on the output (Window x/y, Output w/h) |
 
 The reflection reads the surface's slope from the blurred alpha (steepest at the rim) plus the
@@ -59,6 +62,9 @@ effects/chrome/
 | `animate` | the param the Animate switch sweeps from `from` to `to` every `seconds` |
 | `presets` | named sets of param values, `{ "name", "values": { key: value } }`, picked from the Preset dropdown |
 | `clicks` | presses on the subject, as rows from `rows_from` (x and y from 0 to 1 from its top left, seconds since), at most `max`, each kept `seconds`; their number goes in `count_slot` |
+| `params[].options` | names for 0, 1, 2…: the param shows as a dropdown, like a Figma `select` |
+| `colors` | `key`, `label`, `default` (`#rrggbb` or `#rrggbbaa`) and the `row` it fills with red, green, blue and alpha; shown as a swatch and a hex field; presets set them under `colors` |
+| `suggest` | the `subject` and `backdrop` the lab switches to when the effect is picked (or started with `--effect`) |
 | `constants` | values no control changes: `slot` and `value` |
 | `margin` | logical pixels the passes reach past the subject |
 

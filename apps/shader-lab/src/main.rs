@@ -18,16 +18,22 @@ use amane_kit::app::{app, app_window, standard_shortcut};
 use amane_kit::layout::boxed;
 use amane_kit::tokens::sys;
 
-use effects::{Effects, Manifest, Param};
+use effects::{ColorParam, Effects, Manifest, Param};
 
-const SUBJECTS: [&str; 6] = [
+const SUBJECTS: [&str; 7] = [
     "Rounded rectangle",
     "Pill",
     "Circle",
     "Text",
     "Image",
     "Fill preview",
+    "Photo",
 ];
+
+/// The subjects that show an image file: Image, fitted in, and Photo, covering.
+pub const IMAGE: usize = 4;
+pub const FILL: usize = 5;
+pub const PHOTO: usize = 6;
 
 const BACKDROPS: [&str; 4] = ["Dark", "Light", "Grey", "Wallpaper"];
 
@@ -39,8 +45,11 @@ pub struct Lab {
     pub size: f32,
     pub text: String,
     pub image: String,
+    pub photo: String,
     /// By effect name, then parameter key; a parameter left out is at its default.
     pub values: HashMap<String, HashMap<String, f32>>,
+    /// By effect name, then colour key; a colour left out is at its default.
+    pub colors: HashMap<String, HashMap<String, [f32; 4]>>,
     /// The gradient preset chosen for each effect.
     pub presets: HashMap<String, usize>,
     pub animate: bool,
@@ -67,13 +76,11 @@ impl Service for Lab {
             None
         };
 
-        let index = |name: &str| flag(name).and_then(|value| value.parse().ok()).unwrap_or(0);
-
         // `--effect <folder>` picks an effect by its folder's name
+        let effects = Effects::read();
+
         let effect = flag("--effect")
             .and_then(|folder| {
-                let effects = Effects::read();
-
                 effects
                     .list
                     .iter()
@@ -81,14 +88,34 @@ impl Service for Lab {
             })
             .unwrap_or(0);
 
+        // what the effect suggests, unless the flags say otherwise
+        let suggest = effects
+            .list
+            .get(effect)
+            .and_then(|entry| entry.manifest.as_ref().ok())
+            .map(|manifest| manifest.suggest.clone())
+            .unwrap_or_default();
+
+        let subject = flag("--subject")
+            .and_then(|value| value.parse().ok())
+            .or(suggest.subject)
+            .unwrap_or(0);
+
+        let backdrop = flag("--backdrop")
+            .and_then(|value| value.parse().ok())
+            .or(suggest.backdrop)
+            .unwrap_or(0);
+
         Self {
             effect,
-            subject: index("--subject"),
-            backdrop: index("--backdrop"),
+            subject,
+            backdrop,
             size: 120.0,
             text: "chrome".into(),
             image: default_image(),
+            photo: home("Pictures/overview.jpg"),
             values: HashMap::new(),
+            colors: HashMap::new(),
             presets: HashMap::new(),
             animate: false,
             started: Instant::now(),
@@ -132,6 +159,49 @@ impl Lab {
     pub fn preset(&self, manifest: &Manifest) -> usize {
         self.presets.get(&manifest.name).copied().unwrap_or(0)
     }
+
+    pub fn color(&self, manifest: &Manifest, param: &ColorParam) -> [f32; 4] {
+        self.colors
+            .get(&manifest.name)
+            .and_then(|colors| colors.get(&param.key))
+            .copied()
+            .or_else(|| effects::parse_hex(&param.default))
+            .unwrap_or([0.0, 0.0, 0.0, 1.0])
+    }
+
+    pub fn set_color(&mut self, effect: &str, key: &str, color: [f32; 4]) {
+        self.colors
+            .entry(effect.to_owned())
+            .or_default()
+            .insert(key.to_owned(), color);
+    }
+
+    /// The effect's `values` as set now, all but the presses.
+    pub fn rows(&self, manifest: &Manifest) -> Vec<[f32; 4]> {
+        let presets = manifest.gradient.as_ref().map(|gradient| &gradient.presets);
+        let preset = presets.and_then(|presets| presets.get(self.preset(manifest)));
+
+        let mut rows = manifest.pack(|param| self.value(manifest, param), preset);
+
+        manifest.put_colors(&mut rows, |param| self.color(manifest, param));
+
+        rows
+    }
+
+    /// Picks an effect, and the subject and backdrop it suggests.
+    pub fn pick(&mut self, index: usize, manifest: Option<&Manifest>) {
+        self.effect = index;
+
+        if let Some(manifest) = manifest {
+            if let Some(subject) = manifest.suggest.subject {
+                self.subject = subject;
+            }
+
+            if let Some(backdrop) = manifest.suggest.backdrop {
+                self.backdrop = backdrop;
+            }
+        }
+    }
 }
 
 fn main() {
@@ -149,10 +219,7 @@ fn main_window() -> Window {
     let effect = entry.and_then(|entry| {
         let manifest = entry.manifest.as_ref().ok()?;
 
-        let presets = manifest.gradient.as_ref().map(|gradient| &gradient.presets);
-        let preset = presets.and_then(|presets| presets.get(lab.preset(manifest)));
-
-        let mut values = manifest.pack(|param| lab.value(manifest, param), preset);
+        let mut values = lab.rows(manifest);
 
         if let Some(clicks) = &manifest.clicks {
             let presses: Vec<[f32; 3]> = lab
@@ -250,7 +317,8 @@ fn subject_size(lab: &Lab) -> (f32, f32) {
         1 => (size * 2.2, size * 0.7),
         2 => (size, size),
         3 => (size * 4.0, size * 1.3),
-        4 => (size * 1.6, size * 1.6),
+        IMAGE => (size * 1.6, size * 1.6),
+        PHOTO => (size * 2.4, size * 1.5),
 
         // the window less its padding, the gap and the controls
         _ => {
@@ -285,7 +353,8 @@ fn subject(lab: &Lab) -> Rectangle {
                 .color(Color::WHITE),
         ),
 
-        4 => sized.fill(Image::contain(lab.image.clone())),
+        IMAGE => sized.fill(Image::contain(lab.image.clone())),
+        PHOTO => sized.fill(Image::cover(lab.photo.clone())),
 
         // the whole preview, for effects that are backgrounds
         _ => Rectangle::new()
@@ -308,6 +377,14 @@ fn backdrop(index: usize) -> Fill {
             Fill::from(Image::cover(home.join("Pictures/overview.jpg")))
         }
     }
+}
+
+fn home(path: &str) -> String {
+    let home = std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_default();
+
+    home.join(path).display().to_string()
 }
 
 fn default_image() -> String {
