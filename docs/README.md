@@ -45,6 +45,7 @@ Building and running are in the [README](../README.md); contributing in
 | Buttons, switch, checkbox, radio, dropdown, control sizes | [kit/controls.md](kit/controls.md) |
 | Card, list, slider, dialog, scroll view and the other building blocks; the modules under them | [kit/components.md](kit/components.md) |
 | An app's window, text fields and sidebar | [kit/app.md](kit/app.md) |
+| The colour picker, and hex and HSV helpers | [kit/color-picker.md](kit/color-picker.md) |
 | Springs and fades, keyed list motion, `Kinetic`, `Pager` | [kit/motion.md](kit/motion.md) |
 
 ## Design system

@@ -42,6 +42,7 @@ pub mod app_icon;
 pub mod buttons;
 pub mod card;
 pub mod color;
+pub mod color_picker;
 pub mod control_size;
 pub mod dialog;
 pub mod divider;
