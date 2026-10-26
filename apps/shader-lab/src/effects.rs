@@ -58,6 +58,16 @@ const BUILT_IN: &[(&str, &str, &str)] = &[
         include_str!("../effects/grainy-gradient/grainy.wgsl"),
     ),
     (
+        "rings",
+        "effect.json",
+        include_str!("../effects/rings/effect.json"),
+    ),
+    (
+        "rings",
+        "rings.wgsl",
+        include_str!("../effects/rings/rings.wgsl"),
+    ),
+    (
         "chrome-window",
         "effect.json",
         include_str!("../effects/chrome-window/effect.json"),
@@ -651,6 +661,35 @@ mod tests {
         assert_eq!(rows[1][3], 10.0);
         assert_eq!(rows[14], [0.5, 0.25, 2.0, 0.0]);
         assert_eq!(rows[23], [0.5, 0.25, 11.0, 0.0]);
+    }
+
+    #[test]
+    fn every_built_in_manifest_is_sound() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("effects");
+
+        for (effect, file, _) in BUILT_IN {
+            if *file != "effect.json" {
+                continue;
+            }
+
+            let mut modified = Vec::new();
+            let value = read_manifest(&dir.join(effect), &mut modified, 0).unwrap();
+            let manifest: Manifest = serde_json::from_value(value).unwrap();
+
+            manifest
+                .check()
+                .unwrap_or_else(|error| panic!("{effect}: {error}"));
+
+            for preset in &manifest.presets {
+                for key in preset.values.keys() {
+                    assert!(
+                        manifest.params.iter().any(|param| &param.key == key),
+                        "{effect}: {} sets {key}, which isn't a param",
+                        preset.name
+                    );
+                }
+            }
+        }
     }
 
     #[test]

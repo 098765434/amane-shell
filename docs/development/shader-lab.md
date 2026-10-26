@@ -28,6 +28,7 @@ for screenshots.
 | `chrome-window` | the chrome, reflecting what the window drew behind it (`"backdrop"`); try it over the Wallpaper backdrop |
 | `spectral` | the animated spectral background from the Figma Community file "Shader Dash", drawn inside the subject's shape; try the Fill preview subject |
 | `grainy-gradient` | the warped, breathing gradient with film grain from the Figma Community file "Gradient Shader Card"; press on the subject for ripples |
+| `rings` | the stepped, colour-fringed light rings from the Figma Community file "Copy Shader Animation Component"; Glow only makes its black clear |
 | `chrome-wallpaper` | the chrome, reflecting the wallpaper file, placed by the window's position on the output (Window x/y, Output w/h) |
 
 The reflection reads the surface's slope from the blurred alpha (steepest at the rim) plus the
