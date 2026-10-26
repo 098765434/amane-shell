@@ -1,5 +1,9 @@
 # Spec: adopting the macOS 27 kit's variables
 
+> **Archived: implemented.** Kept as history and not kept up to date. The current references are
+> [design-system/materials.md](../design-system/materials.md),
+> [design-system/tokens.md](../design-system/tokens.md) and [kit/controls.md](../kit/controls.md#control-sizes).
+
 **Status (2026-10-26): implemented.** All seven parts are in, with these departures:
 - Accents: only the system red (`status.critical`), the default seed (blue `#0091ff`) and the
   Settings picker took the new values. The accent is one mode-free seed, so the per-mode and

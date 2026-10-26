@@ -137,7 +137,7 @@ whose output is static: it can't follow the mode, so it holds one value for both
   is gone from `tokens.json` already, and `sys.color.separator` is read again, below.) The hand-added `sys.color.glass.thin` and `.thick` are gone
   already.
 - The macOS 27 kit's values were added to `tokens.json` by hand
-  ([spec-macos27-variables.md](../spec-macos27-variables.md)). Recreate them in Penpot under the same
+  ([spec-macos27-variables.md](../archive/spec-macos27-variables.md)). Recreate them in Penpot under the same
   names:
   - `sys.color.label.primary` … `.quaternary` (85, 50/55, 25, 10 %), `sys.color.fill.primary` …
     `.tertiary` (10, 8, 5 %) and `sys.color.separator` (10 %, light raised from 8 %): labels,

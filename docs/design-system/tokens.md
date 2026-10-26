@@ -1,7 +1,7 @@
 # amane-shell Design Token Manual
  
 For designers working in Penpot and developers working in the amane-shell code. Version 1.1,
-23 Oct 2026. The implementation is specified in `spec-design-tokens-v2.md` (revision 5) and
+23 Oct 2026. The implementation was specified in [spec-design-tokens-v2.md](../archive/spec-design-tokens-v2.md) (revision 5, archived) and
 lives in amane-kit's `tokens` module (`kit/src/tokens`, with the generated functions from
 `kit/build.rs`). Where this manual says "must", a check in CI enforces it (§13).
  

@@ -58,3 +58,12 @@ Building and running are in the [README](../README.md); contributing in
 |---|---|
 | Dev shell, checks, the token workflow | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | What makes a window draw, and the rules that keep an idle desktop still | [development/performance.md](development/performance.md) |
+
+## Archive
+
+Implemented specs, kept as history and not kept up to date.
+
+| Spec | Superseded by |
+|---|---|
+| [archive/spec-design-tokens-v2.md](archive/spec-design-tokens-v2.md): Penpot tokens, the resolver, CI checks | [design-system/tokens.md](design-system/tokens.md) |
+| [archive/spec-macos27-variables.md](archive/spec-macos27-variables.md): the macOS 27 kit's labels, fills, materials and control sizes | [design-system/materials.md](design-system/materials.md), [kit/controls.md](kit/controls.md) |

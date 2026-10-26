@@ -1,4 +1,8 @@
 # Spec: Design tokens v2 for amane-shell
+
+> **Archived: implemented.** Kept as history and not kept up to date. The current reference is
+> [design-system/tokens.md](../design-system/tokens.md); the resolver now lives in amane-kit
+> (`kit/src/tokens`).
  
 Status: implemented, revision 5 (23 Oct 2026) · Target: `098765434/amane-shell` (`main`) · Scope:
 **Penpot is the source of truth for every design token, organised by the Design Token
