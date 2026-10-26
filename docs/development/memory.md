@@ -73,7 +73,10 @@ and segments, and 2²¹ for ptcl; the heaviest amane example scene, a stroked cl
 Settings' edit mode and the Shader Lab while it runs, since those are the largest scenes.
 Frames are slow with the feature on; it is for checking, not for running.
 
-**Measured.** amane's `gradient` example: 193 MB → 65 MB of VRAM. The desktop's figures before
+**Measured.** amane's `gradient` example: 193 MB → 65 MB of VRAM. The shell run this way on
+2026-10-26, with the desktop showing and the launcher and Quick Settings opened: 231 vello runs,
+none failed; the largest took 38.7k tiles and 104k ptcl entries (Quick Settings), 3.5k segments
+and 1.1k lines (the widgets layer), 7× or more under every limit. The desktop's figures before
 and after go in the table below as each phase lands. See amane's
 [memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md) for the
 mechanism and the per-example baseline.
