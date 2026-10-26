@@ -435,7 +435,8 @@ impl Material {
     /// once under `group` (`glass_region::adapted_group`).
     pub fn adapted_group<T>(self, group: u32, members: &[u32], f: impl FnOnce() -> T) -> T {
         if self.spec().adaptive {
-            return glass_region::adapted_group(group, members, || scope(self, f));
+            let tint = self.spec().thickness.token();
+            return glass_region::adapted_group(group, members, tint, || scope(self, f));
         }
         self.adapted(group, f)
     }

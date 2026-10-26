@@ -66,12 +66,23 @@ const SMALL: Turns = Turns {
     to_dark: TURN_DARK,
 };
 
+/// Where a panel's labels turn: on how bright the glass itself comes out,
+/// its tint over the backdrop. Dark labels above `to_light`, light ones
+/// below `to_dark`: dark glass takes dark labels only over a near-white
+/// backdrop, and thin light glass takes light ones over anything darker
+/// than mid-blue.
+const PANEL_LABELS: Turns = Turns {
+    to_light: 0.6,
+    to_dark: 0.45,
+};
+
 /// A panel of glass keeps the theme's tint (Apple: "bigger elements …
 /// adapt based on context, but they don't flip"), thinned where the
-/// backdrop is on the tint's side; what's on it flips with the backdrop
-/// as small glass does ("symbols and glyphs … flip from light to dark,
-/// mirroring the glass"), decided under `group` with the same hysteresis.
-fn panel_adaptation(group: u32, theme: Mode, luminance: Option<f32>) -> Panel {
+/// backdrop is on the tint's side; what's on it flips with how bright
+/// the glass comes out, `tint` over the backdrop ("symbols and glyphs …
+/// flip from light to dark, mirroring the glass"), decided under `group`
+/// with hysteresis ([`PANEL_LABELS`]).
+fn panel_adaptation(group: u32, theme: Mode, tint: Color, luminance: Option<f32>) -> Panel {
     let none = Panel {
         tint: theme,
         labels: None,
@@ -83,9 +94,10 @@ fn panel_adaptation(group: u32, theme: Mode, luminance: Option<f32>) -> Panel {
     let Some(luminance) = luminance else {
         return none;
     };
+    let glass = glass_luminance(tint, luminance);
     let labels = ADAPTED.with_borrow_mut(|adapted| {
         let before = *adapted.get(&group).unwrap_or(&theme);
-        let (mode, _) = decide(before, luminance, SMALL);
+        let (mode, _) = decide(before, glass, PANEL_LABELS);
         adapted.insert(group, mode);
         mode
     });
@@ -98,6 +110,17 @@ fn panel_adaptation(group: u32, theme: Mode, luminance: Option<f32>) -> Panel {
         labels: Some(labels),
         backed,
     }
+}
+
+/// How bright glass tinted `tint` comes out over a backdrop at
+/// `luminance`: the tint laid over it, by its alpha.
+fn glass_luminance(tint: Color, luminance: f32) -> f32 {
+    let alpha = f32::from(tint.alpha()) / 255.0;
+    let luma = (0.2126 * f32::from(tint.red())
+        + 0.7152 * f32::from(tint.green())
+        + 0.0722 * f32::from(tint.blue()))
+        / 255.0;
+    alpha * luma + (1.0 - alpha) * luminance
 }
 
 /// How a panel of glass is built: the mode its tint takes, the one its
@@ -213,14 +236,20 @@ pub(crate) fn adapted<T>(id: u32, f: impl FnOnce() -> T) -> T {
     in_adaptation(adaptation(id), f)
 }
 
-/// Builds `f`, one piece of a panel of glass, as the whole panel is: the
-/// theme's tint, thinned by the mean of the readings behind `members`, and
-/// labels flipped with that mean under `group` ([`panel_adaptation`]). The
-/// pieces stay alike, as Apple's Control Center does; `members` includes
-/// the piece being built.
-pub(crate) fn adapted_group<T>(group: u32, members: &[u32], f: impl FnOnce() -> T) -> T {
+/// Builds `f`, one piece of a panel of glass tinted `tint`, as the whole
+/// panel is: the theme's tint, thinned by the mean of the readings behind
+/// `members`, and labels flipped with how bright the glass comes out,
+/// decided under `group` ([`panel_adaptation`]). The pieces stay alike,
+/// as Apple's Control Center does; `members` includes the piece being
+/// built.
+pub(crate) fn adapted_group<T>(
+    group: u32,
+    members: &[u32],
+    tint: Color,
+    f: impl FnOnce() -> T,
+) -> T {
     let theme = Key::current().mode;
-    let panel = panel_adaptation(group, theme, mean_luminance(members));
+    let panel = panel_adaptation(group, theme, tint, mean_luminance(members));
     let before = LABELS.replace(panel.labels);
     let out = in_adaptation((panel.tint, panel.backed), f);
     LABELS.set(before);
@@ -273,10 +302,18 @@ mod tests {
     }
 
     #[test]
-    fn a_panel_keeps_the_themes_tint_and_flips_its_labels() {
+    fn a_panel_keeps_the_themes_tint_and_flips_its_labels_on_the_glass() {
         let group = shape_id("test.panel");
-        for (theme, luminance) in [(Mode::Light, 0.1), (Mode::Dark, 0.95)] {
-            let panel = panel_adaptation(group, theme, Some(luminance));
+        let dark = Color::rgba(28, 28, 30, 77);
+        let light = Color::rgba(246, 246, 246, 31);
+        // dark glass over a bright sky is still dark: white labels
+        assert!(glass_luminance(dark, 0.7) < PANEL_LABELS.to_light);
+        // over near-white it isn't
+        assert!(glass_luminance(dark, 0.98) > PANEL_LABELS.to_light);
+        // thin light glass over mid-blue is mid-blue: white labels
+        assert!(glass_luminance(light, 0.3) < PANEL_LABELS.to_dark);
+        for (theme, tint, luminance) in [(Mode::Light, light, 0.1), (Mode::Dark, dark, 0.99)] {
+            let panel = panel_adaptation(group, theme, tint, Some(luminance));
             assert_eq!(panel.tint, theme);
             if theme::adaptive_glass() && see_through() {
                 let other = match theme {
@@ -286,7 +323,7 @@ mod tests {
                 assert_eq!(panel.labels, Some(other));
             }
         }
-        let none = panel_adaptation(group, Mode::Dark, None);
+        let none = panel_adaptation(group, Mode::Dark, dark, None);
         assert_eq!((none.tint, none.labels), (Mode::Dark, None));
     }
 
