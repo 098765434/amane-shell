@@ -17,7 +17,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amane"
 version = "0.1.2"
-source = "git+https://github.com/098765434/amane?rev=04a3efd80c54a4690966cc90a20fe08a72304acd#04a3efd80c54a4690966cc90a20fe08a72304acd"
+source = "git+https://github.com/098765434/amane?rev=235e7d3a5e74e6bcf5e046688b99a3ae59bcd9bd#235e7d3a5e74e6bcf5e046688b99a3ae59bcd9bd"
 dependencies = [
  "bitflags",
  "inotify",
@@ -2253,7 +2253,7 @@ dependencies = [
 [[package]]
 name = "vello_encoding"
 version = "0.11.0"
-source = "git+https://github.com/098765434/vello?branch=ocbk#8bbfc3f8d9a69302ae2a5c35546515364ec30876"
+source = "git+https://github.com/098765434/vello?branch=ocbk#b6f075ab80228650bdbbf2ad6b49e30416aafa73"
 dependencies = [
  "bytemuck",
  "guillotiere",

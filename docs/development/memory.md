@@ -81,16 +81,50 @@ and after go in the table below as each phase lands. See amane's
 [memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md) for the
 mechanism and the per-example baseline.
 
+### niri's global blur matches glass
+
+Every blurred rule names a material with its own `blur-passes`/`blur-offset`, and niri keeps one
+blur chain per distinct pair in each xray buffer (about 26 MB each at 2880×1800), plus one for
+the global `blur {}` whether or not anything uses it. The global block is now glass's 3/2
+(nixos-config `niri/config.kdl`), so glass draws from that chain and no extra one is built.
+Noise and saturation are per-element, so nothing looks different. `hotkey-overlay {
+skip-at-startup }` saves its cached texture per output too. A new material should reuse an
+existing pair unless it needs its own.
+
+### Only the Radeon Vulkan driver
+
+The wrapper named every driver in `/run/opengl-driver/share/vulkan/icd.d` (13 on NixOS,
+lavapipe among them), and the loader opened them all: about 6.5 MB of RSS per amane process.
+`flake.nix` now names only `radeon_icd.x86_64.json` when it exists, the whole dir otherwise,
+and pins `WGPU_BACKEND=vulkan` so wgpu doesn't probe GL as well.
+
+### Xwayland no longer starts at login
+
+PipeWire's X11-bell module opened `DISPLAY` at login, and under niri that connection started
+xwayland-satellite's Xwayland (about 85 MB between them) with no X app running. nixos-config
+sets `module.x11.bell = false`; an X app still gets Xwayland on demand. Found with
+`sudo ss -xp | grep X11-unix`, then the peer inodes.
+
+### Hidden windows release their GPU memory (amane)
+
+The launcher, Quick Settings, toasts and widget-edit hide with `visible(false)`. amane now lets
+go of everything a hidden window held on the GPU (swapchain, canvas, spares, kept results,
+pictures, letter atlas, vibrant layers) and makes it afresh on show; spare textures an animation
+passed through are dropped after the frame; and the swapchain is Fifo with one frame of latency
+instead of Mailbox with four images. `AMANE_KEEP_HIDDEN=1`, `AMANE_KEEP_SPARES=1` and
+`AMANE_PRESENT=mailbox` restore each old behaviour. Measured on a second shell (launcher opened
+and closed twice, then Quick Settings): 354 MB before, 128 MB after, and reopening no longer
+grows. Quick Settings leaves about 115 MB of GTT behind when it closes; that is next to look
+at. Details in amane's memory doc.
+
 ## Planned
 
-In order of payoff, from the 2026-10-26 research: niri's global `blur {}` set to glass's
-passes/offset so the unused base chain goes away; a radeon-only `VK_ICD_FILENAMES` in the
-wrapper (−6.5 MB RSS per amane process); amane releasing a hidden window's GPU resources, ageing
-out spare textures and presenting with Fifo at one frame of latency; niri clearing blur-shape
-captures, resetting a swiped tile's offscreen, and freeing the screenshot targets' xray buffers;
-the widgets surface sized to its grid rather than the output, with content-sized vibrant
-layers; the stats tick repainting only on a visible change; and images decoded at their drawn
-size. Each lands with a section above and a row here:
+In order of payoff, from the 2026-10-26 research: niri clearing blur-shape captures, resetting a
+swiped tile's offscreen, and freeing the screenshot targets' xray buffers; dropping vello's
+renderer when idle (what the launcher still leaves behind); the widgets surface sized to its
+grid rather than the output, with content-sized vibrant layers; the stats tick repainting only
+on a visible change; and images decoded at their drawn size. Each lands with a section above and
+a row here:
 
 | Scenario | 2026-10-26 baseline | After |
 |---|---|---|
