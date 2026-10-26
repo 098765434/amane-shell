@@ -15,16 +15,23 @@ use amane_kit::settings::change_launcher;
 use crate::components::app_icon;
 use crate::components::buttons::{PushButton, Style};
 use crate::components::color::with_alpha;
-use crate::components::icons::{ICON_APPS, ICON_CONTENT_PASTE, ICON_SEARCH};
+use crate::components::icons::{
+    ICON_APPS, ICON_CONTENT_PASTE, ICON_DESCRIPTION, ICON_FOLDER, ICON_SEARCH,
+};
 use crate::components::kinetic::Axis;
 use crate::components::layout::{boxed, icon, pad, slot, text_height, text_width, wrapped_lines};
 use crate::components::material::{self, FillLevel, Level};
 use crate::components::scroll_view::ScrollView;
 use crate::tokens::{Styled, TextStyle, sys};
 
+use std::cell::RefCell;
+use std::io::Read;
+use std::path::{Path, PathBuf};
+
 use super::entries::{self, Action, Entry, Icon, Preview, Scope};
 use super::grid::At;
 use super::mode::Mode;
+use super::provider;
 use super::{
     ANSWER_H, CHIP_H, Capture, HEADING, Layout, ROW, ROW_GAP, app_menu, enter_scope, header,
     headings, hover, on_body_scroll, start_capture, with,
@@ -329,6 +336,7 @@ fn row(
         .on_click(move |button| match (button, &clicked.action) {
             (Button::Left, _) => entries::run(&clicked, &query),
             (Button::Right, Action::Launch(app)) => app_menu::open(app),
+            (Button::Right, Action::OpenFile(path)) => app_menu::open_file(path),
             _ => {}
         })
         .child(Row::new(parts).gap(gap).align(Center))
@@ -459,12 +467,12 @@ pub(super) enum Empty {
     Loading,
     /// The category has nothing under it.
     Category,
-    /// A mode that has nothing to show yet.
-    Soon(Mode),
     /// The clipboard's history is empty.
     NothingCopied,
     /// Nothing in it has what was typed.
     NoMatch,
+    /// No files were found (yet).
+    NoFiles,
 }
 
 /// What shows where nothing does, `width` by `height`: a glyph over a note
@@ -473,9 +481,9 @@ pub(super) fn empty(why: Empty, width: f32, height: f32) -> Rectangle {
     let (glyph, note) = match why {
         Empty::Loading => (ICON_SEARCH, "Loading…"),
         Empty::Category => (ICON_APPS, "Nothing in this category"),
-        Empty::Soon(mode) => (mode.glyph(), "Not available yet"),
         Empty::NothingCopied => (ICON_CONTENT_PASTE, "Nothing copied yet"),
         Empty::NoMatch => (ICON_SEARCH, "No copies match"),
+        Empty::NoFiles => (ICON_FOLDER, "No files found"),
     };
     let secondary = material::label(Level::Secondary);
     Rectangle::new()
@@ -529,8 +537,151 @@ pub(super) fn preview(preview: Option<&Preview>, width: f32, height: f32) -> Rec
                         .collect(),
                 ))
         }
+        Some(Preview::File(path)) => {
+            let shown = file_preview(path);
+            let inner = width - inset * 2.0;
+            let centred = matches!(shown, FilePreview::About(_));
+            let body: Box<dyn Widget> = match shown {
+                FilePreview::Image => boxed(
+                    Rectangle::new()
+                        .width(inner)
+                        .height(height - inset * 2.0)
+                        .fill(Image::contain(path.clone())),
+                ),
+                FilePreview::Lines(lines, glyph) => {
+                    let style = sys::r#type::label();
+                    let line_h = text_height(style);
+                    let fit = ((height - inset * 2.0) / line_h).max(1.0) as usize;
+                    let gap = sys::space::gap::s();
+                    let rows: Vec<Box<dyn Widget>> = lines
+                        .iter()
+                        .take(fit)
+                        .map(|line| {
+                            let text = Text::new(line.clone())
+                                .style(style)
+                                .color(material::label(Level::Primary))
+                                .elide();
+                            let mut parts: Vec<Box<dyn Widget>> = Vec::new();
+                            let mut text_w = inner;
+                            if let Some(glyph) = glyph {
+                                parts.push(boxed(icon(
+                                    glyph,
+                                    line_h,
+                                    material::label(Level::Secondary),
+                                )));
+                                text_w -= line_h + gap;
+                            }
+                            parts.push(boxed(
+                                Rectangle::new()
+                                    .width(text_w.max(0.0))
+                                    .height(line_h)
+                                    .fill(Color::TRANSPARENT)
+                                    .clip()
+                                    .child(text),
+                            ));
+                            boxed(Row::new(parts).gap(gap).align(Center))
+                        })
+                        .collect();
+                    boxed(Column::new(rows))
+                }
+                FilePreview::About(name) => boxed(
+                    Column::new(vec![
+                        boxed(icon(
+                            ICON_DESCRIPTION,
+                            PREVIEW_ICON,
+                            material::label(Level::Secondary),
+                        )),
+                        boxed(
+                            Text::new(name)
+                                .style(sys::r#type::label())
+                                .color(material::label(Level::Primary)),
+                        ),
+                    ])
+                    .gap(sys::space::gap::m())
+                    .align(Center),
+                ),
+            };
+            let card = card.padding(pad(inset, inset));
+            if centred {
+                card.align_child(Center, Center)
+                    .child(Stack::new(vec![body]))
+            } else {
+                card.align_child(Start, Start).child(Stack::new(vec![body]))
+            }
+        }
         None => card,
     }
+}
+
+/// How big the glyph is in the preview of a file it can't show.
+const PREVIEW_ICON: f32 = 64.0;
+/// How much of a text file, and how many of a folder's files, a preview
+/// reads.
+const PREVIEW_BYTES: usize = 4096;
+const PREVIEW_ENTRIES: usize = 40;
+
+/// What the preview shows of a file.
+#[derive(Clone)]
+enum FilePreview {
+    Image,
+    /// Lines, with a glyph before each (a folder's files).
+    Lines(Vec<String>, Option<char>),
+    /// Only its name: a file it can't show.
+    About(String),
+}
+
+thread_local! {
+    // the last file previewed, read once rather than on every frame
+    static PREVIEWED: RefCell<Option<(PathBuf, FilePreview)>> = const { RefCell::new(None) };
+}
+
+/// What the preview shows of the file at `path`: an image amane draws, a
+/// folder's files, the start of a text, or its name.
+fn file_preview(path: &Path) -> FilePreview {
+    if let Some(known) = PREVIEWED.with_borrow(|seen| {
+        seen.as_ref()
+            .filter(|(seen, _)| seen == path)
+            .map(|(_, preview)| preview.clone())
+    }) {
+        return known;
+    }
+    let name = path
+        .file_name()
+        .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
+    let preview = if provider::shows_as_image(path) {
+        FilePreview::Image
+    } else if path.is_dir() {
+        let mut names: Vec<String> = std::fs::read_dir(path)
+            .map(|entries| {
+                entries
+                    .filter_map(Result::ok)
+                    .map(|entry| entry.file_name().to_string_lossy().into_owned())
+                    .filter(|name| !name.starts_with('.'))
+                    .collect()
+            })
+            .unwrap_or_default();
+        names.sort_by_key(|name| name.to_lowercase());
+        names.truncate(PREVIEW_ENTRIES);
+        FilePreview::Lines(names, Some(ICON_DESCRIPTION))
+    } else {
+        let mut start = vec![0; PREVIEW_BYTES];
+        let read = std::fs::File::open(path)
+            .and_then(|mut file| file.read(&mut start))
+            .unwrap_or(0);
+        start.truncate(read);
+        match std::str::from_utf8(&start) {
+            // text, and not a binary that happens to start like it
+            Ok(text) if read > 0 && !text.contains('\0') => FilePreview::Lines(
+                text.lines()
+                    .map(|line| line.replace('\t', "    "))
+                    .collect(),
+                None,
+            ),
+            _ => FilePreview::About(name),
+        }
+    };
+    PREVIEWED.with_borrow_mut(|seen| *seen = Some((path.to_path_buf(), preview.clone())));
+    preview
 }
 
 /// Clipboard before its history is turned on, `width` by `height`: what

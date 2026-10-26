@@ -63,6 +63,7 @@ use crate::components::pager::{Pager, PagerMotion};
 use crate::components::panel::{self, Panel, close, is_open, overlay};
 use crate::components::text_edit::{self, Field};
 use crate::services::clipboard_history;
+use crate::services::file_search::{self, FileKind};
 use amane_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
 
 use entries::{Entry, Scope};
@@ -100,9 +101,17 @@ const HEADING: f32 = 36.0;
 /// The answer card over the results, and the chips under it.
 const ANSWER_H: f32 = 88.0;
 const CHIP_H: f32 = 32.0;
-/// How wide Clipboard's list is, beside the preview of the copy picked.
+/// The kinds Files offers as chips.
+const FILE_CHIPS: [FileKind; 4] = [
+    FileKind::Pdf,
+    FileKind::Image,
+    FileKind::Document,
+    FileKind::Folder,
+];
+/// How wide Clipboard's and Files' list is, beside the preview of the row
+/// picked.
 const CLIP_LIST_W: f32 = 420.0;
-/// How tall a mode with nothing to show yet is under its search row.
+/// How tall Clipboard is under its search row while it asks to keep copies.
 const EMPTY_H: f32 = 200.0;
 /// How far one wheel notch scrolls.
 const WHEEL_STEP: f32 = 60.0;
@@ -272,8 +281,6 @@ enum Kind {
     Results,
     /// Applications: the grid, or the apps listed.
     Apps,
-    /// A mode with nothing to show yet.
-    Empty,
     /// Clipboard, before its history is turned on: asking to.
     Ask,
 }
@@ -397,7 +404,7 @@ impl<'a> View<'a> {
             Mode::Actions => Kind::Results,
             Mode::Clipboard if settings.clipboard.enabled => Kind::Results,
             Mode::Clipboard => Kind::Ask,
-            Mode::Files => Kind::Empty,
+            Mode::Files => Kind::Results,
         };
 
         let buckets = model::active_buckets(
@@ -414,6 +421,10 @@ impl<'a> View<'a> {
             Kind::Results => {
                 let query = Query::new(field.text(), mode, all);
                 found = provider::search(&query, scope.as_ref(), &settings.excluded_providers);
+                // Files offers its kinds as chips, as Spotlight's filter bubbles
+                if mode == Mode::Files && scope.is_none() && !field.text().starts_with('/') {
+                    found.scopes = FILE_CHIPS.into_iter().map(Scope::Kind).collect();
+                }
             }
             Kind::Apps => {
                 suggested = suggestions(all);
@@ -422,7 +433,7 @@ impl<'a> View<'a> {
                     found.rows = shown.iter().map(|app| Entry::app(app)).collect();
                 }
             }
-            Kind::Idle | Kind::Empty | Kind::Ask => {}
+            Kind::Idle | Kind::Ask => {}
         }
         drop(settings);
 
@@ -467,7 +478,7 @@ impl<'a> View<'a> {
             Kind::Results | Kind::Apps => {
                 usize::from(self.found.answer.is_some()) + self.found.rows.len()
             }
-            Kind::Idle | Kind::Empty | Kind::Ask => 0,
+            Kind::Idle | Kind::Ask => 0,
         }
     }
 
@@ -487,17 +498,24 @@ impl<'a> View<'a> {
 
     /// How wide the panel is, and what's on it inside its inset.
     fn width(&self) -> f32 {
-        if matches!(self.mode, Mode::Apps | Mode::Clipboard) {
+        if matches!(self.mode, Mode::Apps | Mode::Clipboard | Mode::Files) {
             APPS_W
         } else {
             PILL_W
         }
     }
 
-    /// How wide the list is: Clipboard shares its width with a preview of
-    /// the copy picked.
+    /// Whether a preview of the row picked shows beside the list: a copy
+    /// in Clipboard, a file in Files.
+    fn previews(&self) -> bool {
+        matches!(self.mode, Mode::Clipboard | Mode::Files)
+            && self.found.rows.iter().any(|row| row.preview.is_some())
+    }
+
+    /// How wide the list is: Clipboard and Files share their width with a
+    /// preview of the row picked.
     fn list_width(&self) -> f32 {
-        if self.mode == Mode::Clipboard {
+        if self.previews() {
             CLIP_LIST_W
         } else {
             self.inner()
@@ -514,7 +532,7 @@ impl<'a> View<'a> {
         if self.kind == Kind::Apps {
             return BODY;
         }
-        if matches!(self.mode, Mode::Actions | Mode::Clipboard) {
+        if matches!(self.mode, Mode::Actions | Mode::Clipboard | Mode::Files) {
             return MAX_ROWS as f32 * (ROW + ROW_GAP) - ROW_GAP;
         }
         let rows = self.found.rows.len().clamp(1, MAX_ROWS);
@@ -525,7 +543,7 @@ impl<'a> View<'a> {
     fn height(&self) -> f32 {
         let under = match self.kind {
             Kind::Idle => return PILL_H,
-            Kind::Empty | Kind::Ask => EMPTY_H,
+            Kind::Ask => EMPTY_H,
             Kind::Apps => PILLS + GAP + BODY + INSET * 2.0,
             Kind::Results => {
                 let answer = if self.found.answer.is_some() {
@@ -1050,6 +1068,15 @@ fn on_key(key: Key) {
             drop(apps);
             back();
         }
+        // Ctrl+Return shows a file in the file manager
+        (Key::Enter, _) if held.ctrl => {
+            if let Some(entries::Action::OpenFile(path)) =
+                view.entry(selected).map(|entry| entry.action.clone())
+            {
+                close();
+                file_search::reveal(&path);
+            }
+        }
         (Key::Enter, Zone::Pills) => set_focus(Zone::Body),
         // Shift+Return puts a copy back on the clipboard, without pasting it
         (Key::Enter, _) if held.shift && view.mode == Mode::Clipboard => {
@@ -1383,30 +1410,28 @@ fn panel(view: &View) -> Column {
                 body.push(boxed(results::scope_chips(&view.found.scopes, width)));
             }
             let list_w = view.list_width();
-            let list: Box<dyn Widget> =
-                if view.mode == Mode::Clipboard && view.found.rows.is_empty() {
-                    boxed(results::empty(
-                        if query.is_empty() {
-                            results::Empty::NothingCopied
-                        } else {
-                            results::Empty::NoMatch
-                        },
-                        width,
-                        body_height,
-                    ))
-                } else {
-                    boxed(results::list(
-                        &view.found.rows,
-                        at,
-                        list_w,
-                        body_height,
-                        &layout,
-                        &query,
-                        view.mode == Mode::Actions,
-                    ))
-                };
-            if view.mode == Mode::Clipboard && !view.found.rows.is_empty() {
-                // the copy picked, beside the list
+            let nothing = match view.mode {
+                Mode::Clipboard if query.is_empty() => Some(results::Empty::NothingCopied),
+                Mode::Clipboard => Some(results::Empty::NoMatch),
+                Mode::Files => Some(results::Empty::NoFiles),
+                _ => None,
+            }
+            .filter(|_| view.found.rows.is_empty());
+            let list: Box<dyn Widget> = if let Some(nothing) = nothing {
+                boxed(results::empty(nothing, width, body_height))
+            } else {
+                boxed(results::list(
+                    &view.found.rows,
+                    at,
+                    list_w,
+                    body_height,
+                    &layout,
+                    &query,
+                    view.mode == Mode::Actions,
+                ))
+            };
+            if view.previews() {
+                // the copy or file picked, beside the list
                 let preview = view.entry(selected).and_then(|entry| entry.preview.clone());
                 body.push(boxed(
                     Row::new(vec![
@@ -1446,13 +1471,6 @@ fn panel(view: &View) -> Column {
                     false,
                 ))
             });
-        }
-        Kind::Empty => {
-            body.push(boxed(results::empty(
-                results::Empty::Soon(view.mode),
-                width,
-                EMPTY_H - INSET * 2.0,
-            )));
         }
         Kind::Idle => {}
     }

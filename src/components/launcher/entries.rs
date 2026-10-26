@@ -11,6 +11,7 @@ use amane::DesktopApp;
 use crate::components::panel::close;
 use crate::components::text_edit;
 use crate::services::clipboard_history::{self, Clip};
+use crate::services::file_search::{self, FileKind};
 use crate::services::run_now;
 
 use super::usage;
@@ -28,6 +29,9 @@ pub(super) enum Icon {
 pub(super) enum Preview {
     Text(String),
     Image(PathBuf),
+    /// A file found: an image, a text's start, a folder's files, or what
+    /// it is.
+    File(PathBuf),
 }
 
 /// Somewhere a search can be narrowed to: Tab on a row that has one, or a
@@ -36,6 +40,10 @@ pub(super) enum Preview {
 pub(super) enum Scope {
     /// An app: its own actions.
     App(DesktopApp),
+    /// A folder: the files in it.
+    Folder(PathBuf),
+    /// A kind of file, like PDFs.
+    Kind(FileKind),
     /// An action that asks for something first, like how long a timer
     /// runs: the field takes it.
     Action {
@@ -50,6 +58,11 @@ impl Scope {
     pub(super) fn name(&self) -> &str {
         match self {
             Self::App(app) => app.name(),
+            Self::Folder(path) => path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("/"),
+            Self::Kind(kind) => kind.label(),
             Self::Action { title, .. } => title,
         }
     }
@@ -59,6 +72,7 @@ impl Scope {
     pub(super) fn placeholder(&self) -> Option<&'static str> {
         match self {
             Self::App(_) => None,
+            Self::Folder(_) | Self::Kind(_) => Some("Search Files"),
             Self::Action { placeholder, .. } => Some(placeholder),
         }
     }
@@ -81,6 +95,8 @@ pub(super) enum Action {
     /// A copy from the clipboard's history, pasted into the window the
     /// launcher was over.
     Paste(Box<Clip>),
+    /// A file, opened in the app it opens with.
+    OpenFile(PathBuf),
 }
 
 #[derive(Clone)]
@@ -206,6 +222,7 @@ pub(super) fn run(entry: &Entry, query: &str) {
         Action::Open(url) => open(url.clone()),
         Action::Copy(value) => text_edit::copy(value),
         Action::Run(run) => run(),
+        Action::OpenFile(path) => file_search::open(path),
         Action::Ask(_) | Action::Hint | Action::Paste(_) => {}
     }
 }

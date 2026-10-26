@@ -13,9 +13,10 @@ use amane_kit::tokens::{Styled, sys};
 use crate::setting;
 
 /// The sources the search draws on, by the ids the launcher knows them by.
-const PROVIDERS: [(&str, &str); 5] = [
+const PROVIDERS: [(&str, &str); 6] = [
     ("apps", "Applications"),
     ("actions", "Actions"),
+    ("files", "Files"),
     ("answers", "Calculations and conversions"),
     ("url", "Web addresses"),
     ("web", "Web search"),

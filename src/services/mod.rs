@@ -18,6 +18,8 @@
 //! - [`timer`] — the launcher's countdown, which the bar shows while it runs.
 //! - [`clipboard_history`] — what's been copied, for the launcher's Clipboard
 //!   (wl-clipboard), once it's turned on.
+//! - [`file_search`] — files by name and content for the launcher's Files
+//!   (LocalSearch's index, or `fd`).
 //! - [`system_stats`] — processor, memory, network, temperature and disks,
 //!   and their recent history, for the desktop's widgets.
 //!
@@ -30,6 +32,7 @@ pub mod clipboard_history;
 pub mod clock;
 pub mod connections;
 pub mod dark_style;
+pub mod file_search;
 pub mod keep_awake;
 pub mod keyboard_backlight;
 pub mod night_light;

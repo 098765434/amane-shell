@@ -6,14 +6,17 @@
 //! the order it's found in, a section at a time.
 
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 
 use amane::DesktopApp;
 use amane_kit::settings::{QuickKey, launcher};
 
 use crate::components::icons::{
-    ICON_CALCULATE, ICON_CONTENT_COPY, ICON_FOLDER, ICON_OPEN_IN_NEW, ICON_SEARCH, ICON_SWAP,
+    ICON_CALCULATE, ICON_CONTENT_COPY, ICON_DESCRIPTION, ICON_FOLDER, ICON_OPEN_IN_NEW,
+    ICON_SEARCH, ICON_SWAP,
 };
 use crate::services::clipboard_history::{self, Clip, Kind as ClipKind};
+use crate::services::file_search::{self, FileKind, Hit, Request};
 
 use super::actions::{self, Param, Spec, Value};
 use super::answers;
@@ -90,8 +93,8 @@ pub(super) struct Found {
 }
 
 /// Every provider, in the order their fallbacks list.
-fn providers() -> [&'static dyn Provider; 6] {
-    [&Answers, &Apps, &Actions, &Clipboard, &Url, &Web]
+fn providers() -> [&'static dyn Provider; 7] {
+    [&Answers, &Apps, &Actions, &Files, &Clipboard, &Url, &Web]
 }
 
 /// What `query` finds in its mode, narrowed to `scope` if there is one,
@@ -100,6 +103,8 @@ pub(super) fn search(query: &Query, scope: Option<&Scope>, excluded: &[String]) 
     let mut found = Vec::new();
     match scope {
         Some(Scope::App(app)) => in_app(app, query, &mut found),
+        Some(Scope::Folder(folder)) => files(query, None, Some(folder.clone()), &mut found),
+        Some(Scope::Kind(kind)) => files(query, Some(*kind), None, &mut found),
         Some(Scope::Action { key, .. }) => {
             if let Some(spec) = actions::find(key, query.apps) {
                 asking(&spec, query, &mut found);
@@ -430,6 +435,172 @@ fn asking(spec: &Spec, query: &Query, out: &mut Vec<Candidate>) {
             });
         }
         None => {}
+    }
+}
+
+/// Files, by name and (with LocalSearch's index) what's in them: in Files
+/// all it finds, newest first, or the recent ones before anything's typed,
+/// "/" first picking a kind; from the pill a few, under the apps.
+struct Files;
+
+impl Provider for Files {
+    fn id(&self) -> &'static str {
+        "files"
+    }
+
+    fn modes(&self) -> &'static [Mode] {
+        &[Mode::Home, Mode::Files]
+    }
+
+    fn find(&self, query: &Query, out: &mut Vec<Candidate>) {
+        if query.mode == Mode::Home {
+            if query.needle.chars().count() < FILES_FROM_PILL_CHARS {
+                return;
+            }
+            let request = Request {
+                text: query.text.to_string(),
+                ..Request::default()
+            };
+            let (hits, _) = file_search::find(&request);
+            let now = file_search::now();
+            let mut matched: Vec<(f32, Hit)> = hits
+                .into_iter()
+                .filter_map(|hit| Some((rank::fuzzy(&query.needle, &hit.name)?, hit)))
+                .collect();
+            matched.sort_by(|a, b| b.0.total_cmp(&a.0));
+            for (score, hit) in matched.into_iter().take(FILES_FROM_PILL) {
+                out.push(Candidate {
+                    entry: file_entry(hit, now),
+                    matched: score * FILE_WEIGHT,
+                    group: Group::Ranked,
+                });
+            }
+            return;
+        }
+        if let Some(kind) = query.needle.strip_prefix('/') {
+            kinds(kind.trim(), out);
+            return;
+        }
+        files(query, None, None, out);
+    }
+}
+
+/// How many letters from the pill before files are looked for, how many
+/// it lists, and how they compare with apps and actions.
+const FILES_FROM_PILL_CHARS: usize = 3;
+const FILES_FROM_PILL: usize = 5;
+const FILE_WEIGHT: f32 = 0.6;
+/// What the files changed lately are listed under.
+const RECENTS: &str = "Recents";
+
+/// The files `query` finds, of `kind` and under `folder`, in the order
+/// found.
+fn files(query: &Query, kind: Option<FileKind>, folder: Option<PathBuf>, out: &mut Vec<Candidate>) {
+    let request = Request {
+        text: query.text.to_string(),
+        kind,
+        folder,
+    };
+    let (hits, _) = file_search::find(&request);
+    let now = file_search::now();
+    for hit in hits {
+        let mut entry = file_entry(hit, now);
+        if query.text.is_empty() && kind.is_none() {
+            entry.section = Some(String::from(RECENTS));
+        }
+        out.push(Candidate {
+            entry,
+            matched: 1.0,
+            group: Group::Listed,
+        });
+    }
+}
+
+/// The kinds a search can be narrowed to, named like `name`: "/" and a
+/// kind's name, as Spotlight's.
+fn kinds(name: &str, out: &mut Vec<Candidate>) {
+    for kind in FileKind::ALL {
+        if rank::fuzzy(name, kind.label()).is_none() && !name.is_empty() {
+            continue;
+        }
+        out.push(Candidate {
+            entry: Entry::new(
+                format!("kind:{}", kind.label()),
+                kind.label(),
+                Icon::Glyph(ICON_DESCRIPTION),
+                Action::Ask(Scope::Kind(kind)),
+            )
+            .subtitle("Kind"),
+            matched: 1.0,
+            group: Group::Listed,
+        });
+    }
+}
+
+/// A file's row: its kind's glyph (or the image itself, small), its name,
+/// what it is, how big and where, its whole path under Super, and how long
+/// ago it changed. A folder narrows the search to it with Tab.
+fn file_entry(hit: Hit, now: u64) -> Entry {
+    let icon = if hit.dir {
+        Icon::Glyph(ICON_FOLDER)
+    } else if shows_as_image(&hit.path) {
+        Icon::Image(hit.path.clone())
+    } else {
+        Icon::Glyph(ICON_DESCRIPTION)
+    };
+    let mut line = vec![kind_name(&hit)];
+    if !hit.dir {
+        line.push(model::size(hit.size as usize));
+    }
+    if let Some(parent) = hit
+        .path
+        .parent()
+        .and_then(|parent| parent.file_name())
+        .and_then(|name| name.to_str())
+    {
+        line.push(format!("▸ {parent}"));
+    }
+    let mut entry = Entry::new(
+        format!("file:{}", hit.path.display()),
+        hit.name.clone(),
+        icon,
+        Action::OpenFile(hit.path.clone()),
+    )
+    .subtitle(line.join(" · "))
+    .detail(hit.path.display().to_string());
+    entry.trailing = Some(model::ago(now.saturating_sub(hit.modified)));
+    entry.preview = Some(Preview::File(hit.path.clone()));
+    if hit.dir {
+        entry = entry.scope(Scope::Folder(hit.path));
+    }
+    entry
+}
+
+/// Whether amane can draw the file at `path` as an image.
+pub(super) fn shows_as_image(path: &std::path::Path) -> bool {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| matches!(ext.to_lowercase().as_str(), "png" | "jpg" | "jpeg" | "svg"))
+}
+
+/// What a file is, in words: "PDF document", "Folder", "MD file".
+fn kind_name(hit: &Hit) -> String {
+    if hit.dir {
+        return String::from("Folder");
+    }
+    match FileKind::of(&hit.name) {
+        Some(FileKind::Pdf) => String::from("PDF document"),
+        Some(FileKind::Image) => String::from("Image"),
+        Some(FileKind::Document) => String::from("Document"),
+        Some(FileKind::Spreadsheet) => String::from("Spreadsheet"),
+        Some(FileKind::Presentation) => String::from("Presentation"),
+        Some(FileKind::Audio) => String::from("Audio"),
+        Some(FileKind::Video) => String::from("Movie"),
+        Some(FileKind::Archive) => String::from("Archive"),
+        Some(FileKind::Folder) | None => match hit.name.rsplit_once('.') {
+            Some((_, ext)) if !ext.is_empty() => format!("{} file", ext.to_uppercase()),
+            _ => String::from("File"),
+        },
     }
 }
 

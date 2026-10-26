@@ -50,7 +50,7 @@ ones — the bar itself is not.
   how much they're used, answers sums and unit conversions in a card, finds URLs and a web
   search, runs Quick Settings' controls, the session, a timer and apps' desktop actions (some
   asking for an argument, `timer 5m`, some on quick keys), keeps a clipboard history to paste
-  from once it's turned on, narrows to an app's own actions with Tab, and brings back past searches with Up.
+  from once it's turned on, finds files by name (and by content with LocalSearch), narrows to an app's own actions with Tab, and brings back past searches with Up.
   Applications is a Launchpad grid with category pills, the apps used most on top, momentum
   scrolling and sideways swipes between categories.
 - **Desktop widgets** ([docs/widgets.md](docs/widgets.md)) — macOS's widgets on the

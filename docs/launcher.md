@@ -43,6 +43,8 @@ From the pill, a query lists ([`provider.rs`](../src/components/launcher/provide
       `keep awake for 2h`, `set power mode power saver`.
   - Each match is lifted by how much it's been used (a score that halves each week) and by
     how often it was picked for the same first letters before. So "f" learns Firefox.
+- **Files**, from three letters typed: the five whose names match best, under the apps and
+  actions (see [Files](#files)).
 - **Open the URL**, for a query that reads as one, then **a web search**, always last.
 
 Each row has its icon (with a badge on its corner for things that come from somewhere), its
@@ -79,7 +81,8 @@ pointer, the glyph turns into a back button (a chevron on a soft square), back t
   panel of one size. Typing searches the actions only.
 - **Clipboard** (`Ctrl+4`): what's been copied, newest first (see
   [Clipboard](#clipboard)), in a panel as wide as Applications'.
-- **Files** (`Ctrl+2`): not there yet. It says so.
+- **Files** (`Ctrl+2`): files by name, and by what's in them with LocalSearch (see
+  [Files](#files)), beside a preview of the one picked.
 
 ## Actions
 
@@ -114,6 +117,40 @@ it on Enter:
 **The timer** (`services/timer.rs`): one at a time; a new one replaces it. While it runs the
 bar shows a ⏱ chip counting down by the second, which opens Actions. When it runs out, a
 notification says so.
+
+## Files
+
+Spotlight's Files (`services/file_search.rs`). A search runs off the UI thread a moment after
+the last key, the newest replacing any before it.
+
+- **Where it looks.**
+  - With GNOME's LocalSearch running, its index, through `tinysparql`: names, and what's in
+    the files (full-text). Newest first.
+  - Without it, file names under the home folder, through `fd` (which leaves out hidden
+    files and what `.gitignore`s ignore).
+- **Before anything's typed**, the files changed lately, under **Recents**: the index's
+  newest, or `fd`'s files changed in the last week.
+- **Chips** narrow it to a kind: PDF, Images, Documents, Folders. Typing `/` lists every kind
+  (Spreadsheets, Presentations, Music, Movies, Archives too) to pick from.
+- **A folder**: Tab narrows the search to what's in it, its name as the token.
+- **Each row** is the file's kind glyph (an image itself, small), its name, what it is, how
+  big and the folder it's in, and how long ago it changed. Super shows its whole path.
+- **The preview** beside the list: an image (PNG, JPEG, SVG) fitted, the start of a text, a
+  folder's files, or the name of anything else.
+- **Return** opens it in its app (`xdg-open`); **Ctrl+Return** shows it in the file manager
+  (`org.freedesktop.FileManager1`).
+- **Right-click**: Open, **Open With ›** (the apps whose desktop entries open its kind), and
+  Show in Files.
+
+To search inside files, turn LocalSearch on in NixOS:
+
+```nix
+services.gnome.localsearch.enable = true;
+services.gnome.tinysparql.enable = true;
+```
+
+It indexes the home folder by default (dconf `org.freedesktop.Tracker3.Miner.Files`
+`index-recursive-directories`).
 
 ## Clipboard
 
@@ -168,6 +205,8 @@ Mod+Ctrl+V hotkey-overlay-title="Clipboard" {
 | Tab | Narrows to the row picked when it narrows to anything; else moves the focus (search field → pills → apps) |
 | Ctrl+K (an action) | Starts typing its quick keys |
 | Shift+Return / Delete (a copy) | Puts it back on the clipboard without pasting / forgets it |
+| Ctrl+Return (a file) | Shows it in the file manager |
+| `/` (Files) | Lists the kinds of file to narrow to |
 | Shift+Tab | Moves the focus back |
 | Enter | Runs the highlighted row or app, else the first |
 | Escape | Clears the query, then leaves the scope, then the mode; then closes the launcher |
@@ -244,7 +283,7 @@ fuller lines.
   followed live:
   - `apps_layout`: `grid` or `list`.
   - `excluded_providers`: the sources the search leaves out, by id: `answers`, `apps`,
-    `actions`, `clipboard`, `url`, `web`.
+    `actions`, `files`, `clipboard`, `url`, `web`.
   - `quick_keys`: each action's quick keys, with its key and name.
   - `clipboard`: whether the history is on, how many copies it keeps, whether images too,
     and the apps it leaves out.
@@ -309,6 +348,7 @@ never blocks anything.
 | `shape.rs` | where the glass is: the pill, the panel and the buttons (`Geometry`, which blends), and its frost (pure, tested) |
 | `mode.rs` | the modes, their glyphs, names and keys (pure, tested) |
 | `provider.rs` | the sources a search draws on (`Provider`) and how their finds are arranged (`search`; tested) |
+| `services/file_search.rs` | file searches through LocalSearch or `fd`, the kinds, and the SPARQL (tested) |
 | `actions.rs` | the actions (`Spec`), what they ask for, and an argument typed after a name (tested) |
 | `rank.rs` | the fuzzy match and the frecency score (pure, tested) |
 | `usage.rs` | what's remembered of use, and the searches run (tested) |
@@ -317,7 +357,7 @@ never blocks anything.
 | `header.rs` | the search row, the round mode buttons, the ⋯ menu, and the pill bar with its sliding fill |
 | `grid.rs` | the category pages, each a grid with its highlight, the suggested row on the first |
 | `results.rs` | the answer card, the chips, the rows with their section headings and quick keys, and the empty states |
-| `app_menu.rs` | an app's right-click menu |
+| `app_menu.rs` | an app's and a file's right-click menus |
 | `model.rs` | categories, sums, URLs, session-action names, the history's steps, durations and quick keys (pure, tested) |
 | `components/text_edit.rs` | the search text, caret and selection (pure, tested; shared with Quick Settings' Customize window) |
 
@@ -330,7 +370,6 @@ light and dark themes and the density.
 
 ## Known limits
 
-- Files is scaffolded, not built: picking it shows that it isn't there yet.
 - The clipboard history needs wl-clipboard (`wl-paste`, `wl-copy`), and pasting needs `wtype`
   and niri's IPC. Images other than PNG and JPEG are kept only as the text or files offered
   with them, since amane can't show them.

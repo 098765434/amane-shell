@@ -1,15 +1,19 @@
 //! An app's menu, opened by right-clicking it in the grid or the results:
 //! open it, open it on a workspace of the monitor in focus (a new one
 //! too), or run one of the actions its desktop entry lists, like "New
-//! Private Window".
+//! Private Window". A file's menu opens it, opens it with another app, or
+//! shows it in the file manager.
 
-use amane::{DesktopApp, Windows, Workspaces};
+use std::path::Path;
+
+use amane::{Apps, DesktopApp, Service, Windows, Workspaces};
 
 use crate::components::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::components::icons::{ICON_ADD, ICON_OPEN_IN_NEW};
 use crate::components::layout::cursor;
 use crate::components::panel::close;
 use crate::components::workspace_menu;
+use crate::services::file_search;
 use crate::tokens::sys;
 
 use super::LAUNCHER_NS;
@@ -59,4 +63,46 @@ pub(super) fn open(app: &DesktopApp) {
 /// A menu row's icon: one of the shell's glyphs, in their font.
 fn glyph(glyph: char) -> Icon {
     Icon::glyph_with_font(glyph.to_string(), sys::r#type::icon())
+}
+
+/// Registry key for a file's menu, built afresh for each file.
+const FILE_MENU_KEY: &str = "amane.launcher.file-menu";
+
+/// Opens a file's menu at the pointer: open it, open it with one of the
+/// apps that open its kind, or show it in the file manager.
+pub(super) fn open_file(path: &Path) {
+    let opened = path.to_path_buf();
+    let revealed = path.to_path_buf();
+    let openers: Vec<DesktopApp> = Apps::read()
+        .list()
+        .iter()
+        .filter(|app| app.opens(path))
+        .cloned()
+        .collect();
+    let mut menu = ContextMenu::new().item(
+        MenuItem::label("Open")
+            .icon(glyph(ICON_OPEN_IN_NEW))
+            .on_select(move || {
+                close();
+                file_search::open(&opened);
+            }),
+    );
+    if !openers.is_empty() {
+        let mut with = ContextMenu::new();
+        for app in openers {
+            let file = path.to_path_buf();
+            with = with.item(MenuItem::label(app.name()).on_select(move || {
+                close();
+                app.launch_with(std::slice::from_ref(&file));
+            }));
+        }
+        menu = menu.item(MenuItem::label("Open With").submenu(with));
+    }
+    menu = menu
+        .separator()
+        .item(MenuItem::label("Show in Files").on_select(move || {
+            close();
+            file_search::reveal(&revealed);
+        }));
+    context_menu::show_under(FILE_MENU_KEY, menu, LAUNCHER_NS, cursor());
 }

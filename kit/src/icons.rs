@@ -130,6 +130,7 @@ pub const ICON_SWAP: char = '\u{e8d4}';
 pub const ICON_BOLT: char = '\u{ea0b}';
 pub const ICON_HISTORY: char = '\u{e889}';
 pub const ICON_TIMER: char = '\u{e425}';
+pub const ICON_DESCRIPTION: char = '\u{e873}';
 
 /// The wedge for a signal strength (0–100): the nearest of its five steps,
 /// never fewer than one, since a network you can see has some signal.
