@@ -16,7 +16,7 @@ read through amane-kit's `Styled`: `Text::new(…).style(sys::r#type::label())`.
 All take `ref.font.family.ui`: Atkinson Hyperlegible Next, then Atkinson Hyperlegible, Inter and
 `sans-serif`. The icon stack, `ref.font.family.icon`, is Material Symbols Rounded, then Material
 Icons Round and `sans-serif`. The weights are `ref.font.weight.regular` 400, `.medium` 500 and
-`.bold` 700; the sizes `ref.font.size.11` to `.14`. The manual's `sys.type.body` has no token yet.
+`.bold` 700; the sizes `ref.font.size.11` to `.14`. There is no `sys.type.body` yet ([penpot-backlog.md](penpot-backlog.md), *Roles to consider*).
 
 ## Component typographies
 

@@ -198,3 +198,11 @@ whose output is static: it can't follow the mode, so it holds one value for both
   translucent surface with a stroke. The panels draw no edge until it exists.
 - `sys.shadow.*`: there's no shadow role yet, so the shared `Card` has no M3 elevated variant.
   The frosted surfaces' shadow is niri's, from `sys.shadow.popover` above.
+- `sys.color.state.pressed`: the manual's state rule (§6.1) gives it the surface's `fg` at 10 %.
+  Nothing draws a pressed fill today; buttons shrink instead (`PRESS_SCALE`).
+- `sys.color.focus.ring`: a shared keyboard focus outline. Only the launcher draws one, from its
+  own constants (`launcher.focus-ring.*` above).
+- `sys.color.scrim`, `sys.color.shadow`: dimming behind a modal surface and a shadow colour.
+  Nothing dims behind the alert today, and the shadows are niri's.
+- `sys.type.body`: the vocabulary has a `body` type role (§4.2), but no text uses one yet;
+  [typography.md](typography.md) lists the roles there are.

@@ -209,15 +209,13 @@ dimension role may follow density.
 | `sys.color.accent.bg / .fg / .text` | accent fill, content on it, accent-coloured text |
 | `sys.color.status.critical.bg / .fg / .text` | urgent/destructive (also `warning`, `success` when needed) |
 | `sys.color.status.critical.hover` | hover fill on a destructive row |
-| `sys.color.state.hover / .pressed / .selected` | overlay fills painted on top of a surface |
-| `sys.color.focus.ring` | keyboard focus outline |
+| `sys.color.state.hover / .selected` | overlay fills painted on top of a surface |
 | `sys.color.separator` | dividers inside a surface |
-| `sys.color.scrim`, `sys.color.shadow` | dimming behind modal surfaces; shadow colour |
 | `sys.color.state.on.bg / .fg` | a Quick Settings control that's on |
 
-Not in `tokens.json` yet, though named here: `sys.color.state.pressed`, `sys.color.focus.ring`,
-`sys.color.scrim` and `sys.color.shadow` (the code holds what it needs as `TODO(token)` constants;
-see [penpot-backlog.md](penpot-backlog.md)).
+This table lists only roles that are in `tokens.json`. Roles the shell doesn't have yet (a
+pressed state, a focus ring, a scrim, a shadow colour) are under *Roles to consider* in
+[penpot-backlog.md](penpot-backlog.md); add them in Penpot before any code names them.
  
 Primary content is the surface's own `fg`. Secondary, tertiary and disabled content are
 shared across surfaces; if a surface needs its own, add `sys.color.surface.<s>.fg-secondary`
@@ -250,10 +248,11 @@ How to set them:
 | `sys.size.slider.height` | `sizing` | a slider's track; its hit area is `sys.size.control.height` |
 | `sys.radius.popover / .raised` | `borderRadius` | not density-scaled |
 | `sys.border.hairline` | `borderWidth` | `{ref.border.1}` |
-| `sys.opacity.disabled` | `opacity` | `{ref.opacity.38}`; not in `tokens.json` yet |
-| `sys.shadow.popover` | `shadow` | not in `tokens.json` yet |
-| `sys.motion.duration.short / .medium` | `number` | ms, `{ref.duration.N}`; not in `tokens.json` yet (the springs are constants, [penpot-backlog.md](penpot-backlog.md)) |
 | `sys.effect.backdrop-blur` | `number` | px of in-surface blur under translucent surfaces |
+
+The disabled opacity, the popover shadow and the motion durations are still `TODO(token)`
+constants in the code; their suggested names and values are under *Tokens to add* in
+[penpot-backlog.md](penpot-backlog.md).
  
 Always `round()` density-scaled values in Penpot, so Penpot and the shell land on the same
 whole pixel.
@@ -469,7 +468,8 @@ the accent, and the accent never means "blue".
  
 Hover, pressed and selected are overlays (§6.1), so one rule covers bar items, menu rows and
 list rows, and works on translucent surfaces. Selection in menus uses `accent.bg` +
-`accent.fg`. Focus uses `sys.color.focus.ring`.
+`accent.fg`. Focus is to use `sys.color.focus.ring` once it exists (penpot-backlog.md); today
+only the launcher draws a ring, from its own constants.
  
 ### 11.4 Typography
  
