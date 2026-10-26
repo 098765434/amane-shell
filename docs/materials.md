@@ -17,6 +17,11 @@ The glass setting, reduced motion and higher contrast change every material at o
   content. niri's `glass` material lenses it. Its **Clear** variant (`glass-clear`) is for media
   only: it is dark whatever the theme, keeps 0.7 of its tint, and keeps all of it over a bright
   backdrop. That is Apple's 35% dimming layer.
+- **Small glass frosts less.** A piece of Regular glass no more than `SMALL_GLASS` (44) across its
+  short side, a button or a chip, asks for niri's `glass-small`, which blurs with `blur {}`'s own
+  light blur. Larger glass, the modules, menus and sheets, takes `glass`, which sets a heavier blur
+  of its own (`blur-passes`, `blur-offset`). This is the macOS 27 kit's frost: 6 for small glass,
+  16 for medium and large. Without `glass-small` in the config, small glass takes `glass`.
 - **Standard** materials frost without a lens (`frost`). They are used inside the content layer:
   the bar, tooltips and app windows.
 

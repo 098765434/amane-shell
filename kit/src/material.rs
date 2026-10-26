@@ -158,6 +158,11 @@ impl Thickness {
 /// has the focus: calmer, as AppKit's inactive windows are.
 const INACTIVE: f32 = 0.5;
 
+// TODO(token): `sys.material.small-glass` once Penpot has it.
+/// Glass no bigger than this across its short side, a control-sized piece,
+/// frosts with the small glass material, as Apple's small glass frosts less.
+pub const SMALL_GLASS: f32 = 44.0;
+
 // TODO(token): `sys.material.clear-fade` once Penpot has it.
 /// How much of its tint Clear glass keeps over a backdrop that isn't
 /// bright. Over a bright one it keeps all of it: Apple's 35% dimming layer
@@ -256,6 +261,24 @@ impl Material {
         }
     }
 
+    /// The niri material for a small piece of this one, which frosts its
+    /// backdrop less than large glass (the macOS 27 kit: 6 against 16), or
+    /// none where this material has no small variant or niri doesn't offer it.
+    fn niri_small(self) -> Option<&'static str> {
+        if !see_through() {
+            return None;
+        }
+        let wanted: &[&str] = match (self.spec().family, theme::reduced_motion()) {
+            (Family::Glass(Variant::Regular), false) => &["glass-small"],
+            (Family::Glass(Variant::Regular), true) => &["glass-small-still", "glass-small"],
+            _ => &[],
+        };
+        wanted
+            .iter()
+            .copied()
+            .find(|name| amane::material_available(name))
+    }
+
     /// The niri material that frosts this one, or none where the glass
     /// isn't see-through or the compositor has no materials.
     pub fn niri(self) -> Option<&'static str> {
@@ -331,9 +354,13 @@ impl Material {
         if !see_through() {
             return shape.alpha(0.0);
         }
-        shape
-            .alpha(opacity)
-            .material(self.niri().unwrap_or(glass_region::MATERIAL))
+        let small = width.min(height) <= SMALL_GLASS;
+        let name = small
+            .then(|| self.niri_small())
+            .flatten()
+            .or_else(|| self.niri())
+            .unwrap_or(glass_region::MATERIAL);
+        shape.alpha(opacity).material(name)
     }
 
     /// What the glass drawn in the surface is filled with: the tint,

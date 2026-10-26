@@ -26,6 +26,7 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `quick.page.reveal.*` (header, body, step, span, rise) | 0.35–0.7, 0.45, 0.06, 0.35, 8 | `quick_settings/detail.rs` (`REVEAL_*`: a page's content coming in) |
 | `sys.glass.material` | `glass` | `components/glass_region.rs` (`MATERIAL`: the stand-in compositor material where a material's own isn't configured) |
 | `sys.material.inactive` | 0.5 | `material.rs` (`INACTIVE`: how far an app window's materials go toward opaque while another window has the focus) |
+| `sys.material.small-glass` | 44 | `material.rs` (`SMALL_GLASS`: the short side at or under which glass is small and frosts with `glass-small`) |
 | `sys.material.clear-fade` | 0.7 | `material.rs` (`CLEAR_FADE`: how much of its tint Clear glass keeps over a backdrop that isn't bright) |
 | `dock.icon.size`, `dock.icon.least`, `dock.radius`, `dock.reveal.strip` | 44, 20, 18, 2 | `dock/mod.rs` (`ICON`, `LEAST_ICON`, `RADIUS`, `STRIP`) |
 | `dock.running.size` | 4 | `dock/item.rs` (`RUNNING`) |
@@ -131,6 +132,9 @@ whose output is static: it can't follow the mode, so it holds one value for both
     `.knob-height`, `sys.radius.control.<size>` and `sys.radius.checkbox.<size>`. The sizes are
     `round(<px> * {sys.density.factor})`; the radii and the radio dot aren't scaled.
     `sys.size.switch.width` and `.height` are deleted.
+  - `material.glass-small.*`, the same settings as `material.glass`, and
+    `material.glass.blur-passes` (2) and `material.glass.blur-offset` (1.5): big glass frosts
+    more than small ([materials.md](materials.md)).
 - `menu.label.advance-ratio` is no longer read: menus measure their text now. Delete it.
 - `bar.volume.width` is no longer read: the volume is a glyph button now, its level in a tooltip.
   Delete it.

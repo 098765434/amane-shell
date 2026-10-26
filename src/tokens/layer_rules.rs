@@ -393,6 +393,24 @@ mod tests {
     }
 
     #[test]
+    fn small_glass_is_glass_at_the_lighter_blur() {
+        let all = materials();
+        let find = |name: &str| {
+            all.iter()
+                .find(|m| m.name == name)
+                .unwrap_or_else(|| panic!("{name} isn't generated"))
+        };
+        for (big, small) in [("glass", "glass-small"), ("glass-still", "glass-small-still")] {
+            let blur = |(setting, _): &&(String, String)| setting.starts_with("blur-");
+            let (big, small) = (find(big), find(small));
+            assert!(big.settings.iter().any(|s| blur(&s)), "{} frosts more", big.name);
+            assert!(!small.settings.iter().any(|s| blur(&s)), "{} keeps blur {{}}'s", small.name);
+            let rest: Vec<_> = big.settings.iter().filter(|s| !blur(s)).collect();
+            assert_eq!(rest, small.settings.iter().collect::<Vec<_>>());
+        }
+    }
+
+    #[test]
     fn still_twins_only_add_materialize_false() {
         let all = materials();
         for twin in all.iter().filter(|m| m.name.ends_with("-still")) {

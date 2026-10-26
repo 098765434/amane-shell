@@ -1,6 +1,6 @@
 # Spec: adopting the macOS 27 kit's variables
 
-**Status (2026-10-26): implemented.** Parts 1 to 6 are in, with these departures:
+**Status (2026-10-26): implemented.** All seven parts are in, with these departures:
 - Accents: only the system red (`status.critical`), the default seed (blue `#0091ff`) and the
   Settings picker took the new values. The accent is one mode-free seed, so the per-mode and
   vibrant forms and the five colours nothing reads (mint, teal, cyan, indigo, brown) were left
@@ -11,7 +11,10 @@
 - Control sizes: everything is Medium for now, the shell's panels too, and density scales the
   sizes through `sys.density.factor` (manual rule 5) instead of moving a step. `scope(Large, …)`
   makes a panel Large.
-- Part 7 (size-dependent frost) isn't done.
+- Part 7 (size-dependent frost) is in, the other way round: niri's `blur {}` here is already
+  light (1 pass, offset 1), so it stays the small glass's blur (`glass-small`), and `glass`
+  sets a heavier one of its own (2 passes, offset 1.5). Small means no more than 44 across the
+  short side, not under 60 tall: a wide capsule button is small glass too.
 
 The source is `variables(1).json`, exported on 2026-10-26 from the Figma community file
 "macOS 27 (Community)". The file isn't Apple's own, but its values match Apple's published
