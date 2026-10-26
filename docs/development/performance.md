@@ -180,7 +180,7 @@ built, as the bar's volume scroll does (shell `c1bef96`).
 `AMANE_FRAMES=1` prints a line per frame and per change on stderr:
 
 ```
-frame amane.dock 1646x150 gap 16.2 view 0.3 draw 0.0 gpu 4.2
+frame amane.dock 1646x150 gap 16.2 view 0.3 draw 0.0 gpu 4.2 vello 0
 change amane::services::windows::Windows
 change Titles
 change Backdrop 1234
@@ -188,8 +188,10 @@ change everything            ← a mark_all
 ```
 
 `gap` is the time since that window's last frame. `view`, `draw` and `gpu` are milliseconds, and
-a `gpu` near 0 means the frame matched the one on screen and was skipped. A `change` line names
-what woke the windows that follow it.
+a `gpu` near 0 means the frame matched the one on screen and was skipped. `vello` is how many
+times the frame went through vello: 0 when the quads drew it alone, which is what an idle frame
+should say (each vello run costs GPU time and keeps vello's scratch buffers busy; see
+[memory.md](memory.md)). A `change` line names what woke the windows that follow it.
 
 Run a second shell beside your bar, with its own runtime dir, so it doesn't take the bar's socket:
 

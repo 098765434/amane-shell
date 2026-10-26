@@ -5,7 +5,8 @@
 //!
 //! One clear surface per monitor on the background layer, under the
 //! windows, holding frosted cards laid out on Quick Settings' grid (cells
-//! of 74 px, 16 px between) across the whole screen. A card is 2 × 2
+//! of 74 px, 16 px between) across the whole screen; the surface itself is
+//! only the grid and room for the cards' shadows. A card is 2 × 2
 //! (Small), 4 × 2 (Medium), 4 × 4 (Large) or 8 × 4 (Extra Large) cells,
 //! and the same kind can sit on the desktop more than once, each with its
 //! own settings. Each monitor keeps its own layout (`store.rs`).
@@ -32,9 +33,9 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
 use amane::{
-    Animation, BlurShape, Button, Color, Cursor, Desktop, Full, InputArea, Keyboard, Layer,
-    LayerWindow, Monitor, Point, Rectangle, Service, Shadow, Size, Stack, Widget, WorkspaceSwitch,
-    Workspaces, Zone,
+    Animation, BlurShape, Button, Color, Cursor, Desktop, Full, Horizontal, InputArea, Keyboard,
+    Layer, LayerWindow, Margin, Monitor, Point, Rectangle, Service, Shadow, Size, Stack, Vertical,
+    Widget, WindowSize, WorkspaceSwitch, Workspaces, Zone,
 };
 
 use crate::components::context_menu::{self, ContextMenu, Icon, MenuItem};
@@ -68,6 +69,11 @@ const CELL: f32 = 74.0;
 const GAP: f32 = 16.0;
 /// The room kept clear round the canvas, at the screen's edges.
 const MARGIN: f32 = 24.0;
+/// The room the background surface keeps round the canvas for the cards'
+/// shadows (`shadow()`: 24 blurred, 8 down), so the surface is the grid and
+/// no more. A surface costs four or five times its pixels on the GPU (its
+/// swapchain, canvas and vibrant layers), and the screen is mostly not grid.
+const PAD: f32 = 32.0;
 /// A card's corners: macOS's widgets'.
 const RADIUS: f32 = 22.0;
 /// How far a card fades back while windows are open.
@@ -85,13 +91,18 @@ fn metrics() -> Metrics {
 }
 
 /// Where a monitor's canvas is: as many whole cells as fit inside the
-/// margin, above the bar, centred in what's left.
+/// margin, above the bar, centred in what's left. `origin`, `width` and
+/// `height` are against the surface the cards are drawn on: the whole
+/// monitor as [`Self::of`] gives it (the edit surface), or the part of it
+/// the background surface covers, see [`Self::on_surface_around`].
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Geometry {
     pub canvas: Canvas,
     pub origin: (f32, f32),
     pub width: f32,
     pub height: f32,
+    /// Where the surface is on the monitor: x, y, width, height.
+    pub surface: (f32, f32, f32, f32),
 }
 
 impl Geometry {
@@ -106,7 +117,35 @@ impl Geometry {
             origin: (MARGIN + x, MARGIN + y),
             width,
             height,
+            surface: (0.0, 0.0, width, height),
         }
+    }
+
+    /// The same canvas against a surface that covers only `extent` (x, y,
+    /// width, height in the canvas's pixels) and [`PAD`] round it, kept
+    /// within the monitor: the background surface, which is as big as the
+    /// cards on it and no more.
+    fn on_surface_around(self, extent: (f32, f32, f32, f32)) -> Self {
+        let (x, y, w, h) = extent;
+        let left = (self.origin.0 + x - PAD).max(0.0).floor();
+        let top = (self.origin.1 + y - PAD).max(0.0).floor();
+        let right = (self.origin.0 + x + w + PAD).min(self.width).ceil();
+        let bottom = (self.origin.1 + y + h + PAD).min(self.height).ceil();
+        let width = (right - left).max(1.0);
+        let height = (bottom - top).max(1.0);
+        Self {
+            origin: (self.origin.0 - left, self.origin.1 - top),
+            width,
+            height,
+            surface: (left, top, width, height),
+            ..self
+        }
+    }
+
+    /// The whole canvas, in its own pixels.
+    fn whole(&self) -> (f32, f32, f32, f32) {
+        let px = metrics();
+        (0.0, 0.0, px.extent(self.canvas.cols), px.extent(self.canvas.rows))
     }
 
     /// `point` on the surface, in the canvas's pixels.
@@ -288,17 +327,47 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
             .click_through()
             .child(Stack::new(Vec::new()));
     }
-    with_desk(&output, |desk| desk.geometry = Some(geometry));
 
+    let layout = shown(&output, geometry.canvas);
+
+    /*
+     * the edit surface covers the monitor (the gallery, and cards dragged
+     * anywhere); the background one covers the cards on it and the room for
+     * their shadows, since a surface costs by its pixels, and the whole
+     * canvas only while a card is dragged across it: the drag's points are
+     * kept in the canvas's pixels, so the surface growing under it is fine
+     */
+    let (window, geometry) = if edit_window {
+        let window = LayerWindow::new().width(Full).height(Full);
+        (window, geometry)
+    } else {
+        let dragging = with_desk(&output, |desk| desk.session.is_some());
+        let extent = if dragging {
+            geometry.whole()
+        } else {
+            cards_extent(&layout)
+        };
+        let geometry = geometry.on_surface_around(extent);
+        let (left, top, width, height) = geometry.surface;
+        let window = LayerWindow::new()
+            .width(WindowSize::Fixed(width))
+            .height(WindowSize::Fixed(height))
+            .anchor_vertical(Vertical::Top)
+            .anchor_horizontal(Horizontal::Left)
+            .margin(Margin {
+                top: top as i32,
+                left: left as i32,
+                ..Margin::default()
+            });
+        (window, geometry)
+    };
     let full = InputArea {
         x: 0,
         y: 0,
-        width: monitor.width as i32,
-        height: monitor.height as i32,
+        width: geometry.width.ceil() as i32,
+        height: geometry.height.ceil() as i32,
     };
-    let window = LayerWindow::new()
-        .width(Full)
-        .height(Full)
+    let window = window
         .vibrant(material::vibrant())
         .layer(layer)
         .space(Zone::Ignore)
@@ -313,8 +382,9 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
             .blur_shapes(Vec::new())
             .child(Stack::new(Vec::new()));
     }
+    // the window that shows the cards says where the pointer meets the grid
+    with_desk(&output, |desk| desk.geometry = Some(geometry));
 
-    let layout = shown(&output, geometry.canvas);
     // the gallery shows every kind live while editing
     let system = layout
         .placed()
@@ -606,6 +676,25 @@ fn held(output: &str) -> Option<(WidgetKey, (f32, f32))> {
         Some(Drag::Move { id, at, .. }) => Some((id, at)),
         _ => None,
     })
+}
+
+/// The box round every card in `layout`, in the canvas's pixels: x, y,
+/// width, height. Nothing when there are no cards.
+fn cards_extent(layout: &Layout<WidgetKey>) -> (f32, f32, f32, f32) {
+    let px = metrics();
+    let mut bounds: Option<(f32, f32, f32, f32)> = None;
+    for (_, rect) in layout.placed() {
+        let slot = px.slot(rect);
+        let (left, top, right, bottom) = (slot.x, slot.y, slot.x + slot.width, slot.y + slot.height);
+        bounds = Some(match bounds {
+            None => (left, top, right, bottom),
+            Some((l, t, r, b)) => (l.min(left), t.min(top), r.max(right), b.max(bottom)),
+        });
+    }
+    match bounds {
+        Some((l, t, r, b)) => (l, t, r - l, b - t),
+        None => (0.0, 0.0, 0.0, 0.0),
+    }
 }
 
 /// The drag in flight on `output`.
@@ -1097,5 +1186,34 @@ mod tests {
         // centred: as much room left as right
         let right = 1920.0 - geometry.origin.0 - px.extent(geometry.canvas.cols);
         assert!((right - geometry.origin.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn the_background_surface_is_the_cards_and_their_shadows_within_the_screen() {
+        let geometry = Geometry::of(1920.0, 1080.0);
+        let px = metrics();
+        // two cards: a 2×2 at the top left and a 4×2 further along
+        let extent = (0.0, 0.0, 5.0 * px.pitch() + px.extent(4), px.extent(2));
+        let on_surface = geometry.on_surface_around(extent);
+        let (left, top, width, height) = on_surface.surface;
+        assert!(left <= geometry.origin.0 && top <= geometry.origin.1);
+        assert!(left + width >= geometry.origin.0 + extent.2);
+        assert!(top + height >= geometry.origin.1 + extent.3);
+        assert!(left >= 0.0 && top >= 0.0 && left + width <= 1920.0 && top + height <= 1080.0);
+        // far smaller than the screen
+        assert!(width < 1920.0 / 2.0 && height < 1080.0 / 3.0);
+        // the same point on the grid, whichever surface it is measured on
+        let screen = Point { x: 500.0, y: 300.0 };
+        let surface = Point {
+            x: screen.x - left,
+            y: screen.y - top,
+        };
+        assert_eq!(geometry.grid(screen), on_surface.grid(surface));
+        assert_eq!((on_surface.width, on_surface.height), (width, height));
+        // the whole canvas, while a card is dragged, stays within the screen too
+        let whole = geometry.on_surface_around(geometry.whole());
+        let (l, t, w, h) = whole.surface;
+        assert!(l >= 0.0 && t >= 0.0 && l + w <= 1920.0 && t + h <= 1080.0);
+        assert!(w > width && h > height);
     }
 }
