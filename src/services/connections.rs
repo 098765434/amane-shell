@@ -40,65 +40,78 @@ pub struct Connections {
     vpns: Vec<Vpn>,
     wired: Option<Wired>,
     hotspot: Option<Hotspot>,
-    // each Wi-Fi profile's mode, asked once: it only changes when edited
-    modes: HashMap<String, String>,
 }
 
 impl Service for Connections {
     fn new() -> Self {
-        let mut connections = Self::default();
-        connections.update();
-        connections
+        fetch(&mut HashMap::new()).unwrap_or_default()
     }
 
     fn interval() -> Duration {
         Duration::from_secs(3)
     }
 
-    fn update(&mut self) -> bool {
-        let Some(profiles) = nmcli(&["-t", "-f", "NAME,UUID,TYPE,DEVICE,ACTIVE", "connection"])
-        else {
-            return false;
-        };
-        let devices =
-            nmcli(&["-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device"]).unwrap_or_default();
-        let profiles = parse_profiles(&profiles);
-
-        let vpns = vpns(&profiles);
-        let wired = wired(&parse_rows(&devices));
-
-        // the active Wi-Fi profile in access-point mode is a hotspot
-        let mut hotspot = None;
-        for profile in profiles
-            .iter()
-            .filter(|p| p.kind == "802-11-wireless" && p.active)
-        {
-            let mode = self.modes.entry(profile.uuid.clone()).or_insert_with(|| {
-                nmcli(&[
-                    "-g",
-                    "802-11-wireless.mode",
-                    "connection",
-                    "show",
-                    &profile.uuid,
-                ])
-                .unwrap_or_default()
-                .trim()
-                .to_string()
-            });
-            if mode == "ap" {
-                hotspot = Some(Hotspot {
-                    uuid: profile.uuid.clone(),
-                    ssid: profile.name.clone(),
-                });
+    /*
+     * nmcli is asked with no lock held, so the bar never waits on it while
+     * it draws, and nothing is written when nothing changed
+     */
+    fn listen() {
+        // each Wi-Fi profile's mode, asked once: it only changes when edited
+        let mut modes = HashMap::new();
+        loop {
+            std::thread::sleep(Self::interval());
+            let Some(fresh) = fetch(&mut modes) else {
+                continue;
+            };
+            if *Self::read() == fresh {
+                continue;
             }
+            *Self::write() = fresh;
         }
-
-        let changed = vpns != self.vpns || wired != self.wired || hotspot != self.hotspot;
-        self.vpns = vpns;
-        self.wired = wired;
-        self.hotspot = hotspot;
-        changed
     }
+}
+
+/// What NetworkManager says now; none if nmcli didn't answer.
+fn fetch(modes: &mut HashMap<String, String>) -> Option<Connections> {
+    let profiles = nmcli(&["-t", "-f", "NAME,UUID,TYPE,DEVICE,ACTIVE", "connection"])?;
+    let devices =
+        nmcli(&["-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device"]).unwrap_or_default();
+    let profiles = parse_profiles(&profiles);
+
+    let vpns = vpns(&profiles);
+    let wired = wired(&parse_rows(&devices));
+
+    // the active Wi-Fi profile in access-point mode is a hotspot
+    let mut hotspot = None;
+    for profile in profiles
+        .iter()
+        .filter(|p| p.kind == "802-11-wireless" && p.active)
+    {
+        let mode = modes.entry(profile.uuid.clone()).or_insert_with(|| {
+            nmcli(&[
+                "-g",
+                "802-11-wireless.mode",
+                "connection",
+                "show",
+                &profile.uuid,
+            ])
+            .unwrap_or_default()
+            .trim()
+            .to_string()
+        });
+        if mode == "ap" {
+            hotspot = Some(Hotspot {
+                uuid: profile.uuid.clone(),
+                ssid: profile.name.clone(),
+            });
+        }
+    }
+
+    Some(Connections {
+        vpns,
+        wired,
+        hotspot,
+    })
 }
 
 impl Connections {
@@ -148,7 +161,11 @@ fn act(args: &[&str]) {
     let args: Vec<String> = args.iter().map(|arg| arg.to_string()).collect();
     std::thread::spawn(move || {
         let _ = run_now("nmcli", &args);
-        Connections::write().update();
+        if let Some(fresh) = fetch(&mut HashMap::new())
+            && *Connections::read() != fresh
+        {
+            *Connections::write() = fresh;
+        }
     });
 }
 
