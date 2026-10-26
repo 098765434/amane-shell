@@ -72,8 +72,10 @@ from the one-accent rule (§11.2).
 and below. `Divider::height()` is what it takes up, for menus that measure themselves.
 
 `Slider::new(value, width)` sets a 0–100 level when pressed, dragged or scrolled. Its thin
-`sys.size.slider.height` track is filled with the accent, or greyed with `.dimmed(true)`. The hit
-area is a full control tall. One scroll notch moves it `slider::STEP` (5). The bar's volume button
+`sys.size.slider.height` track, outlined in `sys.color.progress.track-stroke`, is filled with the
+accent, or greyed with `.dimmed(true)`. A pill knob at the current control size
+(`control_size::current().slider_knob()`, 20×16 at Medium) sits at the level; an `.inert(true)`
+slider is a meter and has none. The hit area is a full control tall. One scroll notch moves it `slider::STEP` (5). The bar's volume button
 uses the same `slider::scrolled`. `.on_value_change` takes any closure.
 
 `.large(glyph)` is the macOS Control Center slider: a track a full control tall with the glyph

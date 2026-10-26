@@ -158,8 +158,8 @@ and component non-colour values may use them.
 | Group | Penpot type | Rule | Seed values |
 |-------|-------------|------|-------------|
 | `ref.color.neutral.<L>` | `color` | `<L>` = CIE L\* lightness rounded (0 black … 100 white); CI allows ±2 | `.0` #000000, `.11` #1d1d1f, `.97` #f5f5f7, `.100` #ffffff |
-| `ref.color.<hue>.<L>` | `color` | same rule for status hues | `ref.color.red.58` #ff453a |
-| `ref.color.accent.seed` | `color` | the default accent | #0a84ff |
+| `ref.color.<hue>.<L>` | `color` | same rule for status hues (none today: the status red is macOS 27's, per mode, in `sys.color.status.*`) | `ref.color.red.58` #ff453a |
+| `ref.color.accent.seed` | `color` | the default accent | #0091ff (macOS 27's blue) |
 | `ref.color.accent.on-seed` | `color` | text/icons on the seed (§8.3) | #ffffff |
 | `ref.color.accent.dim` | `color` | seed with OKLab L ≤ 0.50 — accent text on light surfaces | #0060bf |
 | `ref.color.accent.bright` | `color` | seed with OKLab L ≥ 0.85 — accent text on dark surfaces | #add1ff |
@@ -199,7 +199,7 @@ dimension role may follow density.
 | `sys.color.surface.osd.bg / .fg / .stroke` | volume/brightness OSD (reserved) |
 | `sys.color.surface.notification.bg / .fg / .fg-secondary / .stroke` | notification toasts (no longer read: `Material::Banner`) |
 | `sys.color.surface.raised.bg` | chips, rows and cards inside any surface (the bar's pill) |
-| `sys.color.surface.popover.fg-secondary` | secondary text in menus (differs from `content.secondary` until converged) |
+| `sys.color.surface.popover.fg-secondary` | secondary text in menus (differs from `label.secondary` until converged) |
 | `sys.color.accent.bg / .fg / .text` | accent fill, content on it, accent-coloured text |
 | `sys.color.status.critical.bg / .fg / .text` | urgent/destructive (also `warning`, `success` when needed) |
 | `sys.color.status.critical.hover` | hover fill on a destructive row |

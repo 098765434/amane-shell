@@ -27,7 +27,8 @@ take a `Style` and a `Shape`:
 | `Plain` | text / standard | none | `sys.color.vibrant.label.primary` |
 
 `Shape::Round` is a capsule (a circle when square). `Shape::Square` is the rounded rectangle
-chips and rows use (`sys.radius.raised`). A button on another surface passes that surface's
+of the current control size (`sys.radius.control.<size>`, 6 at Medium), and a capsule from Large
+up ([control sizes](#control-sizes)). A button on another surface passes that surface's
 `fg` with `.color(…)`. An `IconButton` that's `.selected(true)` is a toggle that's on, and its
 glyph turns `sys.color.accent.bg`.
 
