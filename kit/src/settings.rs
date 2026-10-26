@@ -35,6 +35,10 @@ pub struct Appearance {
     /// Whether small glass turns light or dark with what's behind it, from
     /// niri's readings of the backdrop (an experiment, off by default).
     pub adaptive_glass: bool,
+
+    /// Whether labels on glass blend with the frosted backdrop under them,
+    /// through niri's vibrancy (an experiment, off by default).
+    pub vibrancy: bool,
 }
 
 impl Default for Appearance {
@@ -47,6 +51,7 @@ impl Default for Appearance {
             glass: Glass::Tinted,
             reduce_motion: None,
             adaptive_glass: false,
+            vibrancy: false,
         }
     }
 }

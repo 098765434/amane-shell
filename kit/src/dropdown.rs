@@ -234,6 +234,7 @@ fn menu(id: &str, parent: &Parent, at: Point) -> Popup {
     let popup = Popup::new("amane.dropdown")
         .size(width.ceil() as u32, height.ceil() as u32)
         .anchor_rect(at.x as i32, at.y as i32, 1, 1)
+        .vibrant(material::vibrant())
         .anchor(PopupAnchor::TopLeft)
         .gravity(Gravity::BottomRight)
         .constraint_adjustment(

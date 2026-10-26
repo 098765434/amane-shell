@@ -50,7 +50,7 @@ use crate::components::divider::Divider;
 use crate::components::edge_reveal::EdgeReveal;
 use crate::components::glass_region;
 use crate::components::layout::{blank, boxed};
-use crate::components::material::Material;
+use crate::components::material::{self, Material};
 use crate::components::motion::redraw_after;
 use crate::tokens::sys;
 
@@ -354,6 +354,7 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
     LayerWindow::new()
         .width(Full)
         .height(at.height)
+        .vibrant(material::vibrant())
         .anchor_vertical(Vertical::Bottom)
         // over the bar, which it covers to the bottom edge
         .layer(Layer::Overlay)

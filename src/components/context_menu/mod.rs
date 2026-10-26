@@ -284,6 +284,7 @@ fn render(k: usize) -> Popup {
     let mut popup = Popup::new(NS[k])
         .size(width as u32, height as u32)
         .anchor_rect(ax, ay, aw, ah)
+        .vibrant(material::vibrant())
         .parent(parent_ns(k))
         .gravity(Gravity::BottomRight)
         .constraint_adjustment(constraint)

@@ -83,6 +83,7 @@ pub fn bar() -> LayerWindow {
     LayerWindow::new()
         .width(Full)
         .height(sys::size::panel::height())
+        .vibrant(material::vibrant())
         .anchor_vertical(Vertical::Bottom)
         .layer(Layer::Top)
         .space(Zone::Reserve)

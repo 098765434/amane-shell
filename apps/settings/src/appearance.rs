@@ -36,7 +36,7 @@ const TEXT_SIZES: [(&str, f32); 5] = [
 ];
 
 pub fn page() -> Column {
-    let (mode, accent, density, text_scale, glass, reduce_motion, adaptive_glass) = {
+    let (mode, accent, density, text_scale, glass, reduce_motion, adaptive_glass, vibrancy) = {
         let now = appearance();
 
         (
@@ -47,6 +47,7 @@ pub fn page() -> Column {
             now.glass,
             now.reduce_motion,
             now.adaptive_glass,
+            now.vibrancy,
         )
     };
 
@@ -111,6 +112,12 @@ pub fn page() -> Column {
     let adaptive = Switch::new("settings.adaptive-glass", adaptive_glass)
         .disabled(glass == Glass::Solid)
         .on_toggle(|on| change_appearance(|now| now.adaptive_glass = on))
+        .build();
+
+    // labels blending with the frosted backdrop; solid glass has none
+    let vibrant = Switch::new("settings.vibrancy", vibrancy)
+        .disabled(glass == Glass::Solid)
+        .on_toggle(|on| change_appearance(|now| now.vibrancy = on))
         .build();
 
     let motions = [
@@ -181,6 +188,7 @@ pub fn page() -> Column {
         boxed(setting("Text size", sizes.build())),
         boxed(setting("Glass", Column::new(glass_radios))),
         boxed(setting("Adaptive glass", adaptive)),
+        boxed(setting("Vibrant labels", vibrant)),
         boxed(setting("Motion", Column::new(motion_radios))),
     ])
     .gap(sys::space::gap::l())

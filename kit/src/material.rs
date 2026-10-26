@@ -417,6 +417,14 @@ impl Material {
     }
 }
 
+/// Whether a window of glass blends its grey labels, glyphs and fills with
+/// the frosted backdrop under them (`LayerWindow::vibrant`): with vibrancy
+/// on and the glass see-through, as solid glass and higher contrast keep
+/// their labels flat. A compositor without niri-vibrancy draws them as usual.
+pub fn vibrant() -> bool {
+    theme::vibrancy() && see_through()
+}
+
 /// A label on whatever material is current, or on none.
 pub fn label(level: Level) -> Color {
     label_in(level, theme::high_contrast())

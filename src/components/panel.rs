@@ -8,6 +8,7 @@ use std::cell::Cell;
 
 use amane::{Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Vertical, Zone, mark_all};
 
+use crate::components::material;
 use crate::components::{context_menu, launcher, notifications, quick_settings};
 use crate::tokens::sys;
 
@@ -69,7 +70,8 @@ fn set(next: Option<Panel>) {
 // ───── view ──────────────────────────────────────────────────────────────────
 
 /// An overlay-layer surface anchored to `vertical` and `horizontal` edges,
-/// clear of what other surfaces reserve. Callers size it first.
+/// clear of what other surfaces reserve, its labels vibrant where vibrancy
+/// is on (`material::vibrant`). Callers size it first.
 pub(crate) fn overlay(
     base: LayerWindow,
     namespace: &'static str,
@@ -81,6 +83,7 @@ pub(crate) fn overlay(
         .layer(Layer::Overlay)
         .space(Zone::Respect)
         .namespace(namespace)
+        .vibrant(material::vibrant())
 }
 
 /// Takes keys while clicked into, and closes the open panel on Escape.

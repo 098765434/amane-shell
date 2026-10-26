@@ -93,5 +93,11 @@ A piece of glass is built with its material's methods:
   doubles the fills, and strengthens the separator.
 - **Reduced motion.** Glass asks for its material's `-still` twin, so the lens appears at once
   instead of building up (Apple: avoid animating into and out of blurs).
+- **Vibrant labels** (an experiment, off by default: `vibrancy` in `appearance.json`, the
+  Settings switch, or `AMANE_VIBRANCY=1`) makes every shell surface, popup and app window
+  vibrant (`material::vibrant`, amane's `.vibrant(true)`). On niri with `niri-vibrancy-v1`,
+  light grey labels, glyphs and fills are then added to the frosted backdrop and dark grey ones
+  multiplied with it, so they take on its colour, as Apple's vibrancy does. Solid glass and higher
+  contrast turn it off. Elsewhere the translucent label colours stand in.
 - **Adaptive glass** (an experiment, off by default) lets `Control` and `Banner` follow niri's
   readings of their backdrop; see `glass_region` and [components.md](components.md).

@@ -153,6 +153,7 @@ pub fn popup() -> Popup {
     Popup::new(TOOLTIP_NS)
         .size(width, height)
         .anchor_rect(cursor().0, 0, 1, 1)
+        .vibrant(material::vibrant())
         .parent(parent)
         .anchor(PopupAnchor::Top)
         .gravity(Gravity::Top)

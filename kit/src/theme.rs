@@ -137,6 +137,14 @@ pub fn adaptive_glass() -> bool {
         || settings::appearance().adaptive_glass
 }
 
+/// `AMANE_VIBRANCY=1`, else the settings file's: whether labels on glass
+/// blend with the backdrop under them (niri's vibrancy).
+pub fn vibrancy() -> bool {
+    static OVERRIDE: OnceLock<bool> = OnceLock::new();
+    *OVERRIDE.get_or_init(|| std::env::var("AMANE_VIBRANCY").as_deref() == Ok("1"))
+        || settings::appearance().vibrancy
+}
+
 /// Whether to reduce motion: the settings file's choice, else the
 /// system's.
 pub fn reduced_motion() -> bool {

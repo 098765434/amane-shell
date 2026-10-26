@@ -61,7 +61,7 @@ pub fn app_window(content: impl Widget + 'static) -> Window {
     // TODO(token): `sys.opacity.inactive` once Penpot has it
     let opacity = if focused { 1.0 } else { 0.85 };
 
-    Window::new().child(
+    Window::new().vibrant(material::vibrant()).child(
         Rectangle::new()
             .width(Size::Parent)
             .height(Size::Parent)
