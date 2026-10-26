@@ -19,7 +19,7 @@ use amane_kit::tokens::{Styled, sys};
 use crate::effects::{Effects, Manifest, Param};
 use crate::{BACKDROPS, Lab, SUBJECTS};
 
-const WIDTH: f32 = 380.0;
+pub const WIDTH: f32 = 380.0;
 const LABEL_WIDTH: f32 = 92.0;
 const SLIDER_WIDTH: f32 = 170.0;
 const FIELD_WIDTH: f32 = 72.0;
@@ -430,14 +430,17 @@ fn show(id: &'static str, value: &str) {
     }
 }
 
+/// As many decimals as the step has, so 0.075 doesn't show as 0.1.
 fn format_value(value: f32, param: &Param) -> String {
-    let number = if param.step >= 1.0 {
-        format!("{value:.0}")
+    let decimals = if param.step <= 0.0 {
+        2
+    } else if param.step >= 1.0 {
+        0
     } else {
-        format!("{value:.1}")
+        (-param.step.log10()).ceil().clamp(1.0, 4.0) as usize
     };
 
-    format!("{number}{}", param.unit)
+    format!("{value:.decimals$}{}", param.unit)
 }
 
 fn to_strings(names: &[&str]) -> Vec<String> {
@@ -454,4 +457,30 @@ fn static_id(id: String) -> &'static str {
         *ids.entry(id.clone())
             .or_insert_with(|| Box::leak(id.into_boxed_str()))
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn param(step: f32, unit: &str) -> Param {
+        Param {
+            key: "key".into(),
+            label: "Label".into(),
+            default: 0.0,
+            min: 0.0,
+            max: 1.0,
+            step,
+            unit: unit.into(),
+            slot: [0, 0],
+        }
+    }
+
+    #[test]
+    fn shows_as_many_decimals_as_the_step() {
+        assert_eq!(format_value(0.075, &param(0.005, "")), "0.075");
+        assert_eq!(format_value(1.55, &param(0.05, "")), "1.55");
+        assert_eq!(format_value(7.5, &param(0.5, "")), "7.5");
+        assert_eq!(format_value(100.0, &param(1.0, "%")), "100%");
+    }
 }

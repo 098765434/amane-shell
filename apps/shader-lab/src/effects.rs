@@ -48,6 +48,16 @@ const BUILT_IN: &[(&str, &str, &str)] = &[
         include_str!("../effects/spectral/spectral.wgsl"),
     ),
     (
+        "grainy-gradient",
+        "effect.json",
+        include_str!("../effects/grainy-gradient/effect.json"),
+    ),
+    (
+        "grainy-gradient",
+        "grainy.wgsl",
+        include_str!("../effects/grainy-gradient/grainy.wgsl"),
+    ),
+    (
         "chrome-window",
         "effect.json",
         include_str!("../effects/chrome-window/effect.json"),
@@ -76,6 +86,20 @@ pub struct Manifest {
     /// Named sets of parameter values, picked from a dropdown.
     #[serde(default)]
     pub presets: Vec<ParamPreset>,
+    /// Presses on the subject, handed to the shader.
+    pub clicks: Option<Clicks>,
+}
+
+/// Each recent press is a row from `rows_from`: x and y from 0 to 1 across
+/// the subject, from its top left, and seconds since it; how many there are
+/// goes in `count_slot`. A press is let go after `seconds`.
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct Clicks {
+    pub rows_from: usize,
+    pub max: usize,
+    pub seconds: f32,
+    pub count_slot: [usize; 2],
 }
 
 #[derive(Deserialize, Clone)]
@@ -416,6 +440,15 @@ impl Manifest {
             last_row = last_row.max(rows.into_iter().max());
         }
 
+        if let Some(clicks) = &self.clicks {
+            let rows = [
+                clicks.rows_from + clicks.max.max(1) - 1,
+                clicks.count_slot[0],
+            ];
+
+            last_row = last_row.max(rows.into_iter().max());
+        }
+
         if last_row.is_some_and(|row| row >= VALUE_ROWS) {
             return Err(format!("values only have {VALUE_ROWS} rows"));
         }
@@ -479,6 +512,29 @@ impl Manifest {
 
         rows.truncate(used);
         rows
+    }
+}
+
+impl Manifest {
+    /// The presses, newest last, as rows from `clicks.rows_from`, the oldest
+    /// left out past `clicks.max`.
+    pub fn put_clicks(&self, rows: &mut Vec<[f32; 4]>, presses: &[[f32; 3]]) {
+        let Some(clicks) = &self.clicks else {
+            return;
+        };
+
+        let kept = &presses[presses.len().saturating_sub(clicks.max)..];
+        let needed = (clicks.rows_from + kept.len()).max(clicks.count_slot[0] + 1);
+
+        if rows.len() < needed {
+            rows.resize(needed, [0.0; 4]);
+        }
+
+        for (row, press) in rows[clicks.rows_from..].iter_mut().zip(kept) {
+            *row = [press[0], press[1], press[2], 0.0];
+        }
+
+        rows[clicks.count_slot[0]][clicks.count_slot[1]] = kept.len() as f32;
     }
 }
 
@@ -576,6 +632,25 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn presses_fill_their_rows_and_count() {
+        let manifest: Manifest =
+            serde_json::from_str(include_str!("../effects/grainy-gradient/effect.json")).unwrap();
+
+        manifest.check().unwrap();
+
+        let mut rows = manifest.pack(|param| param.default, None);
+        let presses: Vec<[f32; 3]> = (0..12).map(|index| [0.5, 0.25, index as f32]).collect();
+
+        manifest.put_clicks(&mut rows, &presses);
+
+        // only the newest ten, the count beside the wave scales
+        assert_eq!(rows.len(), 24);
+        assert_eq!(rows[1][3], 10.0);
+        assert_eq!(rows[14], [0.5, 0.25, 2.0, 0.0]);
+        assert_eq!(rows[23], [0.5, 0.25, 11.0, 0.0]);
     }
 
     #[test]

@@ -47,6 +47,10 @@ pub struct Lab {
     pub started: Instant,
     /// How far the controls are scrolled.
     pub scroll: f32,
+    /// Presses on the subject: where, from 0 to 1 across it, and when.
+    pub presses: Vec<(f32, f32, Instant)>,
+    /// A press is held, so dragging on doesn't press again.
+    pub pressing: bool,
 }
 
 impl Service for Lab {
@@ -89,6 +93,8 @@ impl Service for Lab {
             animate: false,
             started: Instant::now(),
             scroll: 0.0,
+            presses: Vec::new(),
+            pressing: false,
         }
     }
 
@@ -146,10 +152,30 @@ fn main_window() -> Window {
         let presets = manifest.gradient.as_ref().map(|gradient| &gradient.presets);
         let preset = presets.and_then(|presets| presets.get(lab.preset(manifest)));
 
-        let values = manifest.pack(|param| lab.value(manifest, param), preset);
+        let mut values = manifest.pack(|param| lab.value(manifest, param), preset);
+
+        if let Some(clicks) = &manifest.clicks {
+            let presses: Vec<[f32; 3]> = lab
+                .presses
+                .iter()
+                .map(|(x, y, at)| [*x, *y, at.elapsed().as_secs_f32()])
+                .filter(|press| press[2] < clicks.seconds)
+                .collect();
+
+            // the ripples' ages move on while any is still showing
+            if !presses.is_empty() {
+                request_frame();
+            }
+
+            manifest.put_clicks(&mut values, &presses);
+        }
 
         Some(manifest.effect(&entry.dir, values))
     });
+
+    let takes_clicks = entry
+        .and_then(|entry| entry.manifest.as_ref().ok())
+        .is_some_and(|manifest| manifest.clicks.is_some());
 
     // the sweep moves every frame while it's on
     if lab.animate {
@@ -160,6 +186,29 @@ fn main_window() -> Window {
 
     if let Some(effect) = effect {
         subject = subject.effect(effect);
+    }
+
+    if takes_clicks {
+        let (width, height) = subject_size(&lab);
+
+        subject = subject
+            .on_drag(move |point| {
+                let mut lab = Lab::write();
+
+                if lab.pressing {
+                    return;
+                }
+
+                lab.pressing = true;
+
+                // only the ones still showing are kept
+                lab.presses
+                    .retain(|(_, _, at)| at.elapsed().as_secs_f32() < 10.0);
+
+                let at = (point.x / width, point.y / height, Instant::now());
+                lab.presses.push(at);
+            })
+            .on_release(|_| Lab::write().pressing = false);
     }
 
     /*
@@ -192,45 +241,51 @@ fn main_window() -> Window {
         .on_shortcut(standard_shortcut)
 }
 
+/// How big the subject is, which a press's place is measured against.
+fn subject_size(lab: &Lab) -> (f32, f32) {
+    let size = lab.size;
+
+    match lab.subject {
+        0 => (size * 1.6, size),
+        1 => (size * 2.2, size * 0.7),
+        2 => (size, size),
+        3 => (size * 4.0, size * 1.3),
+        4 => (size * 1.6, size * 1.6),
+
+        // the window less its padding, the gap and the controls
+        _ => {
+            let (width, height) = amane::window_size();
+            let inset = sys::space::inset::l() * 2.0;
+
+            (
+                (width - inset - sys::space::gap::l() - panel::WIDTH).max(1.0),
+                (height - inset).max(1.0),
+            )
+        }
+    }
+}
+
 /// The shape the effect is tried on. Only its alpha matters to the chrome,
 /// so it's drawn in plain white.
 fn subject(lab: &Lab) -> Rectangle {
     let size = lab.size;
+    let (width, height) = subject_size(lab);
+
+    let sized = Rectangle::new().width(width).height(height);
 
     match lab.subject {
-        0 => Rectangle::new()
-            .width(size * 1.6)
-            .height(size)
-            .radius(size * 0.22)
-            .fill(Color::WHITE),
+        0 => sized.radius(size * 0.22).fill(Color::WHITE),
+        1 => sized.radius(height / 2.0).fill(Color::WHITE),
+        2 => sized.radius(size / 2.0).fill(Color::WHITE),
 
-        1 => Rectangle::new()
-            .width(size * 2.2)
-            .height(size * 0.7)
-            .radius(size * 0.35)
-            .fill(Color::WHITE),
+        3 => sized.align_child(Center, Center).child(
+            Text::new(lab.text.clone())
+                .size(size)
+                .weight(Weight::Bold)
+                .color(Color::WHITE),
+        ),
 
-        2 => Rectangle::new()
-            .width(size)
-            .height(size)
-            .radius(size / 2.0)
-            .fill(Color::WHITE),
-
-        3 => Rectangle::new()
-            .width(size * 4.0)
-            .height(size * 1.3)
-            .align_child(Center, Center)
-            .child(
-                Text::new(lab.text.clone())
-                    .size(size)
-                    .weight(Weight::Bold)
-                    .color(Color::WHITE),
-            ),
-
-        4 => Rectangle::new()
-            .width(size * 1.6)
-            .height(size * 1.6)
-            .fill(Image::contain(lab.image.clone())),
+        4 => sized.fill(Image::contain(lab.image.clone())),
 
         // the whole preview, for effects that are backgrounds
         _ => Rectangle::new()

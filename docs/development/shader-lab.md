@@ -27,6 +27,7 @@ for screenshots.
 | `chrome` | the metallic chrome ported from Figma |
 | `chrome-window` | the chrome, reflecting what the window drew behind it (`"backdrop"`); try it over the Wallpaper backdrop |
 | `spectral` | the animated spectral background from the Figma Community file "Shader Dash", drawn inside the subject's shape; try the Fill preview subject |
+| `grainy-gradient` | the warped, breathing gradient with film grain from the Figma Community file "Gradient Shader Card"; press on the subject for ripples |
 | `chrome-wallpaper` | the chrome, reflecting the wallpaper file, placed by the window's position on the output (Window x/y, Output w/h) |
 
 The reflection reads the surface's slope from the blurred alpha (steepest at the rim) plus the
@@ -56,6 +57,7 @@ effects/chrome/
 | `gradient` | gradient presets: eight color rows from `colors_row`, two position rows from `positions_row`, the stop count in `count_slot` |
 | `animate` | the param the Animate switch sweeps from `from` to `to` every `seconds` |
 | `presets` | named sets of param values, `{ "name", "values": { key: value } }`, picked from the Preset dropdown |
+| `clicks` | presses on the subject, as rows from `rows_from` (x and y from 0 to 1 from its top left, seconds since), at most `max`, each kept `seconds`; their number goes in `count_slot` |
 | `constants` | values no control changes: `slot` and `value` |
 | `margin` | logical pixels the passes reach past the subject |
 

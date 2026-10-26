@@ -1,0 +1,62 @@
+{
+  "name": "Grainy gradient (Gradient Shader Card)",
+  "passes": [
+    { "shader": "grainy.wgsl", "inputs": ["content"] }
+  ],
+  "clicks": { "rows_from": 14, "max": 10, "seconds": 2, "count_slot": [1, 3] },
+  "params": [
+    { "key": "speed", "label": "Speed", "default": 100, "min": 0, "max": 300, "step": 1, "unit": "%", "slot": [3, 1] },
+    { "key": "noiseIntensity", "label": "Noise", "default": 1.55, "min": 0, "max": 3, "step": 0.05, "slot": [0, 0] },
+    { "key": "noiseScale", "label": "Noise scale", "default": 2, "min": 0.1, "max": 6, "step": 0.1, "slot": [0, 1] },
+    { "key": "noiseSpeed", "label": "Noise speed", "default": 0.15, "min": 0, "max": 1, "step": 0.01, "slot": [0, 2] },
+    { "key": "waveIntensity", "label": "Warp", "default": 1.2, "min": 0, "max": 3, "step": 0.05, "slot": [0, 3] },
+    { "key": "waveScale1", "label": "Warp scale 1", "default": 0.5, "min": 0, "max": 3, "step": 0.05, "slot": [1, 0] },
+    { "key": "waveScale2", "label": "Warp scale 2", "default": 0.8, "min": 0, "max": 3, "step": 0.05, "slot": [1, 1] },
+    { "key": "waveScale3", "label": "Warp scale 3", "default": 1.2, "min": 0, "max": 3, "step": 0.05, "slot": [1, 2] },
+    { "key": "waveSpeed1", "label": "Warp speed 1", "default": 0.24, "min": 0, "max": 1, "step": 0.01, "slot": [2, 0] },
+    { "key": "waveSpeed2", "label": "Warp speed 2", "default": 0.2, "min": 0, "max": 1, "step": 0.01, "slot": [2, 1] },
+    { "key": "waveSpeed3", "label": "Warp speed 3", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "slot": [2, 2] },
+    { "key": "grain", "label": "Grain", "default": 0.075, "min": 0, "max": 0.5, "step": 0.005, "slot": [2, 3] },
+    { "key": "grainBlend", "label": "Grain blend", "default": 2, "min": 0, "max": 4, "step": 1, "slot": [3, 0] }
+  ],
+  "gradient": {
+    "label": "Palette",
+    "colors_row": 4,
+    "positions_row": 12,
+    "count_slot": [3, 2],
+    "presets": [
+      {
+        "name": "Original",
+        "stops": [
+          [0.0, 0.980, 0.831, 0.984, 1.0],
+          [0.1667, 0.980, 0.784, 0.882, 1.0],
+          [0.3333, 0.980, 0.714, 0.082, 1.0],
+          [0.5, 0.988, 0.408, 0.118, 1.0],
+          [0.6667, 0.051, 0.365, 0.957, 1.0],
+          [0.8333, 0.043, 0.290, 0.733, 1.0],
+          [1.0, 0.090, 0.055, 0.027, 1.0]
+        ]
+      },
+      {
+        "name": "Dusk",
+        "stops": [
+          [0.0, 1.0, 0.86, 0.72, 1.0],
+          [0.25, 0.98, 0.55, 0.45, 1.0],
+          [0.5, 0.74, 0.32, 0.62, 1.0],
+          [0.75, 0.25, 0.18, 0.5, 1.0],
+          [1.0, 0.06, 0.05, 0.12, 1.0]
+        ]
+      },
+      {
+        "name": "Lagoon",
+        "stops": [
+          [0.0, 0.88, 1.0, 0.94, 1.0],
+          [0.3, 0.45, 0.9, 0.78, 1.0],
+          [0.55, 0.1, 0.62, 0.72, 1.0],
+          [0.8, 0.05, 0.3, 0.5, 1.0],
+          [1.0, 0.02, 0.08, 0.14, 1.0]
+        ]
+      }
+    ]
+  }
+}
