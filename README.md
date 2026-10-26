@@ -65,6 +65,9 @@ ones — the bar itself is not.
 - **Design tokens** — every colour, size, gap and font is a token designed in Penpot and exported
   to `design-tokens/tokens.json`, compiled in with `include_str!` and resolved the way Penpot does
   (`src/tokens/`). See [docs/design-token-manual.md](docs/design-token-manual.md).
+- **Keeping it cheap** ([docs/performance.md](docs/performance.md)) — what makes a window draw,
+  what a frame costs, and the rules (scoped markers, quiet services, animations made once,
+  opacity) that keep an idle desktop from drawing at all; read it before adding a component.
 
 ## Build & run
 
