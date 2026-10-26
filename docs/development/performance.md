@@ -240,6 +240,9 @@ What a quiet desktop looked like on 2026-10-26 (eDP-1, 30 s idle, system widgets
 
 ## Known remaining costs
 
+What the desktop holds in memory, rather than what it spends per frame, is in
+[memory.md](memory.md).
+
 - **Full-surface groups.** Vello runs of fills and strokes now take only their box (amane
   `bounds.rs`), but groups, and vello runs with shadows, gradients or images, still take a texture
   the size of the whole surface. That's why a dimmed widget card or a fading panel costs as much as

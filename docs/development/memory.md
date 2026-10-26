@@ -156,4 +156,8 @@ place of polls. Each lands with a section above and a row here:
 
 | Scenario | 2026-10-26 baseline | After |
 |---|---|---|
-| idle, whole GPU | 1.96 GiB VRAM + 318 MB GTT | |
+| idle, whole GPU (other apps differing between readings) | 1.96 GiB VRAM + 318 MB GTT | 1.48 GiB + 223 MB after the vello fork, blur 3/2 and the Radeon-only driver; not yet re-read after the hide release, the cards-sized widgets surface and the niri changes |
+| shell RSS / anon at idle | 193 / 123 MB | 133 / 72 MB (same point) |
+| second shell: launcher opened and closed twice, then Quick Settings | 354 MB VRAM | 128–186 MB |
+| second shell with the desktop showing (widgets) | 363 MB VRAM | 213 MB |
+| amane `gradient` example | 193 MB VRAM | 65 MB |
