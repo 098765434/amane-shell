@@ -85,7 +85,7 @@ draws again when it changes.
 
 **Settings** live in `$XDG_CONFIG_HOME/amane-shell/` (else `~/.config/amane-shell/`), as JSON
 through amane's `Config` (`amane_kit::settings`). The running shell follows each file at once,
-whether Shell Settings, the launcher or a text editor changed it:
+whether [Shell Settings](../shell/settings-app.md), the launcher or a text editor changed it:
 
 | File | Holds |
 |---|---|

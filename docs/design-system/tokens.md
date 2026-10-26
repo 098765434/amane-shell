@@ -62,7 +62,7 @@ What the running shell may change on top of Penpot, and nothing else:
  
 Everything else is exactly what Penpot shows. `~/.config/amane-shell/appearance.json` is the
 appearance settings file that Shell Settings writes and the running shell follows live
-(`amane_kit::settings`, read by `amane_kit::theme`).
+(`amane_kit::settings`, read by `amane_kit::theme`; see [settings-app.md](../shell/settings-app.md)).
 Its other settings, the glass level (`AMANE_GLASS`), higher contrast (`AMANE_HIGH_CONTRAST`, else
 the system), reduced motion, adaptive glass (`AMANE_ADAPTIVE_GLASS`) and vibrant labels
 (`AMANE_VIBRANCY`), don't change any token: they change how the materials draw
@@ -260,33 +260,11 @@ whole pixel.
  
 ### 6.3 Typography roles
  
-`sys.type.caption`, `.label`, `.body`, `.title`, `.numeric` — Penpot `typography`
-composites whose members reference `ref.font.*`. `numeric` is for clocks and percentages
-(tabular figures). Five roles is enough for a shell; add one only when a size is used by two
-components and matches no role. `sys.type.icon` (`fontFamilies`) is the icon font stack.
+`sys.type.caption`, `.label`, `.title` and `.numeric` are Penpot `typography` composites whose
+members reference `ref.font.*`; `sys.type.icon` (`fontFamilies`) is the icon font stack. The roles,
+their values, the component typographies and how each member reaches the drawn text are in
+[typography.md](typography.md).
 
-Today: `caption` 12/regular (secondary lines, small controls), `label` 13/regular, `title`
-13/medium (headings, focused titles), `numeric` 13/medium (the clock); `body` is unused.
-
-Every member Penpot gives a typography reaches the drawn text: `Text::new(…).style(role)`
-(the kit's `Styled`) sets family, size, weight (`"400 italic"` turns on italic), `lineHeights`,
-`letterSpacing`, `textCase` and `textDecoration`.
-
-| Member | Penpot value | In amane |
-|---|---|---|
-| `fontWeights` | 100–950 or a name, optional ` italic` | exact on a variable font's `wght` axis; a family of static files takes the closest file (CSS matching), so an in-between weight snaps when both kinds are installed |
-| `lineHeights` | multiplier, `%`, or px (needs `fontSizes` in the same typography) | stored as a multiple of the size; the text's box is then the whole line box, like CSS and Penpot. Left out, lines take the font's own spacing and the box hugs ascent to descent, as before |
-| `letterSpacing` | px (`%` is refused, as in Penpot) | pixels after every letter, scaled with the text size setting |
-| `textCase` | `none`, `uppercase`, `lowercase`, `capitalize` | applied to the string before it is laid out |
-| `textDecoration` | `none`, `underline`, `strike-through` | drawn at the font's own offsets and thickness, in the text's colour |
-
-Text align (`start`/`center`/`end`/`justify`) and direction (`auto`/`ltr`/`rtl`) are Penpot
-panel settings, not tokens: set them in code with `.align(TextAlign::…)` and
-`.direction(TextDirection::…)`. Vertical alignment and grow type are the parent's job
-(`align_child`, `Size::Fixed`/`Parent`). amane shapes text with parley (kerning, ligatures,
-fallback for every script, bidi), and a variable font's other axes are set with
-`.variation(b"FILL", 1.0)`.
- 
 ---
  
 ## 7. Tier 3 — component tokens
@@ -495,8 +473,7 @@ list rows, and works on translucent surfaces. Selection in menus uses `accent.bg
  
 ### 11.4 Typography
  
-Five roles. Clocks and percentages use `numeric`. Don't add sizes per component; if text
-must be smaller in one place, use `caption`.
+Use a role; don't add sizes per component ([typography.md](typography.md#rules)).
  
 ### 11.5 Translucent colours that alias primitives
  

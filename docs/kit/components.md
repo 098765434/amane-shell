@@ -17,8 +17,6 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `EdgeReveal` | `edge_reveal.rs` | none | the dock hiding at the bottom edge |
 | `ScrollView` | `scroll_view.rs` | none | the launcher's grid, results and pill bar, the Customize window's panes |
 | `Flow` | `flow.rs` | none | the Customize window's controls, flowing into rows |
-| `Kinetic`, `AxisLock` | `kinetic.rs` | none (iOS's scroll physics) | the launcher's scrolling |
-| `Pager` | `pager.rs` | none | the launcher's categories |
 | `Dialog` | `dialog.rs` | [Dialogs](https://m3.material.io/components/dialogs/overview) (basic) | the shell's alert, an app's modal dialog |
 
 ## Card
@@ -142,34 +140,6 @@ itself), the items at the top of their row, the rows as tall as their tallest. `
 the widget, how tall it is and where each item went (`Placed`), so a caller can record where its
 items are drawn. The row breaking is `flow::place`, pure and tested.
 
-## Kinetic and AxisLock
-
-`Kinetic` is one axis of scrolling from 0 to `set_max(max)`, in pixels:
-
-- `follow(moved, stop, now)` follows fingers one to one, pulling on a rubber band past the ends.
-- When the fingers lift, it coasts as far as their speed carries it (an iOS-like projection eased
-  out over a short coast) or springs back from past an end. Fingers that rested before lifting
-  leave no momentum.
-- `scroll(&scroll, axis, wheel_step)` does either from an amane `Scroll`: fingers are followed, a
-  wheel eases on a notch at a time.
-- `go(to)` eases there (bringing something into view), `jump(to)` puts it there at once.
-- `value()` is where it is this frame; call `settle_stale()` once a frame for a compositor that
-  never says the fingers lifted.
-
-`Tracker` is the smoothed finger velocity underneath, shared with `Pager`. `AxisLock` lets one
-two-finger gesture either scroll or turn the page: the first few pixels pick the axis, and it
-keeps to it until the fingers lift.
-
-## Pager
-
-Turning pages with the fingers (`pager.rs`): `Pager::new(axis, &motion)`, then `scroll(…)` or
-`follow(moved, stop, page_px, count, &motion)` while two fingers slide. The page follows them one
-to one and settles on the nearest page when they lift, or the next one on a flick (never more
-than one). A wheel steps a page a notch (`step`), and `go(page)` / `jump(page)` move there with or
-without the spring. `offset(count, &motion)` is the fractional page to draw, rubber-banded past
-the ends. `PagerMotion` holds the settle's duration and easing, the flick speed and the rubber
-band. The launcher turns it sideways through its categories.
-
 ## Dialog
 
 `kit::dialog::Dialog` is macOS 26's alert (`dialog/dialog-*.css`): a 260-wide card of thick glass
@@ -201,8 +171,8 @@ the same card as its alert, in the middle of the screen
   `text_width` (measured), `inner_width` and cursor tracking.
 - `icons.rs` holds the glyphs and their pickers (`battery_glyph`, `wifi_glyph`, `audio_glyph` …).
 - `color.rs` holds `over`, `faded` and `with_alpha`.
-- `motion.rs` holds the shared springs and fades (`spring`, `sheet`, `fade`) and the keyed list
-  motion the notifications use.
+- `motion.rs`, `kinetic.rs` and `pager.rs` are the shared springs and fades, scrolling with
+  momentum and turning pages: see [motion.md](motion.md).
 - `material.rs` holds the materials, Apple's: glass by role (`Material::Control`, `Sheet` …), the
   frost it asks niri for (`shape`), what the surface draws where niri lays the tint and edge on
   itself (`fill`, `lit`, `stroke`), and the vibrant labels, fills and separator on it. See

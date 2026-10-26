@@ -28,6 +28,7 @@ compositor.
 - **Desktop widgets**: a stroke-drawn clock, batteries and the system's readings on the wallpaper
   ([docs/shell/widgets.md](docs/shell/widgets.md)).
 - **Context menus**: nested menus on xdg-popups ([docs/shell/context-menu.md](docs/shell/context-menu.md)).
+- **Shell Settings**: a settings app the shell follows live ([docs/shell/settings-app.md](docs/shell/settings-app.md)).
 - **amane-kit**: the look as a library: controls, components and the design tokens from Penpot,
   for the shell and apps like Shell Settings ([kit/README.md](kit/README.md)).
 
@@ -89,28 +90,10 @@ Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery
 
 ## Shell Settings
 
-`amane-settings` is a settings app for the shell, built on the [kit](kit/README.md). Its
-Appearance page picks light or dark (or the system's), the accent, the density, the text size,
-the glass (Clear, Tinted or Solid), Adaptive glass, Vibrant labels and Motion (the system's,
-reduced or full); its Desktop page whether the widgets show and how they dim (`desktop.json`).
-It saves them to `~/.config/amane-shell/appearance.json`, and the running shell follows the file at
-once; editing the file by hand works too. `AMANE_THEME`, `AMANE_DENSITY` and `AMANE_TEXT_SCALE`
-still win when set. Its Spotlight page picks what the launcher's search draws on and how it lays
-out the apps, and lists the quick keys set for its actions (`launcher.json`).
-
-Only one copy runs: launching it again brings the open one forward. The flake installs it with a
-`.desktop` entry, so the launcher lists it as *Shell Settings*. Its window draws the opaque window
-background, with only the sidebar showing the frost behind it; the generated config's
-`window-rule` for `amane-settings` frosts it and its popups. A niri window rule can still round it
-like other apps:
-
-```kdl
-window-rule {
-    match app-id="^amane-settings$"
-    geometry-corner-radius 12
-    clip-to-geometry true
-}
-```
+`amane-settings` is a settings app for the shell, built on the [kit](kit/README.md): appearance
+(light or dark, accent, density, text size, glass, adaptive glass, vibrant labels, motion), the
+desktop's widgets and Spotlight. It writes `~/.config/amane-shell/*.json`, which the running shell
+follows at once. See [docs/shell/settings-app.md](docs/shell/settings-app.md).
 
 ## Layout
 

@@ -29,6 +29,7 @@ Building and running are in the [README](../README.md); contributing in
 | Quick Settings | GNOME's quick settings in the macOS Control Center look, with Edit Controls | [shell/quick-settings.md](shell/quick-settings.md) |
 | Desktop widgets | readings and a clock on the wallpaper, on Quick Settings' grid | [shell/widgets.md](shell/widgets.md) |
 | Alert | macOS's alert in the middle of the screen, for questions like "Restart now?" | [shell/quick-settings.md#the-alert](shell/quick-settings.md#the-alert) |
+| Shell Settings | the settings app: appearance, the desktop's widgets, Spotlight | [shell/settings-app.md](shell/settings-app.md) |
 | Context menu | nested xdg-popup menus: the dock's, the launcher's, the widgets', Do Not Disturb's and a Bluetooth device's | [shell/context-menu.md](shell/context-menu.md) |
 
 ## amane-kit
@@ -37,6 +38,8 @@ Building and running are in the [README](../README.md); contributing in
 |---|---|
 | Buttons, switch, checkbox, radio, dropdown, control sizes | [kit/controls.md](kit/controls.md) |
 | Card, list, slider, dialog, scroll view and the other building blocks; the modules under them | [kit/components.md](kit/components.md) |
+| An app's window, text fields and sidebar | [kit/app.md](kit/app.md) |
+| Springs and fades, keyed list motion, `Kinetic`, `Pager` | [kit/motion.md](kit/motion.md) |
 
 ## Design system
 
@@ -44,6 +47,7 @@ Building and running are in the [README](../README.md); contributing in
 |---|---|
 | Design tokens: tiers, naming, Penpot workflow, CI checks | [design-system/tokens.md](design-system/tokens.md) |
 | Materials: glass by role, its tints, vibrant labels | [design-system/materials.md](design-system/materials.md) |
+| Typography: the type roles, font stacks, text scale | [design-system/typography.md](design-system/typography.md) |
 | Tokens still waiting on Penpot | [design-system/penpot-backlog.md](design-system/penpot-backlog.md) |
 
 ## Integration

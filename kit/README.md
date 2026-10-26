@@ -30,6 +30,8 @@ fn main_window() -> amane::Window {
 - [Controls](../docs/kit/controls.md): buttons, switch, checkbox, radio, dropdown and control sizes.
 - [Components](../docs/kit/components.md): card, list, slider, dialog, scroll view and the other
   building blocks, and the modules under them.
+- [App scaffolding](../docs/kit/app.md): `app`, `app_window`, text fields and the sidebar.
+- [Motion](../docs/kit/motion.md): the springs, keyed list motion, `Kinetic` and `Pager`.
 - [Design tokens](../docs/design-system/tokens.md), [materials](../docs/design-system/materials.md):
   how the tokens are made in Penpot and read, and the glass every surface is made of.
 
