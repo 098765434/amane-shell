@@ -29,6 +29,7 @@
 //! `launcher [toggle | open | close] [apps | files | actions | clipboard]`,
 //! which a niri keybind sends. See `docs/launcher.md`.
 
+mod actions;
 mod answers;
 mod app_menu;
 mod entries;
@@ -43,6 +44,7 @@ mod shape;
 mod usage;
 
 use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use amane::{
@@ -60,7 +62,7 @@ use crate::components::motion;
 use crate::components::pager::{Pager, PagerMotion};
 use crate::components::panel::{self, Panel, close, is_open, overlay};
 use crate::components::text_edit::{self, Field};
-use amane_kit::settings::{AppsLayout, launcher};
+use amane_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
 
 use entries::{Entry, Scope};
 use mode::Mode;
@@ -92,6 +94,8 @@ const PILLS: f32 = 40.0;
 const ROW: f32 = 52.0;
 const ROW_GAP: f32 = 4.0;
 const MAX_ROWS: usize = 8;
+/// A section's heading over its rows, with the gap under it.
+const HEADING: f32 = 36.0;
 /// The answer card over the results, and the chips under it.
 const ANSWER_H: f32 = 88.0;
 const CHIP_H: f32 = 32.0;
@@ -166,6 +170,8 @@ struct State {
     // the mode button under the pointer, and whether the back button is
     hover_mode: Option<Mode>,
     back_hover: bool,
+    // an action's quick keys being typed: every key goes to them
+    capture: Option<Capture>,
     // what the last frame showed: a change snaps the highlight and the
     // scroll rather than slide them between lists that have nothing to do
     // with each other
@@ -193,6 +199,7 @@ impl State {
             logo_armed: false,
             hover_mode: None,
             back_hover: false,
+            capture: None,
             shown: (Kind::Idle, 0),
             pages: 0,
             pills_for: None,
@@ -201,6 +208,16 @@ impl State {
             fade_due: None,
         }
     }
+}
+
+/// Quick keys being typed for an action: its key and name, the keys so
+/// far, and why the last try couldn't be saved.
+#[derive(Clone, Debug, PartialEq)]
+struct Capture {
+    action: String,
+    title: String,
+    keys: String,
+    error: Option<String>,
 }
 
 thread_local! {
@@ -257,25 +274,30 @@ enum Kind {
 }
 
 /// How the body lays its items out: the grid, or a list of rows, the first
-/// `skip` items (the answer) drawn over it rather than in it.
-#[derive(Clone, Copy, PartialEq, Eq)]
+/// `skip` items (the answer) drawn over it rather than in it, and a
+/// section's heading over each row in `headings` (by its place in the list).
+#[derive(Clone, PartialEq)]
 enum Layout {
     Grid,
-    List { skip: usize },
+    List { skip: usize, headings: Rc<[usize]> },
 }
 
 impl Layout {
     /// Where item `index` is down the body: its top and its height.
-    fn span(self, index: usize) -> (f32, f32) {
+    fn span(&self, index: usize) -> (f32, f32) {
         match self {
             Self::Grid => ((index / COLS) as f32 * CELL, CELL),
-            Self::List { skip } if index < skip => (0.0, 0.0),
-            Self::List { skip } => ((index - skip) as f32 * (ROW + ROW_GAP), ROW),
+            Self::List { skip, .. } if index < *skip => (0.0, 0.0),
+            Self::List { skip, headings } => {
+                let row = index - skip;
+                let above = headings.iter().filter(|at| **at <= row).count();
+                (row as f32 * (ROW + ROW_GAP) + above as f32 * HEADING, ROW)
+            }
         }
     }
 
     /// Where the highlight rests on item `index`.
-    fn highlight(self, index: usize) -> (f32, f32) {
+    fn highlight(&self, index: usize) -> (f32, f32) {
         match self {
             Self::Grid => (
                 (index % COLS) as f32 * CELL + BOX_X,
@@ -286,20 +308,44 @@ impl Layout {
     }
 
     /// How long `count` rows or apps are, top to bottom.
-    fn content(self, count: usize) -> f32 {
+    fn content(&self, count: usize) -> f32 {
         match self {
             Self::Grid => count.div_ceil(COLS).max(1) as f32 * CELL,
-            Self::List { .. } => count as f32 * (ROW + ROW_GAP),
+            Self::List { headings, .. } => {
+                count as f32 * (ROW + ROW_GAP) + headings.len() as f32 * HEADING
+            }
         }
     }
 
     /// How many items Up and Down move by.
-    fn row(self) -> usize {
+    fn row(&self) -> usize {
         match self {
             Self::Grid => COLS,
             Self::List { .. } => 1,
         }
     }
+
+    /// How many items are drawn over the list rather than in it.
+    fn skip(&self) -> usize {
+        match self {
+            Self::Grid => 0,
+            Self::List { skip, .. } => *skip,
+        }
+    }
+}
+
+/// Where `rows` start a new section: a heading goes over each.
+fn headings(rows: &[Entry]) -> Vec<usize> {
+    let mut last: Option<&str> = None;
+    let mut at = Vec::new();
+    for (index, row) in rows.iter().enumerate() {
+        let section = row.section.as_deref();
+        if section.is_some() && section != last {
+            at.push(index);
+        }
+        last = section;
+    }
+    at
 }
 
 /// What the launcher shows this moment, worked out once for the view, a
@@ -343,7 +389,8 @@ impl<'a> View<'a> {
             Mode::Home => Kind::Idle,
             Mode::Apps if typed => Kind::Results,
             Mode::Apps => Kind::Apps,
-            Mode::Files | Mode::Actions | Mode::Clipboard => Kind::Empty,
+            Mode::Actions => Kind::Results,
+            Mode::Files | Mode::Clipboard => Kind::Empty,
         };
 
         let buckets = model::active_buckets(
@@ -402,6 +449,7 @@ impl<'a> View<'a> {
         } else {
             Layout::List {
                 skip: usize::from(self.found.answer.is_some()),
+                headings: headings(&self.found.rows).into(),
             }
         }
     }
@@ -445,8 +493,12 @@ impl<'a> View<'a> {
 
     /// How tall the list of results is in view.
     fn list_height(&self) -> f32 {
+        // Applications and Actions keep one size, however much they list
         if self.kind == Kind::Apps {
             return BODY;
+        }
+        if self.mode == Mode::Actions {
+            return MAX_ROWS as f32 * (ROW + ROW_GAP) - ROW_GAP;
         }
         let rows = self.found.rows.len().clamp(1, MAX_ROWS);
         rows as f32 * (ROW + ROW_GAP) - ROW_GAP
@@ -649,6 +701,75 @@ fn back() {
     }
 }
 
+/// Starts typing quick keys for the action `action`, named `title`, from
+/// the ones it has, `keys`.
+fn start_capture(action: &str, title: &str, keys: &str) {
+    with(|state| {
+        state.capture = Some(Capture {
+            action: action.to_string(),
+            title: title.to_string(),
+            keys: keys.to_string(),
+            error: None,
+        });
+    });
+    mark_all();
+}
+
+/// A key while quick keys are being typed: letters and digits add to
+/// them, Backspace takes one back, Return saves them (none clears them)
+/// and Escape gives up.
+fn capture_key(key: Key) {
+    let Some(mut capture) = with(|state| state.capture.clone()) else {
+        return;
+    };
+    match key {
+        Key::Character(c) if c.is_ascii_alphanumeric() => {
+            if capture.keys.chars().count() < model::MAX_QUICK_KEYS {
+                capture.keys.push(c.to_ascii_lowercase());
+            }
+            capture.error = None;
+        }
+        Key::Backspace => {
+            capture.keys.pop();
+            capture.error = None;
+        }
+        Key::Escape => {
+            with(|state| state.capture = None);
+            mark_all();
+            return;
+        }
+        Key::Enter => {
+            let taken = launcher()
+                .quick_keys
+                .get(&capture.keys)
+                .filter(|key| key.action != capture.action)
+                .map(|key| key.title.clone());
+            if let Some(owner) = taken {
+                capture.error = Some(format!("Used by {owner}"));
+            } else if capture.keys.is_empty() || model::valid_quick_keys(&capture.keys) {
+                let Capture {
+                    action,
+                    title,
+                    keys,
+                    ..
+                } = capture;
+                change_launcher(|settings| {
+                    settings.quick_keys.retain(|_, key| key.action != action);
+                    if !keys.is_empty() {
+                        settings.quick_keys.insert(keys, QuickKey { action, title });
+                    }
+                });
+                with(|state| state.capture = None);
+                mark_all();
+                return;
+            }
+        }
+        _ => return,
+    }
+    with(|state| state.capture = Some(capture));
+    mark_all();
+}
+
 /// The body moved: the scrollbar shows for a while.
 fn moved() {
     with(|state| state.scrolled = Some(Instant::now()));
@@ -719,7 +840,7 @@ fn on_pill_scroll(scroll: Scroll) {
 
 /// Highlights item `index` of `layout`, scrolling it into view in a body
 /// `height` tall.
-fn select(index: usize, layout: Layout, height: f32) {
+fn select(index: usize, layout: &Layout, height: f32) {
     with(|state| state.selected = index);
     let (top, span) = layout.span(index);
     SCROLL.with_borrow_mut(|scroll| {
@@ -822,6 +943,10 @@ fn run_selected() {
 
 /// Every key: nothing else on the panel takes the focus.
 fn on_key(key: Key) {
+    if with(|state| state.capture.is_some()) {
+        capture_key(key);
+        return;
+    }
     let apps = Apps::read();
     let view = View::new(apps.list());
     let held = modifiers();
@@ -846,6 +971,19 @@ fn on_key(key: Key) {
                         field.insert(&text);
                         true
                     });
+                }
+            }
+            // the keyboard's way to set the picked action's quick keys
+            'k' => {
+                if let Some(entry) = view.entry(view.selected)
+                    && let Some(title) = &entry.action_title
+                    && !matches!(entry.action, entries::Action::Hint)
+                {
+                    start_capture(
+                        &entry.key,
+                        title,
+                        entry.quick_keys.as_deref().unwrap_or(""),
+                    );
                 }
             }
             digit => {
@@ -924,7 +1062,7 @@ fn on_key(key: Key) {
         (Key::Down, Zone::Search) if view.pills() => set_focus(Zone::Pills),
         (Key::Down, Zone::Search) if count > 0 => {
             set_focus(Zone::Body);
-            select((selected + 1).min(count - 1), layout, height);
+            select((selected + 1).min(count - 1), &layout, height);
         }
 
         (Key::Left, Zone::Pills) => turn_to(view.page.saturating_sub(1)),
@@ -939,7 +1077,7 @@ fn on_key(key: Key) {
         // off the top of the apps or rows, up to what's over them
         (Key::Up, Zone::Body) if selected < layout.row() => {
             if selected > 0 {
-                select(0, layout, height);
+                select(0, &layout, height);
             }
             set_focus(if view.pills() {
                 Zone::Pills
@@ -947,20 +1085,20 @@ fn on_key(key: Key) {
                 Zone::Search
             })
         }
-        (Key::Left, Zone::Body) if count > 0 => select(selected.saturating_sub(1), layout, height),
+        (Key::Left, Zone::Body) if count > 0 => select(selected.saturating_sub(1), &layout, height),
         (Key::Right, Zone::Body) if count > 0 => {
-            select((selected + 1).min(count - 1), layout, height)
+            select((selected + 1).min(count - 1), &layout, height)
         }
         (Key::Up, Zone::Body) if count > 0 => {
-            select(selected.saturating_sub(layout.row()), layout, height)
+            select(selected.saturating_sub(layout.row()), &layout, height)
         }
         (Key::Down, Zone::Body) if count > 0 => {
-            select((selected + layout.row()).min(count - 1), layout, height)
+            select((selected + layout.row()).min(count - 1), &layout, height)
         }
-        (Key::Home, Zone::Body) if count > 0 => select(0, layout, height),
-        (Key::End, Zone::Body) if count > 0 => select(count - 1, layout, height),
+        (Key::Home, Zone::Body) if count > 0 => select(0, &layout, height),
+        (Key::End, Zone::Body) if count > 0 => select(count - 1, &layout, height),
         (Key::Up, Zone::Search) if listing && count > 0 => {
-            select(selected.saturating_sub(1), layout, height)
+            select(selected.saturating_sub(1), &layout, height)
         }
         _ => return,
     }
@@ -1155,12 +1293,7 @@ fn panel(view: &View) -> Column {
     // how far the body scrolls
     let body_height = view.list_height();
     let scroll = SCROLL.with_borrow_mut(|scroll| {
-        scroll.set_max(
-            layout.content(count.saturating_sub(match layout {
-                Layout::List { skip } => skip,
-                Layout::Grid => 0,
-            })) - body_height,
-        );
+        scroll.set_max(layout.content(count.saturating_sub(layout.skip())) - body_height);
         scroll.settle_stale();
         if scroll.swiping() {
             moved();
@@ -1222,8 +1355,9 @@ fn panel(view: &View) -> Column {
                 at,
                 width,
                 body_height,
-                layout,
+                &layout,
                 &query,
+                view.mode == Mode::Actions,
             )));
         }
         Kind::Apps => {
@@ -1238,7 +1372,15 @@ fn panel(view: &View) -> Column {
             } else if view.grid() {
                 boxed(grid::pages(view, offset, at))
             } else {
-                boxed(results::list(&view.found.rows, at, width, BODY, layout, ""))
+                boxed(results::list(
+                    &view.found.rows,
+                    at,
+                    width,
+                    BODY,
+                    &layout,
+                    "",
+                    false,
+                ))
             });
         }
         Kind::Empty => {
@@ -1326,15 +1468,50 @@ mod tests {
             Layout::Grid.highlight(COLS + 1),
             (CELL + BOX_X, CELL + BOX_Y)
         );
-        let list = Layout::List { skip: 0 };
+        let list = Layout::List {
+            skip: 0,
+            headings: Rc::from([]),
+        };
         assert_eq!(list.span(2), (2.0 * (ROW + ROW_GAP), ROW));
         assert_eq!(Layout::Grid.content(0), CELL);
         assert_eq!(Layout::Grid.content(COLS + 1), 2.0 * CELL);
     }
 
     #[test]
+    fn headings_push_the_rows_under_them_down() {
+        let list = Layout::List {
+            skip: 0,
+            headings: Rc::from([0, 2]),
+        };
+        assert_eq!(list.span(0), (HEADING, ROW));
+        assert_eq!(list.span(1), (ROW + ROW_GAP + HEADING, ROW));
+        assert_eq!(list.span(2), (2.0 * (ROW + ROW_GAP) + 2.0 * HEADING, ROW));
+        assert_eq!(list.content(3), 3.0 * (ROW + ROW_GAP) + 2.0 * HEADING);
+    }
+
+    #[test]
+    fn a_section_starts_where_its_name_changes() {
+        let row = |section: Option<&str>| {
+            let mut entry = Entry::new("k", "t", entries::Icon::Glyph(' '), entries::Action::Hint);
+            entry.section = section.map(String::from);
+            entry
+        };
+        let rows = [
+            row(Some("Suggestions")),
+            row(Some("Suggestions")),
+            row(Some("System")),
+            row(None),
+            row(Some("Firefox")),
+        ];
+        assert_eq!(headings(&rows), vec![0, 2, 4]);
+    }
+
+    #[test]
     fn an_answer_over_the_list_isnt_in_it() {
-        let list = Layout::List { skip: 1 };
+        let list = Layout::List {
+            skip: 1,
+            headings: Rc::from([]),
+        };
         assert_eq!(list.span(0), (0.0, 0.0));
         assert_eq!(list.span(1), (0.0, ROW));
         assert_eq!(list.span(3), (2.0 * (ROW + ROW_GAP), ROW));

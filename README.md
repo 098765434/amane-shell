@@ -46,9 +46,10 @@ ones — the bar itself is not.
   (screen shared, camera, microphone) and the settings that are on.
 - **Launcher** ([docs/launcher.md](docs/launcher.md)) — macOS Tahoe's Spotlight, from a keybind
   (`launcher toggle` over IPC): a glass search pill with round buttons beside it for its modes,
-  growing into a panel as you type. The search ranks apps by a fuzzy match and by how much
-  they're used, answers sums and unit conversions in a card, finds session actions, URLs and a
-  web search, narrows to an app's own actions with Tab, and brings back past searches with Up.
+  growing into a panel as you type. The search ranks apps and actions by a fuzzy match and by
+  how much they're used, answers sums and unit conversions in a card, finds URLs and a web
+  search, runs Quick Settings' controls, the session, a timer and apps' desktop actions (some
+  asking for an argument, `timer 5m`, some on quick keys), narrows to an app's own actions with Tab, and brings back past searches with Up.
   Applications is a Launchpad grid with category pills, the apps used most on top, momentum
   scrolling and sideways swipes between categories.
 - **Desktop widgets** ([docs/widgets.md](docs/widgets.md)) — macOS's widgets on the
@@ -128,7 +129,8 @@ Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery
 Appearance page picks light or dark (or the system's), the accent, the density and the text size.
 It saves them to `~/.config/amane-shell/appearance.json`, and the running shell follows the file at
 once; editing the file by hand works too. `AMANE_THEME`, `AMANE_DENSITY` and `AMANE_TEXT_SCALE`
-still win when set.
+still win when set. Its Spotlight page picks what the launcher's search draws on and how it lays
+out the apps, and lists the quick keys set for its actions (`launcher.json`).
 
 Only one copy runs: launching it again brings the open one forward. The flake installs it with a
 `.desktop` entry, so the launcher lists it as *Shell Settings*. Its window draws its own solid

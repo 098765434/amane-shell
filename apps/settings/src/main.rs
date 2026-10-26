@@ -4,10 +4,11 @@
 mod about;
 mod appearance;
 mod desktop;
+mod launcher;
 
 use amane::{Column, Row, Service, Size, Text, Widget, Window};
 use amane_kit::app::{Page, app, app_window, sidebar, standard_shortcut};
-use amane_kit::icons::{ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE};
+use amane_kit::icons::{ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_SEARCH};
 use amane_kit::layout::boxed;
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
@@ -32,10 +33,11 @@ fn main() {
         .run();
 }
 
-fn pages() -> [Page; 3] {
+fn pages() -> [Page; 4] {
     [
         Page::new(ICON_DARK_MODE, "Appearance"),
         Page::new(ICON_APPS, "Desktop"),
+        Page::new(ICON_SEARCH, "Spotlight"),
         Page::new(ICON_COMPUTER, "About"),
     ]
 }
@@ -52,6 +54,7 @@ fn main_window() -> Window {
     let (title, body): (&str, Box<dyn Widget>) = match page {
         0 => ("Appearance", boxed(appearance::page())),
         1 => ("Desktop", boxed(desktop::page())),
+        2 => ("Spotlight", boxed(launcher::page())),
         _ => ("About", boxed(about::page())),
     };
 

@@ -239,6 +239,40 @@ impl QuickToggle {
         self
     }
 
+    /// Its name, for the launcher's actions.
+    pub fn title(&self) -> &str {
+        &self.title
+    }
+
+    pub fn glyph(&self) -> Glyph {
+        self.glyph
+    }
+
+    pub fn is_checked(&self) -> bool {
+        self.checked
+    }
+
+    /// Whether it switches something on and off, rather than doing it once.
+    pub fn switches(&self) -> bool {
+        self.toggle.is_some()
+    }
+
+    /// Whether a click does something, other than opening its page.
+    pub fn acts(&self) -> bool {
+        self.toggle.is_some() || self.press.is_some()
+    }
+
+    /// What a click on its disc does, from outside Quick Settings: the
+    /// other state, or its action.
+    pub fn fire(&self) {
+        if let Some(toggle) = &self.toggle {
+            clicked(&self.id, !self.checked);
+            toggle(!self.checked);
+        } else if let Some(press) = &self.press {
+            press();
+        }
+    }
+
     /// How tall a card or a row is: one cell.
     pub fn height() -> f32 {
         Metrics::tokens().cell

@@ -1,7 +1,10 @@
 //! What the launcher works out without a compositor: which pill an app
 //! goes under, what a query is (a sum, a URL, a session action's name), how
-//! a URL is spelled, and where Up and Down go through the searches run
-//! before. The view reads it, and the tests run it.
+//! a URL is spelled, where Up and Down go through the searches run
+//! before, how long a duration typed is, and what quick keys can be. The
+//! view reads it, and the tests run it.
+
+use std::time::Duration;
 
 /// The pills, in the order they show. A bucket's index is its bit in an
 /// app's mask; "All Applications" holds every app.
@@ -111,8 +114,19 @@ impl SessionAction {
         }
     }
 
+    /// What its action is kept under.
+    pub(super) fn name(self) -> &'static str {
+        match self {
+            Self::Lock => "lock",
+            Self::LogOut => "log-out",
+            Self::Suspend => "suspend",
+            Self::Restart => "restart",
+            Self::PowerOff => "power-off",
+        }
+    }
+
     /// The other words it's found by.
-    fn aliases(self) -> &'static [&'static str] {
+    pub(super) fn aliases(self) -> &'static [&'static str] {
         match self {
             Self::Lock => &["lock"],
             Self::LogOut => &["logout", "sign out", "quit"],
@@ -120,13 +134,6 @@ impl SessionAction {
             Self::Restart => &["reboot"],
             Self::PowerOff => &["shut down", "shutdown", "poweroff", "turn off"],
         }
-    }
-
-    /// Whether `needle`, already lowercased, names it.
-    pub(super) fn matches(self, needle: &str) -> bool {
-        !needle.is_empty()
-            && (self.label().to_lowercase().contains(needle)
-                || self.aliases().iter().any(|alias| alias.starts_with(needle)))
     }
 }
 
@@ -266,6 +273,73 @@ pub(super) fn percent_encode(text: &str) -> String {
     out
 }
 
+/// How long `text` says: "5m", "5 min", "1h30m", "1h 30m", "90s",
+/// "2 hours", "1:30" (minutes and seconds), or a bare number of minutes.
+pub(super) fn parse_duration(text: &str) -> Option<Duration> {
+    let text = text.trim().to_lowercase();
+    if text.is_empty() {
+        return None;
+    }
+    if let Some((minutes, seconds)) = text.split_once(':') {
+        let minutes: u64 = minutes.trim().parse().ok()?;
+        let seconds: u64 = seconds.trim().parse().ok()?;
+        return (seconds < 60).then(|| Duration::from_secs(minutes * 60 + seconds));
+    }
+    if let Ok(minutes) = text.parse::<f64>() {
+        return (minutes > 0.0).then(|| Duration::from_secs_f64(minutes * 60.0));
+    }
+    let mut total = 0.0;
+    let mut rest = text.as_str();
+    while !rest.is_empty() {
+        let end = rest
+            .find(|c: char| !(c.is_ascii_digit() || c == '.'))
+            .unwrap_or(rest.len());
+        let number: f64 = rest[..end].parse().ok()?;
+        rest = rest[end..].trim_start();
+        let unit_end = rest
+            .find(|c: char| !c.is_ascii_alphabetic())
+            .unwrap_or(rest.len());
+        let seconds = match &rest[..unit_end] {
+            "h" | "hr" | "hrs" | "hour" | "hours" => 3600.0,
+            "m" | "min" | "mins" | "minute" | "minutes" => 60.0,
+            "s" | "sec" | "secs" | "second" | "seconds" => 1.0,
+            _ => return None,
+        };
+        total += number * seconds;
+        rest = rest[unit_end..].trim_start();
+    }
+    (total > 0.0).then(|| Duration::from_secs_f64(total))
+}
+
+/// `length` in words: "5 min", "1 h 30 min", "45 s".
+pub(super) fn format_duration(length: Duration) -> String {
+    let secs = length.as_secs();
+    let (hours, minutes, seconds) = (secs / 3600, secs / 60 % 60, secs % 60);
+    let mut parts = Vec::new();
+    if hours > 0 {
+        parts.push(format!("{hours} h"));
+    }
+    if minutes > 0 {
+        parts.push(format!("{minutes} min"));
+    }
+    if seconds > 0 || parts.is_empty() {
+        parts.push(format!("{seconds} s"));
+    }
+    parts.join(" ")
+}
+
+/// How many keys an action's quick keys can be.
+pub(super) const MAX_QUICK_KEYS: usize = 4;
+
+/// Whether `keys` can be an action's quick keys: one to four letters or
+/// digits.
+pub(super) fn valid_quick_keys(keys: &str) -> bool {
+    (1..=MAX_QUICK_KEYS).contains(&keys.chars().count())
+        && keys
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -304,6 +378,44 @@ mod tests {
     }
 
     #[test]
+    fn durations_read_as_people_type_them() {
+        let secs = |text: &str| parse_duration(text).map(|length| length.as_secs());
+        assert_eq!(secs("5m"), Some(300));
+        assert_eq!(secs("5 min"), Some(300));
+        assert_eq!(secs("5"), Some(300));
+        assert_eq!(secs("1h30m"), Some(5400));
+        assert_eq!(secs("1h 30m"), Some(5400));
+        assert_eq!(secs("90s"), Some(90));
+        assert_eq!(secs("2 hours"), Some(7200));
+        assert_eq!(secs("1:30"), Some(90));
+        assert_eq!(secs("1.5h"), Some(5400));
+        assert_eq!(secs("soon"), None);
+        assert_eq!(secs("5 parsecs"), None);
+        assert_eq!(secs("0"), None);
+        assert_eq!(secs("1:75"), None);
+        assert_eq!(secs(""), None);
+    }
+
+    #[test]
+    fn durations_are_shown_in_words() {
+        assert_eq!(format_duration(Duration::from_secs(300)), "5 min");
+        assert_eq!(format_duration(Duration::from_secs(5400)), "1 h 30 min");
+        assert_eq!(format_duration(Duration::from_secs(45)), "45 s");
+        assert_eq!(format_duration(Duration::from_secs(3601)), "1 h 1 s");
+    }
+
+    #[test]
+    fn quick_keys_are_a_few_letters_or_digits() {
+        assert!(valid_quick_keys("nl"));
+        assert!(valid_quick_keys("1"));
+        assert!(valid_quick_keys("ab12"));
+        assert!(!valid_quick_keys(""));
+        assert!(!valid_quick_keys("abcde"));
+        assert!(!valid_quick_keys("N"));
+        assert!(!valid_quick_keys("a b"));
+    }
+
+    #[test]
     fn up_and_down_walk_the_searches_run_before() {
         assert_eq!(history_step(None, true, 3), Some(Some(0)));
         assert_eq!(history_step(Some(0), true, 3), Some(Some(1)));
@@ -312,15 +424,6 @@ mod tests {
         assert_eq!(history_step(Some(0), false, 3), Some(None));
         assert_eq!(history_step(None, false, 3), None);
         assert_eq!(history_step(None, true, 0), None);
-    }
-
-    #[test]
-    fn session_actions_are_found_by_their_other_names() {
-        assert!(SessionAction::PowerOff.matches("shut"));
-        assert!(SessionAction::Restart.matches("reb"));
-        assert!(SessionAction::Lock.matches("lock"));
-        assert!(!SessionAction::Suspend.matches(""));
-        assert!(!SessionAction::Suspend.matches("firefox"));
     }
 
     #[test]

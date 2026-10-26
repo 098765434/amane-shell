@@ -15,6 +15,7 @@
 //! - [`tailscale`] — the tailnet, its exit nodes and settings (the CLI).
 //! - [`keep_awake`] — the screen held on and the lid ignored (inhibitors).
 //! - [`clock`] — the wall-clock time and date the bar shows.
+//! - [`timer`] — the launcher's countdown, which the bar shows while it runs.
 //! - [`system_stats`] — processor, memory, network, temperature and disks,
 //!   and their recent history, for the desktop's widgets.
 //!
@@ -34,6 +35,7 @@ pub mod rfkill;
 pub mod session;
 pub mod system_stats;
 pub mod tailscale;
+pub mod timer;
 
 use std::cell::RefCell;
 use std::collections::HashMap;

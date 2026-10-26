@@ -50,10 +50,11 @@ fn is_separator(c: char) -> bool {
 }
 
 /// `needle`'s letters in order through `hay`, scored by how many come
-/// together; a single letter anywhere isn't a match.
+/// together; fewer than three letters scattered through it aren't a match
+/// (two would match most names).
 fn subsequence(needle: &str, hay: &str) -> Option<f32> {
     let wanted: Vec<char> = needle.chars().filter(|c| !c.is_whitespace()).collect();
-    if wanted.len() < 2 {
+    if wanted.len() < 3 {
         return None;
     }
     let mut at = 0;
@@ -122,6 +123,8 @@ mod tests {
     fn letters_in_order_still_match() {
         assert!(fuzzy("frx", "firefox").is_some());
         assert!(fuzzy("xf", "firefox").is_none());
+        // two letters scattered through a name are too many names
+        assert!(fuzzy("tm", "bluetooth manager").is_none());
         // one letter has to be in the name itself
         assert!(fuzzy("z", "firefox").is_none());
         assert!(fuzzy("f", "firefox").is_some());

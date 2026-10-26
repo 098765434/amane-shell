@@ -34,11 +34,13 @@ From the pill, a query lists ([`provider.rs`](../src/components/launcher/provide
   app with desktop actions. A click narrows to it, as Tab does on its row.
 - **The rows**, ranked (`rank.rs`):
   - **Apps**, by a fuzzy match on the name. The tiers are the whole name, its start, a word's
-    start, the words' initials ("vsc"), anywhere in it, then its letters in order. The start
-    of a `Keywords` entry also counts.
-  - **Session actions**: Lock Screen, Log Out, Suspend, Restart and Power Off.
-    - Each is found by its name or another word for it ("reboot", "shut down").
-    - Each shows only when logind allows it.
+    start, the words' initials ("vsc"), anywhere in it, then its letters in order (three or
+    more of them). The start of a `Keywords` entry also counts.
+  - **Actions** (see [Actions](#actions)), by name or another word for them ("reboot",
+    "caffeine"), a little under an app with the same match.
+    - An action's **quick keys** typed exactly pin it to the top.
+    - An action that asks for something can have it typed after its name: `timer 5m`,
+      `keep awake for 2h`, `set power mode power saver`.
   - Each match is lifted by how much it's been used (a score that halves each week) and by
     how often it was picked for the same first letters before. So "f" learns Firefox.
 - **Open the URL**, for a query that reads as one, then **a web search**, always last.
@@ -73,7 +75,43 @@ pointer, the glyph turns into a back button (a chevron on a soft square), back t
   - The ⋯ button at the end of the row shows the apps as a **Grid** or a **List**
     (`apps_layout` in `~/.config/amane-shell/launcher.json`).
   - Typing searches the apps only.
-- **Files**, **Actions** and **Clipboard** (`Ctrl+2` … `4`): not there yet. Each says so.
+- **Actions** (`Ctrl+3`): every action, a section at a time (see [Actions](#actions)), in a
+  panel of one size. Typing searches the actions only.
+- **Files** and **Clipboard** (`Ctrl+2`, `Ctrl+4`): not there yet. Each says so.
+
+## Actions
+
+What the launcher does without opening an app (`actions.rs`), Spotlight's Actions:
+
+| Section | Actions |
+|---|---|
+| Control Center | each of Quick Settings' toggles and buttons this machine has, as it is now ("Turn Night Light On" while it's off, Screenshot), Set Power Mode (a choice of the modes the daemon offers), Keep Awake For (how long) |
+| System | Lock Screen, Log Out, Suspend, Restart, Power Off, each when logind allows it |
+| Clock | Start Timer (how long), and Cancel Timer while one runs |
+| *an app* | each of its `[Desktop Action]`s, like Firefox's "New Private Window" |
+
+Unsearched, Actions lists them a section at a time under bold headings, the five used most
+first under **Suggestions**.
+
+**Asking first.** An action that needs something (how long, which mode) narrows the search to
+it on Enter:
+- Its name shows as a token, and the field says what to type ("For how long? 5m, 1h30m, 1:30").
+- A choice lists its options.
+- A duration reads as `5m`, `5 min`, `1h30m`, `90s`, `2 hours`, `1:30`, or a bare number of
+  minutes; the row says what it will do ("Start Timer · 5 min").
+- Typing it after the name from the pill skips the step: `timer 5m`.
+
+**Quick keys.** In Actions each row ends with **Add Quick Keys**, or the keys it has.
+- A click on it, or Ctrl+K on the row picked, starts typing them: one to four letters or
+  digits, Return to save (none clears them), Escape to give up.
+- Keys another action has are refused, saying which.
+- Typed in the launcher, an action's quick keys put it first, its keys shown at its end.
+- They're kept in `launcher.json` (`quick_keys`), with the action's name. Shell Settings lists
+  them and can remove them or reset them all.
+
+**The timer** (`services/timer.rs`): one at a time; a new one replaces it. While it runs the
+bar shows a ⏱ chip counting down by the second, which opens Actions. When it runs out, a
+notification says so.
 
 ## Using it
 
@@ -88,6 +126,7 @@ pointer, the glyph turns into a back button (a chevron on a soft square), back t
 | Arrows (apps) | Move the highlight a cell, or a row; Up from the top row goes to the pills |
 | Left / Right (pills) | The previous or next category, sliding there |
 | Tab | Narrows to the row picked when it narrows to anything; else moves the focus (search field → pills → apps) |
+| Ctrl+K (an action) | Starts typing its quick keys |
 | Shift+Tab | Moves the focus back |
 | Enter | Runs the highlighted row or app, else the first |
 | Escape | Clears the query, then leaves the scope, then the mode; then closes the launcher |
@@ -164,7 +203,10 @@ fuller lines.
   followed live:
   - `apps_layout`: `grid` or `list`.
   - `excluded_providers`: the sources the search leaves out, by id: `answers`, `apps`,
-    `session`, `url`, `web`.
+    `actions`, `url`, `web`.
+  - `quick_keys`: each action's quick keys, with its key and name.
+
+  Shell Settings' **Spotlight** page changes all three.
 
 ## IPC
 
@@ -224,15 +266,16 @@ never blocks anything.
 | `shape.rs` | where the glass is: the pill, the panel and the buttons (`Geometry`, which blends), and its frost (pure, tested) |
 | `mode.rs` | the modes, their glyphs, names and keys (pure, tested) |
 | `provider.rs` | the sources a search draws on (`Provider`) and how their finds are arranged (`search`; tested) |
+| `actions.rs` | the actions (`Spec`), what they ask for, and an argument typed after a name (tested) |
 | `rank.rs` | the fuzzy match and the frecency score (pure, tested) |
 | `usage.rs` | what's remembered of use, and the searches run (tested) |
 | `answers.rs` | unit conversions (pure, tested) |
 | `entries.rs` | a row (`Entry`), what narrows a search (`Scope`), and what each row does |
 | `header.rs` | the search row, the round mode buttons, the ⋯ menu, and the pill bar with its sliding fill |
 | `grid.rs` | the category pages, each a grid with its highlight, the suggested row on the first |
-| `results.rs` | the answer card, the chips, the rows and the empty states |
+| `results.rs` | the answer card, the chips, the rows with their section headings and quick keys, and the empty states |
 | `app_menu.rs` | an app's right-click menu |
-| `model.rs` | categories, sums, URLs, session-action names and the history's steps (pure, tested) |
+| `model.rs` | categories, sums, URLs, session-action names, the history's steps, durations and quick keys (pure, tested) |
 | `components/text_edit.rs` | the search text, caret and selection (pure, tested; shared with Quick Settings' Customize window) |
 
 It's built on the shared [`ScrollView`, `Kinetic`, `AxisLock`, `Pager`, `workspace_menu`,
@@ -244,8 +287,9 @@ light and dark themes and the density.
 
 ## Known limits
 
-- Files, Actions and Clipboard are scaffolded, not built: picking one shows that it isn't
-  there yet.
+- Files and Clipboard are scaffolded, not built: picking one shows that it isn't there yet.
+- Quick Settings' toggles act through the same callbacks as their tiles, so one that only
+  opens its page (Power Off…, Display, Sound) isn't an action.
 - The grid scrolls by a negative top padding inside a clipped viewport (`ScrollView`), as amane's
   `ScrollArea` does, so hit areas follow what's drawn. The pill bar scrolls the same way, sideways.
 - amane's `Key` has no Menu or F10 key, so an app's menu only opens from a right-click.

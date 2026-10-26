@@ -2,26 +2,31 @@
 //! finds for the query, with how well it matched; [`search`] ranks them by
 //! that and by their use (`rank`), puts an answer in the card over the
 //! list, the fallbacks (the URL typed, a web search) last, and offers the
-//! scopes of the best rows as chips.
+//! scopes of the best rows as chips. Actions' listing, unsearched, keeps
+//! the order it's found in, a section at a time.
 
-use amane::{DesktopApp, Service};
+use std::collections::BTreeMap;
 
-use crate::components::icons::{
-    ICON_CALCULATE, ICON_LOCK, ICON_LOG_OUT, ICON_OPEN_IN_NEW, ICON_POWER, ICON_RESTART,
-    ICON_SEARCH, ICON_SLEEP, ICON_SWAP,
-};
-use crate::services::session::Session;
+use amane::DesktopApp;
+use amane_kit::settings::{QuickKey, launcher};
 
+use crate::components::icons::{ICON_CALCULATE, ICON_OPEN_IN_NEW, ICON_SEARCH, ICON_SWAP};
+
+use super::actions::{self, Param, Spec, Value};
 use super::answers;
 use super::entries::{Action, Entry, Icon, Scope, app_key};
 use super::mode::Mode;
-use super::model::{self, SessionAction};
+use super::model;
 use super::rank;
 use super::usage::{self, Usage};
 
 /// How many rows a search lists at most, and chips it offers.
 const MAX_ROWS: usize = 40;
 const MAX_SCOPES: usize = 4;
+/// How many of the actions used most Actions suggests first.
+const SUGGESTED: usize = 5;
+/// What the actions used most are listed under.
+const SUGGESTIONS: &str = "Suggestions";
 
 /// What's being searched for.
 pub(super) struct Query<'a> {
@@ -50,6 +55,8 @@ pub(super) enum Group {
     Answer,
     /// The list, ranked.
     Ranked,
+    /// The list, in the order found: Actions, unsearched.
+    Listed,
     /// After everything else, in the order found.
     Fallback,
 }
@@ -81,7 +88,7 @@ pub(super) struct Found {
 
 /// Every provider, in the order their fallbacks list.
 fn providers() -> [&'static dyn Provider; 5] {
-    [&Answers, &Apps, &Sessions, &Url, &Web]
+    [&Answers, &Apps, &Actions, &Url, &Web]
 }
 
 /// What `query` finds in its mode, narrowed to `scope` if there is one,
@@ -90,6 +97,11 @@ pub(super) fn search(query: &Query, scope: Option<&Scope>, excluded: &[String]) 
     let mut found = Vec::new();
     match scope {
         Some(Scope::App(app)) => in_app(app, query, &mut found),
+        Some(Scope::Action { key, .. }) => {
+            if let Some(spec) = actions::find(key, query.apps) {
+                asking(&spec, query, &mut found);
+            }
+        }
         None => {
             for provider in providers() {
                 if provider.modes().contains(&query.mode)
@@ -107,6 +119,7 @@ pub(super) fn search(query: &Query, scope: Option<&Scope>, excluded: &[String]) 
 fn arrange(found: Vec<Candidate>, query: &str, usage: &Usage, now: u64) -> Found {
     let mut answer = None;
     let mut ranked = Vec::new();
+    let mut listed = Vec::new();
     let mut fallback = Vec::new();
     for candidate in found {
         match candidate.group {
@@ -120,6 +133,7 @@ fn arrange(found: Vec<Candidate>, query: &str, usage: &Usage, now: u64) -> Found
                 );
                 ranked.push((score, candidate.entry));
             }
+            Group::Listed => listed.push(candidate.entry),
             Group::Fallback => fallback.push(candidate.entry),
         }
     }
@@ -134,6 +148,7 @@ fn arrange(found: Vec<Candidate>, query: &str, usage: &Usage, now: u64) -> Found
             scopes.push(scope);
         }
     }
+    rows.extend(listed);
     rows.extend(fallback);
     Found {
         answer,
@@ -162,7 +177,7 @@ fn in_app(app: &DesktopApp, query: &Query, out: &mut Vec<Candidate>) {
         if let Some(matched) = rank::fuzzy(&query.needle, action.name()) {
             out.push(Candidate {
                 entry: Entry::new(
-                    format!("{}#{index}", app_key(app)),
+                    format!("action:app:{}#{index}", app.id()),
                     action.name(),
                     Icon::App(Box::new(app.clone())),
                     Action::AppShortcut(app.clone(), index),
@@ -255,43 +270,59 @@ impl Provider for Apps {
     }
 }
 
-/// Locking, logging out, sleeping, restarting and powering off, each when
-/// logind allows it.
-struct Sessions;
+/// The launcher's actions ([`actions`]): by their quick keys first, then by
+/// name, with an argument typed after it ("timer 5m"). Unsearched in
+/// Actions, all of them a section at a time, the ones used most first.
+struct Actions;
 
-impl Provider for Sessions {
+impl Provider for Actions {
     fn id(&self) -> &'static str {
-        "session"
+        "actions"
     }
 
     fn modes(&self) -> &'static [Mode] {
-        HOME
+        &[Mode::Home, Mode::Actions]
     }
 
     fn find(&self, query: &Query, out: &mut Vec<Candidate>) {
-        let session = Session::read();
-        for power in SessionAction::ALL {
-            let allowed = match power {
-                SessionAction::Suspend => session.can_suspend(),
-                SessionAction::Restart => session.can_reboot(),
-                SessionAction::PowerOff => session.can_power_off(),
-                SessionAction::Lock | SessionAction::LogOut => true,
-            };
-            if !allowed || query.needle.is_empty() {
+        let quick = launcher().quick_keys.clone();
+        let specs = actions::registry(query.apps);
+        if query.needle.is_empty() {
+            if query.mode == Mode::Actions {
+                listing(&specs, &quick, out);
+            }
+            return;
+        }
+        let pinned = quick.get(&query.needle).map(|key| key.action.as_str());
+        for spec in &specs {
+            if pinned == Some(spec.key.as_str()) {
+                out.push(Candidate {
+                    entry: action_entry(spec, None, &quick),
+                    matched: QUICK_KEYS,
+                    group: Group::Ranked,
+                });
                 continue;
             }
-            let by_label = rank::fuzzy(&query.needle, power.label());
-            let by_alias = power.matches(&query.needle).then_some(0.7);
-            if let Some(matched) = by_label.into_iter().chain(by_alias).reduce(f32::max) {
+            if let Some(value) = actions::inline(spec, &query.needle) {
                 out.push(Candidate {
-                    entry: Entry::new(
-                        format!("session:{}", power.label()),
-                        power.label(),
-                        Icon::Glyph(glyph(power)),
-                        Action::SessionAction(power),
-                    )
-                    .subtitle("System"),
-                    matched,
+                    entry: action_entry(spec, Some(value), &quick),
+                    matched: INLINE,
+                    group: Group::Ranked,
+                });
+                continue;
+            }
+            let by_title = rank::fuzzy(&query.needle, &spec.title);
+            // a keyword's start counts, a little under the name's
+            let by_keyword = spec
+                .keywords
+                .iter()
+                .any(|keyword| keyword.starts_with(&query.needle))
+                .then_some(0.7);
+            if let Some(matched) = by_title.into_iter().chain(by_keyword).reduce(f32::max) {
+                out.push(Candidate {
+                    entry: action_entry(spec, None, &quick),
+                    // an app named the same comes first
+                    matched: matched * ACTION_WEIGHT,
                     group: Group::Ranked,
                 });
             }
@@ -299,13 +330,103 @@ impl Provider for Sessions {
     }
 }
 
-fn glyph(power: SessionAction) -> char {
-    match power {
-        SessionAction::Lock => ICON_LOCK,
-        SessionAction::LogOut => ICON_LOG_OUT,
-        SessionAction::Suspend => ICON_SLEEP,
-        SessionAction::Restart => ICON_RESTART,
-        SessionAction::PowerOff => ICON_POWER,
+/// How an action found by its quick keys, or with an argument typed, and
+/// one found by name compare with the rest.
+const QUICK_KEYS: f32 = 3.0;
+const INLINE: f32 = 1.5;
+const ACTION_WEIGHT: f32 = 0.95;
+
+/// Every action a section at a time, the ones used most first.
+fn listing(specs: &[Spec], quick: &BTreeMap<String, QuickKey>, out: &mut Vec<Candidate>) {
+    let used = usage::read(|usage| usage.top("action:", SUGGESTED, usage::now()));
+    let mut listed = |spec: &Spec, section: &str| {
+        let mut entry = action_entry(spec, None, quick);
+        entry.section = Some(section.to_string());
+        out.push(Candidate {
+            entry,
+            matched: 0.0,
+            group: Group::Listed,
+        });
+    };
+    for key in &used {
+        if let Some(spec) = specs.iter().find(|spec| &spec.key == key) {
+            listed(spec, SUGGESTIONS);
+        }
+    }
+    for spec in specs {
+        listed(spec, &spec.section);
+    }
+}
+
+/// `spec`'s row: run with `value`, or, if it asks for something and
+/// nothing was given, narrowing the search to ask for it.
+fn action_entry(spec: &Spec, value: Option<Value>, quick: &BTreeMap<String, QuickKey>) -> Entry {
+    let action = match (spec.param, value) {
+        (Some(_), None) => Action::Ask(Scope::Action {
+            key: spec.key.clone(),
+            title: spec.title.clone(),
+            placeholder: spec.placeholder,
+        }),
+        (_, value) => {
+            let run = spec.run.clone();
+            let value = value.unwrap_or(Value::None);
+            let title = spec.titled(&value);
+            let mut entry = runs(spec, title, quick);
+            entry.action = Action::Run(std::rc::Rc::new(move || run(value.clone())));
+            return entry;
+        }
+    };
+    let mut entry = runs(spec, spec.title.clone(), quick);
+    entry.action = action;
+    entry
+}
+
+/// `spec`'s row titled `title`, with its quick keys, doing nothing yet.
+fn runs(spec: &Spec, title: String, quick: &BTreeMap<String, QuickKey>) -> Entry {
+    let mut entry = Entry::new(spec.key.clone(), title, spec.icon.clone(), Action::Hint)
+        .subtitle(spec.section.clone());
+    entry.action_title = Some(spec.title.clone());
+    entry.quick_keys = quick
+        .iter()
+        .find(|(_, key)| key.action == spec.key)
+        .map(|(keys, _)| keys.clone());
+    entry
+}
+
+/// The rows of an action waiting for what it asks: each choice, or what
+/// was typed read as it.
+fn asking(spec: &Spec, query: &Query, out: &mut Vec<Candidate>) {
+    let quick = launcher().quick_keys.clone();
+    match spec.param {
+        Some(Param::Choice) => {
+            for (name, value) in &spec.choices {
+                if let Some(matched) = rank::fuzzy(&query.needle, name) {
+                    out.push(Candidate {
+                        entry: action_entry(spec, Some(Value::Choice(value.clone())), &quick),
+                        matched,
+                        group: Group::Listed,
+                    });
+                }
+            }
+        }
+        Some(Param::Duration) => {
+            let entry = match spec.read(query.text) {
+                Some(value) => action_entry(spec, Some(value), &quick),
+                None => Entry::new(
+                    spec.key.clone(),
+                    spec.placeholder,
+                    spec.icon.clone(),
+                    Action::Hint,
+                )
+                .subtitle("Type how long, then Return"),
+            };
+            out.push(Candidate {
+                entry,
+                matched: 1.0,
+                group: Group::Listed,
+            });
+        }
+        None => {}
     }
 }
 

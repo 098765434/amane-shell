@@ -27,6 +27,7 @@ use crate::components::scroll_view::ScrollView;
 use crate::components::text_edit::Field;
 use crate::tokens::{Styled, TextStyle, sys};
 
+use super::entries::Scope;
 use super::mode::Mode;
 use super::shape::{CIRCLE, Geometry, PILL_H};
 use super::{
@@ -94,7 +95,11 @@ pub(super) fn search_row(
 
     let placeholder = match hover_mode {
         Some(mode) if view.mode == Mode::Home && !typed => mode.title(),
-        _ => view.mode.title(),
+        _ => view
+            .scope
+            .as_ref()
+            .and_then(Scope::placeholder)
+            .unwrap_or(view.mode.title()),
     };
     let trailing: Option<Box<dyn Widget>> = if typed {
         used += LEADING + gap;
@@ -200,7 +205,7 @@ fn token_width(name: &str) -> f32 {
 }
 
 /// A key, drawn as a small cap: the keys that pick a mode.
-fn keycap(key: &str) -> Rectangle {
+pub(super) fn keycap(key: &str) -> Rectangle {
     let style = sys::r#type::caption();
     Rectangle::new()
         .width(keycap_width(key))
@@ -215,7 +220,7 @@ fn keycap(key: &str) -> Rectangle {
         )
 }
 
-fn keycap_width(key: &str) -> f32 {
+pub(super) fn keycap_width(key: &str) -> f32 {
     (text_width(key, sys::r#type::caption()) + sys::space::inset::s() * 2.0).max(KEYCAP)
 }
 

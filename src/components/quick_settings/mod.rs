@@ -66,6 +66,7 @@ use crate::components::motion;
 use crate::components::panel::{self, Panel, close, is_open, overlay, popover_margin};
 use crate::tokens::quick;
 
+pub use controls::{ControlId, available as control_available, quick_toggle};
 pub use pages::Page;
 pub(crate) use tiles::keep_awake::status as keep_awake_status;
 

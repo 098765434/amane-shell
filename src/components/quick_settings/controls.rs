@@ -223,6 +223,31 @@ pub fn build(id: ControlId, span: Span, ctx: &Ctx) -> Option<Box<dyn Widget>> {
     }
 }
 
+/// `id` as a toggle, for the controls that are one, or `None` for the
+/// cells (Now Playing, Display, Sound) and what this machine hasn't got.
+pub fn quick_toggle(id: ControlId) -> Option<QuickToggle> {
+    match id {
+        ControlId::Wifi => network::wifi_toggle(),
+        ControlId::Bluetooth => bluetooth::toggle(),
+        ControlId::Vpn => network::vpn_toggle(),
+        ControlId::Wired => network::wired_toggle(),
+        ControlId::Airplane => airplane::toggle(),
+        ControlId::Focus => Some(notifications::toggle()),
+        ControlId::DarkStyle => appearance::dark_style_toggle(),
+        ControlId::NightLight => appearance::night_light_toggle(),
+        ControlId::Battery => system_row::battery_toggle(),
+        ControlId::PowerMode => power::mode_toggle(),
+        ControlId::Keyboard => keyboard::toggle(),
+        ControlId::BackgroundApps => background::toggle(),
+        ControlId::Screenshot => Some(system_row::screenshot_toggle()),
+        ControlId::Lock => Some(system_row::lock_toggle()),
+        ControlId::PowerOff => Some(system_row::power_off_toggle()),
+        ControlId::Tailscale => tailscale::toggle(),
+        ControlId::KeepAwake => keep_awake::toggle(),
+        ControlId::NowPlaying | ControlId::Display | ControlId::Sound => None,
+    }
+}
+
 /// Whether `id` would build: for the Add Controls list and the default layout.
 pub fn present(id: ControlId, _ctx: &Ctx) -> bool {
     available(id)

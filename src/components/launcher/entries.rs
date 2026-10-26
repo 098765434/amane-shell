@@ -3,14 +3,14 @@
 //! and its [`Action`] on Enter or a click. Running one counts it in the
 //! launcher's [`usage`](super::usage), so what's used rises.
 
+use std::rc::Rc;
+
 use amane::DesktopApp;
 
 use crate::components::panel::close;
 use crate::components::text_edit;
 use crate::services::run_now;
-use crate::services::session::Session;
 
-use super::model::SessionAction;
 use super::usage;
 
 #[derive(Clone)]
@@ -25,6 +25,13 @@ pub(super) enum Icon {
 pub(super) enum Scope {
     /// An app: its own actions.
     App(DesktopApp),
+    /// An action that asks for something first, like how long a timer
+    /// runs: the field takes it.
+    Action {
+        key: String,
+        title: String,
+        placeholder: &'static str,
+    },
 }
 
 impl Scope {
@@ -32,6 +39,16 @@ impl Scope {
     pub(super) fn name(&self) -> &str {
         match self {
             Self::App(app) => app.name(),
+            Self::Action { title, .. } => title,
+        }
+    }
+
+    /// What the empty field says while narrowed to it, if not the mode's
+    /// name.
+    pub(super) fn placeholder(&self) -> Option<&'static str> {
+        match self {
+            Self::App(_) => None,
+            Self::Action { placeholder, .. } => Some(placeholder),
         }
     }
 }
@@ -41,10 +58,15 @@ pub(super) enum Action {
     Launch(DesktopApp),
     /// One of an app's `[Desktop Action]`s, by its place in the list.
     AppShortcut(DesktopApp, usize),
-    SessionAction(SessionAction),
     /// Opens in the default browser, which then gets the focus.
     Open(String),
     Copy(String),
+    /// One of the launcher's actions, with what it asked for.
+    Run(Rc<dyn Fn()>),
+    /// An action that asks for something first: narrows the search to it.
+    Ask(Scope),
+    /// A row that only says something, like what to type.
+    Hint,
 }
 
 #[derive(Clone)]
@@ -63,6 +85,13 @@ pub(super) struct Entry {
     pub(super) action: Action,
     /// Where Tab narrows the search to from this row.
     pub(super) scope: Option<Scope>,
+    /// The heading of the section it starts or belongs to, in a list of
+    /// sections (Actions).
+    pub(super) section: Option<String>,
+    /// For one of the launcher's actions: its name, which quick keys are
+    /// saved with, and the quick keys that run it.
+    pub(super) action_title: Option<String>,
+    pub(super) quick_keys: Option<String>,
 }
 
 impl Entry {
@@ -82,6 +111,9 @@ impl Entry {
             badge: None,
             action,
             scope: None,
+            section: None,
+            action_title: None,
+            quick_keys: None,
         }
     }
 
@@ -129,8 +161,17 @@ pub(super) fn app_key(app: &DesktopApp) -> String {
 }
 
 /// Does what `entry` says, counting it picked for `query`, and closes the
-/// launcher.
+/// launcher; an action that asks for something narrows the search to it
+/// instead, and a hint does nothing.
 pub(super) fn run(entry: &Entry, query: &str) {
+    match &entry.action {
+        Action::Hint => return,
+        Action::Ask(scope) => {
+            super::enter_scope(scope.clone());
+            return;
+        }
+        _ => {}
+    }
     usage::record(&entry.key, query);
     close();
     match &entry.action {
@@ -140,13 +181,10 @@ pub(super) fn run(entry: &Entry, query: &str) {
                 action.launch();
             }
         }
-        Action::SessionAction(SessionAction::Lock) => Session::lock(),
-        Action::SessionAction(SessionAction::LogOut) => Session::log_out(),
-        Action::SessionAction(SessionAction::Suspend) => Session::suspend(),
-        Action::SessionAction(SessionAction::Restart) => Session::reboot(),
-        Action::SessionAction(SessionAction::PowerOff) => Session::power_off(),
         Action::Open(url) => open(url.clone()),
         Action::Copy(value) => text_edit::copy(value),
+        Action::Run(run) => run(),
+        Action::Ask(_) | Action::Hint => {}
     }
 }
 

@@ -3,6 +3,7 @@
 //! through amane's `Config`. [`theme`](crate::theme) reads the appearance,
 //! between the `AMANE_*` overrides and what the system says.
 
+use std::collections::BTreeMap;
 use std::sync::RwLockReadGuard;
 
 use amane::serde::{Deserialize, Serialize};
@@ -144,7 +145,17 @@ pub enum AppsLayout {
     List,
 }
 
-/// The launcher: how it lays the apps out, and what its search leaves out.
+/// An action's quick keys: what they run, by the launcher's key for it,
+/// and its name then, for a settings page that can't ask the launcher.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", default)]
+pub struct QuickKey {
+    pub action: String,
+    pub title: String,
+}
+
+/// The launcher: how it lays the apps out, what its search leaves out,
+/// and the quick keys that run its actions.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct Launcher {
@@ -152,6 +163,19 @@ pub struct Launcher {
 
     /// The sources the search leaves out, by their ids, like "web".
     pub excluded_providers: Vec<String>,
+
+    /// Keys typed in the launcher, like "nl", and the action each runs.
+    pub quick_keys: BTreeMap<String, QuickKey>,
+}
+
+impl Launcher {
+    /// The quick keys that run `action`, if any do.
+    pub fn keys_for(&self, action: &str) -> Option<&str> {
+        self.quick_keys
+            .iter()
+            .find(|(_, key)| key.action == action)
+            .map(|(keys, _)| keys.as_str())
+    }
 }
 
 impl Settings for Launcher {

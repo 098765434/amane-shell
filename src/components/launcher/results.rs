@@ -2,8 +2,10 @@
 //! that narrow the search to an app, and a row an entry, its icon (the
 //! app's, or a glyph on a raised tile, with a badge saying where it's
 //! from), its title, a line under it (the fuller one while Super is held)
-//! and a note at its end, one highlight gliding to the row picked. It
-//! scrolls as the grid does, in a [`ScrollView`].
+//! and a note at its end, one highlight gliding to the row picked. In
+//! Actions the rows come in sections under headings, and each ends with
+//! its quick keys, or an offer to set them. It scrolls as the grid does,
+//! in a [`ScrollView`].
 
 use amane::{
     Button, Center, Color, Column, End, Rectangle, Row, Stack, Start, Text, Widget, mark_all,
@@ -21,7 +23,10 @@ use crate::tokens::{Styled, TextStyle, sys};
 use super::entries::{self, Action, Entry, Icon, Scope};
 use super::grid::At;
 use super::mode::Mode;
-use super::{ANSWER_H, CHIP_H, Layout, ROW, ROW_GAP, app_menu, enter_scope, hover, on_body_scroll};
+use super::{
+    ANSWER_H, CHIP_H, Capture, HEADING, Layout, ROW, ROW_GAP, app_menu, enter_scope, header,
+    headings, hover, on_body_scroll, start_capture, with,
+};
 
 // TODO(token): `launcher.result.icon`, `launcher.result.badge`,
 // `launcher.answer.*` and `launcher.empty.icon` once Penpot has them
@@ -33,23 +38,30 @@ const BADGE: f32 = 16.0;
 const ANSWER_TEXT: f32 = 30.0;
 /// How big the glyph over an empty state's note is.
 const EMPTY_ICON: f32 = 40.0;
+/// How heavy a section's heading is.
+const HEADING_WEIGHT: u16 = 600;
+/// How tall the offer to set an action's quick keys is, and how wide the
+/// box the keys are typed into.
+const OFFER_H: f32 = 26.0;
+const CAPTURE_W: f32 = 190.0;
+
+const ADD_QUICK_KEYS: &str = "Add Quick Keys";
 
 /// `entries` as rows in a list `width` wide and `height` tall in view,
-/// what was searched for `query`.
+/// what was searched for `query`, a heading over each section. `assign`
+/// offers to set each action's quick keys (Actions).
 pub(super) fn list(
     entries: &[Entry],
     at: At,
     width: f32,
     height: f32,
-    layout: Layout,
+    layout: &Layout,
     query: &str,
+    assign: bool,
 ) -> Rectangle {
     // over the answer's card, the highlight in the list has nothing to show
     let on_row = layout.span(at.selected).1 > 0.0;
-    let skip = match layout {
-        Layout::List { skip } => skip,
-        Layout::Grid => 0,
-    };
+    let skip = layout.skip();
     let highlight = Rectangle::new()
         .width(width)
         .height(ROW)
@@ -57,11 +69,25 @@ pub(super) fn list(
         .fill(sys::color::state::selected())
         .opacity(if on_row { at.highlight } else { 0.0 })
         .translate(0.0, at.y);
-    let rows: Vec<Box<dyn Widget>> = entries
-        .iter()
-        .enumerate()
-        .map(|(index, entry)| boxed(row(entry, index + skip, width, at.reveal, query)))
-        .collect();
+    let capture = with(|state| state.capture.clone());
+    let starts = headings(entries);
+    let mut rows: Vec<Box<dyn Widget>> = Vec::new();
+    for (index, entry) in entries.iter().enumerate() {
+        if starts.contains(&index)
+            && let Some(section) = &entry.section
+        {
+            rows.push(boxed(heading(section, width)));
+        }
+        let trailing = trailing(entry, assign, capture.as_ref());
+        rows.push(boxed(row(
+            entry,
+            index + skip,
+            width,
+            at.reveal,
+            query,
+            trailing,
+        )));
+    }
 
     ScrollView::new(Axis::Vertical, width, height)
         .content(layout.content(entries.len()))
@@ -73,6 +99,136 @@ pub(super) fn list(
             boxed(Column::new(rows).gap(ROW_GAP)),
         ]))
         .opacity(at.fade)
+}
+
+/// A section's name over its rows, a hairline under it, as Spotlight's.
+fn heading(name: &str, width: f32) -> Rectangle {
+    let style = TextStyle {
+        weight: HEADING_WEIGHT,
+        ..sys::r#type::label()
+    };
+    let inset = sys::space::inset::l();
+    Rectangle::new()
+        .width(width)
+        .height(HEADING - ROW_GAP)
+        .fill(Color::TRANSPARENT)
+        .padding(pad(inset, 0.0))
+        .align_child(Start, End)
+        .child(
+            Column::new(vec![
+                boxed(
+                    Text::new(name)
+                        .style(style)
+                        .color(material::label(Level::Primary)),
+                ),
+                boxed(
+                    Rectangle::new()
+                        .width(width - inset * 2.0)
+                        .height(sys::border::hairline())
+                        .fill(material::separator()),
+                ),
+            ])
+            .gap(sys::space::gap::xs()),
+        )
+}
+
+/// What ends a row, and how wide it is: the keys being typed for it, its
+/// quick keys, an offer to set them, or its note.
+fn trailing(
+    entry: &Entry,
+    assign: bool,
+    capture: Option<&Capture>,
+) -> Option<(Box<dyn Widget>, f32)> {
+    let title = entry.action_title.clone();
+    if let (Some(capture), Some(_)) = (capture, &title)
+        && capture.action == entry.key
+    {
+        return Some((boxed(capture_box(capture)), CAPTURE_W));
+    }
+    if let (Some(keys), Some(title)) = (&entry.quick_keys, &title) {
+        let gap = sys::space::gap::_2xs();
+        let caps: Vec<Box<dyn Widget>> = keys
+            .chars()
+            .map(|key| boxed(header::keycap(&key.to_uppercase().to_string())))
+            .collect();
+        let width = keys
+            .chars()
+            .map(|key| header::keycap_width(&key.to_uppercase().to_string()))
+            .sum::<f32>()
+            + gap * keys.chars().count().saturating_sub(1) as f32;
+        let action = entry.key.clone();
+        let (title, keys) = (title.clone(), keys.clone());
+        // a click on them changes them
+        let caps = Rectangle::new()
+            .width(width)
+            .height(ROW)
+            .fill(Color::TRANSPARENT)
+            .align_child(Start, Center)
+            .on_click(move |_| start_capture(&action, &title, &keys))
+            .child(Row::new(caps).gap(gap).align(Center));
+        return Some((boxed(caps), width));
+    }
+    if assign
+        && let Some(title) = title
+        && !matches!(entry.action, Action::Hint)
+    {
+        let style = sys::r#type::caption();
+        let inset = sys::space::inset::s();
+        let width = text_width(ADD_QUICK_KEYS, style) + inset * 2.0;
+        let action = entry.key.clone();
+        return Some((
+            boxed(
+                Rectangle::new()
+                    .width(width)
+                    .height(OFFER_H)
+                    .radius(sys::radius::raised() / 2.0)
+                    .fill(Color::TRANSPARENT)
+                    .border(sys::border::hairline(), material::separator())
+                    .align_child(Center, Center)
+                    .on_click(move |_| start_capture(&action, &title, ""))
+                    .child(
+                        Text::new(ADD_QUICK_KEYS)
+                            .style(style)
+                            .color(material::label(Level::Tertiary)),
+                    ),
+            ),
+            width,
+        ));
+    }
+    entry.trailing.as_ref().map(|note| {
+        let style = sys::r#type::caption();
+        let text = Text::new(note.clone())
+            .style(style)
+            .color(material::label(Level::Secondary));
+        (boxed(text) as Box<dyn Widget>, text_width(note, style))
+    })
+}
+
+/// The quick keys being typed for an action: what's typed so far, or why
+/// it can't be saved.
+fn capture_box(capture: &Capture) -> Rectangle {
+    let style = sys::r#type::caption();
+    let (note, color) = match &capture.error {
+        Some(error) => (error.clone(), sys::color::status::critical::bg()),
+        None if capture.keys.is_empty() => (
+            String::from("Type keys, then Return"),
+            material::label(Level::Secondary),
+        ),
+        None => (
+            format!("{} · Return to save", capture.keys.to_uppercase()),
+            material::label(Level::Primary),
+        ),
+    };
+    Rectangle::new()
+        .width(CAPTURE_W)
+        .height(OFFER_H)
+        .radius(sys::radius::raised() / 2.0)
+        .fill(Color::TRANSPARENT)
+        .border(2.0, sys::color::accent::bg())
+        .padding(pad(sys::space::inset::s(), 0.0))
+        .align_child(Center, Center)
+        .clip()
+        .child(Text::new(note).style(style).color(color).elide())
 }
 
 /// A row's icon: the app's, or a glyph on a raised tile, with `badge` on
@@ -106,7 +262,14 @@ fn leading(entry: &Entry) -> Rectangle {
         .child(Stack::new(layers))
 }
 
-fn row(entry: &Entry, index: usize, width: f32, reveal: bool, query: &str) -> Rectangle {
+fn row(
+    entry: &Entry,
+    index: usize,
+    width: f32,
+    reveal: bool,
+    query: &str,
+    trailing: Option<(Box<dyn Widget>, f32)>,
+) -> Rectangle {
     let clicked = entry.clone();
     let query = query.to_string();
     let title = Text::new(entry.title.clone())
@@ -131,15 +294,8 @@ fn row(entry: &Entry, index: usize, width: f32, reveal: bool, query: &str) -> Re
 
     let inset = sys::space::inset::l();
     let gap = sys::space::gap::xl();
-    let mut trailing_w = 0.0;
+    let trailing_w = trailing.as_ref().map_or(0.0, |(_, width)| width + gap);
     let mut parts: Vec<Box<dyn Widget>> = vec![boxed(leading(entry))];
-    let trailing = entry.trailing.as_ref().map(|note| {
-        let style = sys::r#type::caption();
-        trailing_w = text_width(note, style) + gap;
-        Text::new(note.clone())
-            .style(style)
-            .color(material::label(Level::Secondary))
-    });
     let text_w = (width - inset * 2.0 - RESULT_ICON - gap - trailing_w).max(0.0);
     parts.push(boxed(
         Rectangle::new()
@@ -150,8 +306,8 @@ fn row(entry: &Entry, index: usize, width: f32, reveal: bool, query: &str) -> Re
             .align_child(Start, Center)
             .child(text),
     ));
-    if let Some(trailing) = trailing {
-        parts.push(boxed(trailing));
+    if let Some((trailing, _)) = trailing {
+        parts.push(trailing);
     }
 
     Rectangle::new()
