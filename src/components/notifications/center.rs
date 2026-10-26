@@ -326,7 +326,8 @@ fn group_view(
                 scale: motion::scale(motion::ENTER_SCALE),
                 ..pose.faded()
             },
-            exit: pose.moved(width).faded(),
+            // where motion is reduced it fades where it is
+            exit: pose.moved(motion::travel(width)).faded(),
         });
     }
 

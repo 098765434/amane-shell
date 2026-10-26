@@ -306,7 +306,8 @@ impl Kinetic {
             self.target = from.clamp(0.0, self.max);
             self.motion = motion::spring(from);
             self.motion.to(self.target);
-        } else if velocity.abs() >= MIN_FLING {
+        } else if velocity.abs() >= MIN_FLING && !crate::theme::reduced_motion() {
+            // where motion is reduced a flick stops where it's let go
             self.target = projected(from, velocity).clamp(0.0, self.max);
             self.motion = Animation::new(from).duration(COAST).easing(Easing::Out);
             self.motion.to(self.target);
