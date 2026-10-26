@@ -143,14 +143,15 @@ whose output is static: it can't follow the mode, so it holds one value for both
     `.tone` 0.8.
   - Apple's edge and light: `material.glass` `.refraction` 16, `.bevel` 12, `.dispersion` 0.3,
     `.rim` 0.35, `.glow` 0.05 (new), `.light-angle` 270, `.far-rim` 0.5, `.specular` 0.4,
-    `.saturation` 2.0; `material.glass-small` the same at `.refraction` 12, `.bevel` 8;
+    `.saturation` 1.5; `material.glass-small` the same at `.refraction` 12, `.bevel` 8;
     `material.glass-clear` `.refraction` 24, `.bevel` 16, `.dispersion` 0.4, `.glow` 0.08;
     `material.frost` `.glow` 0, `.light-angle` 270. `quick.shadow` blur 24, y 8, `#00000029`.
-  - Tints, dark / light: `sys.color.material.ultra-thin` `#00000059` / `#f6f6f633`,
-    `.thin` `#1c1c1e5c` / `#f6f6f633`, `.regular` `#1c1c1e80` / `#f6f6f680`, `.thick`
-    `#1c1c1ed1` / `#f6f6f6d1`. New: `sys.color.material.sidebar` `#1e1e1ecc` / `#f6f6f6d6`.
-  - `material.glass-large.*`: `material.glass` with `.blur-passes` 4, `.blur-offset` 2 and
-    `.tone` 0.6, for thick glass; `material.glass.tone` and `.glass-small.tone` are 0.85.
+  - Tints, dark / light: `sys.color.material.ultra-thin` `#0000004d` / `#f6f6f633`,
+    `.thin` `#1c1c1e4d` / `#f6f6f61f`, `.regular` `#1c1c1e80` / `#f6f6f680`, `.thick`
+    `#1c1c1e99` / `#f6f6f68c`. New: `sys.color.material.sidebar` `#1e1e1ecc` / `#f6f6f6d6`.
+  - `material.glass-large.*`: `material.glass` with `.blur-passes` 4, `.blur-offset` 2,
+    `.saturation` 1.8 and `.tone` 0.9, for thick glass; `material.glass.tone` and
+    `.glass-small.tone` are 1.
 - `menu.label.advance-ratio` is no longer read: menus measure their text now. Delete it.
 - `bar.volume.width` is no longer read: the volume is a glyph button now, its level in a tooltip.
   Delete it.

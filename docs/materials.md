@@ -88,16 +88,23 @@ A piece of glass is built with its material's methods:
   flip from light to dark based on the background. Bigger elements, like menus or sidebars,
   also adapt based on context, but they don't flip." Quick Settings' modules are one panel:
   `Material::adapted_group` keeps the theme's tint on all of them, thinned together from the
-  mean of the readings behind them, while their labels, glyphs and fills flip with that mean
-  ("symbols and glyphs … flip from light to dark, mirroring the glass"): over a blue wallpaper
-  in the light theme the modules are blue glass with white labels, as macOS's Control Center
-  is (`glass_region::panel_adaptation`, `material::under_labels`). Dock items and toasts stay
-  small glass of their own, flipping whole at 0.35 / 0.65.
-- **Thin is thin, thick is thick.** Regular glass's thin tint is 20% (light) / 36% (dark), so
-  a module is mostly backdrop, lifted only a little (`glass` tone 0.85). Thick glass, the
-  sheets and the launcher, is 82%, like Apple's sidebar (84%), on its own `glass-large` niri
-  material: the 30 pt blur (4 passes) and the stronger lift (tone 0.6). The contrast floors
-  let a flipping surface pass with either mode's labels over each wallpaper.
+  mean of the readings behind them, while their labels, glyphs and fills flip with how bright
+  the glass itself comes out, the tint laid over that mean ("symbols and glyphs … flip from
+  light to dark, mirroring the glass"): dark labels above 0.6, light below 0.45
+  (`glass_region::PANEL_LABELS`). So thin light glass over a blue wallpaper is blue glass
+  with white labels, as macOS's Control Center is, while dark glass keeps white labels until
+  the backdrop is near white (`glass_region::panel_adaptation`, `material::under_labels`).
+  The readings arrive a frame after the first draw, so the decision is on the glass, not the
+  backdrop, or a dark panel would flip to black labels and fills over a bright sky. Dock items
+  and toasts stay small glass of their own, flipping whole at 0.35 / 0.65.
+- **Thin is thin, thick is thick.** Regular glass's thin tint is 12% (light) / 30% (dark)
+  with no lift (`glass` tone 1), so a module is the wallpaper with a touch of white or black,
+  saturated 1.5. Thick glass, the sheets and the launcher, is 55% (light) / 60% (dark) on its
+  own `glass-large` niri material: the 30 pt blur (4 passes), saturation 1.8 and a little
+  lift (tone 0.9), so the sheet shows its backdrop's colour the way Apple's does. A plain
+  module in the Customize catalog is a translucent fill on the sheet (`fill_role(Secondary)`)
+  with no shadow, not a tint over it. The contrast floors let a flipping surface pass with
+  either mode's labels over each wallpaper.
 - **The edge.** niri's lens bends the backdrop in from past the shape's edge, as the recovered
   macOS 26 glass shaders do, so a rim continues what lies beside it (no stretched ring). The
   light comes from the top (`light-angle 270`) with an opposite fill (`far-rim 0.5`), Apple's
