@@ -12,14 +12,14 @@ use std::cell::{Cell, RefCell};
 
 use amane::{
     Animation, Blend, BlurShape, Center, Color, Key, Rectangle, Row, Size, Stack, Start, Text,
-    Widget, mark_all, modifiers,
+    Widget, modifiers,
 };
 
 use super::catalog;
 use super::edit;
 use super::kind::{Category, WidgetKey, WidgetKind};
 use super::store::Settings;
-use super::{Geometry, MARGIN, RADIUS};
+use super::{Geometry, MARGIN, RADIUS, changed};
 use crate::components::buttons::{PushButton, Shape, Style};
 use crate::components::divider::Divider;
 use crate::components::flow::Flow;
@@ -169,7 +169,7 @@ pub(super) fn clear_query() -> bool {
 /// A key for the search field.
 pub(super) fn key(key: Key) {
     if with(|state| state.field.handle(key, modifiers())) {
-        mark_all();
+        changed();
     }
 }
 
@@ -178,7 +178,7 @@ fn pick(section: Section) {
         state.section = section;
         state.field = Field::new();
     });
-    mark_all();
+    changed();
 }
 
 /// Whether `point` on the surface is on the sheet.
@@ -347,7 +347,7 @@ fn sidebar(field: &Field, picked: Section, height: f32) -> Rectangle {
         .width(inner_w)
         .on_clear(|| {
             clear_query();
-            mark_all();
+            changed();
         })
         .build();
     let items: Vec<ListItem> = Section::ALL

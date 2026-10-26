@@ -221,7 +221,7 @@ pub fn anchor() -> LayerWindow {
 
     if arming {
         rect = rect
-            .on_move(|p: Point| runtime::set_cursor(p.x as i32, p.y as i32))
+            .on_track(|p: Point| runtime::set_cursor(p.x as i32, p.y as i32))
             .on_click(|btn: Button| {
                 if btn == Button::Right {
                     runtime::open_at_cursor();

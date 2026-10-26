@@ -33,7 +33,7 @@ use std::collections::HashMap;
 
 use amane::{
     Animation, BlurShape, Button, Color, Cursor, Full, InputArea, Keyboard, Layer, LayerWindow,
-    Monitor, Point, Rectangle, Service, Shadow, Size, Stack, Widget, Workspaces, Zone, mark_all,
+    Monitor, Point, Rectangle, Service, Shadow, Size, Stack, Widget, Workspaces, Zone,
 };
 
 use crate::components::context_menu::{self, ContextMenu, Icon, MenuItem};
@@ -153,6 +153,25 @@ thread_local! {
     static NAMES: RefCell<HashMap<String, &'static str>> = RefCell::new(HashMap::new());
 }
 
+/// Read by every widget window and written whenever the widgets change,
+/// so a change redraws the desktops and their edit surfaces, not the bar
+/// and the dock as `mark_all` would.
+struct Desktops;
+
+impl Service for Desktops {
+    fn new() -> Self {
+        Self
+    }
+
+    // only input changes it
+    fn listen() {}
+}
+
+/// The widgets changed: every monitor's desktop draws again.
+fn changed() {
+    drop(Desktops::write());
+}
+
 fn with_desk<R>(output: &str, f: impl FnOnce(&mut Desk) -> R) -> R {
     DESKS.with_borrow_mut(|desks| f(desks.entry(output.to_string()).or_insert_with(Desk::new)))
 }
@@ -194,7 +213,7 @@ fn current(output: &str) -> Option<Layout<WidgetKey>> {
 /// Keeps `layout` as `output`'s.
 fn commit(output: &str, layout: &Layout<WidgetKey>) {
     store::with(|store| store.commit(output, layout));
-    mark_all();
+    changed();
 }
 
 // ───── view ──────────────────────────────────────────────────────────────────
@@ -216,6 +235,8 @@ pub fn edit_surface(monitor: &Monitor) -> LayerWindow {
 }
 
 fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
+    // a change to the widgets anywhere redraws this window, hidden or not
+    drop(Desktops::read());
     let output = monitor.name.clone();
     let geometry = Geometry::of(monitor.width as f32, monitor.height as f32);
     let name = if edit_window {
@@ -503,7 +524,7 @@ fn still_layer(output: &str, geometry: Geometry, holding: bool) -> Rectangle {
         output.to_string(),
     );
     let layer = blank()
-        .on_move(move |point: Point| with_desk(&move_on, |desk| desk.pointer = point))
+        .on_track(move |point: Point| with_desk(&move_on, |desk| desk.pointer = point))
         .on_drag(move |point: Point| {
             with_desk(&drag_on, |desk| desk.pointer = point);
             pressed(&drag_on, geometry, point);
@@ -571,7 +592,7 @@ fn pressed(output: &str, geometry: Geometry, point: Point) {
             desk.session = Some(session);
         });
     }
-    mark_all();
+    // the pointer's own window draws again for its input; nothing else shows the drag
 }
 
 /// The button came up: what the drag previewed is kept. A card let go off
@@ -622,7 +643,7 @@ fn released(output: &str) {
         }
     }
     edit::released(output);
-    mark_all();
+    changed();
 }
 
 fn clicked(output: &str, geometry: Geometry, button: Button) {
@@ -750,7 +771,7 @@ fn choices(output: &str, key: WidgetKey) -> Option<ContextMenu> {
         move || {
             store::with(|store| store.set_settings(key.id, next.clone()));
             let _ = &output;
-            mark_all();
+            changed();
         }
     };
     let mut menu = ContextMenu::new()
@@ -793,7 +814,7 @@ fn add(output: &str, kind: WidgetKind, size: WidgetSize, at: Option<Place>) -> b
         return false;
     };
     let added = store::with(|store| store.add(output, &layout, kind, size, at)).is_some();
-    mark_all();
+    changed();
     added
 }
 
@@ -873,7 +894,7 @@ pub fn ipc(args: &[String]) -> String {
         Some("reset-layout") => match output_for(arg(1)) {
             Some(output) => {
                 store::with(|store| store.clear(&output));
-                mark_all();
+                changed();
                 String::from("ok")
             }
             None => String::from("error: no monitor"),

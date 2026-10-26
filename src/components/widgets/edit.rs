@@ -15,11 +15,13 @@
 
 use std::cell::RefCell;
 
-use amane::{Color, Cursor, Key, Point, Radius, Rectangle, Size, Stack, Widget, mark_all};
+use amane::{Color, Cursor, Key, Point, Radius, Rectangle, Size, Stack, Widget};
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use super::store::{self, Settings};
-use super::{BAND, Geometry, RADIUS, THRESHOLD, commit, current, gallery, shown, with_desk};
+use super::{
+    BAND, Geometry, RADIUS, THRESHOLD, changed, commit, current, gallery, shown, with_desk,
+};
 use crate::components::buttons::{IconButton, Shape, Style};
 use crate::components::context_menu;
 use crate::components::control_size::ControlSize;
@@ -73,7 +75,7 @@ pub(super) fn enter(output: &str) {
         UNDO.with_borrow_mut(|undo| *undo = None);
         gallery::open();
     }
-    mark_all();
+    changed();
 }
 
 /// Done: every desktop back on the wallpaper.
@@ -87,7 +89,7 @@ pub(super) fn leave_all() {
     PRESS.with_borrow_mut(|press| *press = None);
     UNDO.with_borrow_mut(|undo| *undo = None);
     gallery::close();
-    mark_all();
+    changed();
 }
 
 /// A key while editing: Escape lets go of a drag, else clears the search,
@@ -98,7 +100,7 @@ pub(super) fn key(output: &str, key: Key) {
         if !dropped && !gallery::clear_query() {
             leave_all();
         }
-        mark_all();
+        changed();
     } else {
         gallery::key(key);
     }
@@ -207,7 +209,7 @@ pub(super) fn placed(output: &str, provisional: WidgetKey, layout: &Layout<Widge
             Some(rect.at),
         )
     });
-    mark_all();
+    changed();
 }
 
 /// Takes `key` off `output`, to be put back by Undo Remove.
@@ -238,7 +240,7 @@ pub(super) fn undo() {
             }
         });
     }
-    mark_all();
+    changed();
 }
 
 /// An empty desktop on the monitor being edited.
@@ -255,7 +257,7 @@ pub(super) fn reset() {
         UNDO.with_borrow_mut(|undo| *undo = Some((output.clone(), layout, settings)));
     }
     store::with(|store| store.clear(&output));
-    mark_all();
+    changed();
 }
 
 // ───── the layers ───────────────────────────────────────────────────────────

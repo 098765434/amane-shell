@@ -108,7 +108,7 @@ thread_local! {
 
 /// Records the pointer's position over `rect` for [`cursor`].
 pub fn track_cursor(rect: Rectangle) -> Rectangle {
-    rect.on_move(|p: Point| CURSOR.with(|c| c.set((p.x as i32, p.y as i32))))
+    rect.on_track(|p: Point| CURSOR.with(|c| c.set((p.x as i32, p.y as i32))))
 }
 
 /// Where the pointer last was over a tracked surface, for anchoring a menu.
