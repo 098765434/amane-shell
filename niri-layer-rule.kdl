@@ -180,6 +180,8 @@ materials {
         blur-passes 4
         dispersion 0
         far-rim 0
+        glow 0
+        light-angle 270
         refraction 0
         rim 0.12
         saturation 1.8
@@ -189,45 +191,51 @@ materials {
     }
     material "glass" {
         adaptive-tint 0.25
-        bevel 16
+        bevel 12
         blur-offset 2
         blur-passes 3
-        dispersion 0.6
-        far-rim 0.15
-        refraction 12
+        dispersion 0.3
+        far-rim 0.5
+        glow 0.05
+        light-angle 270
+        refraction 16
         report-backdrop true
-        rim 0.25
-        saturation 1.6
-        specular 0.15
+        rim 0.35
+        saturation 2
+        specular 0.4
         tint 1
         tone 0.6
     }
     material "glass-clear" {
-        bevel 30
+        bevel 16
         blur-offset 2
         blur-passes 3
-        dispersion 0.8
-        far-rim 0.2
-        refraction 32
+        dispersion 0.4
+        far-rim 0.5
+        glow 0.08
+        light-angle 270
+        refraction 24
         report-backdrop true
         rim 0.3
-        saturation 1.6
-        specular 0.25
+        saturation 2
+        specular 0.4
         tint 1
         tone 0.8
     }
     material "glass-small" {
         adaptive-tint 0.25
-        bevel 12
+        bevel 8
         blur-offset 1.5
         blur-passes 2
-        dispersion 0.6
-        far-rim 0.15
-        refraction 10
+        dispersion 0.3
+        far-rim 0.5
+        glow 0.05
+        light-angle 270
+        refraction 12
         report-backdrop true
-        rim 0.25
-        saturation 1.6
-        specular 0.15
+        rim 0.35
+        saturation 2
+        specular 0.4
         tint 1
         tone 0.6
     }
@@ -237,6 +245,8 @@ materials {
         blur-passes 4
         dispersion 0
         far-rim 0
+        glow 0
+        light-angle 270
         refraction 0
         rim 0.12
         saturation 1.8
@@ -247,47 +257,53 @@ materials {
     }
     material "glass-still" {
         adaptive-tint 0.25
-        bevel 16
+        bevel 12
         blur-offset 2
         blur-passes 3
-        dispersion 0.6
-        far-rim 0.15
-        refraction 12
+        dispersion 0.3
+        far-rim 0.5
+        glow 0.05
+        light-angle 270
+        refraction 16
         report-backdrop true
-        rim 0.25
-        saturation 1.6
-        specular 0.15
+        rim 0.35
+        saturation 2
+        specular 0.4
         tint 1
         tone 0.6
         materialize false
     }
     material "glass-clear-still" {
-        bevel 30
+        bevel 16
         blur-offset 2
         blur-passes 3
-        dispersion 0.8
-        far-rim 0.2
-        refraction 32
+        dispersion 0.4
+        far-rim 0.5
+        glow 0.08
+        light-angle 270
+        refraction 24
         report-backdrop true
         rim 0.3
-        saturation 1.6
-        specular 0.25
+        saturation 2
+        specular 0.4
         tint 1
         tone 0.8
         materialize false
     }
     material "glass-small-still" {
         adaptive-tint 0.25
-        bevel 12
+        bevel 8
         blur-offset 1.5
         blur-passes 2
-        dispersion 0.6
-        far-rim 0.15
-        refraction 10
+        dispersion 0.3
+        far-rim 0.5
+        glow 0.05
+        light-angle 270
+        refraction 12
         report-backdrop true
-        rim 0.25
-        saturation 1.6
-        specular 0.15
+        rim 0.35
+        saturation 2
+        specular 0.4
         tint 1
         tone 0.6
         materialize false

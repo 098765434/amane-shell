@@ -424,6 +424,17 @@ impl Material {
         scope(self, f)
     }
 
+    /// [`adapted`](Self::adapted) for one piece of a panel of this
+    /// material: the panel keeps the theme's mode, its tint thinned by the
+    /// readings behind all its `members` (`glass_region::adapted_group`).
+    /// `id` names the piece, for the materials that read their own backdrop.
+    pub fn adapted_group<T>(self, id: u32, members: &[u32], f: impl FnOnce() -> T) -> T {
+        if self.spec().adaptive {
+            return glass_region::adapted_group(members, || scope(self, f));
+        }
+        self.adapted(id, f)
+    }
+
     /// Clear glass is mode-less: dark, whatever the theme.
     fn media_key() -> Key {
         Key {

@@ -141,6 +141,11 @@ whose output is static: it can't follow the mode, so it holds one value for both
     `.bevel` 16, `.refraction` 12, `.adaptive-tint` 0.25; `material.glass-small` 2, 1.5, 1.6, 0.6
     with `.bevel` 12, `.refraction` 10, `.adaptive-tint` 0.25; `material.glass-clear` 3, 2, 1.6,
     `.tone` 0.8.
+  - Apple's edge and light: `material.glass` `.refraction` 16, `.bevel` 12, `.dispersion` 0.3,
+    `.rim` 0.35, `.glow` 0.05 (new), `.light-angle` 270, `.far-rim` 0.5, `.specular` 0.4,
+    `.saturation` 2.0; `material.glass-small` the same at `.refraction` 12, `.bevel` 8;
+    `material.glass-clear` `.refraction` 24, `.bevel` 16, `.dispersion` 0.4, `.glow` 0.08;
+    `material.frost` `.glow` 0, `.light-angle` 270. `quick.shadow` blur 24, y 8, `#00000029`.
   - Lighter tints, dark / light: `sys.color.material.ultra-thin` `#00000059` / `#f6f6f659`,
     `.thin` `#1c1c1e5c` / `#f6f6f65c`, `.regular` `#1c1c1e70` / `#f6f6f673`, `.thick`
     `#1c1c1e8c` / `#f6f6f699`. New: `sys.color.material.sidebar` `#1e1e1ecc` / `#f6f6f6d6`.

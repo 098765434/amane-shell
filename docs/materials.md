@@ -84,6 +84,17 @@ A piece of glass is built with its material's methods:
   several controls.
 - **Small glass adapts, large glass is thick.** Only `Control` and `Banner` flip light or dark
   with their backdrop. Large glass that holds text is thicker, so it stays legible over anything.
+- **A panel flips together, and seldom.** Apple: "small elements like navbars and tabbars …
+  flip from light to dark based on the background. Bigger elements, like menus or sidebars,
+  also adapt based on context, but they don't flip." Quick Settings' modules are one panel:
+  `Material::adapted_group` keeps them in the theme's mode and thins their tint together, from
+  the mean of the readings behind all of them (`glass_region::panel_adaptation`). Dock items
+  and toasts stay small glass of their own, flipping at 0.35 / 0.65.
+- **The edge.** niri's lens bends the backdrop in from past the shape's edge, as the recovered
+  macOS 26 glass shaders do, so a rim continues what lies beside it (no stretched ring). The
+  light comes from the top (`light-angle 270`) with an opposite fill (`far-rim 0.5`), Apple's
+  preset, on a crisp hairline (`rim 0.35`) with next to no `glow` over the bevel. Glass is
+  saturated 2.0, at the top of Apple's 1.6–2.4, so the backdrop comes through vivid.
 - **Labels are vibrant and monochrome.** Text and glyphs on a material take `label(Level::..)`.
   The levels are primary, secondary, tertiary and quaternary, plus `fill_role(..)` and
   `separator()`. These are translucent, so the backdrop tints them, as Apple's label colours

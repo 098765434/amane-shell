@@ -127,12 +127,16 @@ pub(super) fn grid(look: Motion) -> Grid {
     let canvas = shown_layout.canvas;
     let placed: Vec<(ControlId, Rect)> = shown_layout.placed().collect();
 
+    // the modules are one panel of glass: alike, in the theme's mode, thinned
+    // by the backdrop behind all of them
+    let members: Vec<u32> = placed.iter().map(|(id, _)| glass_id(*id)).collect();
+
     let mut widgets: HashMap<ControlId, Box<dyn Widget>> = HashMap::new();
     let mut slots: Vec<(ControlId, Rect, Slot)> = Vec::new();
     for (id, rect) in &placed {
-        // each module is small glass of its own, light or dark with its backdrop
-        let built =
-            Material::Control.adapted(glass_id(*id), || controls::build(*id, rect.span, &ctx));
+        let built = Material::Control.adapted_group(glass_id(*id), &members, || {
+            controls::build(*id, rect.span, &ctx)
+        });
         let widget = match built {
             Some(widget) => widget,
             // a control waiting for its hardware takes no room, except in
@@ -208,9 +212,9 @@ pub(super) fn grid(look: Motion) -> Grid {
         let widget = match widgets.remove(&id) {
             Some(widget) => widget,
             None if item.leaving => {
-                match Material::Control
-                    .adapted(glass_id(id), || controls::build(id, rect.span, &ctx))
-                {
+                match Material::Control.adapted_group(glass_id(id), &members, || {
+                    controls::build(id, rect.span, &ctx)
+                }) {
                     Some(widget) => widget,
                     None => continue,
                 }
@@ -257,7 +261,11 @@ pub(super) fn grid(look: Motion) -> Grid {
         };
         if focused.is_none() && !in_hand {
             let glass = glass_id(id);
-            shapes.push(Material::Control.adapted(glass, || frost(&drawn)).id(glass));
+            shapes.push(
+                Material::Control
+                    .adapted_group(glass, &members, || frost(&drawn))
+                    .id(glass),
+            );
         }
         if !in_hand {
             rims.push(drawn);
