@@ -18,7 +18,7 @@ pub mod center;
 pub mod dnd;
 pub mod toasts;
 
-use amane::{Notifications, mark_all};
+use amane::Notifications;
 
 pub use center::{CENTER_NS, side_sheet, unseen};
 pub use dnd::DoNotDisturb;
@@ -38,6 +38,6 @@ pub fn ipc(args: &[String]) -> String {
         ["dnd", "off"] => DoNotDisturb::set(None),
         _ => return String::from("usage: notifications [toggle | clear | dnd [on|off|toggle]]"),
     }
-    mark_all();
+    // each writes its own service, and toggling the panel marks the panels
     String::from("ok")
 }

@@ -19,6 +19,12 @@ use amane::{Animation, InputArea};
 
 use crate::motion;
 
+crate::marker! {
+    /// A reveal's delay ran out: the surfaces that read a reveal's
+    /// progress draw again.
+    Reveals
+}
+
 pub struct EdgeReveal {
     // 0 hidden … 1 out, on the motion it was made with
     motion: Animation,
@@ -55,7 +61,7 @@ impl EdgeReveal {
         } else {
             self.left = Some(Instant::now());
             // nothing else changes when the delay runs out
-            motion::redraw_after(self.delay + Duration::from_millis(10));
+            motion::redraw_after::<Reveals>(self.delay + Duration::from_millis(10));
         }
     }
 
@@ -69,7 +75,7 @@ impl EdgeReveal {
         self.kept = kept;
         if !kept && !self.hovered {
             self.left = Some(Instant::now());
-            motion::redraw_after(self.delay + Duration::from_millis(10));
+            motion::redraw_after::<Reveals>(self.delay + Duration::from_millis(10));
         }
     }
 
@@ -82,6 +88,7 @@ impl EdgeReveal {
     /// Steps towards out or in and gives how far out it is, at least
     /// `hold` (0 … 1). Call it once a frame.
     pub fn progress(&mut self, hold: f32) -> f32 {
+        Reveals::watch();
         if !self.wanted() {
             self.left = None;
         }

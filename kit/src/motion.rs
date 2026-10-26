@@ -22,7 +22,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
-use amane::{Animation, Blend, Easing, mark_all};
+use amane::{Animation, Blend, Easing, Service};
 
 use crate::theme;
 
@@ -139,13 +139,14 @@ pub fn fade<T: Blend>(value: T, duration: Duration) -> Animation<T> {
     Animation::new(value).duration(duration).easing(Easing::Out)
 }
 
-/// Redraws every window once `delay` has passed, for a view whose output
-/// changes with time alone (a wait running out). amane has no timers, so a
-/// thread sleeps it.
-pub fn redraw_after(delay: Duration) {
+/// Changes the marker `M` once `delay` has passed, so the windows that
+/// watch it draw again, for a view whose output changes with time alone (a
+/// wait running out). amane has no timers, so a thread sleeps it. See
+/// [`marker!`](crate::marker!).
+pub fn redraw_after<M: Service>(delay: Duration) {
     std::thread::spawn(move || {
         std::thread::sleep(delay);
-        mark_all();
+        drop(M::write());
     });
 }
 

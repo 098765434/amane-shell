@@ -50,7 +50,7 @@ use std::time::{Duration, Instant};
 use amane::{
     Animation, Apps, Blend, Button, Color, Column, DesktopApp, Easing, Horizontal, Key, Keyboard,
     LayerWindow, Parent, Rectangle, Row, Scroll, ScrollSource, Service, Stack, Start, Vertical,
-    Widget, WindowSize, mark_all, modifiers, window_size,
+    Widget, WindowSize, modifiers, window_size,
 };
 
 use crate::components::divider::Divider;
@@ -70,6 +70,12 @@ use entries::{Entry, Scope};
 use mode::Mode;
 use provider::{Found, Query};
 use shape::{Geometry, PILL_H, PILL_W};
+
+amane_kit::marker! {
+    /// The launcher's own state changed (what's picked, the mode, the
+    /// page, a capture): only its window draws again.
+    pub Launcher
+}
 
 /// Layer-surface namespace; the niri `layer-rule` matches it (a clear
 /// surface that says where to frost).
@@ -667,7 +673,7 @@ pub fn ipc(args: &[String]) -> String {
         }
         _ => return String::from(USAGE),
     }
-    mark_all();
+    Launcher::changed();
     String::from("ok")
 }
 
@@ -706,7 +712,7 @@ fn enter_scope(scope: Scope) {
         state.focus = Zone::Search;
     });
     SCROLL.with_borrow_mut(|scroll| scroll.jump(0.0));
-    mark_all();
+    Launcher::changed();
 }
 
 /// Steps back one level: the query, then the scope, then the mode; with
@@ -747,7 +753,7 @@ fn start_capture(action: &str, title: &str, keys: &str) {
             error: None,
         });
     });
-    mark_all();
+    Launcher::changed();
 }
 
 /// A key while quick keys are being typed: letters and digits add to
@@ -770,7 +776,7 @@ fn capture_key(key: Key) {
         }
         Key::Escape => {
             with(|state| state.capture = None);
-            mark_all();
+            Launcher::changed();
             return;
         }
         Key::Enter => {
@@ -795,14 +801,14 @@ fn capture_key(key: Key) {
                     }
                 });
                 with(|state| state.capture = None);
-                mark_all();
+                Launcher::changed();
                 return;
             }
         }
         _ => return,
     }
     with(|state| state.capture = Some(capture));
-    mark_all();
+    Launcher::changed();
 }
 
 /// The body moved: the scrollbar shows for a while.
@@ -851,7 +857,7 @@ fn on_body_scroll(scroll: Scroll) {
             }
         }
     }
-    mark_all();
+    Launcher::changed();
 }
 
 /// The pill bar follows a sideways swipe, or a wheel turned over it.
@@ -870,7 +876,7 @@ fn on_pill_scroll(scroll: Scroll) {
             pills.go(to);
         }
     });
-    mark_all();
+    Launcher::changed();
 }
 
 /// Highlights item `index` of `layout`, scrolling it into view in a body
@@ -897,7 +903,7 @@ fn hover(index: usize) -> impl Fn(bool) + 'static {
                 std::mem::replace(&mut state.selected, index)
             }) != index
         {
-            mark_all();
+            Launcher::changed();
         }
     }
 }
@@ -914,7 +920,7 @@ fn turn_to(page: usize) {
             pager.go(page, pages, &PAGING);
         }
     });
-    mark_all();
+    Launcher::changed();
 }
 
 /// Edits the search text; a change starts the list over at the top. The
@@ -1023,7 +1029,7 @@ fn on_key(key: Key) {
                 }
             }
         }
-        mark_all();
+        Launcher::changed();
         return;
     }
     if held.command() && matches!(key, Key::Character(_) | Key::Space) {
@@ -1158,7 +1164,7 @@ fn on_key(key: Key) {
         }
         _ => return,
     }
-    mark_all();
+    Launcher::changed();
 }
 
 // ───── view ──────────────────────────────────────────────────────────────────
@@ -1186,6 +1192,7 @@ fn ease(anim: &'static std::thread::LocalKey<RefCell<Animation>>, to: f32) -> f3
 /// The surface: hidden while closed, else the glass high on a clear
 /// surface that closes the launcher when clicked.
 pub fn surface() -> LayerWindow {
+    Launcher::watch();
     // the clipboard's history follows its setting, whether or not the
     // launcher is open
     clipboard_history::sync(&launcher().clipboard);
@@ -1497,7 +1504,7 @@ fn scrollbar() -> f32 {
     {
         let due = at + SCROLLBAR_IDLE;
         with(|state| state.fade_due = Some(due));
-        motion::redraw_after(due.saturating_duration_since(now));
+        motion::redraw_after::<Launcher>(due.saturating_duration_since(now));
     }
     ease(&SCROLLBAR, if showing { 1.0 } else { 0.0 })
 }

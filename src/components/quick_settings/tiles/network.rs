@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 use amane::{
     AccessPoint, Center, Column, Link, Network, Parent, Row, ScrollArea, Service, Size, TextInput,
-    Widget, mark_all,
+    Widget,
 };
 
 use super::super::{Page, open};
@@ -25,6 +25,7 @@ use crate::components::layout::{boxed, caption, fixed_width, icon, nothing, text
 use crate::components::list::{self, List, ListItem};
 use crate::components::material::{self, Level};
 use crate::components::motion::redraw_after;
+use crate::components::quick_settings::QuickSettings;
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::detail::page_width;
 use crate::components::quick_settings::tile::QuickToggle;
@@ -150,7 +151,7 @@ pub(crate) fn wifi_page() -> DetailPage {
     if enabled && LAST_SCAN.get().is_none_or(|at| at.elapsed() >= RESCAN) {
         LAST_SCAN.set(Some(Instant::now()));
         Network::scan();
-        redraw_after(RESCAN);
+        redraw_after::<QuickSettings>(RESCAN);
     }
 
     let page = DetailPage::new("amane.qs.wifi.page", "Wi‑Fi")
@@ -177,7 +178,7 @@ fn begin_password(ssid: String) {
         typed: String::new(),
     });
     TextInput::set_text(PW_ID, "");
-    mark_all();
+    QuickSettings::changed();
 }
 
 /// Joins `ssid` with the password typed for it. The page stays to show the

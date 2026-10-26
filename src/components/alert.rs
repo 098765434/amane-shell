@@ -10,7 +10,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use amane::{Animation, Blend, Horizontal, Keyboard, LayerWindow, Rectangle, Vertical, mark_all};
+use amane::{Animation, Blend, Horizontal, Keyboard, LayerWindow, Rectangle, Vertical};
 
 use crate::components::dialog::Dialog;
 use crate::components::glass_region;
@@ -19,6 +19,11 @@ use crate::components::material::Material;
 use crate::components::motion;
 use crate::components::panel::overlay;
 use crate::tokens::dialog;
+
+amane_kit::marker! {
+    /// The alert showed or closed: only its window draws again.
+    pub Alert
+}
 
 /// Layer-surface namespace; the niri `layer-rule` matches it.
 pub const ALERT_NS: &str = "amane.alert";
@@ -40,13 +45,13 @@ thread_local! {
 pub fn show(alert: Dialog) {
     SHOWN.set(Some(alert));
     OPEN.set(true);
-    mark_all();
+    Alert::changed();
 }
 
 /// Puts the alert away without an answer.
 pub fn close() {
     OPEN.set(false);
-    mark_all();
+    Alert::changed();
 }
 
 /// Steps the card's opening towards `open` and gives how far it is, a
@@ -63,6 +68,7 @@ fn unfold(open: bool) -> f32 {
 
 /// The surface: hidden while no alert shows, else the card, swelling in.
 pub fn surface() -> LayerWindow {
+    Alert::watch();
     let open = OPEN.get();
     let unfolded = unfold(open);
 

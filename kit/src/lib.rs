@@ -31,6 +31,7 @@
 //! - [`glass_region`] — where the compositor frosts behind clear glass.
 //! - [`edge_reveal`] — a surface hiding at a screen edge until the pointer
 //!   touches it.
+//! - [`marker`] — scoped redraws for state kept outside a service.
 //! - [`settings`] — the shell's settings file, which a settings app changes.
 //! - [`tokens`] and [`theme`] — the design tokens and the mode, density,
 //!   accent and text scale they resolve with.
@@ -53,6 +54,7 @@ pub mod icons;
 pub mod kinetic;
 pub mod layout;
 pub mod list;
+pub mod marker;
 pub mod material;
 pub mod motion;
 pub mod pager;

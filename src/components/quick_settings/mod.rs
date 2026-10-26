@@ -56,7 +56,7 @@ use std::time::Instant;
 
 use amane::{
     Animation, Blend, BlurShape, Color, End, Horizontal, InputArea, Key, Keyboard, LayerWindow,
-    Parent, Rectangle, Size, Stack, Start, Vertical, Widget, WindowSize, mark_all, window_size,
+    Parent, Rectangle, Size, Stack, Start, Vertical, Widget, WindowSize, window_size,
 };
 
 use crate::components::glass_region;
@@ -65,6 +65,12 @@ use crate::components::material::Material;
 use crate::components::motion;
 use crate::components::panel::{self, Panel, close, is_open, overlay, popover_margin};
 use crate::tokens::quick;
+
+amane_kit::marker! {
+    /// Quick Settings' own state changed (its page, editing, Customize):
+    /// only its window draws again.
+    pub QuickSettings
+}
 
 pub use controls::{ControlId, available as control_available, quick_toggle};
 pub use pages::Page;
@@ -157,7 +163,7 @@ fn go(page: Page) {
             slide.to(target);
         }
     });
-    mark_all();
+    QuickSettings::changed();
 }
 
 /// Escape: lets go of a drag, then clears the Customize window's search,
@@ -243,7 +249,7 @@ pub fn ipc(args: &[String]) -> String {
             );
         }
     }
-    mark_all();
+    QuickSettings::changed();
     String::from("ok")
 }
 
@@ -275,6 +281,7 @@ fn unfold(open: bool) -> f32 {
 
 /// The surface: hidden while closed, else the card, as tall as the grid.
 pub fn surface() -> LayerWindow {
+    QuickSettings::watch();
     let open = is_open(Panel::QuickSettings);
     let unfolded = unfold(open);
     let shown = open || unfolded > 0.001;

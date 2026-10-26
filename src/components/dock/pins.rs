@@ -12,7 +12,7 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
-use amane::{Windows, Workspaces, mark_all};
+use amane::{Windows, Workspaces};
 
 use crate::components::app_icon;
 use crate::services::{save_state, state_file};
@@ -96,7 +96,7 @@ fn change(edit: impl FnOnce(&mut Vec<Pin>) -> bool) {
     let changed = PINS.with_borrow_mut(edit);
     if changed {
         PINS.with_borrow(|pins| save_state(FILE, &format(pins)));
-        mark_all();
+        super::Docks::changed();
     }
 }
 

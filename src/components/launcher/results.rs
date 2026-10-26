@@ -8,7 +8,7 @@
 //! in a [`ScrollView`].
 
 use amane::{
-    Button, Center, Color, Column, End, Image, Rectangle, Row, Stack, Start, Text, Widget, mark_all,
+    Button, Center, Color, Column, End, Image, Rectangle, Row, Stack, Start, Text, Widget,
 };
 use amane_kit::settings::change_launcher;
 
@@ -428,7 +428,7 @@ pub(super) fn scope_chips(scopes: &[Scope], width: f32) -> Rectangle {
                     .align_child(Center, Center)
                     .on_click(move |_| {
                         enter_scope(picked.clone());
-                        mark_all();
+                        super::Launcher::changed();
                     })
                     // elided text fills its box, so the box is only as wide
                     // as the name: the chip centres it
@@ -713,7 +713,7 @@ pub(super) fn ask_clipboard(width: f32, height: f32) -> Rectangle {
                     .style(Style::Tonal)
                     .on_press(|| {
                         super::switch_mode(Mode::Home);
-                        mark_all();
+                        super::Launcher::changed();
                     })
                     .build(),
             ),

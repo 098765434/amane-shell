@@ -7,9 +7,13 @@
 use std::cell::RefCell;
 use std::collections::HashSet;
 
-use amane::mark_all;
-
 use crate::services::{save_state, state_file};
+
+amane_kit::marker! {
+    /// An indicator was shown or hidden: what asked whether one shows
+    /// (the bars, Customize) draws again.
+    pub Indicators
+}
 
 const FILE: &str = "status-bar";
 
@@ -55,6 +59,7 @@ impl Indicator {
     }
 
     pub fn shown(self) -> bool {
+        Indicators::watch();
         HIDDEN.with_borrow(|hidden| !hidden.contains(&self))
     }
 
@@ -68,7 +73,7 @@ impl Indicator {
         });
         if changed {
             HIDDEN.with_borrow(|hidden| save_state(FILE, &format(hidden)));
-            mark_all();
+            Indicators::changed();
         }
     }
 }

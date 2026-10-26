@@ -46,6 +46,7 @@ use crate::services::night_light::NightLight;
 use crate::services::privacy::Privacy;
 use crate::services::rfkill::Rfkill;
 use crate::services::tailscale::{State as TailscaleState, Tailscale};
+use crate::services::timer::Countdown;
 
 use crate::tokens::{bar, sys};
 
@@ -528,7 +529,9 @@ fn timer() -> Option<Box<dyn Widget>> {
     // for once a second however often the bar redraws
     let due = left.as_secs();
     if TIMER_DUE.replace(Some(due)) != Some(due) {
-        motion::redraw_after(Duration::from_nanos(u64::from(left.subsec_nanos())) + TICK);
+        motion::redraw_after::<Countdown>(
+            Duration::from_nanos(u64::from(left.subsec_nanos())) + TICK,
+        );
     }
     let text = crate::services::timer::format(left);
     let width = text_width(&text, sys::r#type::numeric())

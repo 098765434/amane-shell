@@ -9,9 +9,7 @@
 use std::cell::{Cell, RefCell};
 use std::time::{Duration, Instant};
 
-use amane::{
-    Bluetooth, BluetoothDevice, Column, Parent, ScrollArea, Service, Size, Widget, mark_all,
-};
+use amane::{Bluetooth, BluetoothDevice, Column, Parent, ScrollArea, Service, Size, Widget};
 
 use super::super::{Page, QS_NS, open};
 use super::{connected_count, settings_link};
@@ -24,6 +22,7 @@ use crate::components::layout::{boxed, caption, cursor};
 use crate::components::list::{self, List, ListItem};
 use crate::components::material::{self, Level};
 use crate::components::motion::redraw_after;
+use crate::components::quick_settings::QuickSettings;
 use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::tile::QuickToggle;
 use crate::components::status_bar::Indicator;
@@ -129,8 +128,8 @@ fn act(device: &BluetoothDevice) {
         })
     });
     // redraw once the wait is over, so a call that never answers stops saying so
-    redraw_after(PENDING_FOR);
-    mark_all();
+    redraw_after::<QuickSettings>(PENDING_FOR);
+    QuickSettings::changed();
 }
 
 /// "Connecting…" / "Disconnecting…" while `device` hasn't reached what was

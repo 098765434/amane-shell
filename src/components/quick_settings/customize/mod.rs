@@ -27,7 +27,7 @@ use std::time::{Duration, Instant};
 
 use amane::{
     Animation, Blend, BlurShape, Center, Color, Cursor, Key, Parent, Point, Rectangle, Row, Scroll,
-    Size, Stack, Start, Text, Widget, mark_all, modifiers,
+    Size, Stack, Start, Text, Widget, modifiers,
 };
 
 use super::controls::{self, ControlId, Ctx};
@@ -147,7 +147,7 @@ pub(super) fn open() {
             open.retime(motion::POP);
             open.to(1.0);
         });
-        mark_all();
+        super::QuickSettings::changed();
     }
 }
 
@@ -159,7 +159,7 @@ pub(super) fn close() {
             open.retime(motion::CLOSE);
             open.to(0.0);
         });
-        mark_all();
+        super::QuickSettings::changed();
     }
 }
 
@@ -187,7 +187,7 @@ pub(super) fn has_query() -> bool {
 pub(super) fn clear_query() {
     with(|state| state.field = Field::new());
     SCROLL.with_borrow_mut(|scroll| scroll.go(0.0));
-    mark_all();
+    super::QuickSettings::changed();
 }
 
 /// A key while the window is open: it goes to the search field. Whether
@@ -202,7 +202,7 @@ pub(super) fn key(key: Key) -> bool {
         taken
     });
     if taken {
-        mark_all();
+        super::QuickSettings::changed();
     }
     taken
 }
@@ -213,7 +213,7 @@ fn pick(category: Category) {
         state.field = Field::new();
     });
     SCROLL.with_borrow_mut(|scroll| scroll.go(0.0));
-    mark_all();
+    super::QuickSettings::changed();
 }
 
 /// The surface says where the canvas is this frame.
@@ -237,12 +237,12 @@ fn moved() {
 fn on_pane_scroll(scroll: Scroll) {
     SCROLL.with_borrow_mut(|pane| pane.scroll(&scroll, Axis::Vertical, WHEEL_STEP));
     moved();
-    mark_all();
+    super::QuickSettings::changed();
 }
 
 fn on_side_scroll(scroll: Scroll) {
     SIDE_SCROLL.with_borrow_mut(|side| side.scroll(&scroll, Axis::Vertical, WHEEL_STEP));
-    mark_all();
+    super::QuickSettings::changed();
 }
 
 // ───── the drag, measured on the surface ────────────────────────────────────
@@ -755,7 +755,7 @@ fn scrollbar() -> f32 {
     {
         let due = at + SCROLLBAR_IDLE;
         with(|state| state.fade_due = Some(due));
-        motion::redraw_after(due.saturating_duration_since(now));
+        motion::redraw_after::<super::QuickSettings>(due.saturating_duration_since(now));
     }
     SCROLLBAR.with_borrow_mut(|bar| {
         bar.to(if showing { 1.0 } else { 0.0 });

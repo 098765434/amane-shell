@@ -5,7 +5,13 @@
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 
-use amane::{Notify, mark_all};
+use amane::Notify;
+
+amane_kit::marker! {
+    /// The timer started, ran out or was stopped: what asked how long
+    /// is left draws again.
+    pub Countdown
+}
 
 struct Running {
     // which start this is, so an older thread waking finds it replaced
@@ -29,7 +35,7 @@ pub fn start(length: Duration, label: String) {
         ends: SystemTime::now() + length,
         label,
     });
-    mark_all();
+    Countdown::changed();
     std::thread::spawn(move || {
         std::thread::sleep(length);
         let done = {
@@ -43,7 +49,7 @@ pub fn start(length: Duration, label: String) {
             Notify::new("Timer")
                 .body(&format!("{} is done", done.label))
                 .send();
-            mark_all();
+            Countdown::changed();
         }
     });
 }
@@ -51,11 +57,12 @@ pub fn start(length: Duration, label: String) {
 /// Stops the timer running, if one is.
 pub fn cancel() {
     *TIMER.lock().unwrap_or_else(|e| e.into_inner()) = None;
-    mark_all();
+    Countdown::changed();
 }
 
 /// How long the running timer has left, and its name.
 pub fn left() -> Option<(Duration, String)> {
+    Countdown::watch();
     let timer = TIMER.lock().unwrap_or_else(|e| e.into_inner());
     let running = timer.as_ref()?;
     let left = running

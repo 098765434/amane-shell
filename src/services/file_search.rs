@@ -10,9 +10,12 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use amane::mark_all;
-
 use super::run_now;
+
+amane_kit::marker! {
+    /// A search finished: what asked for its hits draws again.
+    pub Found
+}
 
 /// How long after the last key a search starts.
 const DEBOUNCE: Duration = Duration::from_millis(120);
@@ -182,6 +185,7 @@ static GENERATION: AtomicU64 = AtomicU64::new(0);
 /// than for the search before, while this one runs). Asks for it to run
 /// if it hasn't.
 pub fn find(request: &Request) -> (Vec<Hit>, bool) {
+    Found::watch();
     let mut state = STATE.lock().unwrap_or_else(|e| e.into_inner());
     if let Some((done, hits)) = &state.done
         && done == request
@@ -216,7 +220,7 @@ fn run(request: Request, generation: u64) {
         return;
     }
     STATE.lock().unwrap_or_else(|e| e.into_inner()).done = Some((request, hits));
-    mark_all();
+    Found::changed();
 }
 
 /// Whether LocalSearch answers, asked every few minutes.

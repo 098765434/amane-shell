@@ -21,10 +21,15 @@ use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use amane::serde::{Deserialize, Serialize};
-use amane::{Service, Windows, mark_all};
+use amane::{Service, Windows};
 use amane_kit::settings::ClipboardHistory as Settings;
 
 use super::{run_now, save_state, state_file};
+
+amane_kit::marker! {
+    /// The history changed: what read the clips draws again.
+    pub Clips
+}
 
 /// Where the history is kept, under the shell's state directory.
 const DIR: &str = "clipboard";
@@ -112,6 +117,7 @@ fn save(clips: &[Clip]) {
 
 /// The copies kept, newest first.
 pub fn clips() -> Vec<Clip> {
+    Clips::watch();
     with(|history| history.clips.clone())
 }
 
@@ -247,7 +253,7 @@ fn take(settings: &Settings) {
         gone
     });
     forget(&gone);
-    mark_all();
+    Clips::changed();
 }
 
 /// Puts `clip` back on the clipboard; with `paste`, types it into the
@@ -301,7 +307,7 @@ pub fn delete(id: u64) {
         gone
     });
     forget(&gone);
-    mark_all();
+    Clips::changed();
 }
 
 /// Forgets every copy.
@@ -312,7 +318,7 @@ pub fn clear() {
         gone
     });
     forget(&gone);
-    mark_all();
+    Clips::changed();
 }
 
 fn forget(clips: &[Clip]) {

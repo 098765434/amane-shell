@@ -13,7 +13,6 @@ use std::time::Duration;
 
 use amane::{
     Center, Color, Column, Image, Media, Rectangle, Row, Service, Size, Stack, Start, Widget,
-    mark_all,
 };
 
 use super::super::grid::{Metrics, Span};
@@ -24,6 +23,7 @@ use crate::components::icons::{
 };
 use crate::components::layout::{boxed, icon, pad};
 use crate::components::material::{self, FillLevel, Level};
+use crate::components::quick_settings::QuickSettings;
 use crate::tokens::{quick, sys};
 
 /// What the card shows.
@@ -91,7 +91,7 @@ fn art_path(url: &str) -> Option<String> {
                 .status()
                 .is_ok_and(|status| status.success());
             if fetched && std::fs::rename(&part, &path).is_ok() {
-                mark_all();
+                QuickSettings::changed();
             } else {
                 let _ = std::fs::remove_file(&part);
             }

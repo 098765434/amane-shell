@@ -25,9 +25,7 @@
 
 use std::cell::{Cell, RefCell};
 
-use amane::{
-    Animation, Color, Cursor, Parent, Point, Radius, Rectangle, Size, Stack, Widget, mark_all,
-};
+use amane::{Animation, Color, Cursor, Parent, Point, Radius, Rectangle, Size, Stack, Widget};
 
 use super::controls::ControlId;
 use super::customize;
@@ -96,7 +94,7 @@ pub(super) fn enter() {
             chrome.to(1.0);
         });
         customize::open();
-        mark_all();
+        super::QuickSettings::changed();
     }
 }
 
@@ -116,7 +114,7 @@ pub(super) fn leave() {
     UNDO.with_borrow_mut(|undo| *undo = None);
     layout::with(|layout| layout.save());
     customize::close();
-    mark_all();
+    super::QuickSettings::changed();
 }
 
 /// Lets go of a drag in flight without keeping what it previewed; whether
@@ -125,7 +123,7 @@ pub(super) fn cancel() -> bool {
     if SESSION.with_borrow_mut(Option::take).is_none() {
         return false;
     }
-    mark_all();
+    super::QuickSettings::changed();
     true
 }
 
@@ -200,7 +198,7 @@ fn motion(point: Point) {
             session.motion(point, &Metrics::tokens(), BAND);
         }
     });
-    mark_all();
+    super::QuickSettings::changed();
 }
 
 /// The drag is over: what it previewed is kept.
@@ -291,7 +289,7 @@ pub(super) fn release() {
         Some(Drag::Resize { .. }) => commit(),
         None => {}
     }
-    mark_all();
+    super::QuickSettings::changed();
 }
 
 fn handle_side() -> f32 {
@@ -316,7 +314,7 @@ pub(super) fn hide(id: ControlId) {
         layout.hide(id);
         layout.save();
     });
-    mark_all();
+    super::QuickSettings::changed();
 }
 
 /// Whether a removed control can be put back where it was.
@@ -329,7 +327,7 @@ pub(super) fn undo() {
     if let Some(layout) = UNDO.with_borrow_mut(Option::take) {
         layout::replace(layout);
     }
-    mark_all();
+    super::QuickSettings::changed();
 }
 
 /// Control Center's order again, for the controls this machine has.
@@ -338,7 +336,7 @@ pub(super) fn reset() {
     layout::replace(Layout::default_for(Canvas::tokens(), &|id| {
         super::controls::available(id)
     }));
-    mark_all();
+    super::QuickSettings::changed();
 }
 
 // ───── the layers ───────────────────────────────────────────────────────────

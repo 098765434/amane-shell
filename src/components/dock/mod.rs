@@ -41,7 +41,7 @@ use std::time::{Duration, Instant};
 use amane::{
     Animation, BlurShape, Button, Color, Cursor, Full, InputArea, Keyboard, Layer, LayerWindow,
     Monitor, Overview, Parent, Point, Rectangle, Row, Service, Stack, Start, Vertical, Widget,
-    Windows, Workspaces, Zone, mark_all,
+    Windows, Workspaces, Zone,
 };
 
 use crate::components::app_icon;
@@ -59,6 +59,12 @@ use magnify::{Rest, Swollen};
 use model::{Icon, Section, Space, Win};
 use motion::{DockMotion, anim};
 use window_menu::{open_pin_menu, open_window_menu};
+
+amane_kit::marker! {
+    /// The dock's own state changed (its pins, a spring-load running
+    /// out): every monitor's dock draws again, nothing else.
+    pub Docks
+}
 
 /// The dock's layer-surface namespace; the niri `layer-rule` matches it
 /// (a clear surface that says where to frost), and an icon's menu hangs
@@ -321,6 +327,7 @@ fn row(sections: &[Section], rule: f32) -> Vec<Entry> {
 
 /// The dock on `monitor`. Registered with `App::window_per_monitor`.
 pub fn surface(monitor: &Monitor) -> LayerWindow {
+    Docks::watch();
     let motion = motion::motion();
 
     let windows: Vec<Win> = Windows::read().list().iter().map(Win::from).collect();
@@ -918,11 +925,11 @@ fn still_layer(
                 Some(drag) => drag.to((point.x, point.y)),
                 None => dock.drag = take(&pressed, (point.x, point.y), at).filter(|_| dock.out),
             });
-            mark_all();
+            // the dock under the pointer draws again for its input; no other shows the drag
         })
         .on_release(move |point: Point| {
             with_dock(&release_on, |dock| let_go(dock, point.y, at));
-            mark_all();
+            Docks::changed();
         })
         .on_files_over(move |point, files| {
             let motion = motion::motion();
@@ -1015,7 +1022,7 @@ fn files_over(
         held.sprung = false;
         held.opens = opens(&icon, files);
         if let Some(delay) = motion.spring_load {
-            redraw_after(delay + Duration::from_millis(10));
+            redraw_after::<Docks>(delay + Duration::from_millis(10));
         }
     }
     held.opens

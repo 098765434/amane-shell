@@ -11,7 +11,7 @@
 //! follows the fingers as they turn the category; the pills' names take
 //! the accent's colour as it reaches them.
 
-use amane::{Blend, Center, Color, Rectangle, Row, Stack, Start, Text, Widget, mark_all};
+use amane::{Blend, Center, Color, Rectangle, Row, Stack, Start, Text, Widget};
 use amane_kit::settings::{AppsLayout, change_launcher};
 
 use crate::components::color::with_alpha;
@@ -109,7 +109,7 @@ pub(super) fn search_row(
                 *field = Field::new();
                 true
             });
-            mark_all();
+            super::Launcher::changed();
         })))
     } else if let Some(digit) = hover_mode
         .and_then(Mode::digit)
@@ -168,12 +168,12 @@ fn leading_glyph(mode: Mode, hovered: bool) -> Rectangle {
         .fill(fill)
         .on_hover(|inside| {
             if with(|state| std::mem::replace(&mut state.back_hover, inside)) != inside {
-                mark_all();
+                super::Launcher::changed();
             }
         })
         .on_click(|_| {
             back_to_pill();
-            mark_all();
+            super::Launcher::changed();
         })
         .child(icon(glyph, GLYPH, label))
 }
@@ -243,7 +243,7 @@ fn more_menu() {
     let item = |name: &str, layout: AppsLayout| {
         let mut item = MenuItem::label(name).on_select(move || {
             change_launcher(|settings| settings.apps_layout = layout);
-            mark_all();
+            super::Launcher::changed();
         });
         if picked == layout {
             item = item.icon(Icon::glyph_with_font(
@@ -272,7 +272,7 @@ fn clipboard_menu() {
         )
         .item(MenuItem::label("Turn Off Clipboard History").on_select(|| {
             change_launcher(|settings| settings.clipboard.enabled = false);
-            mark_all();
+            super::Launcher::changed();
         }));
     context_menu::show_under(MORE_MENU_KEY, menu, LAUNCHER_NS, cursor());
 }
@@ -369,12 +369,12 @@ pub(super) fn mode_buttons(geometry: &Geometry, picked: Mode) -> Vec<Box<dyn Wid
                         before != state.hover_mode
                     });
                     if changed {
-                        mark_all();
+                        super::Launcher::changed();
                     }
                 })
                 .on_click(move |_| {
                     switch_mode(mode);
-                    mark_all();
+                    super::Launcher::changed();
                 })
                 .child(icon(
                     mode.glyph(),
