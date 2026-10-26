@@ -17,7 +17,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amane"
 version = "0.1.2"
-source = "git+https://github.com/098765434/amane?rev=1ba9c2daa6d13d7136dc7ebef01bdd2ccf1c974d#1ba9c2daa6d13d7136dc7ebef01bdd2ccf1c974d"
+source = "git+https://github.com/098765434/amane?rev=3c3d56b349362f4a3ac53eca14eb458a7cb4316a#3c3d56b349362f4a3ac53eca14eb458a7cb4316a"
 dependencies = [
  "bitflags",
  "fontconfig",
