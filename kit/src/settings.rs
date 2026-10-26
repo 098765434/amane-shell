@@ -135,6 +135,41 @@ pub fn change_desktop(edit: impl FnOnce(&mut Desktop)) {
     Config::<Desktop>::change(edit);
 }
 
+/// How the launcher shows the apps in its Apps mode.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum AppsLayout {
+    #[default]
+    Grid,
+    List,
+}
+
+/// The launcher: how it lays the apps out, and what its search leaves out.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct Launcher {
+    pub apps_layout: AppsLayout,
+
+    /// The sources the search leaves out, by their ids, like "web".
+    pub excluded_providers: Vec<String>,
+}
+
+impl Settings for Launcher {
+    const APP: &'static str = "amane-shell";
+    const FILE: &'static str = "launcher";
+}
+
+/// The launcher settings as they are now; a view that reads them redraws
+/// when they change.
+pub fn launcher() -> RwLockReadGuard<'static, Config<Launcher>> {
+    Config::<Launcher>::read()
+}
+
+/// Changes the launcher settings and saves them, for input handlers.
+pub fn change_launcher(edit: impl FnOnce(&mut Launcher)) {
+    Config::<Launcher>::change(edit);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -44,12 +44,13 @@ ones — the bar itself is not.
   a Customize window beside the card, after macOS's: a search, the controls by category, and a
   drag onto the card to add one or off it to remove one. The bar shows GNOME's privacy icons
   (screen shared, camera, microphone) and the settings that are on.
-- **Launcher** ([docs/launcher.md](docs/launcher.md)) — a Launchpad-style app launcher on a
-  glass panel in the middle of the screen, from a keybind (`launcher toggle` over IPC): category
-  pills, a grid of the installed apps that scrolls with momentum and swipes sideways between
-  categories, a right-click menu to open an app on a workspace or run its desktop actions,
-  keyboard focus moving between search, pills and apps, and a search that also does sums,
-  session actions, URLs and a web search. A click outside the panel closes it.
+- **Launcher** ([docs/launcher.md](docs/launcher.md)) — macOS Tahoe's Spotlight, from a keybind
+  (`launcher toggle` over IPC): a glass search pill with round buttons beside it for its modes,
+  growing into a panel as you type. The search ranks apps by a fuzzy match and by how much
+  they're used, answers sums and unit conversions in a card, finds session actions, URLs and a
+  web search, narrows to an app's own actions with Tab, and brings back past searches with Up.
+  Applications is a Launchpad grid with category pills, the apps used most on top, momentum
+  scrolling and sideways swipes between categories.
 - **Desktop widgets** ([docs/widgets.md](docs/widgets.md)) — macOS's widgets on the
   wallpaper, for watching: batteries, CPU, memory, temperature, network, disks and a System card,
   on Quick Settings' grid across each monitor. Drag them anywhere at any time, place the same
@@ -152,7 +153,7 @@ src/
     panel.rs                    the one-open-at-a-time overlay state the panels share
     context_menu/               reusable nested context menu on xdg-popups
     notifications/              toasts, the notification center and Do Not Disturb
-    launcher/                   the app launcher: search, category pills and the app grid
+    launcher/                   the launcher: Spotlight's search pill, its modes and the app grid
     dock/                       the dock: workspaces' windows and pins, drag, file drops (docs/dock.md)
     quick_settings/             Quick Settings: tiles, sliders and their pages
     grid/                       the grid Quick Settings and the widgets share: cells, layout, drag

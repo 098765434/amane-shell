@@ -4,7 +4,8 @@
 //!
 //! Each category is a page of its own. At rest only the category showing
 //! is drawn; while two fingers turn the page sideways, the one it's
-//! turning to is drawn beside it, both sliding under the fingers.
+//! turning to is drawn beside it, both sliding under the fingers. All
+//! Applications leads with the apps used most, a hairline under them.
 
 use amane::{
     Center, Color, Column, DesktopApp, Padding, Rectangle, Row, Stack, Start, Text, Widget,
@@ -18,8 +19,8 @@ use crate::tokens::{Styled, sys};
 
 use super::results::{self, Empty};
 use super::{
-    BODY, CELL, COLS, ICON, ICON_BOX, Layout, View, WIDTH, bucket, hover, on_app_click,
-    on_body_scroll, under,
+    BODY, CELL, COLS, GRID_W, ICON, ICON_BOX, Layout, View, apps_on, hover, on_app_click,
+    on_body_scroll,
 };
 use crate::components::material::{self, Level};
 
@@ -28,8 +29,9 @@ use crate::components::material::{self, Level};
 pub(super) const HIGHLIGHT_RADIUS: f32 = 14.0;
 
 /// Where this frame draws things: the body scrolled by `scroll`, the
-/// highlight at `x`, `y` and as strong as `highlight`, the whole body at
-/// `fade`, and the scrollbar at `scrollbar`.
+/// highlight at `x`, `y` on item `selected` and as strong as `highlight`,
+/// the whole body at `fade`, and the scrollbar at `scrollbar`; `reveal`
+/// while Super shows the rows' fuller lines.
 #[derive(Clone, Copy)]
 pub(super) struct At {
     pub(super) scroll: f32,
@@ -38,6 +40,8 @@ pub(super) struct At {
     pub(super) highlight: f32,
     pub(super) fade: f32,
     pub(super) scrollbar: f32,
+    pub(super) selected: usize,
+    pub(super) reveal: bool,
 }
 
 /// The category showing and, while turning, the one beside it, `offset`
@@ -54,18 +58,20 @@ pub(super) fn pages(view: &View, offset: f32, at: At) -> Rectangle {
     let layers: Vec<Box<dyn Widget>> = shown
         .into_iter()
         .map(|page| {
+            let suggested = page == 0 && view.suggested.len() == COLS;
             let body = if page == view.page {
-                page_of(&view.shown, Some(at))
+                page_of(&view.shown, Some(at), suggested)
             } else {
                 // the one turning in: at its top, not yet live
-                page_of(&under(view.all, bucket(&view.buckets, page)), None)
+                let apps = apps_on(view.all, &view.buckets, page, &view.suggested);
+                page_of(&apps, None, suggested)
             };
-            boxed(body.translate((page as f32 - offset) * WIDTH, 0.0))
+            boxed(body.translate((page as f32 - offset) * GRID_W, 0.0))
         })
         .collect();
 
     Rectangle::new()
-        .width(WIDTH)
+        .width(GRID_W)
         .height(BODY)
         .fill(Color::TRANSPARENT)
         .clip()
@@ -77,12 +83,12 @@ pub(super) fn pages(view: &View, offset: f32, at: At) -> Rectangle {
         .child(Stack::new(layers))
 }
 
-/// One category's page: its grid, or a note when it's empty. Without `at`
-/// it's one turning in, drawn at its top with no highlight, scrollbar or
-/// hover.
-fn page_of(apps: &[&DesktopApp], at: Option<At>) -> Rectangle {
+/// One category's page: its grid, or a note when it's empty, a hairline
+/// under its first row when that's the `suggested` apps. Without `at` it's
+/// one turning in, drawn at its top with no highlight, scrollbar or hover.
+fn page_of(apps: &[&DesktopApp], at: Option<At>, suggested: bool) -> Rectangle {
     if apps.is_empty() {
-        return results::empty(Empty::Category);
+        return results::empty(Empty::Category, GRID_W, BODY);
     }
     let live = at.is_some();
     let at = at.unwrap_or(At {
@@ -92,6 +98,8 @@ fn page_of(apps: &[&DesktopApp], at: Option<At>) -> Rectangle {
         highlight: 0.0,
         fade: 1.0,
         scrollbar: 0.0,
+        selected: 0,
+        reveal: false,
     });
 
     let highlight = Rectangle::new()
@@ -115,14 +123,22 @@ fn page_of(apps: &[&DesktopApp], at: Option<At>) -> Rectangle {
         })
         .collect();
 
-    ScrollView::new(Axis::Vertical, WIDTH, BODY)
+    let mut layers = vec![boxed(highlight), boxed(Column::new(lines))];
+    if suggested {
+        // in the room over the second row's icons
+        layers.push(boxed(
+            Rectangle::new()
+                .width(GRID_W)
+                .height(sys::border::hairline())
+                .fill(material::separator())
+                .translate(0.0, CELL),
+        ));
+    }
+    ScrollView::new(Axis::Vertical, GRID_W, BODY)
         .content(Layout::Grid.content(apps.len()))
         .offset(at.scroll)
         .scrollbar(at.scrollbar)
-        .build(Stack::new(vec![
-            boxed(highlight),
-            boxed(Column::new(lines)),
-        ]))
+        .build(Stack::new(layers))
 }
 
 /// One app: its icon in the highlight's box, its name under it on one

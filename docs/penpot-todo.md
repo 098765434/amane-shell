@@ -38,11 +38,14 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `widget.dim.opacity`, `widget.drag.scale`, `widget.drag.band`, `widget.drag.threshold` | 0.45, 1.04, 0.1, 6 | `widgets/mod.rs` (`DIM`, `DRAG_SCALE`, `BAND`, `THRESHOLD`) |
 | `widget.card.pad`, `widget.type.figure`, `widget.type.figure-large` | 16, 28, 40 | `widgets/catalog/mod.rs` (`PAD`, `FIGURE`, `FIGURE_LARGE`); add `widget` to `tokens::COMPONENTS` and `("widgets/", "widget")` to the checker's owners with the first `widget.*` token |
 | `widget.gallery.{width,height,sidebar,inset,preview}`, `widget.gallery.open-scale` | 900, 420, 240, 20, 120, 0.96 | `widgets/gallery.rs` |
-| `launcher.grid.cols`, `.rows`, `.cell`, `.icon`, `.highlight` | 5, 4, 150, 64, 84 | `launcher/mod.rs` (`COLS`, `ROWS`, `CELL`, `ICON`, `ICON_BOX`) |
-| `launcher.panel.inset`, `.radius`, `launcher.header.height`, `launcher.pills.height` | 15, 22, 40, 40 | `launcher/mod.rs` (`INSET`, `RADIUS`, `HEADER`, `PILLS`) |
-| `launcher.result.height`, `.gap`, `.icon` | 56, 6, 40 | `launcher/mod.rs` (`ROW`, `ROW_GAP`), `launcher/results.rs` (`RESULT_ICON`) |
+| `launcher.grid.cols`, `.rows`, `.cell`, `.icon`, `.highlight` | 5, 3, 150, 64, 84 | `launcher/mod.rs` (`COLS`, `ROWS`, `CELL`, `ICON`, `ICON_BOX`) |
+| `launcher.panel.inset`, `.gap`, `launcher.pills.height`, `launcher.empty.height` | 15, 10, 40, 200 | `launcher/mod.rs` (`INSET`, `GAP`, `PILLS`, `EMPTY_H`) |
+| `launcher.pill.width`, `.height`, `launcher.mode-button.size`, `.gap`, `launcher.sheet.radius`, `launcher.top` | 680, 52, 52, 12, 26, 0.2 | `launcher/shape.rs` (`PILL_W`, `PILL_H`, `CIRCLE`, `CIRCLE_GAP`, `SHEET_RADIUS`, `TOP`) |
+| `launcher.result.height`, `.gap`, `.max-rows`, `.icon`, `.badge` | 52, 4, 8, 40, 16 | `launcher/mod.rs` (`ROW`, `ROW_GAP`, `MAX_ROWS`), `launcher/results.rs` (`RESULT_ICON`, `BADGE`) |
+| `launcher.answer.height`, `.size`, `launcher.chip.height` | 88, 30, 32 | `launcher/mod.rs` (`ANSWER_H`, `CHIP_H`), `launcher/results.rs` (`ANSWER_TEXT`) |
 | `launcher.open.scale`, `launcher.scroll.wheel-step` | 0.96, 60 | `launcher/mod.rs` (`OPEN_SCALE`, `WHEEL_STEP`) |
-| `launcher.search.size`, `.caret`, `launcher.logo.size` | 18, 2×22, 24 | `launcher/header.rs` (`SEARCH_TEXT`, `CARET`, `LOGO`) |
+| `launcher.search.size`, `.caret`, `.inset`, `launcher.leading.size`, `.glyph`, `launcher.keycap.height` | 22, 2×26, 16, 30, 22, 24 | `launcher/header.rs` (`SEARCH_TEXT`, `CARET`, `ROW_INSET`, `LEADING`, `GLYPH`, `KEYCAP`) |
+| `launcher.mode-button.glyph`, `.lift`, `.slide` | 24, 1.06, 12 | `launcher/header.rs` (`MODE_GLYPH`, `MODE_LIFT`, `MODE_SLIDE`) |
 | `launcher.highlight.radius` | 14 | `launcher/grid.rs` (`HIGHLIGHT_RADIUS`); add `launcher` to `tokens::COMPONENTS` with the first `launcher.*` token |
 | `launcher.highlight.unfocused`, `launcher.scrollbar.idle`, `launcher.paging.*` | 0.45, 800 ms, 450 ms spring 0.08 / flick 1.2 / band 0.3 | `launcher/mod.rs` (`UNFOCUSED`, `SCROLLBAR_IDLE`, `PAGING`) |
 | `launcher.focus-ring.width`, `.gap`, `.opacity`, `launcher.empty.icon` | 2, 2, 0.55, 40 | `launcher/header.rs` (`RING`, `RING_GAP`, `RING_ALPHA`), `launcher/results.rs` (`EMPTY_ICON`) |

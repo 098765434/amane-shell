@@ -1,33 +1,46 @@
-//! What a search finds, in the order it's listed: a sum's answer, the
-//! matching apps, the session actions named, the URL typed and, always
-//! last, a web search, so the list is never empty. Each runs on Enter or a
-//! click and closes the launcher.
+//! What a search finds and what each find does. An [`Entry`] is one row:
+//! its icon, its title, a line under it (and the fuller one Super shows),
+//! and its [`Action`] on Enter or a click. Running one counts it in the
+//! launcher's [`usage`](super::usage), so what's used rises.
 
-use amane::{DesktopApp, Service};
+use amane::DesktopApp;
 
-use crate::components::icons::{
-    ICON_CALCULATE, ICON_LOCK, ICON_LOG_OUT, ICON_OPEN_IN_NEW, ICON_POWER, ICON_RESTART,
-    ICON_SEARCH, ICON_SLEEP,
-};
 use crate::components::panel::close;
 use crate::components::text_edit;
 use crate::services::run_now;
 use crate::services::session::Session;
 
-use super::model::{self, SessionAction};
-
-/// How much of an app's description its row shows.
-const DESCRIPTION_CHARS: usize = 52;
+use super::model::SessionAction;
+use super::usage;
 
 #[derive(Clone)]
 pub(super) enum Icon {
-    App(DesktopApp),
+    App(Box<DesktopApp>),
     Glyph(char),
+}
+
+/// Somewhere a search can be narrowed to: Tab on a row that has one, or a
+/// click on its chip.
+#[derive(Clone, Debug, PartialEq)]
+pub(super) enum Scope {
+    /// An app: its own actions.
+    App(DesktopApp),
+}
+
+impl Scope {
+    /// What its chip and the token in the search field say.
+    pub(super) fn name(&self) -> &str {
+        match self {
+            Self::App(app) => app.name(),
+        }
+    }
 }
 
 #[derive(Clone)]
 pub(super) enum Action {
     Launch(DesktopApp),
+    /// One of an app's `[Desktop Action]`s, by its place in the list.
+    AppShortcut(DesktopApp, usize),
     SessionAction(SessionAction),
     /// Opens in the default browser, which then gets the focus.
     Open(String),
@@ -36,99 +49,97 @@ pub(super) enum Action {
 
 #[derive(Clone)]
 pub(super) struct Entry {
+    /// What its use is remembered by, like "app:firefox.desktop".
+    pub(super) key: String,
     pub(super) title: String,
     pub(super) subtitle: Option<String>,
+    /// The fuller line Super shows in the subtitle's place, like a path.
+    pub(super) detail: Option<String>,
+    /// A short note at the row's end, like a date.
+    pub(super) trailing: Option<String>,
     pub(super) icon: Icon,
+    /// A small glyph on the icon's corner, saying where it's from.
+    pub(super) badge: Option<char>,
     pub(super) action: Action,
+    /// Where Tab narrows the search to from this row.
+    pub(super) scope: Option<Scope>,
 }
 
-/// The entries for `query` over the installed `apps`.
-pub(super) fn build(query: &str, apps: &[DesktopApp]) -> Vec<Entry> {
-    let query = query.trim();
-    let needle = query.to_lowercase();
-    let mut entries = Vec::new();
-
-    if let Some(answer) = model::evaluate(query) {
-        let value = model::format_number(answer);
-        entries.push(Entry {
-            title: format!("= {value}"),
-            subtitle: Some(String::from("Copy to clipboard")),
-            icon: Icon::Glyph(ICON_CALCULATE),
-            action: Action::Copy(value),
-        });
-    }
-
-    for app in apps
-        .iter()
-        .filter(|app| model::matches(app.name(), app.keywords(), &needle))
-    {
-        entries.push(Entry {
-            title: app.name().to_string(),
-            subtitle: app
-                .description()
-                .map(|text| truncate(text, DESCRIPTION_CHARS)),
-            icon: Icon::App(app.clone()),
-            action: Action::Launch(app.clone()),
-        });
-    }
-
-    let session = Session::read();
-    for power in SessionAction::ALL {
-        let allowed = match power {
-            SessionAction::Suspend => session.can_suspend(),
-            SessionAction::Restart => session.can_reboot(),
-            SessionAction::PowerOff => session.can_power_off(),
-            SessionAction::Lock | SessionAction::LogOut => true,
-        };
-        if allowed && power.matches(&needle) {
-            entries.push(Entry {
-                title: power.label().to_string(),
-                subtitle: Some(String::from("System")),
-                icon: Icon::Glyph(glyph(power)),
-                action: Action::SessionAction(power),
-            });
+impl Entry {
+    pub(super) fn new(
+        key: impl Into<String>,
+        title: impl Into<String>,
+        icon: Icon,
+        action: Action,
+    ) -> Self {
+        Self {
+            key: key.into(),
+            title: title.into(),
+            subtitle: None,
+            detail: None,
+            trailing: None,
+            icon,
+            badge: None,
+            action,
+            scope: None,
         }
     }
-    drop(session);
 
-    if model::looks_like_url(query) {
-        entries.push(Entry {
-            title: format!("Open {query}"),
-            subtitle: Some(String::from("Default browser")),
-            icon: Icon::Glyph(ICON_OPEN_IN_NEW),
-            action: Action::Open(model::normalize_url(query)),
-        });
+    pub(super) fn subtitle(mut self, subtitle: impl Into<String>) -> Self {
+        self.subtitle = Some(subtitle.into());
+        self
     }
 
-    entries.push(Entry {
-        title: format!("Search the web for \u{201c}{query}\u{201d}"),
-        subtitle: Some(String::from("Google")),
-        icon: Icon::Glyph(ICON_SEARCH),
-        action: Action::Open(format!(
-            "{}{}",
-            model::SEARCH_URL,
-            model::percent_encode(query)
-        )),
-    });
+    pub(super) fn detail(mut self, detail: impl Into<String>) -> Self {
+        self.detail = Some(detail.into());
+        self
+    }
 
-    entries
-}
+    pub(super) fn scope(mut self, scope: Scope) -> Self {
+        self.scope = Some(scope);
+        self
+    }
 
-fn glyph(power: SessionAction) -> char {
-    match power {
-        SessionAction::Lock => ICON_LOCK,
-        SessionAction::LogOut => ICON_LOG_OUT,
-        SessionAction::Suspend => ICON_SLEEP,
-        SessionAction::Restart => ICON_RESTART,
-        SessionAction::PowerOff => ICON_POWER,
+    /// An app's row: its icon and description, its command line under
+    /// Super, and Tab into its actions when it has any.
+    pub(super) fn app(app: &DesktopApp) -> Self {
+        let mut entry = Self::new(
+            app_key(app),
+            app.name(),
+            Icon::App(Box::new(app.clone())),
+            Action::Launch(app.clone()),
+        )
+        .detail(format!("{} · {}", app.id(), app.exec()));
+        if let Some(description) = app.description() {
+            entry = entry.subtitle(truncate(description, DESCRIPTION_CHARS));
+        }
+        if !app.actions().is_empty() {
+            entry = entry.scope(Scope::App(app.clone()));
+        }
+        entry
     }
 }
 
-/// Does what `action` says, and closes the launcher.
-pub(super) fn run_action(action: &Action) {
+/// How much of an app's description its row shows.
+const DESCRIPTION_CHARS: usize = 64;
+
+/// What an app's use is remembered by.
+pub(super) fn app_key(app: &DesktopApp) -> String {
+    format!("app:{}", app.id())
+}
+
+/// Does what `entry` says, counting it picked for `query`, and closes the
+/// launcher.
+pub(super) fn run(entry: &Entry, query: &str) {
+    usage::record(&entry.key, query);
     close();
-    match action {
+    match &entry.action {
         Action::Launch(app) => app.launch(),
+        Action::AppShortcut(app, index) => {
+            if let Some(action) = app.actions().get(*index) {
+                action.launch();
+            }
+        }
         Action::SessionAction(SessionAction::Lock) => Session::lock(),
         Action::SessionAction(SessionAction::LogOut) => Session::log_out(),
         Action::SessionAction(SessionAction::Suspend) => Session::suspend(),
@@ -196,7 +207,7 @@ fn window_of(windows: &str, app_id: &str) -> Option<u64> {
 }
 
 /// `text` cut to `max` characters, with an ellipsis when it was longer.
-fn truncate(text: &str, max: usize) -> String {
+pub(super) fn truncate(text: &str, max: usize) -> String {
     let text = text.trim();
     if text.chars().count() <= max {
         return text.to_string();

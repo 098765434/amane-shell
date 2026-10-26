@@ -1,6 +1,7 @@
 //! What the launcher works out without a compositor: which pill an app
-//! goes under, what a query is (a sum, a URL, a session action's name) and
-//! how a URL is spelled. The view reads it, and the tests run it.
+//! goes under, what a query is (a sum, a URL, a session action's name), how
+//! a URL is spelled, and where Up and Down go through the searches run
+//! before. The view reads it, and the tests run it.
 
 /// The pills, in the order they show. A bucket's index is its bit in an
 /// app's mask; "All Applications" holds every app.
@@ -67,13 +68,17 @@ pub(super) fn active_buckets(masks: impl IntoIterator<Item = u16>) -> Vec<usize>
         .collect()
 }
 
-/// Whether an app named `name` with `keywords` matches `needle`, already
-/// lowercased.
-pub(super) fn matches(name: &str, keywords: &[String], needle: &str) -> bool {
-    name.to_lowercase().contains(needle)
-        || keywords
-            .iter()
-            .any(|keyword| keyword.to_lowercase().starts_with(needle))
+/// Where Up (`older`) or Down goes from `at` through `len` searches run
+/// before, newest first, `None` being the empty field; `None` when there's
+/// nowhere further to go.
+pub(super) fn history_step(at: Option<usize>, older: bool, len: usize) -> Option<Option<usize>> {
+    match (at, older) {
+        (None, true) if len > 0 => Some(Some(0)),
+        (Some(at), true) if at + 1 < len => Some(Some(at + 1)),
+        (Some(0), false) => Some(None),
+        (Some(at), false) => Some(Some(at - 1)),
+        _ => None,
+    }
 }
 
 /// A session action the search offers by name.
@@ -299,11 +304,14 @@ mod tests {
     }
 
     #[test]
-    fn an_app_is_found_by_its_name_or_a_keyword() {
-        let keywords = strings(&["Internet", "WWW"]);
-        assert!(matches("Firefox", &keywords, "fire"));
-        assert!(matches("Firefox", &keywords, "www"));
-        assert!(!matches("Firefox", &keywords, "chrome"));
+    fn up_and_down_walk_the_searches_run_before() {
+        assert_eq!(history_step(None, true, 3), Some(Some(0)));
+        assert_eq!(history_step(Some(0), true, 3), Some(Some(1)));
+        assert_eq!(history_step(Some(2), true, 3), None);
+        assert_eq!(history_step(Some(1), false, 3), Some(Some(0)));
+        assert_eq!(history_step(Some(0), false, 3), Some(None));
+        assert_eq!(history_step(None, false, 3), None);
+        assert_eq!(history_step(None, true, 0), None);
     }
 
     #[test]

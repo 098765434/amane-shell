@@ -13,6 +13,7 @@ use crate::components::workspace_menu;
 use crate::tokens::sys;
 
 use super::LAUNCHER_NS;
+use super::entries::{self, Entry};
 
 /// Registry key for the menu, built afresh for each app.
 const APP_MENU_KEY: &str = "amane.launcher.app-menu";
@@ -33,10 +34,7 @@ pub(super) fn open(app: &DesktopApp) {
         .item(
             MenuItem::label("Open")
                 .icon(glyph(ICON_OPEN_IN_NEW))
-                .on_select(move || {
-                    close();
-                    launched.launch();
-                }),
+                .on_select(move || entries::run(&Entry::app(&launched), "")),
         )
         .item(
             MenuItem::label("Open in Workspace")

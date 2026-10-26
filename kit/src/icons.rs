@@ -121,6 +121,14 @@ pub const ICON_WIFI: char = ICON_WIFI_LEVELS[4];
 pub const ICON_WIFI_NONE: char = '\u{f0b0}';
 pub const ICON_WIFI_OFF: char = '\u{e1da}';
 pub const ICON_CABLE: char = '\u{efe6}';
+pub const ICON_FOLDER: char = '\u{e2c7}';
+pub const ICON_LAYERS: char = '\u{e53b}';
+pub const ICON_CONTENT_PASTE: char = '\u{e14f}';
+pub const ICON_CONTENT_COPY: char = '\u{e14d}';
+pub const ICON_MORE_HORIZ: char = '\u{e5d3}';
+pub const ICON_SWAP: char = '\u{e8d4}';
+pub const ICON_BOLT: char = '\u{ea0b}';
+pub const ICON_HISTORY: char = '\u{e889}';
 
 /// The wedge for a signal strength (0–100): the nearest of its five steps,
 /// never fewer than one, since a network you can see has some signal.
