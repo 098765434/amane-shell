@@ -53,6 +53,7 @@ pub mod glass;
 pub mod glass_region;
 pub mod icons;
 pub mod kinetic;
+pub mod lab;
 pub mod layout;
 pub mod list;
 pub mod marker;
