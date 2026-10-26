@@ -76,8 +76,8 @@ when it's off.
 | `motion.rs` | `DockMotion` |
 | `window_menu.rs` | a window's and a pinned app's right-click menus |
 
-It reuses the shared [`EdgeReveal`, `workspace_menu`, `app_icon`, `Divider::vertical` and
-`glass_region`](../kit/components.md).
+It reuses the kit's [`EdgeReveal`, `app_icon`, `Divider::vertical` and
+`glass_region`](../kit/components.md), and the shell's [`workspace_menu`](#workspace_menu).
 
 - **One size.** The surface spans the monitor and is as tall as the card at full icon size plus
   room for the swell and the name, so it never resizes, even as icons shrink to fit; a resize every
@@ -108,6 +108,15 @@ It reuses the shared [`EdgeReveal`, `workspace_menu`, `app_icon`, `Divider::vert
 - **Glass** is Quick Settings': `Material::Control.shape` frosts behind the card (and the name
   label), and `Material::Control.lit` adds the shader's edge where the compositor has no glass
   material. The niri layer rule is `clear` (`xray false` only); the surface says where to frost.
+
+### workspace_menu
+
+The shell's `src/components/workspace_menu.rs`, which the launcher's app menu uses too.
+
+`workspace_menu::all(pick)` is a submenu of every workspace, `pick` run with the chosen one's
+id. `workspace_menu::on_focused_output(pick)` is the focused monitor's workspaces, the empty one
+niri keeps after the last called "New Workspace". Workspaces are named as niri names them, or
+"Workspace N".
 
 ## Known limits
 

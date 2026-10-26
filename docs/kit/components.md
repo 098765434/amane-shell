@@ -1,10 +1,11 @@
-# Shared components
+# Components
 
-The building blocks Quick Settings, the notification center, the context menu and the dock are made of. Like the
+amane-kit's building blocks (`kit/src/`, `amane_kit::*`), which Quick Settings, the notification
+center, the context menu, the dock, the launcher and Shell Settings are made of. Like the
 [buttons](controls.md), each is named and structured after its Material 3 counterpart and drawn in
 the shell's macOS look. They read `sys.*` tokens only, so any component can use them.
 
-| Component | File | M3 counterpart | Used for |
+| Component | `kit/src/` | M3 counterpart | Used for |
 |---|---|---|---|
 | `Card` | `card.rs` | [Cards](https://m3.material.io/components/cards/overview) | the notification center's sheet, context menus, tooltips |
 | `TopAppBar` | `app_bar.rs` | [Top app bar](https://m3.material.io/components/app-bars/overview) (small) | the title row of each Quick Settings page and of the center |
@@ -15,12 +16,10 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `app_icon` | `app_icon.rs` | none | the dock's icons, notification cards' app icons, the launcher's apps |
 | `EdgeReveal` | `edge_reveal.rs` | none | the dock hiding at the bottom edge |
 | `ScrollView` | `scroll_view.rs` | none | the launcher's grid, results and pill bar, the Customize window's panes |
-| `SearchField` | `search_field.rs` | [Search](https://m3.material.io/components/search/overview) (bar) | the Customize window's "Search Controls" |
 | `Flow` | `flow.rs` | none | the Customize window's controls, flowing into rows |
-| `text_edit::Field` | `text_edit.rs` | none | the launcher's and the Customize window's search text |
 | `Kinetic`, `AxisLock` | `kinetic.rs` | none (iOS's scroll physics) | the launcher's scrolling |
 | `Pager` | `pager.rs` | none | the launcher's categories |
-| `workspace_menu` | `workspace_menu.rs` | none | the dock's "Move to Workspace" and "Open in Workspace", the launcher's "Open in Workspace" |
+| `Dialog` | `dialog.rs` | [Dialogs](https://m3.material.io/components/dialogs/overview) (basic) | the shell's alert, an app's modal dialog |
 
 ## Card
 
@@ -135,22 +134,6 @@ scrolled (past the ends too, for a rubber band), `.on_scroll(…)` takes the scr
 gives the viewport. It scrolls by a negative padding inside the clip, so the content's hover and
 click areas move with it. Where it's scrolled to is the caller's: usually a `Kinetic`.
 
-## SearchField and text_edit
-
-`SearchField::new(id, &field, focused)` is a `surface.raised` capsule a control tall: a magnifier,
-the query (or a `.placeholder(…)`, "Search" by default) in `sys.type.label` with its caret (accent,
-while `focused`) and selection (a `state.selected` wash), and a clear (×) button while there's a
-query and an `.on_clear(…)`. `.width(…)` sets its width. It draws the text itself rather than
-focusing a `TextInput`, so every key reaches the surface's `on_key`.
-
-The text is a `text_edit::Field`: the characters, the caret and the selection's other end, with
-`insert`, `backspace`, `delete_selection`, `left`/`right`/`move_to` (extending the selection with
-Shift) and `select_all`, and `handle(key, modifiers)`, which applies the keys a one-line field
-takes — characters, Space, Backspace, Left/Right/Home/End with or without Shift, Ctrl+A/C/X/V
-through wl-clipboard (`text_edit::copy`, `paste`) — and says whether the key was the field's.
-Line breaks never go in. It's pure and tested; the launcher types into one with its own key
-routing, the Customize window through `handle`.
-
 ## Flow
 
 `Flow::new(width, gap_x, gap_y)` lays fixed-size `.item(width, height, widget)`s out in rows:
@@ -187,7 +170,7 @@ without the spring. `offset(count, &motion)` is the fractional page to draw, rub
 the ends. `PagerMotion` holds the settle's duration and easing, the flick speed and the rubber
 band. The launcher turns it sideways through its categories.
 
-## Dialog and alert
+## Dialog
 
 `kit::dialog::Dialog` is macOS 26's alert (`dialog/dialog-*.css`): a 260-wide card of thick glass
 (`Material::Sheet`, radius `dialog.radius`) with an optional icon (`Icon::App(path)` or
@@ -204,22 +187,11 @@ They're 32 tall, with cancel on the left and the default on the right. Otherwise
 `.side_by_side()` and `.stacked()` choose for it. `height()` measures the card from its text,
 so it's as tall as its content: 152 for the design's side-by-side sample, 216 stacked.
 
-It shows in two places, both drawing `Dialog::content` on their glass:
-
-- **An app's dialog:** `.open(parent)` puts it in a modal window over the app's window. niri's
-  generated rule for a floating window of an amane app (a dialog floats) gives it the corners,
-  the shadow (`0 18 48`) and the thick glass. Without that rule it's on the window background.
-- **The shell's alert:** `alert::show(dialog)` puts it in the middle of the screen, on the
-  `amane.alert` surface, which frosts itself and holds the keyboard until answered. Quick
-  Settings' Restart…, Power Off… and Log Out… ask with it. In debug builds,
-  `printf 'alert-test\nstacked\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock` shows a sample.
-
-## workspace_menu
-
-`workspace_menu::all(pick)` is a submenu of every workspace, `pick` run with the chosen one's
-id. `workspace_menu::on_focused_output(pick)` is the focused monitor's workspaces, the empty one
-niri keeps after the last called "New Workspace". Workspaces are named as niri names them, or
-"Workspace N".
+An app shows it with `.open(parent)`, in a modal window over the app's window. niri's generated
+rule for a floating window of an amane app (a dialog floats) gives it the corners, the shadow
+(`0 18 48`) and the thick glass. Without that rule it's on the window background. The shell shows
+the same card as its alert, in the middle of the screen
+([quick-settings.md](../shell/quick-settings.md#the-alert)).
 
 ## Under the components
 
@@ -235,6 +207,19 @@ niri keeps after the last called "New Workspace". Workspaces are named as niri n
   frost it asks niri for (`shape`), what the surface draws where niri lays the tint and edge on
   itself (`fill`, `lit`, `stroke`), and the vibrant labels, fills and separator on it. See
   [materials.md](../design-system/materials.md).
+- `glass.rs` (and its shader, `glass.wgsl`) is the lit edge and glow a translucent surface wears
+  where niri draws no glass material of its own.
+- `marker.rs` holds `marker!`: a service holding nothing, for state kept elsewhere, so only the
+  windows that `watch()` it draw again when it's `changed()` ([performance.md](../development/performance.md)).
+- `settings.rs` holds the shell's settings files, `appearance.json`, `desktop.json` and
+  `launcher.json` under `~/.config/amane-shell/`, which a settings app changes and the shell
+  follows live.
+- `theme.rs` holds the runtime inputs the tokens resolve with (mode, density, accent, text scale)
+  and the ones the materials follow (glass level, higher contrast, reduced motion, adaptive glass,
+  vibrancy), each from its `AMANE_*` override, else the settings file, else the system
+  ([tokens.md](../design-system/tokens.md)).
+- `tokens/` holds the Penpot resolver, the manual's checks (`amane-shell tokens check`) and the
+  functions `build.rs` generates, one per token.
 - `glass_region.rs` is what's under the materials: moving shapes with their layer
   (`transformed`, `faded`), and the glass level every tint goes through (`level`: `Clear` 0.8 of
   the tint, `Tinted`, `Solid` opaque, and the system's high contrast, which, like `Solid`, turns

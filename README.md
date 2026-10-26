@@ -1,7 +1,7 @@
 # amane-shell
 
-A custom Wayland desktop bar for the [niri](https://github.com/YaLTeR/niri) compositor, built on the
-[amane](https://github.com/098765434/amane) shell library (a fork). macOS-flavoured: a compact
+A macOS-flavoured Wayland desktop shell for the [niri](https://github.com/YaLTeR/niri) compositor, built on the
+[amane](https://github.com/098765434/amane) shell library (a fork). It has a compact
 bottom bar that is one uniform frosted strip (`Material::Bar`, frosted by niri), a dock that rises
 from the bottom edge and with niri's overview, and glass floating surfaces (context menus, Quick
 Settings, the launcher, notification toasts and the notification center), all blurred by the
@@ -15,59 +15,23 @@ compositor.
 
 ## Features
 
-- **Status bar** ([docs/shell/status-bar.md](docs/shell/status-bar.md)) — a compact bottom bar: workspace
-  pips on the left (click or scroll to switch) and the status cluster on the right (privacy,
-  volume, Bluetooth, network, battery, Quick Settings, notifications, clock). Every item has a
-  tooltip and turns into a white rounded tile while hovered or while what it opens is open.
-- **Status icons** — volume, Bluetooth, network, Tailscale and battery, each optional and
-  opening its Quick Settings page: Sound (volume, microphone and devices), Bluetooth (connect,
-  pair, forget), Wi‑Fi (scan and join), Tailscale (connect, log in, exit node, routes/DNS,
-  block incoming, the tailnet's devices) and Battery (power profile, peripherals).
-- **Dock** ([docs/shell/dock.md](docs/shell/dock.md)) — a macOS-style dock that rises from the bottom edge
-  (and with niri's overview), showing every workspace of its monitor side by side with a rule
-  between them and an icon per window. Pin apps to a workspace, drag icons to reorder windows or
-  move them between workspaces, and drop files on an icon to open them with that app (hold them
-  there and its window comes into view).
-- **Context menus** ([docs/shell/context-menu.md](docs/shell/context-menu.md)) — right-click a window's icon in the dock for focus/close/fullscreen/float/move-to-workspace/pin,
-  built on amane's xdg-popup support (nested submenus, outside-click dismiss).
-- **Notifications** ([docs/shell/notifications.md](docs/shell/notifications.md)) — the shell is the
-  notification daemon (through amane): macOS-style toasts at the top-right (hover to hold, swipe
-  to put away), a notification center sidebar opened from the clock with iOS-style stacks per
-  app, and Do Not Disturb (on, for an hour, until this evening or tomorrow; critical
-  notifications still show).
-- **Quick Settings** ([docs/shell/quick-settings.md](docs/shell/quick-settings.md)) — GNOME's quick
-  settings in the macOS Control Center look, from the bar's slider button. The system row
-  (battery, screenshot, lock, power menu), Now Playing, volume, microphone and brightness
-  sliders, and tiles for wired, Wi‑Fi (and hotspot), VPN, Bluetooth, power mode, night light,
-  dark style, Do Not Disturb, keyboard light, airplane mode and background apps. Each shows only
-  when the machine has it, and each opens a page of its own that slides in. Edit Controls opens
-  a Customize window beside the card, after macOS's: a search, the controls by category, and a
-  drag onto the card to add one or off it to remove one. The bar shows GNOME's privacy icons
-  (screen shared, camera, microphone) and the settings that are on.
-- **Launcher** ([docs/shell/launcher.md](docs/shell/launcher.md)) — macOS Tahoe's Spotlight, from a keybind
-  (`launcher toggle` over IPC): a glass search pill with round buttons beside it for its modes,
-  growing into a panel as you type. The search ranks apps and actions by a fuzzy match and by
-  how much they're used, answers sums and unit conversions in a card, finds URLs and a web
-  search, runs Quick Settings' controls, the session, a timer and apps' desktop actions (some
-  asking for an argument, `timer 5m`, some on quick keys), keeps a clipboard history to paste
-  from once it's turned on, finds files by name (and by content with LocalSearch), narrows to an app's own actions with Tab, and brings back past searches with Up.
-  Applications is a Launchpad grid with category pills, the apps used most on top, momentum
-  scrolling and sideways swipes between categories.
-- **Desktop widgets** ([docs/shell/widgets.md](docs/shell/widgets.md)) — macOS's widgets on the
-  wallpaper: a stroke-drawn clock, batteries, CPU, memory, temperature, network, disks and a System card,
-  on Quick Settings' grid across each monitor. Drag them anywhere at any time, place the same
-  kind more than once with its own settings, right-click for sizes and what each shows, and
-  Edit Widgets for a gallery to drag new ones from. They fade back while windows are open.
-- **Buttons** ([docs/kit/controls.md](docs/kit/controls.md)) and **components**
-  ([docs/kit/components.md](docs/kit/components.md)) — shared push and icon buttons, a switch, a
-  segmented button, cards, top app bars, lists, dividers and a slider, each after its Material 3
-  counterpart but drawn in the shell's macOS/iOS look.
-- **Design tokens** — every colour, size, gap and font is a token designed in Penpot and exported
-  to `design-tokens/tokens.json`, compiled in with `include_str!` and resolved the way Penpot does
-  (amane-kit's `kit/src/tokens`). See [docs/design-system/tokens.md](docs/design-system/tokens.md).
-- **Keeping it cheap** ([docs/development/performance.md](docs/development/performance.md)) — what makes a window draw,
-  what a frame costs, and the rules (scoped markers, quiet services, animations made once,
-  opacity) that keep an idle desktop from drawing at all; read it before adding a component.
+- **Status bar**: workspace pips, the status icons, Quick Settings, notifications, the timer and
+  the clock, on one frosted strip ([docs/shell/status-bar.md](docs/shell/status-bar.md)).
+- **Dock**: every workspace's windows and pinned apps, rising from the bottom edge and with the
+  overview; drag to reorder or move, drop files to open them ([docs/shell/dock.md](docs/shell/dock.md)).
+- **Launcher**: macOS Tahoe's Spotlight, with Applications, Files, Actions and a clipboard
+  history ([docs/shell/launcher.md](docs/shell/launcher.md)).
+- **Notifications**: the shell is the notification daemon: toasts, a notification center and
+  Do Not Disturb ([docs/shell/notifications.md](docs/shell/notifications.md)).
+- **Quick Settings**: GNOME's quick settings in the macOS Control Center look, with a page per
+  control and Edit Controls ([docs/shell/quick-settings.md](docs/shell/quick-settings.md)).
+- **Desktop widgets**: a stroke-drawn clock, batteries and the system's readings on the wallpaper
+  ([docs/shell/widgets.md](docs/shell/widgets.md)).
+- **Context menus**: nested menus on xdg-popups ([docs/shell/context-menu.md](docs/shell/context-menu.md)).
+- **amane-kit**: the look as a library: controls, components and the design tokens from Penpot,
+  for the shell and apps like Shell Settings ([kit/README.md](kit/README.md)).
+
+Every doc is listed in [docs/README.md](docs/README.md).
 
 ## Build & run
 
@@ -96,22 +60,17 @@ the library together, check `amane` out beside this repo and add a git-ignored
 > against its own bundled library copy, **not** this fork (so it lacks `Gestures` and won't compile
 > the bar). The flake is the one canonical build path.
 
-## niri layer-rules (for the frosted popups)
+## niri layer rules
 
-The shell's surfaces (the bar, the dock, the launcher, Quick Settings, the widgets, notification
-toasts and the center, the alert, and every popup) get their blur, corner rounding and shadow from
-matching `layer-rule` blocks in your niri config; the bar's rule frosts the whole strip in niri's
-`frost` material. `niri-layer-rule.kdl` holds those blocks, generated from the design tokens
-(`cargo run -q -- layer-rules > niri-layer-rule.kdl`), so the blur's corners follow the cards'
-radii. `./gen-layer-rules.sh` injects the blocks into a target niri config between marker
-comments, so the two never drift (no hand-copying):
+The shell's glass is frosted by niri, through `layer-rule` blocks generated from the design
+tokens into `niri-layer-rule.kdl` and injected into your niri config by `./gen-layer-rules.sh`:
 
 ```sh
+cargo run -q -- layer-rules > niri-layer-rule.kdl
 ./gen-layer-rules.sh /path/to/your/niri/config.kdl   # e.g. ~/.config/niri/config.kdl
 ```
 
-See [docs/integration/layer-rules.md](docs/integration/layer-rules.md) — the namespaces must match the Rust
-`LayerWindow::namespace(...)` calls.
+See [docs/integration/layer-rules.md](docs/integration/layer-rules.md).
 
 ## Running it persistently
 

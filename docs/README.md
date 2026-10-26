@@ -28,14 +28,15 @@ Building and running are in the [README](../README.md); contributing in
 | Notifications | the notification daemon's toasts, the notification center and Do Not Disturb | [shell/notifications.md](shell/notifications.md) |
 | Quick Settings | GNOME's quick settings in the macOS Control Center look, with Edit Controls | [shell/quick-settings.md](shell/quick-settings.md) |
 | Desktop widgets | readings and a clock on the wallpaper, on Quick Settings' grid | [shell/widgets.md](shell/widgets.md) |
+| Alert | macOS's alert in the middle of the screen, for questions like "Restart now?" | [shell/quick-settings.md#the-alert](shell/quick-settings.md#the-alert) |
 | Context menu | nested xdg-popup menus: the dock's, the launcher's, the widgets', Do Not Disturb's and a Bluetooth device's | [shell/context-menu.md](shell/context-menu.md) |
 
 ## amane-kit
 
 | Topic | Doc |
 |---|---|
-| Buttons, switch, checkbox, radio, control sizes | [kit/controls.md](kit/controls.md) |
-| Card, list, slider, dialog, scroll view and the other building blocks | [kit/components.md](kit/components.md) |
+| Buttons, switch, checkbox, radio, dropdown, control sizes | [kit/controls.md](kit/controls.md) |
+| Card, list, slider, dialog, scroll view and the other building blocks; the modules under them | [kit/components.md](kit/components.md) |
 
 ## Design system
 

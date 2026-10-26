@@ -41,7 +41,7 @@ page switches from anywhere. A right click opens the page too; a round button ha
 tooltip names it, and a tile whose lines are too long for it names itself the same way. The
 Power Off page's Restart…, Power Off… and Log Out… close Quick Settings and ask first, in the
 shell's alert (macOS's "Are you sure you want to restart your computer now?"; see
-[components.md](../kit/components.md#dialog-and-alert)). Log Out's answer is destructive, in red. Switch
+[the alert](#the-alert)). Log Out's answer is destructive, in red. Switch
 User is left out because greetd has no user switching.
 
 A page is at least five rows tall, however short the grid is, and its lists scroll in the room
@@ -335,10 +335,37 @@ It reuses the shared components:
   mute and play/pause glyphs as `Pending` is for the tiles.
 - **`dnd::choices`**: the timed choices, which the Do Not Disturb menu uses too.
 
+### SearchField and text_edit
+
+The shell's own (`src/components/search_field.rs`, `text_edit.rs`), not the kit's.
+
+`SearchField::new(id, &field, focused)` is a `surface.raised` capsule a control tall: a magnifier,
+the query (or a `.placeholder(…)`, "Search" by default) in `sys.type.label` with its caret (accent,
+while `focused`) and selection (a `state.selected` wash), and a clear (×) button while there's a
+query and an `.on_clear(…)`. `.width(…)` sets its width. It draws the text itself rather than
+focusing a `TextInput`, so every key reaches the surface's `on_key`.
+
+The text is a `text_edit::Field`: the characters, the caret and the selection's other end, with
+`insert`, `backspace`, `delete_selection`, `left`/`right`/`move_to` (extending the selection with
+Shift) and `select_all`, and `handle(key, modifiers)`, which applies the keys a one-line field
+takes — characters, Space, Backspace, Left/Right/Home/End with or without Shift, Ctrl+A/C/X/V
+through wl-clipboard (`text_edit::copy`, `paste`) — and says whether the key was the field's.
+Line breaks never go in. It's pure and tested; the launcher types into one with its own key
+routing, the Customize window through `handle`.
+
 Tokens: `quick.grid.{cell,cols,rows,gap,margin}`, `quick.tile.{pad,gap,disc}`,
 `quick.card.radius`, `quick.media.{art,art-radius,play}`, `quick.slider.track`, `quick.shadow`,
 `quick.type.{title,caption,line}`, `quick.page.recede`, `quick.open.scale`, `quick.press.scale`
 and `quick.drag.scale` (see [penpot-backlog.md](../design-system/penpot-backlog.md)). Everything else is `sys.*`.
+
+## The alert
+
+The Power Off page's Restart…, Power Off… and Log Out… ask first in the shell's alert
+(`src/components/alert.rs`): macOS's alert in the middle of the screen, a kit
+[`Dialog`](../kit/components.md#dialog) on thick glass. `alert::show(dialog)` puts it on the
+`amane.alert` surface, as big as its card, which frosts itself and holds the keyboard until
+answered; its layer rule rounds it (`dialog.radius`) and gives it niri's shadow (`0 18 48`). In
+debug builds the `alert-test` IPC call shows a sample (`printf 'alert-test\nstacked\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`).
 
 ## Backends
 

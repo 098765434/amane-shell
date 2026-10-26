@@ -67,14 +67,40 @@ A track and pill-shaped knob at the current control size (`control_size::current
 it reads on any surface. Turning on, it blends to `sys.color.accent.bg`. The
 `sys.color.accent.fg` knob, centred in the track's height, springs across.
 
+## Checkbox and Radio
+
+`Checkbox::new(id, checked)` and `Radio::new(id, selected)` take an optional `.label(…)` that takes
+the click too, `.disabled(…)`, and `.on_toggle(|checked| …)` or `.on_select(|| …)`. Each is a
+control-height row (`sys.size.control.height`, `sys.radius.raised` corners) with the hover layer,
+the box at the current control size (`control_size::current().checkbox()`), and the label in
+`sys.type.label`.
+
+- **Checkbox**: off, a box outlined in the secondary label colour; on, filled
+  `sys.color.accent.bg` with a check in `sys.color.accent.fg`. A setting that applies at once
+  reads better as a `Switch`; a checkbox suits choices confirmed together.
+- **Radio**: a group is radios sharing what's chosen, each `selected` when the setting equals
+  its value. Chosen, the circle fills with the accent around a `sys.color.accent.fg` dot
+  (`radio_dot()`); choosing the chosen one does nothing. Shell Settings uses them for every
+  one-of-a-few choice.
+
+## Dropdown
+
+`dropdown::Dropdown::new(id, options, selected)` is one choice out of a list, after M3's exposed
+dropdown menu and drawn like macOS's pop-up button: a control-height button with the chosen option
+and a chevron, as wide as the widest option unless given `.width(…)`. A click opens a menu of the
+options at the pointer, the chosen one checked, as an xdg-popup on a `Material::Popover` card;
+choosing one (`.on_select(|index| …)`), clicking outside or Escape closes it. In a normal window
+it finds its parent window itself; on a layer window, pass the surface's namespace with
+`.layer(ns)`. For a few options that all fit, radios read better. Shell Settings' accent and text
+size are dropdowns.
+
 ## Control sizes
 
 `control_size` has the macOS 27 kit's five sizes, Mini, Small, Medium, Large and XL. The switch,
 checkbox, radio, thin slider's knob and push buttons' corners read the innermost
 `control_size::scope`, Medium outside any. From Large up, `Shape::Square` buttons are capsules.
 Layout heights (rows, a thin slider's hit area) stay on `sys.size.control.height`, so a size
-changes the control drawn, not the room panels leave for it. A chosen radio is filled with the
-accent around a `sys.color.accent.fg` dot, as in macOS. The thin slider has a pill knob at its
+changes the control drawn, not the room panels leave for it. The thin slider has a pill knob at its
 value; an inert slider, a meter, has none.
 
 ## Pending tokens

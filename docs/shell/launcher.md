@@ -361,8 +361,10 @@ never blocks anything.
 | `model.rs` | categories, sums, URLs, session-action names, the history's steps, durations and quick keys (pure, tested) |
 | `components/text_edit.rs` | the search text, caret and selection (pure, tested; shared with Quick Settings' Customize window) |
 
-It's built on the shared [`ScrollView`, `Kinetic`, `AxisLock`, `Pager`, `workspace_menu`,
-`app_icon` and `text_edit`](../kit/components.md).
+It's built on the kit's [`ScrollView`, `Kinetic`, `AxisLock`, `Pager` and
+`app_icon`](../kit/components.md), and the shell's
+[`workspace_menu`](dock.md#workspace_menu) and
+[`text_edit`](quick-settings.md#searchfield-and-text_edit).
 
 Sizes particular to the launcher are `TODO(token)` constants until Penpot has a `launcher.*` set
 (see [penpot-backlog.md](../design-system/penpot-backlog.md)). Everything else reads `sys.*`, so the launcher follows the
