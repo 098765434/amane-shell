@@ -78,7 +78,11 @@ A piece of glass is built with its material's methods:
 
 - `sys.color.material.ultra-thin` … `.ultra-thick` and `.bar` are the tints, thinnest first.
 - `sys.color.vibrant.label.*`, `.fill.*` and `.separator` are the labels, fills and separator.
-  They are one set for every material, and the contrast floors check primary and secondary
+  The values are the macOS 27 kit's vibrant greys as translucent white (dark) and black (light),
+  which blend the same way and still sort onto the right vibrancy layer. On an opaque surface
+  (solid glass, `Material::Content`) labels and fills come from `sys.color.label.*` and
+  `sys.color.fill.*` instead, a little weaker, as the kit's content area is. The vibrant set is
+  one set for every material, and the contrast floors check primary and secondary
   labels on every tint over black and white wallpaper (`tokens::rules`).
 - `material.<name>.*` (component tokens) are niri's material settings. `amane-shell layer-rules`
   writes one niri material for each of them into `niri-layer-rule.kdl`, with a `-still` twin
@@ -97,7 +101,8 @@ A piece of glass is built with its material's methods:
   Settings switch, or `AMANE_VIBRANCY=1`) makes every shell surface, popup and app window
   vibrant (`material::vibrant`, amane's `.vibrant(true)`). On niri with `niri-vibrancy-v1`,
   light grey labels, glyphs and fills are then added to the frosted backdrop and dark grey ones
-  multiplied with it, so they take on its colour, as Apple's vibrancy does. Solid glass and higher
+  subtracted from it (Apple's plus-lighter and plus-darker), so they take on its colour, as
+  Apple's vibrancy does. Solid glass and higher
   contrast turn it off. Elsewhere the translucent label colours stand in.
 - **Adaptive glass** (an experiment, off by default) lets `Control` and `Banner` follow niri's
   readings of their backdrop; see `glass_region` and [components.md](components.md).

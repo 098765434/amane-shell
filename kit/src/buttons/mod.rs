@@ -51,6 +51,7 @@ pub use segmented::{Segment, SegmentedButton};
 pub use switch::Switch;
 
 use crate::color::over;
+use crate::control_size;
 use crate::layout::{boxed, icon};
 use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, TextStyle, sys};
@@ -103,7 +104,8 @@ impl Style {
 pub enum Shape {
     /// A capsule, or a circle when square.
     Round,
-    /// The rounded rectangle chips and rows use (`sys.radius.raised`).
+    /// The rounded rectangle of the current control size, a capsule from
+    /// Large up.
     Square,
 }
 
@@ -111,7 +113,7 @@ impl Shape {
     fn radius(self) -> Radius {
         match self {
             Self::Round => Radius::Full,
-            Self::Square => Radius::Fixed(sys::radius::raised()),
+            Self::Square => control_size::current().button_radius(),
         }
     }
 }

@@ -14,6 +14,7 @@ use amane::{Center, Color, Radius, Rectangle, Size};
 
 use super::checkbox::row;
 use super::{Actions, interactive};
+use crate::control_size;
 use crate::material::{self, Level};
 use crate::tokens::sys;
 
@@ -56,30 +57,28 @@ impl Radio {
     }
 
     pub fn build(self) -> Rectangle {
-        // TODO(token): `sys.size.radio` once Penpot has it
-        let side = sys::size::icon::s();
+        let size = control_size::current();
+        let side = size.checkbox().0;
         let ring = sys::border::hairline() * 1.5;
 
-        let (color, dot) = if self.selected {
-            (sys::color::accent::bg(), side / 2.0)
-        } else {
-            (material::label(Level::Secondary), 0.0)
-        };
-
+        // chosen, the box fills with the accent around a dot, as in macOS
         let mark = Rectangle::new()
             .width(Size::Fixed(side))
             .height(Size::Fixed(side))
             .radius(Radius::Full)
-            .fill(Color::TRANSPARENT)
-            .border(ring, color)
-            .align_child(Center, Center)
-            .child(
+            .align_child(Center, Center);
+        let mark = if self.selected {
+            mark.fill(sys::color::accent::bg()).child(
                 Rectangle::new()
-                    .width(Size::Fixed(dot))
-                    .height(Size::Fixed(dot))
+                    .width(Size::Fixed(size.radio_dot()))
+                    .height(Size::Fixed(size.radio_dot()))
                     .radius(Radius::Full)
-                    .fill(color),
-            );
+                    .fill(sys::color::accent::fg()),
+            )
+        } else {
+            mark.fill(Color::TRANSPARENT)
+                .border(ring, material::label(Level::Secondary))
+        };
 
         // choosing what's already chosen asks for nothing
         let actions = Actions {

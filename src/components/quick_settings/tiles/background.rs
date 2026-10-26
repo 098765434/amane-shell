@@ -6,6 +6,7 @@ use amane::{ScrollArea, Service, Size, Widget};
 
 use super::super::{Page, open};
 use crate::components::buttons::{IconButton, Style};
+use crate::components::control_size::ControlSize;
 use crate::components::icons::{ICON_BACKGROUND_APPS, ICON_CLOSE};
 use crate::components::layout::{boxed, caption};
 use crate::components::list::{self, List, ListItem};
@@ -64,8 +65,8 @@ pub(crate) fn page() -> DetailPage {
                         IconButton::new(format!("amane.qs.background.{id}.close"), ICON_CLOSE)
                             .style(Style::Tonal)
                             .size(sys::size::icon::s())
-                            .height(sys::size::switch::height())
-                            .width(sys::size::switch::height())
+                            .height(ControlSize::Medium.height())
+                            .width(ControlSize::Medium.height())
                             .on_press(move || BackgroundApps::quit(&id))
                             .build(),
                     )

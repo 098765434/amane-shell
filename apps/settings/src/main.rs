@@ -53,7 +53,11 @@ fn main_window() -> Window {
     };
 
     let content = Row::new(vec![
-        boxed(Column::new(vec![boxed(nav)]).width(Size::Fixed(200.0))),
+        boxed(
+            Column::new(vec![boxed(nav)])
+                .width(Size::Fixed(200.0))
+                .height(Size::Parent),
+        ),
         boxed(
             Column::new(vec![
                 boxed(

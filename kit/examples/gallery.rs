@@ -8,6 +8,7 @@ use amane_kit::buttons::{Checkbox, PushButton, Radio, Shape, Style, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::icons::{ICON_DARK_MODE, ICON_TUNE};
 use amane_kit::layout::boxed;
+use amane_kit::material::{self, Level};
 use amane_kit::slider::Slider;
 use amane_kit::tokens::{Styled, sys};
 
@@ -93,7 +94,7 @@ fn controls(state: &Gallery) -> Column {
     let label = |text: &str| {
         Text::new(text)
             .style(sys::r#type::caption())
-            .color(sys::color::content::secondary())
+            .color(material::label(Level::Secondary))
     };
 
     let mut radios: Vec<Box<dyn Widget>> = Vec::new();
@@ -178,7 +179,7 @@ fn text() -> Column {
         boxed(
             Text::new("Name")
                 .style(sys::r#type::caption())
-                .color(sys::color::content::secondary()),
+                .color(material::label(Level::Secondary)),
         ),
         boxed(field_box(
             "gallery.name",

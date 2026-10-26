@@ -38,18 +38,22 @@ pub fn app(app_id: &str) -> App {
 }
 
 /// What an app window is drawn on: the window material's tint where the
-/// compositor frosts behind the window, else the tint made solid, as
-/// there's nothing frosted to see through to. The window's own material
-/// being offered is the sign: the shell's generated config defines it with
-/// the window rule that frosts the window; a stand-in material doesn't
-/// count.
+/// compositor frosts behind the window, else the opaque window background
+/// (`sys.color.window.bg`), as there's nothing frosted to see through to.
 pub fn window_bg() -> Color {
-    let tint = Material::Window.tint();
-    if Material::Window.niri() == Some(Material::Window.niri_name()) {
-        tint
+    if frosted() {
+        Material::Window.tint()
     } else {
-        with_alpha(tint, 1.0)
+        sys::color::window::bg()
     }
+}
+
+/// Whether the compositor frosts behind app windows. The window's own
+/// material being offered is the sign: the shell's generated config defines
+/// it with the window rule that frosts the window; a stand-in material
+/// doesn't count.
+fn frosted() -> bool {
+    Material::Window.niri() == Some(Material::Window.niri_name())
 }
 
 /// A normal window in the shell's look: its surface and padding behind
@@ -144,14 +148,18 @@ impl Page {
 }
 
 /// The pages of a settings-style window, one row each, the shown one filled.
-/// `on_select` gets the index of a row clicked.
+/// `on_select` gets the index of a row clicked. Over a frosted window it's
+/// the window's own glass; on an opaque one it's a panel of the sidebar's
+/// colour, paler and with greyer labels while another window has the focus.
 pub fn sidebar(
     id: &str,
     pages: &[Page],
     selected: usize,
     on_select: impl Fn(usize) + 'static,
-) -> Column {
+) -> Rectangle {
     let on_select = Rc::new(on_select);
+    let focused = window_state().focused;
+    let opaque = !frosted();
 
     let rows: Vec<Box<dyn Widget>> = pages
         .iter()
@@ -166,7 +174,11 @@ pub fn sidebar(
                 Color::TRANSPARENT
             };
 
-            let fg = material::label(Level::Primary);
+            let fg = if opaque && !focused {
+                sys::color::sidebar::label::inactive()
+            } else {
+                material::label(Level::Primary)
+            };
 
             let base = Rectangle::new()
                 .width(Size::Parent)
@@ -199,9 +211,23 @@ pub fn sidebar(
         })
         .collect();
 
-    Column::new(rows)
-        .gap(sys::space::gap::_2xs())
+    let bg = match (opaque, focused) {
+        (false, _) => Color::TRANSPARENT,
+        (true, true) => sys::color::sidebar::bg::active(),
+        (true, false) => sys::color::sidebar::bg::inactive(),
+    };
+
+    Rectangle::new()
         .width(Size::Parent)
+        .height(Size::Parent)
+        .radius(Radius::Fixed(sys::radius::popover()))
+        .fill(bg)
+        .padding(pad(sys::space::inset::s(), sys::space::inset::s()))
+        .child(
+            Column::new(rows)
+                .gap(sys::space::gap::_2xs())
+                .width(Size::Parent),
+        )
 }
 
 /// A question over a window, answered with one of its buttons: "Discard

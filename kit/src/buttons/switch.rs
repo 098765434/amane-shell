@@ -18,6 +18,7 @@ use std::time::Instant;
 use amane::{Animation, Blend, Center, Color, Radius, Rectangle, Size, Start, request_frame};
 
 use super::{Actions, Pending, interactive, state_fill, with_existing, with_state};
+use crate::control_size;
 use crate::layout::pad;
 use crate::motion;
 use crate::tokens::sys;
@@ -61,10 +62,9 @@ impl Switch {
     }
 
     pub fn build(self) -> Rectangle {
-        let width = sys::size::switch::width();
-        let height = sys::size::switch::height();
-        let inset = sys::space::gap::_2xs();
-        let knob = (height - inset * 2.0).max(1.0);
+        let size = control_size::current().switch();
+        let (knob_w, knob_h) = size.knob;
+        let inset = ((size.height - knob_h) / 2.0).max(0.0);
 
         let (shown, progress) = self.animate();
 
@@ -74,15 +74,15 @@ impl Switch {
             progress.clamp(0.0, 1.0),
         );
         let knob = Rectangle::new()
-            .width(Size::Fixed(knob))
-            .height(Size::Fixed(knob))
+            .width(Size::Fixed(knob_w))
+            .height(Size::Fixed(knob_h))
             .radius(Radius::Full)
             .fill(sys::color::accent::fg())
-            .translate(progress * (width - height), 0.0);
+            .translate(progress * (size.width - knob_w - inset * 2.0), 0.0);
 
         let base = Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(height))
+            .width(Size::Fixed(size.width))
+            .height(Size::Fixed(size.height))
             .radius(Radius::Full)
             .fill(state_fill(&self.id, track, self.disabled))
             .padding(pad(inset, inset))

@@ -13,17 +13,29 @@ use amane_kit::tokens::sys;
 
 use crate::setting;
 
-/// The accents to pick from, after macOS's, and none for the system's.
+/// The accents to pick from, macOS 27's system colours in their dark
+/// form, and none for the system's.
 const ACCENTS: [(&str, Option<&str>); 9] = [
     ("System", None),
-    ("Blue", Some("#0a84ff")),
-    ("Purple", Some("#bf5af2")),
+    ("Blue", Some("#0091ff")),
+    ("Purple", Some("#db34f2")),
     ("Pink", Some("#ff375f")),
-    ("Red", Some("#ff453a")),
-    ("Orange", Some("#ff9f0a")),
-    ("Yellow", Some("#ffd60a")),
+    ("Red", Some("#ff4245")),
+    ("Orange", Some("#ff9230")),
+    ("Yellow", Some("#ffd600")),
     ("Green", Some("#30d158")),
-    ("Graphite", Some("#8e8e93")),
+    ("Graphite", Some("#98989f")),
+];
+
+/// Accents saved before macOS 27's colours, and the entry that shows for
+/// each; picking it again saves the new colour.
+const OLD_ACCENTS: [(&str, &str); 6] = [
+    ("#0a84ff", "#0091ff"),
+    ("#bf5af2", "#db34f2"),
+    ("#ff453a", "#ff4245"),
+    ("#ff9f0a", "#ff9230"),
+    ("#ffd60a", "#ffd600"),
+    ("#8e8e93", "#98989f"),
 ];
 
 /// The text sizes to pick from.
@@ -139,9 +151,15 @@ pub fn page() -> Column {
         })
         .collect();
 
+    let saved = accent.as_deref().map(|hex| {
+        OLD_ACCENTS
+            .iter()
+            .find(|(old, _)| old.eq_ignore_ascii_case(hex))
+            .map_or(hex, |(_, new)| *new)
+    });
     let chosen_accent = ACCENTS
         .iter()
-        .position(|(_, hex)| *hex == accent.as_deref())
+        .position(|(_, hex)| *hex == saved)
         .unwrap_or(0);
 
     let accents = Dropdown::new(

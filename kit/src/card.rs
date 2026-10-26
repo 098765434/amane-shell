@@ -34,6 +34,7 @@ pub struct Card {
     blur: bool,
     glass: bool,
     fill: Option<Color>,
+    stroke: Option<Color>,
     radius: f32,
     gap: f32,
     padding: f32,
@@ -48,6 +49,7 @@ impl Card {
             blur: false,
             glass: false,
             fill: None,
+            stroke: None,
             radius: sys::radius::popover(),
             gap: 0.0,
             padding: sys::space::inset::l(),
@@ -87,6 +89,12 @@ impl Card {
     }
 
     /// The corners; `sys.radius.popover` by default.
+    /// An outlined card's hairline in place of the material's separator.
+    pub fn stroke(mut self, stroke: Color) -> Self {
+        self.stroke = Some(stroke);
+        self
+    }
+
     pub fn radius(mut self, radius: f32) -> Self {
         self.radius = radius;
         self
@@ -114,10 +122,11 @@ impl Card {
 
         if self.variant == Variant::Outlined {
             // glass draws no hairline where the compositor's material is its edge
+            let stroke = self.stroke.unwrap_or_else(material::separator);
             let stroke = if self.glass {
-                self.material.stroke(material::separator())
+                self.material.stroke(stroke)
             } else {
-                material::separator()
+                stroke
             };
             card = card.border(sys::border::hairline(), stroke);
         }

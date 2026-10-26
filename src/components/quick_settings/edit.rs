@@ -40,6 +40,7 @@ use super::grid::{Canvas, Metrics, Occupancy, Place, Rect, Slot, Span};
 use super::layout::{self, Layout};
 use super::tiles::{SCOPE, radius_of};
 use crate::components::buttons::{IconButton, Shape, Style};
+use crate::components::control_size::ControlSize;
 use crate::components::icons::{ICON_REMOVE, ICON_RESIZE};
 use crate::components::layout::{boxed, icon};
 use crate::components::material::{self, FillLevel, Level};
@@ -397,7 +398,7 @@ pub(super) fn pulled(base: Slot, grab: Point, point: Point) -> (f32, f32) {
 }
 
 fn handle_side() -> f32 {
-    sys::size::switch::height()
+    ControlSize::Medium.height()
 }
 
 fn drag_move(point: Point) {

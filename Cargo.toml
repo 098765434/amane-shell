@@ -41,4 +41,4 @@ members = ["kit", "apps/settings"]
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
 # sibling checkout during local co-development. See README.
-amane = { git = "https://github.com/098765434/amane", rev = "c74990b4d73d39cdca5d4c05bef565d4e3019d95" }
+amane = { git = "https://github.com/098765434/amane", rev = "6ef0c4e2a2f6ca6cadf037d9aed53b49cc1cb589" }

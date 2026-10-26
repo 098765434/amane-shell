@@ -17,7 +17,7 @@ use std::time::{Duration, Instant};
 
 use amane::{ConstraintAdjustment, Gravity, Popup, PopupAnchor, Text, request_frame};
 
-use crate::card::Card;
+use crate::card::{Card, Variant};
 use crate::layout::{blank, boxed, cursor, text_height, text_width};
 use crate::material::{self, Level, Material};
 use crate::tokens::{Styled, sys};
@@ -146,6 +146,9 @@ pub fn popup() -> Popup {
             .color(material::label(Level::Primary)),
     )])
     .material(Material::ToolTip)
+    // dark tooltips keep a faint inner edge where niri draws none
+    .variant(Variant::Outlined)
+    .stroke(sys::color::tooltip::inner_stroke())
     .glass(true)
     .padding(inset)
     .build();

@@ -106,10 +106,31 @@ whose output is static: it can't follow the mode, so it holds one value for both
   Penpot, or the next export puts SF Pro Text back.
 - The materials replace the glass's surface roles, so these are no longer read. Delete them:
   `sys.color.surface.panel.*`, `sys.color.surface.notification.*`,
-  `sys.color.surface.popover.*`, `sys.color.surface.raised.bg`, `sys.color.content.secondary` and
-  `sys.color.separator`. The vibrant labels, fills and separator take their place, and an app
-  window is `Material::Window`. The hand-added `sys.color.glass.thin` and `.thick` are gone
+  `sys.color.surface.popover.*` and `sys.color.surface.raised.bg`. The vibrant labels, fills and
+  separator take their place, and an app window is `Material::Window`. (`sys.color.content.secondary`
+  is gone from `tokens.json` already, and `sys.color.separator` is read again, below.) The hand-added `sys.color.glass.thin` and `.thick` are gone
   already.
+- The macOS 27 kit's values were added to `tokens.json` by hand
+  ([spec-macos27-variables.md](spec-macos27-variables.md)). Recreate them in Penpot under the same
+  names:
+  - `sys.color.label.primary` … `.quaternary` (85, 50/55, 25, 10 %), `sys.color.fill.primary` …
+    `.tertiary` (10, 8, 5 %) and `sys.color.separator` (10 %, light raised from 8 %): labels,
+    fills and the separator on opaque surfaces (solid glass, `Material::Content`).
+  - New values for `sys.color.vibrant.label.*` and `.fill.*`, the kit's plus-lighter and
+    plus-darker greys turned into translucent white and black.
+  - `sys.color.status.critical.*` now holds macOS 27's red, light `#ff383c`, dark `#ff4245`,
+    and `ref.color.red.58` is deleted.
+  - `ref.color.accent.seed` is macOS 27's blue `#0091ff`, with `dim` `#0064b3` and `bright`
+    `#a9d2ff` derived from it.
+  - `sys.color.window.bg`, `sys.color.sidebar.bg.active`, `.inactive`,
+    `sys.color.sidebar.label.inactive`, `sys.color.scrollbar` (`{sys.color.label.secondary}`),
+    `sys.color.progress.track-stroke` and `sys.color.tooltip.inner-stroke`.
+  - The control sizes, each with a `mini`, `small`, `medium`, `large` and `xl` child:
+    `sys.size.control.<size>`, `sys.size.switch.<size>.width`, `.knob-width`, `.knob-height`,
+    `sys.size.checkbox.<size>`, `sys.size.radio.<size>.dot`, `sys.size.slider.<size>.knob-width`,
+    `.knob-height`, `sys.radius.control.<size>` and `sys.radius.checkbox.<size>`. The sizes are
+    `round(<px> * {sys.density.factor})`; the radii and the radio dot aren't scaled.
+    `sys.size.switch.width` and `.height` are deleted.
 - `menu.label.advance-ratio` is no longer read: menus measure their text now. Delete it.
 - `bar.volume.width` is no longer read: the volume is a glyph button now, its level in a tooltip.
   Delete it.

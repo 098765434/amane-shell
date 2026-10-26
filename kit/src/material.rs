@@ -427,27 +427,39 @@ pub fn vibrant() -> bool {
 
 /// A label on whatever material is current, or on none.
 pub fn label(level: Level) -> Color {
-    label_in(level, theme::high_contrast())
+    label_in(level, theme::high_contrast(), on_content())
 }
 
 /// A fill on whatever material is current, or on none.
 pub fn fill_role(level: FillLevel) -> Color {
-    fill_in(level, theme::high_contrast())
+    fill_in(level, theme::high_contrast(), on_content())
 }
 
 /// The separator on whatever material is current, or on none.
 pub fn separator() -> Color {
-    separator_in(theme::high_contrast())
+    separator_in(theme::high_contrast(), on_content())
+}
+
+/// Whether what's being built sits on an opaque surface rather than glass:
+/// solid glass, or the content material. It then takes the content area's
+/// labels and fills (`sys.color.label.*`, `sys.color.fill.*`), which the
+/// glass's vibrant set is a little stronger than.
+fn on_content() -> bool {
+    !see_through() || current() == Some(Material::Content)
 }
 
 /// A label, under higher contrast or not: Apple's increased contrast keeps
 /// each level well clear of the next.
-fn label_in(level: Level, high_contrast: bool) -> Color {
-    let color = match level {
-        Level::Primary => sys::color::vibrant::label::primary(),
-        Level::Secondary => sys::color::vibrant::label::secondary(),
-        Level::Tertiary => sys::color::vibrant::label::tertiary(),
-        Level::Quaternary => sys::color::vibrant::label::quaternary(),
+fn label_in(level: Level, high_contrast: bool, content: bool) -> Color {
+    let color = match (level, content) {
+        (Level::Primary, false) => sys::color::vibrant::label::primary(),
+        (Level::Secondary, false) => sys::color::vibrant::label::secondary(),
+        (Level::Tertiary, false) => sys::color::vibrant::label::tertiary(),
+        (Level::Quaternary, false) => sys::color::vibrant::label::quaternary(),
+        (Level::Primary, true) => sys::color::label::primary(),
+        (Level::Secondary, true) => sys::color::label::secondary(),
+        (Level::Tertiary, true) => sys::color::label::tertiary(),
+        (Level::Quaternary, true) => sys::color::label::quaternary(),
     };
     if !high_contrast {
         return color;
@@ -463,11 +475,14 @@ fn label_in(level: Level, high_contrast: bool) -> Color {
 
 /// A fill, under higher contrast or not: over an opaque material a fill
 /// has to carry the shape alone, so it doubles.
-fn fill_in(level: FillLevel, high_contrast: bool) -> Color {
-    let color = match level {
-        FillLevel::Primary => sys::color::vibrant::fill::primary(),
-        FillLevel::Secondary => sys::color::vibrant::fill::secondary(),
-        FillLevel::Tertiary => sys::color::vibrant::fill::tertiary(),
+fn fill_in(level: FillLevel, high_contrast: bool, content: bool) -> Color {
+    let color = match (level, content) {
+        (FillLevel::Primary, false) => sys::color::vibrant::fill::primary(),
+        (FillLevel::Secondary, false) => sys::color::vibrant::fill::secondary(),
+        (FillLevel::Tertiary, false) => sys::color::vibrant::fill::tertiary(),
+        (FillLevel::Primary, true) => sys::color::fill::primary(),
+        (FillLevel::Secondary, true) => sys::color::fill::secondary(),
+        (FillLevel::Tertiary, true) => sys::color::fill::tertiary(),
     };
     if high_contrast {
         with_alpha(color, (opacity(color) * 2.0).min(1.0))
@@ -476,8 +491,12 @@ fn fill_in(level: FillLevel, high_contrast: bool) -> Color {
     }
 }
 
-fn separator_in(high_contrast: bool) -> Color {
-    let color = sys::color::vibrant::separator();
+fn separator_in(high_contrast: bool, content: bool) -> Color {
+    let color = if content {
+        sys::color::separator()
+    } else {
+        sys::color::vibrant::separator()
+    };
     if high_contrast {
         with_alpha(color, opacity(color).max(0.4))
     } else {
@@ -606,11 +625,24 @@ mod tests {
                     Level::Tertiary,
                     Level::Quaternary,
                 ]
-                .map(|l| label_in(l, false).alpha());
+                .map(|l| label_in(l, false, false).alpha());
                 assert!(
                     alphas.windows(2).all(|w| w[0] > w[1]),
                     "{mode:?}: {alphas:?}"
                 );
+            });
+        }
+    }
+
+    #[test]
+    fn glass_labels_are_stronger_than_the_content_areas() {
+        // the blend over a frosted backdrop costs contrast, so the vibrant
+        // set starts higher (the macOS 27 kit: 90 % against 85 % in light)
+        for mode in Mode::ALL {
+            with_key(Key::new(mode, Density::Comfortable), || {
+                let glass = label_in(Level::Primary, false, false).alpha();
+                let content = label_in(Level::Primary, false, true).alpha();
+                assert!(glass > content, "{mode:?}: {glass} against {content}");
             });
         }
     }
@@ -625,16 +657,16 @@ mod tests {
         ];
         for mode in Mode::ALL {
             with_key(Key::new(mode, Density::Comfortable), || {
-                let normal = levels.map(|l| label_in(l, false).alpha());
-                let high = levels.map(|l| label_in(l, true).alpha());
+                let normal = levels.map(|l| label_in(l, false, false).alpha());
+                let high = levels.map(|l| label_in(l, true, false).alpha());
                 assert_eq!(high[0], 255, "{mode:?}: primary is solid");
                 assert!(high.windows(2).all(|w| w[0] > w[1]), "{mode:?}: {high:?}");
                 assert!(normal.iter().zip(&high).all(|(n, h)| h >= n), "{mode:?}");
 
                 // the colour itself stays monochrome
                 let (a, b) = (
-                    label_in(Level::Tertiary, false),
-                    label_in(Level::Tertiary, true),
+                    label_in(Level::Tertiary, false, false),
+                    label_in(Level::Tertiary, true, false),
                 );
                 assert_eq!(
                     (a.red(), a.green(), a.blue()),
@@ -646,9 +678,9 @@ mod tests {
                     FillLevel::Secondary,
                     FillLevel::Tertiary,
                 ] {
-                    assert!(fill_in(level, true).alpha() > fill_in(level, false).alpha());
+                    assert!(fill_in(level, true, false).alpha() > fill_in(level, false, false).alpha());
                 }
-                assert!(separator_in(true).alpha() > separator_in(false).alpha());
+                assert!(separator_in(true, false).alpha() > separator_in(false, false).alpha());
             });
         }
     }

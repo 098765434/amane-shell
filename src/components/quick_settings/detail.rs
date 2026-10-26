@@ -22,6 +22,7 @@ use super::grid::{Canvas, Metrics};
 use super::{back, ramp};
 use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::Switch;
+use crate::components::control_size;
 use crate::components::divider::Divider;
 use crate::components::icons::ICON_CHEVRON_RIGHT;
 use crate::components::layout::{boxed, icon};
@@ -135,7 +136,7 @@ impl DetailPage {
         let gap_s = sys::space::gap::s();
         let mut text_w = width - sys::size::control::height() - gap_s;
         if self.switch.is_some() {
-            text_w -= sys::size::switch::width() + gap_s;
+            text_w -= control_size::current().switch().width + gap_s;
         }
         let mut bar = TopAppBar::new(self.title)
             .back(format!("{}.back", self.id), back)

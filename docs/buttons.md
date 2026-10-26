@@ -58,10 +58,20 @@ goes back to what the service says.
 
 ## Switch
 
-An iOS track and knob at `sys.size.switch.{width,height}`. Off, the track is
-`sys.color.state.selected`, an overlay, so it reads on any surface. Turning on, it blends to
-`sys.color.accent.bg`. The `sys.color.accent.fg` knob, inset by `sys.space.gap.2xs`, springs
-across.
+A track and pill-shaped knob at the current control size (`control_size::current().switch()`:
+54×24 with a 32×20 knob at Medium). Off, the track is `sys.color.state.selected`, an overlay, so
+it reads on any surface. Turning on, it blends to `sys.color.accent.bg`. The
+`sys.color.accent.fg` knob, centred in the track's height, springs across.
+
+## Control sizes
+
+`control_size` has the macOS 27 kit's five sizes, Mini, Small, Medium, Large and XL. The switch,
+checkbox, radio, thin slider's knob and push buttons' corners read the innermost
+`control_size::scope`, Medium outside any. From Large up, `Shape::Square` buttons are capsules.
+Layout heights (rows, a thin slider's hit area) stay on `sys.size.control.height`, so a size
+changes the control drawn, not the room panels leave for it. A chosen radio is filled with the
+accent around a `sys.color.accent.fg` dot, as in macOS. The thin slider has a pill knob at its
+value; an inert slider, a meter, has none.
 
 ## Pending tokens
 

@@ -146,7 +146,7 @@ Use these words; add new ones only by updating this manual.
 | `bar.size.wifi-panel-w` | `sys.size.popover.width`, or `wifi.*` if only Wi-Fi uses it | a token belongs to the role or component that owns it |
 | `space.row-h` holding a height | `menu.row.height` | category must match meaning |
 | `menu.hoverAlpha` | `menu.shortcut.hover-opacity` | lowercase, hyphens |
-| `sys.color.text-grey` | `sys.color.content.secondary` | role, not appearance |
+| `sys.color.text-grey` | `sys.color.label.secondary` | role, not appearance |
  
 ---
  
@@ -191,13 +191,15 @@ dimension role may follow density.
 |-------|---------|
 | `sys.color.material.ultra-thin / .thin / .regular / .thick / .ultra-thick / .bar` | the tints of the materials, thinnest first ([materials.md](materials.md)) |
 | `sys.color.vibrant.label.primary … .quaternary`, `.fill.primary … .tertiary`, `.separator` | labels, fills and the separator on any material |
+| `sys.color.label.primary … .quaternary`, `sys.color.fill.primary … .tertiary`, `sys.color.separator` | the same on opaque surfaces: solid glass, `Material::Content` |
+| `sys.color.window.bg`, `sys.color.sidebar.bg.active / .inactive`, `sys.color.sidebar.label.inactive` | an app window that isn't frosted, and its sidebar |
+| `sys.color.scrollbar`, `sys.color.progress.track-stroke`, `sys.color.tooltip.inner-stroke` | the scroll indicator, a slider track's outline, a dark tooltip's edge |
 | `sys.color.surface.panel.bg / .fg / .stroke` | the bar (no longer read: the materials replace it) |
 | `sys.color.surface.popover.bg / .fg / .stroke` | context menus, Wi-Fi panel, other popovers |
 | `sys.color.surface.osd.bg / .fg / .stroke` | volume/brightness OSD (reserved) |
 | `sys.color.surface.notification.bg / .fg / .fg-secondary / .stroke` | notification toasts (no longer read: `Material::Banner`) |
 | `sys.color.surface.raised.bg` | chips, rows and cards inside any surface (the bar's pill) |
 | `sys.color.surface.popover.fg-secondary` | secondary text in menus (differs from `content.secondary` until converged) |
-| `sys.color.content.secondary / .tertiary / .disabled` | less important text and icons on any surface |
 | `sys.color.accent.bg / .fg / .text` | accent fill, content on it, accent-coloured text |
 | `sys.color.status.critical.bg / .fg / .text` | urgent/destructive (also `warning`, `success` when needed) |
 | `sys.color.status.critical.hover` | hover fill on a destructive row |
@@ -233,7 +235,7 @@ How to set them:
 | `sys.size.row.height` | `sizing` | `round(40 * {sys.density.factor})` — list rows in popovers |
 | `sys.size.row.trailing-width` | `sizing` | room a row keeps for its trailing content |
 | `sys.size.control.<variant>` | `sizing` | `round(<px> * {sys.density.factor})` — only for heights shared by two or more components |
-| `sys.size.switch.width / .height` | `sizing` | the On/Off pill in panel headers (Wi-Fi, Bluetooth) |
+| `sys.size.control.<size>`, `sys.size.switch.<size>.*`, `sys.size.checkbox.<size>`, `sys.size.radio.<size>.dot`, `sys.size.slider.<size>.knob-*`, `sys.radius.control.<size>`, `sys.radius.checkbox.<size>` | `sizing`, `borderRadius` | the five control sizes `mini`, `small`, `medium`, `large`, `xl` (`control_size.rs`), after the macOS 27 kit |
 | `sys.size.slider.height` | `sizing` | a slider's track; its hit area is `sys.size.control.height` |
 | `sys.radius.popover / .control / .osd / .raised` | `borderRadius` | not density-scaled |
 | `sys.border.hairline` | `borderWidth` | `{ref.border.1}` |

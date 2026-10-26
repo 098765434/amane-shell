@@ -12,6 +12,7 @@ use std::rc::Rc;
 use amane::{Center, Color, Radius, Rectangle, Row, Size, Text, children};
 
 use super::{Actions, interactive, state_fill};
+use crate::control_size;
 use crate::icons::ICON_CHECK;
 use crate::layout::{icon, pad};
 use crate::material::{self, Level};
@@ -56,14 +57,12 @@ impl Checkbox {
     }
 
     pub fn build(self) -> Rectangle {
-        // TODO(token): `sys.size.checkbox` once Penpot has it
-        let side = sys::size::icon::s();
+        let (side, radius) = control_size::current().checkbox();
 
         let mark = Rectangle::new()
             .width(Size::Fixed(side))
             .height(Size::Fixed(side))
-            // TODO(token): `sys.radius.checkbox` once Penpot has it
-            .radius(Radius::Fixed(side / 4.0))
+            .radius(Radius::Fixed(radius))
             .align_child(Center, Center);
 
         let mark = if self.checked {

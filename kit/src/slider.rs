@@ -18,6 +18,7 @@ use amane::{
 };
 
 use crate::buttons::{Actions, interactive, state_fill};
+use crate::control_size;
 use crate::layout::{boxed, icon, slot};
 use crate::material::{self, FillLevel, Level};
 use crate::tokens::sys;
@@ -143,6 +144,7 @@ impl Slider {
             .height(Size::Fixed(track_h))
             .radius(track_h / 2.0)
             .fill(material::fill_role(FillLevel::Secondary))
+            .border(sys::border::hairline(), sys::color::progress::track_stroke())
             .clip()
             .child(
                 Rectangle::new()
@@ -152,15 +154,40 @@ impl Slider {
                     .fill(active),
             );
 
+        // the pill knob rides the track's end, inside its width; an inert
+        // slider is a meter and has none
+        let height = sys::size::control::height();
+        let (knob_w, knob_h) = control_size::current().slider_knob();
+        let knob = Rectangle::new()
+            .width(Size::Fixed(knob_w))
+            .height(Size::Fixed(knob_h))
+            .radius(Radius::Full)
+            .fill(sys::color::accent::fg())
+            .border(sys::border::hairline(), material::separator())
+            .translate(
+                (width - knob_w).max(0.0) * f32::from(value) / 100.0,
+                (height - knob_h) / 2.0,
+            );
+
         let scroll = set.clone();
         let input = Rectangle::new()
             .width(Size::Fixed(width))
-            .height(Size::Fixed(sys::size::control::height()))
+            .height(Size::Fixed(height))
             .fill(Color::TRANSPARENT)
             .align_child(Start, Center);
         if inert {
             return input.child(track);
         }
+        let track = Stack::new(vec![
+            boxed(
+                Rectangle::new()
+                    .width(Size::Fixed(width))
+                    .height(Size::Fixed(height))
+                    .align_child(Start, Center)
+                    .child(track),
+            ),
+            boxed(knob),
+        ]);
         input
             .cursor(Pointer)
             .on_drag(move |p: Point| {

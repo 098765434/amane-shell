@@ -122,11 +122,11 @@ mod tests {
 
     #[test]
     fn default_seed_reproduces_committed_primitives() {
-        let [seed, on_seed, dim, bright] = derived("#0a84ff");
-        assert_eq!(seed, "#0a84ff");
+        let [seed, on_seed, dim, bright] = derived("#0091ff");
+        assert_eq!(seed, "#0091ff");
         assert_eq!(on_seed, "#ffffff");
-        assert!(byte_distance(&dim, "#0060bf") <= 1, "dim {dim}");
-        assert!(byte_distance(&bright, "#add1ff") <= 1, "bright {bright}");
+        assert!(byte_distance(&dim, "#0064b3") <= 1, "dim {dim}");
+        assert!(byte_distance(&bright, "#a9d2ff") <= 1, "bright {bright}");
     }
 
     #[test]
