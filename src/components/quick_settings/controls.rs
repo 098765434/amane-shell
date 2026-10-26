@@ -6,6 +6,7 @@
 use amane::{Audio, Battery, Bluetooth, Brightness, PowerProfile, Service, Widget};
 
 use super::grid::Span;
+use crate::components::grid::GridKey;
 use super::system_row;
 use super::tile::{QuickToggle, Style};
 use super::tiles::{
@@ -169,21 +170,15 @@ impl ControlId {
         )
     }
 
-    /// `span`, or the nearest size it comes in.
-    pub fn clamp(self, span: Span) -> Span {
-        let supported = self.supported();
-        if supported.contains(&span) {
-            return span;
-        }
-        *supported
-            .iter()
-            .min_by_key(|s| s.cells().abs_diff(span.cells()))
-            .unwrap_or(&supported[0])
-    }
-
     /// The key its motion is kept under.
     pub fn key(self) -> u64 {
         Self::ALL.iter().position(|id| *id == self).unwrap_or(0) as u64
+    }
+}
+
+impl GridKey for ControlId {
+    fn supported(&self) -> &'static [Span] {
+        ControlId::supported(*self)
     }
 }
 

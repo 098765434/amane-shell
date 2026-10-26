@@ -41,6 +41,8 @@
 //!
 //! Under those, with no look of their own:
 //!
+//! - [`grid`] — the cells Quick Settings and the desktop's widgets are
+//!   laid out on, their layouts and drags.
 //! - [`layout`] — layout primitives (`boxed`, `pad`, `icon`, `split_row` …).
 //! - [`icons`] — the Material Symbols glyphs and their pickers.
 //! - [`color`] — colour arithmetic (`over`, `faded`, `with_alpha`).
@@ -56,6 +58,7 @@
 pub mod battery;
 pub mod context_menu;
 pub mod dock;
+pub mod grid;
 pub mod launcher;
 pub mod notifications;
 pub mod panel;

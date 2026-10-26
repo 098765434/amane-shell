@@ -5,42 +5,27 @@
 //! doesn't know, or one whose hardware shows up later, waits in the Add
 //! list rather than tearing a hole in the canvas.
 //!
-//! Moves and resizes are worked out on a copy (`moved`, `resized`): the
-//! controls in the way swap with the moving one when it covers just one
-//! its own size, else they're pushed to the first free cells; when one
-//! can't fit, nothing moves. Edit mode previews those copies as it drags
-//! and commits one on the drop.
+//! The layout itself, and the moves and resizes edit mode previews and
+//! commits, are the shared grid's (`components::grid::layout`); what's
+//! Quick Settings' own is the default, the file, and that every control
+//! has an entry.
 
 use std::cell::RefCell;
 
 use serde_json::{Value, json};
 
 use super::controls::ControlId;
-use super::grid::{Canvas, Occupancy, Place, Rect, Span};
+use super::grid::{Canvas, Place, Span};
+use crate::components::grid::{self, GridKey};
 use crate::services::{save_state, state_file};
 
 const FILE: &str = "quick-settings";
 const VERSION: u64 = 2;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Entry {
-    pub id: ControlId,
-    pub span: Span,
-    /// Its cell, or `None` when it's hidden (in the Add list).
-    pub at: Option<Place>,
-}
+/// A control's place and size, or that it waits in the Add list.
+pub type Entry = grid::Entry<ControlId>;
 
-impl Entry {
-    pub fn rect(&self) -> Option<Rect> {
-        self.at.map(|at| Rect::new(at, self.span))
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Layout {
-    pub canvas: Canvas,
-    pub entries: Vec<Entry>,
-}
+pub type Layout = grid::Layout<ControlId>;
 
 thread_local! {
     static LAYOUT: RefCell<Option<Layout>> = const { RefCell::new(None) };
@@ -149,22 +134,7 @@ impl Layout {
     /// control moves to the first free cells (or hides), and every control
     /// the file lacks is added, hidden.
     fn reconcile(&mut self) {
-        let mut occupancy: Occupancy<ControlId> = Occupancy::new(self.canvas);
-        for i in 0..self.entries.len() {
-            let entry = self.entries[i];
-            let Some(rect) = entry.rect() else {
-                continue;
-            };
-            let at = if occupancy.free(&rect, None) {
-                Some(rect.at)
-            } else {
-                occupancy.first_free(entry.span)
-            };
-            self.entries[i].at = at;
-            if let Some(at) = at {
-                occupancy.put(entry.id, Rect::new(at, entry.span));
-            }
-        }
+        self.repair();
         for id in ControlId::ALL {
             if !self.entries.iter().any(|entry| entry.id == id) {
                 self.entries.push(Entry {
@@ -196,161 +166,12 @@ impl Layout {
         serde_json::to_string_pretty(&json!({ "version": VERSION, "controls": controls }))
             .unwrap_or_default()
     }
-
-    /// The controls on the canvas, in layout order.
-    pub fn placed(&self) -> impl Iterator<Item = (ControlId, Rect)> + '_ {
-        self.entries
-            .iter()
-            .filter_map(|entry| entry.rect().map(|rect| (entry.id, rect)))
-    }
-
-    /// The controls in the Add list.
-    pub fn hidden(&self) -> impl Iterator<Item = ControlId> + '_ {
-        self.entries
-            .iter()
-            .filter(|entry| entry.at.is_none())
-            .map(|entry| entry.id)
-    }
-
-    pub fn rect_of(&self, id: ControlId) -> Option<Rect> {
-        self.entries
-            .iter()
-            .find(|entry| entry.id == id)
-            .and_then(Entry::rect)
-    }
-
-    /// The size `id` has, on the canvas or waiting in the Add list.
-    pub fn span_of(&self, id: ControlId) -> Option<Span> {
-        self.entries
-            .iter()
-            .find(|entry| entry.id == id)
-            .map(|entry| entry.span)
-    }
-
-    pub fn occupancy(&self) -> Occupancy<ControlId> {
-        Occupancy::of(self.canvas, self.placed())
-    }
-
-    /// How many rows the canvas needs to show everything placed.
-    #[cfg(test)]
-    pub fn rows_used(&self) -> u8 {
-        self.occupancy().rows_used()
-    }
-
-    fn entry(&mut self, id: ControlId) -> Option<&mut Entry> {
-        self.entries.iter_mut().find(|entry| entry.id == id)
-    }
-
-    pub fn hide(&mut self, id: ControlId) {
-        if let Some(entry) = self.entry(id) {
-            entry.at = None;
-        }
-    }
-
-    /// Puts `id` in the first free cells it fits, at its size or failing
-    /// that its smallest; whether there was room.
-    pub fn show(&mut self, id: ControlId) -> bool {
-        let occupancy = self.occupancy();
-        let Some(entry) = self.entry(id) else {
-            return false;
-        };
-        if entry.at.is_some() {
-            return true;
-        }
-        let smallest = id.supported().first().copied().unwrap_or(entry.span);
-        for span in [entry.span, smallest] {
-            if let Some(at) = occupancy.first_free(span) {
-                entry.span = span;
-                entry.at = Some(at);
-                return true;
-            }
-        }
-        false
-    }
-
-    /// This layout with `id` moved so its top-left is `at`, the controls
-    /// in its way swapped or pushed aside; `None` when that can't be done.
-    pub fn moved(&self, id: ControlId, at: Place) -> Option<Layout> {
-        let rect = self.rect_of(id)?;
-        self.settled(id, Rect::new(at, rect.span), Some(rect))
-    }
-
-    /// This layout with `id` at `at`, `span` big (or the nearest size it
-    /// comes in), the controls in its way swapped or pushed aside as
-    /// [`moved`](Self::moved) does: a control from the Add list put on the
-    /// canvas by hand, or one on it moved. `None` when that can't be done.
-    pub fn placed_at(&self, id: ControlId, span: Span, at: Place) -> Option<Layout> {
-        self.span_of(id)?;
-        let span = id.clamp(span);
-        self.settled(id, Rect::new(at, span), self.rect_of(id))
-    }
-
-    /// This layout with `id` at `span` (or the nearest size it comes in),
-    /// shifted up or left to stay on the canvas; `None` when it can't be.
-    pub fn resized(&self, id: ControlId, span: Span) -> Option<Layout> {
-        let rect = self.rect_of(id)?;
-        let span = id.clamp(span);
-        let at = self
-            .canvas
-            .clamp(i32::from(rect.at.col), i32::from(rect.at.row), span);
-        self.settled(id, Rect::new(at, span), Some(rect))
-    }
-
-    /// This layout with `id` at `rect`, making room for it; `before` is
-    /// where it was, or `None` for one coming from the Add list.
-    fn settled(&self, id: ControlId, rect: Rect, before: Option<Rect>) -> Option<Layout> {
-        if !self.canvas.fits(&rect) {
-            return None;
-        }
-        let mut next = self.clone();
-        next.entry(id)?.span = rect.span;
-        next.entry(id)?.at = Some(rect.at);
-        if before == Some(rect) {
-            return Some(next);
-        }
-
-        let others = Occupancy::of(self.canvas, self.placed().filter(|(other, _)| *other != id));
-        let covered = others.covered(&rect, None);
-
-        // one control its own size under it changes places with it
-        if let [other] = covered[..]
-            && let Some(before) = before
-            && let Some(theirs) = self.rect_of(other)
-            && theirs.span == before.span
-            && rect.span == before.span
-        {
-            let swapped = Rect::new(before.at, theirs.span);
-            let mut rest = Occupancy::of(
-                self.canvas,
-                self.placed().filter(|(o, _)| *o != id && *o != other),
-            );
-            rest.put(id, rect);
-            if rest.free(&swapped, None) {
-                next.entry(other)?.at = Some(swapped.at);
-                return Some(next);
-            }
-        }
-
-        // else what's under it goes to the first free cells, in order
-        let mut taken = Occupancy::of(
-            self.canvas,
-            self.placed()
-                .filter(|(o, _)| !covered.contains(o) && *o != id),
-        );
-        taken.put(id, rect);
-        for other in covered {
-            let span = self.rect_of(other)?.span;
-            let at = taken.first_free(span)?;
-            taken.put(other, Rect::new(at, span));
-            next.entry(other)?.at = Some(at);
-        }
-        Some(next)
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::components::quick_settings::grid::Rect;
 
     const CANVAS: Canvas = Canvas { cols: 4, rows: 8 };
 
