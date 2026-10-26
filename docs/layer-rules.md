@@ -42,7 +42,7 @@ generated from (2), not hand-edited, so neither can drift.
 | `amane.quick-settings` | Quick Settings: a clear surface that frosts its own modules through a blur region; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
 | `amane.widgets.<output>` | the desktop widgets, one surface a monitor on the background layer (matched by the prefix `^amane\.widgets\.`): a clear surface that frosts its own cards; `xray false`, and its popups (a card's menu) frosted |
 | `amane.launcher` | the app launcher: a clear surface over the output that frosts its glass panel through a blur region; `xray false`, and its popups (an app's menu) frosted |
-| `amane.notifications.toast` | each notification toast: one surface per banner, frosting its card itself; `clear`, rounded `notification.card.radius`, with niri's shadow |
+| `amane.notifications.toast` | each notification toast: one surface per banner, frosting its card itself; `clear`, rounded `notification.card.radius`, with niri's shadow at softness 48 (the banner design's `0 8 48`; other surfaces use 16) |
 | `amane.notifications.center` | the notification center sidebar, frosting itself; `clear`, rounded `notification.center.radius`, with niri's shadow (its Do Not Disturb menu is a frosted xdg-popup of it) |
 | `amane.context-menu-anchor` | the context-menu anchor window |
 | `amane.context-menu.0` … `.7` | nested context-menu levels |

@@ -83,9 +83,18 @@ whose output is static: it can't follow the mode, so it holds one value for both
   was raised by hand from 18 to 28 to give the highlight room. Recreate them in Penpot.
 - The `notification.*` tokens and the `sys.color.surface.notification.*` pair were added to
   `tokens.json` by hand (see [notifications.md](notifications.md)). Recreate them in Penpot under
-  the same names, or the next export drops them. `notification.center.radius` (26: the cards'
-  16 plus the 10 of `sys.space.inset.l` around them, so their corners nest) came later the same
+  the same names, or the next export drops them. `notification.center.radius` (now 30: the cards'
+  20 plus the 10 of `sys.space.inset.l` around them, so their corners nest) came later the same
   way. It's a number, not an expression, because radii mustn't vary with density (§8.2).
+- For the banner design (2026-10-26), these were added to `tokens.json` by hand, so recreate them
+  in Penpot:
+  - `ref.radius.20`, `ref.font.weight.bold` (700) and `ref.font.size.11`.
+  - Under `notification.card`: `icon-frame`, `thumbnail-size`, `thumbnail-radius`,
+    `padding-block`, `padding-start`, `padding-end` and `trailing-gap`, plus the `title`, `body`
+    and `time` typographies, which carry `lineHeights` in px and `letterSpacing`.
+  - `notification.card.radius` went from 16 to 20, `notification.center.radius` from 26 to 30 to
+    keep the corners nested, and `notification.toast.width` from 360 to 344.
+  - `notification.card.badge-size` was removed.
 - `sys.color.glass.thin`, `.thick`, `.rim` and `.glow` were added to `tokens.json` by hand, in
   both modes: the tints of small and large glass (thin is the panels' old tint; thick is more
   opaque, for glass that holds text) and the glass edge's light, which `components/glass.rs` held

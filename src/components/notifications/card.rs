@@ -1,10 +1,11 @@
 //! One notification as a card, shared by the toasts and the center.
 //!
-//! Laid out like an iOS/macOS banner: the app icon (or the sender's image,
-//! with the app icon as a badge) on the left; the app name and time on one
-//! line, the summary, and up to [`BODY_LINES`] of body to its right; the
-//! sender's actions as a row of equal buttons underneath. A hovered card
-//! swaps the time for a close button.
+//! Laid out like an iOS/macOS banner, in three columns: the app icon,
+//! centered in its frame on the left; the app name, the summary and up to
+//! [`BODY_LINES`] of body in the middle; the time on the right, with the
+//! sender's image under it as a thumbnail. The sender's actions run as a row
+//! of equal buttons underneath. A hovered card swaps the time for a close
+//! button.
 //!
 //! The card is measured before it is drawn ([`measure`]), so the stacks
 //! around it can place and animate cards exactly, and drawing reuses the
@@ -15,20 +16,23 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 use amane::{
-    Button, Center, Color, Column, Image, Notification, Notifications, Pointer, Radius, Rectangle,
-    Row, Size, Stack, Start, Text, Urgency, Widget,
+    Button, Center, Color, Column, End, Image, Notification, Notifications, Padding, Pointer,
+    Rectangle, Row, Size, Start, Text, Urgency, Widget,
 };
 use chrono::{DateTime, Local};
 
 use crate::components::app_icon::{icon_for, tile as app_icon_tile};
 use crate::components::buttons::{IconButton, PushButton, Style};
 use crate::components::icons::ICON_CLOSE;
-use crate::components::layout::{blank, boxed, inner_width, pad, split_row};
+use crate::components::layout::{blank, boxed, inner_width, text_width};
 use crate::components::material::{self, FillLevel, Level, Material};
 use crate::tokens::{Styled, notification, sys};
 
 /// The body is cut after this many lines, like a banner's.
-const BODY_LINES: usize = 4;
+const BODY_LINES: usize = 2;
+
+/// The widest times [`ago`] gives, which the time column is sized to fit.
+const WIDEST_TIMES: [&str; 2] = ["59m ago", "Wed 23:59"];
 
 /// Where a card is drawn, which decides its width and material.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -93,17 +97,35 @@ fn hover(id: u32, inside: bool) {
     });
 }
 
+/// The room between a card's edge and what's on it: more on the trailing
+/// side, where the time sits, as in a banner.
+fn padding() -> Padding {
+    let block = notification::card::padding_block();
+    Padding {
+        top: block,
+        right: notification::card::padding_end(),
+        bottom: block,
+        left: notification::card::padding_start(),
+    }
+}
+
 // ───── layout ────────────────────────────────────────────────────────────────
 
-/// The text a card shows, cleaned, and how tall each part is.
+/// The text a card shows, cleaned, and how big each part is.
 #[derive(Clone)]
 pub struct Layout {
     summary: String,
     body: String,
+    /// The sender's image, shown as a thumbnail under the time.
+    image: Option<String>,
     text_width: f32,
+    trailing_width: f32,
     line: f32,
     title_line: f32,
+    time_line: f32,
     body_height: f32,
+    /// The three columns' height, which the icon centers in.
+    content: f32,
     /// The whole card's height.
     pub height: f32,
 }
@@ -111,19 +133,39 @@ pub struct Layout {
 /// `n`'s card in `place`, measured: how tall it is, and what it shows.
 pub fn measure(n: &Notification, place: Place) -> Layout {
     let width = place.width();
-    let inset = sys::space::inset::l();
-    let text_width =
-        (width - inset * 2.0 - notification::card::icon_size() - sys::space::gap::m()).max(1.0);
+    let padding = padding();
+    let gap = sys::space::gap::m();
 
     let summary = one_line(&plain(n.summary()));
     let body = plain(n.body());
+    let image = image_path(n);
 
     let line = Text::new("Ag")
         .style(sys::r#type::caption())
         .height_in(f32::MAX);
     let title_line = Text::new("Ag")
-        .style(sys::r#type::title())
+        .style(notification::card::title())
         .height_in(f32::MAX);
+    let time_line = Text::new("Ag")
+        .style(notification::card::time())
+        .height_in(f32::MAX);
+
+    // as wide as the widest time, so the text doesn't move as it ages, and
+    // wide enough for the thumbnail and the close button that stands in
+    let trailing_width = WIDEST_TIMES
+        .iter()
+        .map(|sample| text_width(sample, notification::card::time()))
+        .fold(close_side(time_line), f32::max)
+        .max(notification::card::thumbnail_size());
+
+    let text_width = (width
+        - padding.left
+        - padding.right
+        - notification::card::icon_frame()
+        - trailing_width
+        - gap * 2.0)
+        .max(1.0);
+
     let body_height = if body.is_empty() {
         0.0
     } else {
@@ -134,22 +176,33 @@ pub fn measure(n: &Notification, place: Place) -> Layout {
     if !summary.is_empty() {
         text += sys::space::gap::_2xs() + title_line;
     }
-    if body_height > 0.0 {
-        text += sys::space::gap::_2xs() + body_height;
+    text += body_height;
+
+    // the image's room is kept from the start, so the card doesn't grow
+    // when it finishes loading
+    let mut trailing = time_line;
+    if image.is_some() {
+        trailing += notification::card::trailing_gap() + notification::card::thumbnail_size();
     }
 
-    let mut height = inset * 2.0 + text.max(notification::card::icon_size());
+    let content = text.max(notification::card::icon_size()).max(trailing);
+
+    let mut height = padding.top + padding.bottom + content;
     if !n.actions().is_empty() {
-        height += sys::space::gap::m() + sys::size::control::height();
+        height += gap + sys::size::control::height();
     }
 
     Layout {
         summary,
         body,
+        image,
         text_width,
+        trailing_width,
         line,
         title_line,
+        time_line,
         body_height,
+        content,
         height,
     }
 }
@@ -173,11 +226,16 @@ impl Measured {
 
 fn body_text(body: &str, color: Color) -> Text {
     Text::new(body)
-        .style(sys::r#type::label())
+        .style(notification::card::body())
         .color(color)
         .wrap()
         .max_lines(BODY_LINES)
         .elide()
+}
+
+/// The close button's side: a little more than the time it stands in for.
+fn close_side(time_line: f32) -> f32 {
+    time_line + sys::space::gap::xs()
 }
 
 // ───── view ──────────────────────────────────────────────────────────────────
@@ -191,6 +249,7 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
     let look = place.look();
     let id = n.id();
     let hovered = HOVERED.with(Cell::get) == Some(id);
+    let padding = padding();
 
     let fixed = |w: f32, h: f32| {
         Rectangle::new()
@@ -200,35 +259,8 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
             .clip()
     };
 
-    // app name on the left, the time (or close, while hovered) on the right
-    let trailing: Box<dyn Widget> = if hovered {
-        let side = parts.line + sys::space::gap::xs();
-        let close = close_button(
-            format!("amane.notification.{id}.close"),
-            side,
-            look.secondary,
-            move || Notifications::dismiss(id),
-        );
-        // a line tall, like the time it replaces, so the header doesn't grow
-        // (and the card measured without it doesn't shift); the button spills
-        // evenly above and below
-        boxed(
-            Rectangle::new()
-                .width(Size::Fixed(side))
-                .height(Size::Fixed(parts.line))
-                .fill(Color::TRANSPARENT)
-                .align_child(Center, Center)
-                .child(close),
-        )
-    } else {
-        boxed(
-            Text::new(ago(n.received(), now))
-                .style(sys::r#type::caption())
-                .color(look.secondary),
-        )
-    };
-    // the app's name takes most of the line, leaving the rest to the time
-    let app = fixed(parts.text_width * 0.7, parts.line)
+    // the middle: the app's name, the summary, and the body
+    let app = fixed(parts.text_width, parts.line)
         .align_child(Start, Center)
         .child(
             Text::new(app_name(n))
@@ -236,16 +268,16 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
                 .color(look.secondary)
                 .elide(),
         );
-    let header = split_row(app, vec![trailing]).width(Size::Fixed(parts.text_width));
 
-    let mut text: Vec<Box<dyn Widget>> = vec![boxed(header)];
+    let mut text: Vec<Box<dyn Widget>> = vec![boxed(app)];
     if !parts.summary.is_empty() {
+        text.push(boxed(fixed(parts.text_width, sys::space::gap::_2xs())));
         text.push(boxed(
             fixed(parts.text_width, parts.title_line)
                 .align_child(Start, Center)
                 .child(
                     Text::new(parts.summary.clone())
-                        .style(sys::r#type::title())
+                        .style(notification::card::title())
                         .color(look.fg)
                         .elide(),
                 ),
@@ -257,15 +289,67 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
         ));
     }
 
+    // the right: the time (or close, while hovered), then the image
+    let time: Box<dyn Widget> = if hovered {
+        let side = close_side(parts.time_line);
+        let close = close_button(
+            format!("amane.notification.{id}.close"),
+            side,
+            look.secondary,
+            move || Notifications::dismiss(id),
+        );
+        // a time line tall, like the time it replaces, so the column doesn't
+        // grow (and the card measured without it doesn't shift); the button
+        // spills evenly above and below
+        boxed(
+            Rectangle::new()
+                .width(Size::Fixed(side))
+                .height(Size::Fixed(parts.time_line))
+                .fill(Color::TRANSPARENT)
+                .align_child(Center, Center)
+                .child(close),
+        )
+    } else {
+        boxed(
+            Text::new(ago(n.received(), now))
+                .style(notification::card::time())
+                .color(look.secondary),
+        )
+    };
+    let mut trailing: Vec<Box<dyn Widget>> = vec![time];
+    if let Some(image) = parts.image.as_deref().filter(|path| Image::loaded(path)) {
+        let side = notification::card::thumbnail_size();
+        trailing.push(boxed(
+            Rectangle::new()
+                .width(Size::Fixed(side))
+                .height(Size::Fixed(side))
+                .radius(notification::card::thumbnail_radius())
+                .fill(Image::cover(image)),
+        ));
+    }
+
     let top = Row::new(vec![
-        leading(n, notification::card::icon_size()),
-        boxed(Column::new(text).gap(sys::space::gap::_2xs())),
+        leading(n, parts.content),
+        boxed(Column::new(text)),
+        boxed(
+            fixed(parts.trailing_width, parts.content)
+                .align_child(End, Start)
+                .child(
+                    Column::new(trailing)
+                        .gap(notification::card::trailing_gap())
+                        .align(End),
+                ),
+        ),
     ])
     .gap(sys::space::gap::m());
 
     let mut rows: Vec<Box<dyn Widget>> = vec![boxed(top)];
     if !n.actions().is_empty() {
-        rows.push(boxed(actions(n, inner_width(width), look.fg)));
+        rows.push(boxed(actions(
+            n,
+            width - padding.left - padding.right,
+            look.fg,
+        )));
     }
 
     let mut body = blank().child(Column::new(rows).gap(sys::space::gap::m()));
@@ -285,7 +369,7 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
         .radius(notification::card::radius())
         .fill(look.fill)
         .border(sys::border::hairline(), stroke)
-        .padding(pad(sys::space::inset::l(), sys::space::inset::l()))
+        .padding(padding)
         .clip()
         .child(body);
 
@@ -363,20 +447,22 @@ pub fn critical(n: &Notification) -> bool {
     n.urgency() == Urgency::Critical
 }
 
-/// The app's icon, or the sender's own image with the app icon as a badge.
-fn leading(n: &Notification, side: f32) -> Box<dyn Widget> {
+/// The app's icon, centered in its frame as tall as the card's content.
+fn leading(n: &Notification, height: f32) -> Box<dyn Widget> {
+    boxed(
+        Rectangle::new()
+            .width(Size::Fixed(notification::card::icon_frame()))
+            .height(Size::Fixed(height))
+            .fill(Color::TRANSPARENT)
+            .align_child(Center, Center)
+            .child(app_icon(n, notification::card::icon_size())),
+    )
+}
+
+/// The sender's own image, as a path, when it sent one.
+fn image_path(n: &Notification) -> Option<String> {
     let image = n.image().strip_prefix("file://").unwrap_or(n.image());
-    if !image.is_empty() && Image::loaded(image) {
-        let badge = notification::card::badge_size();
-        let avatar = Rectangle::new()
-            .width(Size::Fixed(side))
-            .height(Size::Fixed(side))
-            .radius(Radius::Full)
-            .fill(Image::cover(image));
-        let badge = app_icon(n, badge).translate(side - badge * 0.8, side - badge * 0.8);
-        return boxed(Stack::new(vec![boxed(avatar), boxed(badge)]));
-    }
-    boxed(app_icon(n, side))
+    (!image.is_empty()).then(|| image.to_string())
 }
 
 /// The sending app's icon, from its desktop entry, its name, or the icon

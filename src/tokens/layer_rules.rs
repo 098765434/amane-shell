@@ -21,10 +21,10 @@ use crate::tokens::{Key, Value, bar, library, notification, resolved, sys, with_
 pub struct LayerRule {
     pub namespace: &'static str,
     pub comment: String,
-    /// The surface is a card with these corners, casting niri's shadow: the
-    /// shell can't draw it, as the surface is only as big as its card.
+    /// The surface is a card, rounded and casting niri's shadow: the shell
+    /// can't draw the shadow, as the surface is only as big as its card.
     /// `None` leaves it alone.
-    pub radius: Option<f32>,
+    pub card: Option<Card>,
     /// The surface is frosted whole with these corners, in the bar's
     /// material, with no shadow, blurring the wallpaper (niri's xray): for a
     /// surface that reserves its zone, so nothing but the wallpaper is ever
@@ -40,14 +40,26 @@ pub struct LayerRule {
     pub clear: bool,
 }
 
+/// A card surface's corners and how soft its shadow is.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Card {
+    pub radius: f32,
+    pub softness: f32,
+}
+
 // TODO(token): `sys.shadow.popover` once Penpot has it (docs/penpot-todo.md).
 // The rules are static, so the shadow can't follow the mode: this is the
-// dark one, which also reads in light.
+// dark one, which also reads in light (the banner design's light shadow is
+// lighter, `#00000040`).
 /// The shadow under every frosted surface: the shell can't draw it, as each
 /// surface is only as big as its card.
 const SHADOW_SOFTNESS: f32 = 16.0;
 const SHADOW_Y: f32 = 8.0;
 const SHADOW_COLOR: &str = "#00000073";
+
+/// A notification banner's shadow spreads wider than a panel's, as in the
+/// banner design (`0 8 48`).
+const BANNER_SHADOW_SOFTNESS: f32 = 48.0;
 
 /// One rule per frosted surface.
 pub fn rules() -> Vec<LayerRule> {
@@ -67,7 +79,7 @@ pub fn rules() -> Vec<LayerRule> {
                  the wallpaper is behind it and niri's xray blur is enough. Its xdg-popups\n\
                  (tooltips, Do Not Disturb's menu) are frosted cards.",
             ),
-            radius: None,
+            card: None,
             frost: Some(strip),
             popups: Some(popover),
             clear: false,
@@ -82,7 +94,7 @@ pub fn rules() -> Vec<LayerRule> {
                 level_ns(0),
                 MAX_DEPTH - 1
             ),
-            radius: None,
+            card: None,
             frost: None,
             popups: Some(popover),
             clear: false,
@@ -94,7 +106,7 @@ pub fn rules() -> Vec<LayerRule> {
                       surface saying where (ext-background-effect). Toggled by the status bar's\n\
                       Quick Settings button. A Bluetooth device's menu is an xdg-popup of it.",
             ),
-            radius: None,
+            card: None,
             frost: None,
             popups: Some(popover),
             clear: true,
@@ -106,7 +118,7 @@ pub fn rules() -> Vec<LayerRule> {
                       where the surface says (ext-background-effect). It comes up from the\n\
                       bottom edge; a window's menu is an xdg-popup of it.",
             ),
-            radius: None,
+            card: None,
             frost: None,
             popups: Some(popover),
             clear: true,
@@ -119,7 +131,7 @@ pub fn rules() -> Vec<LayerRule> {
                       where the surface says (ext-background-effect). A card's menu is an\n\
                       xdg-popup of it.",
             ),
-            radius: None,
+            card: None,
             frost: None,
             popups: Some(popover),
             clear: true,
@@ -131,7 +143,7 @@ pub fn rules() -> Vec<LayerRule> {
                       is frosted where the surface says (ext-background-effect). Toggled over IPC\n\
                       from a keybind. An app's menu is an xdg-popup of it.",
             ),
-            radius: None,
+            card: None,
             frost: None,
             popups: Some(popover),
             clear: true,
@@ -143,7 +155,10 @@ pub fn rules() -> Vec<LayerRule> {
                       at the top-right. Each frosts its card itself (blur shapes, in the glass\n\
                       material); the rule rounds it and gives it niri's shadow.",
             ),
-            radius: Some(toast),
+            card: Some(Card {
+                radius: toast,
+                softness: BANNER_SHADOW_SOFTNESS,
+            }),
             frost: None,
             popups: None,
             clear: true,
@@ -156,7 +171,10 @@ pub fn rules() -> Vec<LayerRule> {
                       rule rounds it and gives it niri's shadow. Its Do Not Disturb menu is an\n\
                       xdg-popup of it.",
             ),
-            radius: Some(center),
+            card: Some(Card {
+                radius: center,
+                softness: SHADOW_SOFTNESS,
+            }),
             frost: None,
             popups: Some(popover),
             clear: true,
@@ -208,10 +226,10 @@ pub fn render(rules: &[LayerRule]) -> String {
             "    match namespace=\"{}\"",
             kdl_string(&anchored(rule.namespace))
         );
-        if let Some(radius) = rule.radius {
-            let _ = writeln!(out, "    geometry-corner-radius {radius}");
+        if let Some(card) = rule.card {
+            let _ = writeln!(out, "    geometry-corner-radius {}", card.radius);
             out.push_str("    shadow {\n        on\n");
-            let _ = writeln!(out, "        softness {SHADOW_SOFTNESS}");
+            let _ = writeln!(out, "        softness {}", card.softness);
             let _ = writeln!(out, "        offset x=0 y={SHADOW_Y}");
             let _ = writeln!(out, "        color \"{SHADOW_COLOR}\"");
             out.push_str("    }\n");

@@ -31,7 +31,7 @@ use std::cell::Cell;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 
-use amane::Text;
+use amane::{Case, Decoration, Text};
 
 use crate::theme::{self, Density, Mode};
 pub use envelope::{Library, TokenType};
@@ -172,7 +172,7 @@ mod generated {
 pub use generated::*;
 
 /// A `sys.type.*` role, ready for a `Text`: the first installed family of
-/// its stack and its size times the text scale.
+/// its stack, and its size and letter spacing times the text scale.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TextStyle {
     pub family: &'static str,
@@ -181,19 +181,49 @@ pub struct TextStyle {
     pub italic: bool,
     /// A multiple of the size.
     pub line_height: Option<f32>,
+    /// Pixels after every letter.
     pub letter_spacing: Option<f32>,
+    pub text_case: Option<TextCase>,
+    pub text_decoration: Option<TextDecoration>,
 }
 
-/// `Text::new(…).style(sys::r#type::label())` sets family, size and weight.
+/// `Text::new(…).style(sys::r#type::label())` sets everything a Penpot
+/// typography holds: family, size, weight, italic, line height, letter
+/// spacing, case and decoration. Members the typography leaves out keep
+/// amane's defaults (the font's own line spacing, no tracking).
 pub trait Styled {
     fn style(self, style: TextStyle) -> Self;
 }
 
 impl Styled for Text {
     fn style(self, style: TextStyle) -> Self {
-        self.font(style.family)
+        let mut text = self
+            .font(style.family)
             .size(style.size)
             .weight(style.weight)
+            .italic(style.italic);
+        if let Some(multiple) = style.line_height {
+            text = text.line_height(multiple);
+        }
+        if let Some(pixels) = style.letter_spacing {
+            text = text.letter_spacing(pixels);
+        }
+        if let Some(case) = style.text_case {
+            text = text.case(match case {
+                TextCase::None => Case::AsWritten,
+                TextCase::Uppercase => Case::Upper,
+                TextCase::Lowercase => Case::Lower,
+                TextCase::Capitalize => Case::Capitalize,
+            });
+        }
+        if let Some(decoration) = style.text_decoration {
+            text = text.decoration(match decoration {
+                TextDecoration::None => Decoration::None,
+                TextDecoration::Underline => Decoration::Underline,
+                TextDecoration::StrikeThrough => Decoration::StrikeThrough,
+            });
+        }
+        text
     }
 }
 
@@ -271,7 +301,9 @@ pub mod read {
             weight,
             italic,
             line_height: t.line_height,
-            letter_spacing: t.letter_spacing,
+            letter_spacing: t.letter_spacing.map(|pixels| pixels * r.text_scale),
+            text_case: t.text_case,
+            text_decoration: t.text_decoration,
         }
     }
 

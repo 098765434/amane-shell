@@ -18,6 +18,27 @@ asks for one blur shape the size of the card, a `Material::Banner`: thin glass t
 dark with its backdrop, as Apple's banners do (see [materials.md](materials.md)). Sliding in, sliding out and swiping
 move the surface itself (its margin), not a widget inside it.
 
+### The card (`card.rs`)
+
+Toasts and the center share one card, laid out like an iOS banner in three columns:
+
+- **Leading:** the app's icon (`card.icon-size`), centered in a `card.icon-frame`-wide frame as
+  tall as the content.
+- **Middle:** the app's name (`sys.type.caption`, secondary), the summary (`card.title`: 13/bold,
+  16px lines, tracked −0.26px) and at most two lines of body (`card.body`: 13/regular, 16px lines,
+  tracked −0.1px), elided.
+- **Trailing:** the time (`card.time`: 11/regular), right-aligned, with the sender's image under it
+  as a `card.thumbnail-size` thumbnail with `card.thumbnail-radius` corners, `card.trailing-gap`
+  apart. The column is as wide as the widest time, so the text doesn't move as the time ages. The
+  image's room is kept from the moment the card is measured, so the card doesn't grow when the
+  image finishes loading.
+
+The insets are `card.padding-block` above and below, `card.padding-start` on the leading side and
+the wider `card.padding-end` on the trailing side, where the time sits. Actions run in a row of
+equal buttons underneath. The design these follow (`shadow-notification-{bright,dark}.css`, a
+Figma export) also sets the banner's glass, edge and label blending. The banner material and
+vibrancy already draw those, so the card doesn't.
+
 Which toasts show is computed fresh from the notification list and the clock (`alive`):
 
 | Notification | Toast shows for |
@@ -104,9 +125,12 @@ constants until `sys.motion.*` tokens exist in Penpot. A card is measured once
 Colours are the `sys.color.surface.notification.*` pair for toasts (`bg`, `fg`, `fg-secondary`,
 `stroke`; checked for contrast over black and white wallpaper). The center is a panel [`Card`](components.md#card) filled with thick glass's tint, with
 `raised` cards on it, in the panel's colours, under a `TopAppBar`. Sizes are `notification.*`: `toast.width`, `toast.max-visible`,
-`center.width`, `center.radius` (the cards' radius plus the inset around them, so the corners nest),
-`card.radius`, `card.icon-size`, `card.badge-size`, and `stack.peek`,
-`max-peek`, `scale-step`, `fade-step`.
+`center.width`, `center.radius` (the cards' 20 plus the inset of 10 around them, so the corners
+nest), `card.radius`, `card.icon-size`, `card.icon-frame`, `card.thumbnail-size`,
+`card.thumbnail-radius`, `card.padding-block`, `card.padding-start`, `card.padding-end`,
+`card.trailing-gap`, the `card.title`, `card.body` and `card.time` typographies, and `stack.peek`,
+`max-peek`, `scale-step`, `fade-step`. A toast's shadow is softer than other surfaces' (niri
+softness 48, the design's `0 8 48`; see [layer-rules.md](layer-rules.md)).
 
 > These tokens were added to `tokens.json` by hand, before they existed in Penpot. Recreate them
 > there under the same names, or the next export drops them.

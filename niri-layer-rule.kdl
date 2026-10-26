@@ -132,10 +132,10 @@ layer-rule {
 // material); the rule rounds it and gives it niri's shadow.
 layer-rule {
     match namespace="^amane\\.notifications\\.toast$"
-    geometry-corner-radius 16
+    geometry-corner-radius 20
     shadow {
         on
-        softness 16
+        softness 48
         offset x=0 y=8
         color "#00000073"
     }
@@ -150,7 +150,7 @@ layer-rule {
 // xdg-popup of it.
 layer-rule {
     match namespace="^amane\\.notifications\\.center$"
-    geometry-corner-radius 26
+    geometry-corner-radius 30
     shadow {
         on
         softness 16
