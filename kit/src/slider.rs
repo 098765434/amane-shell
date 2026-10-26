@@ -53,6 +53,8 @@ pub struct Slider {
     thickness: Option<f32>,
     // the glyph's id and what pressing it does
     icon_press: Option<(String, Rc<dyn Fn()>)>,
+    // whether the wheel moves it; off in a scrolled list, where the wheel scrolls the list
+    wheel: bool,
 }
 
 impl Slider {
@@ -67,6 +69,7 @@ impl Slider {
             fill: None,
             thickness: None,
             icon_press: None,
+            wheel: true,
         }
     }
 
@@ -80,6 +83,13 @@ impl Slider {
     /// controls are shown but not for use.
     pub fn inert(mut self, inert: bool) -> Self {
         self.inert = inert;
+        self
+    }
+
+    /// Whether the scroll wheel moves it (on by default). Turn it off in a
+    /// list that scrolls, or scrolling past it changes its value.
+    pub fn wheel(mut self, wheel: bool) -> Self {
+        self.wheel = wheel;
         self
     }
 
@@ -130,6 +140,7 @@ impl Slider {
             on_value_change: set,
             fill,
             thickness,
+            wheel,
             ..
         } = self;
         let set = changes_only(value, set);
@@ -145,7 +156,10 @@ impl Slider {
             .height(Size::Fixed(track_h))
             .radius(track_h / 2.0)
             .fill(material::fill_role(FillLevel::Secondary))
-            .border(sys::border::hairline(), sys::color::progress::track_stroke())
+            .border(
+                sys::border::hairline(),
+                sys::color::progress::track_stroke(),
+            )
             .clip()
             .child(
                 Rectangle::new()
@@ -189,15 +203,18 @@ impl Slider {
             ),
             boxed(knob),
         ]);
-        input
+        let input = input
             .cursor(Pointer)
             .on_drag(move |p: Point| {
                 // the drag keeps reporting past either end, so it is clamped
                 let ratio = (p.x / width).clamp(0.0, 1.0);
                 set((ratio * 100.0).round() as u8);
             })
-            .on_scroll(move |s: Scroll| scroll(scrolled(value, s, STEP)))
-            .child(track)
+            .child(track);
+        if !wheel {
+            return input;
+        }
+        input.on_scroll(move |s: Scroll| scroll(scrolled(value, s, STEP)))
     }
 
     fn build_large(self, glyph: char) -> Rectangle {
