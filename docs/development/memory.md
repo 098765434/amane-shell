@@ -117,14 +117,42 @@ and closed twice, then Quick Settings): 354 MB before, 128 MB after, and reopeni
 grows. Quick Settings leaves about 115 MB of GTT behind when it closes; that is next to look
 at. Details in amane's memory doc.
 
+### The widgets surface is the cards, not the monitor
+
+**What it cost.** The widgets' background surface was Full×Full and vibrant: three
+2880×1800 contexts (the surface and its two vibrant layers), each with a swapchain and a canvas,
+under everything, all day. The grid spans most of the screen, so sizing the surface to the
+canvas would have saved only 12%.
+
+**What changed.** `widgets/mod.rs` sizes the background window to the box round the placed
+cards plus 32 px for their shadows (`PAD`), and places it on the monitor with margins
+(`Geometry::on_surface_around`). While a card is dragged the surface is the whole canvas, since
+the drag may cross it; the drag's points are kept in the canvas's pixels, so the surface growing
+under it is fine. The edit surface stays full for the gallery. Only the window that shows the
+cards records the geometry the pointer is measured against. amane's vibrant layers follow the
+window's size, and one with nothing on it now unmaps and releases its buffers.
+
+**Rule.** Size a surface to what it shows. A surface costs by its pixels, not by what is drawn
+on it, and `hidden` means `visible(false)` so amane releases it.
+
+**Measured** on a second shell with the desktop showing (the user's layout: a column of
+cards): 363 MB → 213 MB of VRAM; the surface went from 1646×1029 to 588×949.
+
+### niri's xray buffers and shape captures (niri fork)
+
+The fork's `effects/memory.md` has it: the base blur chain only when something uses it, no
+background buffer over see-through workspaces, idle eviction of chains and buffers after 600
+rendered frames, the screenshot targets released right after a capture (about 300 MB a
+screenshot before), the blur-shape capture dropped before the blur checks its textures (it
+rebuilt the whole chain every frame), and a swiped tile's offscreen cleared.
+
 ## Planned
 
-In order of payoff, from the 2026-10-26 research: niri clearing blur-shape captures, resetting a
-swiped tile's offscreen, and freeing the screenshot targets' xray buffers; dropping vello's
-renderer when idle (what the launcher still leaves behind); the widgets surface sized to its
-grid rather than the output, with content-sized vibrant layers; the stats tick repainting only
-on a visible change; and images decoded at their drawn size. Each lands with a section above and
-a row here:
+In order of payoff, from the 2026-10-26 research: dropping vello's renderer when idle (what the
+launcher still leaves behind; only worth it once no surface runs vello every 2 s), images
+decoded at their drawn size with a byte-capped cache (Quick Settings leaves 100+ MB of GTT
+behind), shared pipelines and picture textures across windows, and event-driven services in
+place of polls. Each lands with a section above and a row here:
 
 | Scenario | 2026-10-26 baseline | After |
 |---|---|---|

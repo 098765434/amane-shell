@@ -3,7 +3,7 @@
 macOS's desktop widgets on the wallpaper (`src/components/widgets/`). Quick Settings' tiles are
 controls; widgets are readings: the batteries, the processor, memory, temperature, the network
 and the disks. Each is a frosted card on a clear surface under the windows, laid out on Quick
-Settings' grid across the whole screen, and the same kind can be placed more than once, each
+Settings' grid across the whole screen (the surface itself is only as big as the cards), and the same kind can be placed more than once, each
 with its own settings.
 
 ## What there is
