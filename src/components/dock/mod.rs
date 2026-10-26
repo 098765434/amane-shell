@@ -571,7 +571,7 @@ fn build(
     }
     dock.out = out;
 
-    let laid = lay_out(dock, entries, at, motion);
+    let laid = lay_out(dock, entries, at, motion, !out);
     spring_load(dock, &laid, spaces, motion);
     let sunk = at.sunk(progress);
     let top = at.top + sunk;
@@ -802,8 +802,16 @@ fn swell_anim(motion: &DockMotion) -> motion::Anim {
 }
 
 /// The row's places at rest, stepping their slides and growth, and the
-/// card's width for them; forgets the places that have gone.
-fn lay_out(dock: &mut Dock, entries: Vec<Entry>, at: Measures, motion: &DockMotion) -> Laid {
+/// card's width for them; forgets the places that have gone. While
+/// `hidden` everything is simply where it goes: nothing on a hidden dock
+/// is seen moving, and every frame it moved would be drawn for nothing.
+fn lay_out(
+    dock: &mut Dock,
+    entries: Vec<Entry>,
+    at: Measures,
+    motion: &DockMotion,
+    hidden: bool,
+) -> Laid {
     dock.items
         .retain(|key, _| entries.iter().any(|entry| entry.key == *key));
     // the first row it lays out is simply there
@@ -812,31 +820,40 @@ fn lay_out(dock: &mut Dock, entries: Vec<Entry>, at: Measures, motion: &DockMoti
     let mut slot = 0.0;
     let mut rests = Vec::with_capacity(entries.len());
     let mut shown = Vec::with_capacity(entries.len());
-    let mut length: f32 = 0.0;
     for entry in &entries {
         let item = dock.items.entry(entry.key.clone()).or_insert_with(|| Item {
             slot: anim(&motion.item, slot),
             presence: anim(&motion.item, if fresh { 1.0 } else { 0.0 }),
         });
-        item.slot.to(slot);
-        item.presence.to(1.0);
+        if hidden {
+            item.slot = anim(&motion.item, slot);
+            item.presence = anim(&motion.item, 1.0);
+        } else {
+            item.slot.to(slot);
+            item.presence.to(1.0);
+        }
         let presence = item.presence.value().clamp(0.0, 1.5);
         let rest = Rest {
             slot: item.slot.value(),
             // a rule only fades, it never swells
             presence: if entry.pointable() { presence } else { 0.0 },
         };
-        length = length.max(rest.slot + entry.width * presence);
         rests.push(rest);
         shown.push(presence.min(1.0));
         slot += entry.width;
     }
 
-    let target = at.card_width(length);
+    // where the row ends once everything has arrived, so the card's spring
+    // has one place to go rather than a new one each frame of a slide
+    let target = at.card_width(slot);
     let width = dock
         .width
         .get_or_insert_with(|| anim(&motion.resize, target));
-    width.to(target);
+    if hidden {
+        *width = anim(&motion.resize, target);
+    } else {
+        width.to(target);
+    }
     Laid {
         entries,
         rests,
