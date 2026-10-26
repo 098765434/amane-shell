@@ -59,11 +59,21 @@
 
       # Without VK_ICD_FILENAMES, point the Vulkan loader at the system's
       # drivers. Shared by the devShell and the installed binary's wrapper.
+      # Loading every driver in the dir (13 on NixOS, lavapipe among them)
+      # costs about 6.5 MB of RSS per amane process, so on a machine with a
+      # Radeon only its driver is named; others get the whole dir. The backend
+      # is pinned to Vulkan so wgpu doesn't probe GL as well.
+      # See docs/development/memory.md.
       vulkanIcdFallback = ''
         if [ -z "''${VK_ICD_FILENAMES:-}" ] && [ -d /run/opengl-driver/share/vulkan/icd.d ]; then
-          VK_ICD_FILENAMES="$(printf '%s:' /run/opengl-driver/share/vulkan/icd.d/*.json)"
-          export VK_ICD_FILENAMES="''${VK_ICD_FILENAMES%:}"
+          if [ -e /run/opengl-driver/share/vulkan/icd.d/radeon_icd.x86_64.json ]; then
+            export VK_ICD_FILENAMES=/run/opengl-driver/share/vulkan/icd.d/radeon_icd.x86_64.json
+          else
+            VK_ICD_FILENAMES="$(printf '%s:' /run/opengl-driver/share/vulkan/icd.d/*.json)"
+            export VK_ICD_FILENAMES="''${VK_ICD_FILENAMES%:}"
+          fi
         fi
+        export WGPU_BACKEND="''${WGPU_BACKEND:-vulkan}"
       '';
     in
     {
