@@ -244,8 +244,9 @@ fn rim(look: &Look, shape: Shape) -> Rectangle {
     let channel = |value: u8| f32::from(value) / 255.0;
     let color = look.highlight;
 
-    rim.shader("src/components/glass.wgsl").shader_values(vec![
-        [shape.radius, 1.5, look.rim, look.bloom],
+    // one rectangle, the whole card; no glow, the card's inner shadow has it
+    rim.shader("kit/src/glass.wgsl").shader_values(vec![
+        [1.0, 1.5, look.rim, look.bloom],
         [14.0, look.rim_far, 0.0, 0.0],
         [
             channel(color.red()),
@@ -253,6 +254,8 @@ fn rim(look: &Look, shape: Shape) -> Rectangle {
             channel(color.blue()),
             0.0,
         ],
+        [0.0, 0.0, shape.width, shape.height],
+        [shape.radius, 1.0, 0.0, 0.0],
     ])
 }
 
