@@ -132,6 +132,7 @@ impl Slider {
             thickness,
             ..
         } = self;
+        let set = changes_only(value, set);
         let track_h = thickness.unwrap_or_else(sys::size::slider::height);
         let active = if dimmed {
             material::label(Level::Secondary)
@@ -209,6 +210,7 @@ impl Slider {
             icon_press,
             ..
         } = self;
+        let set = changes_only(value, set);
         let height = sys::size::control::height();
         let track = material::fill_role(FillLevel::Secondary);
         let active = if dimmed {
@@ -274,6 +276,17 @@ impl Slider {
         }
         slider.on_scroll(move |s: Scroll| set(scrolled(value, s, STEP)))
     }
+}
+
+/// `set`, passed only a value other than `value`, the one shown: a drag
+/// reports every motion and a scroll every step past either end, and each
+/// value sent is a round trip (a sink's volume, the backlight) and a redraw.
+fn changes_only(value: u8, set: Rc<dyn Fn(u8)>) -> Rc<dyn Fn(u8)> {
+    Rc::new(move |next| {
+        if next != value {
+            set(next);
+        }
+    })
 }
 
 /// How wide the large slider's fill is at `value`: never narrower than the

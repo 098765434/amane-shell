@@ -266,8 +266,14 @@ fn volume() -> Option<Box<dyn Widget>> {
         Page::Sound,
         tip,
     )
-    .on_scroll(move |scroll: Scroll| {
-        Audio::set_volume(slider::scrolled(volume, scroll, slider::STEP))
+    .on_scroll(|scroll: Scroll| {
+        // the volume as it is now: a burst of scroll steps comes before the
+        // bar draws again, and each should step on from the last
+        let now = Audio::read().volume();
+        let next = slider::scrolled(now, scroll, slider::STEP);
+        if next != now {
+            Audio::set_volume(next);
+        }
     })
     .on_middle(Audio::toggle_mute);
     Some(boxed(icon.build()))

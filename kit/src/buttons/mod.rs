@@ -348,6 +348,10 @@ thread_local! {
 
     // each switch's and segmented button's motion, by id
     static STATES: RefCell<HashMap<String, Box<dyn Any>>> = RefCell::new(HashMap::new());
+
+    // the button held down and when it last reported: the drag that
+    // reports a press goes on reporting every motion after it
+    static HELD: RefCell<Option<(String, Instant)>> = const { RefCell::new(None) };
 }
 
 /// Runs `f` on control `id`'s state, made with `init` the first time (or
@@ -428,8 +432,18 @@ pub fn press_scale(id: &str, scale: f32) -> f32 {
     f32::blend(scale, 1.0, progress)
 }
 
-/// Control `id` was pressed: its pulse starts over.
+/// Control `id` was pressed: its pulse starts over, once a press, and not
+/// at all where motion is reduced.
 fn pressed(id: &str) {
+    // a release can go unseen (the window closed under it), so the hold
+    // also ends after a second without a report
+    let again = HELD.with_borrow_mut(|held| {
+        let before = held.replace((id.to_string(), Instant::now()));
+        before.is_some_and(|(was, at)| was == id && at.elapsed() < Duration::from_secs(1))
+    });
+    if again || crate::theme::reduced_motion() {
+        return;
+    }
     with_state(
         &format!("{id}.press"),
         || Press(motion::spring(1.0)),
@@ -475,6 +489,7 @@ pub fn interactive(base: Rectangle, id: String, disabled: bool, actions: Actions
         .cursor(Pointer)
         // a left press starts a drag, which is the only press amane reports
         .on_drag(move |_: Point| pressed(&pressed_id))
+        .on_release(|_: Point| HELD.set(None))
         .on_hover(move |inside| {
             hover(&id, inside);
             if !inside {
