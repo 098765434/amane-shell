@@ -68,6 +68,16 @@ const BUILT_IN: &[(&str, &str, &str)] = &[
         include_str!("../effects/rings/rings.wgsl"),
     ),
     (
+        "liquid-glass",
+        "effect.json",
+        include_str!("../effects/liquid-glass/effect.json"),
+    ),
+    (
+        "liquid-glass",
+        "liquid.wgsl",
+        include_str!("../effects/liquid-glass/liquid.wgsl"),
+    ),
+    (
         "glass",
         "effect.json",
         include_str!("../effects/glass/effect.json"),

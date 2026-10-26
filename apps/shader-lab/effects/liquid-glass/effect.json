@@ -1,0 +1,40 @@
+{
+  "name": "Liquid glass (refracting)",
+  "suggest": { "subject": 0, "backdrop": 3 },
+  "passes": [
+    { "shader": "liquid.wgsl", "inputs": ["backdrop", "content"] }
+  ],
+  "surface": {
+    "tint": "tint",
+    "glow": "glow",
+    "glow_blur": "glowBlur",
+    "frost": "frost",
+    "radius": "radius",
+    "rect_row": 3,
+    "radius_slot": [4, 0]
+  },
+  "params": [
+    { "key": "refraction", "label": "Refraction", "default": 18, "min": -60, "max": 60, "step": 0.5, "unit": "px", "slot": [0, 0] },
+    { "key": "bezel", "label": "Bezel", "default": 16, "min": 1, "max": 80, "step": 0.5, "unit": "px", "slot": [0, 1] },
+    { "key": "dispersion", "label": "Dispersion", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "slot": [0, 2] },
+    { "key": "curve", "label": "Curve", "default": 2.5, "min": 0.5, "max": 6, "step": 0.1, "slot": [0, 3] },
+    { "key": "rimStrength", "label": "Rim", "default": 0.35, "min": 0, "max": 1, "step": 0.01, "slot": [1, 0] },
+    { "key": "rimWidth", "label": "Rim width", "default": 1.5, "min": 0.5, "max": 6, "step": 0.1, "unit": "px", "slot": [1, 1] },
+    { "key": "far", "label": "Far catch", "default": 0.3, "min": 0, "max": 1, "step": 0.01, "slot": [1, 2] },
+    { "key": "bloom", "label": "Bloom", "default": 0.08, "min": 0, "max": 0.5, "step": 0.005, "slot": [1, 3] },
+    { "key": "frost", "label": "Frost", "default": 0, "min": 0, "max": 40, "step": 0.5, "unit": "px", "slot": [5, 0] },
+    { "key": "glowBlur", "label": "Glow blur", "default": 5, "min": 0, "max": 30, "step": 0.5, "unit": "px", "slot": [5, 1] },
+    { "key": "radius", "label": "Corners", "default": 28, "min": 0, "max": 80, "step": 1, "unit": "px", "slot": [5, 2] }
+  ],
+  "colors": [
+    { "key": "rim", "label": "Rim colour", "default": "#ffffff", "row": 2 },
+    { "key": "tint", "label": "Tint", "default": "#ffffff0d", "row": 6 },
+    { "key": "glow", "label": "Glow", "default": "#ffffff1e", "row": 7 }
+  ],
+  "presets": [
+    { "name": "Clear", "values": { "refraction": 18, "bezel": 16, "dispersion": 0.3, "curve": 2.5, "frost": 0 }, "colors": { "tint": "#ffffff0d", "glow": "#ffffff1e" } },
+    { "name": "Frosted", "values": { "refraction": 14, "bezel": 18, "dispersion": 0.2, "curve": 2, "frost": 10 }, "colors": { "tint": "#ffffff1a", "glow": "#ffffff28" } },
+    { "name": "Dark material", "values": { "refraction": 14, "bezel": 16, "dispersion": 0.25, "curve": 2.5, "frost": 8 }, "colors": { "tint": "#1c1c1e80", "glow": "#ffffff05" } },
+    { "name": "Thick lens", "values": { "refraction": 40, "bezel": 40, "dispersion": 0.5, "curve": 1.5, "frost": 0 } }
+  ]
+}
