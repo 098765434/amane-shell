@@ -37,7 +37,9 @@ leftwards.
 - **Right-click the desktop**: **Edit Widgets…**.
 
 As on macOS, the cards fade back while a window is open on the monitor's workspace, and come up
-again on an empty one. Shell Settings' **Desktop** page has **Show widgets on the desktop** and the
+again on an empty one; during a workspace switch the fade follows the switch, part way between the
+two workspaces as far as it has gone. The cards stay put while the workspaces slide over them, and
+fade out in place as the overview opens. Shell Settings' **Desktop** page has **Show widgets on the desktop** and the
 **Widget style**: dim while windows are open (the default), always full, or always dimmed
 (`~/.config/amane-shell/desktop.json`).
 
@@ -87,8 +89,20 @@ the windows (and its edit surface, above), covering the output (`Zone::Ignore`; 
 namespace is `amane.widgets.<output>`, so a card's menu hangs under the surface on its own monitor
 (amane parents a popup to the first surface with the namespace asked for). niri hands a
 background surface the pointer wherever no window is, so the desktop's clicks reach it, and
-draws it with each workspace: the cards slide with a workspace switch and show on every
-workspace in the overview, where they take no input.
+the fork's `desktop` layer rule draws it once, on the wallpaper (the overview's backdrop) under
+the workspaces, rather than with each workspace: the cards stay put while workspaces slide over
+them, keep their size as the overview opens, and fade out with it, frost and all, in step with the
+gesture, with no frame of the shell's. They take no input in the overview. A card's menu still
+shows above the windows. The workspaces must be transparent (`layout { background-color
+"transparent" }`) for the backdrop to show, as for the wallpaper.
+
+While nothing under the windows shows on its monitor (niri's `DesktopObscured`: the overview fully
+open, or windows, each with its gap, covering the screen with no switch going on), the surface is
+frozen (`LayerWindow::frozen`): its last frame stays up and nothing is drawn or committed, as the
+view reads only what says when it shows again. The readings go on gathering, so when the desktop
+shows again the first frame has the graphs with what came in meanwhile, the clock at the time
+without drawing its digits' changes, the cards where they are and the fade where it's going. A
+translucent window covering the screen counts as covering it. The edit surface never freezes.
 
 Every press, drag and click lands on one still layer over the whole surface, the first thing on
 it; the cards take no input of their own. amane measures a drag against the hit areas of the last
@@ -118,8 +132,9 @@ all, the first monitor starts with the battery (where there is one) and the CPU.
 Each card is a `Material::Control` blur shape (`glass_region`), as Quick Settings' modules are,
 lit in one pass over all of them (`glass::rim_layers`) where niri doesn't draw the material. The
 layer rule (`amane.widgets.` matched as a prefix) is `clear`: `xray false`, as niri's xray buffer
-for the background layer holds this surface too. The cards' frost fades with them when they dim,
-where niri can fade frost (`amane::blur_fades()`).
+for the background layer holds this surface too, and `desktop true`. The cards' frost fades with
+them when they dim, where niri can fade frost (`amane::blur_fades()`); niri fades it with the
+overview itself.
 
 ## Backends
 

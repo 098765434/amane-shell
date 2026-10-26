@@ -92,10 +92,12 @@ layer-rule {
 
 // Desktop widgets: a clear surface on the wallpaper, one a monitor
 // (`amane.widgets.<output>`, matched by the prefix), whose cards are frosted
-// where the surface says (ext-background-effect). A card's menu is an
+// where the surface says (ext-background-effect). The desktop: still while
+// workspaces switch, faded out with the overview. A card's menu is an
 // xdg-popup of it.
 layer-rule {
     match namespace="^amane\\.widgets\\."
+    desktop true
     background-effect {
         xray false
     }

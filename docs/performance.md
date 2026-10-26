@@ -131,6 +131,11 @@ dock's magnification). To remember where the pointer is for a later click or men
   them unseen (shell `8aa0445`).
 - **Hidden means `visible(false)`.** amane draws nothing for a hidden window, and it can't tell a
   transparent or off-screen one apart from a visible one.
+- **Unseen means `frozen(true)`.** A window that stays mapped but that the compositor shows
+  nothing of for now (the widgets under windows covering the screen, or under the open overview:
+  amane's `Desktop`) keeps its last frame with `LayerWindow::frozen`: no draw, no commit. Read only
+  what says when to thaw, and settle animations on the first frame after, so it shows the present
+  at once rather than playing what it missed.
 - **Honor reduced motion with kit's helpers**:
   - `motion::spring`, `scale`, `travel`, `fade`;
   - the dock's `anim`;
@@ -214,7 +219,7 @@ What a quiet desktop looked like on 2026-10-26 (eDP-1, 30 s idle, system widgets
 
 | Window | Before this work | After |
 |---|---|---|
-| widgets | 165 | 19 (one per 2 s stats tick, plus startup) |
+| widgets | 165 | 19 (one per 2 s stats tick, plus startup); 0 while frozen under windows |
 | dock | 100–706 | 4 |
 | bar | ~50 | 4 |
 

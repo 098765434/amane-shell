@@ -39,6 +39,10 @@ pub struct LayerRule {
     /// (ext-background-effect): no corners, no shadow, only `xray false`,
     /// since niri's blur would otherwise show the wallpaper alone.
     pub clear: bool,
+    /// The surface is the desktop (niri fork's `desktop`): on the wallpaper,
+    /// still while workspaces switch, faded out with the overview, taking
+    /// input where no window is.
+    pub desktop: bool,
 }
 
 /// A card surface's corners, and how soft its shadow is and how far down
@@ -92,6 +96,7 @@ pub fn rules() -> Vec<LayerRule> {
             frost: Some(strip),
             popups: Some(popover),
             clear: false,
+            desktop: false,
         },
         LayerRule {
             namespace: ANCHOR_NS,
@@ -107,6 +112,7 @@ pub fn rules() -> Vec<LayerRule> {
             frost: None,
             popups: Some(popover),
             clear: false,
+            desktop: false,
         },
         LayerRule {
             namespace: QS_NS,
@@ -119,6 +125,7 @@ pub fn rules() -> Vec<LayerRule> {
             frost: None,
             popups: Some(popover),
             clear: true,
+            desktop: false,
         },
         LayerRule {
             namespace: DOCK_NS,
@@ -131,19 +138,22 @@ pub fn rules() -> Vec<LayerRule> {
             frost: None,
             popups: Some(popover),
             clear: true,
+            desktop: false,
         },
         LayerRule {
             namespace: WIDGETS_NS,
             comment: String::from(
                 "Desktop widgets: a clear surface on the wallpaper, one a monitor\n\
                       (`amane.widgets.<output>`, matched by the prefix), whose cards are frosted\n\
-                      where the surface says (ext-background-effect). A card's menu is an\n\
+                      where the surface says (ext-background-effect). The desktop: still while\n\
+                      workspaces switch, faded out with the overview. A card's menu is an\n\
                       xdg-popup of it.",
             ),
             card: None,
             frost: None,
             popups: Some(popover),
             clear: true,
+            desktop: true,
         },
         LayerRule {
             namespace: LAUNCHER_NS,
@@ -156,6 +166,7 @@ pub fn rules() -> Vec<LayerRule> {
             frost: None,
             popups: Some(popover),
             clear: true,
+            desktop: false,
         },
         LayerRule {
             namespace: TOAST_NS,
@@ -172,6 +183,7 @@ pub fn rules() -> Vec<LayerRule> {
             frost: None,
             popups: None,
             clear: true,
+            desktop: false,
         },
         LayerRule {
             namespace: CENTER_NS,
@@ -189,6 +201,7 @@ pub fn rules() -> Vec<LayerRule> {
             frost: None,
             popups: Some(popover),
             clear: true,
+            desktop: false,
         },
         LayerRule {
             namespace: ALERT_NS,
@@ -205,6 +218,7 @@ pub fn rules() -> Vec<LayerRule> {
             frost: None,
             popups: None,
             clear: true,
+            desktop: false,
         },
     ]
 }
@@ -266,6 +280,9 @@ pub fn render(rules: &[LayerRule]) -> String {
             out.push_str("    background-effect {\n        blur true\n");
             let _ = writeln!(out, "        material \"{}\"", Material::Bar.niri_name());
             out.push_str("    }\n");
+        }
+        if rule.desktop {
+            out.push_str("    desktop true\n");
         }
         if rule.clear {
             // the surface sets its own blur region; without `xray false`

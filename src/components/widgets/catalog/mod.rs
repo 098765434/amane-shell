@@ -18,6 +18,7 @@ use crate::components::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, TextStyle, sys};
 
 pub use battery::devices;
+pub use clock::settle as settle_clock;
 
 // TODO(token): `widget.card.pad`, `widget.type.figure` and
 // `widget.type.figure-large` once Penpot has them (manual §1.1).

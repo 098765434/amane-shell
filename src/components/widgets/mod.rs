@@ -32,8 +32,9 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
 use amane::{
-    Animation, BlurShape, Button, Color, Cursor, Full, InputArea, Keyboard, Layer, LayerWindow,
-    Monitor, Point, Rectangle, Service, Shadow, Size, Stack, Widget, Workspaces, Zone,
+    Animation, BlurShape, Button, Color, Cursor, Desktop, Full, InputArea, Keyboard, Layer,
+    LayerWindow, Monitor, Point, Rectangle, Service, Shadow, Size, Stack, Widget, WorkspaceSwitch,
+    Workspaces, Zone,
 };
 
 use crate::components::context_menu::{self, ContextMenu, Icon, MenuItem};
@@ -132,6 +133,8 @@ struct Desk {
     pointer: Point,
     /// 0 … 1: the cards fading back while windows are open.
     dim: Animation,
+    /// Nothing under the windows shows, so the surface keeps its last frame.
+    frozen: bool,
 }
 
 impl Desk {
@@ -144,6 +147,7 @@ impl Desk {
             slots: Vec::new(),
             pointer: Point { x: 0.0, y: 0.0 },
             dim: motion::fade(0.0, motion::FADE),
+            frozen: false,
         }
     }
 }
@@ -316,7 +320,33 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
         .placed()
         .any(|(key, _)| key.kind.category() == Category::System);
     watching(name, editing || system);
-    let dim = dimming(&output, editing);
+
+    /*
+     * nothing under the windows shows (niri's overview fully open, or windows
+     * over the whole screen): the surface keeps its last frame and draws
+     * nothing, reading only what says when it shows again, while the
+     * readings go on gathering history for then
+     */
+    let hidden = !editing && Desktop::read().obscured(&output);
+    let thawed = with_desk(&output, |desk| std::mem::replace(&mut desk.frozen, hidden)) && !hidden;
+    if hidden {
+        return window
+            .keyboard(Keyboard::None)
+            .input_region(vec![full])
+            .frozen(true)
+            .child(Stack::new(Vec::new()));
+    }
+    // shown again: the cards come back as they are now, nothing animating
+    if thawed {
+        motion::forget(&scope(&output));
+        for (key, _) in layout.placed() {
+            if key.kind == WidgetKind::Clock {
+                catalog::settle_clock(key.id);
+            }
+        }
+    }
+
+    let dim = dimming(&output, editing, thawed);
     let view = view(&output, &geometry, &layout, dim, editing);
     let window = window
         .keyboard(if editing {
@@ -336,10 +366,13 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
 }
 
 /// Whether the cards fade back now, as the widget style says: by default
-/// while a window is open on the monitor's workspace, never while editing.
-/// 0 … 1, faded.
-fn dimming(output: &str, editing: bool) -> f32 {
+/// while a window is open on the monitor's workspace, and part way through
+/// a switch between one with windows and one without, as far as the switch
+/// has gone; never while editing. `settled` lands the fade where it's going
+/// at once. 0 … 1, faded.
+fn dimming(output: &str, editing: bool, settled: bool) -> f32 {
     let style = desktop().widget_style;
+    let automatic = !editing && style == WidgetStyle::Automatic;
     let busy = !editing
         && match style {
             WidgetStyle::Full => false,
@@ -349,10 +382,54 @@ fn dimming(output: &str, editing: bool) -> f32 {
                 .iter()
                 .any(|ws| ws.output() == Some(output) && ws.active() && ws.windows() > 0),
         };
+    let target = if busy { 1.0 } else { 0.0 };
+    let switching = automatic.then(|| switching(output)).flatten();
     with_desk(output, |desk| {
-        desk.dim.to(if busy { 1.0 } else { 0.0 });
+        // the switch moves the fade itself, which carries on from there once it lands
+        if let Some(dim) = switching {
+            desk.dim = motion::fade(dim, motion::FADE);
+            return dim;
+        }
+        if settled {
+            desk.dim = motion::fade(target, motion::FADE);
+        }
+        desk.dim.to(target);
         desk.dim.value().clamp(0.0, 1.0)
     })
+}
+
+/// The fade part way through a workspace switch on `output`: between the
+/// two workspaces it's between, each faded if it has windows, by how far
+/// the switch has gone. None while no switch is under way there.
+fn switching(output: &str) -> Option<f32> {
+    let switch = WorkspaceSwitch::read();
+    if switch.output() != output {
+        return None;
+    }
+    let workspaces = Workspaces::read();
+    let here: Vec<_> = workspaces
+        .list()
+        .iter()
+        .filter(|ws| ws.output() == Some(output))
+        .collect();
+    let last = here.len().checked_sub(1)? as f64;
+    // a rubber band past either end stays on the end one
+    let at = switch.workspace_idx().clamp(0.0, last);
+    // niri stops reporting a few thousandths short of a landing
+    if (at - at.round()).abs() < 0.01 {
+        return None;
+    }
+    // the switch counts from 0, niri's workspace indices from 1
+    let busy = |position: f64| {
+        let index = position as u32 + 1;
+        let busy = here
+            .iter()
+            .any(|ws| ws.index() == index && ws.windows() > 0);
+        if busy { 1.0 } else { 0.0 }
+    };
+    let below = at.floor();
+    let along = (at - below) as f32;
+    Some(busy(below) * (1.0 - along) + busy(below + 1.0) * along)
 }
 
 struct View {

@@ -267,6 +267,12 @@ enum Stroke {
     },
 }
 
+/// Clock `id` shows its digits still on its next frame, with no change
+/// drawn: for a desktop shown again after a while.
+pub fn settle(id: u32) {
+    SLOTS.with_borrow_mut(|clocks| clocks.remove(&id));
+}
+
 /// Each digit's stroke for clock `id` showing `values` now, starting a
 /// change for each that differs from what it showed, and asking for the
 /// next frame while any is changing.

@@ -40,7 +40,7 @@ generated from (2), not hand-edited, so neither can drift.
 |---|---|
 | `amane.status-bar` | the bar: frosted whole, square, without a shadow or `xray false` (`frost`: it reserves its zone, so only the wallpaper is behind it); its xdg-popups, tooltips and Do Not Disturb's menu, are frosted too |
 | `amane.quick-settings` | Quick Settings: a clear surface that frosts its own modules through a blur region; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
-| `amane.widgets.<output>` | the desktop widgets, one surface a monitor on the background layer (matched by the prefix `^amane\.widgets\.`): a clear surface that frosts its own cards; `xray false`, and its popups (a card's menu) frosted |
+| `amane.widgets.<output>` | the desktop widgets, one surface a monitor on the background layer (matched by the prefix `^amane\.widgets\.`): a clear surface that frosts its own cards; `desktop true` (niri fork: on the wallpaper, still while workspaces switch, faded out with the overview), `xray false`, and its popups (a card's menu) frosted |
 | `amane.launcher` | the app launcher: a clear surface over the output that frosts its glass panel through a blur region; `xray false`, and its popups (an app's menu) frosted |
 | `amane.notifications.toast` | each notification toast: one surface per banner, frosting its card itself; `clear`, rounded `notification.card.radius`, with niri's shadow at softness 48 (the banner design's `0 8 48`; other surfaces use 16) |
 | `amane.alert` | the shell's alert in the middle of the screen, as big as its card, frosting itself in thick glass; `clear`, rounded `dialog.radius`, with niri's shadow at softness 48 and offset 18 (the dialog design's `0 18 48`) |
