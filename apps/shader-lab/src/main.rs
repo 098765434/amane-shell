@@ -12,13 +12,14 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 use amane::{
-    Center, Color, Fill, Image, Rectangle, Row, Service, Size, Text, Weight, Window, request_frame,
+    Center, Color, Fill, Image, Rectangle, Row, Service, Shadow, Size, Text, Weight, Window,
+    request_frame,
 };
 use amane_kit::app::{app, app_window, standard_shortcut};
 use amane_kit::layout::boxed;
 use amane_kit::tokens::sys;
 
-use effects::{ColorParam, Effects, Manifest, Param};
+use effects::{ColorParam, Effects, Manifest, Param, SurfaceSpec};
 
 const SUBJECTS: [&str; 7] = [
     "Rounded rectangle",
@@ -216,10 +217,17 @@ fn main_window() -> Window {
 
     let entry = effects.list.get(lab.effect);
 
-    let effect = entry.and_then(|entry| {
-        let manifest = entry.manifest.as_ref().ok()?;
+    let manifest = entry.and_then(|entry| entry.manifest.as_ref().ok());
 
+    let values = entry.zip(manifest).map(|(entry, manifest)| {
         let mut values = lab.rows(manifest);
+
+        if let Some(surface) = &manifest.surface {
+            let (width, height) = subject_size(&lab);
+            let radius = subject_radius(&lab, Some(manifest));
+
+            manifest.put_surface(&mut values, surface, width, height, radius);
+        }
 
         if let Some(clicks) = &manifest.clicks {
             let presses: Vec<[f32; 3]> = lab
@@ -237,12 +245,10 @@ fn main_window() -> Window {
             manifest.put_clicks(&mut values, &presses);
         }
 
-        Some(manifest.effect(&entry.dir, values))
+        (entry.dir.clone(), values)
     });
 
-    let takes_clicks = entry
-        .and_then(|entry| entry.manifest.as_ref().ok())
-        .is_some_and(|manifest| manifest.clicks.is_some());
+    let takes_clicks = manifest.is_some_and(|manifest| manifest.clicks.is_some());
 
     // the sweep moves every frame while it's on
     if lab.animate {
@@ -251,8 +257,22 @@ fn main_window() -> Window {
 
     let mut subject = subject(&lab);
 
-    if let Some(effect) = effect {
-        subject = subject.effect(effect);
+    if let Some(manifest) = manifest
+        && let Some(surface) = &manifest.surface
+    {
+        subject = as_surface(subject, &lab, manifest, surface);
+    }
+
+    if let (Some(manifest), Some((dir, values))) = (manifest, values) {
+        if let Some(shader) = &manifest.shader {
+            subject = subject
+                .shader(dir.join(shader))
+                .shader_values(values.clone());
+        }
+
+        if let Some(effect) = manifest.effect(&dir, values) {
+            subject = subject.effect(effect);
+        }
     }
 
     if takes_clicks {
@@ -306,6 +326,62 @@ fn main_window() -> Window {
         .size(1100.0, 760.0)
         .min_size(800.0, 600.0)
         .on_shortcut(standard_shortcut)
+}
+
+/// The subject's corner radius: a surface's own on a rounded rectangle.
+fn subject_radius(lab: &Lab, manifest: Option<&Manifest>) -> f32 {
+    let (width, height) = subject_size(lab);
+
+    match lab.subject {
+        0 => {
+            let surface =
+                manifest.and_then(|manifest| Some((manifest, manifest.surface.as_ref()?)));
+
+            let param = surface.and_then(|(manifest, surface)| {
+                let param = manifest
+                    .params
+                    .iter()
+                    .find(|param| param.key == surface.radius)?;
+
+                Some(lab.value(manifest, param))
+            });
+
+            param.unwrap_or(lab.size * 0.22)
+        }
+        1 => height / 2.0,
+        2 => width / 2.0,
+        _ => 0.0,
+    }
+}
+
+/// The subject as a surface like the shell's: tinted, over a frosted
+/// backdrop, with an even glow inside its edge.
+fn as_surface(
+    subject: Rectangle,
+    lab: &Lab,
+    manifest: &Manifest,
+    surface: &SurfaceSpec,
+) -> Rectangle {
+    let number = |key: &str| {
+        let param = manifest.params.iter().find(|param| param.key == key);
+
+        param.map_or(0.0, |param| lab.value(manifest, param))
+    };
+
+    let color = |key: &str| {
+        let param = manifest.colors.iter().find(|param| param.key == key);
+        let [red, green, blue, alpha] = param
+            .map_or([0.0; 4], |param| lab.color(manifest, param))
+            .map(|value| (value.clamp(0.0, 1.0) * 255.0).round() as u8);
+
+        Color::rgba(red, green, blue, alpha)
+    };
+
+    subject
+        .radius(subject_radius(lab, Some(manifest)))
+        .fill(color(&surface.tint))
+        .blur(number(&surface.frost))
+        .shadow(Shadow::inner(color(&surface.glow)).blur(number(&surface.glow_blur)))
 }
 
 /// How big the subject is, which a press's place is measured against.

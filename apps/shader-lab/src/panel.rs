@@ -453,6 +453,26 @@ fn actions(manifest: &Manifest, lab: &Lab, dir: &std::path::Path) -> Row {
 fn rust_snippet(manifest: &Manifest, lab: &Lab, dir: &std::path::Path) -> String {
     let values = lab.rows(manifest);
 
+    // a rectangle shader, as the shell's glass is drawn
+    if let Some(shader) = &manifest.shader {
+        let mut text = format!(
+            ".shader({:?})\n.shader_values(vec![\n",
+            dir.join(shader).display().to_string()
+        );
+
+        for row in values {
+            let _ = writeln!(
+                text,
+                "    [{:?}, {:?}, {:?}, {:?}],",
+                row[0], row[1], row[2], row[3]
+            );
+        }
+
+        text.push_str("])");
+
+        return text;
+    }
+
     let mut text = String::from("Effect::new()\n");
 
     for pass in &manifest.passes {

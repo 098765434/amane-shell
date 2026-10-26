@@ -68,6 +68,16 @@ const BUILT_IN: &[(&str, &str, &str)] = &[
         include_str!("../effects/rings/rings.wgsl"),
     ),
     (
+        "glass",
+        "effect.json",
+        include_str!("../effects/glass/effect.json"),
+    ),
+    (
+        "glass",
+        "glass.wgsl",
+        include_str!("../../../kit/src/glass.wgsl"),
+    ),
+    (
         "hatching",
         "effect.json",
         include_str!("../effects/hatching/effect.json"),
@@ -115,7 +125,12 @@ pub struct Manifest {
     pub name: String,
     #[serde(default)]
     pub margin: f32,
+    #[serde(default)]
     pub passes: Vec<PassSpec>,
+    /// A rectangle shader drawn over the subject's fill, in place of passes.
+    pub shader: Option<String>,
+    /// Draws the subject as a translucent surface for the shader to light.
+    pub surface: Option<SurfaceSpec>,
     #[serde(default)]
     pub params: Vec<Param>,
     pub gradient: Option<GradientSpec>,
@@ -144,6 +159,23 @@ pub struct ColorParam {
     /// `#rrggbb` or `#rrggbbaa`.
     pub default: String,
     pub row: usize,
+}
+
+/// The subject as a surface like the shell's: filled with the `tint` colour
+/// over the backdrop frosted by the `frost` param (a stand-in for niri's
+/// blur), with an inner `glow` colour blurred by `glow_blur`, its corners
+/// rounded by `radius` on a rounded rectangle. Its rectangle (0, 0, width,
+/// height) goes in `rect_row` and its corner radius in `radius_slot`.
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct SurfaceSpec {
+    pub tint: String,
+    pub glow: String,
+    pub glow_blur: String,
+    pub frost: String,
+    pub radius: String,
+    pub rect_row: usize,
+    pub radius_slot: [usize; 2],
 }
 
 #[derive(Deserialize, Clone, Default)]
@@ -497,8 +529,26 @@ fn folder_name(dir: &Path) -> String {
 impl Manifest {
     /// What amane would panic on, said as an error instead.
     fn check(&self) -> Result<(), String> {
-        if self.passes.is_empty() {
-            return Err("an effect needs at least one pass".into());
+        if self.passes.is_empty() == self.shader.is_none() {
+            return Err("an effect has passes or a shader, one or the other".into());
+        }
+
+        if let Some(surface) = &self.surface {
+            let is_param = |key: &String| self.params.iter().any(|param| &param.key == key);
+            let is_color = |key: &String| self.colors.iter().any(|color| &color.key == key);
+
+            let params = [&surface.glow_blur, &surface.frost, &surface.radius];
+
+            if let Some(key) = params.into_iter().find(|key| !is_param(key)) {
+                return Err(format!("the surface's {key} isn't a param"));
+            }
+
+            if let Some(key) = [&surface.tint, &surface.glow]
+                .into_iter()
+                .find(|key| !is_color(key))
+            {
+                return Err(format!("the surface's {key} isn't a colour"));
+            }
         }
 
         for (index, pass) in self.passes.iter().enumerate() {
@@ -582,7 +632,12 @@ impl Manifest {
     }
 
     /// The amane effect, with its shader paths under `dir`.
-    pub fn effect(&self, dir: &Path, values: Vec<[f32; 4]>) -> Effect {
+    /// None for a manifest with a rectangle shader instead of passes.
+    pub fn effect(&self, dir: &Path, values: Vec<[f32; 4]>) -> Option<Effect> {
+        if self.passes.is_empty() {
+            return None;
+        }
+
         let mut effect = Effect::new();
 
         for pass in &self.passes {
@@ -591,7 +646,7 @@ impl Manifest {
             effect = effect.pass(dir.join(&pass.shader), inputs);
         }
 
-        effect.values(values).margin(self.margin)
+        Some(effect.values(values).margin(self.margin))
     }
 
     /// The `values` rows: each parameter in its slot, the gradient in its rows.
@@ -632,6 +687,25 @@ impl Manifest {
 }
 
 impl Manifest {
+    /// The surface's rectangle and corner radius, in its rows.
+    pub fn put_surface(
+        &self,
+        rows: &mut Vec<[f32; 4]>,
+        surface: &SurfaceSpec,
+        width: f32,
+        height: f32,
+        radius: f32,
+    ) {
+        let needed = surface.rect_row.max(surface.radius_slot[0]) + 1;
+
+        if rows.len() < needed {
+            rows.resize(needed, [0.0; 4]);
+        }
+
+        rows[surface.rect_row] = [0.0, 0.0, width, height];
+        rows[surface.radius_slot[0]][surface.radius_slot[1]] = radius;
+    }
+
     /// Each colour's row, as `color` says it is now.
     pub fn put_colors(&self, rows: &mut Vec<[f32; 4]>, color: impl Fn(&ColorParam) -> [f32; 4]) {
         for param in &self.colors {

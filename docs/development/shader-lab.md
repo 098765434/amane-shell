@@ -32,6 +32,7 @@ for screenshots.
 | `rings` | the stepped, colour-fringed light rings from the Figma Community file "Copy Shader Animation Component"; Glow only makes its black clear |
 | `hatching` | the Figma shader "Hatching": the picture redrawn as lines between two colours, as thick as it's bright; starts on the Photo subject |
 | `moving-blobs` | the Figma shader "Moving blobs": liquid blobs that refract, displace, bulge, hue-shift or invert the picture under them, with dispersion and a cast shadow; starts on the Photo subject |
+| `glass` | the shell's own glass: `kit/src/glass.wgsl` (linked, so editing it reloads here) over a surface drawn like the shell's panels, with Dark and Light presets from the `sys` tokens; Frost stands in for niri's blur, which the lab can't show |
 | `chrome-wallpaper` | the chrome, reflecting the wallpaper file, placed by the window's position on the output (Window x/y, Output w/h) |
 
 The reflection reads the surface's slope from the blurred alpha (steepest at the rim) plus the
@@ -65,6 +66,8 @@ effects/chrome/
 | `params[].options` | names for 0, 1, 2…: the param shows as a dropdown, like a Figma `select` |
 | `colors` | `key`, `label`, `default` (`#rrggbb` or `#rrggbbaa`) and the `row` it fills with red, green, blue and alpha; shown as a swatch and a hex field; presets set them under `colors` |
 | `suggest` | the `subject` and `backdrop` the lab switches to when the effect is picked (or started with `--effect`) |
+| `shader` | a rectangle shader drawn over the subject's fill (`Rectangle::shader`), in place of `passes` |
+| `surface` | draws the subject as a translucent surface: the `tint` and `glow` colours, the `frost`, `glow_blur` and `radius` params, its rectangle written to `rect_row` and its radius to `radius_slot` |
 | `constants` | values no control changes: `slot` and `value` |
 | `margin` | logical pixels the passes reach past the subject |
 
