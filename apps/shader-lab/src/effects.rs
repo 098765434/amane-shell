@@ -1,0 +1,413 @@
+//! The effects the lab can show: one folder each, holding an `effect.json`
+//! manifest and the WGSL passes it names. The manifest says what each pass
+//! reads and which `values` slot each parameter fills, the way a Figma
+//! shader's `defineProperties` does, so a Figma shader ports by translating
+//! one table.
+
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
+use std::time::{Duration, SystemTime};
+
+use amane::serde::Deserialize;
+use amane::{Effect, Input, Service};
+
+// the most rows amane hands a pass
+const VALUE_ROWS: usize = 64;
+
+// effects built into the binary, written out when no folder is given
+const BUILT_IN: &[(&str, &str, &str)] = &[
+    (
+        "chrome",
+        "effect.json",
+        include_str!("../effects/chrome/effect.json"),
+    ),
+    (
+        "chrome",
+        "blur_x.wgsl",
+        include_str!("../effects/chrome/blur_x.wgsl"),
+    ),
+    (
+        "chrome",
+        "blur_y.wgsl",
+        include_str!("../effects/chrome/blur_y.wgsl"),
+    ),
+    (
+        "chrome",
+        "chrome.wgsl",
+        include_str!("../effects/chrome/chrome.wgsl"),
+    ),
+];
+
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct Manifest {
+    pub name: String,
+    #[serde(default)]
+    pub margin: f32,
+    pub passes: Vec<PassSpec>,
+    #[serde(default)]
+    pub params: Vec<Param>,
+    pub gradient: Option<GradientSpec>,
+    pub animate: Option<Animate>,
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct PassSpec {
+    pub shader: String,
+    pub inputs: Vec<InputSpec>,
+}
+
+/// `"content"`, or the index of an earlier pass.
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde", untagged)]
+pub enum InputSpec {
+    Pass(usize),
+    Named(String),
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct Param {
+    pub key: String,
+    pub label: String,
+    pub default: f32,
+    pub min: f32,
+    pub max: f32,
+    #[serde(default)]
+    pub step: f32,
+    #[serde(default)]
+    pub unit: String,
+    /// The row and lane of `values` it fills.
+    pub slot: [usize; 2],
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct GradientSpec {
+    pub label: String,
+    /// Eight rows of stop colors start here.
+    pub colors_row: usize,
+    /// Two rows of stop positions, four to a row, start here.
+    pub positions_row: usize,
+    pub count_slot: [usize; 2],
+    pub presets: Vec<Preset>,
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct Preset {
+    pub name: String,
+    /// Position, then red, green, blue and alpha from 0 to 1.
+    pub stops: Vec<[f32; 5]>,
+}
+
+/// A parameter the Animate switch sweeps, looping every `seconds`.
+#[derive(Deserialize, Clone)]
+#[serde(crate = "amane::serde")]
+pub struct Animate {
+    pub key: String,
+    pub from: f32,
+    pub to: f32,
+    pub seconds: f32,
+}
+
+pub struct Entry {
+    pub dir: PathBuf,
+    pub manifest: Result<Manifest, String>,
+    modified: Option<SystemTime>,
+}
+
+impl Entry {
+    pub fn title(&self) -> String {
+        match &self.manifest {
+            Ok(manifest) => manifest.name.clone(),
+            Err(_) => format!("{} (broken)", folder_name(&self.dir)),
+        }
+    }
+}
+
+/// The effect folders, read again when a manifest is saved. The shaders
+/// reload in amane itself.
+pub struct Effects {
+    pub list: Vec<Entry>,
+}
+
+impl Service for Effects {
+    fn new() -> Self {
+        Self { list: scan() }
+    }
+
+    fn interval() -> Duration {
+        Duration::from_millis(700)
+    }
+
+    fn update(&mut self) -> bool {
+        let stamps = |list: &[Entry]| -> Vec<(PathBuf, Option<SystemTime>)> {
+            list.iter()
+                .map(|entry| (entry.dir.clone(), entry.modified))
+                .collect()
+        };
+
+        let now = scan();
+
+        if stamps(&now) == stamps(&self.list) {
+            return false;
+        }
+
+        self.list = now;
+        true
+    }
+}
+
+/// Where the effect folders are: `--effects <dir>`, so edits to a source
+/// tree show at once, or else the built-in ones written into the runtime dir.
+pub fn folder() -> &'static Path {
+    static FOLDER: OnceLock<PathBuf> = OnceLock::new();
+
+    FOLDER.get_or_init(|| {
+        let mut args = std::env::args().skip(1);
+
+        while let Some(arg) = args.next() {
+            if arg == "--effects"
+                && let Some(dir) = args.next()
+            {
+                return PathBuf::from(dir);
+            }
+        }
+
+        let dir = std::env::var_os("XDG_RUNTIME_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(std::env::temp_dir)
+            .join("amane-shader-lab");
+
+        for (effect, file, source) in BUILT_IN {
+            let path = dir.join(effect).join(file);
+
+            let written =
+                fs::create_dir_all(dir.join(effect)).and_then(|()| fs::write(&path, source));
+
+            if let Err(error) = written {
+                eprintln!("amane-shader-lab: {}: {error}", path.display());
+            }
+        }
+
+        dir
+    })
+}
+
+fn scan() -> Vec<Entry> {
+    let Ok(read) = fs::read_dir(folder()) else {
+        return Vec::new();
+    };
+
+    let mut dirs: Vec<PathBuf> = read
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.join("effect.json").is_file())
+        .collect();
+
+    dirs.sort();
+
+    dirs.into_iter()
+        .map(|dir| {
+            let path = dir.join("effect.json");
+
+            let modified = fs::metadata(&path).and_then(|meta| meta.modified()).ok();
+
+            let manifest = fs::read_to_string(&path)
+                .map_err(|error| error.to_string())
+                .and_then(|text| serde_json::from_str(&text).map_err(|error| error.to_string()))
+                .and_then(|manifest: Manifest| manifest.check().map(|()| manifest))
+                .map_err(|error| format!("{}: {error}", path.display()));
+
+            Entry {
+                dir,
+                manifest,
+                modified,
+            }
+        })
+        .collect()
+}
+
+fn folder_name(dir: &Path) -> String {
+    dir.file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_default()
+}
+
+impl Manifest {
+    /// What amane would panic on, said as an error instead.
+    fn check(&self) -> Result<(), String> {
+        if self.passes.is_empty() {
+            return Err("an effect needs at least one pass".into());
+        }
+
+        for (index, pass) in self.passes.iter().enumerate() {
+            if pass.inputs.len() > 4 {
+                return Err(format!("pass {index} reads more than 4 inputs"));
+            }
+
+            for input in &pass.inputs {
+                match input {
+                    InputSpec::Pass(earlier) if *earlier >= index => {
+                        return Err(format!(
+                            "pass {index} reads pass {earlier}, which isn't before it"
+                        ));
+                    }
+
+                    InputSpec::Named(name) if name != "content" => {
+                        return Err(format!(
+                            "pass {index} reads \"{name}\", only \"content\" or a pass number"
+                        ));
+                    }
+
+                    _ => {}
+                }
+            }
+        }
+
+        let mut last_row = self.params.iter().map(|param| param.slot[0]).max();
+
+        if let Some(gradient) = &self.gradient {
+            let rows = [
+                gradient.colors_row + 7,
+                gradient.positions_row + 1,
+                gradient.count_slot[0],
+            ];
+
+            last_row = last_row.max(rows.into_iter().max());
+        }
+
+        if last_row.is_some_and(|row| row >= VALUE_ROWS) {
+            return Err(format!("values only have {VALUE_ROWS} rows"));
+        }
+
+        let lanes = self.params.iter().map(|param| param.slot[1]);
+
+        if lanes
+            .chain(self.gradient.iter().map(|g| g.count_slot[1]))
+            .any(|lane| lane > 3)
+        {
+            return Err("a row has 4 lanes, 0 to 3".into());
+        }
+
+        Ok(())
+    }
+
+    /// The amane effect, with its shader paths under `dir`.
+    pub fn effect(&self, dir: &Path, values: Vec<[f32; 4]>) -> Effect {
+        let mut effect = Effect::new();
+
+        for pass in &self.passes {
+            let inputs: Vec<Input> = pass
+                .inputs
+                .iter()
+                .map(|input| match input {
+                    InputSpec::Pass(earlier) => Input::Pass(*earlier),
+                    InputSpec::Named(_) => Input::Content,
+                })
+                .collect();
+
+            effect = effect.pass(dir.join(&pass.shader), inputs);
+        }
+
+        effect.values(values).margin(self.margin)
+    }
+
+    /// The `values` rows: each parameter in its slot, the gradient in its rows.
+    pub fn pack(&self, value: impl Fn(&Param) -> f32, preset: Option<&Preset>) -> Vec<[f32; 4]> {
+        let mut rows = vec![[0.0; 4]; VALUE_ROWS];
+        let mut used = 0;
+
+        let mut put = |row: usize, lane: usize, number: f32| {
+            rows[row][lane] = number;
+            used = used.max(row + 1);
+        };
+
+        for param in &self.params {
+            put(param.slot[0], param.slot[1], value(param));
+        }
+
+        if let (Some(gradient), Some(preset)) = (&self.gradient, preset) {
+            let count = preset.stops.len().min(8);
+
+            for (index, stop) in preset.stops.iter().take(8).enumerate() {
+                for lane in 0..4 {
+                    put(gradient.colors_row + index, lane, stop[lane + 1]);
+                }
+
+                put(gradient.positions_row + index / 4, index % 4, stop[0]);
+            }
+
+            put(gradient.count_slot[0], gradient.count_slot[1], count as f32);
+        }
+
+        rows.truncate(used);
+        rows
+    }
+}
+
+impl Param {
+    /// Snapped to its step and kept in its range.
+    pub fn snap(&self, value: f32) -> f32 {
+        let snapped = if self.step > 0.0 {
+            self.min + ((value - self.min) / self.step).round() * self.step
+        } else {
+            value
+        };
+
+        snapped.clamp(self.min, self.max)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn chrome() -> Manifest {
+        serde_json::from_str(include_str!("../effects/chrome/effect.json")).unwrap()
+    }
+
+    #[test]
+    fn the_chrome_manifest_is_sound() {
+        chrome().check().unwrap();
+    }
+
+    #[test]
+    fn packs_params_and_the_gradient_into_their_slots() {
+        let manifest = chrome();
+        let preset = &manifest.gradient.as_ref().unwrap().presets[0];
+        let rows = manifest.pack(|param| param.default, Some(preset));
+
+        assert_eq!(rows.len(), 14);
+        // rounding, read by both blurs
+        assert_eq!(rows[0][0], 7.5);
+        // the first stop's color, and the last stop's position
+        assert_eq!(rows[1], [1.0, 1.0, 1.0, 1.0]);
+        assert_eq!(rows[10][2], 0.70);
+        // count, depth, rgb split, scale
+        assert_eq!(rows[11], [7.0, 100.0, 10.0, 50.0]);
+        // phase, evolution, angle, stretch
+        assert_eq!(rows[12], [0.0, 0.0, 30.0, 200.0]);
+        // offset, repeats, roughness
+        assert_eq!(rows[13], [0.0, 2.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn snaps_to_the_step_inside_the_range() {
+        let rounding = chrome().params.remove(0);
+
+        assert_eq!(rounding.snap(7.3), 7.5);
+        assert_eq!(rounding.snap(12.0), 10.0);
+    }
+
+    #[test]
+    fn a_pass_reading_a_later_pass_is_an_error() {
+        let mut manifest = chrome();
+        manifest.passes[0].inputs = vec![InputSpec::Pass(2)];
+
+        assert!(manifest.check().is_err());
+    }
+}

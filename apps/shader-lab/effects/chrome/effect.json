@@ -1,0 +1,75 @@
+{
+  "name": "Metallic chrome",
+  "margin": 4,
+  "passes": [
+    { "shader": "blur_x.wgsl", "inputs": ["content"] },
+    { "shader": "blur_y.wgsl", "inputs": [0] },
+    { "shader": "chrome.wgsl", "inputs": ["content", 1] }
+  ],
+  "animate": { "key": "evolution", "from": 0, "to": 100, "seconds": 8 },
+  "params": [
+    { "key": "blurStrength", "label": "Rounding", "default": 7.5, "min": 0, "max": 10, "step": 0.5, "slot": [0, 0] },
+    { "key": "heightIntensity", "label": "Depth", "default": 100, "min": 0, "max": 200, "step": 1, "unit": "%", "slot": [11, 1] },
+    { "key": "roughness", "label": "Roughness", "default": 0, "min": 0, "max": 100, "step": 1, "unit": "%", "slot": [13, 2] },
+    { "key": "chromaSepR", "label": "RGB split", "default": 10, "min": 0, "max": 100, "step": 1, "unit": "%", "slot": [11, 2] },
+    { "key": "noiseScale", "label": "Scale", "default": 50, "min": 2, "max": 200, "step": 1, "unit": "%", "slot": [11, 3] },
+    { "key": "stretch", "label": "Stretch", "default": 200, "min": 0, "max": 500, "step": 1, "unit": "%", "slot": [12, 3] },
+    { "key": "noiseAngle", "label": "Angle", "default": 30, "min": -180, "max": 180, "step": 1, "unit": "°", "slot": [12, 2] },
+    { "key": "gradientRepeats", "label": "Repeats", "default": 2, "min": 1, "max": 10, "step": 1, "slot": [13, 1] },
+    { "key": "gradientOffset", "label": "Offset", "default": 0, "min": -100, "max": 100, "step": 1, "unit": "%", "slot": [13, 0] },
+    { "key": "phase", "label": "Phase", "default": 0, "min": -100, "max": 100, "step": 1, "unit": "%", "slot": [12, 0] },
+    { "key": "evolution", "label": "Evolution", "default": 0, "min": -100, "max": 100, "step": 1, "unit": "%", "slot": [12, 1] }
+  ],
+  "gradient": {
+    "label": "Gradient",
+    "colors_row": 1,
+    "positions_row": 9,
+    "count_slot": [11, 0],
+    "presets": [
+      {
+        "name": "Chrome",
+        "stops": [
+          [0.18, 1.0, 1.0, 1.0, 1.0],
+          [0.43, 0.278, 0.302, 0.329, 1.0],
+          [0.43, 1.0, 1.0, 1.0, 1.0],
+          [0.55, 1.0, 1.0, 1.0, 1.0],
+          [0.55, 0.247, 0.247, 0.251, 1.0],
+          [0.70, 0.247, 0.247, 0.251, 1.0],
+          [0.70, 1.0, 1.0, 1.0, 1.0]
+        ]
+      },
+      {
+        "name": "Soft silver",
+        "stops": [
+          [0.0, 0.96, 0.97, 0.98, 1.0],
+          [0.35, 0.55, 0.58, 0.62, 1.0],
+          [0.5, 0.98, 0.98, 0.99, 1.0],
+          [0.75, 0.42, 0.44, 0.47, 1.0],
+          [1.0, 0.9, 0.91, 0.93, 1.0]
+        ]
+      },
+      {
+        "name": "Gold",
+        "stops": [
+          [0.18, 1.0, 0.95, 0.75, 1.0],
+          [0.43, 0.55, 0.38, 0.12, 1.0],
+          [0.43, 1.0, 0.9, 0.6, 1.0],
+          [0.55, 0.98, 0.84, 0.45, 1.0],
+          [0.55, 0.36, 0.24, 0.08, 1.0],
+          [0.70, 0.5, 0.34, 0.1, 1.0],
+          [0.70, 1.0, 0.93, 0.7, 1.0]
+        ]
+      },
+      {
+        "name": "Holographic",
+        "stops": [
+          [0.0, 0.85, 0.75, 1.0, 1.0],
+          [0.25, 0.6, 0.95, 1.0, 1.0],
+          [0.5, 0.75, 1.0, 0.8, 1.0],
+          [0.75, 1.0, 0.85, 0.7, 1.0],
+          [1.0, 0.95, 0.7, 0.95, 1.0]
+        ]
+      }
+    ]
+  }
+}

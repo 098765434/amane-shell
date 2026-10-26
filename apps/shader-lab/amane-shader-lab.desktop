@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Shader Lab
+Comment=Try amane shader effects live
+Exec=amane-shader-lab
+Icon=applications-graphics
+Categories=Development;Graphics;
+StartupNotify=true

@@ -56,6 +56,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "amane-shader-lab"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "amane-kit",
+ "serde_json",
+]
+
+[[package]]
 name = "amane-shell"
 version = "0.1.0"
 dependencies = [
