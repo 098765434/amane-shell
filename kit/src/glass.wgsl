@@ -11,7 +11,8 @@
 // values[0]: how many rectangles, line thickness, line strength, bloom strength
 // values[1]: bloom width, far edge strength, glow strength, glow width
 // values[2]: the highlight's red, green and blue, from 0 to 1
-// values[3 + 2i]: rectangle i's x, y, width and height, in the surface's pixels
+// values[3 + 2i]: rectangle i's x, y, width and height, in the surface's pixels;
+//                  a rectangle with no size is the whole surface (glass::apply)
 // values[4 + 2i]: rectangle i's corner radius and opacity
 
 // distance to the rounded rectangle's edge, below 0 inside
@@ -72,8 +73,13 @@ fn main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
 
     var alpha = 0.0;
     for (var i = 0; i < count && i < 30; i++) {
-        let rect = values[3 + 2 * i];
+        var rect = values[3 + 2 * i];
         let shape = values[4 + 2 * i];
+
+        if rect.z <= 0.0 && rect.w <= 0.0 {
+            rect = vec4<f32>(0.0, 0.0, size);
+        }
+
         let half = rect.zw * 0.5;
         let lit = light(point - rect.xy - half, half, shape.x) * shape.y;
         alpha = max(alpha, lit);
