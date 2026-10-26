@@ -211,14 +211,14 @@ materials {
         blur-offset 2
         blur-passes 3
         dispersion 0.4
-        far-rim 0.5
+        far-rim 0.25
         glow 0.08
         light-angle 270
         refraction 24
         report-backdrop true
-        rim 0.3
+        rim 0.12
         saturation 2
-        specular 0.4
+        specular 0.1
         tint 1
         tone 0.8
     }
@@ -228,14 +228,14 @@ materials {
         blur-offset 2
         blur-passes 4
         dispersion 0.3
-        far-rim 0.5
+        far-rim 0.25
         glow 0.05
         light-angle 270
         refraction 16
         report-backdrop true
-        rim 0.35
+        rim 0.12
         saturation 1.8
-        specular 0.4
+        specular 0.1
         tint 1
         tone 0.9
     }
@@ -295,14 +295,14 @@ materials {
         blur-offset 2
         blur-passes 3
         dispersion 0.4
-        far-rim 0.5
+        far-rim 0.25
         glow 0.08
         light-angle 270
         refraction 24
         report-backdrop true
-        rim 0.3
+        rim 0.12
         saturation 2
-        specular 0.4
+        specular 0.1
         tint 1
         tone 0.8
         materialize false
@@ -313,14 +313,14 @@ materials {
         blur-offset 2
         blur-passes 4
         dispersion 0.3
-        far-rim 0.5
+        far-rim 0.25
         glow 0.05
         light-angle 270
         refraction 16
         report-backdrop true
-        rim 0.35
+        rim 0.12
         saturation 1.8
-        specular 0.4
+        specular 0.1
         tint 1
         tone 0.9
         materialize false

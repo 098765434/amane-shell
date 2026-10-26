@@ -144,7 +144,9 @@ whose output is static: it can't follow the mode, so it holds one value for both
   - Apple's edge and light: `material.glass` `.refraction` 16, `.bevel` 12, `.dispersion` 0.3,
     `.rim` 0.12, `.glow` 0.05 (new), `.light-angle` 270, `.far-rim` 0.25, `.specular` 0.1,
     `.saturation` 1.5; `material.glass-small` the same at `.refraction` 12, `.bevel` 8;
-    `material.glass-clear` `.refraction` 24, `.bevel` 16, `.dispersion` 0.4, `.glow` 0.08;
+    `material.glass-clear` `.refraction` 24, `.bevel` 16, `.dispersion` 0.4, `.glow` 0.08,
+    and the same faint edge (`.rim` 0.12, `.far-rim` 0.25, `.specular` 0.1) on every glass,
+    `glass-large` and `glass-clear` included;
     `material.frost` `.glow` 0, `.light-angle` 270. `quick.shadow` blur 24, y 8, `#00000029`.
   - Tints, dark / light: `sys.color.material.ultra-thin` `#0000004d` / `#f6f6f633`,
     `.thin` `#1c1c1e4d` / `#f6f6f61f`, `.regular` `#1c1c1e80` / `#f6f6f680`, `.thick`
