@@ -50,6 +50,11 @@ ones — the bar itself is not.
   categories, a right-click menu to open an app on a workspace or run its desktop actions,
   keyboard focus moving between search, pills and apps, and a search that also does sums,
   session actions, URLs and a web search. A click outside the panel closes it.
+- **Desktop widgets** ([docs/widgets.md](docs/widgets.md)) — macOS's widgets on the
+  wallpaper, for watching: batteries, CPU, memory, temperature, network, disks and a System card,
+  on Quick Settings' grid across each monitor. Drag them anywhere at any time, place the same
+  kind more than once with its own settings, right-click for sizes and what each shows, and
+  Edit Widgets for a gallery to drag new ones from. They fade back while windows are open.
 - **Buttons** ([docs/buttons.md](docs/buttons.md)) and **components**
   ([docs/components.md](docs/components.md)) — shared push and icon buttons, a switch, a
   segmented button, cards, top app bars, lists, dividers and a slider, each after its Material 3
@@ -150,12 +155,14 @@ src/
     launcher/                   the app launcher: search, category pills and the app grid
     dock/                       the dock: workspaces' windows and pins, drag, file drops (docs/dock.md)
     quick_settings/             Quick Settings: tiles, sliders and their pages
+    grid/                       the grid Quick Settings and the widgets share: cells, layout, drag
+    widgets/                    desktop widgets, their faces and the gallery (docs/widgets.md)
     workspace_menu.rs           a submenu of workspaces (the dock's and the launcher's menus)
     mod.rs                      re-exports the kit's controls under their old paths
 kit/                            amane-kit: the look as a library, for the shell and its apps
   build.rs                      generates `tokens::sys::…`, `tokens::bar::…`, … from tokens.json
   src/tokens/ theme.rs          Penpot token resolver, the manual's checks, mode/accent/density/scale
-  src/settings.rs               appearance.json, which theme.rs reads
+  src/settings.rs               appearance.json, which theme.rs reads, and desktop.json
   src/buttons/                  push, icon, drawn and segmented buttons, switch, checkbox, radio
   src/card.rs list.rs …         shared M3-style components (docs/components.md)
   src/app.rs dropdown.rs        an app's window, fields, sidebar and dialog; the dropdown

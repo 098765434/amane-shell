@@ -15,8 +15,10 @@
 //! - [`tailscale`] — the tailnet, its exit nodes and settings (the CLI).
 //! - [`keep_awake`] — the screen held on and the lid ignored (inhibitors).
 //! - [`clock`] — the wall-clock time and date the bar shows.
+//! - [`system_stats`] — processor, memory, network, temperature and disks,
+//!   and their recent history, for the desktop's widgets.
 //!
-//! See `docs/quick-settings.md`.
+//! See `docs/quick-settings.md` and `docs/widgets.md`.
 //!
 //! [`Service`]: amane::Service
 
@@ -30,6 +32,7 @@ pub mod night_light;
 pub mod privacy;
 pub mod rfkill;
 pub mod session;
+pub mod system_stats;
 pub mod tailscale;
 
 use std::cell::RefCell;

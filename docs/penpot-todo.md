@@ -33,6 +33,12 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `dock.running.size` | 4 | `dock/item.rs` (`RUNNING`) |
 | `dock.drag.threshold` | 6 | `dock/drag.rs` (`THRESHOLD`) |
 | `dock.motion.*` (reveal, hide delay, resize, item, magnify scales and lifts, hover, tooltip, spring load) | see `DOCK` | `dock/motion.rs` (`DOCK`); add `dock` to `tokens::COMPONENTS` with the first `dock.*` token |
+| `widget.grid.cell`, `widget.grid.gap` | 74, 16 | `widgets/mod.rs` (`CELL`, `GAP`: Quick Settings' `quick.grid.cell` and `.gap`, which code outside `quick_settings/` can't read; or promote those to `sys`) |
+| `widget.canvas.margin`, `widget.card.radius`, `widget.shadow` | 24, 22, Quick Settings' shadow | `widgets/mod.rs` (`MARGIN`, `RADIUS`, `shadow`) |
+| `widget.dim.opacity`, `widget.drag.scale`, `widget.drag.band`, `widget.drag.threshold` | 0.45, 1.04, 0.1, 6 | `widgets/mod.rs` (`DIM`, `DRAG_SCALE`, `BAND`, `THRESHOLD`) |
+| `widget.edit.scrim` | #00000048 | `widgets/edit.rs` (`SCRIM`) |
+| `widget.card.pad`, `widget.type.figure`, `widget.type.figure-large` | 16, 28, 40 | `widgets/catalog/mod.rs` (`PAD`, `FIGURE`, `FIGURE_LARGE`); add `widget` to `tokens::COMPONENTS` and `("widgets/", "widget")` to the checker's owners with the first `widget.*` token |
+| `widget.gallery.{width,height,sidebar,inset,preview}`, `widget.gallery.open-scale` | 900, 420, 240, 20, 120, 0.96 | `widgets/gallery.rs` |
 | `launcher.grid.cols`, `.rows`, `.cell`, `.icon`, `.highlight` | 5, 4, 150, 64, 84 | `launcher/mod.rs` (`COLS`, `ROWS`, `CELL`, `ICON`, `ICON_BOX`) |
 | `launcher.panel.inset`, `.radius`, `launcher.header.height`, `launcher.pills.height` | 15, 22, 40, 40 | `launcher/mod.rs` (`INSET`, `RADIUS`, `HEADER`, `PILLS`) |
 | `launcher.result.height`, `.gap`, `.icon` | 56, 6, 40 | `launcher/mod.rs` (`ROW`, `ROW_GAP`), `launcher/results.rs` (`RESULT_ICON`) |

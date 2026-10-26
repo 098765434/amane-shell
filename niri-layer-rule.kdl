@@ -90,6 +90,25 @@ layer-rule {
     }
 }
 
+// Desktop widgets: a clear surface on the wallpaper, one a monitor
+// (`amane.widgets.<output>`, matched by the prefix), whose cards are frosted
+// where the surface says (ext-background-effect). A card's menu is an
+// xdg-popup of it.
+layer-rule {
+    match namespace="^amane\\.widgets\\."
+    background-effect {
+        xray false
+    }
+
+    popups {
+        geometry-corner-radius 10
+        background-effect {
+            blur true
+            material "glass"
+        }
+    }
+}
+
 // Launcher: a clear surface over the output whose glass panel, in the middle,
 // is frosted where the surface says (ext-background-effect). Toggled over IPC
 // from a keybind. An app's menu is an xdg-popup of it.

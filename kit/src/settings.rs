@@ -1,7 +1,7 @@
 //! The shell's settings that a settings app changes and the shell follows
-//! live: `~/.config/amane-shell/appearance.json`, through amane's `Config`.
-//! [`theme`](crate::theme) reads them, between the `AMANE_*` overrides and
-//! what the system says.
+//! live: `~/.config/amane-shell/appearance.json` and `desktop.json`,
+//! through amane's `Config`. [`theme`](crate::theme) reads the appearance,
+//! between the `AMANE_*` overrides and what the system says.
 
 use std::sync::RwLockReadGuard;
 
@@ -88,6 +88,53 @@ pub fn change_appearance(edit: impl FnOnce(&mut Appearance)) {
     Config::<Appearance>::change(edit);
 }
 
+/// How the desktop's widgets look while windows are open over the desktop.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum WidgetStyle {
+    /// Faded back while a window is open on the monitor's workspace, as
+    /// macOS dims them.
+    #[default]
+    Automatic,
+    /// Always as they are with nothing open.
+    Full,
+    /// Always faded back.
+    Dim,
+}
+
+/// The desktop: its widgets.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct Desktop {
+    pub show_widgets: bool,
+    pub widget_style: WidgetStyle,
+}
+
+impl Default for Desktop {
+    fn default() -> Self {
+        Self {
+            show_widgets: true,
+            widget_style: WidgetStyle::Automatic,
+        }
+    }
+}
+
+impl Settings for Desktop {
+    const APP: &'static str = "amane-shell";
+    const FILE: &'static str = "desktop";
+}
+
+/// The desktop settings as they are now; a view that reads them redraws
+/// when they change.
+pub fn desktop() -> RwLockReadGuard<'static, Config<Desktop>> {
+    Config::<Desktop>::read()
+}
+
+/// Changes the desktop settings and saves them, for input handlers.
+pub fn change_desktop(edit: impl FnOnce(&mut Desktop)) {
+    Config::<Desktop>::change(edit);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,5 +164,14 @@ mod tests {
         assert_eq!(appearance.text_scale, 1.0);
         assert_eq!(appearance.glass, Glass::Tinted);
         assert_eq!(appearance.reduce_motion, None);
+    }
+
+    #[test]
+    fn the_desktop_shows_its_widgets_until_told_otherwise() {
+        let desktop: Desktop =
+            serde_json::from_str(r#"{ "widget_style": "dim" }"#).unwrap_or_default();
+
+        assert!(desktop.show_widgets);
+        assert_eq!(desktop.widget_style, WidgetStyle::Dim);
     }
 }

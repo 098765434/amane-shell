@@ -302,27 +302,12 @@ mod tests {
         let round = [S, M];
         // halfway between S (74) and M (164) is 119: a hair past it, without
         // a band M wins, with one S holds
-        assert_eq!(
-            nearest_span_from(Some(S), &round, 121.0, 74.0, &PX, 0.0),
-            M
-        );
-        assert_eq!(
-            nearest_span_from(Some(S), &round, 121.0, 74.0, &PX, 8.0),
-            S
-        );
-        assert_eq!(
-            nearest_span_from(Some(S), &round, 130.0, 74.0, &PX, 8.0),
-            M
-        );
+        assert_eq!(nearest_span_from(Some(S), &round, 121.0, 74.0, &PX, 0.0), M);
+        assert_eq!(nearest_span_from(Some(S), &round, 121.0, 74.0, &PX, 8.0), S);
+        assert_eq!(nearest_span_from(Some(S), &round, 130.0, 74.0, &PX, 8.0), M);
         // and back the same way
-        assert_eq!(
-            nearest_span_from(Some(M), &round, 117.0, 74.0, &PX, 8.0),
-            M
-        );
-        assert_eq!(
-            nearest_span_from(Some(M), &round, 108.0, 74.0, &PX, 8.0),
-            S
-        );
+        assert_eq!(nearest_span_from(Some(M), &round, 117.0, 74.0, &PX, 8.0), M);
+        assert_eq!(nearest_span_from(Some(M), &round, 108.0, 74.0, &PX, 8.0), S);
         // a size it doesn't come in can't hold
         assert_eq!(
             nearest_span_from(Some(FULL), &round, 74.0, 74.0, &PX, 8.0),

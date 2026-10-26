@@ -287,16 +287,21 @@ The parts are in `src/components/quick_settings/`:
   - A title and an elided subtitle beside the disc.
   - Like the other controls, it shows a click before the service agrees, for up to 1.5 s.
   - `inert` draws it without any handler, for edit mode.
-- **`grid.rs`**: the canvas's geometry: a `Span` (cells across and down), a `Place`, a `Rect`,
-  the `Canvas` (from the tokens), `Metrics` (cell and gap in pixels, a rect's `Slot`, the
-  nearest place to a point) and `Occupancy` (which control each cell holds; the first free
-  place for a span, what a rect covers, the rows in use). amane has no grid widget, on purpose.
+- **`grid.rs`**: the canvas's geometry, which is the shared grid's (`components::grid`, which the
+  desktop widgets are laid out on too): a `Span` (cells across and down), a `Place`, a `Rect`,
+  the `Canvas`, `Metrics` (cell and gap in pixels, a rect's `Slot`, the nearest place to a
+  point) and `Occupancy` (which control each cell holds; the first free place for a span, what a
+  rect covers, the rows in use). What's Quick Settings' own here is the control sizes
+  (`Span::S` … `FULL`) and the canvas and metrics from its tokens. amane has no grid widget, on
+  purpose.
 - **`controls.rs` (`ControlId`)**: every control, the sizes it comes in, and how to build it.
-- **`layout.rs` (`Layout`)**: where each control sits and how big it is; the file; `moved`,
-  `placed_at` (a control from the window too) and `resized` give the layout a drag would leave
-  (swap or push), `show` the first free cells.
-- **`edit.rs`**: edit mode: the drag in hand (from the canvas or the window) and the layout it
-  previews from the base, the resize ghost, the badge and handle, the ghost discs, undo and reset.
+- **`layout.rs` (`Layout`)**: the shared grid's layout of `ControlId`s (which is its
+  `GridKey`); `moved`, `placed_at` (a control from the window too) and `resized` give the layout
+  a drag would leave (swap or push), `show` the first free cells. Its own are the default
+  order, the file, and that every control has an entry.
+- **`edit.rs`**: edit mode, its drag a shared `grid::drag::Session` (the base layout, its
+  preview and what the pointer holds).
+  Here too: the resize ghost, the badge and handle, the ghost discs, undo and reset.
 - **`customize/`**: the Customize window: `mod.rs` the sheet, the sidebar, the pane (every
   control on a plain tint, named), the footer, the still drag layer and the control in hand;
   `catalog.rs` the categories, what each shows and the search (pure, tested).
@@ -389,5 +394,6 @@ doesn't manage (tailscale) isn't one.
 
 - The bar and its panels: [status-bar.md](status-bar.md).
 - Its frosted surface's niri layer rule: [layer-rules.md](layer-rules.md).
+- The desktop widgets, on the same grid: [widgets.md](widgets.md).
 - The shared components it's built from: [components.md](components.md) and
   [buttons.md](buttons.md).

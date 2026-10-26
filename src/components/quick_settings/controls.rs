@@ -6,13 +6,13 @@
 use amane::{Audio, Battery, Bluetooth, Brightness, PowerProfile, Service, Widget};
 
 use super::grid::Span;
-use crate::components::grid::GridKey;
 use super::system_row;
 use super::tile::{QuickToggle, Style};
 use super::tiles::{
     airplane, appearance, background, bluetooth, keep_awake, keyboard, media, network,
     notifications, power, sound, tailscale,
 };
+use crate::components::grid::GridKey;
 use crate::components::layout::boxed;
 use crate::services::background_apps::BackgroundApps;
 use crate::services::connections::Connections;

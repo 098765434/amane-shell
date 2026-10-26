@@ -12,6 +12,7 @@ use crate::components::launcher::LAUNCHER_NS;
 use crate::components::notifications::{CENTER_NS, TOAST_NS};
 use crate::components::quick_settings::QS_NS;
 use crate::components::status_bar::BAR_NS;
+use crate::components::widgets::WIDGETS_NS;
 use crate::theme::{Density, Mode};
 use amane_kit::material::Material;
 
@@ -104,6 +105,19 @@ pub fn rules() -> Vec<LayerRule> {
                 "Dock: a clear surface over the bar, one a monitor, whose card is frosted\n\
                       where the surface says (ext-background-effect). It comes up from the\n\
                       bottom edge; a window's menu is an xdg-popup of it.",
+            ),
+            radius: None,
+            frost: None,
+            popups: Some(popover),
+            clear: true,
+        },
+        LayerRule {
+            namespace: WIDGETS_NS,
+            comment: String::from(
+                "Desktop widgets: a clear surface on the wallpaper, one a monitor\n\
+                      (`amane.widgets.<output>`, matched by the prefix), whose cards are frosted\n\
+                      where the surface says (ext-background-effect). A card's menu is an\n\
+                      xdg-popup of it.",
             ),
             radius: None,
             frost: None,
@@ -343,6 +357,8 @@ fn render_materials(materials: &[NiriMaterial]) -> String {
 }
 
 /// `^…$` with regex metacharacters escaped.
+/// The regex matching `namespace` whole, or every namespace it begins
+/// when it ends in a dot (one surface a monitor).
 fn anchored(namespace: &str) -> String {
     let mut out = String::from("^");
     for c in namespace.chars() {
@@ -351,7 +367,9 @@ fn anchored(namespace: &str) -> String {
         }
         out.push(c);
     }
-    out.push('$');
+    if !namespace.ends_with('.') {
+        out.push('$');
+    }
     out
 }
 

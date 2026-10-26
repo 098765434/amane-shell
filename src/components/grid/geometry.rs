@@ -329,10 +329,7 @@ mod tests {
         assert_eq!(PX.nearest(&CANVAS, 40.0, 50.0, S), Place::new(0, 1));
         assert_eq!(PX.nearest(&CANVAS, 300.0, 0.0, M), Place::new(2, 0));
         // pulled off the right edge, a wide span stays inside
-        assert_eq!(
-            PX.nearest(&CANVAS, 900.0, -50.0, W3),
-            Place::new(1, 0)
-        );
+        assert_eq!(PX.nearest(&CANVAS, 900.0, -50.0, W3), Place::new(1, 0));
         assert_eq!(PX.nearest(&CANVAS, 0.0, 9000.0, L), Place::new(0, 6));
     }
 

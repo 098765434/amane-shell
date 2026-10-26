@@ -24,6 +24,8 @@ serde_json = "1.0"
 # which amane's Bus can't carry; the same zbus amane already pulls in
 zbus = "5.19.0"
 chrono = "0.4"
+# statvfs, for how full the disks are (already in the lock, through amane)
+libc = "0.2"
 
 [profile.dev]
 debug = "line-tables-only"

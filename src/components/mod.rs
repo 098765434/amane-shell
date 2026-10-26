@@ -15,6 +15,8 @@
 //!   workspace, coming up from the bottom edge and with niri's overview.
 //! - [`launcher`] — a Launchpad-style app launcher: a glass panel with a
 //!   search, category pills and a grid of the installed apps.
+//! - [`widgets`] — macOS's desktop widgets on the wallpaper: batteries and
+//!   the system's readings, on Quick Settings' grid, with a gallery.
 //!
 //! The building blocks they share read `sys.*` only, so any component can
 //! use them. Most live in the kit (`amane-kit`), so apps can use them too,
@@ -66,6 +68,7 @@ pub mod quick_settings;
 pub mod search_field;
 pub mod status_bar;
 pub mod text_edit;
+pub mod widgets;
 pub mod workspace_menu;
 
 pub use amane_kit::{

@@ -62,6 +62,7 @@ dependencies = [
  "amane",
  "amane-kit",
  "chrono",
+ "libc",
  "serde_json",
  "zbus",
 ]

@@ -10,7 +10,7 @@ use std::process::ExitCode;
 use amane::App;
 
 use components::context_menu::{self, ContextMenu, Icon, MenuItem};
-use components::{dock, launcher, notifications, quick_settings, status_bar, tooltip};
+use components::{dock, launcher, notifications, quick_settings, status_bar, tooltip, widgets};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {
@@ -139,6 +139,7 @@ fn main() -> ExitCode {
         .window(notifications::side_sheet)
         .window(launcher::surface)
         .window(context_menu::anchor)
+        .window_per_monitor(widgets::surface)
         .window_per_monitor(dock::surface);
     for toast in notifications::TOASTS {
         app = app.window(toast);
@@ -176,6 +177,8 @@ fn main() -> ExitCode {
     .ipc("quick-settings", quick_settings::ipc)
     // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("launcher", launcher::ipc)
+    // `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    .ipc("widgets", widgets::ipc)
     // `printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("status-bar", status_bar::ipc)
     // its name while it was the taskbar, for scripts and keybinds
