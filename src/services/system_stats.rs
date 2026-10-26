@@ -5,14 +5,20 @@
 //!
 //! One service on one tick (every 2 s), so a desktop of widgets redraws
 //! once a tick rather than once per reading. It starts the first time a
-//! widget reads it: no system widget, no polling. Everything comes from
-//! the kernel (`/proc/stat`, `/proc/meminfo`, `/proc/net/dev`,
-//! `/proc/net/route`, `/sys/class/hwmon`, `/proc/mounts` and `statvfs`);
-//! the parsers are plain functions over the files' text.
+//! widget reads it, and reads nothing while no system widget shows
+//! ([`SystemStats::watch`]). Everything comes from the kernel
+//! (`/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, `/proc/net/route`,
+//! `/sys/class/hwmon`, `/proc/mounts` and `statvfs`); the parsers are plain
+//! functions over the files' text. The files are read with no lock held, so
+//! a slow sensor or a stalled network mount never holds up drawing.
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::ffi::CString;
-use std::path::Path;
+use std::fs::File;
+use std::io::Read;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
 use std::time::{Duration, Instant};
 
 use amane::Service;
@@ -22,6 +28,16 @@ const TICK: Duration = Duration::from_secs(2);
 pub const HISTORY: usize = 450;
 /// Disks fill slowly: they're read every this many ticks.
 const DISK_EVERY: u32 = 15;
+/// Sensors come and go rarely (a drive plugged in): the hwmon directories
+/// are looked through again every this many ticks, or when a read fails.
+const SCAN_EVERY: u32 = 30;
+/// A mount whose `statvfs` took this long (a network share gone away) is
+/// left out of this many disk readings after.
+const STALLED: Duration = Duration::from_secs(1);
+const STALLED_SKIP: u32 = 10;
+
+/// Whether a system widget shows anywhere; while none does, nothing is read.
+static WATCHED: AtomicBool = AtomicBool::new(false);
 
 /// The readings of one thing over time, oldest first.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -132,7 +148,6 @@ pub struct SystemStats {
     pub sensors: Vec<Sensor>,
     temperature: HashMap<String, Series>,
     pub disks: Vec<DiskUse>,
-    tick: u32,
 }
 
 impl Service for SystemStats {
@@ -149,9 +164,9 @@ impl Service for SystemStats {
             sensors: Vec::new(),
             temperature: HashMap::new(),
             disks: Vec::new(),
-            tick: 0,
         };
-        stats.update();
+        // something to show on the first frame, before the first tick
+        stats.apply(Probe::default().read());
         stats
     }
 
@@ -159,35 +174,61 @@ impl Service for SystemStats {
         TICK
     }
 
-    fn update(&mut self) -> bool {
-        let read = |path: &str| std::fs::read_to_string(path).unwrap_or_default();
+    fn listen() {
+        let mut probe = Probe::default();
+        loop {
+            thread::sleep(TICK);
+            if !WATCHED.load(Ordering::Relaxed) {
+                // a reading after the pause would average over all of it
+                probe.paused = true;
+                continue;
+            }
+            let reading = probe.read();
+            let paused = std::mem::take(&mut probe.paused);
+            let mut stats = Self::write();
+            if paused {
+                stats.ticks = None;
+                stats.read_at = None;
+            }
+            stats.apply(reading);
+        }
+    }
+}
 
-        if let Some((total, cores)) = parse_stat(&read("/proc/stat")) {
+impl SystemStats {
+    /// Says whether a system widget shows, so the readings go on or pause.
+    pub fn watch(watched: bool) {
+        WATCHED.store(watched, Ordering::Relaxed);
+    }
+
+    fn apply(&mut self, reading: Reading) {
+        if let Some((total, cores)) = reading.stat {
             if let Some((before, before_cores)) = &self.ticks {
                 self.cpu.push(total.since(*before).unwrap_or(0.0));
-                self.cores = cores
-                    .iter()
-                    .zip(before_cores)
-                    .map(|(now, then)| now.since(*then).unwrap_or(0.0))
-                    .collect();
+                self.cores.clear();
+                self.cores.extend(
+                    cores
+                        .iter()
+                        .zip(before_cores)
+                        .map(|(now, then)| now.since(*then).unwrap_or(0.0)),
+                );
             }
             self.ticks = Some((total, cores));
         }
 
-        if let Some(memory) = parse_meminfo(&read("/proc/meminfo")) {
+        if let Some(memory) = reading.memory {
             self.memory = memory;
             self.memory_history.push(memory.fraction());
         }
 
-        let now = Instant::now();
         let seconds = self
             .read_at
-            .map(|then| now.duration_since(then).as_secs_f32())
+            .map(|then| reading.at.duration_since(then).as_secs_f32())
             .filter(|s| *s > 0.0);
-        for (name, counters) in parse_net_dev(&read("/proc/net/dev")) {
-            if name == "lo" {
-                continue;
-            }
+        // an interface that went away (a VPN's tun) takes its history along
+        self.traffic
+            .retain(|name, _| reading.traffic.iter().any(|(n, _)| n == name));
+        for (name, counters) in reading.traffic {
             let traffic = self.traffic.entry(name).or_default();
             if let Some(seconds) = seconds {
                 let rate = |now: u64, then: u64| now.saturating_sub(then) as f32 / seconds;
@@ -196,24 +237,110 @@ impl Service for SystemStats {
             }
             traffic.counters = counters;
         }
-        self.read_at = Some(now);
-        self.default_route = parse_route(&read("/proc/net/route"));
+        self.read_at = Some(reading.at);
+        self.default_route = reading.default_route;
 
-        self.sensors = sensors(Path::new("/sys/class/hwmon"));
+        self.sensors = reading.sensors;
+        let sensors = &self.sensors;
+        self.temperature
+            .retain(|label, _| sensors.iter().any(|s| &s.label == label));
         for sensor in &self.sensors {
-            self.temperature
-                .entry(sensor.label.clone())
-                .or_default()
-                .push(sensor.celsius);
+            match self.temperature.get_mut(&sensor.label) {
+                Some(series) => series.push(sensor.celsius),
+                None => {
+                    let mut series = Series::default();
+                    series.push(sensor.celsius);
+                    self.temperature.insert(sensor.label.clone(), series);
+                }
+            }
         }
 
-        if self.tick.is_multiple_of(DISK_EVERY) {
-            self.disks = disks(&read("/proc/mounts"));
+        if let Some(disks) = reading.disks {
+            self.disks = disks;
         }
-        self.tick = self.tick.wrapping_add(1);
-        // every tick has a new reading to graph
-        true
     }
+}
+
+/// One tick's readings, taken with no lock held.
+struct Reading {
+    at: Instant,
+    stat: Option<(Ticks, Vec<Ticks>)>,
+    memory: Option<MemoryUse>,
+    traffic: Vec<(String, (u64, u64))>,
+    default_route: Option<String>,
+    sensors: Vec<Sensor>,
+    /// Only on the ticks the disks are read.
+    disks: Option<Vec<DiskUse>>,
+}
+
+/// What the reading thread keeps between ticks: where the sensors are, a
+/// buffer to read files into, and the mounts that stalled.
+#[derive(Default)]
+struct Probe {
+    tick: u32,
+    inputs: Vec<Input>,
+    scanned: bool,
+    text: String,
+    stalled: HashMap<String, u32>,
+    /// Set while nothing watched, so the next reading starts afresh.
+    paused: bool,
+}
+
+impl Probe {
+    fn read(&mut self) -> Reading {
+        let at = Instant::now();
+
+        read_into("/proc/stat", &mut self.text);
+        let stat = parse_stat(&self.text);
+        read_into("/proc/meminfo", &mut self.text);
+        let memory = parse_meminfo(&self.text);
+        read_into("/proc/net/dev", &mut self.text);
+        let traffic = parse_net_dev(&self.text)
+            .into_iter()
+            .filter(|(name, _)| name != "lo")
+            .collect();
+        read_into("/proc/net/route", &mut self.text);
+        let default_route = parse_route(&self.text);
+
+        if !self.scanned || self.tick.is_multiple_of(SCAN_EVERY) {
+            self.inputs = scan(Path::new("/sys/class/hwmon"));
+            self.scanned = true;
+        }
+        let sensors = match read_sensors(&self.inputs, &mut self.text) {
+            Some(sensors) => sensors,
+            None => {
+                // one went away: look again
+                self.inputs = scan(Path::new("/sys/class/hwmon"));
+                read_sensors(&self.inputs, &mut self.text).unwrap_or_default()
+            }
+        };
+
+        let disks = self.tick.is_multiple_of(DISK_EVERY).then(|| {
+            read_into("/proc/mounts", &mut self.text);
+            let mounts = mounts(&self.text);
+            disks(mounts, &mut self.stalled)
+        });
+
+        self.tick = self.tick.wrapping_add(1);
+        Reading {
+            at,
+            stat,
+            memory,
+            traffic,
+            default_route,
+            sensors,
+            disks,
+        }
+    }
+}
+
+/// `path`'s text into `text`, which is kept from one read to the next;
+/// empty if it can't be read.
+fn read_into(path: impl AsRef<Path>, text: &mut String) -> bool {
+    text.clear();
+    File::open(path)
+        .and_then(|mut file| file.read_to_string(text))
+        .is_ok()
 }
 
 impl SystemStats {
@@ -335,9 +462,16 @@ fn parse_route(text: &str) -> Option<String> {
 /// Drivers whose first sensor is the processor's.
 const CPU_SENSORS: [&str; 4] = ["k10temp", "coretemp", "zenpower", "cpu_thermal"];
 
+/// A temperature sensor's file, and what to call it.
+struct Input {
+    path: PathBuf,
+    label: String,
+    cpu: bool,
+}
+
 /// Every temperature sensor under `root` (`/sys/class/hwmon`), named by
 /// its driver and label ("k10temp Tctl").
-fn sensors(root: &Path) -> Vec<Sensor> {
+fn scan(root: &Path) -> Vec<Input> {
     let mut out = Vec::new();
     let Ok(entries) = std::fs::read_dir(root) else {
         return out;
@@ -352,23 +486,41 @@ fn sensors(root: &Path) -> Vec<Sensor> {
         let cpu = CPU_SENSORS.contains(&driver.as_str());
         let mut first = true;
         for n in 1..=16 {
-            let Some(millis) =
-                read(&format!("temp{n}_input")).and_then(|s| s.trim().parse::<i64>().ok())
-            else {
+            let path = dir.join(format!("temp{n}_input"));
+            if !path.exists() {
                 continue;
-            };
+            }
             let label = read(&format!("temp{n}_label"))
                 .map(|s| s.trim().to_string())
                 .unwrap_or_else(|| format!("temp{n}"));
-            out.push(Sensor {
+            out.push(Input {
+                path,
                 label: format!("{driver} {label}"),
-                celsius: millis as f32 / 1000.0,
                 cpu: cpu && first,
             });
             first = false;
         }
     }
     out
+}
+
+/// What each sensor reads now; none if one couldn't be read, as when a
+/// drive was taken out.
+fn read_sensors(inputs: &[Input], text: &mut String) -> Option<Vec<Sensor>> {
+    inputs
+        .iter()
+        .map(|input| {
+            if !read_into(&input.path, text) {
+                return None;
+            }
+            let millis = text.trim().parse::<i64>().ok()?;
+            Some(Sensor {
+                label: input.label.clone(),
+                celsius: millis as f32 / 1000.0,
+                cpu: input.cpu,
+            })
+        })
+        .collect()
 }
 
 /// The filesystems a person keeps files on, from `/proc/mounts`: those on
@@ -398,15 +550,32 @@ fn mounts(text: &str) -> Vec<String> {
     out
 }
 
-fn disks(mounts_text: &str) -> Vec<DiskUse> {
-    mounts(mounts_text)
+/// How full each of `mounts` is. A mount that stalled is left out for a
+/// while (`stalled` counts down its skips), so a share gone away holds up
+/// one reading, not every one.
+fn disks(mounts: Vec<String>, stalled: &mut HashMap<String, u32>) -> Vec<DiskUse> {
+    let present: HashSet<&str> = mounts.iter().map(String::as_str).collect();
+    stalled.retain(|mount, _| present.contains(mount.as_str()));
+    mounts
         .into_iter()
         .filter_map(|mount| {
+            if let Some(skips) = stalled.get_mut(&mount) {
+                *skips -= 1;
+                if *skips == 0 {
+                    stalled.remove(&mount);
+                }
+                return None;
+            }
             let path = CString::new(mount.as_bytes()).ok()?;
+            let started = Instant::now();
             // SAFETY: a zeroed statvfs is a valid one for the call to fill,
             // and `path` is a NUL-terminated string that outlives it.
             let mut stat: libc::statvfs = unsafe { std::mem::zeroed() };
-            if unsafe { libc::statvfs(path.as_ptr(), &mut stat) } != 0 {
+            let failed = unsafe { libc::statvfs(path.as_ptr(), &mut stat) } != 0;
+            if started.elapsed() >= STALLED {
+                stalled.insert(mount.clone(), STALLED_SKIP);
+            }
+            if failed {
                 return None;
             }
             let block = stat.f_frsize as u64;
@@ -500,7 +669,9 @@ mod tests {
     #[test]
     fn the_sensors_on_this_machine_read() {
         // whatever the machine has, each reads as a plausible temperature
-        for sensor in sensors(Path::new("/sys/class/hwmon")) {
+        let inputs = scan(Path::new("/sys/class/hwmon"));
+        let mut text = String::new();
+        for sensor in read_sensors(&inputs, &mut text).unwrap_or_default() {
             assert!(
                 sensor.celsius > -40.0 && sensor.celsius < 150.0,
                 "{sensor:?}"

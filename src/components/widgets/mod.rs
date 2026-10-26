@@ -29,7 +29,7 @@ mod kind;
 mod store;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use amane::{
     Animation, BlurShape, Button, Color, Cursor, Full, InputArea, Keyboard, Layer, LayerWindow,
@@ -50,7 +50,7 @@ use crate::services::system_stats::SystemStats;
 use crate::tokens::sys;
 use amane_kit::settings::{WidgetStyle, desktop};
 
-use kind::{WidgetKey, WidgetKind, WidgetSize};
+use kind::{Category, WidgetKey, WidgetKind, WidgetSize};
 use store::Settings;
 
 /// Every monitor's widget surface is `amane.widgets.<output>`; the niri
@@ -151,6 +151,8 @@ impl Desk {
 thread_local! {
     static DESKS: RefCell<HashMap<String, Desk>> = RefCell::new(HashMap::new());
     static NAMES: RefCell<HashMap<String, &'static str>> = RefCell::new(HashMap::new());
+    /// The windows that show a system card, live, now.
+    static WATCHING: RefCell<HashSet<&'static str>> = RefCell::new(HashSet::new());
 }
 
 /// Read by every widget window and written whenever the widgets change,
@@ -165,6 +167,20 @@ impl Service for Desktops {
 
     // only input changes it
     fn listen() {}
+}
+
+/// Whether the window `name` shows a system card: the readings go on
+/// while any window does, and pause once none does.
+fn watching(name: &'static str, shows: bool) {
+    let any = WATCHING.with_borrow_mut(|watching| {
+        if shows {
+            watching.insert(name);
+        } else {
+            watching.remove(name);
+        }
+        !watching.is_empty()
+    });
+    SystemStats::watch(any);
 }
 
 /// The widgets changed: every monitor's desktop draws again.
@@ -255,6 +271,7 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
     }
     let editing = edit::editing(&output);
     if !showing || (edit_window && !editing) {
+        watching(name, false);
         // hidden, taking nothing
         return LayerWindow::new()
             .width(Full)
@@ -284,6 +301,7 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
         .namespace(name)
         .visible(true);
     if editing && !edit_window {
+        watching(name, false);
         // the edit surface has the cards for now
         return window
             .keyboard(Keyboard::None)
@@ -293,6 +311,11 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
     }
 
     let layout = shown(&output, geometry.canvas);
+    // the gallery shows every kind live while editing
+    let system = layout
+        .placed()
+        .any(|(key, _)| key.kind.category() == Category::System);
+    watching(name, editing || system);
     let dim = dimming(&output, editing);
     let view = view(&output, &geometry, &layout, dim, editing);
     let window = window

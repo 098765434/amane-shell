@@ -126,8 +126,11 @@ in use is what isn't available, as `free` counts it, and swap), `/proc/net/dev` 
 `/proc/net/route` (each interface's rates, and the default route), `/sys/class/hwmon` (each
 temperature sensor, named by its driver and label; the processor's is the first of `k10temp`,
 `coretemp`, `zenpower` or `cpu_thermal`) and, every 30 s, `statvfs` on the filesystems on a block
-device in `/proc/mounts`. It keeps the last 15 minutes of each, and starts the first time a widget
-reads it. The batteries are amane's `Battery` (UPower's peripherals too) and `Bluetooth` (the
+device in `/proc/mounts` (a mount whose `statvfs` stalls for a second is skipped for the next few).
+It keeps the last 15 minutes of each, starts the first time a widget reads it, and reads nothing
+while no system card shows (or the gallery is open). The files are read with no lock held, so a
+slow sensor never holds up drawing; the hwmon sensors are looked up once a minute, not every tick.
+The batteries are amane's `Battery` (UPower's peripherals too) and `Bluetooth` (the
 charge a connected device reports that UPower doesn't know).
 
 ## IPC
