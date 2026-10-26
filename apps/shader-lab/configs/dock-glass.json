@@ -1,0 +1,43 @@
+{
+  "name": "Dock glass",
+  "notes": "A refracting glass pill with soft layered shadows, for a dock or a floating toolbar.",
+  "effect": "liquid-glass",
+  "subject": {
+    "kind": "pill",
+    "size": 150.0,
+    "text": "chrome",
+    "image": "",
+    "photo": "",
+    "x": 0.0,
+    "y": 120.0
+  },
+  "backdrop": "wallpaper",
+  "values": {
+    "bezel": 22.0,
+    "bloom": 0.08,
+    "curve": 2.0,
+    "dispersion": 0.35,
+    "far": 0.3,
+    "frost": 2.0,
+    "glowBlur": 5.0,
+    "radius": 28.0,
+    "refraction": 26.0,
+    "rimStrength": 0.4,
+    "rimWidth": 1.5
+  },
+  "colors": {
+    "glow": "#ffffff1e",
+    "rim": "#ffffff",
+    "tint": "#ffffff14"
+  },
+  "gradient": {
+    "preset": 0,
+    "stops": null
+  },
+  "shadows": [
+    { "inner": false, "color": "#0000001f", "x": 0.0, "y": 2.0, "blur": 6.0, "spread": 0.0, "opacity": 1.0 },
+    { "inner": false, "color": "#00000033", "x": 0.0, "y": 12.0, "blur": 28.0, "spread": -4.0, "opacity": 1.0 },
+    { "inner": false, "color": "#00000026", "x": 0.0, "y": 30.0, "blur": 60.0, "spread": -10.0, "opacity": 1.0 },
+    { "inner": true, "color": "#ffffff26", "x": 0.0, "y": 1.0, "blur": 2.0, "spread": 0.0, "opacity": 1.0 }
+  ]
+}

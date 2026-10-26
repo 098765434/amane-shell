@@ -15,8 +15,50 @@ shows the change straight away. Without it, the built-in effects are written to
 `$XDG_RUNTIME_DIR/amane-shader-lab/`. Shader compile errors and manifest errors show in red under
 the controls. A broken shader keeps its last good version on screen.
 
-`--effect <folder>`, `--subject <n>` and `--backdrop <n>` set what it starts on, which is handy
+`--effect <folder>`, `--subject <n>`, `--backdrop <n>` and `--config <name>` set what it starts
+on, and `--open <picker>` (like `color.tint` or `shadow.0`) opens a colour picker, which is handy
 for screenshots.
+
+## Saved looks
+
+The top of the panel lists the saved looks. Clicking one loads it.
+
+| Button | Does |
+|---|---|
+| **Save as…** | names the look and writes `apps/shader-lab/configs/<name>.json` (Enter saves) |
+| **Update** (Ctrl+S) | writes the look over the file it came from |
+| **Rename** | saves under a new name and removes the old file |
+| **Delete** | asks, then removes the file; the look stays in the lab |
+| **Copy loader line** | copies `amane_kit::lab::look("<name>", w, h, radius)` for this subject's size |
+
+A saved file has every param and colour written out, the gradient (a preset or the look's own
+stops), the subject, its position, the backdrop and the shadows. It's plain JSON for git; see
+[kit/lab.md](../kit/lab.md) for the format and the loader. The build embeds every file in
+`configs/`, so a saved look reaches the shell with no copying. Without `--effects`, looks save to
+`~/.config/amane-shader-lab/configs`, and the panel says the shell won't see them.
+
+## Editing a look
+
+- **Moving:** drag the subject over the backdrop (glass bends what's under it), nudge it with
+  the arrow keys (Shift for 10 px), or double-click to put it back in the middle. A click
+  without a drag is still a press, for effects that take presses.
+- **Colours:** click a swatch to open the picker under it: saturation and brightness square,
+  hue strip, alpha strip, hex field, and the colours picked last.
+- **Gradient:** the bar shows the effect's gradient with a handle per stop. Drag a handle to
+  move its stop; click it again (or **Colour**) to pick its colour; double-click the bar, or **+**,
+  to add a stop; **−** or Delete removes the selected one (2 to 8 stops). Editing turns a preset
+  into the look's own stops.
+- **Shadows** (rectangle, pill and circle): **+ Drop shadow** and **+ Inner shadow**, then each
+  shadow's colour, X, Y, blur, spread and opacity, in order (↑ ↓ ✕). They're layers of their
+  own, so an effect doesn't take them in, and drop shadows are cut out under the shape, so they
+  don't show through glass.
+- **Undo and redo:** Ctrl+Z and Ctrl+Shift+Z (or Ctrl+Y), or the buttons. Dragging one
+  control is one step.
+- **Time:** **Hold time** (or Space) stops every shader's clock, and **At** scrubs it while
+  it's held. The corner readout shows frames per second and how long the view, the drawing and
+  presenting take, averaged over the last 30 frames.
+
+The sliders don't take the scroll wheel, so scrolling the panel never changes a value.
 
 **Copy as Rust** puts the effect, with the values as they're set, on the clipboard as an
 `Effect::new()…` expression to paste into the shell.
