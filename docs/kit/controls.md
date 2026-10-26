@@ -1,6 +1,6 @@
-# Buttons
+# Controls
 
-The shell's shared controls (`src/components/buttons/`). Each follows its Material 3
+amane-kit's buttons and controls (`kit/src/buttons/`, `amane_kit::buttons`). Each follows its Material 3
 counterpart in structure (variants, shapes, a hover state layer, a disabled state), but is drawn
 in the shell's macOS/iOS look and sized like its other controls. They read `sys.*` tokens
 only, so any component can use them.
@@ -11,7 +11,9 @@ only, so any component can use them.
 | `IconButton` | [Icon buttons](https://m3.material.io/components/icon-buttons/overview) | mute, Wi-Fi scan, close/clear, Do Not Disturb, the bar's glyph items |
 | `Switch` | [Switch](https://m3.material.io/components/switch/overview) | Wi-Fi and Bluetooth power |
 | `DrawnButton` | — | the bar's workspace pips: content of its own, drawn in the button's colour |
-| `SegmentedButton` | [Segmented buttons](https://m3.material.io/components/segmented-buttons/overview) | the power profile |
+| `SegmentedButton` | [Segmented buttons](https://m3.material.io/components/segmented-buttons/overview) | the power profile, the keyboard light's level, Keep Awake's limit |
+| `Checkbox` | [Checkbox](https://m3.material.io/components/checkbox/overview) | choices confirmed together, like a dialog's; nothing in the shell yet |
+| `Radio` | [Radio button](https://m3.material.io/components/radio-button/overview) | Shell Settings' choices: appearance, density, glass, motion, widget style, the apps' layout |
 
 ## Style and shape
 
@@ -25,6 +27,7 @@ take a `Style` and a `Shape`:
 | `Filled` | filled | `sys.color.accent.bg` | `sys.color.accent.fg` |
 | `Tonal` | tonal | `sys.color.vibrant.fill.secondary` | `sys.color.vibrant.label.primary` |
 | `Plain` | text / standard | none | `sys.color.vibrant.label.primary` |
+| `Destructive` | — | `sys.color.status.critical.hover` | `sys.color.status.critical.text` (an alert's "Don't Save" or "Log Out") |
 
 `Shape::Round` is a capsule (a circle when square). `Shape::Square` is the rounded rectangle
 of the current control size (`sys.radius.control.<size>`, 6 at Medium), and a capsule from Large

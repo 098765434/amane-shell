@@ -1,17 +1,17 @@
 # amane-shell
 
 A custom Wayland desktop bar for the [niri](https://github.com/YaLTeR/niri) compositor, built on the
-[amane](https://github.com/098765434/amane) shell library (a fork). macOS-flavoured: a clean
-opaque bar with rounded pills and generous spacing — compact and ambient in normal use, expanding
-into an interactive dock while niri's overview is open. Its floating surfaces (context menus, Quick
-Settings, notification toasts and the notification center) are the frosted, compositor-blurred
-ones — the bar itself is not.
+[amane](https://github.com/098765434/amane) shell library (a fork). macOS-flavoured: a compact
+bottom bar that is one uniform frosted strip (`Material::Bar`, frosted by niri), a dock that rises
+from the bottom edge and with niri's overview, and glass floating surfaces (context menus, Quick
+Settings, the launcher, notification toasts and the notification center), all blurred by the
+compositor.
 
-> **Requires a forked niri** for its signature feature (the overview smooth-expand needs live
-> gesture-IPC events): [098765434/niri](https://github.com/098765434/niri). It runs on
-> stock niri without that animation. Dragging a window's icon in the dock to reorder it needs
-> the fork too (`MoveColumnToIndex` with a `window_id`); stock niri would move the focused
-> column instead.
+> **Built for a forked niri**: [098765434/niri](https://github.com/098765434/niri). The generated
+> layer rules use options only the fork has (named `materials {}`, `background-effect { material }`
+> and the `desktop` layer the widgets sit on), the dock rises with the overview from the fork's
+> live overview progress, and dragging a window's icon in the dock to reorder it needs
+> `MoveColumnToIndex` with a `window_id` (stock niri would move the focused column instead).
 
 ## Features
 
@@ -54,7 +54,7 @@ ones — the bar itself is not.
   Applications is a Launchpad grid with category pills, the apps used most on top, momentum
   scrolling and sideways swipes between categories.
 - **Desktop widgets** ([docs/shell/widgets.md](docs/shell/widgets.md)) — macOS's widgets on the
-  wallpaper, for watching: batteries, CPU, memory, temperature, network, disks and a System card,
+  wallpaper: a stroke-drawn clock, batteries, CPU, memory, temperature, network, disks and a System card,
   on Quick Settings' grid across each monitor. Drag them anywhere at any time, place the same
   kind more than once with its own settings, right-click for sizes and what each shows, and
   Edit Widgets for a gallery to drag new ones from. They fade back while windows are open.
@@ -64,7 +64,7 @@ ones — the bar itself is not.
   counterpart but drawn in the shell's macOS/iOS look.
 - **Design tokens** — every colour, size, gap and font is a token designed in Penpot and exported
   to `design-tokens/tokens.json`, compiled in with `include_str!` and resolved the way Penpot does
-  (`src/tokens/`). See [docs/design-system/tokens.md](docs/design-system/tokens.md).
+  (amane-kit's `kit/src/tokens`). See [docs/design-system/tokens.md](docs/design-system/tokens.md).
 - **Keeping it cheap** ([docs/development/performance.md](docs/development/performance.md)) — what makes a window draw,
   what a frame costs, and the rules (scoped markers, quiet services, animations made once,
   opacity) that keep an idle desktop from drawing at all; read it before adding a component.
@@ -98,9 +98,10 @@ the library together, check `amane` out beside this repo and add a git-ignored
 
 ## niri layer-rules (for the frosted popups)
 
-The shell's **floating** surfaces (context menus, Quick Settings, notification toasts and the center) get their blur + corner
-rounding from matching `layer-rule` blocks in your niri config. The bar itself is opaque and needs
-no rule. `niri-layer-rule.kdl` holds those blocks, generated from the design tokens
+The shell's surfaces (the bar, the dock, the launcher, Quick Settings, the widgets, notification
+toasts and the center, the alert, and every popup) get their blur, corner rounding and shadow from
+matching `layer-rule` blocks in your niri config; the bar's rule frosts the whole strip in niri's
+`frost` material. `niri-layer-rule.kdl` holds those blocks, generated from the design tokens
 (`cargo run -q -- layer-rules > niri-layer-rule.kdl`), so the blur's corners follow the cards'
 radii. `./gen-layer-rules.sh` injects the blocks into a target niri config between marker
 comments, so the two never drift (no hand-copying):
@@ -130,15 +131,19 @@ Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery
 ## Shell Settings
 
 `amane-settings` is a settings app for the shell, built on the [kit](kit/README.md). Its
-Appearance page picks light or dark (or the system's), the accent, the density and the text size.
+Appearance page picks light or dark (or the system's), the accent, the density, the text size,
+the glass (Clear, Tinted or Solid), Adaptive glass, Vibrant labels and Motion (the system's,
+reduced or full); its Desktop page whether the widgets show and how they dim (`desktop.json`).
 It saves them to `~/.config/amane-shell/appearance.json`, and the running shell follows the file at
 once; editing the file by hand works too. `AMANE_THEME`, `AMANE_DENSITY` and `AMANE_TEXT_SCALE`
 still win when set. Its Spotlight page picks what the launcher's search draws on and how it lays
 out the apps, and lists the quick keys set for its actions (`launcher.json`).
 
 Only one copy runs: launching it again brings the open one forward. The flake installs it with a
-`.desktop` entry, so the launcher lists it as *Shell Settings*. Its window draws its own solid
-surface, so it needs no layer rule; a niri window rule can still round it like other apps:
+`.desktop` entry, so the launcher lists it as *Shell Settings*. Its window draws the opaque window
+background, with only the sidebar showing the frost behind it; the generated config's
+`window-rule` for `amane-settings` frosts it and its popups. A niri window rule can still round it
+like other apps:
 
 ```kdl
 window-rule {
@@ -165,7 +170,9 @@ src/
     grid/                       the grid Quick Settings and the widgets share: cells, layout, drag
     widgets/                    desktop widgets, their faces and the gallery (docs/shell/widgets.md)
     workspace_menu.rs           a submenu of workspaces (the dock's and the launcher's menus)
+    alert.rs                    the shell's alert in the middle of the screen
     mod.rs                      re-exports the kit's controls under their old paths
+  services/                     what amane has no service for: session, night light, Tailscale, timer …
 kit/                            amane-kit: the look as a library, for the shell and its apps
   build.rs                      generates `tokens::sys::…`, `tokens::bar::…`, … from tokens.json
   src/tokens/ theme.rs          Penpot token resolver, the manual's checks, mode/accent/density/scale
@@ -175,6 +182,7 @@ kit/                            amane-kit: the look as a library, for the shell 
   src/app.rs dropdown.rs        an app's window, fields, sidebar and dialog; the dropdown
   examples/gallery.rs           every control in one window
 apps/settings/                  Shell Settings (amane-settings)
+examples/liquid_glass.rs        a look test for the glass edge, not shell code
 design-tokens/tokens.json       Penpot export (normalized); edit in Penpot, not here
 tests/fixtures/                 service fixtures (the token ones are in kit/tests/fixtures/)
 niri-layer-rule.kdl             layer rules generated from the tokens (see docs/integration/layer-rules.md)

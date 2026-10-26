@@ -62,7 +62,12 @@ From left to right:
 4. The **Quick Settings** button (see [quick-settings.md](quick-settings.md)).
 5. The **notification** icon: a moon while Do Not Disturb is on, a bell while something arrived
    unseen, nothing otherwise. Click it for the center, right-click for Do Not Disturb.
-6. The **clock**: click it for the notification center (see [notifications.md](notifications.md));
+6. The **timer** chip, only while the launcher's timer runs (`services/timer.rs`): a timer glyph
+   and the time left in `sys.type.numeric`, counting down by the second. Its tooltip is the
+   timer's label; a click opens the launcher in Actions, where it can be cancelled (see
+   [launcher.md](launcher.md#actions)). amane has no timers, so the bar asks for a frame just
+   after each second turns over (`motion::redraw_after`).
+7. The **clock**: click it for the notification center (see [notifications.md](notifications.md));
    its tooltip is the date (`Clock::date`).
 
 Hidden items take no space: each section yields `Option`s that are flattened, so the row's gaps

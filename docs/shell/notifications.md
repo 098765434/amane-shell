@@ -92,8 +92,10 @@ center. The bar shows a moon. Choices, from the center's moon button or right-cl
 indicator: **For 1 Hour**, **Until This Evening** (19:00, offered only before then), **Until
 Tomorrow** (08:00), **Turn On** / **Turn Off**.
 
-It is the shell's only state kept on disk: `$XDG_STATE_HOME/amane-shell/dnd` holds `forever` or
-`until <unix seconds>`. A missing, unreadable or past file reads as off.
+It is kept on disk beside the shell's other state files (the dock's pins, the status icons, the
+Quick Settings and widget layouts, night light, the last VPN, the launcher's use and clipboard
+history): `$XDG_STATE_HOME/amane-shell/dnd` holds `forever` or `until <unix seconds>`. A missing, unreadable
+or past file reads as off.
 
 ## Bar
 
@@ -114,7 +116,7 @@ printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock   #
 
 A niri keybind: `Mod+N { spawn "sh" "-c" "printf 'notifications\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock"; }`.
 
-## Motion (`components/motion.rs`)
+## Motion (`amane_kit::motion`, `kit/src/motion.rs`)
 
 Both surfaces place cards through one keyed animator, shared with the rest of the shell. The view says where each card should be
 (a `Pose`: offset, scale, opacity, content opacity) every time it runs. Each card springs there

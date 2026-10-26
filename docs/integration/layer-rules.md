@@ -27,7 +27,7 @@ The bar is the one plain-frost surface (`frost`): niri frosts all of it, square,
 since it reserves its zone and only the wallpaper is ever behind it.
 
 Where niri has the `glass` material (`amane::material_available`), it draws the lit edge too, so
-the cards leave out the shader's (`components/glass.rs`) and their hairlines. A niri config
+the cards leave out the shader's (`kit/src/glass.rs`) and their hairlines. A niri config
 without the material, or without these rules installed, gets plain frost, and the shell lights
 the edges itself; install the rules after every change (below), or menus lose their edge.
 

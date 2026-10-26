@@ -306,7 +306,7 @@ The parts are in `src/components/quick_settings/`:
 - **`customize/`**: the Customize window: `mod.rs` the sheet, the sidebar, the pane (every
   control on a plain tint, named), the footer, the still drag layer and the control in hand;
   `catalog.rs` the categories, what each shows and the search (pure, tested).
-- **`glass_region.rs`**: the frost behind a piece of glass as a blur shape, and its transforms.
+- **`glass_region`** (the kit's, `kit/src/glass_region.rs`): the frost behind a piece of glass as a blur shape, and its transforms.
 - **`tiles/media.rs`**: the square Now Playing module.
 - **`slider_card.rs`**: the Display and Sound cards: a title over each thin slider, a small
   glyph before the track and a large faint one after it, and a right click (`Card::on_secondary`)

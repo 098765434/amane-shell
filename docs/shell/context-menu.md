@@ -3,7 +3,11 @@
 A reusable, macOS-style context menu with arbitrarily nested submenus
 (`src/components/context_menu/`). Each menu level is an **xdg-popup**, so the compositor positions
 it, keeps it on screen, grabs input for it and dismisses it on an outside click. The cards are
-frosted by the niri layer rule for `amane.context-menu-anchor` ([layer-rules.md](../integration/layer-rules.md)).
+`Material::Menu` glass. xdg-popups can't send blur shapes, so niri frosts them through the
+`popups {}` block of their parent surface's layer rule: the anchor's
+(`amane.context-menu-anchor`) for a menu opened with `arm`/`open_at`, or the surface a menu hangs
+under (the dock, the launcher, Quick Settings, the widgets, the bar, the notification center) for
+`show_under`/`open_under` ([layer-rules.md](../integration/layer-rules.md)).
 
 | File | Contents |
 |------|----------|
@@ -136,15 +140,14 @@ accent, density and text scale while open.
 
 | Part | Tokens |
 |------|--------|
-| Card | `sys.color.surface.popover.bg`, `.stroke`; `sys.radius.popover`; `sys.border.hairline`; `menu.card.padding` |
 | Row | `menu.row.height`, `menu.row.radius`; horizontal padding `sys.space.inset.l` |
 | Label, shortcut, chevron | `sys.type.label` |
-| Text colours | `sys.color.surface.popover.fg`; disabled `…popover.fg-secondary`; destructive `sys.color.status.critical.text` |
+| Text colours | the menu material's vibrant labels: `material::label(Level::Primary)`; disabled `Level::Secondary`; destructive `sys.color.status.critical.text` |
 | Hover fill | `sys.color.state.hover`; destructive `sys.color.status.critical.hover` |
 | Keyboard selection | fill `sys.color.accent.bg`, text `sys.color.accent.fg` |
-| Shortcut text | `…popover.fg-secondary`; on a keyboard-selected row `sys.color.accent.fg`, on any other focused row `…popover.fg`, both at `menu.shortcut.hover-opacity` |
+| Shortcut text | `material::label(Level::Secondary)`; on a keyboard-selected row `sys.color.accent.fg`, on any other focused row `Level::Primary`, both at `menu.shortcut.hover-opacity` |
 | Icon and chevron slots | `menu.icon-slot.width`, `menu.chevron-slot.width`; gap after the icon `sys.space.gap.m` |
-| Card | an outlined popover [`Card`](../kit/components.md#card), padding `menu.card.padding` |
+| Card | an outlined, glass-edged [`Card`](../kit/components.md#card) of `Material::Menu` ([materials.md](../design-system/materials.md)), padding `menu.card.padding`; corners `sys.radius.popover` from the `popups {}` rule |
 | Separator | a [`Divider`](../kit/components.md#divider-and-slider): `sys.color.separator`, `sys.border.hairline`, margin `sys.space.gap.xs` |
 | Submenu offset | `menu.submenu.offset` |
 | Width limits | `menu.min-width`, `menu.max-width` |

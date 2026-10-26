@@ -243,7 +243,7 @@ Two fingers on the grid either scroll it or turn the category: the first few pix
   door slides the same way; one further away fades in instead.
 
 The compositor only reports the fingers moving and lifting, so the momentum is the launcher's
-(`components/kinetic.rs`), not amane's.
+(`amane_kit::kinetic`, `kit/src/kinetic.rs`), not amane's.
 
 ## App menu
 

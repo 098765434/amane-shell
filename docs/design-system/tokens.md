@@ -2,7 +2,8 @@
  
 For designers working in Penpot and developers working in the amane-shell code. Version 1.1,
 23 Oct 2026. The implementation is specified in `spec-design-tokens-v2.md` (revision 5) and
-lives in `src/tokens/`. Where this manual says "must", a check in CI enforces it (§13).
+lives in amane-kit's `tokens` module (`kit/src/tokens`, with the generated functions from
+`kit/build.rs`). Where this manual says "must", a check in CI enforces it (§13).
  
 ---
  
@@ -12,7 +13,7 @@ lives in `src/tokens/`. Where this manual says "must", a check in CI enforces it
    shell draws is a token in the Penpot file *amane-shell design system*. Nobody edits
    `design-tokens/tokens.json` by hand.
 2. **Three tiers, one direction.** `ref.*` (raw values) ← `sys.*` (decisions) ← component
-   tokens (`bar.*`, `menu.*`, `wifi.*`, `power.*`, `osd.*`, `notification.*`, `quick.*`).
+   tokens (`bar.*`, `menu.*`, `notification.*`, `quick.*`, `dialog.*`, `material.*`, `wifi.*`).
    References only
    point leftwards.
 3. **Code reads `sys.*` and its own component's tokens. Never `ref.*`.**
@@ -46,20 +47,26 @@ design-tokens/tokens.json  (normalized, committed)  ← developers commit it
 resolved values per (mode, density, accent)         ← cached at runtime
    │  build.rs: one Rust function per sys.* and component token
    ▼
-bar · menus · Wi-Fi panel · OSD · notifications · Quick Settings · niri layer rules
+bar · dock · launcher · menus · notifications · Quick Settings · widgets · alert · Shell Settings · niri layer rules
 ```
  
 What the running shell may change on top of Penpot, and nothing else:
  
 | Runtime input | Source | Acts on |
 |---------------|--------|---------|
-| Mode (light/dark) | `AMANE_THEME`, else system preference, else dark | selects theme `mode/light` or `mode/dark` |
-| Density | `AMANE_DENSITY`, else `comfortable` | selects theme `density/comfortable` or `density/compact` |
-| Accent | system accent, if published | replaces `ref.color.accent.*` before resolving |
-| Text scale | `AMANE_TEXT_SCALE`, later the system setting | multiplies font sizes in `sys.type.*` after resolving |
+| Mode (light/dark) | `AMANE_THEME`, else `appearance.json`'s `mode`, else the system preference, else dark | selects theme `mode/light` or `mode/dark` |
+| Density | `AMANE_DENSITY`, else `appearance.json`'s `density` (`comfortable` by default) | selects theme `density/comfortable` or `density/compact` |
+| Accent | `appearance.json`'s `accent`, else the system accent, if published | replaces `ref.color.accent.*` before resolving |
+| Text scale | `AMANE_TEXT_SCALE`, else `appearance.json`'s `text_scale` (1), kept within 0.5–3 | multiplies font sizes in `sys.type.*` after resolving |
 | Output scale (HiDPI) | niri | below the token system; tokens stay logical px |
  
-Everything else is exactly what Penpot shows.
+Everything else is exactly what Penpot shows. `~/.config/amane-shell/appearance.json` is the
+appearance settings file that Shell Settings writes and the running shell follows live
+(`amane_kit::settings`, read by `amane_kit::theme`).
+Its other settings, the glass level (`AMANE_GLASS`), higher contrast (`AMANE_HIGH_CONTRAST`, else
+the system), reduced motion, adaptive glass (`AMANE_ADAPTIVE_GLASS`) and vibrant labels
+(`AMANE_VIBRANCY`), don't change any token: they change how the materials draw
+([materials.md](materials.md#settings)).
  
 ---
  
@@ -69,11 +76,11 @@ Everything else is exactly what Penpot shows.
 |------|--------|-------|---------------|---------------|--------------------|
 | 1 · Primitives | `ref.` | raw values and scales: palette, spacing steps, font families, sizes, radii, opacities | nothing (literals only) | **no** | no |
 | 2 · Semantic | `sys.` | decisions by role: surfaces, content, accent, status, states, spacing roles, control sizes, typography roles, shadows | `ref.*`, other `sys.*` | yes | colours yes; dimensions via density |
-| 3 · Component | `bar.`, `menu.`, `wifi.`, `power.`, `osd.`, `notification.`, `quick.` | values unique to one component, or its deliberate departures | `sys.*`; `ref.*` only for non-colour values; `sys.density.factor` | only by that component | no |
+| 3 · Component | `bar.`, `menu.`, `notification.`, `quick.`, `dialog.`, `material.`, `wifi.` | values unique to one component, or its deliberate departures | `sys.*`; `ref.*` only for non-colour values; `sys.density.factor` | only by that component | no |
  
 ```
 ref.color.neutral.11 ──► sys.color.surface.popover.bg (in sys/color/dark) ──► menu code
-ref.space.10 ──────────► sys.space.inset.l ─────────────────────────────────► wifi and menu code
+ref.space.10 ──────────► sys.space.inset.l ─────────────────────────────────► menu code
 sys.density.factor ────► menu.row.height = round(24 * {sys.density.factor}) ► menu code
 ```
  
@@ -102,7 +109,7 @@ semantic roles are missing.
 ```
 ref.<category>.<scale-or-family>[.<step>]          ref.color.neutral.11   ref.space.8
 sys.<category>.<role>[.<variant>][.<part>|.<state>] sys.color.surface.popover.bg   sys.space.inset.m
-<component>.<part>.<property>[.<state>]            menu.row.height   osd.progress.height
+<component>.<part>.<property>[.<state>]            menu.row.height   notification.card.radius
 ```
  
 - Lowercase. Dots separate levels; hyphens join words inside a level (`padding-x`,
@@ -123,7 +130,7 @@ Use these words; add new ones only by updating this manual.
 |-------|-------|
 | `ref` categories | `color`, `space`, `size`, `radius`, `border`, `font`, `opacity`, `duration`, `shadow` |
 | `sys` categories | `color`, `space`, `size`, `radius`, `border`, `type`, `opacity`, `shadow`, `motion`, `density`, `effect` |
-| Surfaces | `panel` (the bar), `popover` (menus, Wi-Fi and power panels, calendar), `osd` (volume/brightness), `notification`, `raised` (rows, chips and cards inside a surface) |
+| Surfaces | `panel` (the bar), `popover` (menus and other popovers), `notification`, `raised` (rows, chips and cards inside a surface). The glass surfaces take a material instead (§6.1) |
 | Surface parts | `bg`, `fg`, `stroke` |
 | Content levels | `primary`, `secondary`, `tertiary`, `disabled` |
 | Accent | `bg` (fill), `fg` (text/icons on the fill), `text` (accent-coloured text on a normal surface) |
@@ -143,7 +150,7 @@ Use these words; add new ones only by updating this manual.
 | `menu.bg` = `{sys.color.surface.popover.bg}` | read `sys.color.surface.popover.bg` in menu code | pure renames bloat the system |
 | `sys.space.8` | `sys.space.gap.m` | roles survive value changes |
 | `ref.space.small` | `ref.space.6` | primitives name their value |
-| `bar.size.wifi-panel-w` | `sys.size.popover.width`, or `wifi.*` if only Wi-Fi uses it | a token belongs to the role or component that owns it |
+| `bar.size.qs-panel-w` | `sys.size.popover.width`, or `quick.*` if only Quick Settings uses it | a token belongs to the role or component that owns it |
 | `space.row-h` holding a height | `menu.row.height` | category must match meaning |
 | `menu.hoverAlpha` | `menu.shortcut.hover-opacity` | lowercase, hyphens |
 | `sys.color.text-grey` | `sys.color.label.secondary` | role, not appearance |
@@ -195,11 +202,10 @@ dimension role may follow density.
 | `sys.color.window.bg`, `sys.color.sidebar.bg.active / .inactive`, `sys.color.sidebar.label.inactive` | an app window that isn't frosted, and its sidebar |
 | `sys.color.scrollbar`, `sys.color.progress.track-stroke`, `sys.color.tooltip.inner-stroke` | the scroll indicator, a slider track's outline, a dark tooltip's edge |
 | `sys.color.surface.panel.bg / .fg / .stroke` | the bar (no longer read: the materials replace it) |
-| `sys.color.surface.popover.bg / .fg / .stroke` | context menus, Wi-Fi panel, other popovers |
-| `sys.color.surface.osd.bg / .fg / .stroke` | volume/brightness OSD (reserved) |
+| `sys.color.surface.popover.bg / .fg / .stroke` | popovers without a material (no longer read: menus, dropdowns and popovers are `Material::Menu` and `Material::Popover`) |
 | `sys.color.surface.notification.bg / .fg / .fg-secondary / .stroke` | notification toasts (no longer read: `Material::Banner`) |
 | `sys.color.surface.raised.bg` | chips, rows and cards inside any surface (the bar's pill) |
-| `sys.color.surface.popover.fg-secondary` | secondary text in menus (differs from `label.secondary` until converged) |
+| `sys.color.surface.popover.fg-secondary` | secondary text in menus (no longer read: menus take `material::label(Level::Secondary)`) |
 | `sys.color.accent.bg / .fg / .text` | accent fill, content on it, accent-coloured text |
 | `sys.color.status.critical.bg / .fg / .text` | urgent/destructive (also `warning`, `success` when needed) |
 | `sys.color.status.critical.hover` | hover fill on a destructive row |
@@ -207,6 +213,11 @@ dimension role may follow density.
 | `sys.color.focus.ring` | keyboard focus outline |
 | `sys.color.separator` | dividers inside a surface |
 | `sys.color.scrim`, `sys.color.shadow` | dimming behind modal surfaces; shadow colour |
+| `sys.color.state.on.bg / .fg` | a Quick Settings control that's on |
+
+Not in `tokens.json` yet, though named here: `sys.color.state.pressed`, `sys.color.focus.ring`,
+`sys.color.scrim` and `sys.color.shadow` (the code holds what it needs as `TODO(token)` constants;
+see [penpot-backlog.md](penpot-backlog.md)).
  
 Primary content is the surface's own `fg`. Secondary, tertiary and disabled content are
 shared across surfaces; if a surface needs its own, add `sys.color.surface.<s>.fg-secondary`
@@ -230,18 +241,18 @@ How to set them:
 | `sys.space.inset.xs … l` | `spacing` | same pattern |
 | `sys.size.icon.s / .m / .l` | `sizing` | not density-scaled |
 | `sys.size.panel.height` | `sizing` | the bar's height; popovers sit above it |
-| `sys.size.popover.width / .height` | `sizing` | the bar's panels (Sound, Bluetooth, Wi-Fi, power) |
+| `sys.size.popover.width / .height` | `sizing` | a popover's size; lists, segmented buttons and the search field default to its width |
 | `sys.size.list.max-height` | `sizing` | scrolling lists inside a popover |
 | `sys.size.row.height` | `sizing` | `round(40 * {sys.density.factor})` — list rows in popovers |
 | `sys.size.row.trailing-width` | `sizing` | room a row keeps for its trailing content |
 | `sys.size.control.<variant>` | `sizing` | `round(<px> * {sys.density.factor})` — only for heights shared by two or more components |
 | `sys.size.control.<size>`, `sys.size.switch.<size>.*`, `sys.size.checkbox.<size>`, `sys.size.radio.<size>.dot`, `sys.size.slider.<size>.knob-*`, `sys.radius.control.<size>`, `sys.radius.checkbox.<size>` | `sizing`, `borderRadius` | the five control sizes `mini`, `small`, `medium`, `large`, `xl` (`control_size.rs`), after the macOS 27 kit |
 | `sys.size.slider.height` | `sizing` | a slider's track; its hit area is `sys.size.control.height` |
-| `sys.radius.popover / .control / .osd / .raised` | `borderRadius` | not density-scaled |
+| `sys.radius.popover / .raised` | `borderRadius` | not density-scaled |
 | `sys.border.hairline` | `borderWidth` | `{ref.border.1}` |
-| `sys.opacity.disabled` | `opacity` | `{ref.opacity.38}` |
-| `sys.shadow.popover / .osd` | `shadow` | |
-| `sys.motion.duration.short / .medium` | `number` | ms, `{ref.duration.N}` |
+| `sys.opacity.disabled` | `opacity` | `{ref.opacity.38}`; not in `tokens.json` yet |
+| `sys.shadow.popover` | `shadow` | not in `tokens.json` yet |
+| `sys.motion.duration.short / .medium` | `number` | ms, `{ref.duration.N}`; not in `tokens.json` yet (the springs are constants, [penpot-backlog.md](penpot-backlog.md)) |
 | `sys.effect.backdrop-blur` | `number` | px of in-surface blur under translucent surfaces |
  
 Always `round()` density-scaled values in Penpot, so Penpot and the shell land on the same
@@ -280,21 +291,23 @@ fallback for every script, bidi), and a variable font's other axes are set with
  
 ## 7. Tier 3 — component tokens
  
-Components: `bar`, `menu`, `wifi`, `power`, `osd`, `notification`, `quick`. Each component reads its
-surface role from `sys` directly:
- 
-| Component | Surface role |
-|-----------|--------------|
-| `bar` | `sys.color.surface.panel.*` |
-| `menu` | `sys.color.surface.popover.*` |
-| `wifi`, `power` | `sys.color.surface.popover.*` (they still read `panel.*` until the seed's surface conflict is converged) |
-| `osd` | `sys.color.surface.osd.*` |
-| `notification` | `sys.color.surface.notification.*` |
-| `quick` (Quick Settings) | `sys.color.surface.panel.*`, like the bar's panels |
+The component sets in `tokens.json` are `bar`, `menu`, `notification`, `quick`, `dialog`,
+`material` and `wifi` (`tokens::COMPONENTS` also allows `power` and `osd`, which have no tokens).
+The glass components take their surface from a material, not from a `sys.color.surface.*` pair:
+
+| Component | Surface |
+|-----------|---------|
+| `bar` | `Material::Bar` (`sys.color.material.bar`) |
+| `menu` (context menus) | `Material::Menu` |
+| `notification` | `Material::Banner` (toasts), `Material::Sheet` (the center) |
+| `quick` (Quick Settings) | `Material::Control` modules, a page's `Material::Popover` sheet |
+| `dialog` (the alert, an app's dialog) | `Material::Sheet` |
+| `material` | none: niri's material settings, read only by the layer-rule generator ([materials.md](materials.md#tokens)) |
+| `wifi` | none: left from the old Wi-Fi panel, read by no code (§13 reports them) |
  
 **Add a component token only if:**
 1. the value is unique to this component and not part of a shared scale
-   (`osd.width = 240`, `menu.min-width`, `wifi.icon-button.width`); or
+   (`dialog.width = 260`, `menu.min-width`, `notification.toast.width`); or
 2. the component deliberately departs from its role in a mode-free way (a fixed size, a
    different radius) — still aliasing `sys` or `ref` where possible; or
 3. designers need one knob for one component that would otherwise mean editing a shared role.
@@ -357,7 +370,7 @@ Density: component dimensions that should follow density reference
 | `sys/density/comfortable` | `sys.density.factor` |
 | `sys/density/compact` | `sys.density.factor` |
 | `accent/<name>` (optional) | `ref.color.accent.*` |
-| `components` | `bar.*`, `menu.*`, `wifi.*`, `power.*`, `osd.*`, `notification.*`, `quick.*` |
+| `components` | `bar.*`, `menu.*`, `notification.*`, `quick.*`, `dialog.*`, `material.*`, `wifi.*` |
  
 Later sets win on name clashes; the only intended clashes are the accent preview sets
 overriding `ref.color.accent.*`.
@@ -477,7 +490,7 @@ the accent, and the accent never means "blue".
 ### 11.3 States
  
 Hover, pressed and selected are overlays (§6.1), so one rule covers bar items, menu rows and
-Wi-Fi rows, and works on translucent surfaces. Selection in menus uses `accent.bg` +
+list rows, and works on translucent surfaces. Selection in menus uses `accent.bg` +
 `accent.fg`. Focus uses `sys.color.focus.ring`.
  
 ### 11.4 Typography
@@ -538,7 +551,7 @@ From the spec's tests; failures name the token and the rule.
 - **Component token** — a value one component owns.
 - **Set** — a group of tokens in Penpot; later sets override earlier ones.
 - **Theme** — a choice of sets; one theme per group is active.
-- **Surface** — an area the shell draws on (panel, popover, osd, notification, raised).
+- **Surface** — an area the shell draws on (panel, popover, notification, raised), or a material.
 - **State layer** — a translucent overlay showing hover, pressed or selected.
 - **Density factor** — the number spacing and control sizes are multiplied by.
 - **Seed** — the accent colour everything accent-coloured derives from.

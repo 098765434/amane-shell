@@ -152,3 +152,10 @@ A piece of glass is built with its material's methods:
   contrast turn it off. Elsewhere the translucent label colours stand in.
 - **Adaptive glass** (an experiment, off by default) lets `Control` and `Banner` follow niri's
   readings of their backdrop; see `glass_region` and [components.md](../kit/components.md).
+
+## Look test
+
+`examples/liquid_glass.rs` is a look test, not shell code: glass cards over a wallpaper it draws
+itself, lit by the kit's edge shader (`kit/src/glass.wgsl`) with stronger values, for judging the
+glass edge before it goes into the shell. Its `//!` header lists the `GLASS_*` variables it
+takes.

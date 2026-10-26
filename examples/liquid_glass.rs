@@ -10,10 +10,10 @@
 //! window. Point it at another one with `GLASS_WALLPAPER=/path/to/image`.
 //! `GLASS_THEME=dark` shows the dark version, over a dimmed wallpaper, and
 //! `GLASS_THEME=dark-black` the same with black highlights.
-//! The edge is lit by the shell's own shader, `src/components/glass.wgsl`,
-//! with this test's stronger values; `GLASS_RIM=flat` swaps it for the pen's
-//! plain 1px line, to compare. Run it from the repo root, the shader path is
-//! relative to it.
+//! The edge is lit by the shell's own shader, now amane-kit's
+//! `kit/src/glass.wgsl`, with this test's stronger values; `GLASS_RIM=flat`
+//! swaps it for the pen's plain 1px line, to compare. Run it from the repo
+//! root, the shader path is relative to it.
 //!
 //! `GLASS_SHOW=wifi` swaps the cards for a copy of the bar's Wi-Fi panel: on
 //! the left as it is today, on the right with the glass rim, glow and shadow.
