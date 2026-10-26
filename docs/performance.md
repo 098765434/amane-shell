@@ -27,7 +27,8 @@ What a frame costs:
 - **The GPU work** depends on the commands:
   - **Rectangles, borders, glyphs and plain images** are cheap quads.
   - **Paths, strokes, shadows, inner shadows and gradients** go through vello. Each run of vello
-    commands between quads renders into its own surface-sized texture.
+    commands between quads renders into its own texture. A run of fills and strokes takes one the
+    size of its box; one with shadows, gradients or images takes the whole surface.
   - **An opacity group** (a container at opacity other than 1) is drawn on its own surface-sized
     canvas and laid back. That's a full extra pass every frame.
   - **A rounded shader** costs three extra full passes. A square one blends straight on.
@@ -232,10 +233,12 @@ What a quiet desktop looked like on 2026-10-26 (eDP-1, 30 s idle, system widgets
 
 ## Known remaining costs
 
-- **Full-surface canvases.** Groups and vello runs take a texture the size of the whole surface.
-  That's why a dimmed widget card, a fading panel or a sparkline costs as much as it does. Bounded
-  canvases (sized to their content), and after them damage tracking, are the planned fix. Until
-  then the widget dim stays a group per card.
+- **Full-surface groups.** Vello runs of fills and strokes now take only their box (amane
+  `bounds.rs`), but groups, and vello runs with shadows, gradients or images, still take a texture
+  the size of the whole surface. That's why a dimmed widget card or a fading panel costs as much as
+  it does: a clock showing seconds under a dim pays a full-surface group pass on every frame of each
+  change. Bounding groups too, and after that damage tracking, are the planned fix. Until then the
+  widget dim stays a group per card.
 - **The launcher rebuilds** its search, actions and suggestions on every frame of its animations.
   It should memoize on the query.
 - **Toasts poll at 10 Hz forever.** It's cheap, and it redraws only on change.

@@ -16,6 +16,7 @@ pub const ICON_MEMORY: char = '\u{e322}';
 pub const ICON_THERMOSTAT: char = '\u{f076}';
 pub const ICON_DISK: char = '\u{f80e}';
 pub const ICON_NETWORK: char = '\u{e8d5}';
+pub const ICON_SCHEDULE: char = '\u{e8b5}';
 
 /// macOS's widget sizes on the desktop's grid: a cell is Quick Settings'
 /// (74 px, 16 px between), so Small is 164 × 164, near macOS's 170 pt.
@@ -81,6 +82,7 @@ const SPANS_L_XL: [Span; 2] = [WidgetSize::Large.span(), WidgetSize::ExtraLarge.
 /// The gallery's sections.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Category {
+    Clock,
     System,
     Battery,
 }
@@ -88,6 +90,7 @@ pub enum Category {
 impl Category {
     pub fn title(self) -> &'static str {
         match self {
+            Self::Clock => "Clock",
             Self::System => "System",
             Self::Battery => "Batteries",
         }
@@ -95,6 +98,7 @@ impl Category {
 
     pub fn glyph(self) -> char {
         match self {
+            Self::Clock => ICON_SCHEDULE,
             Self::System => ICON_COMPUTER,
             Self::Battery => ICON_BATTERY_FULL,
         }
@@ -113,11 +117,14 @@ pub enum WidgetKind {
     System,
     /// The machine's battery and the peripherals'.
     Battery,
+    /// The time drawn in pen strokes, each digit changing like a pen.
+    Clock,
 }
 
 impl WidgetKind {
     /// The gallery's order.
-    pub const ALL: [WidgetKind; 7] = [
+    pub const ALL: [WidgetKind; 8] = [
+        Self::Clock,
         Self::Battery,
         Self::Cpu,
         Self::Memory,
@@ -137,6 +144,7 @@ impl WidgetKind {
             Self::Disk => "disk",
             Self::System => "system",
             Self::Battery => "battery",
+            Self::Clock => "clock",
         }
     }
 
@@ -153,6 +161,7 @@ impl WidgetKind {
             Self::Disk => "Disk",
             Self::System => "System",
             Self::Battery => "Batteries",
+            Self::Clock => "Clock",
         }
     }
 
@@ -166,6 +175,7 @@ impl WidgetKind {
             Self::Disk => "How full a disk is.",
             Self::System => "CPU, memory, network and disks at once.",
             Self::Battery => "The battery and your devices' charge.",
+            Self::Clock => "The time, each digit drawn like a pen.",
         }
     }
 
@@ -178,12 +188,14 @@ impl WidgetKind {
             Self::Disk => ICON_DISK,
             Self::System => ICON_COMPUTER,
             Self::Battery => ICON_BATTERY_FULL,
+            Self::Clock => ICON_SCHEDULE,
         }
     }
 
     pub fn category(self) -> Category {
         match self {
             Self::Battery => Category::Battery,
+            Self::Clock => Category::Clock,
             _ => Category::System,
         }
     }
@@ -204,6 +216,7 @@ impl WidgetKind {
     pub fn default_size(self) -> WidgetSize {
         match self {
             Self::System => WidgetSize::Large,
+            Self::Clock => WidgetSize::Medium,
             _ => WidgetSize::Small,
         }
     }
@@ -222,6 +235,8 @@ impl WidgetKind {
         let first = |programs: &[&'static str]| programs.iter().copied().find(|p| installed(p));
         match self {
             Self::Battery => quick_settings::open(Page::Power),
+            // nothing to open: the time is all it shows
+            Self::Clock => {}
             Self::Network => {
                 if let Some(program) = first(&["nm-connection-editor"]) {
                     amane::spawn(program);

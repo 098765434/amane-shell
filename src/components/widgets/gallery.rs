@@ -65,8 +65,9 @@ pub(super) enum Section {
 }
 
 impl Section {
-    const ALL: [Section; 3] = [
+    const ALL: [Section; 4] = [
         Self::All,
+        Self::Only(Category::Clock),
         Self::Only(Category::System),
         Self::Only(Category::Battery),
     ];
@@ -88,6 +89,7 @@ impl Section {
     fn key(self) -> &'static str {
         match self {
             Self::All => "all",
+            Self::Only(Category::Clock) => "clock",
             Self::Only(Category::System) => "system",
             Self::Only(Category::Battery) => "battery",
         }

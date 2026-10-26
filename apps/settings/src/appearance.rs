@@ -7,25 +7,11 @@ use amane::{Column, Widget};
 use amane_kit::buttons::{Radio, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::layout::boxed;
-use amane_kit::settings::{appearance, change_appearance};
+use amane_kit::settings::{ACCENTS, appearance, change_appearance};
 use amane_kit::theme::{Density, Glass, Mode};
 use amane_kit::tokens::sys;
 
 use crate::setting;
-
-/// The accents to pick from, macOS 27's system colours in their dark
-/// form, and none for the system's.
-const ACCENTS: [(&str, Option<&str>); 9] = [
-    ("System", None),
-    ("Blue", Some("#0091ff")),
-    ("Purple", Some("#db34f2")),
-    ("Pink", Some("#ff375f")),
-    ("Red", Some("#ff4245")),
-    ("Orange", Some("#ff9230")),
-    ("Yellow", Some("#ffd600")),
-    ("Green", Some("#30d158")),
-    ("Graphite", Some("#98989f")),
-];
 
 /// Accents saved before macOS 27's colours, and the entry that shows for
 /// each; picking it again saves the new colour.

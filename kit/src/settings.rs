@@ -11,6 +11,20 @@ use amane::{Color, Config, Service, Settings};
 
 use crate::theme::{Density, Glass, Mode};
 
+/// The accents to pick from, macOS 27's system colours in their dark
+/// form, and none for the system's.
+pub const ACCENTS: [(&str, Option<&str>); 9] = [
+    ("System", None),
+    ("Blue", Some("#0091ff")),
+    ("Purple", Some("#db34f2")),
+    ("Pink", Some("#ff375f")),
+    ("Red", Some("#ff4245")),
+    ("Orange", Some("#ff9230")),
+    ("Yellow", Some("#ffd600")),
+    ("Green", Some("#30d158")),
+    ("Graphite", Some("#98989f")),
+];
+
 /// How the shell looks: mode, accent, density, text size, how see-through
 /// its glass is, and whether it moves.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

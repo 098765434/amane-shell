@@ -5,6 +5,8 @@
 //! places, as macOS's are.
 
 mod battery;
+mod clock;
+mod digits;
 mod system;
 
 use amane::{Arc, Canvas, Cap, Color, Path, Rectangle, Shape, Size, Stack, Start, Text, Widget};
@@ -55,6 +57,7 @@ pub fn build(
         WidgetKind::Network => system::network(&face),
         WidgetKind::Disk => system::disk(&face),
         WidgetKind::System => system::overview(&face),
+        WidgetKind::Clock => clock::face(key.id, &face),
     };
     boxed(
         Rectangle::new()

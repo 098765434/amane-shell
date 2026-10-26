@@ -48,7 +48,7 @@ use crate::components::material::{self, Material};
 use crate::components::motion::{self, Arrive, Item, Pose};
 use crate::services::system_stats::SystemStats;
 use crate::tokens::sys;
-use amane_kit::settings::{WidgetStyle, desktop};
+use amane_kit::settings::{ACCENTS, WidgetStyle, desktop};
 
 use kind::{Category, WidgetKey, WidgetKind, WidgetSize};
 use store::Settings;
@@ -726,8 +726,17 @@ fn widget_menu(output: &str, key: WidgetKey, at: (i32, i32)) {
             item.disabled()
         });
     }
-    if let Some(show) = choices(output, key) {
-        menu = menu.separator().item(MenuItem::label("Show").submenu(show));
+    let choices = choices(key);
+    if !choices.is_empty() {
+        menu = menu.separator();
+    }
+    for (title, submenu) in choices {
+        menu = menu.item(MenuItem::label(title).submenu(submenu));
+    }
+    if key.kind == WidgetKind::Clock {
+        menu = menu
+            .item(toggle(key, "Show Seconds", |s| &mut s.seconds, "on", false))
+            .item(toggle(key, "24-Hour Time", |s| &mut s.hours, "12", true));
     }
     let (on_edit, on_remove) = (output.to_string(), output.to_string());
     menu = menu
@@ -742,11 +751,18 @@ fn widget_menu(output: &str, key: WidgetKey, at: (i32, i32)) {
     context_menu::show_under(WIDGET_MENU_KEY, menu, namespace(output), at);
 }
 
-/// What a card can be set to show, and which it shows, as a submenu:
-/// none for a kind with nothing to pick.
-fn choices(output: &str, key: WidgetKey) -> Option<ContextMenu> {
-    let settings = store::with(|store| store.settings(key.id));
-    type Field = fn(&mut Settings) -> &mut Option<String>;
+type Field = fn(&mut Settings) -> &mut Option<String>;
+
+/// What a card can be set to, each a submenu with its choice checked:
+/// what it shows, or for the clock its colour and line; none for a kind
+/// with nothing to pick.
+fn choices(key: WidgetKey) -> Vec<(&'static str, ContextMenu)> {
+    let named = |options: &[(&str, &str)]| -> Vec<(String, String)> {
+        options
+            .iter()
+            .map(|(id, name)| (id.to_string(), name.to_string()))
+            .collect()
+    };
     let (options, field, automatic): (Vec<(String, String)>, Field, &str) = match key.kind {
         WidgetKind::Battery => (
             catalog::devices()
@@ -783,30 +799,77 @@ fn choices(output: &str, key: WidgetKey) -> Option<ContextMenu> {
             |s| &mut s.sensor,
             "Processor",
         ),
-        _ => return None,
+        WidgetKind::Clock => {
+            let colors = ACCENTS
+                .iter()
+                .filter_map(|(name, hex)| Some((hex.as_ref()?.to_string(), name.to_string())))
+                .collect();
+            return vec![
+                ("Color", pick(key, colors, |s| &mut s.color, "Accent")),
+                (
+                    "Line",
+                    pick(
+                        key,
+                        named(&[("thin", "Thin"), ("bold", "Bold")]),
+                        |s| &mut s.line,
+                        "Regular",
+                    ),
+                ),
+            ];
+        }
+        _ => return Vec::new(),
     };
-    let mut current = settings.clone();
-    let now = field(&mut current).clone();
-    let pick = |value: Option<String>| {
-        let output = output.to_string();
+    vec![("Show", pick(key, options, field, automatic))]
+}
+
+/// A submenu setting `field` of `key`'s settings: `automatic` for none,
+/// then each of `options` (its value, its name), the one set checked.
+fn pick(
+    key: WidgetKey,
+    options: Vec<(String, String)>,
+    field: Field,
+    automatic: &str,
+) -> ContextMenu {
+    let settings = store::with(|store| store.settings(key.id));
+    let now = field(&mut settings.clone()).clone();
+    let set = |value: Option<String>| {
         let mut next = settings.clone();
         *field(&mut next) = value;
         move || {
             store::with(|store| store.set_settings(key.id, next.clone()));
-            let _ = &output;
             changed();
         }
     };
     let mut menu = ContextMenu::new()
-        .item(checked(MenuItem::label(automatic), now.is_none()).on_select(pick(None)));
+        .item(checked(MenuItem::label(automatic), now.is_none()).on_select(set(None)));
     if !options.is_empty() {
         menu = menu.separator();
     }
     for (id, name) in options {
         let on = now.as_deref() == Some(id.as_str());
-        menu = menu.item(checked(MenuItem::label(name), on).on_select(pick(Some(id))));
+        menu = menu.item(checked(MenuItem::label(name), on).on_select(set(Some(id))));
     }
-    Some(menu)
+    menu
+}
+
+/// A menu item that turns `field` of `key`'s settings between `value`
+/// and none, checked while it's `value`, or while it's none when
+/// `inverted` (12-hour time under "24-Hour Time").
+fn toggle(
+    key: WidgetKey,
+    title: &str,
+    field: Field,
+    value: &'static str,
+    inverted: bool,
+) -> MenuItem {
+    let settings = store::with(|store| store.settings(key.id));
+    let set = field(&mut settings.clone()).as_deref() == Some(value);
+    checked(MenuItem::label(title), set != inverted).on_select(move || {
+        let mut next = settings.clone();
+        *field(&mut next) = (!set).then(|| value.to_string());
+        store::with(|store| store.set_settings(key.id, next));
+        changed();
+    })
 }
 
 /// The desktop's menu: Edit Widgets….

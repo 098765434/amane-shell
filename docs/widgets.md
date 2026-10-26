@@ -10,6 +10,7 @@ with its own settings.
 
 | Widget | Sizes | Shows | Click | Show (its settings) |
 |---|---|---|---|---|
+| Clock | Small, Medium, Large | the time, each digit one pen stroke; a digit that changes is erased along its line and the next drawn in. Small: hours over minutes; Medium: one row with colons, the date under it; Large: hours over minutes, bigger, the date under them. Seconds, when shown, sit under a stacked clock, smaller, and at the end of Medium's row | nothing | **Color** (the accent, or one of the accent presets), **Line** (Thin, Regular, Bold), **Show Seconds**, **24-Hour Time** (on, by default, like the bar) |
 | Batteries | Small, Medium, Large | Small: one device's charge in a ring with the device in it, the percentage and its name; Medium: up to four rings; Large: a list, the machine's battery with its time left (or "Charged") | Quick Settings' Battery page | which device a Small one shows (the first, by default) |
 | CPU | Small, Medium, Large | how busy the processor is, the cores, a graph; Large adds a bar per core | the first of `missioncenter`, `gnome-system-monitor`, `resources` installed | — |
 | Memory | Small, Medium, Large | memory in use, "8.9 GB of 29.1 GB", a graph; Large adds swap | as CPU | — |
@@ -31,7 +32,8 @@ leftwards.
   off the canvas and it goes back.
 - **Click** opens what it watches (above).
 - **Right-click a card**: its sizes (the one it is checked, one there's no room for greyed out),
-  **Show** (what it shows, for the kinds with a choice), **Edit Widgets…** and **Remove Widget**.
+  **Show** (what it shows, for the kinds with a choice; the clock has **Color**, **Line** and its
+  two switches instead), **Edit Widgets…** and **Remove Widget**.
 - **Right-click the desktop**: **Edit Widgets…**.
 
 As on macOS, the cards fade back while a window is open on the monitor's workspace, and come up
@@ -46,7 +48,7 @@ the windows (the overlay layer) and takes the keyboard; each
 card gets a remove badge at its top-left and, when it comes in more than one size, a resize handle
 at its bottom-right; and the **gallery** opens at the bottom of the screen:
 
-- **The sidebar**: a search field ("Search Widgets") over All Widgets, System and Batteries.
+- **The sidebar**: a search field ("Search Widgets") over All Widgets, Clock, System and Batteries.
 - **The pane**: every kind, live, at its default size and scaled to fit, named under it. Typing
   searches every kind by its name, what it shows and its category.
 - **The footer**: the hint, **Undo Remove** (while there's something to undo), **Remove All**
@@ -102,8 +104,9 @@ The layout is per monitor, by connector name, in `$XDG_STATE_HOME/amane-shell/wi
     { "id": 2, "kind": "disk", "cols": 4, "rows": 2, "col": 2, "row": 0, "settings": { "mount": "/home" } } ] } }
 ```
 
-The kinds are `battery`, `cpu`, `memory`, `temperature`, `network`, `disk` and `system`; the
-settings `device`, `interface`, `mount` and `sensor`. A layout is shown refitted to the screen it's
+The kinds are `clock`, `battery`, `cpu`, `memory`, `temperature`, `network`, `disk` and `system`;
+the settings `device`, `interface`, `mount`, `sensor`, and the clock's `color` (`#rrggbb`), `line`
+(`thin`, `bold`), `seconds` (`on`) and `hours` (`12`). A layout is shown refitted to the screen it's
 on: a card that no longer fits moves to the first free cells, or hides where there are none. What
 the refit moved is never saved, so a smaller screen or a bigger scale doesn't lose where the cards
 were on the bigger one; a card moved by hand is kept where it went. A file from another version is

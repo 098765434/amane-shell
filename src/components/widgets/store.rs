@@ -40,15 +40,27 @@ pub struct Settings {
     pub mount: Option<String>,
     /// Temperature: the sensor's label; none is the hottest.
     pub sensor: Option<String>,
+    /// Clock: the line colour as `#rrggbb`; none is the accent.
+    pub color: Option<String>,
+    /// Clock: how thick the line is, `thin` or `bold`; none is regular.
+    pub line: Option<String>,
+    /// Clock: `on` shows the seconds; none hides them.
+    pub seconds: Option<String>,
+    /// Clock: `12` counts the hours to 12; none to 24, like the bar.
+    pub hours: Option<String>,
 }
 
 impl Settings {
-    fn fields(&mut self) -> [(&'static str, &mut Option<String>); 4] {
+    fn fields(&mut self) -> [(&'static str, &mut Option<String>); 8] {
         [
             ("device", &mut self.device),
             ("interface", &mut self.interface),
             ("mount", &mut self.mount),
             ("sensor", &mut self.sensor),
+            ("color", &mut self.color),
+            ("line", &mut self.line),
+            ("seconds", &mut self.seconds),
+            ("hours", &mut self.hours),
         ]
     }
 
