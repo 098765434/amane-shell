@@ -81,6 +81,27 @@ and after go in the table below as each phase lands. See amane's
 [memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md) for the
 mechanism and the per-example baseline.
 
+### vello's scratch is let go when idle
+
+**What it cost.** vello's pool keeps every run's scratch set and scene uploads for the
+renderer's lifetime. After Quick Settings closed, the shell kept 96 MB of that on the GPU for
+the rest of the session: most of what the hide release left behind.
+
+**What changed.** The fork's `vello` crate is patched in beside `vello_encoding` (a second
+`[patch.crates-io]` line and a second `outputHashes` entry, the same hash). It drops pooled
+buffers no run took for 60 runs, and amane calls its `release_scratch()` once no window drew
+through vello for 30 s, then polls the device so wgpu frees it. The next vello run allocates
+again; the shaders stay, so there is no visible cost.
+
+**Switching it off.** `AMANE_VELLO_IDLE=0` keeps the pool for life; another value is the idle
+seconds.
+
+**Measured** on a second shell with `AMANE_VELLO_IDLE=10`: Quick Settings opened and closed,
+219 MB of VRAM; after the idle release, 123 MB; again, 187 → 123 MB. The launcher alone never
+runs vello (quads draw its glass and text), so it closes back to the start figure already
+(59 → 317 → 59 MB). Quick Settings' 110 MB of GTT, growing a little on each reopening, is the
+open item now.
+
 ### niri's global blur matches glass
 
 Every blurred rule names a material with its own `blur-passes`/`blur-offset`, and niri keeps one
@@ -114,8 +135,8 @@ passed through are dropped after the frame; and the swapchain is Fifo with one f
 instead of Mailbox with four images. `AMANE_KEEP_HIDDEN=1`, `AMANE_KEEP_SPARES=1` and
 `AMANE_PRESENT=mailbox` restore each old behaviour. Measured on a second shell (launcher opened
 and closed twice, then Quick Settings): 354 MB before, 128 MB after, and reopening no longer
-grows. Quick Settings leaves about 115 MB of GTT behind when it closes; that is next to look
-at. Details in amane's memory doc.
+grows. What Quick Settings left behind turned out to be mostly vello's pool (the section
+above); its GTT is still open. Details in amane's memory doc.
 
 ### The widgets surface is the cards, not the monitor
 
@@ -148,16 +169,16 @@ rebuilt the whole chain every frame), and a swiped tile's offscreen cleared.
 
 ## Planned
 
-In order of payoff, from the 2026-10-26 research: dropping vello's renderer when idle (what the
-launcher still leaves behind; only worth it once no surface runs vello every 2 s), images
-decoded at their drawn size with a byte-capped cache (Quick Settings leaves 100+ MB of GTT
-behind), shared pipelines and picture textures across windows, and event-driven services in
-place of polls. Each lands with a section above and a row here:
+In order of payoff, from the 2026-10-26 research: the GTT Quick Settings leaves behind (a
+driver-level view next), images decoded at their drawn size with a byte-capped cache, shared
+pipelines and picture textures across windows, and event-driven services in place of polls.
+Each lands with a section above and a row here:
 
 | Scenario | 2026-10-26 baseline | After |
 |---|---|---|
 | idle, whole GPU (other apps differing between readings) | 1.96 GiB VRAM + 318 MB GTT | 1.48 GiB + 223 MB after the vello fork, blur 3/2 and the Radeon-only driver; not yet re-read after the hide release, the cards-sized widgets surface and the niri changes |
 | shell RSS / anon at idle | 193 / 123 MB | 133 / 72 MB (same point) |
 | second shell: launcher opened and closed twice, then Quick Settings | 354 MB VRAM | 128–186 MB |
+| second shell: Quick Settings opened and closed, then idle | 354 MB VRAM (after the launcher) | 219 MB closed, 123 MB after 10 s idle |
 | second shell with the desktop showing (widgets) | 363 MB VRAM | 213 MB |
 | amane `gradient` example | 193 MB VRAM | 65 MB |

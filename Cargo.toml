@@ -43,11 +43,13 @@ members = ["kit", "apps/settings", "apps/shader-lab"]
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
 # sibling checkout during local co-development. See README.
-amane = { git = "https://github.com/098765434/amane", rev = "6c3468d5da2ef62acf0419f4289d29c35f33774a" }
+amane = { git = "https://github.com/098765434/amane", rev = "efa3bfc449ca42e56e4d7f9313d2bbfd6f088492" }
 
 # amane's vello fork: scratch buffers sized for a shell (about 29 MB a set
-# instead of 165). A patch only applies from the root manifest, so amane's own
-# entry does nothing for this build; this one must match it. The nix build
-# needs the fork's hash in flake.nix outputHashes. See docs/development/memory.md.
+# instead of 165, vello_encoding) that are let go when idle (vello). A patch
+# only applies from the root manifest, so amane's own entries do nothing for
+# this build; these must match them. The nix build needs the fork's hash in
+# flake.nix outputHashes, once per crate. See docs/development/memory.md.
 [patch.crates-io]
+vello = { git = "https://github.com/098765434/vello", branch = "ocbk" }
 vello_encoding = { git = "https://github.com/098765434/vello", branch = "ocbk" }
