@@ -127,14 +127,15 @@ pub(super) fn grid(look: Motion) -> Grid {
     let canvas = shown_layout.canvas;
     let placed: Vec<(ControlId, Rect)> = shown_layout.placed().collect();
 
-    // the modules are one panel of glass: alike, in the theme's mode, thinned
-    // by the backdrop behind all of them
+    // the modules are one panel of glass: alike, in the theme's tint, their
+    // labels flipped and tint thinned by the backdrop behind all of them
+    let panel = panel_id();
     let members: Vec<u32> = placed.iter().map(|(id, _)| glass_id(*id)).collect();
 
     let mut widgets: HashMap<ControlId, Box<dyn Widget>> = HashMap::new();
     let mut slots: Vec<(ControlId, Rect, Slot)> = Vec::new();
     for (id, rect) in &placed {
-        let built = Material::Control.adapted_group(glass_id(*id), &members, || {
+        let built = Material::Control.adapted_group(panel, &members, || {
             controls::build(*id, rect.span, &ctx)
         });
         let widget = match built {
@@ -212,7 +213,7 @@ pub(super) fn grid(look: Motion) -> Grid {
         let widget = match widgets.remove(&id) {
             Some(widget) => widget,
             None if item.leaving => {
-                match Material::Control.adapted_group(glass_id(id), &members, || {
+                match Material::Control.adapted_group(panel, &members, || {
                     controls::build(id, rect.span, &ctx)
                 }) {
                     Some(widget) => widget,
@@ -263,7 +264,7 @@ pub(super) fn grid(look: Motion) -> Grid {
             let glass = glass_id(id);
             shapes.push(
                 Material::Control
-                    .adapted_group(glass, &members, || frost(&drawn))
+                    .adapted_group(panel, &members, || frost(&drawn))
                     .id(glass),
             );
         }
@@ -374,6 +375,11 @@ pub(super) fn grid(look: Motion) -> Grid {
         shapes,
         rests,
     }
+}
+
+/// The id the panel's labels are decided under.
+fn panel_id() -> u32 {
+    glass_region::shape_id("amane.quick-settings")
 }
 
 /// The id of control `id`'s glass, for niri's readings of its backdrop.

@@ -66,18 +66,47 @@ const SMALL: Turns = Turns {
     to_dark: TURN_DARK,
 };
 
-/// A panel of glass keeps the theme's mode (Apple: "bigger elements …
-/// adapt based on context, but they don't flip"); its tint still thins
-/// where the backdrop is on that mode's side.
-fn panel_adaptation(theme: Mode, luminance: Option<f32>) -> (Mode, bool) {
+/// A panel of glass keeps the theme's tint (Apple: "bigger elements …
+/// adapt based on context, but they don't flip"), thinned where the
+/// backdrop is on the tint's side; what's on it flips with the backdrop
+/// as small glass does ("symbols and glyphs … flip from light to dark,
+/// mirroring the glass"), decided under `group` with the same hysteresis.
+fn panel_adaptation(group: u32, theme: Mode, luminance: Option<f32>) -> Panel {
+    let none = Panel {
+        tint: theme,
+        labels: None,
+        backed: false,
+    };
     if !theme::adaptive_glass() || !see_through() {
-        return (theme, false);
+        return none;
     }
-    let backed = luminance.is_some_and(|luminance| match theme {
+    let Some(luminance) = luminance else {
+        return none;
+    };
+    let labels = ADAPTED.with_borrow_mut(|adapted| {
+        let before = *adapted.get(&group).unwrap_or(&theme);
+        let (mode, _) = decide(before, luminance, SMALL);
+        adapted.insert(group, mode);
+        mode
+    });
+    let backed = match theme {
         Mode::Light => luminance > SMALL.to_light,
         Mode::Dark => luminance < SMALL.to_dark,
-    });
-    (theme, backed)
+    };
+    Panel {
+        tint: theme,
+        labels: Some(labels),
+        backed,
+    }
+}
+
+/// How a panel of glass is built: the mode its tint takes, the one its
+/// labels take where they differ, and whether its tint thins.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Panel {
+    tint: Mode,
+    labels: Option<Mode>,
+    backed: bool,
 }
 
 /// How much of its tint adaptive glass keeps where its backdrop is clearly
@@ -94,6 +123,14 @@ thread_local! {
     static ADAPTED: RefCell<HashMap<u32, Mode>> = RefCell::new(HashMap::new());
     // whether the glass being built has a backdrop clearly on its side
     static BACKED: Cell<bool> = const { Cell::new(false) };
+    // the mode the labels on the glass being built take, where it isn't the tint's
+    static LABELS: Cell<Option<Mode>> = const { Cell::new(None) };
+}
+
+/// The mode the labels, glyphs and fills on the glass being built take,
+/// where it isn't the key's: a panel's, flipped with its backdrop.
+pub(crate) fn labels_mode() -> Option<Mode> {
+    LABELS.get()
 }
 
 /// A shape id for the piece of glass named `name` (unique across the
@@ -176,13 +213,18 @@ pub(crate) fn adapted<T>(id: u32, f: impl FnOnce() -> T) -> T {
     in_adaptation(adaptation(id), f)
 }
 
-/// Builds `f`, one piece of a panel of glass, as the whole panel is: in
-/// the theme's mode, its tint thinned by the mean of the readings behind
-/// `members` ([`panel_adaptation`]). The pieces stay alike, as Apple's
-/// Control Center does; `members` includes the piece being built.
-pub(crate) fn adapted_group<T>(members: &[u32], f: impl FnOnce() -> T) -> T {
+/// Builds `f`, one piece of a panel of glass, as the whole panel is: the
+/// theme's tint, thinned by the mean of the readings behind `members`, and
+/// labels flipped with that mean under `group` ([`panel_adaptation`]). The
+/// pieces stay alike, as Apple's Control Center does; `members` includes
+/// the piece being built.
+pub(crate) fn adapted_group<T>(group: u32, members: &[u32], f: impl FnOnce() -> T) -> T {
     let theme = Key::current().mode;
-    in_adaptation(panel_adaptation(theme, mean_luminance(members)), f)
+    let panel = panel_adaptation(group, theme, mean_luminance(members));
+    let before = LABELS.replace(panel.labels);
+    let out = in_adaptation((panel.tint, panel.backed), f);
+    LABELS.set(before);
+    out
 }
 
 fn in_adaptation<T>((mode, backed): (Mode, bool), f: impl FnOnce() -> T) -> T {
@@ -231,13 +273,21 @@ mod tests {
     }
 
     #[test]
-    fn a_panel_keeps_the_themes_mode_and_thins_over_a_backdrop_on_its_side() {
-        let (mode, backed) = panel_adaptation(Mode::Light, Some(0.1));
-        assert_eq!(mode, Mode::Light);
-        assert!(!backed || !theme::adaptive_glass());
-        let (mode, _) = panel_adaptation(Mode::Dark, Some(0.95));
-        assert_eq!(mode, Mode::Dark);
-        assert_eq!(panel_adaptation(Mode::Dark, None).0, Mode::Dark);
+    fn a_panel_keeps_the_themes_tint_and_flips_its_labels() {
+        let group = shape_id("test.panel");
+        for (theme, luminance) in [(Mode::Light, 0.1), (Mode::Dark, 0.95)] {
+            let panel = panel_adaptation(group, theme, Some(luminance));
+            assert_eq!(panel.tint, theme);
+            if theme::adaptive_glass() && see_through() {
+                let other = match theme {
+                    Mode::Light => Mode::Dark,
+                    Mode::Dark => Mode::Light,
+                };
+                assert_eq!(panel.labels, Some(other));
+            }
+        }
+        let none = panel_adaptation(group, Mode::Dark, None);
+        assert_eq!((none.tint, none.labels), (Mode::Dark, None));
     }
 
     #[test]

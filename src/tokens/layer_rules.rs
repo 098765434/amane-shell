@@ -393,6 +393,23 @@ mod tests {
     }
 
     #[test]
+    fn large_glass_is_glass_at_a_heavier_blur_and_lift() {
+        let all = materials();
+        let find = |name: &str| all.iter().find(|m| m.name == name).expect(name);
+        let number = |m: &NiriMaterial, name: &str| -> f64 {
+            m.settings
+                .iter()
+                .find(|(s, _)| s == name)
+                .map(|(_, v)| v.parse().expect("a number"))
+                .unwrap_or_else(|| panic!("{} sets {name}", m.name))
+        };
+        let (glass, large) = (find("glass"), find("glass-large"));
+        assert!(number(large, "blur-passes") > number(glass, "blur-passes"));
+        assert!(number(large, "tone") < number(glass, "tone"));
+        assert_eq!(number(large, "bevel"), number(glass, "bevel"));
+    }
+
+    #[test]
     fn small_glass_is_glass_at_a_lighter_blur_and_lens() {
         let all = materials();
         let find = |name: &str| {

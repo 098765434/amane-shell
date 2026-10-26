@@ -244,18 +244,23 @@ impl Material {
     /// The niri material this one is drawn in, by name, as the generated
     /// config defines it (`material.*` tokens, `layer_rules`).
     pub fn niri_name(self) -> &'static str {
-        match self.spec().family {
-            Family::Glass(Variant::Regular) => "glass",
-            Family::Glass(Variant::Clear) => "glass-clear",
-            Family::Standard => "frost",
-        }
+        self.wanted(false)[0]
     }
 
     /// The niri material asked for, by name, and its stand-ins: the one
     /// without the lens building up under reduced motion first, then
     /// liquid glass, which every config with materials has.
     fn wanted(self, still: bool) -> &'static [&'static str] {
+        let large = matches!(
+            self.spec().thickness,
+            Thickness::Thick | Thickness::UltraThick
+        );
         match (self.spec().family, still) {
+            // thick glass frosts more, as Apple's sheets and sidebars do (30 pt)
+            (Family::Glass(Variant::Regular), false) if large => &["glass-large", "glass"],
+            (Family::Glass(Variant::Regular), true) if large => {
+                &["glass-large-still", "glass-large", "glass-still", "glass"]
+            }
             (Family::Glass(Variant::Regular), false) => &["glass"],
             (Family::Glass(Variant::Regular), true) => &["glass-still", "glass"],
             (Family::Glass(Variant::Clear), false) => &["glass-clear", "glass"],
@@ -425,14 +430,14 @@ impl Material {
     }
 
     /// [`adapted`](Self::adapted) for one piece of a panel of this
-    /// material: the panel keeps the theme's mode, its tint thinned by the
-    /// readings behind all its `members` (`glass_region::adapted_group`).
-    /// `id` names the piece, for the materials that read their own backdrop.
-    pub fn adapted_group<T>(self, id: u32, members: &[u32], f: impl FnOnce() -> T) -> T {
+    /// material: the panel keeps the theme's tint, thinned by the readings
+    /// behind all its `members`, and flips its labels with them, decided
+    /// once under `group` (`glass_region::adapted_group`).
+    pub fn adapted_group<T>(self, group: u32, members: &[u32], f: impl FnOnce() -> T) -> T {
         if self.spec().adaptive {
-            return glass_region::adapted_group(members, || scope(self, f));
+            return glass_region::adapted_group(group, members, || scope(self, f));
         }
-        self.adapted(id, f)
+        self.adapted(group, f)
     }
 
     /// Clear glass is mode-less: dark, whatever the theme.
@@ -478,17 +483,33 @@ pub fn vibrant() -> bool {
 
 /// A label on whatever material is current, or on none.
 pub fn label(level: Level) -> Color {
-    label_in(level, theme::high_contrast(), on_content())
+    under_labels(|| label_in(level, theme::high_contrast(), on_content()))
 }
 
 /// A fill on whatever material is current, or on none.
 pub fn fill_role(level: FillLevel) -> Color {
-    fill_in(level, theme::high_contrast(), on_content())
+    under_labels(|| fill_in(level, theme::high_contrast(), on_content()))
 }
 
 /// The separator on whatever material is current, or on none.
 pub fn separator() -> Color {
-    separator_in(theme::high_contrast(), on_content())
+    under_labels(|| separator_in(theme::high_contrast(), on_content()))
+}
+
+/// Resolves `f` in the mode a panel's labels take, where it flipped them
+/// with the backdrop while keeping the theme's tint
+/// (`glass_region::labels_mode`).
+fn under_labels<T>(f: impl FnOnce() -> T) -> T {
+    match glass_region::labels_mode() {
+        Some(mode) => with_key(
+            Key {
+                mode,
+                ..Key::current()
+            },
+            f,
+        ),
+        None => f(),
+    }
 }
 
 /// Whether what's being built sits on an opaque surface rather than glass:

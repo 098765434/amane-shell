@@ -20,38 +20,47 @@ pub const FG_FLOOR: f64 = 3.4;
 pub const SECONDARY_FLOOR: f64 = 2.0;
 
 /// The surfaces checked for contrast: (background, primary, secondary, the
-/// niri material whose `tone` the compositor lays under it, if any).
-const SURFACES: &[(&str, &str, &str, Option<&str>)] = &[
+/// niri material whose `tone` the compositor lays under it, if any, and
+/// whether the labels on it flip with the backdrop, so either mode's set
+/// may carry the contrast: Apple's glyphs "flip from light to dark,
+/// mirroring the glass").
+const SURFACES: &[(&str, &str, &str, Option<&str>, bool)] = &[
     // every material's tint, under the vibrant labels the material hands out
     (
+        // Clear glass is dark whatever the theme, with white labels
         "sys.color.material.ultra-thin",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
         Some("material.glass-clear.tone"),
+        true,
     ),
     (
         "sys.color.material.thin",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
         Some("material.glass.tone"),
+        true,
     ),
     (
         "sys.color.material.regular",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
         Some("material.glass.tone"),
+        true,
     ),
     (
         "sys.color.material.thick",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
-        Some("material.glass.tone"),
+        Some("material.glass-large.tone"),
+        false,
     ),
     (
         "sys.color.material.ultra-thick",
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
         None,
+        false,
     ),
     // drawn by the window over niri's frost, which has no tint to tone toward
     (
@@ -59,6 +68,7 @@ const SURFACES: &[(&str, &str, &str, Option<&str>)] = &[
         "sys.color.vibrant.label.primary",
         "sys.color.vibrant.label.secondary",
         None,
+        false,
     ),
 ];
 
@@ -442,12 +452,14 @@ pub fn invariants(lib: &Library, resolved: &[(Key, Resolved)]) -> Vec<String> {
 
 /// The lowest contrast of `fg` on `bg` over black and over white wallpaper.
 pub fn worst_contrast(bg: Rgba, fg: Rgba) -> f64 {
-    toned_contrast(bg, fg, 1.0)
+    toned_contrast(bg, &[fg], 1.0)
 }
 
 /// [`worst_contrast`] with the wallpaper toned as niri's material `tone`
-/// does: squeezed toward the tint's side.
-pub fn toned_contrast(bg: Rgba, fg: Rgba, tone: f64) -> f64 {
+/// does, squeezed toward the tint's side, and any of `fgs` to read with:
+/// labels that flip with the backdrop take the better one over each
+/// wallpaper.
+pub fn toned_contrast(bg: Rgba, fgs: &[Rgba], tone: f64) -> f64 {
     let dark = bg.luminance() < Rgba::opaque(0.5, 0.5, 0.5).luminance();
     [Rgba::BLACK, Rgba::WHITE]
         .into_iter()
@@ -455,7 +467,9 @@ pub fn toned_contrast(bg: Rgba, fg: Rgba, tone: f64) -> f64 {
             let c = |c: f64| if dark { c * tone } else { 1.0 - (1.0 - c) * tone };
             let toned = Rgba::opaque(c(wallpaper.r), c(wallpaper.g), c(wallpaper.b));
             let surface = bg.over(toned);
-            fg.over(surface).contrast(surface)
+            fgs.iter()
+                .map(|fg| fg.over(surface).contrast(surface))
+                .fold(0.0, f64::max)
         })
         .fold(f64::INFINITY, f64::min)
 }
@@ -471,8 +485,20 @@ pub fn contrast(resolved: &[(Key, Resolved)]) -> Vec<String> {
             Some(Value::Color(c)) => Some(*c),
             _ => None,
         };
+        // the other mode's labels, for the surfaces whose labels flip
+        let flipped = resolved
+            .iter()
+            .find(|(k, _)| k.density == key.density && k.mode != key.mode)
+            .map(|(_, r)| r);
+        let flipped_color = |name: &str| match flipped.and_then(|r| r.tokens.get(name)) {
+            Some(token) => match &token.value {
+                Value::Color(c) => Some(*c),
+                _ => None,
+            },
+            None => None,
+        };
 
-        for (bg, fg, secondary, tone) in SURFACES {
+        for (bg, fg, secondary, tone, adaptive) in SURFACES {
             let Some(bg_c) = color(bg) else {
                 out.push(format!("manual §6.1: {bg} is missing or not a colour"));
                 continue;
@@ -495,9 +521,14 @@ pub fn contrast(resolved: &[(Key, Resolved)]) -> Vec<String> {
                     out.push(format!("manual §6.1: {content} is missing or not a colour"));
                     continue;
                 };
+                // flipping labels take whichever mode's set reads better
+                let mut fgs = vec![c];
+                if *adaptive {
+                    fgs.extend(flipped_color(content));
+                }
                 for (how, worst) in [
-                    ("toned", toned_contrast(bg_c, c, tone)),
-                    ("without niri's material", worst_contrast(untoned, c)),
+                    ("toned", toned_contrast(bg_c, &fgs, tone)),
+                    ("without niri's material", toned_contrast(untoned, &fgs, 1.0)),
                 ] {
                     if worst < floor {
                         out.push(format!(

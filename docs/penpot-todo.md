@@ -146,9 +146,11 @@ whose output is static: it can't follow the mode, so it holds one value for both
     `.saturation` 2.0; `material.glass-small` the same at `.refraction` 12, `.bevel` 8;
     `material.glass-clear` `.refraction` 24, `.bevel` 16, `.dispersion` 0.4, `.glow` 0.08;
     `material.frost` `.glow` 0, `.light-angle` 270. `quick.shadow` blur 24, y 8, `#00000029`.
-  - Lighter tints, dark / light: `sys.color.material.ultra-thin` `#00000059` / `#f6f6f659`,
-    `.thin` `#1c1c1e5c` / `#f6f6f65c`, `.regular` `#1c1c1e70` / `#f6f6f673`, `.thick`
-    `#1c1c1e8c` / `#f6f6f699`. New: `sys.color.material.sidebar` `#1e1e1ecc` / `#f6f6f6d6`.
+  - Tints, dark / light: `sys.color.material.ultra-thin` `#00000059` / `#f6f6f633`,
+    `.thin` `#1c1c1e5c` / `#f6f6f633`, `.regular` `#1c1c1e80` / `#f6f6f680`, `.thick`
+    `#1c1c1ed1` / `#f6f6f6d1`. New: `sys.color.material.sidebar` `#1e1e1ecc` / `#f6f6f6d6`.
+  - `material.glass-large.*`: `material.glass` with `.blur-passes` 4, `.blur-offset` 2 and
+    `.tone` 0.6, for thick glass; `material.glass.tone` and `.glass-small.tone` are 0.85.
 - `menu.label.advance-ratio` is no longer read: menus measure their text now. Delete it.
 - `bar.volume.width` is no longer read: the volume is a glyph button now, its level in a tooltip.
   Delete it.
