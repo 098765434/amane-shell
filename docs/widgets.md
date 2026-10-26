@@ -42,7 +42,7 @@ again on an empty one. Shell Settings' **Desktop** page has **Show widgets on th
 ## Edit Widgets
 
 **Edit Widgets…**, or `widgets edit` over IPC, edits one monitor's desktop. Its surface moves over
-the windows (the overlay layer) and takes the keyboard; the windows fall back behind a scrim; each
+the windows (the overlay layer) and takes the keyboard; each
 card gets a remove badge at its top-left and, when it comes in more than one size, a resize handle
 at its bottom-right; and the **gallery** opens at the bottom of the screen:
 
@@ -57,6 +57,12 @@ outline shows where it will land), or click it to put it in the first free cells
 the gallery, or off the canvas, to remove it; Undo Remove puts it back, settings and all. Drag a
 handle to resize a card between the sizes it comes in. **Done**, or Escape (which first lets go of
 a drag, then clears the search), puts the desktop back under the windows.
+
+The edit view is a surface of its own on the overlay layer, shown only while editing, while the
+desktop's surface leaves its cards out: niri doesn't frost a surface moved between layers, so
+the desktop's isn't. It draws nothing outside its glass (no scrim over the windows): a surface
+that paints over its whole area gets no frost from niri, and its glass, which leaves the tint to
+niri, would come out clear.
 
 ## The grid
 
@@ -74,8 +80,8 @@ tokens.
 
 ## One surface a monitor
 
-Each monitor has a surface of its own (`App::window_per_monitor`), on the background layer under
-the windows, covering the output (`Zone::Ignore`; the canvas keeps clear of the bar itself). Its
+Each monitor has a surface of its own (`App::window_per_monitor`) on the background layer under
+the windows (and its edit surface, above), covering the output (`Zone::Ignore`; the canvas keeps clear of the bar itself). Its
 namespace is `amane.widgets.<output>`, so a card's menu hangs under the surface on its own monitor
 (amane parents a popup to the first surface with the namespace asked for). niri hands a
 background surface the pointer wherever no window is, so the desktop's clicks reach it, and

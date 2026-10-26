@@ -157,8 +157,9 @@ fn with_desk<R>(output: &str, f: impl FnOnce(&mut Desk) -> R) -> R {
     DESKS.with_borrow_mut(|desks| f(desks.entry(output.to_string()).or_insert_with(Desk::new)))
 }
 
-/// `output`'s surface's namespace. Leaked once per monitor ever seen (a
-/// handful), as amane takes a `&'static str`.
+/// The namespace `amane.widgets.<name>`: a monitor's desktop surface (its
+/// name) or its edit surface (`edit.<name>`). Leaked once per monitor ever
+/// seen (a handful), as amane takes a `&'static str`.
 fn namespace(output: &str) -> &'static str {
     NAMES.with_borrow_mut(|names| {
         *names
@@ -198,32 +199,54 @@ fn commit(output: &str, layout: &Layout<WidgetKey>) {
 
 // ───── view ──────────────────────────────────────────────────────────────────
 
-/// The widgets on `monitor`. Registered with `App::window_per_monitor`.
+/// The widgets on `monitor`, on the wallpaper under the windows.
+/// Registered with `App::window_per_monitor`. While the monitor's desktop
+/// is edited its cards are drawn by [`edit_surface`] instead.
 pub fn surface(monitor: &Monitor) -> LayerWindow {
+    desk_window(monitor, false)
+}
+
+/// The monitor's desktop while it's edited: the cards and the gallery
+/// over the windows, as macOS clears the desktop to edit it; hidden the
+/// rest of the time. A surface of its own on the overlay layer rather than
+/// the desktop's moved there: niri doesn't frost a surface moved off the
+/// background layer.
+pub fn edit_surface(monitor: &Monitor) -> LayerWindow {
+    desk_window(monitor, true)
+}
+
+fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
     let output = monitor.name.clone();
     let geometry = Geometry::of(monitor.width as f32, monitor.height as f32);
-    if !desktop().show_widgets {
-        // hidden, taking nothing, until they're shown again
-        if edit::editing(&output) {
-            edit::leave_all();
-        }
+    let name = if edit_window {
+        namespace(&format!("edit.{output}"))
+    } else {
+        namespace(&output)
+    };
+    let layer = if edit_window {
+        Layer::Overlay
+    } else {
+        Layer::Background
+    };
+    let showing = desktop().show_widgets;
+    if !showing && edit::editing(&output) {
+        edit::leave_all();
+    }
+    let editing = edit::editing(&output);
+    if !showing || (edit_window && !editing) {
+        // hidden, taking nothing
         return LayerWindow::new()
             .width(Full)
             .height(Full)
-            .layer(Layer::Background)
+            .layer(layer)
             .space(Zone::Ignore)
             .keyboard(Keyboard::None)
-            .namespace(namespace(&output))
+            .namespace(name)
             .visible(false)
             .click_through()
             .child(Stack::new(Vec::new()));
     }
     with_desk(&output, |desk| desk.geometry = Some(geometry));
-    let editing = edit::editing(&output);
-
-    let layout = shown(&output, geometry.canvas);
-    let dim = dimming(&output, editing);
-    let view = view(&output, &geometry, &layout, dim, editing);
 
     let full = InputArea {
         x: 0,
@@ -235,21 +258,28 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
         .width(Full)
         .height(Full)
         .vibrant(material::vibrant())
-        // on the wallpaper, under the windows; over them while the gallery
-        // is open, as macOS clears the desktop to edit it
-        .layer(if editing {
-            Layer::Overlay
-        } else {
-            Layer::Background
-        })
+        .layer(layer)
         .space(Zone::Ignore)
+        .namespace(name)
+        .visible(true);
+    if editing && !edit_window {
+        // the edit surface has the cards for now
+        return window
+            .keyboard(Keyboard::None)
+            .click_through()
+            .blur_shapes(Vec::new())
+            .child(Stack::new(Vec::new()));
+    }
+
+    let layout = shown(&output, geometry.canvas);
+    let dim = dimming(&output, editing);
+    let view = view(&output, &geometry, &layout, dim, editing);
+    let window = window
         .keyboard(if editing {
             Keyboard::Exclusive
         } else {
             Keyboard::None
         })
-        .namespace(namespace(&output))
-        .visible(true)
         .input_region(vec![full])
         .blur_shapes(view.frost)
         .child(view.root);
@@ -345,7 +375,6 @@ fn view(
     let mut layers: Vec<Box<dyn Widget>> =
         vec![boxed(still_layer(output, *geometry, held.is_some()))];
     if editing {
-        layers.push(edit::ghost_grid(&px, geometry, layout));
         layers.push(edit::drop_outline(output, &px, geometry, layout));
     }
     let mut frost = Vec::new();

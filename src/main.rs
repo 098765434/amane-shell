@@ -140,6 +140,7 @@ fn main() -> ExitCode {
         .window(launcher::surface)
         .window(context_menu::anchor)
         .window_per_monitor(widgets::surface)
+        .window_per_monitor(widgets::edit_surface)
         .window_per_monitor(dock::surface);
     for toast in notifications::TOASTS {
         app = app.window(toast);

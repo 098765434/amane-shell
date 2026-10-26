@@ -1,6 +1,6 @@
 //! Edit Widgets — macOS's widget gallery, on one monitor at a time. The
 //! desktop's surface moves over the windows (the overlay layer) and takes
-//! the keyboard; the windows fall back behind a scrim; each card gets a
+//! the keyboard; each card gets a
 //! remove badge and, when it comes in more than one size, a resize handle;
 //! and the gallery (`gallery.rs`) opens at the bottom of the screen, where a
 //! widget is dragged from onto the desktop, or clicked to go in the first
@@ -35,10 +35,6 @@ use crate::tokens::sys;
 
 /// The key a widget lifted from the gallery has until it lands.
 pub(super) const PROVISIONAL: u32 = u32::MAX;
-
-// TODO(token): `widget.edit.scrim` once Penpot has it (manual §1.1).
-/// What the windows fall back behind while the desktop is edited.
-const SCRIM: Color = Color::rgba(0, 0, 0, 72);
 
 /// A press on a widget in the gallery: what, where it's drawn (and at
 /// what scale), and where the pointer took it.
@@ -263,20 +259,6 @@ pub(super) fn reset() {
 }
 
 // ───── the layers ───────────────────────────────────────────────────────────
-
-/// The scrim the windows fall back behind, over the whole surface.
-pub(super) fn ghost_grid(
-    _px: &Metrics,
-    _geometry: &Geometry,
-    _layout: &Layout<WidgetKey>,
-) -> Box<dyn Widget> {
-    boxed(
-        Rectangle::new()
-            .width(amane::Parent)
-            .height(amane::Parent)
-            .fill(SCRIM),
-    )
-}
 
 /// Where the card in hand will land: an outline of the cells the preview
 /// gives it. Always one layer, empty when nothing is held.
