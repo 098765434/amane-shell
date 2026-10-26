@@ -286,18 +286,20 @@ impl QuickToggle {
     pub fn build(self) -> Rectangle {
         let (shown, progress) = self.animate();
 
+        // a control that is on goes white with its glyph in the accent
+        // (`sys.color.state.on`), as Control Center's do
         let (disc_fill, glyph_color) = if self.alert {
             (sys::color::status::critical::bg(), sys::color::accent::fg())
         } else {
             (
                 Color::blend(
                     sys::color::state::selected(),
-                    sys::color::accent::bg(),
+                    sys::color::state::on::bg(),
                     progress,
                 ),
                 Color::blend(
                     material::label(Level::Primary),
-                    sys::color::accent::fg(),
+                    sys::color::state::on::fg(),
                     progress,
                 ),
             )
@@ -411,7 +413,7 @@ impl QuickToggle {
         }
 
         let side = Self::round_size();
-        let tint = Color::blend(Color::TRANSPARENT, sys::color::accent::bg(), progress);
+        let tint = Color::blend(Color::TRANSPARENT, sys::color::state::on::bg(), progress);
         let inner = Rectangle::new()
             .width(Size::Fixed(side))
             .height(Size::Fixed(side))

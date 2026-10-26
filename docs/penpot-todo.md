@@ -149,6 +149,9 @@ whose output is static: it can't follow the mode, so it holds one value for both
   - Tints, dark / light: `sys.color.material.ultra-thin` `#0000004d` / `#f6f6f633`,
     `.thin` `#1c1c1e4d` / `#f6f6f61f`, `.regular` `#1c1c1e80` / `#f6f6f680`, `.thick`
     `#1c1c1e99` / `#f6f6f68c`. New: `sys.color.material.sidebar` `#1e1e1ecc` / `#f6f6f6d6`.
+  - `sys.color.state.on.bg` `#ffffff` and `.fg` `{ref.color.accent.seed}` (both modes): a
+    Quick Settings control that is on, white with its glyph in the accent, as Control
+    Center's are.
   - `material.glass-large.*`: `material.glass` with `.blur-passes` 4, `.blur-offset` 2,
     `.saturation` 1.8 and `.tone` 0.9, for thick glass; `material.glass.tone` and
     `.glass-small.tone` are 1.
