@@ -139,6 +139,14 @@ stay with vello and draw once per change; `AMANE_VELLO_SHAPES=1` sends it all ba
 **Measured** on a second shell with the desktop showing for 30 s: 44 widgets frames, 41 of
 them `vello 0`, 2 vello runs in all (the digits' first frame), 61 before.
 
+**Audited** on 2026-10-27, a second `vello-stats` shell driven over IPC: the launcher (apps
+and files), Quick Settings' grid, every detail page and edit mode, the notification centre, the
+dock, the bar, a context menu and Shell Settings. 1,300 frames, no `to vello` line and no vello
+run in any of them. The notification centre held no notification with an image (a second shell
+doesn't own the notification service), but a card's image is a straight `Image::cover`, which
+the quads take. What runs vello in the shell now: the clock's curved digits when they change,
+and the Shader Lab, which was not audited.
+
 **Rule.** Prefer what the quads draw: rectangles, borders, drop shadows, text, glyph icons,
 straight images, arcs, straight lines with round joins, and the area under a line. One
 curve, gradient, inner shadow or rotation in a window makes every frame of that window a
