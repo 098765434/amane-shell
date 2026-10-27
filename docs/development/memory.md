@@ -123,9 +123,27 @@ inner shadows and anything rotated.
 with no vello run. GTT to open: 78 MB (108 before); that 68 MB over the start is what is
 still open.
 
-**Rule.** Prefer what the quads draw: rectangles, borders, drop shadows, text, glyph icons
-and straight images. One path, gradient, inner shadow or rotation in a window makes every
-frame of that window a vello frame. Check with `AMANE_FRAMES=1` and the `vello N` field.
+### The widgets' rings and graphs are quads too
+
+**What it cost.** With the shadows gone, the widgets layer was the one surface running vello
+at idle: the rings are stroked arcs and the graphs a stroked line over a filled area, redrawn
+every stats tick. 61 vello runs in 30 s with the desktop showing, the scratch pool allocated
+all day.
+
+**What changed.** amane's quads draw arcs (a path that is one arc knows it, through `Arc`,
+`Circle` and a trimmed ring), straight lines (round joins, each piece cut at the joint's
+bisector so a see-through line stays even) and the area under a line (a closed outline from a
+baseline and back). `ring()` and `sparkline()` needed no change. The clock's curved digits
+stay with vello and draw once per change; `AMANE_VELLO_SHAPES=1` sends it all back.
+
+**Measured** on a second shell with the desktop showing for 30 s: 44 widgets frames, 41 of
+them `vello 0`, 2 vello runs in all (the digits' first frame), 61 before.
+
+**Rule.** Prefer what the quads draw: rectangles, borders, drop shadows, text, glyph icons,
+straight images, arcs, straight lines with round joins, and the area under a line. One
+curve, gradient, inner shadow or rotation in a window makes every frame of that window a
+vello frame. Check with `AMANE_FRAMES=1` and the `vello N` field; the `vello-stats` build
+prints `to vello: …` for each command the quads could not take.
 
 ### niri's global blur matches glass
 
@@ -206,5 +224,6 @@ Each lands with a section above and a row here:
 | second shell: launcher opened and closed twice, then Quick Settings | 354 MB VRAM | 128–186 MB |
 | second shell: Quick Settings opened and closed, then idle | 354 MB VRAM (after the launcher) | 219 MB closed, 123 MB after 10 s idle; 59 MB (the start figure) with shadows as quads |
 | second shell: Quick Settings open | 252 MB VRAM + 108 MB GTT | 124 MB + 78 MB |
+| widgets layer, 30 s with the desktop showing | 61 vello runs | 2 (the clock's digits once) |
 | second shell with the desktop showing (widgets) | 363 MB VRAM | 213 MB |
 | amane `gradient` example | 193 MB VRAM | 65 MB |
