@@ -227,8 +227,9 @@ Each lands with a section above and a row here:
 
 | Scenario | 2026-10-26 baseline | After |
 |---|---|---|
-| idle, whole GPU (other apps differing between readings) | 1.96 GiB VRAM + 318 MB GTT | 1.48 GiB + 223 MB after the vello fork, blur 3/2 and the Radeon-only driver; not yet re-read after the hide release, the cards-sized widgets surface and the niri changes |
-| shell RSS / anon at idle | 193 / 123 MB | 133 / 72 MB (same point) |
+| idle, whole GPU (other apps differing between readings) | 1.96 GiB VRAM + 318 MB GTT | 1.48 GiB + 223 MB after the vello fork, blur 3/2 and the Radeon-only driver; **768 MB + 141 MB** live on 2026-10-27 with everything above switched in |
+| idle, per process, live (first reading; the research had none) | – | niri 353 MB VRAM + 12 MB GTT; shell 214 MB VRAM + 87 MB GTT |
+| shell RSS / anon at idle | 193 / 123 MB | 133 / 72 MB (same point); 109 / 47 MB live on 2026-10-27 |
 | second shell: launcher opened and closed twice, then Quick Settings | 354 MB VRAM | 128–186 MB |
 | second shell: Quick Settings opened and closed, then idle | 354 MB VRAM (after the launcher) | 219 MB closed, 123 MB after 10 s idle; 59 MB (the start figure) with shadows as quads |
 | second shell: Quick Settings open | 252 MB VRAM + 108 MB GTT | 124 MB + 78 MB |
