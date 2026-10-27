@@ -130,6 +130,8 @@ pub const ICON_MORE_HORIZ: char = '\u{e5d3}';
 pub const ICON_SWAP: char = '\u{e8d4}';
 pub const ICON_BOLT: char = '\u{ea0b}';
 pub const ICON_HISTORY: char = '\u{e889}';
+pub const ICON_STORAGE: char = '\u{e1db}';
+pub const ICON_UPDATE: char = '\u{e923}';
 pub const ICON_TIMER: char = '\u{e425}';
 pub const ICON_DESCRIPTION: char = '\u{e873}';
 

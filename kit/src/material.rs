@@ -757,7 +757,9 @@ mod tests {
                     FillLevel::Secondary,
                     FillLevel::Tertiary,
                 ] {
-                    assert!(fill_in(level, true, false).alpha() > fill_in(level, false, false).alpha());
+                    assert!(
+                        fill_in(level, true, false).alpha() > fill_in(level, false, false).alpha()
+                    );
                 }
                 assert!(separator_in(true, false).alpha() > separator_in(false, false).alpha());
             });

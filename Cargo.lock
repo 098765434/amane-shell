@@ -53,6 +53,9 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
+ "chrono",
+ "libc",
+ "serde_json",
 ]
 
 [[package]]

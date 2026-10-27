@@ -11,3 +11,7 @@ authors = ["ocbk"]
 [dependencies]
 amane = { workspace = true }
 amane-kit = { path = "../../kit" }
+serde_json = "1.0"
+chrono = "0.4"
+# statvfs, for how full /nix and /boot are
+libc = "0.2"

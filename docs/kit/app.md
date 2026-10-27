@@ -38,7 +38,9 @@ settings files a shell app changes are `amane_kit::settings` ([settings-app.md](
 `sidebar(id, &pages, selected, on_select)` lists `Page::new(glyph, name)`s one row each
 (`sys.size.row.height`, a glyph and a `sys.type.label` name), the shown one filled
 `sys.color.state.selected`, with the hover layer; `on_select` gets the index of a row clicked.
-Each row is keyed `<id>.<index>`.
+Each row is keyed `<id>.<index>`. A `Page::section(name)` is a caption over the pages after it,
+as macOS groups its sidebar; it can't be selected but takes an index like a page, so one array
+still names every row.
 
 As in macOS's System Settings, the sidebar is the one part of the window that shows what's behind
 it. Where the compositor frosts behind the window, the sidebar cuts itself out of the window's

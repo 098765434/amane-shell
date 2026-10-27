@@ -10,9 +10,12 @@ a `.desktop` entry, so the launcher lists it as *Shell Settings*.
 
 ## The window
 
-An `app_window` titled "Shell Settings", 760 × 520 (at least 600 × 400), with a 200 px
-[`sidebar`](../kit/app.md#sidebar) of seven pages and the page's title over its settings, each a
-caption over its control. Each page scrolls in an amane `ScrollArea` that keeps its own offset. Ctrl+W closes it (`standard_shortcut`).
+An `app_window` titled "Shell Settings", 760 × 520 (at least 600 × 460), with a 200 px
+[`sidebar`](../kit/app.md#sidebar) in two sections, **Shell** (seven pages, the shell's own
+settings) and **System** (four, the NixOS configuration), and the page's title over its settings,
+each a caption over its control. Each page scrolls in an amane `ScrollArea` that keeps its own
+offset. Ctrl+W closes it (`standard_shortcut`), unless a system build is running: then it asks
+first ("Stop the build?"), as does the compositor's close.
 
 Its content is drawn on the opaque window background; only the sidebar shows the frost behind the
 window. That frost, and the frosted popups (the dropdowns' menus), come from the `window-rule`
@@ -109,9 +112,63 @@ them.
 The app's version, where the settings files are, and a note that `AMANE_THEME`, `AMANE_DENSITY`
 and `AMANE_TEXT_SCALE` win over these settings when set.
 
+## System
+
+The NixOS configuration in `~/nixos-config`, through the contract in
+[nixos.md](../integration/nixos.md): read from the flake's `amaneSettings` output, changed in
+`managed/settings.json`, built as the user and activated through polkit. The pages are
+`apps/settings/src/system/`.
+
+### About This Computer
+
+`system/about.rs`. A banner saying whether the running system is this configuration ("Up to
+date", or why not: settings changed, uncommitted files, commits not applied, a differing
+evaluation), with **Show Changes** and **Apply…**; then the NixOS version and nixpkgs commit,
+the kernel, the generation ("65 of 66"), the commit the running system was built from with its
+subject, the commit the repo is at, the repo path and host attribute (`nixos.json`, Enter to
+set), and **Refresh**. Under *Managed settings*, the registry's controls for this page: **Time
+zone** (a field with **Set**) and **Tailscale** (a switch).
+
+### History
+
+`system/history.rs`. Every generation (`/nix/var/nix/profiles/system-N-link`), newest first:
+when it was made and the subject of the commit it came from (else its NixOS version), marked
+*current* and *booted*. Picking one shows its number, version and commit, with **Try** (activates
+it without recording it; a restart undoes it) and **Restore…** (a dialog, then a new generation
+made from it).
+
+### Storage
+
+`system/storage.rs`. How full `/nix` and `/boot` are (meters), **Check What a Clean-up Frees**
+(`nix-collect-garbage --dry-run`), and the registry's controls for this page: **Boot entries
+kept** (a slider, 1–50).
+
+### Software Update
+
+`system/update.rs`. The flake's inputs from `flake.lock`, each with how long ago it was updated
+and its commit. Checking for updates is later work.
+
+### The Apply bar
+
+`system/apply_bar.rs`, under whichever page shows while there's something to apply:
+
+| State | Says | Buttons |
+|---|---|---|
+| Waiting | "2 changes waiting · Time zone → Europe/Oslo · Tailscale off" | **Discard** (a dialog), **Try** (builds, then activates in `test` mode), **Apply…** (builds) |
+| Building | a meter and "building amane-shell (3/7) · 1:12", or "Evaluating…" | **Show Log**, **Cancel** |
+| Built | "Ready: 12 packages change · needs a restart" | **Show Changes**, **Cancel**, **Try**, **Apply at Restart** (when the kernel changes), **Apply Now** |
+| Applying | "Applying… authenticate when asked." | **Show Log** |
+| Done | "Applied · generation 67 · settings: …", "Tried · Apply to keep it", or "Applied, but not committed: …" | **Show Log**, **Dismiss** |
+| Failed | "Build failed: …" in the critical colour | **Show Log**, **Dismiss** |
+
+**Show Changes** and **Show Log** take the page's place (the settings waiting, then the
+packages that update, are added and removed; the build's last 300 lines, with **Copy Log**),
+with **Back**.
+
 ## The files
 
-`appearance.json`, `desktop.json`, `status-bar.json`, `dock.json` and `launcher.json` are JSON in
+`appearance.json`, `desktop.json`, `status-bar.json`, `dock.json`, `launcher.json` and `nixos.json`
+(`repo`, `host`: where the NixOS configuration is) are JSON in
 `$XDG_CONFIG_HOME/amane-shell/` (else `~/.config/amane-shell/`), read and
 written through amane's `Config` by `amane_kit::settings`. A missing field takes its default, so
 an older or hand-written file still works:

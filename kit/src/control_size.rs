@@ -49,13 +49,8 @@ pub struct SwitchSize {
 }
 
 impl ControlSize {
-    pub const ALL: [ControlSize; 5] = [
-        Self::Mini,
-        Self::Small,
-        Self::Medium,
-        Self::Large,
-        Self::Xl,
-    ];
+    pub const ALL: [ControlSize; 5] =
+        [Self::Mini, Self::Small, Self::Medium, Self::Large, Self::Xl];
 
     /// A control's height: a button, a switch's track.
     pub fn height(self) -> f32 {

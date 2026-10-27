@@ -26,7 +26,7 @@ use amane::{
 
 use crate::buttons::{Actions, interactive, state_fill};
 use crate::color::with_alpha;
-use crate::layout::{boxed, icon, pad};
+use crate::layout::{boxed, caption, icon, pad, text_height};
 use crate::material::{self, FillLevel, Level, Material};
 use crate::tokens::{Styled, sys};
 
@@ -119,17 +119,31 @@ pub fn field_box(id: &'static str, input: TextInput, width: impl Into<Size>) -> 
         .child(input)
 }
 
-/// One page in a [`sidebar`]: its glyph and its name.
+/// One row in a [`sidebar`]: a page, with its glyph and its name, or a
+/// section's title over the pages after it.
 pub struct Page {
-    pub glyph: char,
+    pub glyph: Option<char>,
     pub name: String,
+    /// A title over a run of pages, not a page: it can't be selected.
+    pub section: bool,
 }
 
 impl Page {
     pub fn new(glyph: char, name: impl Into<String>) -> Self {
         Self {
-            glyph,
+            glyph: Some(glyph),
             name: name.into(),
+            section: false,
+        }
+    }
+
+    /// A section's title, as macOS's sidebar groups its pages. It takes an
+    /// index like a page, so one array still names every row.
+    pub fn section(name: impl Into<String>) -> Self {
+        Self {
+            glyph: None,
+            name: name.into(),
+            section: true,
         }
     }
 }
@@ -153,6 +167,28 @@ pub fn sidebar(
         .enumerate()
         .map(|(index, page)| {
             let key = format!("{id}.{index}");
+
+            if page.section {
+                // a title over its pages, set off from the pages above it
+                let above = if index == 0 {
+                    sys::space::gap::xs()
+                } else {
+                    sys::space::gap::m()
+                };
+
+                let height = above + text_height(sys::r#type::caption());
+
+                return boxed(
+                    Rectangle::new()
+                        .width(Size::Parent)
+                        .height(Size::Fixed(height))
+                        .fill(Color::TRANSPARENT)
+                        .padding(pad(sys::space::inset::s(), 0.0))
+                        .align_child(amane::Start, amane::End)
+                        .child(caption(page.name.clone())),
+                );
+            }
+
             let chosen = index == selected;
 
             let fill = if chosen {
@@ -176,7 +212,7 @@ pub fn sidebar(
                 .align_child(amane::Start, Center)
                 .child(
                     Row::new(vec![
-                        boxed(icon(page.glyph, sys::size::icon::s(), fg)),
+                        boxed(icon(page.glyph.unwrap_or(' '), sys::size::icon::s(), fg)),
                         boxed(
                             Text::new(page.name.clone())
                                 .style(sys::r#type::label())

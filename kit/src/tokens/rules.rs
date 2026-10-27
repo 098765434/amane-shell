@@ -464,7 +464,13 @@ pub fn toned_contrast(bg: Rgba, fgs: &[Rgba], tone: f64) -> f64 {
     [Rgba::BLACK, Rgba::WHITE]
         .into_iter()
         .map(|wallpaper| {
-            let c = |c: f64| if dark { c * tone } else { 1.0 - (1.0 - c) * tone };
+            let c = |c: f64| {
+                if dark {
+                    c * tone
+                } else {
+                    1.0 - (1.0 - c) * tone
+                }
+            };
             let toned = Rgba::opaque(c(wallpaper.r), c(wallpaper.g), c(wallpaper.b));
             let surface = bg.over(toned);
             fgs.iter()
@@ -507,7 +513,10 @@ pub fn contrast(resolved: &[(Key, Resolved)]) -> Vec<String> {
                 None => 1.0,
                 Some(Some(Value::Number(n))) => n.value,
                 Some(_) => {
-                    out.push(format!("manual §6.1: {} is missing or not a number", tone.unwrap()));
+                    out.push(format!(
+                        "manual §6.1: {} is missing or not a number",
+                        tone.unwrap()
+                    ));
                     continue;
                 }
             };
@@ -528,7 +537,10 @@ pub fn contrast(resolved: &[(Key, Resolved)]) -> Vec<String> {
                 }
                 for (how, worst) in [
                     ("toned", toned_contrast(bg_c, &fgs, tone)),
-                    ("without niri's material", toned_contrast(untoned, &fgs, 1.0)),
+                    (
+                        "without niri's material",
+                        toned_contrast(untoned, &fgs, 1.0),
+                    ),
                 ] {
                     if worst < floor {
                         out.push(format!(
