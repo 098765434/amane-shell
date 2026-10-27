@@ -14,6 +14,7 @@ use amane_kit::tokens::{Styled, sys};
 
 use super::job::{BuildJob, Kind, Mode, Phase, Target};
 use super::nixos::{Managed, Snapshot};
+use super::repo::short;
 use crate::{Navigation, PAGE_WIDTH, note};
 
 /// A view that takes the page's place.
@@ -52,6 +53,15 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
 
     let (text, buttons): (Box<dyn Widget>, Vec<Box<dyn Widget>>) = match &job.phase {
         Phase::Idle if changes.is_empty() => return None,
+        Phase::UpToDate => (
+            boxed(line("Already up to date: every input is at its newest.")),
+            vec![button(
+                "dismiss",
+                "Dismiss",
+                Style::Tonal,
+                BuildJob::dismiss,
+            )],
+        ),
         Phase::Idle => (
             boxed(line(format!(
                 "{} waiting · {}",
@@ -110,7 +120,12 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
         Phase::Built(built) => {
             let changed = built.diff.len();
             let mut text = format!(
-                "Ready: {}",
+                "{}: {}",
+                if matches!(job.target, Target::Update { .. }) {
+                    "Update ready"
+                } else {
+                    "Ready"
+                },
                 match changed {
                     0 => String::from("nothing changes"),
                     1 => String::from("1 package changes"),
@@ -129,7 +144,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
                 ),
                 button("drop", "Cancel", Style::Plain, BuildJob::dismiss),
             ];
-            if job.target == Target::Head {
+            if job.target.is_ours() {
                 buttons.push(button("try-built", "Try", Style::Tonal, || {
                     BuildJob::activate(Mode::Test);
                 }));
@@ -234,6 +249,35 @@ fn changes() -> Column {
     let snapshot = Snapshot::read();
 
     let mut parts: Vec<Box<dyn Widget>> = vec![back()];
+
+    if let Target::Update { changes, .. } = &job.target
+        && !changes.is_empty()
+    {
+        parts.push(boxed(
+            List::new(
+                changes
+                    .iter()
+                    .map(|change| {
+                        ListItem::new(
+                            format!("settings.changes.input.{}", change.name),
+                            &change.name,
+                        )
+                        .bare(true)
+                        .trailing(trailing_text(
+                            format!(
+                                "{} → {}",
+                                change.from.as_deref().map_or(String::from("∅"), short),
+                                change.to.as_deref().map_or(String::from("∅"), short)
+                            ),
+                            material::label(Level::Secondary),
+                        ))
+                    })
+                    .collect(),
+            )
+            .header("Inputs")
+            .build(),
+        ));
+    }
 
     let edits = managed.summary(&snapshot);
     if !edits.is_empty() {

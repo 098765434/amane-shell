@@ -99,10 +99,17 @@ impl Repo {
             .collect()
     }
 
-    /// Commits `managed/settings.json` alone (a pathspec commit takes
-    /// nothing else from the index) and gives the new HEAD. Never pushes.
+    /// Commits `managed/settings.json` alone and gives the new HEAD.
     pub fn commit_settings(message: &str) -> Result<String, String> {
-        git(&["commit", "-q", "-m", message, "--", SETTINGS_FILE])?;
+        Self::commit_paths(message, &[SETTINGS_FILE])
+    }
+
+    /// Commits just these paths (a pathspec commit takes nothing else from
+    /// the index) and gives the new HEAD. Never pushes.
+    pub fn commit_paths(message: &str, paths: &[&str]) -> Result<String, String> {
+        let mut args = vec!["commit", "-q", "-m", message, "--"];
+        args.extend_from_slice(paths);
+        git(&args)?;
         git(&["rev-parse", "HEAD"]).map(|out| out.trim().to_string())
     }
 

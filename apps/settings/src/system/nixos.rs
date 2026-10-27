@@ -95,9 +95,34 @@ pub fn nix(args: &[&str]) -> Result<String, String> {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Control {
     Switch,
-    Int { min: i64, max: i64 },
+    Int {
+        min: i64,
+        max: i64,
+    },
+    /// One of a few named values, in a dropdown.
+    Choice(Vec<Choice>),
     TimeZone,
     Text,
+    /// A list of nixpkgs attribute paths; the Apps page draws it.
+    Packages,
+}
+
+/// One option of a [`Control::Choice`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct Choice {
+    pub label: String,
+    pub value: Value,
+}
+
+/// What a package attribute path may look like: `ripgrep`, `python3Packages.black`.
+pub fn is_attr_path(name: &str) -> bool {
+    !name.is_empty()
+        && name.split('.').all(|part| {
+            !part.is_empty()
+                && part
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '+' | '-'))
+        })
 }
 
 /// When a change takes effect, from the registry's `tier`.
@@ -129,6 +154,12 @@ pub struct Entry {
     pub description: String,
     /// The repo files that define the option; ours is `modules/managed.nix`.
     pub set_in: Vec<String>,
+    /// The systemd unit behind a service, for its running state.
+    pub unit: Option<String>,
+    /// Whether that unit is a user unit (`systemctl --user`).
+    pub user_scope: bool,
+    /// The id of the service's "only when needed" switch.
+    pub on_demand: Option<String>,
 }
 
 impl Entry {
@@ -169,6 +200,25 @@ impl Entry {
                 }
             }
             (Control::Text, Value::String(_)) => Ok(()),
+            (Control::Choice(choices), value) if choices.iter().any(|c| c.value == *value) => {
+                Ok(())
+            }
+            (Control::Packages, Value::Array(names)) => {
+                let mut seen = Vec::new();
+                for name in names {
+                    let Some(name) = name.as_str() else {
+                        return Err(String::from("A package is named by its attribute path"));
+                    };
+                    if !is_attr_path(name) {
+                        return Err(format!("{name} isn't an attribute path"));
+                    }
+                    if seen.contains(&name) {
+                        return Err(format!("{name} is listed twice"));
+                    }
+                    seen.push(name);
+                }
+                Ok(())
+            }
             _ => Err(format!("{} can't be set to {}", self.label, show(value))),
         }
     }
@@ -182,8 +232,33 @@ pub fn show(value: &Value) -> String {
         Value::Bool(false) => String::from("off"),
         Value::String(text) => text.clone(),
         Value::Number(n) => n.to_string(),
+        Value::Array(items) if items.is_empty() => String::from("nothing"),
+        Value::Array(items) => items.iter().map(show).collect::<Vec<_>>().join(", "),
         other => other.to_string(),
     }
+}
+
+/// A choice's label for a value, else the value itself.
+pub fn show_as(control: &Control, value: &Value) -> String {
+    if let Control::Choice(choices) = control
+        && let Some(choice) = choices.iter().find(|c| c.value == *value)
+    {
+        return choice.label.clone();
+    }
+    show(value)
+}
+
+fn strings(value: Option<&Value>) -> Vec<String> {
+    value
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(String::from)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn entry(value: &Value) -> Option<Entry> {
@@ -195,6 +270,24 @@ fn entry(value: &Value) -> Option<Entry> {
             max: value.get("max").and_then(Value::as_i64).unwrap_or(i64::MAX),
         },
         "timezone" => Control::TimeZone,
+        "packages" => Control::Packages,
+        "choice" => Control::Choice(
+            value
+                .get("choices")
+                .and_then(Value::as_array)
+                .map(|choices| {
+                    choices
+                        .iter()
+                        .filter_map(|choice| {
+                            Some(Choice {
+                                label: choice.get("label")?.as_str()?.to_string(),
+                                value: choice.get("value")?.clone(),
+                            })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+        ),
         _ => Control::Text,
     };
     let tier = match text("tier").as_deref() {
@@ -222,6 +315,27 @@ fn entry(value: &Value) -> Option<Entry> {
                     .collect()
             })
             .unwrap_or_default(),
+        unit: text("unit"),
+        user_scope: text("scope").as_deref() == Some("user"),
+        on_demand: text("onDemand"),
+    })
+}
+
+/// A package a repo file installs system-wide.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SystemPackage {
+    pub name: String,
+    pub version: String,
+    /// The repo file that lists it.
+    pub file: String,
+}
+
+fn system_package(value: &Value) -> Option<SystemPackage> {
+    let text = |key: &str| value.get(key).and_then(Value::as_str).map(String::from);
+    Some(SystemPackage {
+        name: text("name")?,
+        version: text("version").unwrap_or_default(),
+        file: text("file").unwrap_or_default(),
     })
 }
 
@@ -231,6 +345,7 @@ pub struct Parsed {
     pub entries: Vec<Entry>,
     pub revision: Option<String>,
     pub host: Option<String>,
+    pub system_packages: Vec<SystemPackage>,
 }
 
 pub fn parse_snapshot(json: &str) -> Result<Parsed, String> {
@@ -251,6 +366,11 @@ pub fn parse_snapshot(json: &str) -> Result<Parsed, String> {
             .and_then(Value::as_str)
             .map(String::from),
         host: value.get("host").and_then(Value::as_str).map(String::from),
+        system_packages: value
+            .get("systemPackages")
+            .and_then(Value::as_array)
+            .map(|list| list.iter().filter_map(system_package).collect())
+            .unwrap_or_default(),
     })
 }
 
@@ -261,6 +381,8 @@ pub struct Snapshot {
     /// The commit the repo was at, `-dirty` when it had changes.
     pub revision: Option<String>,
     pub host: Option<String>,
+    /// What the repo's files install system-wide.
+    pub system_packages: Vec<SystemPackage>,
     pub error: Option<String>,
     pub loading: bool,
     pub taken: Option<Instant>,
@@ -275,6 +397,7 @@ impl Service for Snapshot {
             entries: Vec::new(),
             revision: None,
             host: None,
+            system_packages: Vec::new(),
             error: None,
             loading: true,
             taken: None,
@@ -323,6 +446,7 @@ fn take(take_number: u64) {
             now.entries = parsed.entries;
             now.revision = parsed.revision;
             now.host = parsed.host;
+            now.system_packages = parsed.system_packages;
             now.error = None;
         }
         Err(error) => now.error = Some(error),
@@ -444,16 +568,40 @@ impl Managed {
         self.changes()
             .iter()
             .map(|change| {
-                let label = snapshot
-                    .entry(&change.id)
-                    .map_or(change.id.clone(), |entry| entry.label.clone());
+                let entry = snapshot.entry(&change.id);
+                let label = entry.map_or(change.id.clone(), |entry| entry.label.clone());
                 match &change.to {
                     Some(Value::Bool(on)) => format!("{label} {}", if *on { "on" } else { "off" }),
-                    Some(value) => format!("{label} → {}", show(value)),
+                    // a list: what came and went, "Added in Settings + ripgrep, − htop"
+                    Some(Value::Array(_)) => {
+                        let (from, to) =
+                            (strings(change.from.as_ref()), strings(change.to.as_ref()));
+                        let added = to
+                            .iter()
+                            .filter(|n| !from.contains(n))
+                            .map(|n| format!("+ {n}"));
+                        let gone = from
+                            .iter()
+                            .filter(|n| !to.contains(n))
+                            .map(|n| format!("− {n}"));
+                        format!(
+                            "{label} {}",
+                            added.chain(gone).collect::<Vec<_>>().join(", ")
+                        )
+                    }
+                    Some(value) => format!(
+                        "{label} → {}",
+                        entry.map_or_else(|| show(value), |e| show_as(&e.control, value))
+                    ),
                     None => format!("{label} unset"),
                 }
             })
             .collect()
+    }
+
+    /// A setting's list value as strings (empty when it's not a list).
+    pub fn list(&self, id: &str, configured: &Value) -> Vec<String> {
+        strings(Some(self.value(id, configured)))
     }
 
     /// The commit's subject for the changes.
@@ -464,8 +612,13 @@ impl Managed {
     /// Writes one setting and stages the file, so the flake sees it. The
     /// caller has checked the value against its entry.
     pub fn set(id: &str, value: Value) {
-        let mut map = Self::read().current.clone();
-        map.insert(String::from(id), value);
+        // into the live map first, so a second set before the write lands
+        // builds on this one
+        let map = {
+            let mut now = Self::write();
+            now.current.insert(String::from(id), value);
+            now.current.clone()
+        };
         let path = settings_path();
 
         thread::spawn(move || {
@@ -513,8 +666,20 @@ mod tests {
          "type":"boolean","value":true},
         {"control":"int","default":null,"id":"bootEntries","label":"Boot entries kept","max":50,"min":1,
          "page":"storage","path":["boot","loader","systemd-boot","configurationLimit"],
-         "setIn":["modules/managed.nix"],"tier":"restart","type":"null or signed integer","value":10}
-    ],"host":"nixos-niri","revision":"5d056b8-dirty"}"#;
+         "setIn":["modules/managed.nix"],"tier":"restart","type":"null or signed integer","value":10},
+        {"control":"switch","default":false,"id":"openssh","label":"SSH server","page":"services",
+         "path":["services","openssh","enable"],"setIn":["modules/managed.nix"],"tier":"rebuild",
+         "type":"boolean","value":true,"unit":"sshd.service","onDemand":"sshdOnDemand"},
+        {"control":"switch","default":false,"id":"sunshine","label":"Sunshine","page":"services",
+         "path":["services","sunshine","enable"],"setIn":[],"tier":"rebuild",
+         "type":"boolean","value":false,"unit":"sunshine.service","scope":"user"},
+        {"control":"choice","choices":[{"label":"1 minute","value":60},{"label":"Never","value":0}],
+         "default":180,"id":"dimAfter","label":"Dim the screen after","page":"power",
+         "path":["amane","idle","dimAfter"],"setIn":[],"tier":"rebuild","type":"unsigned integer","value":180},
+        {"control":"packages","default":[],"id":"packages","label":"Added in Settings","page":"apps",
+         "path":["amane","packages"],"setIn":[],"tier":"rebuild","type":"list of string","value":[]}
+    ],"host":"nixos-niri","revision":"5d056b8-dirty",
+    "systemPackages":[{"name":"foot","version":"1.2","file":"modules/apps.nix"}]}"#;
 
     fn snapshot() -> Snapshot {
         let parsed = parse_snapshot(SNAPSHOT).unwrap();
@@ -522,6 +687,7 @@ mod tests {
             entries: parsed.entries,
             revision: parsed.revision,
             host: parsed.host,
+            system_packages: parsed.system_packages,
             error: None,
             loading: false,
             taken: None,
@@ -531,7 +697,7 @@ mod tests {
     #[test]
     fn the_snapshot_says_what_each_setting_is_and_who_sets_it() {
         let snapshot = snapshot();
-        assert_eq!(snapshot.entries.len(), 3);
+        assert_eq!(snapshot.entries.len(), 7);
         assert_eq!(snapshot.revision.as_deref(), Some("5d056b8-dirty"));
 
         let zone = snapshot.entry("timeZone").unwrap();
@@ -546,6 +712,21 @@ mod tests {
         assert_eq!(boot.control, Control::Int { min: 1, max: 50 });
         assert_eq!(boot.tier, Tier::Restart);
         assert_eq!(snapshot.for_page("storage").len(), 1);
+
+        let ssh = snapshot.entry("openssh").unwrap();
+        assert_eq!(ssh.unit.as_deref(), Some("sshd.service"));
+        assert_eq!(ssh.on_demand.as_deref(), Some("sshdOnDemand"));
+        assert!(!ssh.user_scope);
+        let sunshine = snapshot.entry("sunshine").unwrap();
+        assert!(sunshine.user_scope);
+        // nothing sets it: ours to set
+        assert!(sunshine.managed());
+
+        let dim = snapshot.entry("dimAfter").unwrap();
+        assert!(matches!(&dim.control, Control::Choice(choices) if choices.len() == 2));
+        assert_eq!(show_as(&dim.control, &Value::from(0)), "Never");
+        assert_eq!(show_as(&dim.control, &Value::from(7)), "7");
+        assert_eq!(snapshot.system_packages[0].name, "foot");
     }
 
     #[test]
@@ -563,6 +744,42 @@ mod tests {
         let zone = snapshot.entry("timeZone").unwrap();
         assert!(zone.check(&Value::from("../etc/passwd")).is_err());
         assert!(zone.check(&Value::from("")).is_err());
+
+        let dim = snapshot.entry("dimAfter").unwrap();
+        assert!(dim.check(&Value::from(60)).is_ok());
+        assert!(dim.check(&Value::from(61)).is_err());
+
+        let packages = snapshot.entry("packages").unwrap();
+        assert!(
+            packages
+                .check(&serde_json::json!(["ripgrep", "python3Packages.black"]))
+                .is_ok()
+        );
+        assert!(
+            packages
+                .check(&serde_json::json!(["ripgrep", "ripgrep"]))
+                .is_err()
+        );
+        assert!(packages.check(&serde_json::json!(["rip grep"])).is_err());
+        assert!(packages.check(&serde_json::json!([1])).is_err());
+        assert!(packages.check(&Value::from("ripgrep")).is_err());
+    }
+
+    #[test]
+    fn a_list_change_says_what_came_and_went() {
+        let managed = Managed {
+            current: parse_map(r#"{"packages":["ripgrep","fd"],"dimAfter":0}"#).unwrap(),
+            committed: parse_map(r#"{"packages":["htop","fd"],"dimAfter":180}"#).unwrap(),
+            error: None,
+        };
+        assert_eq!(
+            managed.commit_message(&snapshot()),
+            "settings: Dim the screen after → Never, Added in Settings + ripgrep, − htop"
+        );
+        assert_eq!(
+            managed.list("packages", &Value::Null),
+            vec!["ripgrep", "fd"]
+        );
     }
 
     #[test]

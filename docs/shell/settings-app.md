@@ -127,7 +127,39 @@ evaluation), with **Show Changes** and **Apply…**; then the NixOS version and 
 the kernel, the generation ("65 of 66"), the commit the running system was built from with its
 subject, the commit the repo is at, the repo path and host attribute (`nixos.json`, Enter to
 set), and **Refresh**. Under *Managed settings*, the registry's controls for this page: **Time
-zone** (a field with **Set**) and **Tailscale** (a switch).
+zone** (a field with **Set**).
+
+### Apps
+
+`system/apps.rs`. *Added in Settings*: the packages in `managed/settings.json`'s `packages`
+(nixpkgs attribute paths, `amane.packages` in the repo), each with **Remove**. *Add App*: a
+field and **Search** run `nix search --json --inputs-from <repo> nixpkgs <query>` on a thread
+(the configuration's own nixpkgs, no network; the first search after a nixpkgs update fills
+nix's evaluation cache for minutes, and the page says so after three seconds), then the 50
+shortest attribute names with version and description, each with **Add** (*Added* when it's
+there already or installed from a `.nix` file). A change waits for Apply like any other. Then
+a list per repo file that installs packages (`In modules/apps.nix`, …), from the snapshot's
+`systemPackages`, read-only, and *Flatpak*: `flatpak list --app`, every half minute, with
+**Uninstall…** (a dialog, then `flatpak uninstall -y --noninteractive`; flatpak asks through
+polkit for a system-wide app). The Flatpak list is left out when flatpak isn't installed.
+
+### Services
+
+`system/services.rs`. A switch per service the registry puts on this page (SSH, Avahi,
+Syncthing, KDE Connect, Flatpak, the fingerprint reader, fwupd, Bluetooth, Tailscale,
+Sunshine), with the unit's state beside it ("Running · 79 MB", "Stopped") from
+`systemctl show -p Id,ActiveState,SubState,MemoryCurrent` every five seconds (`--user` for a
+user unit such as Sunshine's). A service that's installed but not started at boot has **Only
+when needed** under it (`amane.services.<unit>.onDemand`, which empties the unit's `wantedBy`).
+**Start** / **Stop** act now through `systemctl start|stop` (systemd asks through polkit) and
+don't survive a restart; the switches wait for Apply.
+
+### Power & Lock
+
+`system/power.rs`. **Dim the screen after**, **Lock the screen after** and **Turn the screen
+off after**: dropdowns over 1–30 minutes and *Never*, the `amane.idle.*` options that build
+hypridle's listeners (home-manager restarts hypridle on Apply). Whether hypridle is running is
+shown under them.
 
 ### History
 
@@ -145,8 +177,17 @@ kept** (a slider, 1–50).
 
 ### Software Update
 
-`system/update.rs`. The flake's inputs from `flake.lock`, each with how long ago it was updated
-and its commit. Checking for updates is later work.
+`system/update.rs`. **Check for Updates** writes a fresh lock beside the repo
+(`nix flake update --output-lock-file $XDG_STATE_HOME/amane-shell/nixos/update.lock`), and if
+any root input moved, builds the working tree with it (`nix build --reference-lock-file`) and
+compares it with the running system, through the Apply bar like any build; a card then says
+"Update ready: 2 inputs change · 143 packages change · needs a restart" with **Show Changes**
+(the inputs' commits first, then the packages). The Apply bar's **Apply Now** / **Apply at
+Restart** / **Try** activate it; after a `switch` or `boot` the lock goes into the repo as
+`flake.lock` and is committed with `managed/settings.json` as `update: nixpkgs 26f4107 →
+1a2b3c4, …`. Nothing moved: "Already up to date". Below, the inputs from `flake.lock`, each
+with how long ago it was updated and its commit (the old and new commits while a check is
+around), and **Update** to check just that input.
 
 ### The Apply bar
 
@@ -155,8 +196,9 @@ and its commit. Checking for updates is later work.
 | State | Says | Buttons |
 |---|---|---|
 | Waiting | "2 changes waiting · Time zone → Europe/Oslo · Tailscale off" | **Discard** (a dialog), **Try** (builds, then activates in `test` mode), **Apply…** (builds) |
-| Building | a meter and "building amane-shell (3/7) · 1:12", or "Evaluating…" | **Show Log**, **Cancel** |
-| Built | "Ready: 12 packages change · needs a restart" | **Show Changes**, **Cancel**, **Try**, **Apply at Restart** (when the kernel changes), **Apply Now** |
+| Building | a meter and "building amane-shell (3/7) · 1:12", "Evaluating…", or "checking for updates" | **Show Log**, **Cancel** |
+| Built | "Ready: 12 packages change · needs a restart" ("Update ready: …" for a check) | **Show Changes**, **Cancel**, **Try**, **Apply at Restart** (when the kernel changes), **Apply Now** |
+| Up to date | "Already up to date: every input is at its newest." (a check that found nothing) | **Dismiss** |
 | Applying | "Applying… authenticate when asked." | **Show Log** |
 | Done | "Applied · generation 67 · settings: …", "Tried · Apply to keep it", or "Applied, but not committed: …" | **Show Log**, **Dismiss** |
 | Failed | "Build failed: …" in the critical colour | **Show Log**, **Dismiss** |

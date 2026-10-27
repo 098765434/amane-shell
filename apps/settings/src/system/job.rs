@@ -1,7 +1,9 @@
 //! The pipeline behind Apply: build the system as the user (nix reports
 //! progress as JSON lines), compare it with the running one, activate it
-//! as root through polkit, then commit what changed. One job at a time, on
-//! its own threads; the window reads its [`Phase`].
+//! as root through polkit, then commit what changed. Check for Updates is
+//! the same pipeline from a fresh `flake.lock` written beside the repo,
+//! which goes into the repo once the update is applied. One job at a time,
+//! on its own threads; the window reads its [`Phase`].
 
 use std::collections::VecDeque;
 use std::fs;
@@ -17,8 +19,10 @@ use amane::{Notify, Service};
 use serde_json::Value;
 
 use super::generations::Generations;
-use super::nixos::{Managed, Snapshot, failure, host, repo};
+use super::nixos::{Managed, Snapshot, failure, git, host, repo};
 use super::repo::{Applied, Repo, Running, Toplevel};
+use super::state_dir;
+use super::update::{self, InputChange};
 
 /// Where the helper is in the running system; polkit's action names the
 /// store path it resolves to.
@@ -56,6 +60,7 @@ impl Mode {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Stage {
+    Lock,
     Eval,
     Build,
     Compare,
@@ -65,6 +70,7 @@ pub enum Stage {
 impl Stage {
     pub fn name(self) -> &'static str {
         match self {
+            Self::Lock => "Checking for updates",
             Self::Eval => "Evaluation",
             Self::Build => "Build",
             Self::Compare => "Comparing",
@@ -136,6 +142,8 @@ pub struct Built {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Phase {
     Idle,
+    /// A check found nothing newer than the lock.
+    UpToDate,
     Building(Progress),
     Built(Built),
     Activating {
@@ -153,11 +161,28 @@ pub enum Phase {
     },
 }
 
-/// What's being built: the working tree, or an old generation to go back to.
+/// What's being built: the working tree, an old generation to go back to,
+/// or the working tree with a newer `flake.lock`.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Target {
     Head,
     Generation(PathBuf),
+    Update {
+        /// The fresh lock, in the state folder until it's applied.
+        lock: PathBuf,
+        /// The inputs asked for; all when empty.
+        inputs: Vec<String>,
+        /// What the fresh lock moves.
+        changes: Vec<InputChange>,
+    },
+}
+
+impl Target {
+    /// Whether it's the working tree, with or without a newer lock: what
+    /// a commit records.
+    pub fn is_ours(&self) -> bool {
+        matches!(self, Self::Head | Self::Update { .. })
+    }
 }
 
 pub struct BuildJob {
@@ -224,11 +249,69 @@ impl BuildJob {
         }
         CANCELLED.store(false, Ordering::SeqCst);
 
-        thread::spawn(|| match build() {
+        thread::spawn(|| match build(None) {
             Ok(out) => compare_then(out),
             Err(Some((stage, message))) => fail(stage, message),
             // cancelled
             Err(None) => Self::write().phase = Phase::Idle,
+        });
+    }
+
+    /// Writes a fresh lock for `inputs` (all when empty) beside the repo,
+    /// and builds the working tree with it when something moved.
+    pub fn start_update(inputs: Vec<String>) {
+        let lock = state_dir().join("update.lock");
+        {
+            let mut job = Self::write();
+            if job.running() {
+                job.quiet();
+                return;
+            }
+            job.phase = Phase::Building(Progress {
+                current: Some(String::from("checking for updates")),
+                ..Progress::default()
+            });
+            job.started = Some(Instant::now());
+            job.log.clear();
+            job.target = Target::Update {
+                lock: lock.clone(),
+                inputs: inputs.clone(),
+                changes: Vec::new(),
+            };
+            job.then = None;
+        }
+        CANCELLED.store(false, Ordering::SeqCst);
+
+        thread::spawn(move || {
+            let changes = match relock(&lock, &inputs) {
+                Ok(changes) => changes,
+                Err(Some((stage, message))) => return fail(stage, message),
+                Err(None) => return Self::write().phase = Phase::Idle,
+            };
+            if changes.is_empty() {
+                let mut job = Self::write();
+                job.note("Every input is at its newest.");
+                job.phase = Phase::UpToDate;
+                return;
+            }
+            {
+                let mut job = Self::write();
+                for change in &changes {
+                    job.note(change.text());
+                }
+                if let Target::Update { changes: known, .. } = &mut job.target {
+                    *known = changes;
+                }
+                job.phase = Phase::Building(Progress {
+                    evaluating: true,
+                    ..Progress::default()
+                });
+            }
+            match build(Some(&lock)) {
+                Ok(out) => compare_then(out),
+                Err(Some((stage, message))) => fail(stage, message),
+                Err(None) => Self::write().phase = Phase::Idle,
+            }
         });
     }
 
@@ -312,23 +395,82 @@ fn fail(stage: Stage, message: String) {
 
 // ───── building ──────────────────────────────────────────────────────────────
 
-/// The built system's path; none when cancelled.
-fn build() -> Result<PathBuf, Option<(Stage, String)>> {
+/// `nix flake update` into `lock`, without touching the repo's: what it
+/// moves against the repo's lock. None when cancelled.
+fn relock(lock: &Path, inputs: &[String]) -> Result<Vec<InputChange>, Option<(Stage, String)>> {
+    let repo = repo();
+    if let Some(folder) = lock.parent() {
+        fs::create_dir_all(folder).map_err(|e| Some((Stage::Lock, e.to_string())))?;
+    }
+    let mut command = Command::new("nix");
+    command.args(["flake", "update"]).args(inputs).args([
+        "--flake",
+        &repo.to_string_lossy(),
+        "--output-lock-file",
+        &lock.to_string_lossy(),
+        "--no-warn-dirty",
+    ]);
+    let child = command
+        .current_dir(&repo)
+        .env("NO_COLOR", "1")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| Some((Stage::Lock, format!("nix: {error}"))))?;
+    *CHILD.lock().unwrap_or_else(PoisonError::into_inner) = Some(child);
+    let child = CHILD.lock().unwrap_or_else(PoisonError::into_inner).take();
+    let output = child
+        .map(Child::wait_with_output)
+        .ok_or(None)?
+        .map_err(|error| Some((Stage::Lock, error.to_string())))?;
+
+    {
+        let mut job = BuildJob::write();
+        for line in String::from_utf8_lossy(&output.stderr).lines() {
+            let line = strip_ansi(line);
+            if !line.trim().is_empty() {
+                job.note(line);
+            }
+        }
+    }
+    if CANCELLED.load(Ordering::SeqCst) {
+        return Err(None);
+    }
+    if !output.status.success() {
+        return Err(Some((
+            Stage::Lock,
+            failure(&output.stderr, &output.stdout, output.status.code()),
+        )));
+    }
+
+    let old = fs::read_to_string(repo.join("flake.lock")).unwrap_or_default();
+    let new = fs::read_to_string(lock).map_err(|e| Some((Stage::Lock, e.to_string())))?;
+    update::diff_locks(&old, &new).map_err(|e| Some((Stage::Lock, e)))
+}
+
+/// The built system's path; none when cancelled. With `reference_lock`,
+/// that lock is built instead of the repo's.
+fn build(reference_lock: Option<&Path>) -> Result<PathBuf, Option<(Stage, String)>> {
     let flake = format!(
         "{}#nixosConfigurations.{}.config.system.build.toplevel",
         repo().display(),
         host()
     );
-    let mut child = Command::new("nix")
-        .args([
-            "build",
-            "--no-link",
-            "--print-out-paths",
-            "--log-format",
-            "internal-json",
-            "--no-warn-dirty",
-            &flake,
-        ])
+    let mut command = Command::new("nix");
+    command.args([
+        "build",
+        "--no-link",
+        "--print-out-paths",
+        "--log-format",
+        "internal-json",
+        "--no-warn-dirty",
+    ]);
+    if let Some(lock) = reference_lock {
+        command.arg("--reference-lock-file").arg(lock);
+    }
+    let mut child = command
+        .arg(&flake)
         .current_dir(repo())
         .env("NO_COLOR", "1")
         .stdin(Stdio::null())
@@ -522,9 +664,9 @@ impl Follow {
         for line in self.lines.drain(..) {
             job.note(line);
         }
-        let building_head = job.target == Target::Head;
+        let building_ours = job.target.is_ours();
         if let Phase::Building(progress) = &mut job.phase
-            && building_head
+            && building_ours
         {
             *progress = self.progress.clone();
         }
@@ -669,25 +811,41 @@ fn switch(out: &Path, mode: Mode) -> Result<(), String> {
 fn finish(out: PathBuf, mode: Mode) {
     let target = BuildJob::read().target.clone();
 
-    // the edits that went in, as a commit; a restore has none of its own
-    let commit = if mode.records() && target == Target::Head {
-        let message = {
+    // the edits that went in, as a commit; a restore has none of its own.
+    // An update puts its lock into the repo first, and commits that too.
+    let commit = if mode.records() && target.is_ours() {
+        let edits = {
             let managed = Managed::read();
             (!managed.changes().is_empty()).then(|| managed.commit_message(&Snapshot::read()))
         };
-        message.map(|message| Repo::commit_settings(&message).map(|_| message))
+        match &target {
+            Target::Update { lock, changes, .. } => {
+                let placed = fs::copy(lock, repo().join("flake.lock"))
+                    .map_err(|e| format!("flake.lock not written: {e}"))
+                    .and_then(|_| git(&["add", "--", "flake.lock"]).map(|_| ()));
+                let message = match edits {
+                    Some(edits) => format!("{}; {edits}", update::message(changes)),
+                    None => update::message(changes),
+                };
+                Some(placed.and_then(|()| {
+                    Repo::commit_paths(&message, &["flake.lock", super::nixos::SETTINGS_FILE])
+                        .map(|_| message)
+                }))
+            }
+            _ => edits.map(|message| Repo::commit_settings(&message).map(|_| message)),
+        }
     } else {
         None
     };
 
-    if mode.records() && target == Target::Head {
+    if mode.records() && target.is_ours() {
         let head = commit
             .as_ref()
             .and_then(|c| c.as_ref().ok())
             .map(|_| Repo::read().head.clone())
             .unwrap_or(None)
             .or_else(|| {
-                super::nixos::git(&["rev-parse", "HEAD"])
+                git(&["rev-parse", "HEAD"])
                     .ok()
                     .map(|h| h.trim().to_string())
             });
@@ -704,7 +862,7 @@ fn finish(out: PathBuf, mode: Mode) {
     Repo::refresh();
     Running::refresh();
     Generations::refresh();
-    if target == Target::Head {
+    if target.is_ours() {
         Snapshot::refresh();
         Toplevel::refresh();
     }
@@ -721,13 +879,18 @@ fn finish(out: PathBuf, mode: Mode) {
                 .ok()
         });
 
+    let what = if matches!(target, Target::Update { .. }) {
+        "System update applied"
+    } else {
+        "System settings applied"
+    };
     let body = match (mode, generation) {
         (Mode::Test, _) => String::from("Tried without recording it: a restart undoes it."),
         (Mode::Boot, _) => String::from("It takes effect at the next restart."),
         (_, Some(n)) => format!("Generation {n} is running and in History."),
         (_, None) => String::from("The new system is running."),
     };
-    Notify::new("System settings applied").body(&body).send();
+    Notify::new(what).body(&body).send();
 
     let mut job = BuildJob::write();
     job.phase = Phase::Done {

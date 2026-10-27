@@ -94,7 +94,10 @@ Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery
 `amane-settings` is a settings app for the shell, built on the [kit](kit/README.md): appearance
 (light or dark, accent, density, text size, glass, adaptive glass, vibrant labels, motion), the
 desktop's widgets and Spotlight. It writes `~/.config/amane-shell/*.json`, which the running shell
-follows at once. See [docs/shell/settings-app.md](docs/shell/settings-app.md).
+follows at once. Its **System** pages manage the NixOS configuration the machine is built from
+(apps, services, idle timeouts, storage, history, updates), through
+[docs/integration/nixos.md](docs/integration/nixos.md). See
+[docs/shell/settings-app.md](docs/shell/settings-app.md).
 
 ## Layout
 

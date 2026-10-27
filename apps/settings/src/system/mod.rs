@@ -5,12 +5,15 @@
 
 pub mod about;
 pub mod apply_bar;
+pub mod apps;
 pub mod controls;
 pub mod generations;
 pub mod history;
 pub mod job;
 pub mod nixos;
+pub mod power;
 pub mod repo;
+pub mod services;
 pub mod storage;
 pub mod update;
 

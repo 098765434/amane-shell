@@ -14,8 +14,8 @@ mod system;
 use amane::{Center, Column, Key, Row, ScrollArea, Service, Size, Text, Widget, Window};
 use amane_kit::app::{Dialog, Page, app, app_window, sidebar, standard_shortcut};
 use amane_kit::icons::{
-    ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_HISTORY, ICON_INFO, ICON_LAYERS,
-    ICON_MORE_HORIZ, ICON_SEARCH, ICON_STORAGE, ICON_TUNE, ICON_UPDATE,
+    ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DNS, ICON_HISTORY, ICON_INFO, ICON_LAYERS,
+    ICON_LOCK, ICON_MORE_HORIZ, ICON_PACKAGE, ICON_SEARCH, ICON_STORAGE, ICON_TUNE, ICON_UPDATE,
 };
 use amane_kit::layout::boxed;
 use amane_kit::material::{self, Level};
@@ -48,9 +48,12 @@ impl Service for Navigation {
 
 // the sidebar's rows: two sections, each over its pages
 const SYS_ABOUT: usize = 9;
-const SYS_HISTORY: usize = 10;
-const SYS_STORAGE: usize = 11;
-const SYS_UPDATE: usize = 12;
+const SYS_APPS: usize = 10;
+const SYS_SERVICES: usize = 11;
+const SYS_POWER: usize = 12;
+const SYS_STORAGE: usize = 13;
+const SYS_HISTORY: usize = 14;
+const SYS_UPDATE: usize = 15;
 
 fn main() {
     app("amane-settings")
@@ -58,7 +61,7 @@ fn main() {
         .run();
 }
 
-fn pages() -> [Page; 13] {
+fn pages() -> [Page; 16] {
     [
         Page::section("Shell"),
         Page::new(ICON_DARK_MODE, "Appearance"),
@@ -70,8 +73,11 @@ fn pages() -> [Page; 13] {
         Page::new(ICON_COMPUTER, "About"),
         Page::section("System"),
         Page::new(ICON_INFO, "About This Computer"),
-        Page::new(ICON_HISTORY, "History"),
+        Page::new(ICON_PACKAGE, "Apps"),
+        Page::new(ICON_DNS, "Services"),
+        Page::new(ICON_LOCK, "Power & Lock"),
         Page::new(ICON_STORAGE, "Storage"),
+        Page::new(ICON_HISTORY, "History"),
         Page::new(ICON_UPDATE, "Software Update"),
     ]
 }
@@ -147,6 +153,21 @@ fn main_window() -> Window {
             "settings.scroll.system-about",
             boxed(system::about::page()),
         ),
+        SYS_APPS => (
+            "Apps",
+            "settings.scroll.system-apps",
+            boxed(system::apps::page()),
+        ),
+        SYS_SERVICES => (
+            "Services",
+            "settings.scroll.system-services",
+            boxed(system::services::page()),
+        ),
+        SYS_POWER => (
+            "Power & Lock",
+            "settings.scroll.system-power",
+            boxed(system::power::page()),
+        ),
         SYS_HISTORY => (
             "History",
             "settings.scroll.system-history",
@@ -220,8 +241,8 @@ fn main_window() -> Window {
 
     app_window(content)
         .title("Shell Settings")
-        .size(760.0, 520.0)
-        .min_size(600.0, 460.0)
+        .size(760.0, 720.0)
+        .min_size(600.0, 700.0)
         .on_shortcut(shortcut)
         .on_close(may_close)
 }

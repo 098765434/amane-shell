@@ -132,6 +132,10 @@ pub const ICON_BOLT: char = '\u{ea0b}';
 pub const ICON_HISTORY: char = '\u{e889}';
 pub const ICON_STORAGE: char = '\u{e1db}';
 pub const ICON_UPDATE: char = '\u{e923}';
+/// `dns`: a server, for services.
+pub const ICON_DNS: char = '\u{e875}';
+/// `deployed_code`: a package.
+pub const ICON_PACKAGE: char = '\u{f720}';
 pub const ICON_TIMER: char = '\u{e425}';
 pub const ICON_DESCRIPTION: char = '\u{e873}';
 

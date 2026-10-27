@@ -1,17 +1,18 @@
 //! A control for each setting the registry lists on a page, from the
-//! snapshot's entry: a switch, a slider over a range, or a field with Set.
-//! A change goes to `managed/settings.json` and waits for Apply; a setting
-//! another file sets is shown locked, with where.
+//! snapshot's entry: a switch, a slider over a range, a dropdown of choices,
+//! or a field with Set. A change goes to `managed/settings.json` and waits
+//! for Apply; a setting another file sets is shown locked, with where.
 
 use amane::{Column, Row, Service, TextInput, Widget};
 use amane_kit::app::{field_box, text_field};
 use amane_kit::buttons::{PushButton, Switch};
+use amane_kit::dropdown::Dropdown;
 use amane_kit::layout::boxed;
 use amane_kit::slider::Slider;
 use amane_kit::tokens::sys;
 use serde_json::Value;
 
-use super::nixos::{Control, Entry, Managed, Snapshot, show};
+use super::nixos::{Control, Entry, Managed, Snapshot, show, show_as};
 use crate::{labelled, note, setting};
 
 /// What the last Set said when it refused a value.
@@ -28,7 +29,7 @@ impl Service for Feedback {
 }
 
 /// Checks the value against its entry and writes it, or says why not.
-fn set(entry: &Entry, value: Value) {
+pub fn set(entry: &Entry, value: Value) {
     match entry.check(&value) {
         Ok(()) => {
             Feedback::write().error = None;
@@ -47,6 +48,51 @@ fn field_id(id: &str) -> &'static str {
     }
 }
 
+/// The lines under a control: what Set refused, where else the setting is
+/// set (locked), what it was while a change waits, or when it takes effect.
+pub fn notes(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Vec<Box<dyn Widget>> {
+    let mut lines: Vec<Box<dyn Widget>> = Vec::new();
+    let pending = managed.current.get(&entry.id) != managed.committed.get(&entry.id);
+
+    if let Some((id, why)) = &feedback.error
+        && *id == entry.id
+    {
+        lines.push(boxed(
+            note(why.clone()).color(sys::color::status::critical::text()),
+        ));
+    }
+    if !entry.managed() {
+        lines.push(boxed(note(format!(
+            "Set in {}: move it to managed/settings.json to change it here.",
+            entry.set_elsewhere().join(", ")
+        ))));
+    } else if pending {
+        let was = managed.committed.get(&entry.id).map_or_else(
+            || show_as(&entry.control, &entry.default),
+            |v| show_as(&entry.control, v),
+        );
+        lines.push(boxed(note(format!(
+            "Was {was} · waiting for Apply. {}",
+            entry.tier.note()
+        ))));
+    } else {
+        lines.push(boxed(note(entry.tier.note())));
+    }
+    lines
+}
+
+/// The switch for a boolean entry, by itself.
+pub fn switch(entry: &Entry, managed: &Managed) -> Switch {
+    let on = managed
+        .value(&entry.id, &entry.value)
+        .as_bool()
+        .unwrap_or(false);
+    let e = entry.clone();
+    Switch::new(format!("settings.system.{}", entry.id), on)
+        .disabled(!entry.managed())
+        .on_toggle(move |on| set(&e, Value::Bool(on)))
+}
+
 pub fn for_page(page: &str) -> Vec<Box<dyn Widget>> {
     let snapshot = Snapshot::read();
     let managed = Managed::read();
@@ -55,24 +101,20 @@ pub fn for_page(page: &str) -> Vec<Box<dyn Widget>> {
     snapshot
         .for_page(page)
         .into_iter()
-        .map(|entry| {
+        .filter_map(|entry| {
             let value = managed.value(&entry.id, &entry.value).clone();
             let locked = !entry.managed();
-            let pending = managed.current.get(&entry.id) != managed.committed.get(&entry.id);
 
             let mut lines: Vec<Box<dyn Widget>> = Vec::new();
             let mut heading = true;
 
             match &entry.control {
+                // the Apps page draws the list itself
+                Control::Packages => return None,
                 Control::Switch => {
-                    let on = value.as_bool().unwrap_or(false);
-                    let e = entry.clone();
                     lines.push(boxed(labelled(
                         &entry.label,
-                        Switch::new(format!("settings.system.{}", entry.id), on)
-                            .disabled(locked)
-                            .on_toggle(move |on| set(&e, Value::Bool(on)))
-                            .build(),
+                        switch(entry, &managed).build(),
                     )));
                     heading = false;
                 }
@@ -98,6 +140,27 @@ pub fn for_page(page: &str) -> Vec<Box<dyn Widget>> {
                         ])
                         .gap(sys::space::gap::m())
                         .align(amane::Center),
+                    ));
+                }
+                Control::Choice(choices) => {
+                    let labels = choices.iter().map(|c| c.label.clone()).collect();
+                    let selected = choices.iter().position(|c| c.value == value).unwrap_or(0);
+                    let e = entry.clone();
+                    let values: Vec<Value> = choices.iter().map(|c| c.value.clone()).collect();
+                    lines.push(boxed(
+                        Dropdown::new(
+                            format!("settings.system.choice.{}", entry.id),
+                            labels,
+                            selected,
+                        )
+                        .width(240.0)
+                        .disabled(locked)
+                        .on_select(move |i| {
+                            if let Some(value) = values.get(i) {
+                                set(&e, value.clone());
+                            }
+                        })
+                        .build(),
                     ));
                 }
                 Control::TimeZone | Control::Text => {
@@ -129,37 +192,14 @@ pub fn for_page(page: &str) -> Vec<Box<dyn Widget>> {
                 }
             }
 
-            if let Some((id, why)) = &feedback.error
-                && *id == entry.id
-            {
-                lines.push(boxed(
-                    note(why.clone()).color(sys::color::status::critical::text()),
-                ));
-            }
-            if locked {
-                lines.push(boxed(note(format!(
-                    "Set in {}: move it to managed/settings.json to change it here.",
-                    entry.set_elsewhere().join(", ")
-                ))));
-            } else if pending {
-                let was = managed
-                    .committed
-                    .get(&entry.id)
-                    .map_or_else(|| show(&entry.default), show);
-                lines.push(boxed(note(format!(
-                    "Was {was} · waiting for Apply. {}",
-                    entry.tier.note()
-                ))));
-            } else {
-                lines.push(boxed(note(entry.tier.note())));
-            }
+            lines.extend(notes(entry, &managed, &feedback));
 
             let column = Column::new(lines).gap(sys::space::gap::xs());
-            if heading {
+            Some(if heading {
                 boxed(setting(&entry.label, column))
             } else {
                 boxed(column)
-            }
+            })
         })
         .collect()
 }

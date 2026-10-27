@@ -11,14 +11,16 @@ Three files in the repo, and one flake output, are what Settings reads and write
 
 | In the repo | What |
 |---|---|
-| `managed/settings.json` | the values Settings owns, `{ "timeZone": "Europe/Oslo", "tailscale": true, "bootEntries": 10 }`. The one file Settings writes (whole, through a rename), and the one it commits. Hand edits are fine. |
-| `managed/registry.nix` | which settings may be there: a list of `{ id, path, page, label, control, tier, min?, max? }`. `path` is the NixOS option (`[ "services" "tailscale" "enable" ]`), `page` the Settings page that shows it (`about`, `storage`), `control` how (`switch`, `int` with `min`/`max`, `timezone`, `text`), `tier` when it takes effect (`rebuild`, `restart`). |
+| `managed/settings.json` | the values Settings owns, `{ "timeZone": "Europe/Oslo", "openssh": true, "sshdOnDemand": true, "dimAfter": 180, "packages": ["ripgrep"], "bootEntries": 10, … }`. The one file Settings writes (whole, through a rename), and the one it commits (with `flake.lock` after an update). Hand edits are fine. |
+| `managed/registry.nix` | which settings may be there: a list of `{ id, path, page, label, control, tier, … }`. `path` is the NixOS option (`[ "services" "tailscale" "enable" ]`), `page` the Settings page that shows it (`about`, `services`, `power`, `apps`, `storage`), `control` how (`switch`; `int` with `min`/`max`; `choice` with `choices = [ { label; value; } … ]`; `timezone`; `text`; `packages`, a list of attribute paths the Apps page draws), `tier` when it takes effect (`rebuild`, `restart`). A service entry may name its `unit` (`"sshd.service"`), `scope = "user"` for a user unit, and `onDemand`, the id of its "only when needed" switch. |
 | `modules/managed.nix` | turns each key in the file into an option definition (`lib.mkIf (settings ? id)`), so a missing key leaves the option to the other modules. Also ships the activation helper and its polkit action. |
-| `amaneSettings` (flake output) | `nix eval --json .#amaneSettings`: `{ host, revision, entries }`, each entry the registry's fields plus `value` (effective), `default`, `type`, `description` and `setIn`, the repo files that define the option (`modules/managed.nix` when it's ours). |
+| `modules/options.nix` | the repo's own options for what has no option path of its own, so the registry can point at them: `amane.idle.{dimAfter,lockAfter,screenOffAfter}` (seconds, 0 = never) build hypridle's listener list; `amane.services.<unit>.onDemand` empties the unit's `wantedBy` (`mkIf` round `mkForce`, so an unset flag leaves the unit alone); `amane.packages` (dotted nixpkgs attribute paths) adds to `environment.systemPackages`. |
+| `amaneSettings` (flake output) | `nix eval --json .#amaneSettings`: `{ host, revision, entries, systemPackages }`, each entry the registry's fields plus `value` (effective), `default`, `type`, `description` and `setIn`, the repo files that define the option (`modules/managed.nix` when it's ours; empty when nothing sets it, since an option's default doesn't count). `systemPackages` is what the repo's own files install, `{ name, version, file }` each. |
 
 A setting another file sets (`setIn` has more than `modules/managed.nix`) shows **locked**, with
 the file: a value Settings wrote would clash with it or be overridden. Move the line into
-`settings.json` by hand to take it over. `nix eval` sees only files git knows about, so
+`settings.json` by hand to take it over (a list option such as hypridle's listeners would be
+merged, not overridden, so its hand-written definition has to go). `nix eval` sees only files git knows about, so
 Settings runs `git add` after every write.
 
 The repo's path and the `nixosConfigurations` attribute come from `nixos.json`
@@ -57,6 +59,31 @@ A failed commit (a signing prompt, say) shows "Applied, but not committed".
 Restore (History) builds nothing: it compares a generation's system with the running one and
 activates it the same way. It commits nothing.
 
+## Check for Updates
+
+```
+nix flake update [input…] --flake <repo> --output-lock-file $XDG_STATE_HOME/amane-shell/nixos/update.lock
+   │ the repo's flake.lock is untouched; root inputs whose commit moved → "nixpkgs 26f4107 → 1a2b3c4"; none → "Already up to date"
+nix build … --reference-lock-file <state>/update.lock <repo>#nixosConfigurations.<host>.config.system.build.toplevel
+   │ then diff-closures and activation exactly as above (Try leaves the repo alone)
+cp update.lock <repo>/flake.lock; git add flake.lock
+git commit -m "update: nixpkgs 26f4107 → 1a2b3c4[; settings: …]" -- flake.lock managed/settings.json
+```
+
+The lock is written into the repo only after a `switch` or `boot` succeeded, so a failed or
+cancelled check leaves no trace but `update.lock`. Settings waiting in `settings.json` go into
+the same build and the same commit. A nixpkgs bump rebuilds whatever follows it (the shell,
+niri) from source, which is minutes; the meter shows it.
+
+## Now, not after Apply
+
+Some things on the System pages act at once and aren't part of the configuration: **Start** /
+**Stop** on Services (`systemctl [--user] start|stop <unit>`; systemd asks through polkit, and
+a restart puts the unit back to what the configuration says), Flatpak's **Uninstall…**
+(`flatpak uninstall -y --noninteractive <id>`), and the search behind **Add App**
+(`nix search --json --inputs-from <repo> nixpkgs <query>`, which reads the configuration's
+own nixpkgs and fills nix's evaluation cache the first time, for minutes).
+
 ## "Up to date"
 
 About This Computer says whether the running system is the configuration, from the quick
@@ -75,11 +102,12 @@ signs to the exact one:
 
 A running system with no revision recorded says so: apply once to know.
 
-## Limits (phase 1 + 2)
+## Limits (phases 1–3)
 
-- Three settings so far (time zone, Tailscale, boot entries kept); more are a line in the
-  registry each, and a control in `system/controls.rs` if the kind is new.
+- A new setting is a line in the registry (and a line in `settings.json` in place of the
+  hand-written one); a new kind of control is an arm in `system/controls.rs`.
 - The window can't close during a build. Moving the build to a `systemd-run --user` unit is
   later work behind the same `BuildJob` API.
 - `switch-to-configuration dry-activate` needs root, so which services restart isn't shown.
-- Software Update lists the lock's inputs and their ages; checking for updates is later work.
+- General (hostname, locale, keyboard), "Move to Settings" for a locked setting, and a
+  scheduled update check are later work.
