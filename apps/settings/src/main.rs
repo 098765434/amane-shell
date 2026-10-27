@@ -4,11 +4,16 @@
 mod about;
 mod appearance;
 mod desktop;
+mod dock;
 mod launcher;
+mod quick_settings;
+mod status_bar;
 
-use amane::{Column, Row, Service, Size, Text, Widget, Window};
+use amane::{Center, Column, Row, ScrollArea, Service, Size, Text, Widget, Window};
 use amane_kit::app::{Page, app, app_window, sidebar, standard_shortcut};
-use amane_kit::icons::{ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_SEARCH};
+use amane_kit::icons::{
+    ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_LAYERS, ICON_MORE_HORIZ, ICON_SEARCH, ICON_TUNE,
+};
 use amane_kit::layout::boxed;
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
@@ -33,10 +38,13 @@ fn main() {
         .run();
 }
 
-fn pages() -> [Page; 4] {
+fn pages() -> [Page; 7] {
     [
         Page::new(ICON_DARK_MODE, "Appearance"),
         Page::new(ICON_APPS, "Desktop"),
+        Page::new(ICON_MORE_HORIZ, "Status Bar"),
+        Page::new(ICON_LAYERS, "Dock"),
+        Page::new(ICON_TUNE, "Quick Settings"),
         Page::new(ICON_SEARCH, "Spotlight"),
         Page::new(ICON_COMPUTER, "About"),
     ]
@@ -51,12 +59,37 @@ fn main_window() -> Window {
         Navigation::write().page = page;
     });
 
-    let (title, body): (&str, Box<dyn Widget>) = match page {
-        0 => ("Appearance", boxed(appearance::page())),
-        1 => ("Desktop", boxed(desktop::page())),
-        2 => ("Spotlight", boxed(launcher::page())),
-        _ => ("About", boxed(about::page())),
+    // each page keeps where it was scrolled to, under its own name
+    let (title, scroll, body): (&str, &'static str, Box<dyn Widget>) = match page {
+        0 => (
+            "Appearance",
+            "settings.scroll.appearance",
+            boxed(appearance::page()),
+        ),
+        1 => ("Desktop", "settings.scroll.desktop", boxed(desktop::page())),
+        2 => (
+            "Status Bar",
+            "settings.scroll.status-bar",
+            boxed(status_bar::page()),
+        ),
+        3 => ("Dock", "settings.scroll.dock", boxed(dock::page())),
+        4 => (
+            "Quick Settings",
+            "settings.scroll.quick-settings",
+            boxed(quick_settings::page()),
+        ),
+        5 => (
+            "Spotlight",
+            "settings.scroll.spotlight",
+            boxed(launcher::page()),
+        ),
+        _ => ("About", "settings.scroll.about", boxed(about::page())),
     };
+    let body = boxed(
+        ScrollArea::new(scroll, Column::new(vec![body]))
+            .width(Size::Parent)
+            .height(Size::Parent),
+    );
 
     let content = Row::new(vec![
         boxed(
@@ -86,6 +119,27 @@ fn main_window() -> Window {
         .size(760.0, 520.0)
         .min_size(600.0, 400.0)
         .on_shortcut(standard_shortcut)
+}
+
+/// A control with its name after it on one line, for a switch.
+pub fn labelled(name: &str, control: impl Widget + 'static) -> Row {
+    Row::new(vec![
+        boxed(control),
+        boxed(
+            Text::new(name)
+                .style(sys::r#type::label())
+                .color(material::label(Level::Primary)),
+        ),
+    ])
+    .gap(sys::space::gap::m())
+    .align(Center)
+}
+
+/// A line of explanation under a setting, in the caption's grey.
+pub fn note(text: impl Into<String>) -> Text {
+    Text::new(text)
+        .style(sys::r#type::caption())
+        .color(material::label(Level::Secondary))
 }
 
 /// A setting's name over its control, the way every page lays them out.

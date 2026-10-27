@@ -1,5 +1,6 @@
 //! The shell's settings that a settings app changes and the shell follows
-//! live: `~/.config/amane-shell/appearance.json` and `desktop.json`,
+//! live: `~/.config/amane-shell/appearance.json`, `desktop.json`,
+//! `launcher.json`, `status-bar.json` and `dock.json`,
 //! through amane's `Config`. [`theme`](crate::theme) reads the appearance,
 //! between the `AMANE_*` overrides and what the system says.
 
@@ -248,6 +249,224 @@ pub fn change_launcher(edit: impl FnOnce(&mut Launcher)) {
     Config::<Launcher>::change(edit);
 }
 
+/// Which edge of the screen the status bar runs along.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum BarPosition {
+    #[default]
+    Bottom,
+    Top,
+}
+
+/// What the status bar is made of.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum BarStyle {
+    /// The standard material, frosted by niri's layer rule.
+    #[default]
+    Frosted,
+    /// niri's glass material, clearer than the frost.
+    Glass,
+    /// Opaque: black in dark mode, white in light.
+    Solid,
+}
+
+/// How the clock's tooltip gives the day.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum DateFormat {
+    /// "Sunday 25 October".
+    #[default]
+    Long,
+    /// "Sun 25 Oct".
+    Short,
+    /// The locale's numbers, such as "25/10/26".
+    Numeric,
+}
+
+impl DateFormat {
+    pub const ALL: [DateFormat; 3] = [Self::Long, Self::Short, Self::Numeric];
+
+    /// The `strftime` pattern for it.
+    pub fn pattern(self) -> &'static str {
+        match self {
+            Self::Long => "%A %-d %B",
+            Self::Short => "%a %-d %b",
+            Self::Numeric => "%x",
+        }
+    }
+}
+
+/// The status bar: where it sits, what it's made of, its clock, its
+/// workspaces and which of its icons show.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct StatusBar {
+    pub position: BarPosition,
+    pub style: BarStyle,
+
+    /// 24-hour time, else 12-hour with AM and PM.
+    pub clock_24h: bool,
+    pub clock_seconds: bool,
+    pub date_format: DateFormat,
+
+    /// Whether the workspace pips show on the left.
+    pub show_workspaces: bool,
+
+    /// Whether scrolling over the workspaces moves between them.
+    pub scroll_workspaces: bool,
+
+    /// The icons left out, by their names, like "volume".
+    pub hidden: Vec<String>,
+}
+
+impl Default for StatusBar {
+    fn default() -> Self {
+        Self {
+            position: BarPosition::Bottom,
+            style: BarStyle::Frosted,
+            clock_24h: true,
+            clock_seconds: false,
+            date_format: DateFormat::Long,
+            show_workspaces: true,
+            scroll_workspaces: true,
+            hidden: Vec::new(),
+        }
+    }
+}
+
+impl StatusBar {
+    /// The `strftime` pattern for the clock.
+    pub fn time_pattern(&self) -> &'static str {
+        match (self.clock_24h, self.clock_seconds) {
+            (true, false) => "%H:%M",
+            (true, true) => "%H:%M:%S",
+            (false, false) => "%-I:%M %p",
+            (false, true) => "%-I:%M:%S %p",
+        }
+    }
+
+    /// Whether the icon by this name shows.
+    pub fn shows(&self, name: &str) -> bool {
+        !self.hidden.iter().any(|hidden| hidden == name)
+    }
+
+    /// Shows or hides the icon by this name.
+    pub fn set_shown(&mut self, name: &str, shown: bool) {
+        self.hidden.retain(|hidden| hidden != name);
+
+        if !shown {
+            self.hidden.push(String::from(name));
+        }
+    }
+}
+
+impl Settings for StatusBar {
+    const APP: &'static str = "amane-shell";
+    const FILE: &'static str = "status-bar";
+}
+
+/// The status bar settings as they are now; a view that reads them redraws
+/// when they change.
+pub fn status_bar() -> RwLockReadGuard<'static, Config<StatusBar>> {
+    Config::<StatusBar>::read()
+}
+
+/// Changes the status bar settings and saves them, for input handlers.
+pub fn change_status_bar(edit: impl FnOnce(&mut StatusBar)) {
+    Config::<StatusBar>::change(edit);
+}
+
+/// How much the dock's icons grow under the pointer.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum Magnify {
+    Off,
+    Small,
+    #[default]
+    Medium,
+    Large,
+}
+
+impl Magnify {
+    pub const ALL: [Magnify; 4] = [Self::Off, Self::Small, Self::Medium, Self::Large];
+
+    /// How much more than Medium it grows: 0 for none.
+    pub fn amount(self) -> f32 {
+        match self {
+            Self::Off => 0.0,
+            Self::Small => 0.5,
+            Self::Medium => 1.0,
+            Self::Large => 1.6,
+        }
+    }
+}
+
+/// The smallest and largest the dock's icons are set to.
+pub const DOCK_ICON_SIZES: (u8, u8) = (32, 64);
+
+/// The dock: its icons, whether it hides, and what it shows and animates.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct Dock {
+    /// The icons' resting size, within `DOCK_ICON_SIZES`.
+    pub icon_size: u8,
+    pub magnification: Magnify,
+
+    /// Whether it slides away until the pointer meets the screen's edge.
+    pub auto_hide: bool,
+
+    /// Whether it rises with niri's overview.
+    pub rise_with_overview: bool,
+
+    /// Whether a dot marks the apps with a window open.
+    pub running_dots: bool,
+
+    /// Whether an app's name shows over its icon on hover.
+    pub tooltips: bool,
+
+    pub animations: bool,
+}
+
+impl Default for Dock {
+    fn default() -> Self {
+        Self {
+            icon_size: 44,
+            magnification: Magnify::Medium,
+            auto_hide: true,
+            rise_with_overview: true,
+            running_dots: true,
+            tooltips: true,
+            animations: true,
+        }
+    }
+}
+
+impl Dock {
+    /// The icons' resting size, kept within `DOCK_ICON_SIZES`.
+    pub fn icon(&self) -> f32 {
+        let (least, most) = DOCK_ICON_SIZES;
+
+        f32::from(self.icon_size.clamp(least, most))
+    }
+}
+
+impl Settings for Dock {
+    const APP: &'static str = "amane-shell";
+    const FILE: &'static str = "dock";
+}
+
+/// The dock settings as they are now; a view that reads them redraws when
+/// they change.
+pub fn dock() -> RwLockReadGuard<'static, Config<Dock>> {
+    Config::<Dock>::read()
+}
+
+/// Changes the dock settings and saves them, for input handlers.
+pub fn change_dock(edit: impl FnOnce(&mut Dock)) {
+    Config::<Dock>::change(edit);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -286,5 +505,45 @@ mod tests {
 
         assert!(desktop.show_widgets);
         assert_eq!(desktop.widget_style, WidgetStyle::Dim);
+    }
+
+    #[test]
+    fn the_status_bar_reads_an_older_file_and_hides_by_name() {
+        let mut bar: StatusBar =
+            serde_json::from_str(r#"{ "position": "top", "hidden": ["volume"] }"#)
+                .unwrap_or_default();
+
+        assert_eq!(bar.position, BarPosition::Top);
+        assert_eq!(bar.style, BarStyle::Frosted);
+        assert!(bar.show_workspaces);
+        assert!(!bar.shows("volume"));
+
+        bar.set_shown("volume", true);
+        bar.set_shown("battery", false);
+        bar.set_shown("battery", false);
+
+        assert!(bar.shows("volume"));
+        assert_eq!(bar.hidden, vec![String::from("battery")]);
+    }
+
+    #[test]
+    fn the_clock_follows_its_format() {
+        let mut bar = StatusBar::default();
+        assert_eq!(bar.time_pattern(), "%H:%M");
+
+        bar.clock_24h = false;
+        bar.clock_seconds = true;
+        assert_eq!(bar.time_pattern(), "%-I:%M:%S %p");
+    }
+
+    #[test]
+    fn the_dock_keeps_its_icons_within_bounds() {
+        let dock: Dock = serde_json::from_str(r#"{ "icon_size": 200, "magnification": "off" }"#)
+            .unwrap_or_default();
+
+        assert_eq!(dock.icon(), 64.0);
+        assert_eq!(dock.magnification, Magnify::Off);
+        assert!(dock.auto_hide);
+        assert_eq!(Dock::default().icon(), 44.0);
     }
 }

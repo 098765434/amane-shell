@@ -1,8 +1,11 @@
 //! The dock's motion, all in one place: every animation it runs is an
 //! [`Anim`] in [`DOCK`], each with its own switch, and the magnification
-//! and tooltip can go altogether. `AMANE_DOCK_ANIMATIONS=off` turns every
-//! animation off at once ([`motion`]); the dock then jumps where it would
-//! have moved, and still magnifies and hides as configured.
+//! and tooltip can go altogether. Shell Settings' dock page
+//! (`~/.config/amane-shell/dock.json`) sets how much it magnifies, whether
+//! it shows names and rises with the overview, and whether it animates;
+//! `AMANE_DOCK_ANIMATIONS=off` turns every animation off whatever that says
+//! ([`motion`]). The dock then jumps where it would have moved, and still
+//! magnifies and hides as configured.
 //!
 //! The view never asks whether an animation is on: it makes each one with
 //! [`anim`], which gives a motion that arrives at once when it's off.
@@ -11,6 +14,7 @@ use std::sync::OnceLock;
 use std::time::Duration;
 
 use amane::{Animation, Blend, Easing};
+use amane_kit::settings::{self, dock};
 
 use crate::theme;
 
@@ -119,26 +123,39 @@ impl Magnify {
     }
 }
 
-/// The dock's motion: [`DOCK`], every animation off when
-/// `AMANE_DOCK_ANIMATIONS=off` (or `0`, `false`, `no`).
-pub fn motion() -> &'static DockMotion {
-    static MOTION: OnceLock<DockMotion> = OnceLock::new();
-    MOTION.get_or_init(|| {
-        let var = std::env::var("AMANE_DOCK_ANIMATIONS").ok();
-        configured(DOCK, var.as_deref())
-    })
+/// The dock's motion: [`DOCK`] as the dock settings have it, every
+/// animation off when `AMANE_DOCK_ANIMATIONS=off` (or `0`, `false`, `no`).
+/// Read afresh each time, so a view that asks redraws when the settings
+/// change.
+pub fn motion() -> DockMotion {
+    static VAR: OnceLock<Option<String>> = OnceLock::new();
+    let var = VAR.get_or_init(|| std::env::var("AMANE_DOCK_ANIMATIONS").ok());
+    configured(DOCK, var.as_deref(), &dock())
 }
 
-/// `motion` with every animation off when `var` says so.
-fn configured(motion: DockMotion, var: Option<&str>) -> DockMotion {
+/// `motion` as `settings` have it, with every animation off when `var`
+/// says so.
+fn configured(motion: DockMotion, var: Option<&str>, settings: &settings::Dock) -> DockMotion {
     let off = var.is_some_and(|var| {
         matches!(
             var.trim().to_ascii_lowercase().as_str(),
             "off" | "0" | "false" | "no"
         )
     });
+    let amount = settings.magnification.amount();
+    let magnify = motion
+        .magnify
+        .filter(|_| amount > 0.0)
+        .map(|magnify| Magnify {
+            scales: magnify.scales.map(|scale| 1.0 + (scale - 1.0) * amount),
+            lifts: magnify.lifts.map(|lift| lift * amount),
+            ..magnify
+        });
     DockMotion {
-        enabled: motion.enabled && !off,
+        enabled: motion.enabled && settings.animations && !off,
+        follow_overview: motion.follow_overview && settings.rise_with_overview,
+        magnify,
+        tooltip: motion.tooltip.filter(|_| settings.tooltips),
         ..motion
     }
 }
@@ -158,11 +175,40 @@ mod tests {
 
     #[test]
     fn the_variable_turns_every_animation_off() {
-        assert!(configured(DOCK, None).enabled);
-        assert!(configured(DOCK, Some("on")).enabled);
-        assert!(!configured(DOCK, Some("off")).enabled);
-        assert!(!configured(DOCK, Some(" OFF ")).enabled);
-        assert!(!configured(DOCK, Some("0")).enabled);
+        let shipped = settings::Dock::default();
+        assert!(configured(DOCK, None, &shipped).enabled);
+        assert!(configured(DOCK, Some("on"), &shipped).enabled);
+        assert!(!configured(DOCK, Some("off"), &shipped).enabled);
+        assert!(!configured(DOCK, Some(" OFF "), &shipped).enabled);
+        assert!(!configured(DOCK, Some("0"), &shipped).enabled);
+    }
+
+    #[test]
+    fn the_settings_shape_the_motion() {
+        let shipped = configured(DOCK, None, &settings::Dock::default());
+        assert_eq!(shipped, DOCK);
+
+        let set = settings::Dock {
+            magnification: settings::Magnify::Small,
+            tooltips: false,
+            animations: false,
+            rise_with_overview: false,
+            ..settings::Dock::default()
+        };
+        let motion = configured(DOCK, None, &set);
+        assert!(!motion.enabled);
+        assert!(!motion.follow_overview);
+        assert_eq!(motion.tooltip, None);
+        assert_eq!(
+            motion.magnify.map(|magnify| magnify.most()),
+            Some((1.25, 5.0))
+        );
+
+        let still = settings::Dock {
+            magnification: settings::Magnify::Off,
+            ..settings::Dock::default()
+        };
+        assert_eq!(configured(DOCK, None, &still).magnify, None);
     }
 
     #[test]

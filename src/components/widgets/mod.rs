@@ -48,6 +48,7 @@ use crate::components::icons::ICON_CHECK;
 use crate::components::layout::{blank, boxed};
 use crate::components::material::{self, Material};
 use crate::components::motion::{self, Arrive, Item, Pose};
+use crate::components::status_bar;
 use crate::services::system_stats::SystemStats;
 use crate::tokens::sys;
 use amane_kit::settings::{ACCENTS, WidgetStyle, desktop};
@@ -109,12 +110,19 @@ impl Geometry {
     fn of(width: f32, height: f32) -> Self {
         let px = metrics();
         let area_w = width - 2.0 * MARGIN;
-        let area_h = height - sys::size::panel::height() - 2.0 * MARGIN;
+        let bar = sys::size::panel::height();
+        let area_h = height - bar - 2.0 * MARGIN;
         let canvas = Canvas::fit(&px, area_w, area_h);
         let (x, y) = px.centred_origin(&canvas, area_w, area_h);
+        // below a bar along the top, rather than above one along the bottom
+        let top = if status_bar::edge() == Vertical::Top {
+            bar
+        } else {
+            0.0
+        };
         Self {
             canvas,
-            origin: (MARGIN + x, MARGIN + y),
+            origin: (MARGIN + x, top + MARGIN + y),
             width,
             height,
             surface: (0.0, 0.0, width, height),

@@ -44,6 +44,8 @@ use amane::{
     Windows, Workspaces, Zone,
 };
 
+use amane_kit::settings::dock as dock_settings;
+
 use crate::components::app_icon;
 use crate::components::context_menu;
 use crate::components::divider::Divider;
@@ -52,6 +54,7 @@ use crate::components::glass_region;
 use crate::components::layout::{blank, boxed};
 use crate::components::material::{self, Material};
 use crate::components::motion::redraw_after;
+use crate::components::status_bar;
 use crate::tokens::sys;
 
 use drag::{Drag, Drop, Settle};
@@ -71,10 +74,9 @@ amane_kit::marker! {
 /// under it.
 pub const DOCK_NS: &str = "amane.dock";
 
-// TODO(token): `dock.icon.size`, `dock.icon.least`, `dock.radius` and
-// `dock.reveal.strip` once Penpot has them (manual §1.1).
-/// How big an icon is at rest, with room for them all.
-const ICON: f32 = 44.0;
+// TODO(token): `dock.icon.least`, `dock.radius` and `dock.reveal.strip`
+// once Penpot has them (manual §1.1). How big an icon is at rest, with room
+// for them all, is the dock settings' `icon_size`.
 /// The least an icon shrinks to, to fit the row on the monitor.
 const LEAST_ICON: f32 = 20.0;
 /// The card's corners.
@@ -84,6 +86,9 @@ const STRIP: f32 = 2.0;
 
 /// One monitor's dock, kept across rebuilds.
 struct Dock {
+    // the motion its animations were made with, to make them again when
+    // the settings change it
+    motion: DockMotion,
     reveal: EdgeReveal,
     // 0 … 1: the swell coming on with the pointer and going with it
     swell: Animation,
@@ -133,6 +138,7 @@ struct Item {
 impl Dock {
     fn new(motion: &DockMotion) -> Self {
         Self {
+            motion: *motion,
             reveal: EdgeReveal::new(anim(&motion.reveal, 0.0), motion.hide_delay),
             swell: anim(&swell_anim(motion), 0.0),
             pointer: None,
@@ -167,12 +173,17 @@ thread_local! {
     static MENU_ON: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
-/// Runs `f` on monitor `output`'s dock.
+/// Runs `f` on monitor `output`'s dock, made afresh when the settings
+/// changed its motion.
 fn with_dock<R>(output: &str, f: impl FnOnce(&mut Dock) -> R) -> R {
+    let motion = motion::motion();
     DOCKS.with_borrow_mut(|docks| {
         let dock = docks
             .entry(output.to_string())
-            .or_insert_with(|| Dock::new(motion::motion()));
+            .or_insert_with(|| Dock::new(&motion));
+        if dock.motion != motion {
+            *dock = Dock::new(&motion);
+        }
         f(dock)
     })
 }
@@ -201,19 +212,20 @@ struct Measures {
 
 impl Measures {
     /// The measures on `monitor` for a row of `icons` icons and `rules`
-    /// rules: icons as big as fits, up to [`ICON`].
+    /// rules: icons as big as fits, up to the settings' size.
     fn new(monitor: &Monitor, motion: &DockMotion, icons: usize, rules: usize) -> Self {
         let gap = sys::space::gap::xs();
         let pad = sys::space::inset::s();
         // a rule keeps a small gap either side, where an icon keeps an xs
         let rule_px = Divider::width() + sys::space::gap::s() * 2.0 - gap;
         let room = monitor.width as f32 - sys::space::inset::m() * 2.0;
+        let most = dock_settings().icon();
         let fit = if icons == 0 {
-            ICON
+            most
         } else {
             (room - pad * 2.0 + gap - rules as f32 * rule_px) / icons as f32 - gap
         };
-        let side = fit.clamp(LEAST_ICON, ICON);
+        let side = fit.clamp(LEAST_ICON.min(most), most);
 
         let (scale, lift) = motion.magnify.map_or((1.0, 0.0), |magnify| magnify.most());
         let tip = if motion.tooltip.is_some() {
@@ -222,11 +234,17 @@ impl Measures {
             0.0
         };
         let headroom = |side: f32| side * (scale - 1.0) + lift + tip + sys::space::gap::s();
-        // over the bar, the gap a popover keeps from it
-        let below = sys::size::panel::height() + sys::space::gap::m();
+        // over the bar, the gap a popover keeps from it; a bar along the top
+        // isn't in the way, nor is one a dock that stays out keeps above
+        let over_bar = status_bar::edge() == Vertical::Bottom && dock_settings().auto_hide;
+        let below = if over_bar {
+            sys::size::panel::height() + sys::space::gap::m()
+        } else {
+            sys::space::gap::m()
+        };
         // the surface is as tall as the biggest icons need, whatever size
         // they are now, so it never resizes
-        let height = (headroom(ICON) + ICON + pad * 2.0 + below).ceil();
+        let height = (headroom(most) + most + pad * 2.0 + below).ceil();
         let card = side + pad * 2.0;
         Self {
             width: monitor.width as f32,
@@ -346,26 +364,33 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
     let (view, at) = with_dock(&monitor.name, |dock| {
         let sections = settled(dock, sections, &spaces, &name);
         let icons = sections.iter().map(|s| s.icons.len().max(1)).sum();
-        let at = Measures::new(monitor, motion, icons, sections.len().saturating_sub(1));
+        let at = Measures::new(monitor, &motion, icons, sections.len().saturating_sub(1));
         let (sections, held) = arrange(dock, sections, at);
         let entries = row(&sections, at.rule);
         // the card is small glass, light or dark with its backdrop
         let view = Material::Control.adapted(glass_id(&name), || {
             build(
-                dock, &name, &sections, entries, &spaces, held, hold, at, motion,
+                dock, &name, &sections, entries, &spaces, held, hold, at, &motion,
             )
         });
         (view, at)
     });
+
+    // hiding, it covers the bar to the bottom edge and keeps nothing out;
+    // staying out, it keeps windows clear of the card, above the bar
+    let zone = if dock_settings().auto_hide {
+        Zone::Ignore
+    } else {
+        Zone::Thickness((at.height - at.top) as u32)
+    };
 
     LayerWindow::new()
         .width(Full)
         .height(at.height)
         .vibrant(material::vibrant())
         .anchor_vertical(Vertical::Bottom)
-        // over the bar, which it covers to the bottom edge
         .layer(Layer::Overlay)
-        .space(Zone::Ignore)
+        .space(zone)
         // clicking an icon focuses its window, so the dock never takes keys
         .keyboard(Keyboard::None)
         .namespace(DOCK_NS)
@@ -556,14 +581,15 @@ fn build(
     held: Option<Held>,
     hold: f32,
     at: Measures,
-    motion: &'static DockMotion,
+    motion: &DockMotion,
 ) -> View {
     let menu_open = context_menu::runtime::is_open_under(DOCK_NS)
         && MENU_ON.with_borrow(|on| on.as_deref() == Some(output));
     // a menu open, an icon held or files held keep it up wherever the
     // pointer goes
-    dock.reveal
-        .keep_out(menu_open || dock.drag.is_some() || dock.files.is_some());
+    dock.reveal.keep_out(
+        menu_open || dock.drag.is_some() || dock.files.is_some() || !dock_settings().auto_hide,
+    );
     let progress = dock.reveal.progress(hold);
     let out = progress > 0.001 || dock.reveal.wanted();
     if out && !dock.out {
@@ -951,7 +977,7 @@ fn still_layer(
         .on_files_over(move |point, files| {
             let motion = motion::motion();
             with_dock(&files_on, |dock| {
-                files_over(dock, &held_over, point, files, at, motion)
+                files_over(dock, &held_over, point, files, at, &motion)
             })
         })
         .on_drop(move |files| {
@@ -1227,8 +1253,8 @@ mod tests {
     fn too_many_icons_shrink_to_fit_the_monitor_and_the_surface_keeps_its_size() {
         let few = Measures::new(&monitor(), &DOCK, 5, 1);
         let many = Measures::new(&monitor(), &DOCK, 60, 4);
-        assert_eq!(few.side, ICON);
-        assert!(many.side < ICON);
+        assert_eq!(few.side, dock_settings().icon());
+        assert!(many.side < dock_settings().icon());
         let slots = 60.0 + 4.0 * many.rule;
         assert!(many.card_width(slots) <= 1600.0);
         assert_eq!(few.height, many.height);

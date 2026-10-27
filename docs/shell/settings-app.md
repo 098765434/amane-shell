@@ -11,8 +11,8 @@ a `.desktop` entry, so the launcher lists it as *Shell Settings*.
 ## The window
 
 An `app_window` titled "Shell Settings", 760 × 520 (at least 600 × 400), with a 200 px
-[`sidebar`](../kit/app.md#sidebar) of four pages and the page's title over its settings, each a
-caption over its control. Ctrl+W closes it (`standard_shortcut`).
+[`sidebar`](../kit/app.md#sidebar) of seven pages and the page's title over its settings, each a
+caption over its control. Each page scrolls in an amane `ScrollArea` that keeps its own offset. Ctrl+W closes it (`standard_shortcut`).
 
 Its content is drawn on the opaque window background; only the sidebar shows the frost behind the
 window. That frost, and the frosted popups (the dropdowns' menus), come from the `window-rule`
@@ -55,6 +55,41 @@ Writes `desktop.json` (`desktop.rs`): **Show widgets on the desktop** (`show_wid
 and **Widget style** (`widget_style`): Dim while windows are open (`automatic`, the default),
 Always full (`full`) or Always dimmed (`dim`). See [widgets.md](widgets.md).
 
+### Status Bar
+
+Writes `status-bar.json` (`status_bar.rs`); see [status-bar.md](status-bar.md#settings).
+
+| Setting | Control | Field |
+|---|---|---|
+| Position | segmented: Bottom, Top | `position` |
+| Material | radios: Frosted, Glass, Solid (black in dark mode, white in light) | `style` |
+| Clock | switches: 24-hour time, Show seconds | `clock_24h`, `clock_seconds` |
+| Date in the clock's tooltip | dropdown: Sunday 25 October, Sun 25 Oct, the locale's numbers | `date_format` |
+| Workspaces | switches: Show workspaces, Scroll over them to move between workspaces | `show_workspaces`, `scroll_workspaces` |
+| Show in the status bar | a switch per optional icon | `hidden` |
+
+### Dock
+
+Writes `dock.json` (`dock.rs`); see [dock.md](dock.md).
+
+| Setting | Control | Field |
+|---|---|---|
+| Icon size | slider, 32–64 pt | `icon_size` |
+| Magnification | segmented: Off, Small, Medium, Large | `magnification` |
+| Hiding | switches: hide until the pointer meets the edge, show with the overview | `auto_hide`, `rise_with_overview` |
+| Icons | switches: dots under open apps, an app's name over its icon, animate | `running_dots`, `tooltips`, `animations` |
+
+### Quick Settings
+
+The layout is the shell's own state, so this page (`quick_settings.rs`) has no file of its own: it
+calls the running shell over IPC ([ipc.md](../integration/ipc.md#quick-settings)) and watches
+`$XDG_STATE_HOME/amane-shell/quick-settings` to stay in step with Customize.
+
+- **Customize…** (`quick-settings customize`) and **Reset Layout…** (`reset-layout`, after a
+  dialog).
+- **Controls**: a switch per control this machine has (`controls`, then `show` or `hide`).
+- While the shell doesn't answer, a line says so, with **Try Again**.
+
 ### Spotlight
 
 Writes `launcher.json` (`launcher.rs`); see [launcher.md](launcher.md).
@@ -71,12 +106,13 @@ them.
 
 ### About
 
-The app's version, where the appearance file is, and a note that `AMANE_THEME`, `AMANE_DENSITY`
+The app's version, where the settings files are, and a note that `AMANE_THEME`, `AMANE_DENSITY`
 and `AMANE_TEXT_SCALE` win over these settings when set.
 
 ## The files
 
-All three are JSON in `$XDG_CONFIG_HOME/amane-shell/` (else `~/.config/amane-shell/`), read and
+`appearance.json`, `desktop.json`, `status-bar.json`, `dock.json` and `launcher.json` are JSON in
+`$XDG_CONFIG_HOME/amane-shell/` (else `~/.config/amane-shell/`), read and
 written through amane's `Config` by `amane_kit::settings`. A missing field takes its default, so
 an older or hand-written file still works:
 

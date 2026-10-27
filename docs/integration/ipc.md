@@ -52,7 +52,7 @@ The modes also answer to `applications` (for `apps`) and `home` or `search` (the
 
 ### `quick-settings`
 
-`quick-settings [toggle | open [<page>] | close | edit | customize | reset-layout]`
+`quick-settings [toggle | open [<page>] | close | edit | customize | reset-layout | controls | (show | hide) <control>]`
 ([quick-settings.md](../shell/quick-settings.md)). No arguments toggles it.
 
 | Call | Does |
@@ -62,6 +62,8 @@ The modes also answer to `applications` (for `apps`) and `home` or `search` (the
 | `open <page>` | opens it on a page: `grid`, `sound`, `wifi`, `vpn`, `bluetooth`, `power-mode`, `power`, `night-light`, `do-not-disturb`, `keyboard`, `session`, `background-apps`, `tailscale`, `keep-awake`. A page the machine can't show answers `page <name> has nothing to show on this machine` |
 | `edit`, `customize` | opens the grid in edit mode with the Customize window |
 | `reset-layout` | puts back the default layout |
+| `controls` | one line a control this machine has: its name, a tab, and `shown` or `hidden` (Shell Settings' Quick Settings page lists these) |
+| `show <control>`, `hide <control>` | puts a control in the first free cells at its size (`no room for <control>: hide another control first` when none fit) or takes it off the canvas; the layout is saved |
 
 ### `notifications`
 
@@ -95,7 +97,8 @@ Errors start with `error:` (`no room for it`, `no monitor`, `no widget <id>`).
 
 `status-bar (show | hide | toggle) <icon>` ([status-bar.md](../shell/status-bar.md#status-icons)):
 shows or hides one of the optional status icons, `volume`, `bluetooth`, `network`, `tailscale`,
-`battery` or `keep-awake`. `taskbar` is the same command under the bar's old name.
+`battery`, `keep-awake`, `privacy`, `status-icons` or `notifications`, in `status-bar.json`.
+`taskbar` is the same command under the bar's old name.
 
 ### Context menus
 

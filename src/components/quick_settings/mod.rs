@@ -64,6 +64,7 @@ use crate::components::layout::{blank, boxed, pad, track_cursor};
 use crate::components::material::Material;
 use crate::components::motion;
 use crate::components::panel::{self, Panel, close, is_open, overlay, popover_margin};
+use crate::components::status_bar;
 use crate::tokens::quick;
 
 amane_kit::marker! {
@@ -237,6 +238,44 @@ pub fn ipc(args: &[String]) -> String {
             open(Page::Grid);
             edit::enter();
         }
+        // what Shell Settings' Quick Settings page lists: each control
+        // this machine has, and whether it's on the canvas
+        ["controls"] => {
+            load_layout();
+            return ControlId::ALL
+                .into_iter()
+                .filter(|id| controls::available(*id))
+                .map(|id| {
+                    let shown = layout::with(|layout| layout.rect_of(id).is_some());
+                    format!(
+                        "{}\t{}\n",
+                        id.name(),
+                        if shown { "shown" } else { "hidden" }
+                    )
+                })
+                .collect();
+        }
+        [action @ ("show" | "hide"), name] => {
+            let Some(id) = ControlId::named(name) else {
+                let names: Vec<&str> = ControlId::ALL.into_iter().map(ControlId::name).collect();
+                return format!("unknown control {name}; controls: {}", names.join(", "));
+            };
+            load_layout();
+            let placed = layout::with(|layout| {
+                let placed = if *action == "show" {
+                    layout.show(id)
+                } else {
+                    layout.hide(id);
+                    true
+                };
+                layout.save();
+                placed
+            });
+            if !placed {
+                QuickSettings::changed();
+                return format!("no room for {name}: hide another control first");
+            }
+        }
         ["reset-layout"] => {
             let ctx = controls::Ctx::new(false);
             layout::replace(layout::Layout::default_for(grid::Canvas::tokens(), &|id| {
@@ -245,12 +284,19 @@ pub fn ipc(args: &[String]) -> String {
         }
         _ => {
             return String::from(
-                "usage: quick-settings [toggle | open <page> | close | edit | customize | reset-layout]",
+                "usage: quick-settings [toggle | open <page> | close | edit | customize | reset-layout | controls | (show | hide) <control>]",
             );
         }
     }
     QuickSettings::changed();
     String::from("ok")
+}
+
+/// The layout from its file, or packed with what this machine has, for an
+/// IPC call that comes before the card has ever shown.
+fn load_layout() {
+    let ctx = controls::Ctx::new(false);
+    layout::load_once(&|id| controls::present(id, &ctx));
 }
 
 // ───── view ──────────────────────────────────────────────────────────────────
@@ -483,15 +529,23 @@ pub fn surface() -> LayerWindow {
     let fades = amane::blur_fades();
     let unfolded_shown = unfolded.clamp(0.0, 1.0);
     let scale = f32::blend(motion::scale(quick::open::scale()), 1.0, unfolded);
-    let lift = (1.0 - unfolded) * motion::travel(OPEN_LIFT);
+    // under a bar along the top it drops out of the bar instead, its
+    // top-right corner staying put
+    let down = if status_bar::edge() == Vertical::Top {
+        -1.0
+    } else {
+        1.0
+    };
+    let lift = down * (1.0 - unfolded) * motion::travel(OPEN_LIFT);
     let opacity = if open && !fades { 1.0 } else { unfolded_shown };
     let card = content.opacity(opacity).scale(scale).translate(
         (1.0 - scale) * width / 2.0,
-        (1.0 - scale) * outer / 2.0 + lift,
+        down * (1.0 - scale) * outer / 2.0 + lift,
     );
+    let pinned = if down > 0.0 { outer } else { 0.0 };
     let mut frost = if open || fades {
         glass_region::faded(
-            glass_region::transformed(shapes, scale, (width, outer), (0.0, lift)),
+            glass_region::transformed(shapes, scale, (width, pinned), (0.0, lift)),
             opacity,
         )
     } else {
@@ -500,8 +554,8 @@ pub fn surface() -> LayerWindow {
 
     // Where the card is on the surface. In card mode the surface is the
     // card, so this is (0, 0); while editing the surface covers the output
-    // and the card keeps its place at the bottom-right, the same place its
-    // margins give it. Worked out from the surface's size rather than the
+    // and the card keeps its place at the bar's right-hand corner, the same
+    // place its margins give it. Worked out from the surface's size rather than the
     // mode, so the one frame amane draws at the old size as the mode
     // changes (the view runs before the new size is sent) draws the card
     // where it is either way.
@@ -509,7 +563,11 @@ pub fn surface() -> LayerWindow {
     let margin = popover_margin();
     let card_at = (
         (screen_w - margin.right as f32 - width).max(0.0),
-        (screen_h - margin.bottom as f32 - outer).max(0.0),
+        if status_bar::edge() == Vertical::Top {
+            margin.top as f32
+        } else {
+            (screen_h - margin.bottom as f32 - outer).max(0.0)
+        },
     );
     let canvas_at = (card_at.0 + inset, card_at.1 + inset + grid_top + shift);
     customize::set_canvas_origin(canvas_at.0, canvas_at.1);
@@ -672,13 +730,13 @@ fn surface_width() -> f32 {
     px.extent(grid::Canvas::tokens().cols) + quick::grid::margin() * 2.0
 }
 
-/// The bottom-right overlay surface, `height` tall.
+/// The overlay surface in the bar's right-hand corner, `height` tall.
 fn window(width: f32, height: f32) -> LayerWindow {
     let base = LayerWindow::new()
         .width(width)
         .height(height)
         .margin(popover_margin());
-    overlay(keyed(base), QS_NS, Vertical::Bottom, Horizontal::Right)
+    overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right)
 }
 
 /// The surface over the whole output while editing (clear of what the bar
@@ -687,7 +745,7 @@ fn full_window() -> LayerWindow {
     let base = LayerWindow::new()
         .width(WindowSize::Full)
         .height(WindowSize::Full);
-    overlay(keyed(base), QS_NS, Vertical::Bottom, Horizontal::Right)
+    overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right)
 }
 
 /// `base` taking the keyboard: the card is modal while open, so Escape

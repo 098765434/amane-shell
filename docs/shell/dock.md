@@ -58,8 +58,18 @@ Every animation is in `DOCK` in `dock/motion.rs`, one `Anim` each (`Anim::spring
 | `tooltip` | the name fading in; `None` shows no name |
 | `spring_load` | how long files wait over an icon before its window comes into view; `None` waits for the drop |
 
-`AMANE_DOCK_ANIMATIONS=off` (or `0`, `false`, `no`) turns every animation off at once. The dock
-then jumps instead of moving, but still magnifies, names and hides as configured. The view never
+`motion::motion()` reads `DOCK` through the dock settings each time
+(`~/.config/amane-shell/dock.json`, Shell Settings' Dock page): `magnification` (`off`, `small`,
+`medium` as shipped, `large`) scales the swell and lift, `tooltips` and `rise_with_overview` turn
+the name and `follow_overview` off, and `animations: false` turns every animation off. A dock
+whose motion changes is made afresh. `AMANE_DOCK_ANIMATIONS=off` (or `0`, `false`, `no`) turns
+every animation off whatever the settings say. The dock then jumps instead of moving, but still
+magnifies, names and hides as configured.
+
+The other dock settings: `icon_size` (32–64, 44 as shipped) is the icons' resting size;
+`running_dots: false` drops the dots; `auto_hide: false` keeps the dock out (`EdgeReveal::keep_out`)
+and reserves `Zone::Thickness` of its card and gap, so windows stop above it, and it sits above
+the bar rather than over it. The view never
 checks the flags: `motion::anim` makes each animation, and gives back one that arrives at once
 when it's off.
 

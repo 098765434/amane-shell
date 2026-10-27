@@ -5,6 +5,7 @@
 //! [`super`]), so nothing here moves a hit area as the icons swell.
 
 use amane::{Center, Color, Rectangle, Row, Service, Text, Widget, Windows};
+use amane_kit::settings::dock;
 
 use super::model::Icon;
 use crate::components::app_icon;
@@ -24,9 +25,10 @@ pub fn icon(icon: &Icon, side: f32) -> Rectangle {
 }
 
 /// The dot under a window's icon, brighter while it has the focus; a
-/// pinned app that isn't open there has none.
+/// pinned app that isn't open there has none, and none have one when the
+/// dock settings turn the dots off.
 pub fn running(icon: &Icon) -> (Box<dyn Widget>, f32) {
-    let count = usize::from(matches!(icon, Icon::Window(_)));
+    let count = usize::from(matches!(icon, Icon::Window(_)) && dock().running_dots);
     let color = if icon.focused() {
         material::label(Level::Primary)
     } else {

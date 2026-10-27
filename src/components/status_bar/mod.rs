@@ -1,4 +1,4 @@
-//! A bottom status bar built on the Amane fork.
+//! A status bar along the bottom (or top) edge, built on the Amane fork.
 //!
 //! Compact and ambient (matching the previous Waybar's size and palette):
 //! workspaces on the left and the status cluster on the right. The open
@@ -9,6 +9,10 @@
 //! rounded tile with a black glyph while hovered, and stays one while what
 //! it opens is open. Everything is driven by the Penpot tokens in
 //! `design-tokens/tokens.json` via [`tokens`](crate::tokens).
+//!
+//! Where it sits, what it's made of, its clock and which icons it shows
+//! are `~/.config/amane-shell/status-bar.json` (Shell Settings), followed
+//! live.
 
 mod indicators;
 
@@ -18,8 +22,10 @@ use std::time::Duration;
 use amane::{
     Audio, Battery, Bluetooth, BluetoothDevice, Center, Color, Full, Justify, Keyboard, Layer,
     LayerWindow, Link, Network, Parent, PowerProfile, Rectangle, Row, Scroll, ScrollSource,
-    Service, Size, Start, Vertical, Widget, Workspace, Workspaces, Zone,
+    Service, Size, Start, Vertical, Widget, Workspace, Workspaces, Zone, window_size,
 };
+use amane_kit::settings::{BarPosition, BarStyle, status_bar};
+use amane_kit::theme::{self, Mode};
 
 use crate::components::battery;
 use crate::components::buttons::{
@@ -52,7 +58,7 @@ use crate::tokens::{bar, sys};
 
 pub(crate) use indicators::Indicator;
 
-pub use indicators::ipc;
+pub use indicators::{ipc, migrate};
 
 /// The status bar's layer-surface namespace. The niri `layer-rule` matches
 /// this to frost its popups, and tooltips hang under it.
@@ -67,28 +73,59 @@ thread_local! {
     static SCROLLED: Cell<f32> = const { Cell::new(0.0) };
 }
 
+/// The edge the bar runs along; the panels and cards that keep clear of
+/// it ask here.
+pub fn edge() -> Vertical {
+    match status_bar().position {
+        BarPosition::Bottom => Vertical::Bottom,
+        BarPosition::Top => Vertical::Top,
+    }
+}
+
 /// The status bar view. Registered with `App::window`.
 pub fn bar() -> LayerWindow {
-    let sections = Row::new(vec![boxed(workspaces()), boxed(status())])
+    let left: Box<dyn Widget> = if status_bar().show_workspaces {
+        boxed(workspaces())
+    } else {
+        boxed(Row::new(Vec::new()))
+    };
+    let sections = Row::new(vec![left, boxed(status())])
         .width(Parent)
         .height(Parent)
         .justify(Justify::SpaceBetween)
         .align(Center);
 
+    let style = status_bar().style;
+    let height = sys::size::panel::height();
+
     let panel = Rectangle::new()
         .width(Parent)
         .height(Parent)
         .radius(bar::radius())
-        // niri frosts the whole strip (its layer rule) in the bar's material
-        .fill(Material::Bar.tint())
+        .fill(fill(style))
         .padding(pad(sys::space::inset::m(), bar::panel::padding_y()));
     let panel = track_cursor(panel).child(sections);
 
-    LayerWindow::new()
+    let window = LayerWindow::new()
         .width(Full)
-        .height(sys::size::panel::height())
-        .vibrant(material::vibrant())
-        .anchor_vertical(Vertical::Bottom)
+        .height(height)
+        .vibrant(style != BarStyle::Solid && material::vibrant());
+
+    // Frosted leaves niri's layer rule to frost the whole strip in the bar's
+    // material; the others say where themselves
+    let window = match style {
+        BarStyle::Frosted => window,
+        BarStyle::Glass => {
+            let (width, _) = window_size();
+            window.blur_shapes(vec![
+                Material::Control.shape(0.0, 0.0, width, height, 0.0, 1.0),
+            ])
+        }
+        BarStyle::Solid => window.blur_shapes(Vec::new()),
+    };
+
+    window
+        .anchor_vertical(edge())
         .layer(Layer::Top)
         .space(Zone::Reserve)
         // None so bar clicks never steal keyboard focus from the active app
@@ -97,6 +134,19 @@ pub fn bar() -> LayerWindow {
         .namespace(BAR_NS)
         .visible(true)
         .child(panel)
+}
+
+/// What the strip is painted with: the bar's tint over niri's frost, the
+/// glass's own (none where niri draws it), or black or white.
+fn fill(style: BarStyle) -> Color {
+    match style {
+        BarStyle::Frosted => Material::Bar.tint(),
+        BarStyle::Glass => Material::Control.fill(),
+        BarStyle::Solid => match theme::mode() {
+            Mode::Dark => Color::BLACK,
+            Mode::Light => Color::WHITE,
+        },
+    }
 }
 
 // ───── left: workspaces ──────────────────────────────────────────────────────
@@ -115,7 +165,11 @@ fn workspaces() -> Rectangle {
         .height(Parent)
         .fill(Color::TRANSPARENT)
         .align_child(Start, Center)
-        .on_scroll(scroll_workspaces)
+        .on_scroll(|scroll| {
+            if status_bar().scroll_workspaces {
+                scroll_workspaces(scroll);
+            }
+        })
         .child(pips)
 }
 
@@ -215,8 +269,13 @@ fn stepped(current: Option<usize>, len: usize, step: i32) -> Option<usize> {
 // ───── right: status cluster ─────────────────────────────────────────────────
 
 fn status() -> Row {
-    let mut items = privacy_icons();
-    items.extend(on_icons());
+    let mut items = Vec::new();
+    if Indicator::Privacy.shown() {
+        items.extend(privacy_icons());
+    }
+    if Indicator::StatusIcons.shown() {
+        items.extend(on_icons());
+    }
     items.extend(
         [
             optional(Indicator::Volume, volume),
@@ -226,7 +285,7 @@ fn status() -> Row {
             optional(Indicator::KeepAwake, keep_awake),
             optional(Indicator::Battery, battery),
             Some(quick_settings_button()),
-            notification_icon(),
+            optional(Indicator::Notifications, notification_icon),
             timer(),
             Some(clock()),
         ]
@@ -521,7 +580,7 @@ fn notification_icon() -> Option<Box<dyn Widget>> {
         bar_icon("amane.bar.notifications", glyph, color)
             .active(is_open(Panel::Notifications))
             .on_press(|| panel::toggle(Panel::Notifications))
-            .on_secondary(|| DoNotDisturb::open_menu(BAR_NS, (cursor().0, 0)))
+            .on_secondary(|| DoNotDisturb::open_menu(BAR_NS, (cursor().0, menu_edge())))
             .tooltip(BAR_NS, tip)
             .build(),
     ))
@@ -568,8 +627,8 @@ thread_local! {
 /// the date.
 fn clock() -> Box<dyn Widget> {
     let clock = Clock::read();
-    let time = clock.text().to_string();
-    let date = clock.date().to_string();
+    let time = clock.text();
+    let date = clock.date();
     drop(clock);
     // as wide as the time, with room for the highlight either side
     let width = text_width(&time, sys::r#type::numeric()) + sys::space::inset::s() * 2.0;
@@ -583,6 +642,15 @@ fn clock() -> Box<dyn Widget> {
             .tooltip(BAR_NS, date)
             .build(),
     )
+}
+
+/// The bar's edge facing the screen, for a menu to open from: its top
+/// along the bottom, its bottom along the top.
+fn menu_edge() -> i32 {
+    match edge() {
+        Vertical::Top => sys::size::panel::height() as i32,
+        _ => 0,
+    }
 }
 
 // ───── helpers ───────────────────────────────────────────────────────────────

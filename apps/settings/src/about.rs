@@ -2,7 +2,7 @@
 
 use amane::{Column, Config, Text};
 use amane_kit::layout::boxed;
-use amane_kit::settings::Appearance;
+use amane_kit::settings::{Appearance, Desktop, Dock, Launcher, StatusBar};
 use amane_kit::tokens::{Styled, sys};
 
 use crate::setting;
@@ -15,15 +15,22 @@ pub fn page() -> Column {
             .color(material::label(Level::Primary))
     };
 
+    let files = [
+        Config::<Appearance>::path(),
+        Config::<Desktop>::path(),
+        Config::<StatusBar>::path(),
+        Config::<Dock>::path(),
+        Config::<Launcher>::path(),
+    ]
+    .map(|path| path.display().to_string())
+    .join("\n");
+
     Column::new(vec![
         boxed(setting(
             "Shell Settings",
             line(format!("version {}", env!("CARGO_PKG_VERSION"))),
         )),
-        boxed(setting(
-            "Settings file",
-            line(Config::<Appearance>::path().display().to_string()),
-        )),
+        boxed(setting("Settings files", line(files))),
         boxed(setting(
             "Overrides",
             line(String::from(

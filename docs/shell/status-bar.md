@@ -1,7 +1,7 @@
 # Status bar
 
-A bottom layer-shell bar (`src/components/status_bar/mod.rs`), full-width, anchored to the bottom
-on the `Top` layer with `Zone::Reserve`. Namespace `amane.status-bar`. The root is a rounded
+A layer-shell bar (`src/components/status_bar/mod.rs`), full-width, anchored to the bottom (or the
+top, see [Settings](#settings)) on the `Top` layer with `Zone::Reserve`. Namespace `amane.status-bar`. The root is a rounded
 `Rectangle` holding one `Row` justified `SpaceBetween`: workspaces on the left and the status
 cluster on the right. The bar is one uniform frosted strip, like macOS 27's toolbar: its layer
 rule frosts the whole surface in niri's `frost` material (no lens, square corners), and the bar
@@ -75,11 +75,31 @@ stay even.
 
 ## Status icons
 
-Volume, Bluetooth, network, Tailscale, Keep Awake and battery are optional. Each Quick Settings
-page that has one ends in a **Show in Status Bar** switch, and the `status-bar` IPC command does
-the same ([ipc.md](../integration/ipc.md#status-bar)). The hidden ones are kept in `$XDG_STATE_HOME/amane-shell/status-bar`,
-one per line (`indicators.rs`), and a missing file shows them all. Until that file exists, the
-old `taskbar` file is read instead.
+Volume, Bluetooth, network, Tailscale, Keep Awake and battery are optional, and so are three
+groups: `privacy` (screen sharing, camera, microphone), `status-icons` (Night Light, VPN, power
+mode, Airplane Mode) and `notifications` (the bell or the moon). Each Quick Settings page that has
+one ends in a **Show in Status Bar** switch; Shell Settings' Status Bar page has a switch for
+each, and the `status-bar` IPC command does the same ([ipc.md](../integration/ipc.md#status-bar)).
+The hidden ones' names are `hidden` in `status-bar.json` (`indicators.rs`), which the bar follows
+live. At start, a shell with no `status-bar.json` yet brings them over once from the state file
+they were kept in before (`$XDG_STATE_HOME/amane-shell/status-bar`, else the older `taskbar`).
+
+## Settings
+
+`~/.config/amane-shell/status-bar.json` (`amane_kit::settings::StatusBar`, Shell Settings' Status
+Bar page), followed live:
+
+| Field | Does |
+|---|---|
+| `position` | `bottom` or `top`. Quick Settings (`panel::popover_margin`, its anchor and its rise), the dock's gap, the widgets' canvas and gallery, and Do Not Disturb's menu follow `status_bar::edge()`; the notification center and toasts already keep clear of the reserved zone |
+| `style` | `frosted`: the layer rule's frost and `Material::Bar`'s tint. `glass`: one blur shape in `Material::Control`'s glass over the strip. `solid`: no blur, black in dark mode and white in light, not vibrant |
+| `clock_24h`, `clock_seconds` | the clock's format; `Clock` signals once a minute, or a second while seconds show |
+| `date_format` | the clock tooltip's day: `long` ("Sunday 25 October"), `short` ("Sun 25 Oct"), `numeric` (the locale's `%x`) |
+| `show_workspaces`, `scroll_workspaces` | the pips, and whether scrolling over them moves between workspaces |
+| `hidden` | the status icons left out (above) |
+
+Every style draws only rectangles and glyphs (the quad pipeline); the glass is niri's, not a
+shader.
 
 ## Shared pieces that live elsewhere
 

@@ -160,6 +160,9 @@ fn main() -> ExitCode {
 
     context_menu::register("file", menu);
 
+    // the bar's hidden icons, from the state file they were kept in before
+    status_bar::migrate();
+
     let mut app = App::new()
         .window(status_bar::bar)
         .window(quick_settings::surface)

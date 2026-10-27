@@ -3,14 +3,14 @@
 //! keys set for its actions.
 //! Each control changes `launcher.json`, which the shell follows at once.
 
-use amane::{Center, Column, Row, Text, Widget};
+use amane::{Column, Text, Widget};
 use amane_kit::buttons::{PushButton, Radio, Switch};
 use amane_kit::layout::boxed;
 use amane_kit::material::{self, Level};
 use amane_kit::settings::{AppsLayout, change_launcher, launcher};
 use amane_kit::tokens::{Styled, sys};
 
-use crate::setting;
+use crate::{labelled, setting};
 
 /// The sources the search draws on, by the ids the launcher knows them by.
 const PROVIDERS: [(&str, &str); 6] = [
@@ -138,18 +138,4 @@ pub fn page() -> Column {
         )),
     ])
     .gap(sys::space::gap::l())
-}
-
-/// `name` beside `control`, on one line.
-fn labelled(name: &str, control: impl Widget + 'static) -> Row {
-    Row::new(vec![
-        boxed(control),
-        boxed(
-            Text::new(name)
-                .style(sys::r#type::label())
-                .color(material::label(Level::Primary)),
-        ),
-    ])
-    .gap(sys::space::gap::m())
-    .align(Center)
 }

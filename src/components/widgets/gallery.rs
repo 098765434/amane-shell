@@ -12,7 +12,7 @@ use std::cell::{Cell, RefCell};
 
 use amane::{
     Animation, Blend, BlurShape, Center, Color, Key, Rectangle, Row, Size, Stack, Start, Text,
-    Widget, modifiers,
+    Vertical, Widget, modifiers,
 };
 
 use super::catalog;
@@ -28,6 +28,7 @@ use crate::components::list::{self, List, ListItem};
 use crate::components::material::{self, FillLevel, Level, Material};
 use crate::components::motion;
 use crate::components::search_field::SearchField;
+use crate::components::status_bar;
 use crate::components::text_edit::Field;
 use crate::tokens::{Styled, sys};
 
@@ -205,13 +206,19 @@ pub(super) fn tile_at(point: amane::Point) -> Option<(WidgetKind, Area, f32)> {
 }
 
 /// Where the sheet sits: centred at the bottom of the screen, over the
-/// bar's edge, no wider or taller than the screen allows.
+/// bar's edge when the bar is there, no wider or taller than the screen
+/// allows.
 fn place(geometry: &Geometry) -> Area {
     let width = WIDTH.min(geometry.width - 2.0 * MARGIN).max(1.0);
     let height = HEIGHT.min(geometry.height * 0.5).max(1.0);
+    let bar = if status_bar::edge() == Vertical::Bottom {
+        sys::size::panel::height()
+    } else {
+        0.0
+    };
     Area {
         x: ((geometry.width - width) / 2.0).round(),
-        y: (geometry.height - sys::size::panel::height() - MARGIN - height).round(),
+        y: (geometry.height - bar - MARGIN - height).round(),
         width,
         height,
     }

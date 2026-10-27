@@ -9,7 +9,7 @@ use std::cell::Cell;
 use amane::{Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Vertical, Zone, mark_all};
 
 use crate::components::material;
-use crate::components::{context_menu, launcher, notifications, quick_settings};
+use crate::components::{context_menu, launcher, notifications, quick_settings, status_bar};
 use crate::tokens::sys;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -95,13 +95,16 @@ pub(crate) fn dismissable(base: LayerWindow) -> LayerWindow {
     })
 }
 
-/// Where a bottom-right card sits: `gap.m` in from the right edge and above
-/// the bar.
+/// Where a card in the bar's right-hand corner sits: `gap.m` in from the
+/// right edge and clear of the bar, above it or below it.
 pub(crate) fn popover_margin() -> Margin {
+    let clear = (sys::size::panel::height() + sys::space::gap::m()) as i32;
+    let top = status_bar::edge() == Vertical::Top;
+
     Margin {
-        top: 0,
+        top: if top { clear } else { 0 },
         right: sys::space::gap::m() as i32,
-        bottom: (sys::size::panel::height() + sys::space::gap::m()) as i32,
+        bottom: if top { 0 } else { clear },
         left: 0,
     }
 }
