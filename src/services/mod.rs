@@ -12,6 +12,7 @@
 //! - [`connections`] — wired, VPN and hotspot (NetworkManager's `nmcli`).
 //! - [`privacy`] — what's using the microphone, the camera or the screen.
 //! - [`background_apps`] — apps running without a window (the portal).
+//! - [`bt_battery`] — a notification when a Bluetooth device runs low.
 //! - [`tailscale`] — the tailnet, its exit nodes and settings (the CLI).
 //! - [`keep_awake`] — the screen held on and the lid ignored (inhibitors).
 //! - [`clock`] — the wall-clock time and date the bar shows.
@@ -28,6 +29,7 @@
 //! [`Service`]: amane::Service
 
 pub mod background_apps;
+pub mod bt_battery;
 pub mod clipboard_history;
 pub mod clock;
 pub mod connections;

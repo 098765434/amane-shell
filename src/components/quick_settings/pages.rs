@@ -131,7 +131,7 @@ pub(super) fn available(page: Page) -> bool {
 pub(super) fn left(page: Page) {
     match page {
         Page::Wifi => network::left_wifi(),
-        Page::Bluetooth => bluetooth::stop_search(),
+        Page::Bluetooth => bluetooth::left(),
         _ => {}
     }
 }

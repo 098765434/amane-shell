@@ -80,6 +80,7 @@ pub struct DetailPage {
     body: Option<Body>,
     status_bar: Option<Indicator>,
     footer: Option<(String, Rc<dyn Fn()>)>,
+    back: Option<Rc<dyn Fn()>>,
 }
 
 impl DetailPage {
@@ -93,6 +94,7 @@ impl DetailPage {
             body: None,
             status_bar: None,
             footer: None,
+            back: None,
         }
     }
 
@@ -126,6 +128,13 @@ impl DetailPage {
         self
     }
 
+    /// What the back chevron does, for a page inside a page; back to the
+    /// grid by default.
+    pub fn on_back(mut self, back: impl Fn() + 'static) -> Self {
+        self.back = Some(Rc::new(back));
+        self
+    }
+
     /// The page, `height` tall, `reveal` of the way in (see the module docs).
     pub fn build(self, height: f32, reveal: f32) -> Column {
         let row = sys::size::row::height();
@@ -138,8 +147,9 @@ impl DetailPage {
         if self.switch.is_some() {
             text_w -= control_size::current().switch().width + gap_s;
         }
+        let on_back = self.back.unwrap_or_else(|| Rc::new(back));
         let mut bar = TopAppBar::new(self.title)
-            .back(format!("{}.back", self.id), back)
+            .back(format!("{}.back", self.id), move || on_back())
             .elide_to(text_w.max(1.0));
         if let Some(subtitle) = self.subtitle {
             bar = bar.subtitle(subtitle);

@@ -22,7 +22,7 @@ when the machine has what it drives, as in GNOME, and the grid packs around what
 | Control | Shows | Click | Page |
 |---|---|---|---|
 | Wi‑Fi | the network joined, "Connecting…", "Not Connected", "Off" or "Hardware switch off"; "<ssid> Hotspot" while the machine is one | the disc switches the radio (or stops the hotspot); the tile opens the page | the networks (rescanned every 15 s while shown; "Searching…" or "Wi‑Fi is off" while there are none), joining with a password; the page stays open and the row says "Connecting…" |
-| Bluetooth | the device connected, or how many | the disc switches the adapter; the tile opens the page | the device lists, searching while shown |
+| Bluetooth | the device connected, how many are, "Turning On…" or "Off" | the disc switches the adapter (lifting rfkill's soft block first); the tile opens the page | My Devices and Other Devices (named ones, the strongest first), searching and discoverable as this computer's name while shown; a row says "Connecting…", "Pairing…" or why it failed ("Not reachable"), else the battery and a check; a paired device's ⓘ or right click opens its own page (Connect, Battery, Connect Automatically, Name, kind and address, Forget This Device… with an alert); a pairing code to confirm, type or show sits under the list. Off, it says why: off, airplane mode or a hardware switch |
 | Airplane Mode | a round button (or a tile) | switches every radio | — |
 | Tailscale | a tile with Tailscale's mark (drawn, as the font hasn't got it), waiting in the window's Suggestions by default; "via <exit node>", this device's address, "Connecting…", "Not logged in", "Disconnected" or "Daemon not running"; hidden without the `tailscale` binary | the disc connects or disconnects (`tailscale up` / `down`), or logs in when logged out; the tile opens the page | what's wrong (no daemon; **Log In…**, which opens the browser once the control plane hands out the URL; no operator grant, with the command to copy; a failed change; tailscaled's own warnings), This Device (a click copies the address), Exit Node (None or a peer that offers itself; offline ones can't be picked), Accept Routes, Accept DNS and Block Incoming switches, and the tailnet's Devices, online first (a click copies the address); Show in Status Bar; Admin Console… |
 | VPN, Wired | tiles, waiting in the window's Suggestions by default; VPN says "Off", the tunnel that's up or how many are; Wired the connection or "Not Connected" | the disc switches; the VPN tile opens its page | VPN: a switch in the header for the preferred tunnel, and one per profile |
@@ -52,8 +52,14 @@ Now Playing is always there, saying "Not Playing" when nothing is, as on macOS; 
 follows GNOME's rule and hides without its hardware.
 
 A page's last row opens the app with the rest of its settings when that app is installed:
-`nm-connection-editor` for Wi‑Fi and VPN, `blueman-manager` for Bluetooth and `pavucontrol` for
-Sound.
+`nm-connection-editor` for Wi‑Fi and VPN and `pavucontrol` for Sound. Bluetooth has none: its
+page is the whole manager.
+
+A device that asks to pair while the Bluetooth page isn't showing asks through the shell's alert
+(`components/bluetooth_prompt.rs`): Pair or Cancel for a code to confirm, the code to type on a
+keyboard, and **Enter Code…**, which opens the page, for a code to type here. The shell is
+BlueZ's pairing agent (`Bluetooth::serve_agent`). A connected device's battery warns once at
+20 % and once at 10 % per connection (`services/bt_battery.rs`).
 
 The bar also shows GNOME's status icons, each only while it applies:
 

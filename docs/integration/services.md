@@ -78,7 +78,7 @@ backdrop readings in [`graphics/blur.md`](https://github.com/098765434/amane/blo
 | `Desktop`, `WorkspaceSwitch` | the widgets: frozen while the desktop is hidden, fading with a workspace switch |
 | `Notifications` | toasts and the notification center; amane owns `org.freedesktop.Notifications` ([`system/notifications.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md)) |
 | `Audio` | the bar's volume, the Sound card and page ([`system/audio.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/audio.md)) |
-| `Network`, `Bluetooth` | the bar's icons, the Wi‑Fi and Bluetooth tiles and pages |
+| `Network`, `Bluetooth` | the bar's icons, the Wi‑Fi and Bluetooth tiles and pages; `Bluetooth` also the pairing alert and the low-battery notices, and the shell serves its pairing agent |
 | `Battery`, `PowerProfile` | the bar's battery, the Battery page, power mode, the battery widgets ([`system/battery.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/battery.md), [`system/power-profile.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/power-profile.md)) |
 | `Brightness`, `Media` | the Display slider, Now Playing |
 | `Appearance` | the system's light/dark, accent, contrast and reduced motion (`amane_kit::theme`), Dark Style ([`system/appearance.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/appearance.md)) |

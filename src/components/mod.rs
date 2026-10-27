@@ -10,6 +10,7 @@
 
 pub mod alert;
 pub mod battery;
+pub mod bluetooth_prompt;
 pub mod context_menu;
 pub mod dock;
 pub mod grid;

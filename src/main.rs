@@ -82,6 +82,10 @@ fn main() -> ExitCode {
         return code;
     }
 
+    // the shell answers BlueZ's pairing questions, and warns of a device running low
+    amane::Bluetooth::serve_agent();
+    services::bt_battery::watch();
+
     let share = ContextMenu::new()
         .item(
             MenuItem::label("AirDrop")

@@ -48,6 +48,11 @@ pub fn show(alert: Dialog) {
     Alert::changed();
 }
 
+/// Whether the alert showing is the one named `name`.
+pub fn showing(name: &str) -> bool {
+    OPEN.get() && SHOWN.with_borrow(|shown| shown.as_ref().is_some_and(|a| a.name() == name))
+}
+
 /// Puts the alert away without an answer.
 pub fn close() {
     OPEN.set(false);
@@ -68,6 +73,8 @@ fn unfold(open: bool) -> f32 {
 
 /// The surface: hidden while no alert shows, else the card, swelling in.
 pub fn surface() -> LayerWindow {
+    // a device asking to pair asks here; reading Bluetooth for it wakes this view
+    crate::components::bluetooth_prompt::sync();
     Alert::watch();
     let open = OPEN.get();
     let unfolded = unfold(open);
