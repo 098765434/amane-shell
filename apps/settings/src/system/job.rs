@@ -154,6 +154,8 @@ pub enum Phase {
         generation: Option<u32>,
         /// The commit made, or why there's none.
         commit: Option<Result<String, String>>,
+        /// The packages this Apply added in Settings, now installed.
+        installed: Vec<String>,
     },
     Failed {
         stage: Stage,
@@ -817,6 +819,13 @@ fn finish(out: PathBuf, mode: Mode) {
     let target = BuildJob::read().target.clone();
 
     // the edits that went in, as a commit; a restore has none of its own.
+    // what it installs, before the commit makes it the last applied
+    let installed = if target.is_ours() {
+        super::apps::arriving(&Managed::read(), &Snapshot::read())
+    } else {
+        Vec::new()
+    };
+
     // An update puts its lock into the repo first, and commits that too.
     let commit = if mode.records() && target.is_ours() {
         let edits = {
@@ -867,6 +876,7 @@ fn finish(out: PathBuf, mode: Mode) {
     Repo::refresh();
     Running::refresh();
     Generations::refresh();
+    super::installed::Launchers::refresh();
     if target.is_ours() {
         Snapshot::refresh();
         Toplevel::refresh();
@@ -906,6 +916,7 @@ fn finish(out: PathBuf, mode: Mode) {
         mode,
         generation,
         commit,
+        installed,
     };
     job.then = None;
 }

@@ -242,6 +242,7 @@ How to set them:
 | `sys.size.popover.width / .height` | `sizing` | a popover's size; lists, segmented buttons and the search field default to its width |
 | `sys.size.list.max-height` | `sizing` | scrolling lists inside a popover |
 | `sys.size.row.height` | `sizing` | `round(40 * {sys.density.factor})` — list rows in popovers |
+| `sys.size.row.two-line-height` | `sizing` | `round(56 * {sys.density.factor})` — a row with supporting text |
 | `sys.size.row.trailing-width` | `sizing` | room a row keeps for its trailing content |
 | `sys.size.control.<variant>` | `sizing` | `round(<px> * {sys.density.factor})` — only for heights shared by two or more components |
 | `sys.size.control.<size>`, `sys.size.switch.<size>.*`, `sys.size.checkbox.<size>`, `sys.size.radio.<size>.dot`, `sys.size.slider.<size>.knob-*`, `sys.radius.control.<size>`, `sys.radius.checkbox.<size>` | `sizing`, `borderRadius` | the five control sizes `mini`, `small`, `medium`, `large`, `xl` (`control_size.rs`), after the macOS 27 kit |

@@ -44,16 +44,19 @@ taller than its content.
 
 ## List
 
-`ListItem::new(id, headline)` is a one-line M3 list item. It has a `.leading(glyph)` (or
-`.leading_tile(glyph)`, the glyph on a small accent tile, as a sidebar names its sections), the
+`ListItem::new(id, headline)` is a one-line M3 list item, or two-line with `.supporting(text)`
+(a caption under the headline, elided too; the row is `sys.size.row.two-line-height`). It has a `.leading(glyph)` (or
+`.leading_tile(glyph)`, the glyph on a small accent tile, as a sidebar names its sections, or
+`.leading_widget(…)`, any widget in its place, such as an app's `app_icon::entry_tile` at
+`list::leading_side()`), the
 headline (elided), and `.trailing(…)` items such as `list::check()`, a lock glyph, or
 `list::trailing_text(…)`. A `.selected(true)` item is filled `sys.color.state.selected` and its
 headline is full-strength. The rest read the secondary label, and `.color(…)`
 overrides that. With `.on_press` or `.on_secondary` it's clickable and shows the
 `sys.color.state.hover` layer, keyed by `id` like a button's. `.bare(true)` leaves out the
 secondary fill, for rows on a surface that reads as one piece (the Customize window's
-sidebar): only the selected and hover fills show. Supporting and overline text are the next M3
-slots to add when a list needs them.
+sidebar): only the selected and hover fills show. Overline text is the next M3 slot to add when
+a list needs it.
 
 `List::new(items)` stacks items `sys.space.gap.xs` apart, under an optional `.header(…)`
 caption, with an `.empty(…)` note while there are none.

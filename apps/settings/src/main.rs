@@ -82,16 +82,32 @@ fn page_named(name: &str) -> Option<usize> {
 
 /// The page named after `--page` in `args`, if any.
 fn page_arg(args: &[String]) -> Option<usize> {
+    flag(args, "--page").and_then(|name| page_named(&name))
+}
+
+/// `--name value` or `--name=value`.
+fn flag(args: &[String], name: &str) -> Option<String> {
     let mut args = args.iter();
     while let Some(arg) = args.next() {
-        if let Some(name) = arg.strip_prefix("--page=") {
-            return page_named(name);
+        if let Some(value) = arg
+            .strip_prefix(name)
+            .and_then(|rest| rest.strip_prefix('='))
+        {
+            return Some(value.to_string());
         }
-        if arg == "--page" {
-            return args.next().and_then(|name| page_named(name));
+        if arg == name {
+            return args.next().cloned();
         }
     }
     None
+}
+
+/// `--package <attr>`: the Apps page, with that nixpkgs package's details.
+fn package_arg(args: &[String]) {
+    if let Some(attr) = flag(args, "--package") {
+        Navigation::write().page = SYS_APPS;
+        system::package::Details::open(&attr);
+    }
 }
 
 fn main() {
@@ -99,6 +115,7 @@ fn main() {
     if let Some(page) = page_arg(&args) {
         Navigation::write().page = page;
     }
+    package_arg(&args);
     app("amane-settings")
         .normal_window("main", main_window)
         // launched again (Spotlight, a notification) while running: show that page
@@ -108,6 +125,7 @@ fn main() {
                 nav.page = page;
                 nav.overlay = None;
             }
+            package_arg(args);
         })
         .run();
 }
@@ -243,7 +261,13 @@ fn main_window() -> Window {
         _ => ("About", "settings.scroll.about", boxed(about::page())),
     };
 
-    // the changes or the log take the page's place; the log scrolls itself
+    // the changes, the log or a package take the page's place; the log
+    // scrolls itself
+    let package_title = if overlay == Some(Overlay::Package) {
+        system::package::title()
+    } else {
+        String::new()
+    };
     let (title, body): (&str, Box<dyn Widget>) = match overlay {
         Some(Overlay::Changes) => (
             "Changes",
@@ -257,6 +281,17 @@ fn main_window() -> Window {
             ),
         ),
         Some(Overlay::Log) => ("Build Log", boxed(apply_bar::log_view())),
+        Some(Overlay::Package) => (
+            package_title.as_str(),
+            boxed(
+                ScrollArea::new(
+                    "settings.scroll.package",
+                    Column::new(vec![boxed(system::package::view())]),
+                )
+                .width(Size::Parent)
+                .height(Size::Parent),
+            ),
+        ),
         None => (
             title,
             boxed(

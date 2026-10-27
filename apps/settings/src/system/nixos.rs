@@ -306,7 +306,7 @@ pub fn show_as(control: &Control, value: &Value) -> String {
     show(value)
 }
 
-fn strings(value: Option<&Value>) -> Vec<String> {
+pub(super) fn strings(value: Option<&Value>) -> Vec<String> {
     value
         .and_then(Value::as_array)
         .map(|items| {
@@ -436,6 +436,7 @@ pub struct Parsed {
     pub revision: Option<String>,
     pub host: Option<String>,
     pub system_packages: Vec<SystemPackage>,
+    pub missing_packages: Vec<String>,
 }
 
 pub fn parse_snapshot(json: &str) -> Result<Parsed, String> {
@@ -461,6 +462,7 @@ pub fn parse_snapshot(json: &str) -> Result<Parsed, String> {
             .and_then(Value::as_array)
             .map(|list| list.iter().filter_map(system_package).collect())
             .unwrap_or_default(),
+        missing_packages: strings(value.get("missingPackages")),
     })
 }
 
@@ -473,6 +475,9 @@ pub struct Snapshot {
     pub host: Option<String>,
     /// What the repo's files install system-wide.
     pub system_packages: Vec<SystemPackage>,
+    /// The packages added in Settings this nixpkgs doesn't have: the build
+    /// leaves them out, with a warning.
+    pub missing_packages: Vec<String>,
     pub error: Option<String>,
     pub loading: bool,
     pub taken: Option<Instant>,
@@ -488,6 +493,7 @@ impl Service for Snapshot {
             revision: None,
             host: None,
             system_packages: Vec::new(),
+            missing_packages: Vec::new(),
             error: None,
             loading: true,
             taken: None,
@@ -537,6 +543,7 @@ fn take(take_number: u64) {
             now.revision = parsed.revision;
             now.host = parsed.host;
             now.system_packages = parsed.system_packages;
+            now.missing_packages = parsed.missing_packages;
             now.error = None;
         }
         Err(error) => now.error = Some(error),
@@ -769,7 +776,8 @@ mod tests {
         {"control":"packages","default":[],"id":"packages","label":"Added in Settings","page":"apps",
          "path":["amane","packages"],"setIn":[],"tier":"rebuild","type":"list of string","value":[]}
     ],"host":"nixos-niri","revision":"5d056b8-dirty",
-    "systemPackages":[{"name":"foot","version":"1.2","file":"modules/apps.nix"}]}"#;
+    "systemPackages":[{"name":"foot","version":"1.2","file":"modules/apps.nix"}],
+    "missingPackages":["youtube-music"]}"#;
 
     fn snapshot() -> Snapshot {
         let parsed = parse_snapshot(SNAPSHOT).unwrap();
@@ -778,6 +786,7 @@ mod tests {
             revision: parsed.revision,
             host: parsed.host,
             system_packages: parsed.system_packages,
+            missing_packages: parsed.missing_packages,
             error: None,
             loading: false,
             taken: None,
@@ -817,6 +826,7 @@ mod tests {
         assert_eq!(show_as(&dim.control, &Value::from(0)), "Never");
         assert_eq!(show_as(&dim.control, &Value::from(7)), "7");
         assert_eq!(snapshot.system_packages[0].name, "foot");
+        assert_eq!(snapshot.missing_packages, ["youtube-music"]);
     }
 
     #[test]

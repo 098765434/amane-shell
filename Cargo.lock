@@ -55,6 +55,7 @@ dependencies = [
  "amane-kit",
  "chrono",
  "libc",
+ "serde",
  "serde_json",
 ]
 

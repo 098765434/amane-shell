@@ -14,8 +14,8 @@ Three files in the repo, and one flake output, are what Settings reads and write
 | `managed/settings.json` | the values Settings owns, `{ "timeZone": "Europe/Oslo", "openssh": true, "sshdOnDemand": true, "dimAfter": 180, "packages": ["ripgrep"], "bootEntries": 10, … }`. The one file Settings writes (whole, through a rename), and the one it commits (with `flake.lock` after an update). Hand edits are fine. |
 | `managed/registry.nix` | which settings may be there: a list of `{ id, path, page, label, control, tier, … }`. `path` is the NixOS option (`[ "services" "tailscale" "enable" ]`), `page` the Settings page that shows it (`about`, `general`, `services`, `power`, `apps`, `storage`, `update`), `control` how (`switch`; `int` with `min`/`max`; `choice` with `choices = [ { label; value; } … ]`; `timezone`; `text`, with `check` naming what Settings checks it against: `hostname`, `xkbLayout`, `xkbVariant` (`localectl list-x11-keymap-*`); `packages`, a list of attribute paths the Apps page draws), `tier` when it takes effect (`rebuild`, `restart`). A service entry may name its `unit` (`"sshd.service"`), `scope = "user"` for a user unit, and `onDemand`, the id of its "only when needed" switch. |
 | `modules/managed.nix` | turns each key in the file into an option definition (`lib.mkIf (settings ? id)`), so a missing key leaves the option to the other modules. Also ships the activation helper and its polkit action. |
-| `modules/options.nix` | the repo's own options for what has no option path of its own, so the registry can point at them: `amane.idle.{dimAfter,lockAfter,screenOffAfter}` (seconds, 0 = never) build hypridle's listener list; `amane.services.<unit>.onDemand` empties the unit's `wantedBy` (`mkIf` round `mkForce`, so an unset flag leaves the unit alone); `amane.packages` (dotted nixpkgs attribute paths) adds to `environment.systemPackages`; `amane.updates.check` (`daily`, `weekly`, `never`) is the scheduled check's timer (below). |
-| `amaneSettings` (flake output) | `nix eval --json .#amaneSettings`: `{ host, revision, entries, systemPackages }`, each entry the registry's fields plus `value` (effective), `default`, `type`, `description`, `setIn`, the repo files that define the option (`modules/managed.nix` when it's ours; empty when nothing sets it, since an option's default doesn't count), and `setAt`, `[ { file, line } ]` for each other repo file's definition, read off the module with `builtins.unsafeGetAttrPos` (empty when the module's shape hides it). `systemPackages` is what the repo's own files install, `{ name, version, file }` each. |
+| `modules/options.nix` | the repo's own options for what has no option path of its own, so the registry can point at them: `amane.idle.{dimAfter,lockAfter,screenOffAfter}` (seconds, 0 = never) build hypridle's listener list; `amane.services.<unit>.onDemand` empties the unit's `wantedBy` (`mkIf` round `mkForce`, so an unset flag leaves the unit alone); `amane.packages` (dotted nixpkgs attribute paths) adds to `environment.systemPackages`, leaving out (with a NixOS warning) one this nixpkgs doesn't have, or has only as an alias that throws, so a nixpkgs update that drops a package doesn't fail the build; `amane.missingPackages` (read-only) lists those; `amane.updates.check` (`daily`, `weekly`, `never`) is the scheduled check's timer (below). |
+| `amaneSettings` (flake output) | `nix eval --json .#amaneSettings`: `{ host, revision, entries, systemPackages }`, each entry the registry's fields plus `value` (effective), `default`, `type`, `description`, `setIn`, the repo files that define the option (`modules/managed.nix` when it's ours; empty when nothing sets it, since an option's default doesn't count), and `setAt`, `[ { file, line } ]` for each other repo file's definition, read off the module with `builtins.unsafeGetAttrPos` (empty when the module's shape hides it). `systemPackages` is what the repo's own files install, `{ name, version, file }` each; `missingPackages` is `amane.missingPackages`. |
 
 A setting another file sets (`setIn` has more than `modules/managed.nix`) shows **locked**, with
 the file and line: a value Settings wrote would clash with it or be overridden. `nix eval` sees
@@ -31,7 +31,11 @@ line with `# name is \`id\` in managed/settings.json (Shell Settings).`, writes 
 current value under `id` in `settings.json` (so nothing changes), and commits both at once as
 `move: Keyboard layout from configuration.nix`, revertable on its own. It refuses a file with
 uncommitted changes, or a line that changed since the snapshot. A list option (hypridle's
-listeners) is moved by hand: its definitions would merge, not override. `system/adopt.rs`.
+listeners) is moved by hand: its definitions would merge, not override. A package moves the
+same way from Apps' *Installed* list (**Move…**): the one line that lists it alone (`foot  #
+terminal`, or `pkgs.foot`) becomes `# foot is in \`packages\` in managed/settings.json (Shell
+Settings).`, the attribute joins `packages`, and the commit is `move: foot from
+modules/apps.nix`; `amane.packages` installs it the same, so nothing changes. `system/adopt.rs`.
 
 The repo's path and the `nixosConfigurations` attribute come from `nixos.json`
 (`repo`, `host`; `~/nixos-config` and `nixos-niri` unless set), editable on About This Computer.
@@ -126,9 +130,10 @@ configuration keeps `security.polkit.enable` and turns the niri flake's `niri-fl
 Some things on the System pages act at once and aren't part of the configuration: **Start** /
 **Stop** on Services (`systemctl [--user] start|stop <unit>`; systemd asks through polkit, and
 a restart puts the unit back to what the configuration says), Flatpak's **Uninstall…**
-(`flatpak uninstall -y --noninteractive <id>`), and the search behind **Add App**
-(`nix search --json --inputs-from <repo> nixpkgs <query>`, which reads the configuration's
-own nixpkgs and fills nix's evaluation cache the first time, for minutes).
+(`flatpak uninstall -y --noninteractive <id>`), and the catalog behind **Add App**
+(`nix search --json --inputs-from <repo> nixpkgs ^`, once per nixpkgs revision, which reads
+the configuration's own nixpkgs and fills nix's evaluation cache the first time, for minutes;
+`$XDG_CACHE_HOME/amane-shell/nixpkgs/<rev>.tsv`).
 
 ## "Up to date"
 

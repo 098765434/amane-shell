@@ -22,6 +22,8 @@ use crate::{Navigation, PAGE_WIDTH, note};
 pub enum Overlay {
     Changes,
     Log,
+    /// A package's details, from the Apps page.
+    Package,
 }
 
 fn button(id: &str, label: &str, style: Style, press: impl Fn() + 'static) -> Box<dyn Widget> {
@@ -167,9 +169,20 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
             mode,
             generation,
             commit,
+            installed,
         } => {
+            // new packages say what they are, and an app can be opened
+            let (arrived, app) = if installed.is_empty() {
+                (String::new(), None)
+            } else {
+                super::package::arrived(installed)
+            };
+            let gen_text = generation.map_or(String::new(), |n| format!(" · generation {n}"));
             let text = match (mode, commit) {
                 (Mode::Test, _) => String::from("Tried · Apply to keep it"),
+                (Mode::Switch, Some(Ok(_)) | None) if !arrived.is_empty() => {
+                    format!("Installed {arrived}{gen_text}")
+                }
                 (_, Some(Err(why))) => format!("Applied, but not committed: {why}"),
                 (_, Some(Ok(message))) => format!(
                     "Applied{} · {message}",
@@ -181,13 +194,18 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
                     generation.map_or(String::new(), |n| format!(" · generation {n}"))
                 ),
             };
-            (
-                boxed(line(text)),
-                vec![
-                    button("log", "Show Log", Style::Plain, show(Overlay::Log)),
-                    button("dismiss", "Dismiss", Style::Tonal, BuildJob::dismiss),
-                ],
-            )
+            let mut buttons = vec![button("log", "Show Log", Style::Plain, show(Overlay::Log))];
+            if let Some(app) = app.filter(|_| *mode == Mode::Switch) {
+                let label = format!("Open {}", app.name());
+                buttons.push(button("open", &label, Style::Tonal, move || app.launch()));
+            }
+            buttons.push(button(
+                "dismiss",
+                "Dismiss",
+                Style::Tonal,
+                BuildJob::dismiss,
+            ));
+            (boxed(line(text)), buttons)
         }
         Phase::Failed { stage, message } => (
             boxed(

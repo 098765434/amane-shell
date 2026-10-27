@@ -7,8 +7,9 @@
 //! optional section header. Drawn in the shell's look: each item is a
 //! rounded `surface.raised` row, filled `state.selected` when selected.
 //!
-//! Only one-line items for now; M3's supporting and overline text are the
-//! next slots to add when a list needs them.
+//! An item is one line, or two with supporting text under the headline
+//! (`sys.size.row.two-line-height`); M3's overline is the next slot to add
+//! when a list needs it.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -40,7 +41,10 @@ pub fn with_row_width<R>(width: f32, f: impl FnOnce() -> R) -> R {
 pub struct ListItem {
     id: String,
     headline: String,
+    supporting: Option<String>,
     leading: Option<char>,
+    // in place of the glyph: an app's icon
+    leading_widget: Option<Box<dyn Widget>>,
     // the leading glyph on an accent tile, as a sidebar names a section
     tile: bool,
     trailing: Vec<Box<dyn Widget>>,
@@ -56,7 +60,9 @@ impl ListItem {
         Self {
             id: id.into(),
             headline: headline.into(),
+            supporting: None,
             leading: None,
+            leading_widget: None,
             tile: false,
             trailing: Vec::new(),
             selected: false,
@@ -66,9 +72,23 @@ impl ListItem {
         }
     }
 
+    /// A second line under the headline, a caption: a package's
+    /// description, a device's address. The row grows to two lines.
+    pub fn supporting(mut self, text: impl Into<String>) -> Self {
+        self.supporting = Some(text.into()).filter(|text| !text.is_empty());
+        self
+    }
+
     /// A Material Symbols glyph before the headline.
     pub fn leading(mut self, glyph: char) -> Self {
         self.leading = Some(glyph);
+        self
+    }
+
+    /// Any widget before the headline, in the glyph's place: an app's icon
+    /// ([`crate::app_icon::entry_tile`]) at [`leading_side`].
+    pub fn leading_widget(mut self, widget: impl Widget + 'static) -> Self {
+        self.leading_widget = Some(boxed(widget));
         self
     }
 
@@ -128,9 +148,11 @@ impl ListItem {
         let headline_w = (row_w - sys::size::row::trailing_width()).max(1.0);
 
         let mut leading = Vec::new();
-        if let Some(glyph) = self.leading {
+        if let Some(widget) = self.leading_widget {
+            leading.push(widget);
+        } else if let Some(glyph) = self.leading {
             if self.tile {
-                let side = sys::size::icon::m() + sys::space::gap::xs() * 2.0;
+                let side = leading_side();
                 leading.push(boxed(
                     Rectangle::new()
                         .width(Size::Fixed(side))
@@ -144,13 +166,36 @@ impl ListItem {
                 leading.push(boxed(icon(glyph, sys::size::icon::m(), color)));
             }
         }
-        leading.push(boxed(clipped_label(
+        let headline = clipped_label(
             self.headline,
             sys::r#type::label(),
             color,
             headline_w,
             Start,
-        )));
+        );
+        let height = match self.supporting {
+            None => {
+                leading.push(boxed(headline));
+                sys::size::row::height()
+            }
+            Some(supporting) => {
+                let line = sys::size::row::two_line_height() / 2.0 - sys::space::gap::xs();
+                leading.push(boxed(Column::new(vec![
+                    boxed(Row::new(vec![boxed(headline)]).height(Size::Fixed(line))),
+                    boxed(
+                        Row::new(vec![boxed(clipped_label(
+                            supporting,
+                            sys::r#type::caption(),
+                            material::label(Level::Secondary),
+                            headline_w,
+                            Start,
+                        ))])
+                        .height(Size::Fixed(line)),
+                    ),
+                ])));
+                sys::size::row::two_line_height()
+            }
+        };
         let content = split_row(
             Row::new(leading).gap(sys::space::gap::m()).align(Center),
             self.trailing,
@@ -172,7 +217,7 @@ impl ListItem {
 
         let row = Rectangle::new()
             .width(Parent)
-            .height(Size::Fixed(sys::size::row::height()))
+            .height(Size::Fixed(height))
             .radius(sys::radius::raised())
             .fill(fill)
             .padding(pad(sys::space::inset::l(), 0.0))
@@ -186,6 +231,11 @@ impl ListItem {
             row
         }
     }
+}
+
+/// How big a leading tile is: an accent glyph tile, or an app's icon.
+pub fn leading_side() -> f32 {
+    sys::size::icon::m() + sys::space::gap::xs() * 2.0
 }
 
 /// The accent check a selected item ends with.

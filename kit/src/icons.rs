@@ -138,6 +138,8 @@ pub const ICON_UPDATE: char = '\u{e923}';
 pub const ICON_DNS: char = '\u{e875}';
 /// `deployed_code`: a package.
 pub const ICON_PACKAGE: char = '\u{f720}';
+/// `terminal`: a command-line tool.
+pub const ICON_TERMINAL: char = '\u{eb8e}';
 pub const ICON_TIMER: char = '\u{e425}';
 pub const ICON_DESCRIPTION: char = '\u{e873}';
 

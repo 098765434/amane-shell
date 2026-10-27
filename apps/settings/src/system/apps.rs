@@ -1,29 +1,37 @@
-//! Apps: what's installed system-wide. Packages added here go into
-//! `managed/settings.json` (`packages`, nixpkgs attribute paths) and wait
-//! for Apply; the ones the repo's `.nix` files list are shown as they are;
-//! Flatpaks are listed from `flatpak list`, with Uninstall.
+//! Apps: finding packages and what's installed system-wide. Packages added
+//! here go into `managed/settings.json` (`packages`, nixpkgs attribute
+//! paths) and wait for Apply; the search reads the nixpkgs catalog
+//! ([`super::catalog`]), or asks `nix search` while there's none; what's
+//! installed, from Settings, the repo's `.nix` files and Flatpak, is one
+//! list ([`super::inventory`]).
 
-use std::collections::BTreeMap;
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use amane::{Center, Column, Row, Service, Size, TextInput, Widget};
-use amane_kit::app::{Dialog, field_box, text_field};
+use amane::{Apps, Center, Column, DesktopApp, Rectangle, Row, Service, Size, TextInput, Widget};
+use amane_kit::app::{field_box, text_field};
+use amane_kit::app_icon::entry_tile;
 use amane_kit::buttons::{PushButton, Style};
-use amane_kit::layout::boxed;
-use amane_kit::list::{List, ListItem, trailing_text, with_row_width};
+use amane_kit::icons::ICON_PACKAGE;
+use amane_kit::layout::{boxed, icon};
+use amane_kit::list::{List, ListItem, leading_side, with_row_width};
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::sys;
 use serde_json::Value;
 
+use super::catalog::{self, Catalog, Named};
 use super::controls::{self, Feedback};
-use super::nixos::{Entry, MANAGED_MODULE, Managed, Snapshot, failure, repo, run};
+use super::installed::Launchers;
+use super::inventory::{self, FileAttrs};
+use super::nixos::{Entry, Managed, Snapshot, failure, repo, run, strings};
+use super::package::Details;
 use crate::{PAGE_WIDTH, note, setting};
 
 /// The registry id of the list of added packages.
-const PACKAGES: &str = "packages";
+pub const PACKAGES: &str = "packages";
 
 /// The search field, which keeps its text under this id.
 const SEARCH: &str = "settings.system.apps.search";
@@ -32,7 +40,10 @@ const SEARCH: &str = "settings.system.apps.search";
 const SLOW: Duration = Duration::from_secs(3);
 
 /// How many results show.
-const RESULTS: usize = 50;
+pub const RESULTS: usize = 50;
+
+/// How long typing pauses before the search runs.
+const PAUSE: Duration = Duration::from_millis(150);
 
 // ───── nixpkgs search ────────────────────────────────────────────────────────
 
@@ -40,29 +51,40 @@ const RESULTS: usize = 50;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Found {
     pub attr: String,
+    pub pname: String,
     pub version: String,
     pub description: String,
 }
 
-/// The last search: its query, results, and whether it's still running.
+/// The last search: its query, results (the first [`RESULTS`] of `total`),
+/// whether it's still running, and what was typed meanwhile.
 pub struct Search {
     pub query: String,
     pub results: Vec<Found>,
+    pub total: usize,
     pub running: bool,
     pub started: Option<Instant>,
     pub error: Option<String>,
+    // typed while the catalog is built or a slow search fills nix's cache,
+    // run after it
+    pub queued: Option<String>,
 }
 
 static SEARCH_CHILD: Mutex<Option<Child>> = Mutex::new(None);
+
+// the latest keystroke, so a pause that's been typed over doesn't search
+static TYPED: AtomicU64 = AtomicU64::new(0);
 
 impl Service for Search {
     fn new() -> Self {
         Self {
             query: String::new(),
             results: Vec::new(),
+            total: 0,
             running: false,
             started: None,
             error: None,
+            queued: None,
         }
     }
 
@@ -70,8 +92,8 @@ impl Service for Search {
 }
 
 /// `nix search --json` output: `legacyPackages.<system>.<attr>` to
-/// `{pname, version, description}`; shortest attribute paths first.
-pub fn parse_search(json: &str) -> Result<Vec<Found>, String> {
+/// `{pname, version, description}`, best match for `query` first.
+pub fn parse_search(json: &str, query: &str) -> Result<Vec<Found>, String> {
     let value: Value = serde_json::from_str(json).map_err(|e| e.to_string())?;
     let map = value.as_object().ok_or("not an object")?;
     let mut found: Vec<Found> = map
@@ -83,36 +105,175 @@ pub fn parse_search(json: &str) -> Result<Vec<Found>, String> {
                     .unwrap_or_default()
                     .to_string()
             };
-            // past "legacyPackages.x86_64-linux."
-            let attr = key
-                .strip_prefix("legacyPackages.")
-                .and_then(|rest| rest.split_once('.'))
-                .map_or(key.as_str(), |(_, attr)| attr);
             Found {
-                attr: attr.to_string(),
+                attr: attr_of(key).to_string(),
+                pname: text("pname"),
                 version: text("version"),
                 description: text("description").lines().next().unwrap_or("").to_string(),
             }
         })
         .collect();
-    found.sort_by(|a, b| (a.attr.len(), &a.attr).cmp(&(b.attr.len(), &b.attr)));
-    found.truncate(RESULTS);
+    found.sort_by_cached_key(|found| rank(found, query));
     Ok(found)
 }
 
+/// A `nix search` key's attribute path, past "legacyPackages.x86_64-linux.".
+pub fn attr_of(key: &str) -> &str {
+    key.strip_prefix("legacyPackages.")
+        .and_then(|rest| rest.split_once('.'))
+        .map_or(key, |(_, attr)| attr)
+}
+
+/// How well a package matches: top-level packages before the ones in a set
+/// (`python3Packages.…`) unless the query names a set; then the name equal
+/// to the query, starting with it, containing it, and last a match only in
+/// the description; then shorter attribute paths.
+pub fn rank(found: &Found, query: &str) -> (bool, u8, usize, String) {
+    let query = query.to_lowercase();
+    let name = found
+        .attr
+        .rsplit('.')
+        .next()
+        .unwrap_or(&found.attr)
+        .to_lowercase();
+    let pname = found.pname.to_lowercase();
+    let names = [name.as_str(), pname.as_str()];
+    let tier = if names.contains(&query.as_str()) {
+        0
+    } else if names.iter().any(|n| n.starts_with(&query)) {
+        1
+    } else if names.iter().any(|n| n.contains(&query)) {
+        2
+    } else {
+        3
+    };
+    let in_set = found.attr.contains('.') && !query.contains('.');
+    (in_set, tier, found.attr.len(), found.attr.clone())
+}
+
+/// Whether a package is on the system already: added here, or installed by
+/// a `.nix` file under the same name (only a top-level package can be,
+/// there).
+pub fn present(attr: &str, pname: &str, added: &[String], installed: &[&str]) -> bool {
+    added.iter().any(|a| a == attr) || (!attr.contains('.') && installed.contains(&pname))
+}
+
 impl Search {
-    /// Searches the configuration's nixpkgs for what the field says.
+    /// Searches the configuration's nixpkgs for what the field says, now.
     pub fn run() {
-        let query = TextInput::text(SEARCH).trim().to_string();
+        Self::search(TextInput::text(SEARCH).trim().to_string());
+    }
+
+    /// The field changed: search once typing pauses. A search filling nix's
+    /// cache isn't cut short (that would start the minutes over); what was
+    /// typed runs after it.
+    pub fn typed(text: String) {
+        let query = text.trim().to_string();
+        let mine = TYPED.fetch_add(1, Ordering::Relaxed) + 1;
+        thread::spawn(move || {
+            thread::sleep(PAUSE);
+            if TYPED.load(Ordering::Relaxed) != mine {
+                return;
+            }
+            if query.chars().count() < 2 {
+                let mut now = Self::write();
+                if now.running {
+                    now.queued = None;
+                    now.quiet();
+                } else {
+                    *now = Self::new();
+                }
+                return;
+            }
+            {
+                let mut now = Self::write();
+                if now.query == query && (now.running || now.error.is_none()) {
+                    now.quiet();
+                    return;
+                }
+                if now.running && now.started.is_some_and(|at| at.elapsed() >= SLOW) {
+                    now.queued = Some(query);
+                    return;
+                }
+            }
+            Self::search(query);
+        });
+    }
+
+    /// The catalog is ready, or failed: runs what was typed meanwhile.
+    pub fn resume() {
+        let queued = {
+            let mut now = Self::write();
+            let queued = now.queued.take();
+            if queued.is_none() {
+                now.quiet();
+            }
+            queued
+        };
+        if let Some(query) = queued {
+            Self::search(query);
+        }
+    }
+
+    fn search(query: String) {
         if query.chars().count() < 2 {
             return;
         }
+        Catalog::ensure();
+        let (file, failed) = {
+            let catalog = Catalog::read();
+            (catalog.file(), catalog.error.is_some())
+        };
+        match file {
+            Some(file) => Self::in_catalog(query, file),
+            // until the catalog's there, or when it can't be built
+            None if failed => Self::with_nix(query),
+            None => {
+                let mut now = Self::write();
+                now.query = query.clone();
+                now.running = false;
+                now.error = None;
+                now.queued = Some(query);
+            }
+        }
+    }
+
+    fn in_catalog(query: String, file: std::path::PathBuf) {
         {
             let mut now = Self::write();
             now.query = query.clone();
             now.running = true;
             now.started = Some(Instant::now());
             now.error = None;
+            now.queued = None;
+        }
+        thread::spawn(move || {
+            let result = catalog::find(&file, &query);
+            let mut now = Self::write();
+            if now.query != query {
+                now.quiet();
+                return;
+            }
+            now.running = false;
+            match result {
+                Ok((results, total)) => {
+                    now.results = results;
+                    now.total = total;
+                }
+                Err(error) => now.error = Some(error),
+            }
+        });
+    }
+
+    /// `nix search` for the query, when there's no catalog to read.
+    fn with_nix(query: String) {
+        {
+            let mut now = Self::write();
+            now.query = query.clone();
+            now.running = true;
+            now.started = Some(Instant::now());
+            now.error = None;
+            now.queued = None;
         }
         // a search still running is for an older query
         if let Some(mut old) = SEARCH_CHILD
@@ -150,7 +311,7 @@ impl Search {
                         .take();
                     match child.map(Child::wait_with_output) {
                         Some(Ok(output)) if output.status.success() => {
-                            parse_search(&String::from_utf8_lossy(&output.stdout))
+                            parse_search(&String::from_utf8_lossy(&output.stdout), &query)
                         }
                         // nix says "no results" by exiting 1
                         Some(Ok(output))
@@ -171,15 +332,25 @@ impl Search {
                 Err(error) => Err(format!("nix: {error}")),
             };
 
-            let mut now = Self::write();
-            if now.query != query {
-                now.quiet();
-                return;
-            }
-            now.running = false;
-            match result {
-                Ok(results) => now.results = results,
-                Err(error) => now.error = Some(error),
+            let next = {
+                let mut now = Self::write();
+                if now.query != query {
+                    now.quiet();
+                    return;
+                }
+                now.running = false;
+                match result {
+                    Ok(mut results) => {
+                        now.total = results.len();
+                        results.truncate(RESULTS);
+                        now.results = results;
+                    }
+                    Err(error) => now.error = Some(error),
+                }
+                now.queued.take().filter(|next| *next != query)
+            };
+            if let Some(next) = next {
+                Self::search(next);
             }
         });
     }
@@ -295,7 +466,7 @@ impl Service for Removal {
     fn listen() {}
 }
 
-fn uninstall(id: String) {
+pub fn uninstall(id: String) {
     {
         let mut now = Removal::write();
         if now.busy.is_some() {
@@ -326,7 +497,7 @@ fn uninstall(id: String) {
 // ───── the page ──────────────────────────────────────────────────────────────
 
 /// Writes the list with `name` added or taken out.
-fn change_packages(entry: &Entry, managed: &Managed, name: &str, add: bool) {
+pub fn change_packages(entry: &Entry, managed: &Managed, name: &str, add: bool) {
     let mut names = managed.list(&entry.id, &entry.value);
     names.retain(|n| n != name);
     if add {
@@ -338,40 +509,93 @@ fn change_packages(entry: &Entry, managed: &Managed, name: &str, add: bool) {
     );
 }
 
-fn added_section(entry: Option<&Entry>, managed: &Managed, feedback: &Feedback) -> Box<dyn Widget> {
-    let Some(entry) = entry else {
-        return boxed(setting(
-            "Added in Settings",
-            note("The registry has no `packages` entry: nothing can be added from here."),
-        ));
-    };
-    let names = managed.list(&entry.id, &entry.value);
-    let items: Vec<ListItem> = names
+/// Where an added package stands against what was last applied.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Standing {
+    Installed,
+    Adding,
+    Removing,
+}
+
+/// The packages added here, and the ones a pending change takes out, each
+/// with where it stands: the list on disk against HEAD's (what Apply last
+/// committed).
+pub fn standings(current: &[String], committed: &[String]) -> Vec<(String, Standing)> {
+    let mut rows: Vec<(String, Standing)> = current
         .iter()
         .map(|name| {
-            let (e, m, n) = (entry.clone(), managed.clone(), name.clone());
-            ListItem::new(format!("settings.apps.added.{name}"), name)
-                .bare(true)
-                .trailing(
-                    PushButton::new(format!("settings.apps.remove.{name}"), "Remove")
-                        .style(Style::Plain)
-                        .disabled(!entry.managed())
-                        .on_press(move || change_packages(&e, &m, &n, false))
-                        .build(),
-                )
+            let standing = if committed.contains(name) {
+                Standing::Installed
+            } else {
+                Standing::Adding
+            };
+            (name.clone(), standing)
         })
         .collect();
+    rows.extend(
+        committed
+            .iter()
+            .filter(|name| !current.contains(name))
+            .map(|name| (name.clone(), Standing::Removing)),
+    );
+    rows
+}
 
-    let mut lines: Vec<Box<dyn Widget>> = vec![boxed(
-        List::new(items)
-            .empty("Nothing added here yet: search below.")
-            .build(),
-    )];
-    lines.extend(controls::notes(entry, managed, feedback));
-    boxed(setting(
-        &entry.label,
-        Column::new(lines).gap(sys::space::gap::xs()),
-    ))
+/// The packages added here since the last Apply: what an Apply now installs.
+pub fn arriving(managed: &Managed, snapshot: &Snapshot) -> Vec<String> {
+    let Some(entry) = snapshot.entry(PACKAGES) else {
+        return Vec::new();
+    };
+    let current = managed.list(&entry.id, &entry.value);
+    let committed = strings(managed.committed.get(&entry.id));
+    standings(&current, &committed)
+        .into_iter()
+        .filter(|(_, standing)| *standing == Standing::Adding)
+        .map(|(attr, _)| attr)
+        .collect()
+}
+
+/// Where one package stands, when it's added here or a pending change takes
+/// it out.
+pub fn standing(attr: &str, managed: &Managed, entry: Option<&Entry>) -> Option<Standing> {
+    let entry = entry?;
+    let current = managed.list(&entry.id, &entry.value);
+    let committed = strings(managed.committed.get(&entry.id));
+    standings(&current, &committed)
+        .into_iter()
+        .find(|(name, _)| name == attr)
+        .map(|(_, standing)| standing)
+}
+
+/// What draws the rows: the installed apps, and what the catalog knows of the
+/// packages added here.
+pub struct Looks<'a> {
+    pub launchers: &'a Launchers,
+    pub apps: &'a Apps,
+    pub named: &'a Named,
+}
+
+impl Looks<'_> {
+    pub fn app(&self, pname: &str, version: &str) -> Option<DesktopApp> {
+        self.launchers.app(self.apps, pname, version)
+    }
+}
+
+/// A row's leading tile: the app's icon, else a package glyph the same size.
+pub fn leading(app: Option<&DesktopApp>) -> Rectangle {
+    let side = leading_side();
+    match app {
+        Some(app) => entry_tile(app, side),
+        None => Rectangle::new()
+            .width(Size::Fixed(side))
+            .height(Size::Fixed(side))
+            .align_child(Center, Center)
+            .child(icon(
+                ICON_PACKAGE,
+                sys::size::icon::m(),
+                material::label(Level::Tertiary),
+            )),
+    }
 }
 
 fn search_section(
@@ -379,8 +603,18 @@ fn search_section(
     managed: &Managed,
     snapshot: &Snapshot,
     search: &Search,
+    catalog: &Catalog,
+    looks: &Looks,
+    checking: Option<&str>,
 ) -> Box<dyn Widget> {
-    let field = text_field(SEARCH, "Search nixpkgs…").on_submit(|_| Search::run());
+    let placeholder = if catalog.ready {
+        format!("Search {} packages…", thousands(catalog.count))
+    } else {
+        String::from("Search nixpkgs…")
+    };
+    let field = text_field(SEARCH, &placeholder)
+        .on_change(Search::typed)
+        .on_submit(|_| Search::run());
     let mut lines: Vec<Box<dyn Widget>> = vec![boxed(
         Row::new(vec![
             boxed(field_box(SEARCH, field, 240.0)),
@@ -395,7 +629,24 @@ fn search_section(
         .align(Center),
     )];
 
-    if search.running {
+    if let Some(since) = catalog.building {
+        let secs = since.elapsed().as_secs();
+        lines.push(boxed(note(format!(
+            "Preparing the app catalog… {}:{:02}. Once per nixpkgs update; the first can take a few minutes.",
+            secs / 60,
+            secs % 60
+        ))));
+    } else if let Some(error) = &catalog.error {
+        lines.push(boxed(
+            note(format!(
+                "Searching with nix: the catalog couldn't be built. {error}"
+            ))
+            .color(sys::color::status::critical::text()),
+        ));
+    }
+
+    // the catalog answers at once, so the last results stay until it has
+    if search.running && !catalog.ready {
         let slow = search.started.is_some_and(|at| at.elapsed() >= SLOW);
         lines.push(boxed(note(if slow {
             "Building the search index… the first search after an update takes a few minutes."
@@ -406,8 +657,8 @@ fn search_section(
         lines.push(boxed(
             note(error.clone()).color(sys::color::status::critical::text()),
         ));
-    } else if !search.query.is_empty() {
-        let have: Vec<String> = entry
+    } else if !search.query.is_empty() && search.queued.is_none() {
+        let added: Vec<String> = entry
             .map(|e| managed.list(&e.id, &e.value))
             .unwrap_or_default();
         let installed: Vec<&str> = snapshot
@@ -419,30 +670,45 @@ fn search_section(
             .results
             .iter()
             .map(|found| {
-                let last = found.attr.rsplit('.').next().unwrap_or(&found.attr);
-                let there = have.contains(&found.attr) || installed.contains(&last);
-                let mut headline = found.attr.clone();
+                let there = present(&found.attr, &found.pname, &added, &installed);
+                let app = there
+                    .then(|| looks.app(&found.pname, &found.version))
+                    .flatten();
+                let mut headline = app.as_ref().map_or(found.attr.clone(), |app| {
+                    format!("{} ({})", app.name(), found.attr)
+                });
                 if !found.version.is_empty() {
                     headline.push_str(&format!(" · {}", found.version));
                 }
-                if !found.description.is_empty() {
-                    headline.push_str(&format!(" — {}", found.description));
-                }
-                let attr = found.attr.clone();
-                let (e, m) = (entry.cloned(), managed.clone());
+                let mine = checking == Some(found.attr.as_str());
+                let (attr, open) = (found.attr.clone(), found.attr.clone());
+                let e = entry.cloned();
                 ListItem::new(format!("settings.apps.found.{}", found.attr), headline)
+                    .leading_widget(leading(app.as_ref()))
+                    .supporting(found.description.clone())
                     .bare(true)
+                    .on_press(move || Details::open(&open))
                     .trailing(
                         PushButton::new(
                             format!("settings.apps.add.{}", found.attr),
-                            if there { "Added" } else { "Add" },
+                            if there {
+                                "Added"
+                            } else if mine {
+                                "Checking…"
+                            } else {
+                                "Add"
+                            },
                         )
                         .style(Style::Tonal)
-                        .disabled(there || entry.is_none_or(|e| !e.managed()))
+                        .disabled(there || checking.is_some() || entry.is_none_or(|e| !e.managed()))
                         .on_press(move || {
-                            if let Some(e) = &e {
-                                change_packages(e, &m, &attr, true);
-                            }
+                            let Some(e) = e.clone() else { return };
+                            let attr2 = attr.clone();
+                            // what it'd build, read first; added as the list is then
+                            Details::check_then_add(&attr, move || {
+                                let managed = Managed::read().clone();
+                                change_packages(&e, &managed, &attr2, true);
+                            });
                         })
                         .build(),
                     )
@@ -450,9 +716,20 @@ fn search_section(
             .collect();
         lines.push(boxed(
             List::new(items)
-                .empty(format!("Nothing in nixpkgs matches \"{}\".", search.query))
+                .empty(if search.running {
+                    String::from("Searching…")
+                } else {
+                    format!("Nothing in nixpkgs matches \"{}\".", search.query)
+                })
                 .build(),
         ));
+        if search.total > search.results.len() {
+            lines.push(boxed(note(format!(
+                "The best {} of {} matches: type more to narrow them down.",
+                search.results.len(),
+                search.total
+            ))));
+        }
     }
 
     boxed(setting(
@@ -461,106 +738,17 @@ fn search_section(
     ))
 }
 
-fn system_sections(snapshot: &Snapshot) -> Vec<Box<dyn Widget>> {
-    // by the file that lists them; ours are shown above
-    let mut by_file: BTreeMap<&str, Vec<&super::nixos::SystemPackage>> = BTreeMap::new();
-    for package in &snapshot.system_packages {
-        if package.file == MANAGED_MODULE || package.file == "modules/options.nix" {
-            continue;
+/// 108517 as "108,517".
+fn thousands(n: usize) -> String {
+    let digits = n.to_string();
+    let mut out = String::new();
+    for (i, digit) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+            out.push(',');
         }
-        by_file
-            .entry(package.file.as_str())
-            .or_default()
-            .push(package);
+        out.push(digit);
     }
-
-    // apps.nix, the one that's meant for apps, first
-    let mut files: Vec<_> = by_file.into_iter().collect();
-    files.sort_by_key(|(file, _)| (*file != "modules/apps.nix", *file));
-
-    files
-        .into_iter()
-        .map(|(file, packages)| {
-            let mut packages = packages;
-            packages.sort_by(|a, b| a.name.cmp(&b.name));
-            let items: Vec<ListItem> = packages
-                .iter()
-                .enumerate()
-                .map(|(i, p)| {
-                    ListItem::new(format!("settings.apps.system.{file}.{i}"), &p.name)
-                        .bare(true)
-                        .trailing(trailing_text(
-                            p.version.clone(),
-                            material::label(Level::Secondary),
-                        ))
-                })
-                .collect();
-            boxed(setting(
-                &format!("In {file}"),
-                Column::new(vec![
-                    boxed(List::new(items).build()),
-                    boxed(note(format!(
-                        "Listed in {file}: change them there, then Apply."
-                    ))),
-                ])
-                .gap(sys::space::gap::xs()),
-            ))
-        })
-        .collect()
-}
-
-fn flatpak_section(flatpaks: &Flatpaks, removal: &Removal) -> Option<Box<dyn Widget>> {
-    if !flatpaks.available {
-        return None;
-    }
-    let items: Vec<ListItem> = flatpaks
-        .apps
-        .iter()
-        .map(|app| {
-            let (id, name) = (app.id.clone(), app.name.clone());
-            let busy = removal.busy.as_deref() == Some(app.id.as_str());
-            ListItem::new(
-                format!("settings.apps.flatpak.{}", app.id),
-                format!("{} · {} · {}", app.name, app.version, app.origin),
-            )
-            .bare(true)
-            .trailing(
-                PushButton::new(
-                    format!("settings.apps.uninstall.{}", app.id),
-                    if busy { "Removing…" } else { "Uninstall…" },
-                )
-                .style(Style::Plain)
-                .disabled(removal.busy.is_some())
-                .on_press(move || {
-                    let id = id.clone();
-                    Dialog::new(
-                        "settings.apps.uninstall-dialog",
-                        format!("Uninstall {name}?"),
-                    )
-                    .message("Its data in ~/.var/app stays until you delete it.")
-                    .button("Cancel", || {})
-                    .destructive("Uninstall", move || uninstall(id.clone()))
-                    .open("main");
-                })
-                .build(),
-            )
-        })
-        .collect();
-
-    let mut lines: Vec<Box<dyn Widget>> =
-        vec![boxed(List::new(items).empty("No Flatpak apps.").build())];
-    if let Some(error) = removal.error.as_ref().or(flatpaks.error.as_ref()) {
-        lines.push(boxed(
-            note(error.clone()).color(sys::color::status::critical::text()),
-        ));
-    }
-    lines.push(boxed(note(
-        "Installed with `flatpak install`, outside the configuration.",
-    )));
-    Some(boxed(setting(
-        "Flatpak",
-        Column::new(lines).gap(sys::space::gap::xs()),
-    )))
+    out
 }
 
 pub fn page() -> Column {
@@ -568,17 +756,36 @@ pub fn page() -> Column {
     let managed = Managed::read();
     let feedback = Feedback::read();
     let search = Search::read();
-    let flatpaks = Flatpaks::read();
-    let removal = Removal::read();
+    Catalog::ensure();
+    let catalog = Catalog::read();
+    let details = Details::read();
+    let (launchers, apps, named) = (Launchers::read(), Apps::read(), Named::read());
     let entry = snapshot.entry(PACKAGES);
+    if let (Some(file), Some(entry)) = (catalog.file(), entry) {
+        Named::ensure(file, managed.list(&entry.id, &entry.value));
+    }
+    if let Some(file) = catalog.file() {
+        FileAttrs::ensure(file, &snapshot);
+    }
+    let looks = Looks {
+        launchers: &launchers,
+        apps: &apps,
+        named: &named,
+    };
 
     with_row_width(PAGE_WIDTH, || {
-        let mut parts: Vec<Box<dyn Widget>> = vec![
-            added_section(entry, &managed, &feedback),
-            search_section(entry, &managed, &snapshot, &search),
+        let parts: Vec<Box<dyn Widget>> = vec![
+            search_section(
+                entry,
+                &managed,
+                &snapshot,
+                &search,
+                &catalog,
+                &looks,
+                details.checking.as_deref(),
+            ),
+            inventory::section(entry, &managed, &feedback, &snapshot, &looks),
         ];
-        parts.extend(system_sections(&snapshot));
-        parts.extend(flatpak_section(&flatpaks, &removal));
 
         Column::new(parts)
             .gap(sys::space::gap::l())
@@ -591,14 +798,91 @@ mod tests {
     use super::*;
 
     #[test]
-    fn search_results_are_named_by_attribute_shortest_first() {
+    fn search_results_are_named_by_attribute_top_level_first() {
         let json = r#"{"legacyPackages.x86_64-linux.bat-extras.batgrep":{"description":"Quickly search","pname":"batgrep","version":"2024"},
             "legacyPackages.x86_64-linux.ripgrep":{"description":"Fast grep\nmore","pname":"ripgrep","version":"14.1.1"}}"#;
-        let found = parse_search(json).unwrap();
+        let found = parse_search(json, "grep").unwrap();
         assert_eq!(found[0].attr, "ripgrep");
+        assert_eq!(found[0].pname, "ripgrep");
         assert_eq!(found[0].description, "Fast grep");
         assert_eq!(found[1].attr, "bat-extras.batgrep");
-        assert!(parse_search("[]").is_err());
+        assert!(parse_search("[]", "grep").is_err());
+    }
+
+    fn found(attr: &str, pname: &str) -> Found {
+        Found {
+            attr: attr.into(),
+            pname: pname.into(),
+            version: String::new(),
+            description: String::new(),
+        }
+    }
+
+    #[test]
+    fn the_closest_name_ranks_first_and_sets_last() {
+        let mut all = [
+            found("python3Packages.spotify", "spotify"),
+            found("musikcube", "musikcube"),
+            found("spotify-player", "spotify-player"),
+            found("ncspot", "ncspot"),
+            found("spotify", "spotify"),
+        ];
+        all.sort_by_cached_key(|f| rank(f, "Spotify"));
+        let order: Vec<&str> = all.iter().map(|f| f.attr.as_str()).collect();
+        assert_eq!(
+            order,
+            [
+                "spotify",
+                "spotify-player",
+                "ncspot",
+                "musikcube",
+                "python3Packages.spotify"
+            ]
+        );
+        // naming the set puts it back in the running
+        assert!(!rank(&all[4], "python3Packages.spotify").0);
+    }
+
+    #[test]
+    fn present_by_attribute_or_installed_name() {
+        let installed = ["gh", "requests"];
+        // github-cli installs as pname gh
+        assert!(present("github-cli", "gh", &[], &installed));
+        // a package in a set isn't the top-level one of the same name
+        assert!(!present(
+            "python3Packages.requests",
+            "requests",
+            &[],
+            &installed
+        ));
+        assert!(present(
+            "python3Packages.requests",
+            "requests",
+            &["python3Packages.requests".into()],
+            &installed
+        ));
+        assert!(!present("ripgrep", "ripgrep", &[], &installed));
+    }
+
+    #[test]
+    fn thousands_are_grouped() {
+        assert_eq!(thousands(7), "7");
+        assert_eq!(thousands(1000), "1,000");
+        assert_eq!(thousands(108517), "108,517");
+    }
+
+    #[test]
+    fn standings_against_the_last_commit() {
+        let current = vec!["ripgrep".to_string(), "bat".to_string()];
+        let committed = vec!["ripgrep".to_string(), "htop".to_string()];
+        assert_eq!(
+            standings(&current, &committed),
+            [
+                ("ripgrep".to_string(), Standing::Installed),
+                ("bat".to_string(), Standing::Adding),
+                ("htop".to_string(), Standing::Removing),
+            ]
+        );
     }
 
     #[test]

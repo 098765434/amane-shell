@@ -8,7 +8,8 @@ file by hand works the same way.
 Only one copy runs: launching it again brings the open window forward, and `--page <name>`
 (`general`, `apps`, `services`, `power`, `storage`, `history`, `update`, `about`; or a Shell
 page's name) opens that page, cold or in the running copy (`App::on_activate`): Spotlight's
-system actions and the update toast use it. The flake installs it with a `.desktop` entry, so
+system actions and the update toast use it. `--package <attr>` opens Apps with that nixpkgs
+package's details. The flake installs it with a `.desktop` entry, so
 the launcher lists it as *Shell Settings*.
 
 ## The window
@@ -146,17 +147,77 @@ layout** and **Keyboard variant** (fields checked against `localectl list-x11-ke
 
 ### Apps
 
-`system/apps.rs`. *Added in Settings*: the packages in `managed/settings.json`'s `packages`
-(nixpkgs attribute paths, `amane.packages` in the repo), each with **Remove**. *Add App*: a
-field and **Search** run `nix search --json --inputs-from <repo> nixpkgs <query>` on a thread
-(the configuration's own nixpkgs, no network; the first search after a nixpkgs update fills
-nix's evaluation cache for minutes, and the page says so after three seconds), then the 50
-shortest attribute names with version and description, each with **Add** (*Added* when it's
-there already or installed from a `.nix` file). A change waits for Apply like any other. Then
-a list per repo file that installs packages (`In modules/apps.nix`, …), from the snapshot's
-`systemPackages`, read-only, and *Flatpak*: `flatpak list --app`, every half minute, with
-**Uninstall…** (a dialog, then `flatpak uninstall -y --noninteractive`; flatpak asks through
-polkit for a system-wide app). The Flatpak list is left out when flatpak isn't installed.
+`system/apps.rs`, two sections: *Add App* and *Installed*. *Add App*: the field searches as you type (after a 150 ms pause, two
+characters or more; Enter or **Search** at once) in the nixpkgs catalog
+(`system/catalog.rs`): every package `nix search --json --inputs-from <repo> nixpkgs ^` finds in
+the configuration's own nixpkgs, less nixpkgs' `tests`, one tab-separated line each (attribute,
+`pname`, version, description) in `$XDG_CACHE_HOME/amane-shell/nixpkgs/<rev>.tsv`, where `<rev>`
+is the nixpkgs revision `flake.lock` pins for the root's `nixpkgs` input. The page builds it
+when it opens and there's none for that revision (*Preparing the app catalog… m:ss*: seconds
+with nix's evaluation cache warm, minutes the first time after a nixpkgs update), streaming
+nix's JSON into the file, and deletes the other revisions' files. It looks at `flake.lock`
+again at most every ten seconds, so an applied update gets its own catalog. Each search reads
+the file again (about 10 MB, 106k packages, under 20 ms) rather than keeping it in memory: a
+package matches when every word of the query is in its attribute, `pname` or description,
+ignoring case. Typing while the catalog is built runs after it; when it can't be built, the
+page says so and searches with `nix search … <query>` as before. Results are ranked:
+top-level packages before ones in a set (`python313Packages.…`) unless the query has a dot,
+then the name equal to the query, starting with it, containing it, then a description match,
+then shorter paths. The best 50 show (*the best 50 of n matches* when there are more), two
+lines each, attribute and version over the description, with **Add** (*Added* when it's in
+the packages added in Settings, or a top-level package whose `pname` a `.nix` file installs). The field's
+placeholder counts the catalog's packages.
+
+Rows show apps as apps (`system/installed.rs`): each desktop entry in
+`/run/current-system/sw/share/applications` links into the store path of the package that put
+it there, so a package whose `<pname>-<version>` (or `<pname>-unwrapped-<version>`, for a
+wrapper such as Steam's) has one in the launcher is drawn with that entry's name and icon
+(*Visual Studio Code (vscode)*); the rest get a package glyph. The packages added in Settings
+find their `pname` and version in the catalog. Pressing a row (a result, or an installed
+package whose attribute is known) shows the
+package's details in the page's place (`system/package.rs`): `nix eval --json
+.#nixosConfigurations.<host>.pkgs.<attr> --apply …` (half a second; through the
+configuration's own `pkgs`, so its nixpkgs config counts and an unfree package is available
+when unfree ones are allowed), kept per nixpkgs revision. It shows the name and icon,
+description and long description, where it stands (installed, *Installs on Apply*, *Installed
+by modules/apps.nix*, not installed), the licence (*Unfree* when it is), the command it
+installs (`meta.mainProgram`, with a terminal glyph when there's no app), the homepage with
+**Open**, and **Add** / **Remove** / **Undo**, and **Open App**. A package nixpkgs would refuse
+to build (`meta.broken`, `knownVulnerabilities`, or not `meta.available`) says why and can't be
+added. **Add** in the results reads the same first (*Checking…*), and shows the details instead
+of adding when the build would refuse it. A change waits
+for Apply like any other.
+
+*Installed* (`system/inventory.rs`) is one list of everything on the system: the packages in
+`managed/settings.json`'s `packages` (nixpkgs attribute paths, `amane.packages` in the repo),
+each with where it stands against HEAD's copy (what Apply last committed: *Added in Settings*,
+with **Remove**; *Installs on Apply* or *Removed on Apply*, with **Undo**), listed first while
+pending; the packages each repo file installs (the snapshot's `systemPackages`, with the file's
+name); and the Flatpaks (`flatpak list --app`, looked at when the page first shows and every
+half minute after, with **Uninstall…**: a dialog, then `flatpak uninstall -y
+--noninteractive`; flatpak asks through polkit for a system-wide app). Each row is the app's
+name and icon, over its attribute, version and where it's from. *All · Apps · Command-line ·
+Flatpak* (with counts; Flatpak left out when flatpak isn't installed) and a filter field (every
+word in the name, attribute or description) narrow it down; an app is a Flatpak, or a package
+with an entry in the launcher. A file's package is matched to its attribute by the bare names
+the file lists on lines of their own (`github-cli  # gh`), looked up in the catalog (`gh` is
+`github-cli`'s `pname`); with one, the row opens its details and has **Move…**: Move to
+Settings for a package (`adopt.rs`), a dialog, then the line listing it alone becomes a comment
+(`# github-cli is in \`packages\` in managed/settings.json (Shell Settings).`), the attribute
+joins `packages`, and both are one commit, `move: github-cli from modules/apps.nix`. Nothing is
+installed or removed, so the system doesn't change. A package listed twice, or with another on
+its line, says to edit the file by hand; one from a flake input (amane) has no attribute and no
+**Move…**. A package added in Settings that this nixpkgs no longer has (the snapshot's
+`missingPackages`: renamed or dropped by an update) is left out of the build with a warning
+rather than failing it; its row is red, *no longer in this nixpkgs, so not installed*, with the
+catalog's closest package by the last part of its name (*try python313Packages.requests*) and
+**Remove**.
+
+After an Apply that installs packages added in Settings, the apply bar says so by name instead
+of the commit message, *Installed Zed, ripgrep (rg) · generation 68*: an app by its launcher
+name, a command-line tool with its `meta.mainProgram` when the check before **Add** read it.
+When exactly one of them is an app, **Open Zed** opens it. The job takes the list (the
+packages in `settings.json` and not in HEAD's copy) just before it commits.
 
 ### Services
 
