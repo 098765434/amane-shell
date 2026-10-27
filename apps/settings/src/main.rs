@@ -15,7 +15,8 @@ use amane::{Center, Column, Key, Row, ScrollArea, Service, Size, Text, Widget, W
 use amane_kit::app::{Dialog, Page, app, app_window, sidebar, standard_shortcut};
 use amane_kit::icons::{
     ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DNS, ICON_HISTORY, ICON_INFO, ICON_LAYERS,
-    ICON_LOCK, ICON_MORE_HORIZ, ICON_PACKAGE, ICON_SEARCH, ICON_STORAGE, ICON_TUNE, ICON_UPDATE,
+    ICON_LOCK, ICON_MORE_HORIZ, ICON_PACKAGE, ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TUNE,
+    ICON_UPDATE,
 };
 use amane_kit::layout::boxed;
 use amane_kit::material::{self, Level};
@@ -48,20 +49,70 @@ impl Service for Navigation {
 
 // the sidebar's rows: two sections, each over its pages
 const SYS_ABOUT: usize = 9;
-const SYS_APPS: usize = 10;
-const SYS_SERVICES: usize = 11;
-const SYS_POWER: usize = 12;
-const SYS_STORAGE: usize = 13;
-const SYS_HISTORY: usize = 14;
-const SYS_UPDATE: usize = 15;
+const SYS_GENERAL: usize = 10;
+const SYS_APPS: usize = 11;
+const SYS_SERVICES: usize = 12;
+const SYS_POWER: usize = 13;
+const SYS_STORAGE: usize = 14;
+const SYS_HISTORY: usize = 15;
+const SYS_UPDATE: usize = 16;
+
+/// The page `--page <name>` opens: the sidebar's names, lowercased, or a
+/// System page's short name.
+fn page_named(name: &str) -> Option<usize> {
+    Some(match name.trim().to_lowercase().as_str() {
+        "appearance" => 1,
+        "desktop" => 2,
+        "status-bar" | "bar" => 3,
+        "dock" => 4,
+        "quick-settings" => 5,
+        "spotlight" | "launcher" => 6,
+        "about-shell" => 7,
+        "about" | "system" | "computer" => SYS_ABOUT,
+        "general" => SYS_GENERAL,
+        "apps" | "software" => SYS_APPS,
+        "services" => SYS_SERVICES,
+        "power" | "lock" => SYS_POWER,
+        "storage" => SYS_STORAGE,
+        "history" => SYS_HISTORY,
+        "update" | "updates" => SYS_UPDATE,
+        _ => return None,
+    })
+}
+
+/// The page named after `--page` in `args`, if any.
+fn page_arg(args: &[String]) -> Option<usize> {
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        if let Some(name) = arg.strip_prefix("--page=") {
+            return page_named(name);
+        }
+        if arg == "--page" {
+            return args.next().and_then(|name| page_named(name));
+        }
+    }
+    None
+}
 
 fn main() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if let Some(page) = page_arg(&args) {
+        Navigation::write().page = page;
+    }
     app("amane-settings")
         .normal_window("main", main_window)
+        // launched again (Spotlight, a notification) while running: show that page
+        .on_activate(|args| {
+            if let Some(page) = page_arg(args) {
+                let mut nav = Navigation::write();
+                nav.page = page;
+                nav.overlay = None;
+            }
+        })
         .run();
 }
 
-fn pages() -> [Page; 16] {
+fn pages() -> [Page; 17] {
     [
         Page::section("Shell"),
         Page::new(ICON_DARK_MODE, "Appearance"),
@@ -73,6 +124,7 @@ fn pages() -> [Page; 16] {
         Page::new(ICON_COMPUTER, "About"),
         Page::section("System"),
         Page::new(ICON_INFO, "About This Computer"),
+        Page::new(ICON_SETTINGS, "General"),
         Page::new(ICON_PACKAGE, "Apps"),
         Page::new(ICON_DNS, "Services"),
         Page::new(ICON_LOCK, "Power & Lock"),
@@ -152,6 +204,11 @@ fn main_window() -> Window {
             "About This Computer",
             "settings.scroll.system-about",
             boxed(system::about::page()),
+        ),
+        SYS_GENERAL => (
+            "General",
+            "settings.scroll.system-general",
+            boxed(system::general::page()),
         ),
         SYS_APPS => (
             "Apps",
@@ -241,8 +298,8 @@ fn main_window() -> Window {
 
     app_window(content)
         .title("Shell Settings")
-        .size(760.0, 720.0)
-        .min_size(600.0, 700.0)
+        .size(760.0, 760.0)
+        .min_size(600.0, 740.0)
         .on_shortcut(shortcut)
         .on_close(may_close)
 }

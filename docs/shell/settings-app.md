@@ -5,14 +5,17 @@
 running shell follows at once; Shell Settings' own window redraws in the new look too. Editing a
 file by hand works the same way.
 
-Only one copy runs: launching it again brings the open window forward. The flake installs it with
-a `.desktop` entry, so the launcher lists it as *Shell Settings*.
+Only one copy runs: launching it again brings the open window forward, and `--page <name>`
+(`general`, `apps`, `services`, `power`, `storage`, `history`, `update`, `about`; or a Shell
+page's name) opens that page, cold or in the running copy (`App::on_activate`): Spotlight's
+system actions and the update toast use it. The flake installs it with a `.desktop` entry, so
+the launcher lists it as *Shell Settings*.
 
 ## The window
 
-An `app_window` titled "Shell Settings", 760 × 520 (at least 600 × 460), with a 200 px
+An `app_window` titled "Shell Settings", 760 × 760 (at least 600 × 740), with a 200 px
 [`sidebar`](../kit/app.md#sidebar) in two sections, **Shell** (seven pages, the shell's own
-settings) and **System** (four, the NixOS configuration), and the page's title over its settings,
+settings) and **System** (eight, the NixOS configuration), and the page's title over its settings,
 each a caption over its control. Each page scrolls in an amane `ScrollArea` that keeps its own
 offset. Ctrl+W closes it (`standard_shortcut`), unless a system build is running: then it asks
 first ("Stop the build?"), as does the compositor's close.
@@ -129,6 +132,18 @@ subject, the commit the repo is at, the repo path and host attribute (`nixos.jso
 set), and **Refresh**. Under *Managed settings*, the registry's controls for this page: **Time
 zone** (a field with **Set**).
 
+A setting another file sets shows locked, with the file and line ("Set in configuration.nix:46")
+and **Move to Settings…** when the line is a plain `name = value;`: a dialog shows the line, and
+**Move** comments it out, writes the value to `managed/settings.json` and commits both as
+`move: … from …` ([nixos.md](../integration/nixos.md#move-to-settings)).
+
+### General
+
+`system/general.rs`. **Computer name** (a field with **Set**; lowercase letters, digits and
+dashes), **Language** (a dropdown of the registry's locales; needs a restart), **Keyboard
+layout** and **Keyboard variant** (fields checked against `localectl list-x11-keymap-layouts`
+/ `-variants <layout>`; the console keymap follows the layout).
+
 ### Apps
 
 `system/apps.rs`. *Added in Settings*: the packages in `managed/settings.json`'s `packages`
@@ -188,6 +203,13 @@ Restart** / **Try** activate it; after a `switch` or `boot` the lock goes into t
 1a2b3c4, …`. Nothing moved: "Already up to date". Below, the inputs from `flake.lock`, each
 with how long ago it was updated and its commit (the old and new commits while a check is
 around), and **Update** to check just that input.
+
+The scheduled check ([nixos.md](../integration/nixos.md#the-scheduled-check)) fills the same
+card between checks: "Checked 2 hours ago · updates for nixpkgs, amane-shell" with **Update
+All**, "Checked yesterday · up to date", or why it couldn't; the inputs it saw move read `from
+→ to` in the list. **Check automatically** (Daily, Weekly, Never) is the timer's setting, a
+managed setting like the others. The shell shows the check's toast, and its Software Update
+tile (Quick Settings, Add Controls → Utilities) names the inputs while something waits.
 
 ### The Apply bar
 

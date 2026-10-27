@@ -126,7 +126,9 @@ pub(crate) fn category_of(id: ControlId) -> Category {
         ControlId::PowerOff => Category::Power,
         ControlId::Screenshot => Category::Screenshot,
         ControlId::Sound => Category::Sounds,
-        ControlId::KeepAwake | ControlId::BackgroundApps => Category::Utilities,
+        ControlId::KeepAwake | ControlId::BackgroundApps | ControlId::SoftwareUpdate => {
+            Category::Utilities
+        }
     }
 }
 

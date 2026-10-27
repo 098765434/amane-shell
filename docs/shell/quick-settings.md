@@ -163,14 +163,18 @@ The layout is kept in `$XDG_STATE_HOME/amane-shell/quick-settings`:
 
 The ids are `wifi`, `bluetooth`, `now-playing`, `vpn`, `wired`, `focus`, `dark-style`,
 `night-light`, `display`, `sound`, `battery`, `power-mode`, `keyboard`, `airplane`,
-`background-apps`, `screenshot`, `lock`, `power-off`, `tailscale` and `keep-awake`. A control
+`background-apps`, `screenshot`, `lock`, `power-off`, `tailscale`, `keep-awake` and
+`software-update`. A control
 without `col`/`row` is hidden (it waits in the window's Suggestions). A file from an older
 version is ignored. One that places something off the canvas or over another control moves it to
 the first free cells (or hides it); a control the file doesn't name is added hidden, so a control
 that arrives with an update or new hardware waits in Suggestions rather than tearing a hole in
 the canvas. The default packs Control Center's order onto the canvas for the controls this machine
-has, with VPN, Wired, Tailscale and Keep Awake hidden. `quick-settings reset-layout` over IPC
-restores it.
+has, with VPN, Wired, Tailscale, Keep Awake and Software Update hidden. `quick-settings
+reset-layout` over IPC restores it. Software Update (Utilities; with Shell Settings installed)
+draws only while the NixOS configuration's scheduled update check found newer inputs
+(`$XDG_STATE_HOME/amane-shell/nixos/check.json`), naming them; a press opens Shell Settings on
+Software Update ([nixos.md](../integration/nixos.md#the-scheduled-check)).
 
 ## Motion
 

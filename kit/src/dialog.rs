@@ -29,11 +29,11 @@ use amane::{
     close_window, open_window_with,
 };
 
-use crate::app::{frosted, standard_shortcut, window_bg};
+use crate::app::{field_box, frosted, standard_shortcut, text_field, window_bg};
 use crate::buttons::{PushButton, Shape, Style};
 use crate::layout::{boxed, icon, text_width};
 use crate::material::{self, Level, Material};
-use crate::tokens::{Styled, dialog};
+use crate::tokens::{Styled, dialog, sys};
 
 /// What a button does to the question, which decides its look and place.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -92,11 +92,32 @@ struct Answer {
     action: Rc<dyn Fn()>,
 }
 
+/// A line of text under the message, in its own colour.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Detail {
+    text: String,
+    error: bool,
+}
+
+/// A text field between the message and the buttons, for a dialog that
+/// asks for a word: a password, a name.
+#[derive(Clone)]
+pub struct Field {
+    /// The input's id, under which its text is kept: read it with
+    /// `TextInput::text(id)` from a button's action.
+    pub id: &'static str,
+    pub placeholder: String,
+    /// Hide what's typed, as a password.
+    pub secret: bool,
+}
+
 #[derive(Clone)]
 pub struct Dialog {
     name: String,
     title: String,
     message: String,
+    details: Vec<Detail>,
+    field: Option<Field>,
     icon: Option<Icon>,
     answers: Vec<Answer>,
     layout: Layout,
@@ -114,6 +135,8 @@ impl Dialog {
             name: name.into(),
             title: title.into(),
             message: String::new(),
+            details: Vec::new(),
+            field: None,
             icon: None,
             answers: Vec::new(),
             layout: Layout::Auto,
@@ -122,6 +145,32 @@ impl Dialog {
 
     pub fn message(mut self, message: impl Into<String>) -> Self {
         self.message = message.into();
+        self
+    }
+
+    /// A quieter line under the message, like what a reader is waiting for.
+    pub fn note(mut self, text: impl Into<String>) -> Self {
+        self.details.push(Detail {
+            text: text.into(),
+            error: false,
+        });
+        self
+    }
+
+    /// A line under the message in the critical colour: what went wrong.
+    pub fn error(mut self, text: impl Into<String>) -> Self {
+        self.details.push(Detail {
+            text: text.into(),
+            error: true,
+        });
+        self
+    }
+
+    /// A text field under the message, which takes the keys while the
+    /// dialog shows. Return still answers with the default button, whose
+    /// action reads the field's text by its id.
+    pub fn field(mut self, field: Field) -> Self {
+        self.field = Some(field);
         self
     }
 
@@ -199,6 +248,9 @@ impl Dialog {
             height += dialog::icon_size() + dialog::gap();
         }
         height += self.text_height();
+        if self.field.is_some() {
+            height += dialog::gap() + sys::size::control::height();
+        }
         if !self.answers.is_empty() {
             height += dialog::gap() + self.buttons_height();
         }
@@ -254,6 +306,10 @@ impl Dialog {
         if !self.message.is_empty() {
             height +=
                 dialog::text::gap() + message(&self.message, Color::TRANSPARENT).height_in(width);
+        }
+        for detail in &self.details {
+            height +=
+                dialog::text::gap() + message(&detail.text, Color::TRANSPARENT).height_in(width);
         }
         height + dialog::text::inset_bottom()
     }
@@ -317,6 +373,14 @@ impl Dialog {
         if !self.message.is_empty() {
             text.push(boxed(message(&self.message, fg)));
         }
+        for detail in &self.details {
+            let color = if detail.error {
+                sys::color::status::critical::text()
+            } else {
+                material::label(Level::Secondary)
+            };
+            text.push(boxed(message(&detail.text, color)));
+        }
         rows.push(boxed(
             Rectangle::new()
                 .width(Size::Fixed(inner_width()))
@@ -330,6 +394,35 @@ impl Dialog {
                 })
                 .child(Column::new(text).gap(dialog::text::gap())),
         ));
+
+        if let Some(field) = &self.field {
+            let mut input = text_field(field.id, &field.placeholder).focused();
+            if field.secret {
+                input = input.password();
+            }
+            // the field takes Return, so it answers with the default button itself
+            if let Some(default) = self.answers.iter().find(|a| a.role == Role::Default) {
+                let close = Rc::clone(&close);
+                let action = Rc::clone(&default.action);
+                input = input.on_submit(move |_| {
+                    close();
+                    action();
+                });
+            }
+            rows.push(boxed(
+                Rectangle::new()
+                    .width(Size::Fixed(inner_width()))
+                    .height(Size::Fixed(sys::size::control::height()))
+                    .fill(Color::TRANSPARENT)
+                    .padding(Padding {
+                        top: 0.0,
+                        right: inset,
+                        bottom: 0.0,
+                        left: inset,
+                    })
+                    .child(field_box(field.id, input, inner_width() - inset * 2.0)),
+            ));
+        }
 
         if !self.answers.is_empty() {
             rows.push(self.buttons(close));

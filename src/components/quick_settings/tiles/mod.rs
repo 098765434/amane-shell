@@ -14,6 +14,7 @@ pub mod network;
 pub mod notifications;
 pub mod power;
 pub mod session;
+pub mod software_update;
 pub mod sound;
 pub mod tailscale;
 
@@ -135,9 +136,8 @@ pub(super) fn grid(look: Motion) -> Grid {
     let mut widgets: HashMap<ControlId, Box<dyn Widget>> = HashMap::new();
     let mut slots: Vec<(ControlId, Rect, Slot)> = Vec::new();
     for (id, rect) in &placed {
-        let built = Material::Control.adapted_group(panel, &members, || {
-            controls::build(*id, rect.span, &ctx)
-        });
+        let built = Material::Control
+            .adapted_group(panel, &members, || controls::build(*id, rect.span, &ctx));
         let widget = match built {
             Some(widget) => widget,
             // a control waiting for its hardware takes no room, except in
@@ -213,9 +213,9 @@ pub(super) fn grid(look: Motion) -> Grid {
         let widget = match widgets.remove(&id) {
             Some(widget) => widget,
             None if item.leaving => {
-                match Material::Control.adapted_group(panel, &members, || {
-                    controls::build(id, rect.span, &ctx)
-                }) {
+                match Material::Control
+                    .adapted_group(panel, &members, || controls::build(id, rect.span, &ctx))
+                {
                     Some(widget) => widget,
                     None => continue,
                 }

@@ -12,16 +12,26 @@ Three files in the repo, and one flake output, are what Settings reads and write
 | In the repo | What |
 |---|---|
 | `managed/settings.json` | the values Settings owns, `{ "timeZone": "Europe/Oslo", "openssh": true, "sshdOnDemand": true, "dimAfter": 180, "packages": ["ripgrep"], "bootEntries": 10, … }`. The one file Settings writes (whole, through a rename), and the one it commits (with `flake.lock` after an update). Hand edits are fine. |
-| `managed/registry.nix` | which settings may be there: a list of `{ id, path, page, label, control, tier, … }`. `path` is the NixOS option (`[ "services" "tailscale" "enable" ]`), `page` the Settings page that shows it (`about`, `services`, `power`, `apps`, `storage`), `control` how (`switch`; `int` with `min`/`max`; `choice` with `choices = [ { label; value; } … ]`; `timezone`; `text`; `packages`, a list of attribute paths the Apps page draws), `tier` when it takes effect (`rebuild`, `restart`). A service entry may name its `unit` (`"sshd.service"`), `scope = "user"` for a user unit, and `onDemand`, the id of its "only when needed" switch. |
+| `managed/registry.nix` | which settings may be there: a list of `{ id, path, page, label, control, tier, … }`. `path` is the NixOS option (`[ "services" "tailscale" "enable" ]`), `page` the Settings page that shows it (`about`, `general`, `services`, `power`, `apps`, `storage`, `update`), `control` how (`switch`; `int` with `min`/`max`; `choice` with `choices = [ { label; value; } … ]`; `timezone`; `text`, with `check` naming what Settings checks it against: `hostname`, `xkbLayout`, `xkbVariant` (`localectl list-x11-keymap-*`); `packages`, a list of attribute paths the Apps page draws), `tier` when it takes effect (`rebuild`, `restart`). A service entry may name its `unit` (`"sshd.service"`), `scope = "user"` for a user unit, and `onDemand`, the id of its "only when needed" switch. |
 | `modules/managed.nix` | turns each key in the file into an option definition (`lib.mkIf (settings ? id)`), so a missing key leaves the option to the other modules. Also ships the activation helper and its polkit action. |
-| `modules/options.nix` | the repo's own options for what has no option path of its own, so the registry can point at them: `amane.idle.{dimAfter,lockAfter,screenOffAfter}` (seconds, 0 = never) build hypridle's listener list; `amane.services.<unit>.onDemand` empties the unit's `wantedBy` (`mkIf` round `mkForce`, so an unset flag leaves the unit alone); `amane.packages` (dotted nixpkgs attribute paths) adds to `environment.systemPackages`. |
-| `amaneSettings` (flake output) | `nix eval --json .#amaneSettings`: `{ host, revision, entries, systemPackages }`, each entry the registry's fields plus `value` (effective), `default`, `type`, `description` and `setIn`, the repo files that define the option (`modules/managed.nix` when it's ours; empty when nothing sets it, since an option's default doesn't count). `systemPackages` is what the repo's own files install, `{ name, version, file }` each. |
+| `modules/options.nix` | the repo's own options for what has no option path of its own, so the registry can point at them: `amane.idle.{dimAfter,lockAfter,screenOffAfter}` (seconds, 0 = never) build hypridle's listener list; `amane.services.<unit>.onDemand` empties the unit's `wantedBy` (`mkIf` round `mkForce`, so an unset flag leaves the unit alone); `amane.packages` (dotted nixpkgs attribute paths) adds to `environment.systemPackages`; `amane.updates.check` (`daily`, `weekly`, `never`) is the scheduled check's timer (below). |
+| `amaneSettings` (flake output) | `nix eval --json .#amaneSettings`: `{ host, revision, entries, systemPackages }`, each entry the registry's fields plus `value` (effective), `default`, `type`, `description`, `setIn`, the repo files that define the option (`modules/managed.nix` when it's ours; empty when nothing sets it, since an option's default doesn't count), and `setAt`, `[ { file, line } ]` for each other repo file's definition, read off the module with `builtins.unsafeGetAttrPos` (empty when the module's shape hides it). `systemPackages` is what the repo's own files install, `{ name, version, file }` each. |
 
 A setting another file sets (`setIn` has more than `modules/managed.nix`) shows **locked**, with
-the file: a value Settings wrote would clash with it or be overridden. Move the line into
-`settings.json` by hand to take it over (a list option such as hypridle's listeners would be
-merged, not overridden, so its hand-written definition has to go). `nix eval` sees only files git knows about, so
-Settings runs `git add` after every write.
+the file and line: a value Settings wrote would clash with it or be overridden. `nix eval` sees
+only files git knows about, so Settings runs `git add` after every write.
+
+### Move to Settings
+
+The one place Settings touches a `.nix` file. A locked control offers **Move to Settings…** when
+`setAt` names exactly one line and that line is a plain `name = value;` (a comment after the
+value is fine; `mkForce`, `lib.`, a value that spans lines or an attribute set aren't, and the
+note then says to edit by hand). A dialog shows the file, line and text; **Move** replaces the
+line with `# name is \`id\` in managed/settings.json (Shell Settings).`, writes the option's
+current value under `id` in `settings.json` (so nothing changes), and commits both at once as
+`move: Keyboard layout from configuration.nix`, revertable on its own. It refuses a file with
+uncommitted changes, or a line that changed since the snapshot. A list option (hypridle's
+listeners) is moved by hand: its definitions would merge, not override. `system/adopt.rs`.
 
 The repo's path and the `nixosConfigurations` attribute come from `nixos.json`
 (`repo`, `host`; `~/nixos-config` and `nixos-niri` unless set), editable on About This Computer.
@@ -75,6 +85,42 @@ cancelled check leaves no trace but `update.lock`. Settings waiting in `settings
 the same build and the same commit. A nixpkgs bump rebuilds whatever follows it (the shell,
 niri) from source, which is minutes; the meter shows it.
 
+## The scheduled check
+
+`amane-update-check`, from `modules/options.nix`, runs as a user timer (`OnCalendar` daily or
+weekly from `amane.updates.check`, persistent, with up to an hour's random delay; **Check
+automatically** on Software Update). It relocks into `$XDG_STATE_HOME/amane-shell/nixos/check.lock`
+(the repo's `flake.lock` is untouched), writes `check.json` beside it, and never builds:
+
+```json
+{ "checked": 1761500000, "changes": [ { "name": "nixpkgs", "from": "26f4107…", "to": "1a2b3c4…" } ] }
+{ "checked": 1761500000, "changes": [], "error": "…the last line nix said…" }
+```
+
+When something moved and it isn't what was last notified (`notified.json`), it sends a toast
+through the shell (`notify-send --action=default=Open "Updates available" "nixpkgs, amane-shell"`)
+whose click runs `amane-settings --page update`. Both Settings (the card at the top of Software
+Update, with **Update All**) and the shell (the Software Update tile in Quick Settings, from
+Add Controls → Utilities, which draws only while something waits) watch `check.json`. Settings
+rewrites it with no changes after an update is applied or a manual check finds nothing, so the
+card and the tile clear before the next run. `systemctl --user start amane-update-check` runs
+one now.
+
+## The polkit agent
+
+The shell is the session's polkit authentication agent (`amane::Polkit::serve_agent()`, from
+`amane-shell`'s start), so the password prompt for `pkexec amane-nixos-activate`, `systemctl
+start`, Flatpak and every other privileged action is the shell's own alert: the action's
+message, a password field, "Sorry, that didn't work" after a wrong one (three tries), Cancel
+or Escape to refuse. It registers `/org/amane/PolicyKit1/AuthenticationAgent` for the
+`unix-session` logind names as the user's display (the shell runs as a user service, outside
+the session's scope), and registers again when polkitd restarts. Polkit 124+ runs its PAM
+helper as a system service behind `/run/polkit/agent-helper.socket`; the agent connects, writes
+the user and the cookie, relays the helper's `PAM_PROMPT_ECHO_OFF` / `PAM_TEXT_INFO` /
+`PAM_ERROR_MSG` lines and the answer, and the helper itself reports to polkitd. The NixOS
+configuration keeps `security.polkit.enable` and turns the niri flake's `niri-flake-polkit`
+(polkit-kde) user service off. amane's `docs/fork/system/polkit.md` has the agent.
+
 ## Now, not after Apply
 
 Some things on the System pages act at once and aren't part of the configuration: **Start** /
@@ -102,12 +148,14 @@ signs to the exact one:
 
 A running system with no revision recorded says so: apply once to know.
 
-## Limits (phases 1–3)
+## Limits (phases 1–4)
 
-- A new setting is a line in the registry (and a line in `settings.json` in place of the
-  hand-written one); a new kind of control is an arm in `system/controls.rs`.
+- A new setting is a line in the registry (and **Move to Settings…**, or a line in
+  `settings.json` in place of the hand-written one); a new kind of control is an arm in
+  `system/controls.rs`.
 - The window can't close during a build. Moving the build to a `systemd-run --user` unit is
   later work behind the same `BuildJob` API.
 - `switch-to-configuration dry-activate` needs root, so which services restart isn't shown.
-- General (hostname, locale, keyboard), "Move to Settings" for a locked setting, and a
-  scheduled update check are later work.
+- The language list is the registry's own (glibc knows more: edit `settings.json` by hand for
+  one it lacks); keyboard layouts and variants are checked but not described.
+- The scheduled check needs the network; offline it only records why.

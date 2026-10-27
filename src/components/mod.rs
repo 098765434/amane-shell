@@ -17,6 +17,7 @@ pub mod grid;
 pub mod launcher;
 pub mod notifications;
 pub mod panel;
+pub mod polkit_prompt;
 pub mod quick_settings;
 pub mod search_field;
 pub mod status_bar;

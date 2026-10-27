@@ -16,6 +16,8 @@ pub const ICON_VOLUME_UP: char = '\u{e050}';
 pub const ICON_VOLUME_OFF: char = '\u{e04f}';
 pub const ICON_VOLUME_DOWN: char = '\u{e04d}';
 pub const ICON_LOCK: char = '\u{e897}';
+/// The gear (`settings`).
+pub const ICON_SETTINGS: char = '\u{e8b8}';
 pub const ICON_CHECK: char = '\u{e5ca}';
 pub const ICON_CLOSE: char = '\u{e5cd}';
 pub const ICON_REMOVE: char = '\u{e15b}';

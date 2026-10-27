@@ -95,8 +95,9 @@ Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery
 (light or dark, accent, density, text size, glass, adaptive glass, vibrant labels, motion), the
 desktop's widgets and Spotlight. It writes `~/.config/amane-shell/*.json`, which the running shell
 follows at once. Its **System** pages manage the NixOS configuration the machine is built from
-(apps, services, idle timeouts, storage, history, updates), through
-[docs/integration/nixos.md](docs/integration/nixos.md). See
+(the computer's name, language and keyboard; apps, services, idle timeouts, storage, history,
+updates with a scheduled check), through [docs/integration/nixos.md](docs/integration/nixos.md),
+and the shell is the session's polkit agent, so the password prompt is its own. See
 [docs/shell/settings-app.md](docs/shell/settings-app.md).
 
 ## Layout

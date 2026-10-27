@@ -15,8 +15,8 @@ use std::time::Duration;
 use amane::{DesktopApp, PowerProfile, Service};
 
 use crate::components::icons::{
-    Glyph, ICON_KEEP_AWAKE, ICON_LOCK, ICON_LOG_OUT, ICON_POWER, ICON_RESTART, ICON_SLEEP,
-    ICON_TIMER, ICON_TUNE, ICON_VPN,
+    Glyph, ICON_KEEP_AWAKE, ICON_LOCK, ICON_LOG_OUT, ICON_PACKAGE, ICON_POWER, ICON_RESTART,
+    ICON_SLEEP, ICON_TIMER, ICON_TUNE, ICON_UPDATE, ICON_VPN,
 };
 use crate::components::quick_settings::{self, ControlId};
 use crate::services::keep_awake::KeepAwake;
@@ -136,6 +136,7 @@ pub(super) fn registry(apps: &[DesktopApp]) -> Vec<Spec> {
     power_mode(&mut specs);
     keep_awake(&mut specs);
     session(&mut specs);
+    nixos(&mut specs);
     clock(&mut specs);
     for app in apps {
         for (index, action) in app.actions().iter().enumerate() {
@@ -301,6 +302,50 @@ fn session(specs: &mut Vec<Spec>) {
                 SessionAction::Restart => Session::reboot(),
                 SessionAction::PowerOff => Session::power_off(),
             }),
+        );
+    }
+}
+
+/// The NixOS configuration, through Shell Settings' System pages: checking
+/// for updates, applying what's changed, installing software. Only with
+/// Shell Settings installed.
+fn nixos(specs: &mut Vec<Spec>) {
+    if !crate::services::installed("amane-settings") {
+        return;
+    }
+    let pages: [(&str, &str, &str, &[&str], char); 3] = [
+        (
+            "check-updates",
+            "Check for Updates",
+            "update",
+            &["update", "upgrade", "nixos", "software update"],
+            ICON_UPDATE,
+        ),
+        (
+            "apply",
+            "Apply System Changes",
+            "about",
+            &["apply", "rebuild", "nixos", "switch"],
+            ICON_TUNE,
+        ),
+        (
+            "install",
+            "Install Software",
+            "apps",
+            &["install", "app", "package", "flatpak"],
+            ICON_PACKAGE,
+        ),
+    ];
+    for (key, title, page, keywords, glyph) in pages {
+        specs.push(
+            Spec::new(
+                format!("action:system:{key}"),
+                title,
+                SYSTEM,
+                Icon::Glyph(glyph),
+            )
+            .keywords(keywords)
+            .run(move |_| amane::spawn_activated(&format!("amane-settings --page {page}"))),
         );
     }
 }

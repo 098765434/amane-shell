@@ -292,6 +292,11 @@ impl BuildJob {
                 let mut job = Self::write();
                 job.note("Every input is at its newest.");
                 job.phase = Phase::UpToDate;
+                drop(job);
+                // the scheduled check's record is stale now
+                if inputs.is_empty() {
+                    update::Check::clear();
+                }
                 return;
             }
             {
@@ -865,6 +870,10 @@ fn finish(out: PathBuf, mode: Mode) {
     if target.is_ours() {
         Snapshot::refresh();
         Toplevel::refresh();
+    }
+    // an applied update is no longer waiting, whatever the timer found
+    if mode.records() && matches!(target, Target::Update { .. }) {
+        update::Check::clear();
     }
 
     let generation = mode

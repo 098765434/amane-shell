@@ -44,6 +44,7 @@ pub mod session;
 pub mod system_stats;
 pub mod tailscale;
 pub mod timer;
+pub mod updates;
 
 use std::cell::RefCell;
 use std::collections::HashMap;

@@ -91,7 +91,7 @@ What the launcher does without opening an app (`actions.rs`), Spotlight's Action
 | Section | Actions |
 |---|---|
 | Control Center | each of Quick Settings' toggles and buttons this machine has, as it is now ("Turn Night Light On" while it's off, Screenshot), Set Power Mode (a choice of the modes the daemon offers), Keep Awake For (how long) |
-| System | Lock Screen, Log Out, Suspend, Restart, Power Off, each when logind allows it |
+| System | Lock Screen, Log Out, Suspend, Restart, Power Off, each when logind allows it; with Shell Settings installed, Check for Updates, Apply System Changes and Install Software, which open its System pages (`amane-settings --page update` / `about` / `apps`) |
 | Clock | Start Timer (how long), and Cancel Timer while one runs |
 | *an app* | each of its `[Desktop Action]`s, like Firefox's "New Private Window" |
 

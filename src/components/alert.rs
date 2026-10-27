@@ -73,8 +73,10 @@ fn unfold(open: bool) -> f32 {
 
 /// The surface: hidden while no alert shows, else the card, swelling in.
 pub fn surface() -> LayerWindow {
-    // a device asking to pair asks here; reading Bluetooth for it wakes this view
+    // a device asking to pair, or polkit asking for a password, asks here;
+    // reading Bluetooth and Polkit for it wakes this view
     crate::components::bluetooth_prompt::sync();
+    crate::components::polkit_prompt::sync();
     Alert::watch();
     let open = OPEN.get();
     let unfolded = unfold(open);

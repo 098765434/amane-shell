@@ -23,6 +23,7 @@ use super::apply_bar::Overlay;
 use super::job::{BuildJob, Phase, Target};
 use super::nixos::repo;
 use super::repo::short;
+use super::{controls, state_dir};
 use crate::{Navigation, PAGE_WIDTH, note};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -154,6 +155,112 @@ pub struct Lock {
     pub error: Option<String>,
 }
 
+/// What the scheduled check (`amane-update-check`, a user timer from the
+/// configuration) last found, from `check.json` in the state dir.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Check {
+    pub checked: Option<DateTime<Utc>>,
+    pub changes: Vec<InputChange>,
+    pub error: Option<String>,
+    pub present: bool,
+}
+
+fn check_path() -> PathBuf {
+    state_dir().join("check.json")
+}
+
+/// `check.json` as the checker writes it.
+pub fn parse_check(json: &str) -> Check {
+    let value: Value = serde_json::from_str(json).unwrap_or(Value::Null);
+    let text = |change: &Value, key: &str| change.get(key)?.as_str().map(String::from);
+    Check {
+        checked: value
+            .get("checked")
+            .and_then(Value::as_i64)
+            .and_then(|secs| DateTime::from_timestamp(secs, 0)),
+        changes: value
+            .get("changes")
+            .and_then(Value::as_array)
+            .map(|changes| {
+                changes
+                    .iter()
+                    .filter_map(|change| {
+                        Some(InputChange {
+                            name: text(change, "name")?,
+                            from: text(change, "from"),
+                            to: text(change, "to"),
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        error: value.get("error").and_then(Value::as_str).map(String::from),
+        present: value.is_object(),
+    }
+}
+
+fn look_check() -> Check {
+    fs::read_to_string(check_path())
+        .map(|json| parse_check(&json))
+        .unwrap_or_default()
+}
+
+impl Service for Check {
+    fn new() -> Self {
+        look_check()
+    }
+
+    fn listen() {
+        loop {
+            let path = check_path();
+            if !path.parent().is_some_and(|folder| folder.is_dir()) {
+                thread::sleep(Duration::from_secs(30));
+                continue;
+            }
+            for _ in watch_file(&path.to_string_lossy()) {
+                let fresh = look_check();
+                let mut now = Self::write();
+                if fresh == *now {
+                    now.quiet();
+                } else {
+                    *now = fresh;
+                }
+            }
+        }
+    }
+}
+
+impl Check {
+    /// Records that nothing waits any more (an update was applied, or a
+    /// check found everything current), so the tile and the card clear
+    /// before the timer's next run.
+    pub fn clear() {
+        let path = check_path();
+        let now = Utc::now().timestamp();
+        let json = format!("{{\n  \"checked\": {now},\n  \"changes\": []\n}}\n");
+        if let Some(folder) = path.parent() {
+            let _ = fs::create_dir_all(folder);
+        }
+        let _ = fs::write(path, json);
+    }
+
+    /// "2 hours ago", "yesterday".
+    fn ago(&self) -> String {
+        let Some(when) = self.checked else {
+            return String::from("never");
+        };
+        let minutes = (Utc::now() - when).num_minutes();
+        match minutes {
+            i64::MIN..=1 => String::from("just now"),
+            2..=59 => format!("{minutes} minutes ago"),
+            60..=119 => String::from("an hour ago"),
+            120..=1439 => format!("{} hours ago", minutes / 60),
+            1440..=2879 => String::from("yesterday"),
+            _ => format!("{} days ago", minutes / 1440),
+        }
+    }
+}
+
 fn lock_path() -> PathBuf {
     repo().join("flake.lock")
 }
@@ -196,15 +303,14 @@ impl Service for Lock {
     }
 }
 
-/// What a check found, while its job is around.
-fn result_card(job: &BuildJob) -> Option<Box<dyn Widget>> {
-    let changes = match &job.target {
-        Target::Update { changes, .. } => changes,
-        _ => return None,
-    };
-    let (glyph, text, show) = match &job.phase {
-        Phase::UpToDate => (ICON_CHECK, String::from("Everything is up to date."), false),
-        Phase::Built(built) => (
+/// What a check found, while its job is around; else what the scheduled
+/// check last found.
+fn result_card(job: &BuildJob, check: &Check) -> Option<Box<dyn Widget>> {
+    let (glyph, text, button) = match (&job.target, &job.phase) {
+        (Target::Update { .. }, Phase::UpToDate) => {
+            (ICON_CHECK, String::from("Everything is up to date."), None)
+        }
+        (Target::Update { changes, .. }, Phase::Built(built)) => (
             ICON_UPDATE,
             format!(
                 "Update ready: {} change{} · {} package{} change{}",
@@ -218,9 +324,32 @@ fn result_card(job: &BuildJob) -> Option<Box<dyn Widget>> {
                     ""
                 }
             ),
-            true,
+            Some(("Show Changes", Button::Changes)),
         ),
-        _ => return None,
+        (Target::Update { .. }, _) if job.busy() => return None,
+        _ if !check.present => return None,
+        _ if !check.changes.is_empty() => (
+            ICON_UPDATE,
+            format!(
+                "Checked {} · updates for {}",
+                check.ago(),
+                check
+                    .changes
+                    .iter()
+                    .map(|c| c.name.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            Some(("Update All", Button::UpdateAll)),
+        ),
+        _ => (
+            ICON_CHECK,
+            match &check.error {
+                Some(error) => format!("Checked {} · couldn't: {error}", check.ago()),
+                None => format!("Checked {} · up to date", check.ago()),
+            },
+            None,
+        ),
     };
 
     let mut row: Vec<Box<dyn Widget>> = vec![
@@ -236,11 +365,16 @@ fn result_card(job: &BuildJob) -> Option<Box<dyn Widget>> {
                 .elide(),
         ),
     ];
-    if show {
+    if let Some((label, what)) = button {
+        let running = job.running();
         row.push(boxed(
-            PushButton::new("settings.update.changes", "Show Changes")
+            PushButton::new("settings.update.card", label)
                 .style(Style::Plain)
-                .on_press(|| Navigation::write().overlay = Some(Overlay::Changes))
+                .disabled(running && what == Button::UpdateAll)
+                .on_press(move || match what {
+                    Button::Changes => Navigation::write().overlay = Some(Overlay::Changes),
+                    Button::UpdateAll => BuildJob::start_update(Vec::new()),
+                })
                 .build(),
         ));
     }
@@ -263,13 +397,22 @@ fn result_card(job: &BuildJob) -> Option<Box<dyn Widget>> {
     ))
 }
 
+/// What the card's button does.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Button {
+    Changes,
+    UpdateAll,
+}
+
 pub fn page() -> Column {
     let lock = Lock::read();
     let job = BuildJob::read();
+    let check = Check::read();
     let running = job.running();
+    // the inputs a job moved, else what the scheduled check saw move
     let moved: Vec<&InputChange> = match &job.target {
         Target::Update { changes, .. } if job.busy() => changes.iter().collect(),
-        _ => Vec::new(),
+        _ => check.changes.iter().collect(),
     };
 
     let list = with_row_width(PAGE_WIDTH, || {
@@ -333,10 +476,14 @@ pub fn page() -> Column {
         .gap(sys::space::gap::m())
         .align(Center),
     )];
-    parts.extend(result_card(&job));
+    parts.extend(result_card(&job, &check));
     parts.push(boxed(list));
     parts.push(boxed(note(
         "Update on one input bumps just that one. Applying writes flake.lock and commits it with the settings.",
+    )));
+    parts.extend(controls::for_page("update"));
+    parts.push(boxed(note(
+        "The automatic check relocks beside the repository and notifies; it never builds or applies.",
     )));
 
     Column::new(parts)
@@ -361,6 +508,25 @@ mod tests {
         assert_eq!(inputs[0].rev.as_deref(), Some("abcdef1234567"));
         assert_eq!(inputs[2].source.as_deref(), Some("NixOS/nixpkgs"));
         assert!(inputs[2].modified.is_some());
+    }
+
+    #[test]
+    fn a_scheduled_check_reads_back() {
+        let check = parse_check(
+            r#"{"checked": 1761500000, "changes": [{"name": "nixpkgs", "from": "1111111aaaaaaa", "to": "2222222bbbbbbb"}]}"#,
+        );
+        assert!(check.present);
+        assert_eq!(check.changes.len(), 1);
+        assert_eq!(check.changes[0].text(), "nixpkgs 1111111 → 2222222");
+        assert!(check.checked.is_some());
+        let none = parse_check("");
+        assert!(!none.present && none.changes.is_empty());
+        assert_eq!(
+            parse_check(r#"{"checked": 1, "changes": [], "error": "offline"}"#)
+                .error
+                .as_deref(),
+            Some("offline")
+        );
     }
 
     #[test]

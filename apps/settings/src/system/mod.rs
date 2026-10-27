@@ -4,9 +4,11 @@
 //! ([nixos.md](../../../../docs/integration/nixos.md)).
 
 pub mod about;
+pub mod adopt;
 pub mod apply_bar;
 pub mod apps;
 pub mod controls;
+pub mod general;
 pub mod generations;
 pub mod history;
 pub mod job;
@@ -16,6 +18,7 @@ pub mod repo;
 pub mod services;
 pub mod storage;
 pub mod update;
+pub mod xkb;
 
 use std::path::PathBuf;
 

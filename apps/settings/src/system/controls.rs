@@ -5,13 +5,14 @@
 
 use amane::{Column, Row, Service, TextInput, Widget};
 use amane_kit::app::{field_box, text_field};
-use amane_kit::buttons::{PushButton, Switch};
+use amane_kit::buttons::{PushButton, Style, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::layout::boxed;
 use amane_kit::slider::Slider;
 use amane_kit::tokens::sys;
 use serde_json::Value;
 
+use super::adopt;
 use super::nixos::{Control, Entry, Managed, Snapshot, show, show_as};
 use crate::{labelled, note, setting};
 
@@ -30,7 +31,15 @@ impl Service for Feedback {
 
 /// Checks the value against its entry and writes it, or says why not.
 pub fn set(entry: &Entry, value: Value) {
-    match entry.check(&value) {
+    // a keyboard variant is one of its layout's
+    let layout = {
+        let (snapshot, managed) = (Snapshot::read(), Managed::read());
+        snapshot
+            .entry("keyboardLayout")
+            .map(|e| show(managed.value(&e.id, &e.value)))
+            .unwrap_or_default()
+    };
+    match entry.check_with(&value, &layout) {
         Ok(()) => {
             Feedback::write().error = None;
             Managed::set(&entry.id, value);
@@ -44,6 +53,8 @@ fn field_id(id: &str) -> &'static str {
     match id {
         "timeZone" => "settings.system.field.timeZone",
         "hostName" => "settings.system.field.hostName",
+        "keyboardLayout" => "settings.system.field.keyboardLayout",
+        "keyboardVariant" => "settings.system.field.keyboardVariant",
         _ => "settings.system.field.other",
     }
 }
@@ -62,10 +73,44 @@ pub fn notes(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Vec<Box<d
         ));
     }
     if !entry.managed() {
-        lines.push(boxed(note(format!(
-            "Set in {}: move it to managed/settings.json to change it here.",
-            entry.set_elsewhere().join(", ")
-        ))));
+        // where, to the line when nix could tell, and Move to Settings… when
+        // the line is a plain `name = value;`
+        let places: Vec<String> = match entry.set_at.as_slice() {
+            [] => entry
+                .set_elsewhere()
+                .iter()
+                .map(|f| f.to_string())
+                .collect(),
+            at => at
+                .iter()
+                .map(|(file, line)| format!("{file}:{line}"))
+                .collect(),
+        };
+        let movable = adopt::plan(entry).is_ok();
+        let e = entry.clone();
+        let mut row: Vec<Box<dyn Widget>> = vec![boxed(note(format!(
+            "Set in {}{}",
+            places.join(", "),
+            if movable {
+                ""
+            } else {
+                "; edit it by hand to change it here"
+            }
+        )))];
+        if movable {
+            row.push(boxed(
+                PushButton::new(
+                    format!("settings.system.move.{}", entry.id),
+                    "Move to Settings…",
+                )
+                .style(Style::Plain)
+                .on_press(move || adopt::confirm(&e))
+                .build(),
+            ));
+        }
+        lines.push(boxed(
+            Row::new(row).gap(sys::space::gap::m()).align(amane::Center),
+        ));
     } else if pending {
         let was = managed.committed.get(&entry.id).map_or_else(
             || show_as(&entry.control, &entry.default),

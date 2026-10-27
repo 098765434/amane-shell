@@ -84,6 +84,8 @@ fn main() -> ExitCode {
 
     // the shell answers BlueZ's pairing questions, and warns of a device running low
     amane::Bluetooth::serve_agent();
+    // and it is the session's polkit agent: the password prompt is its alert
+    amane::Polkit::serve_agent();
     services::bt_battery::watch();
 
     let share = ContextMenu::new()

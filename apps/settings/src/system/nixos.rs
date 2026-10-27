@@ -15,6 +15,8 @@ use std::time::{Duration, Instant};
 
 use amane::{Service, watch_file};
 use amane_kit::settings::nixos;
+
+use super::xkb;
 use serde_json::Value;
 
 /// The file Settings writes, in the repo.
@@ -114,6 +116,29 @@ pub struct Choice {
     pub value: Value,
 }
 
+/// What a text setting is checked against, from the registry's `check`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Check {
+    /// A host name: letters, digits and dashes, up to 63.
+    Hostname,
+    /// A layout `localectl list-x11-keymap-layouts` knows.
+    XkbLayout,
+    /// Empty, or a variant of the keyboard layout set.
+    XkbVariant,
+}
+
+/// Whether `name` is a host name: lowercase letters, digits and dashes,
+/// not at the ends, up to 63 of them.
+pub fn is_hostname(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= 63
+        && !name.starts_with('-')
+        && !name.ends_with('-')
+        && name
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+}
+
 /// What a package attribute path may look like: `ripgrep`, `python3Packages.black`.
 pub fn is_attr_path(name: &str) -> bool {
     !name.is_empty()
@@ -145,6 +170,8 @@ impl Tier {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Entry {
     pub id: String,
+    /// The option's path, like `services.openssh.enable`.
+    pub path: Vec<String>,
     pub page: String,
     pub label: String,
     pub control: Control,
@@ -154,6 +181,10 @@ pub struct Entry {
     pub description: String,
     /// The repo files that define the option; ours is `modules/managed.nix`.
     pub set_in: Vec<String>,
+    /// Where another file defines it, as (file, line), when nix could tell.
+    pub set_at: Vec<(String, u64)>,
+    /// What a text value is checked against.
+    pub check_kind: Option<Check>,
     /// The systemd unit behind a service, for its running state.
     pub unit: Option<String>,
     /// Whether that unit is a user unit (`systemctl --user`).
@@ -179,8 +210,10 @@ impl Entry {
             .collect()
     }
 
-    /// Whether a value is one the control takes, before it's written.
-    pub fn check(&self, value: &Value) -> Result<(), String> {
+    /// Whether a value is one the control takes, before it's written, with
+    /// the keyboard layout a variant is checked against (an empty layout
+    /// lets any variant through).
+    pub fn check_with(&self, value: &Value, layout: &str) -> Result<(), String> {
         match (&self.control, value) {
             (Control::Switch, Value::Bool(_)) => Ok(()),
             (Control::Int { min, max }, Value::Number(n)) => match n.as_i64() {
@@ -199,7 +232,32 @@ impl Entry {
                     Err(format!("No time zone named {name}"))
                 }
             }
-            (Control::Text, Value::String(_)) => Ok(()),
+            (Control::Text, Value::String(text)) => {
+                let text = text.trim();
+                match self.check_kind {
+                    None => Ok(()),
+                    Some(Check::Hostname) if is_hostname(text) => Ok(()),
+                    Some(Check::Hostname) => Err(String::from(
+                        "A computer name is lowercase letters, digits and dashes, up to 63",
+                    )),
+                    Some(Check::XkbLayout) if xkb::layouts().iter().any(|l| l == text) => Ok(()),
+                    Some(Check::XkbLayout) => Err(format!(
+                        "No keyboard layout named {text} (see localectl list-x11-keymap-layouts)"
+                    )),
+                    Some(Check::XkbVariant) if text.is_empty() || layout.is_empty() => Ok(()),
+                    Some(Check::XkbVariant) => {
+                        let variants = xkb::variants(layout);
+                        if variants.iter().any(|v| v == text) {
+                            Ok(())
+                        } else {
+                            Err(format!(
+                                "No variant {text} of {layout}; it has {}",
+                                xkb::some(&variants)
+                            ))
+                        }
+                    }
+                }
+            }
             (Control::Choice(choices), value) if choices.iter().any(|c| c.value == *value) => {
                 Ok(())
             }
@@ -297,6 +355,17 @@ fn entry(value: &Value) -> Option<Entry> {
 
     Some(Entry {
         id: text("id")?,
+        path: value
+            .get("path")
+            .and_then(Value::as_array)
+            .map(|parts| {
+                parts
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .map(String::from)
+                    .collect()
+            })
+            .unwrap_or_default(),
         page: text("page").unwrap_or_default(),
         label: text("label").unwrap_or_else(|| text("id").unwrap_or_default()),
         control,
@@ -315,6 +384,27 @@ fn entry(value: &Value) -> Option<Entry> {
                     .collect()
             })
             .unwrap_or_default(),
+        set_at: value
+            .get("setAt")
+            .and_then(Value::as_array)
+            .map(|places| {
+                places
+                    .iter()
+                    .filter_map(|place| {
+                        Some((
+                            place.get("file")?.as_str()?.to_string(),
+                            place.get("line")?.as_u64()?,
+                        ))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        check_kind: match text("check").as_deref() {
+            Some("hostname") => Some(Check::Hostname),
+            Some("xkbLayout") => Some(Check::XkbLayout),
+            Some("xkbVariant") => Some(Check::XkbVariant),
+            _ => None,
+        },
         unit: text("unit"),
         user_scope: text("scope").as_deref() == Some("user"),
         on_demand: text("onDemand"),
@@ -643,7 +733,7 @@ impl Managed {
 }
 
 /// Writes the map as the file, whole, through a rename.
-fn save(path: &Path, map: &BTreeMap<String, Value>) -> Result<(), String> {
+pub(super) fn save(path: &Path, map: &BTreeMap<String, Value>) -> Result<(), String> {
     let json = serde_json::to_string_pretty(map).map_err(|error| error.to_string())? + "\n";
     let new = path.with_extension("json.new");
     if let Some(folder) = path.parent() {
@@ -733,36 +823,40 @@ mod tests {
     fn a_value_is_checked_against_its_control() {
         let snapshot = snapshot();
         let boot = snapshot.entry("bootEntries").unwrap();
-        assert!(boot.check(&Value::from(8)).is_ok());
-        assert!(boot.check(&Value::from(0)).is_err());
-        assert!(boot.check(&Value::from("ten")).is_err());
+        assert!(boot.check_with(&Value::from(8), "").is_ok());
+        assert!(boot.check_with(&Value::from(0), "").is_err());
+        assert!(boot.check_with(&Value::from("ten"), "").is_err());
 
         let tailscale = snapshot.entry("tailscale").unwrap();
-        assert!(tailscale.check(&Value::Bool(false)).is_ok());
-        assert!(tailscale.check(&Value::from(1)).is_err());
+        assert!(tailscale.check_with(&Value::Bool(false), "").is_ok());
+        assert!(tailscale.check_with(&Value::from(1), "").is_err());
 
         let zone = snapshot.entry("timeZone").unwrap();
-        assert!(zone.check(&Value::from("../etc/passwd")).is_err());
-        assert!(zone.check(&Value::from("")).is_err());
+        assert!(zone.check_with(&Value::from("../etc/passwd"), "").is_err());
+        assert!(zone.check_with(&Value::from(""), "").is_err());
 
         let dim = snapshot.entry("dimAfter").unwrap();
-        assert!(dim.check(&Value::from(60)).is_ok());
-        assert!(dim.check(&Value::from(61)).is_err());
+        assert!(dim.check_with(&Value::from(60), "").is_ok());
+        assert!(dim.check_with(&Value::from(61), "").is_err());
 
         let packages = snapshot.entry("packages").unwrap();
         assert!(
             packages
-                .check(&serde_json::json!(["ripgrep", "python3Packages.black"]))
+                .check_with(&serde_json::json!(["ripgrep", "python3Packages.black"]), "")
                 .is_ok()
         );
         assert!(
             packages
-                .check(&serde_json::json!(["ripgrep", "ripgrep"]))
+                .check_with(&serde_json::json!(["ripgrep", "ripgrep"]), "")
                 .is_err()
         );
-        assert!(packages.check(&serde_json::json!(["rip grep"])).is_err());
-        assert!(packages.check(&serde_json::json!([1])).is_err());
-        assert!(packages.check(&Value::from("ripgrep")).is_err());
+        assert!(
+            packages
+                .check_with(&serde_json::json!(["rip grep"]), "")
+                .is_err()
+        );
+        assert!(packages.check_with(&serde_json::json!([1]), "").is_err());
+        assert!(packages.check_with(&Value::from("ripgrep"), "").is_err());
     }
 
     #[test]
