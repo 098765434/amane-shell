@@ -14,9 +14,9 @@ use std::collections::HashSet;
 use std::time::SystemTime;
 
 use amane::{
-    Animation, Center, Color, Column, Full, Horizontal, LayerWindow, Margin, Notification,
-    Notifications, Parent, Rectangle, ScrollArea, Service, Size, Stack, Text, Vertical, Widget,
-    window_size,
+    Animation, Center, Color, Column, Full, Horizontal, Keyboard, LayerWindow, Margin,
+    Notification, Notifications, Parent, Rectangle, ScrollArea, Service, Size, Stack, Text,
+    Vertical, Widget, window_size,
 };
 
 use super::card::{self, Measured, Place};
@@ -130,9 +130,11 @@ pub fn side_sheet() -> LayerWindow {
 
     let width = notification::center::width();
     let gap = sys::space::gap::m();
-    // slides from just past the right edge to `gap` in from it, or fades in
-    // there where motion is reduced
-    let travel = motion::travel(width + gap);
+    // slides from the right edge to `gap` in from it, or fades in there where
+    // motion is reduced. A pixel of it stays on the output: niri sends no
+    // frame callbacks to a layer surface it doesn't draw, so a sheet parked
+    // wholly past the edge would wait up to a second to start moving.
+    let travel = motion::travel(width + gap - 1.0);
     let right = gap - (1.0 - progress) * travel;
     let opacity = if travel == 0.0 {
         progress.clamp(0.0, 1.0)
@@ -150,7 +152,18 @@ pub fn side_sheet() -> LayerWindow {
             left: 0,
         })
         .visible(shown);
-    let base = dismissable(overlay(base, CENTER_NS, Vertical::Top, Horizontal::Right));
+    // niri focuses an on-demand surface as it maps, which turns the focused
+    // window inactive (its sidebar dims); the sheet takes keys once it's in
+    // place and clicked into, like macOS's Notification Center
+    let keyboard = if open && progress < 0.999 {
+        Keyboard::None
+    } else {
+        Keyboard::OnDemand
+    };
+    let base = dismissable(
+        overlay(base, CENTER_NS, Vertical::Top, Horizontal::Right),
+        keyboard,
+    );
 
     if !shown {
         motion::forget(SCOPE);

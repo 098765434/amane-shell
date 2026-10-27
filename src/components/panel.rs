@@ -86,9 +86,9 @@ pub(crate) fn overlay(
         .vibrant(material::vibrant())
 }
 
-/// Takes keys while clicked into, and closes the open panel on Escape.
-pub(crate) fn dismissable(base: LayerWindow) -> LayerWindow {
-    base.keyboard(Keyboard::OnDemand).on_key(|key| {
+/// Takes keys as `keyboard` says, and closes the open panel on Escape.
+pub(crate) fn dismissable(base: LayerWindow, keyboard: Keyboard) -> LayerWindow {
+    base.keyboard(keyboard).on_key(|key| {
         if matches!(key, Key::Escape) {
             close();
         }
