@@ -223,6 +223,10 @@ mod tests {
 
     #[test]
     fn a_line_moves_into_the_settings_file_as_one_commit() {
+        // a build sandbox (nix's checkPhase) has no git
+        if run("git", &["--version"], None).is_err() {
+            return;
+        }
         let root = temp_repo();
         let entry = Entry {
             id: String::from("keyboardLayout"),
