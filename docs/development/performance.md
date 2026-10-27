@@ -25,7 +25,7 @@ What a frame costs:
 - **The view** runs on the CPU: your component's code, layout and text measuring. It's usually well
   under a millisecond.
 - **The GPU work** depends on the commands:
-  - **Rectangles, borders, glyphs and plain images** are cheap quads.
+  - **Rectangles, borders, drop shadows, glyphs and plain images** are cheap quads.
   - **Paths, strokes, shadows, inner shadows and gradients** go through vello. Each run of vello
     commands between quads renders into its own texture. A run of fills and strokes takes one the
     size of its box; one with shadows, gradients or images takes the whole surface.

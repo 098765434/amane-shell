@@ -102,6 +102,31 @@ runs vello (quads draw its glass and text), so it closes back to the start figur
 (59 → 317 → 59 MB). Quick Settings' 110 MB of GTT, growing a little on each reopening, is the
 open item now.
 
+### Drop shadows are quads, so Quick Settings never runs vello
+
+**What it cost.** amane drew rectangles, text, glyph icons and straight images with its quads
+and sent everything else to vello, and the drop shadow under every Quick Settings module and
+under the sheet was everything else. Opening and closing it ran vello 465 times (one run per
+frame per shadowed scene, each a scene upload, a dozen compute passes and a scratch texture),
+allocated the scratch pool, and left 96 MB behind until the idle release.
+
+**What changed.** amane's quads draw drop shadows with vello's own closed form for a blurred
+rounded rectangle (amane's memory doc has the details), so a window whose only vector content
+was its shadows is now quads-only. Quick Settings, the launcher, the dock, toasts and dialogs
+all are. The widgets' graphs and the stroke clock still go through vello, as do gradients,
+inner shadows and anything rotated.
+
+**Switching it off.** `AMANE_VELLO_SHADOWS=1` sends drop shadows back to vello.
+
+**Measured** on a second shell, VRAM of the process, Quick Settings opened and closed:
+59 MB at start, 124 open (252 before), 59 closed (219 before, 123 after the idle release),
+with no vello run. GTT to open: 78 MB (108 before); that 68 MB over the start is what is
+still open.
+
+**Rule.** Prefer what the quads draw: rectangles, borders, drop shadows, text, glyph icons
+and straight images. One path, gradient, inner shadow or rotation in a window makes every
+frame of that window a vello frame. Check with `AMANE_FRAMES=1` and the `vello N` field.
+
 ### niri's global blur matches glass
 
 Every blurred rule names a material with its own `blur-passes`/`blur-offset`, and niri keeps one
@@ -179,6 +204,7 @@ Each lands with a section above and a row here:
 | idle, whole GPU (other apps differing between readings) | 1.96 GiB VRAM + 318 MB GTT | 1.48 GiB + 223 MB after the vello fork, blur 3/2 and the Radeon-only driver; not yet re-read after the hide release, the cards-sized widgets surface and the niri changes |
 | shell RSS / anon at idle | 193 / 123 MB | 133 / 72 MB (same point) |
 | second shell: launcher opened and closed twice, then Quick Settings | 354 MB VRAM | 128–186 MB |
-| second shell: Quick Settings opened and closed, then idle | 354 MB VRAM (after the launcher) | 219 MB closed, 123 MB after 10 s idle |
+| second shell: Quick Settings opened and closed, then idle | 354 MB VRAM (after the launcher) | 219 MB closed, 123 MB after 10 s idle; 59 MB (the start figure) with shadows as quads |
+| second shell: Quick Settings open | 252 MB VRAM + 108 MB GTT | 124 MB + 78 MB |
 | second shell with the desktop showing (widgets) | 363 MB VRAM | 213 MB |
 | amane `gradient` example | 193 MB VRAM | 65 MB |
