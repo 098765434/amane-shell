@@ -11,13 +11,14 @@ use crate::surfaces::alert::ALERT_NS;
 use crate::surfaces::dock::DOCK_NS;
 use crate::surfaces::launcher::LAUNCHER_NS;
 use crate::surfaces::notifications::{CENTER_NS, TOAST_NS};
+use crate::surfaces::osd::OSD_NS;
 use crate::surfaces::quick_settings::QS_NS;
 use crate::surfaces::status_bar::BAR_NS;
 use crate::surfaces::widgets::WIDGETS_NS;
 use crate::theme::{Density, Mode};
 use amane_kit::material::Material;
 
-use crate::tokens::{Key, Value, bar, dialog, library, notification, resolved, sys, with_key};
+use crate::tokens::{Key, Value, bar, dialog, library, notification, osd, resolved, sys, with_key};
 
 pub struct LayerRule {
     pub namespace: &'static str,
@@ -82,6 +83,7 @@ pub fn rules() -> Vec<LayerRule> {
     let center = with_key(key, notification::center::radius);
     let strip = with_key(key, bar::radius);
     let alert = with_key(key, dialog::radius);
+    let capsule = with_key(key, osd::radius);
 
     vec![
         LayerRule {
@@ -214,6 +216,24 @@ pub fn rules() -> Vec<LayerRule> {
                 radius: alert,
                 softness: ALERT_SHADOW_SOFTNESS,
                 y: ALERT_SHADOW_Y,
+            }),
+            frost: None,
+            popups: None,
+            clear: true,
+            desktop: false,
+        },
+        LayerRule {
+            namespace: OSD_NS,
+            comment: String::from(
+                "On-screen display: the capsule that shows a level or a switch as a key\n\
+                      changes it, above the bottom edge, on a surface as big as the capsule. It\n\
+                      frosts itself (a blur shape, in small glass); the rule rounds it and gives\n\
+                      it niri's shadow.",
+            ),
+            card: Some(Card {
+                radius: capsule,
+                softness: BANNER_SHADOW_SOFTNESS,
+                y: SHADOW_Y,
             }),
             frost: None,
             popups: None,

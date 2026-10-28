@@ -55,6 +55,8 @@ pub const ICON_VPN: char = '\u{e0da}';
 pub const ICON_HOTSPOT: char = '\u{e1e2}';
 pub const ICON_WIRED: char = '\u{eb2f}';
 pub const ICON_KEYBOARD_LIGHT: char = '\u{f7ed}';
+pub const ICON_CAPS_LOCK: char = '\u{e318}';
+pub const ICON_NUM_LOCK: char = '\u{eb8d}';
 pub const ICON_CAMERA: char = '\u{e04b}';
 pub const ICON_SCREEN_SHARE: char = '\u{e0e2}';
 pub const ICON_MUSIC: char = '\u{e405}';
@@ -93,6 +95,19 @@ pub fn audio_glyph(kind: AudioKind, input: bool) -> char {
         AudioKind::Phone => ICON_PHONE,
         AudioKind::Webcam => ICON_WEBCAM,
         AudioKind::Microphone => ICON_MIC_EXTERNAL,
+    }
+}
+
+/// The glyph for an output's level: off while muted or silent, down while
+/// quiet on the built-in speakers, else the device's own (`audio_glyph`).
+pub fn volume_glyph(muted: bool, volume: u8, kind: AudioKind) -> char {
+    let loud = audio_glyph(kind, false);
+    if muted || volume == 0 {
+        ICON_VOLUME_OFF
+    } else if volume < 50 && kind == AudioKind::Internal {
+        ICON_VOLUME_DOWN
+    } else {
+        loud
     }
 }
 

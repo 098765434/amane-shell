@@ -708,6 +708,7 @@ mod tests {
         // the kit's dialog, and the shell's alert that shows it
         ("containers/dialog.rs", "dialog"),
         ("alert/", "dialog"),
+        ("osd/", "osd"),
     ];
 
     fn component_sources() -> Vec<(String, String)> {

@@ -12,7 +12,7 @@ use super::super::{Page, open};
 use super::settings_link;
 use crate::components::buttons::{IconButton, Shape, Style, expect, optimistic};
 use crate::components::icons::{
-    ICON_CHEVRON_RIGHT, ICON_MIC, ICON_MIC_OFF, ICON_VOLUME_DOWN, ICON_VOLUME_OFF, audio_glyph,
+    ICON_CHEVRON_RIGHT, ICON_MIC, ICON_MIC_OFF, ICON_VOLUME_OFF, audio_glyph, volume_glyph,
 };
 use crate::components::layout::{boxed, caption, split_row};
 use crate::components::list::{self, List, ListItem};
@@ -40,7 +40,7 @@ pub(in crate::surfaces::quick_settings) fn cell(
     }
 
     // the small glyph before the track mutes, and says how loud it is
-    let glyph = level_glyph(muted, volume, audio_glyph(kind, false));
+    let glyph = volume_glyph(muted, volume, kind);
     let output = SliderRow::new("Sound", glyph, audio_glyph(kind, false), move |width| {
         Slider::new(volume, width)
             .dimmed(muted)
@@ -67,17 +67,6 @@ pub(in crate::surfaces::quick_settings) fn cell(
             .on_secondary(|| open(Page::Sound))
             .into(),
     )
-}
-
-/// The glyph for a level: off while muted or silent, down while quiet.
-fn level_glyph(muted: bool, volume: u8, loud: char) -> char {
-    if muted || volume == 0 {
-        ICON_VOLUME_OFF
-    } else if volume < 50 && loud == audio_glyph(amane::AudioKind::Internal, false) {
-        ICON_VOLUME_DOWN
-    } else {
-        loud
-    }
 }
 
 const MUTE_ID: &str = "amane.qs.volume.mute";

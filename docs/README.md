@@ -30,7 +30,7 @@ A module's folder says what kind of thing it is. A new one goes where its kind i
 
 | Folder | What goes there |
 |---|---|
-| `src/surfaces/` | a surface of its own: the status bar, dock, launcher, notifications, Quick Settings, widgets, context menu and alert, each with its doc in `shell/` |
+| `src/surfaces/` | a surface of its own: the status bar, dock, launcher, notifications, Quick Settings, widgets, context menu, alert and on-screen display, each with its doc in `shell/` |
 | `src/components/` | the shell's pieces that several surfaces share (`panel`, `battery`, `grid`, `search_field`, `text_edit`), and the kit's modules re-exported under their old paths |
 | `src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; helpers in `process.rs` and `state.rs` |
 | `src/tokens/` | what the shell generates from the tokens (niri's layer rules) |
@@ -55,6 +55,7 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | Notifications | the notification daemon's toasts, the notification center and Do Not Disturb | [shell/notifications.md](shell/notifications.md) |
 | Quick Settings | GNOME's quick settings in the macOS Control Center look, with Edit Controls | [shell/quick-settings.md](shell/quick-settings.md) |
 | Desktop widgets | readings and a clock on the wallpaper, on Quick Settings' grid | [shell/widgets.md](shell/widgets.md) |
+| On-screen display | the capsule that shows volume, brightness, the keyboard light, a lock key or a switch as it changes | [shell/osd.md](shell/osd.md) |
 | Alert | macOS's alert in the middle of the screen, for questions like "Restart now?" | [shell/quick-settings.md#the-alert](shell/quick-settings.md#the-alert) |
 | Shell Settings | the settings app: appearance, the desktop's widgets, Spotlight, and the System pages that manage the NixOS configuration | [shell/settings-app.md](shell/settings-app.md) |
 | Displays | Shell Settings' page for the screens: what each can do (OLED, HDR, VRR range), resolution, refresh (lower on battery), scale, rotation, arrangement, HDR, a monitor's brightness over DDC/CI, Night Light's schedule | [shell/displays.md](shell/displays.md) |

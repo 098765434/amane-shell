@@ -269,8 +269,8 @@ their values, the component typographies and how each member reaches the drawn t
  
 ## 7. Tier 3 — component tokens
  
-The component sets in `tokens.json` are `bar`, `menu`, `notification`, `quick`, `dialog`,
-`material` and `wifi` (`tokens::COMPONENTS` also allows `power` and `osd`, which have no tokens).
+The component sets in `tokens.json` are `bar`, `menu`, `notification`, `quick`, `dialog`, `osd`,
+`material` and `wifi` (`tokens::COMPONENTS` also allows `power`, which has no tokens).
 The glass components take their surface from a material, not from a `sys.color.surface.*` pair:
 
 | Component | Surface |
@@ -280,6 +280,7 @@ The glass components take their surface from a material, not from a `sys.color.s
 | `notification` | `Material::Banner` (toasts), `Material::Sheet` (the center) |
 | `quick` (Quick Settings) | `Material::Control` modules, a page's `Material::Popover` sheet |
 | `dialog` (the alert, an app's dialog) | `Material::Sheet` |
+| `osd` (the on-screen display) | `Material::Control` |
 | `material` | none: niri's material settings, read only by the layer-rule generator ([materials.md](materials.md#tokens)) |
 | `wifi` | none: left from the old Wi-Fi panel, read by no code (§13 reports them) |
  

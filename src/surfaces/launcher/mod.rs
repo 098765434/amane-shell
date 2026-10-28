@@ -43,6 +43,8 @@ mod results;
 mod shape;
 mod usage;
 
+pub(crate) use actions::profile_name;
+
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::{Duration, Instant};

@@ -77,6 +77,23 @@ The modes also answer to `applications` (for `apps`) and `home` or `search` (the
 | `dnd`, `dnd toggle` | switches Do Not Disturb |
 | `dnd on`, `dnd off` | turns it on (until turned off) or off |
 
+### `osd`
+
+`osd <what> <how> [fine]` ([osd.md](../shell/osd.md)): the media and brightness keys. Each changes
+the level or switch and shows the new one in the on-screen display; `fine` steps by 1 in place of 5.
+The niri binds fall back to `wpctl` / `brightnessctl` unless the reply is `ok`.
+
+| Call | Does |
+|---|---|
+| `volume up`, `volume down` | moves the output's volume 5% (up unmutes), clamped to 0–100 |
+| `volume mute` | mutes or unmutes the output |
+| `mic mute` | mutes or unmutes the microphone |
+| `brightness up`, `brightness down` | moves the screen's brightness 5%, never below 1% |
+| `kbd-light up`, `kbd-light down`, `kbd-light cycle` | moves the keyboard light a step; `cycle` goes from the brightest back to off |
+| `airplane toggle` | blocks or unblocks every radio |
+| `profile cycle` | the next power mode the daemon offers |
+| `show volume`, `show mic`, `show brightness`, `show kbd-light` | shows the level as it is, changing nothing |
+
 ### `widgets`
 
 `widgets list | add <kind> [size] [output] | remove <id> | reset-layout [output] | edit [output] | done`

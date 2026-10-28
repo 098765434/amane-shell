@@ -189,6 +189,24 @@ layer-rule {
     }
 }
 
+// On-screen display: the capsule that shows a level or a switch as a key
+// changes it, above the bottom edge, on a surface as big as the capsule. It
+// frosts itself (a blur shape, in small glass); the rule rounds it and gives
+// it niri's shadow.
+layer-rule {
+    match namespace="^amane\\.osd$"
+    geometry-corner-radius 26
+    shadow {
+        on
+        softness 48
+        offset x=0 y=8
+        color "#00000073"
+    }
+    background-effect {
+        xray false
+    }
+}
+
 // An amane app's windows: frosted behind, the window drawing its own tint
 // over the frost (the window material), and its popups like the shell's.
 window-rule {

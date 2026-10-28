@@ -12,7 +12,7 @@ use amane::App;
 
 use components::tooltip;
 use surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
-use surfaces::{alert, dock, launcher, notifications, quick_settings, status_bar, widgets};
+use surfaces::{alert, dock, launcher, notifications, osd, quick_settings, status_bar, widgets};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {
@@ -173,6 +173,7 @@ fn main() -> ExitCode {
         .window(notifications::side_sheet)
         .window(launcher::surface)
         .window(alert::surface)
+        .window(osd::surface)
         .window(context_menu::anchor)
         .window_per_monitor(widgets::surface)
         .window_per_monitor(widgets::edit_surface)
@@ -213,6 +214,9 @@ fn main() -> ExitCode {
     .ipc("quick-settings", quick_settings::ipc)
     // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("launcher", launcher::ipc)
+    // the media and brightness keys, each acting and showing the new level:
+    // `printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    .ipc("osd", osd::ipc)
     // `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("widgets", widgets::ipc)
     // `printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`

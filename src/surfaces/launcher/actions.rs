@@ -231,7 +231,7 @@ fn power_mode(specs: &mut Vec<Spec>) {
 }
 
 /// What a power profile is called: "power-saver" is Power Saver.
-fn profile_name(profile: &str) -> String {
+pub(crate) fn profile_name(profile: &str) -> String {
     profile
         .split('-')
         .map(|word| {

@@ -27,6 +27,7 @@
 //!
 //! - [`desktop::privacy`] — what's using the microphone, the camera or the screen.
 //! - [`desktop::background_apps`] — apps running without a window (the portal).
+//! - [`desktop::lock_keys`] — whether Caps Lock and Num Lock are on (the keyboards' LEDs).
 //! - [`desktop::updates`] — what the last NixOS update check found.
 //! - [`desktop::system_stats`] — processor, memory, network, temperature and
 //!   disks, and their recent history, for the desktop's widgets.

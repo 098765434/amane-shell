@@ -46,6 +46,7 @@ generated from (2), not hand-edited, so neither can drift.
 | `amane.launcher` | the app launcher: a clear surface over the output that frosts its glass panel through a blur region; `xray false`, and its popups (an app's menu) frosted |
 | `amane.notifications.toast` | each notification toast: one surface per banner, frosting its card itself; `clear`, rounded `notification.card.radius`, with niri's shadow at softness 48 (the banner design's `0 8 48`; other surfaces use 16) |
 | `amane.alert` | the shell's alert in the middle of the screen, as big as its card, frosting itself in thick glass; `clear`, rounded `dialog.radius`, with niri's shadow at softness 48 and offset 18 (the dialog design's `0 18 48`) |
+| `amane.osd` | the on-screen display above the bottom edge, as big as its capsule, frosting itself in small glass; `clear`, rounded `osd.radius`, with niri's shadow at softness 48 (the banner's) |
 | `amane.notifications.center` | the notification center sidebar, frosting itself; `clear`, rounded `notification.center.radius`, with niri's shadow (its Do Not Disturb menu is a frosted xdg-popup of it) |
 | `amane.context-menu-anchor` | the context-menu anchor window |
 | `amane.context-menu.0` … `.7` | nested context-menu levels |
