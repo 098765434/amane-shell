@@ -1,6 +1,6 @@
 # Controls
 
-amane-kit's buttons and controls (`kit/src/buttons/`, `amane_kit::buttons`). Each follows its Material 3
+amane-kit's buttons and controls (`kit/src/controls/buttons/`, `amane_kit::buttons`). Each follows its Material 3
 counterpart in structure (variants, shapes, a hover state layer, a disabled state), but is drawn
 in the shell's macOS/iOS look and sized like its other controls. They read `sys.*` tokens
 only, so any component can use them.

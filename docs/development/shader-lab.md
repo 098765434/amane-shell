@@ -74,7 +74,7 @@ The sliders don't take the scroll wheel, so scrolling the panel never changes a 
 | `rings` | the stepped, colour-fringed light rings from the Figma Community file "Copy Shader Animation Component"; Glow only makes its black clear |
 | `hatching` | the Figma shader "Hatching": the picture redrawn as lines between two colours, as thick as it's bright; starts on the Photo subject |
 | `moving-blobs` | the Figma shader "Moving blobs": liquid blobs that refract, displace, bulge, hue-shift or invert the picture under them, with dispersion and a cast shadow; starts on the Photo subject |
-| `glass` | the shell's own glass: `kit/src/glass.wgsl` (linked, so editing it reloads here) over a surface drawn like the shell's panels, with Dark and Light presets from the `sys` tokens; Frost stands in for niri's blur, which the lab can't show |
+| `glass` | the shell's own glass: `kit/src/look/glass.wgsl` (linked, so editing it reloads here) over a surface drawn like the shell's panels, with Dark and Light presets from the `sys` tokens; Frost stands in for niri's blur, which the lab can't show |
 | `liquid-glass` | glass that refracts: inside a bezel along the edge the backdrop is read from further along the edge's normal, each colour a little apart, under the shell's tint, glow and lit rim; the shell itself can't do this until niri draws it, as a surface can't read what's behind it |
 | `chrome-wallpaper` | the chrome, reflecting the wallpaper file, placed by the window's position on the output (Window x/y, Output w/h) |
 

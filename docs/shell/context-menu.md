@@ -1,7 +1,7 @@
 # Context menu
 
 A reusable, macOS-style context menu with arbitrarily nested submenus
-(`src/components/context_menu/`). Each menu level is an **xdg-popup**, so the compositor positions
+(`src/surfaces/context_menu/`). Each menu level is an **xdg-popup**, so the compositor positions
 it, keeps it on screen, grabs input for it and dismisses it on an outside click. The cards are
 `Material::Menu` glass. xdg-popups can't send blur shapes, so niri frosts them through the
 `popups {}` block of their parent surface's layer rule: the anchor's

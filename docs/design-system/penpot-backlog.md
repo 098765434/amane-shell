@@ -10,25 +10,25 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 
 | Token (suggested name) | Value | Where it is now |
 |---|---|---|
-| `sys.motion.duration.spring`, `sys.motion.spring.bounce` | 450 ms, 0.15 | `kit/src/motion.rs` (`SPRING`) |
-| `sys.motion.duration.sheet`, `sys.motion.sheet.bounce` | 500 ms, 0.1 | `kit/src/motion.rs` (`SHEET`) |
-| `sys.motion.duration.fade`, `sys.motion.duration.exit` | 200 ms, 300 ms | `kit/src/motion.rs` (`FADE`, `EXIT`) |
-| `sys.motion.duration.hover`, `.press`, `.close` | 120 ms, 220 ms, 160 ms | `kit/src/motion.rs` (`HOVER`, `PRESS`, `CLOSE`) |
-| `sys.motion.duration.pop`, `sys.motion.pop.bounce` | 380 ms, 0.08 | `kit/src/motion.rs` (`POP`: a popover swelling in) |
-| `sys.motion.zoom.bounce` | 0.05 | `kit/src/motion.rs` (`ZOOM_BOUNCE`: a page growing out of its control) |
-| `sys.motion.enter-scale` | 0.9 | `kit/src/motion.rs` (`ENTER_SCALE`: a card's or control's entrance) |
-| `sys.motion.press-scale` | 0.96 | `kit/src/buttons/mod.rs` (`PRESS_SCALE`; `quick.press.scale` holds the same) |
+| `sys.motion.duration.spring`, `sys.motion.spring.bounce` | 450 ms, 0.15 | `kit/src/animation/motion.rs` (`SPRING`) |
+| `sys.motion.duration.sheet`, `sys.motion.sheet.bounce` | 500 ms, 0.1 | `kit/src/animation/motion.rs` (`SHEET`) |
+| `sys.motion.duration.fade`, `sys.motion.duration.exit` | 200 ms, 300 ms | `kit/src/animation/motion.rs` (`FADE`, `EXIT`) |
+| `sys.motion.duration.hover`, `.press`, `.close` | 120 ms, 220 ms, 160 ms | `kit/src/animation/motion.rs` (`HOVER`, `PRESS`, `CLOSE`) |
+| `sys.motion.duration.pop`, `sys.motion.pop.bounce` | 380 ms, 0.08 | `kit/src/animation/motion.rs` (`POP`: a popover swelling in) |
+| `sys.motion.zoom.bounce` | 0.05 | `kit/src/animation/motion.rs` (`ZOOM_BOUNCE`: a page growing out of its control) |
+| `sys.motion.enter-scale` | 0.9 | `kit/src/animation/motion.rs` (`ENTER_SCALE`: a card's or control's entrance) |
+| `sys.motion.press-scale` | 0.96 | `kit/src/controls/buttons/mod.rs` (`PRESS_SCALE`; `quick.press.scale` holds the same) |
 | `quick.drag.band` | 0.1 | `quick_settings/edit.rs` (`BAND`: the dead band before a held control changes cell) |
 | `quick.page.min-rows` | 5 | `quick_settings/mod.rs` (`MIN_PAGE_ROWS`) |
 | `quick.open.lift` | 12 | `quick_settings/mod.rs` (`OPEN_LIFT`: how far below its place the card starts) |
 | `quick.open.cascade`, `.cascade-scale`, `.cascade-rise` | 90 ms, 0.9, 10 | `quick_settings/tiles/mod.rs` (`CASCADE*`: the modules arriving in a wave) |
 | `quick.page.tile-fade`, `quick.page.grid-fade` | 0.25, 0.6 | `quick_settings/mod.rs` (`TILE_FADE`, `GRID_FADE`: shares of the zoom) |
 | `quick.page.reveal.*` (header, body, step, span, rise) | 0.35–0.7, 0.45, 0.06, 0.35, 8 | `quick_settings/detail.rs` (`REVEAL_*`: a page's content coming in) |
-| `sys.glass.material` | `glass` | `kit/src/glass_region.rs` (`MATERIAL`: the stand-in compositor material where a material's own isn't configured) |
-| `sys.material.inactive` | 0.5 | `kit/src/material.rs` (`INACTIVE`: how far an app window's materials go toward opaque while another window has the focus) |
-| `sys.material.small-glass` | 44 | `kit/src/material.rs` (`SMALL_GLASS`: the short side at or under which glass is small and frosts with `glass-small`) |
-| `sys.material.untoned` | 0.4 | `kit/src/material.rs` (`UNTONED`: how far a tint goes toward opaque where niri doesn't tone the backdrop under it) |
-| `sys.material.clear-fade` | 0.7 | `kit/src/material.rs` (`CLEAR_FADE`: how much of its tint Clear glass keeps over a backdrop that isn't bright) |
+| `sys.glass.material` | `glass` | `kit/src/look/glass_region.rs` (`MATERIAL`: the stand-in compositor material where a material's own isn't configured) |
+| `sys.material.inactive` | 0.5 | `kit/src/look/material.rs` (`INACTIVE`: how far an app window's materials go toward opaque while another window has the focus) |
+| `sys.material.small-glass` | 44 | `kit/src/look/material.rs` (`SMALL_GLASS`: the short side at or under which glass is small and frosts with `glass-small`) |
+| `sys.material.untoned` | 0.4 | `kit/src/look/material.rs` (`UNTONED`: how far a tint goes toward opaque where niri doesn't tone the backdrop under it) |
+| `sys.material.clear-fade` | 0.7 | `kit/src/look/material.rs` (`CLEAR_FADE`: how much of its tint Clear glass keeps over a backdrop that isn't bright) |
 | `dock.icon.size`, `dock.icon.least`, `dock.radius`, `dock.reveal.strip` | 44, 20, 18, 2 | `dock/mod.rs` (`ICON`, `LEAST_ICON`, `RADIUS`, `STRIP`) |
 | `dock.running.size` | 4 | `dock/item.rs` (`RUNNING`) |
 | `dock.drag.threshold` | 6 | `dock/drag.rs` (`THRESHOLD`) |
@@ -49,19 +49,19 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `launcher.highlight.radius` | 14 | `launcher/grid.rs` (`HIGHLIGHT_RADIUS`); add `launcher` to `tokens::COMPONENTS` with the first `launcher.*` token |
 | `launcher.highlight.unfocused`, `launcher.scrollbar.idle`, `launcher.paging.*` | 0.45, 800 ms, 450 ms spring 0.08 / flick 1.2 / band 0.3 | `launcher/mod.rs` (`UNFOCUSED`, `SCROLLBAR_IDLE`, `PAGING`) |
 | `launcher.focus-ring.width`, `.gap`, `.opacity`, `launcher.empty.icon` | 2, 2, 0.55, 40 | `launcher/header.rs` (`RING`, `RING_GAP`, `RING_ALPHA`), `launcher/results.rs` (`EMPTY_ICON`) |
-| `sys.scrollbar.width`, `.thumb-min` | 6, 32 | `kit/src/scroll_view.rs` (`SCROLLBAR`, `THUMB_MIN`) |
+| `sys.scrollbar.width`, `.thumb-min` | 6, 32 | `kit/src/containers/scroll_view.rs` (`SCROLLBAR`, `THUMB_MIN`) |
 | `sys.caret.width` | 2 | `search_field.rs` (`CARET`) |
 | `customize.window.width`, `.height` | 860, 960 | `quick_settings/customize/mod.rs` (`WIDTH`, `HEIGHT`: the Customize window, shorter on a short display) |
 | `customize.sidebar.width`, `customize.pane.inset` | 300, 24 | `quick_settings/customize/mod.rs` (`SIDEBAR`, `INSET`) |
 | `customize.open.scale`, `customize.scroll.wheel-step`, `customize.scrollbar.idle` | 0.96, 60, 800 ms | `quick_settings/customize/mod.rs` (`OPEN_SCALE`, `WHEEL_STEP`, `SCROLLBAR_IDLE`); add `customize` to `tokens::COMPONENTS` with the first `customize.*` token |
-| `sys.motion.coast.decay`, `.duration`, `.min-fling`, `.held`, `.rubber-band` | 0.325 s, 850 ms, 60 px/s, 80 ms, 0.3 | `kit/src/kinetic.rs` (`DECAY`, `COAST`, `MIN_FLING`, `HELD`, `RUBBER_BAND`) |
+| `sys.motion.coast.decay`, `.duration`, `.min-fling`, `.held`, `.rubber-band` | 0.325 s, 850 ms, 60 px/s, 80 ms, 0.3 | `kit/src/animation/kinetic.rs` (`DECAY`, `COAST`, `MIN_FLING`, `HELD`, `RUBBER_BAND`) |
 | `sys.opacity.disabled` (also) | 0.38 | `quick_settings/tiles/mod.rs` (`DIMMED`: a placeholder for a control without its hardware) |
-| `sys.opacity.disabled` | 0.38 | `kit/src/buttons/mod.rs` (`DISABLED_OPACITY`) |
-| `sys.effect.glass.far`, `sys.effect.glass.bloom` | light 0.3, 0.08; dark 0.1, 0.01 | `kit/src/glass.rs` (`Light::now`). These differ by mode but aren't colours, so §1.4 needs them folded into the rim colour or made mode-free first |
-| `sys.effect.glass.rim-width`, `.bloom-width`, `.glow-blur` | 1.5, 14, 5 | `kit/src/glass.rs` |
+| `sys.opacity.disabled` | 0.38 | `kit/src/controls/buttons/mod.rs` (`DISABLED_OPACITY`) |
+| `sys.effect.glass.far`, `sys.effect.glass.bloom` | light 0.3, 0.08; dark 0.1, 0.01 | `kit/src/look/glass.rs` (`Light::now`). These differ by mode but aren't colours, so §1.4 needs them folded into the rim colour or made mode-free first |
+| `sys.effect.glass.rim-width`, `.bloom-width`, `.glow-blur` | 1.5, 14, 5 | `kit/src/look/glass.rs` |
 | `sys.shadow.popover` | `0 8 16 #00000073` | `tokens/layer_rules.rs` (`SHADOW_*`) |
-| `sys.motion.duration.tooltip` | 500 ms | `kit/src/tooltip.rs` (`DELAY`) |
-| `tooltip.*` (text style, inset) | `sys.type.caption`, `sys.space.inset.s` | `kit/src/tooltip.rs` |
+| `sys.motion.duration.tooltip` | 500 ms | `kit/src/containers/tooltip.rs` (`DELAY`) |
+| `tooltip.*` (text style, inset) | `sys.type.caption`, `sys.space.inset.s` | `kit/src/containers/tooltip.rs` |
 | `bar.scroll.step` | 3 | `status_bar/mod.rs` (`SCROLL_STEP`: lines of touchpad scroll per workspace) |
 
 `motion` and `opacity` are already `sys` categories in the vocabulary (§4.2). Add `ref.duration.*`
@@ -104,7 +104,7 @@ whose output is static: it can't follow the mode, so it holds one value for both
     `button.label` typographies.
 - `sys.color.glass.thin`, `.thick`, `.rim` and `.glow` were added to `tokens.json` by hand, in
   both modes: the tints of small and large glass (thin is the panels' old tint; thick is more
-  opaque, for glass that holds text) and the glass edge's light, which `kit/src/glass.rs` held
+  opaque, for glass that holds text) and the glass edge's light, which `kit/src/look/glass.rs` held
   as constants. Recreate them in Penpot under the same names. `.thin` and `.thick` are now
   aliases of `sys.color.material.thin` and `.thick`, and go once nothing reads them.
 - The materials were added to `tokens.json` by hand (see [materials.md](materials.md)), in both

@@ -108,9 +108,9 @@ file means the default:
 | `dock-pins` | the dock's pins, one a line | `dock/pins.rs` |
 | `quick-settings` | Quick Settings' layout (JSON) | `quick_settings/layout.rs` |
 | `widgets` | each monitor's widgets and their settings (JSON) | `widgets/store.rs` |
-| `night-light` | whether night light is on, how warm and when (`on 4000 manual`, `on 3500 sun 59.92 10.75`, `on 4000 hours 21:00 07:00`; a line without the schedule is all day) | `services/night_light.rs` |
-| `vpn` | the last VPN used | `services/connections.rs` |
+| `night-light` | whether night light is on, how warm and when (`on 4000 manual`, `on 3500 sun 59.92 10.75`, `on 4000 hours 21:00 07:00`; a line without the schedule is all day) | `services/display/night_light.rs` |
+| `vpn` | the last VPN used | `services/network/connections.rs` |
 | `launcher-usage.json` | how much each result was used, and the last searches | `launcher/usage.rs` |
-| `clipboard/` | the clipboard history: `index.json` and a file a copy | `services/clipboard_history.rs` |
+| `clipboard/` | the clipboard history: `index.json` and a file a copy | `services/launcher/clipboard_history.rs` |
 
 Keep Awake keeps nothing: its holds are inhibitors tied to the running shell.

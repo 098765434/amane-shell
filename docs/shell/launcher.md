@@ -1,6 +1,6 @@
 # Launcher
 
-macOS Tahoe's Spotlight (`src/components/launcher/`): a glass search pill high on the screen,
+macOS Tahoe's Spotlight (`src/surfaces/launcher/`): a glass search pill high on the screen,
 with round buttons beside it for its modes, that grows down into a panel as you type. Its
 Applications mode is the Launchpad grid the launcher started as, after KDE's
 [Tahoe Launcher](https://github.com/EliverLara/TahoeLauncher). It's opened over IPC from a
@@ -23,7 +23,7 @@ glass, so a click anywhere but the glass closes it.
 
 ### Searching
 
-From the pill, a query lists ([`provider.rs`](../../src/components/launcher/provider.rs)):
+From the pill, a query lists ([`provider.rs`](../../src/surfaces/launcher/provider.rs)):
 
 1. **An answer**, in an accent card over the list. Enter copies it.
    - A sum: `+ - * / ( )` over numbers.
@@ -114,13 +114,13 @@ it on Enter:
 - They're kept in `launcher.json` (`quick_keys`), with the action's name. Shell Settings lists
   them and can remove them or reset them all.
 
-**The timer** (`services/timer.rs`): one at a time; a new one replaces it. While it runs the
+**The timer** (`services/launcher/timer.rs`): one at a time; a new one replaces it. While it runs the
 bar shows a ⏱ chip counting down by the second, which opens Actions. When it runs out, a
 notification says so.
 
 ## Files
 
-Spotlight's Files (`services/file_search.rs`). A search runs off the UI thread a moment after
+Spotlight's Files (`services/launcher/file_search.rs`). A search runs off the UI thread a moment after
 the last key, the newest replacing any before it.
 
 - **Where it looks.**
@@ -154,7 +154,7 @@ It indexes the home folder by default (dconf `org.freedesktop.Tracker3.Miner.Fil
 
 ## Clipboard
 
-Spotlight's clipboard history (`services/clipboard_history.rs`). It's **off until asked for**:
+Spotlight's clipboard history (`services/launcher/clipboard_history.rs`). It's **off until asked for**:
 the first time, Clipboard explains what it would keep, with **Not Now** (back to the pill) and
 **Enable**.
 
@@ -238,7 +238,7 @@ Two fingers on the grid either scroll it or turn the category: the first few pix
   door slides the same way; one further away fades in instead.
 
 The compositor only reports the fingers moving and lifting, so the momentum is the launcher's
-(`amane_kit::kinetic`, `kit/src/kinetic.rs`), not amane's.
+(`amane_kit::kinetic`, `kit/src/animation/kinetic.rs`), not amane's.
 
 ## App menu
 
@@ -322,7 +322,7 @@ never blocks anything.
 | `shape.rs` | where the glass is: the pill, the panel and the buttons (`Geometry`, which blends), and its frost (pure, tested) |
 | `mode.rs` | the modes, their glyphs, names and keys (pure, tested) |
 | `provider.rs` | the sources a search draws on (`Provider`) and how their finds are arranged (`search`; tested) |
-| `services/file_search.rs` | file searches through LocalSearch or `fd`, the kinds, and the SPARQL (tested) |
+| `services/launcher/file_search.rs` | file searches through LocalSearch or `fd`, the kinds, and the SPARQL (tested) |
 | `actions.rs` | the actions (`Spec`), what they ask for, and an argument typed after a name (tested) |
 | `rank.rs` | the fuzzy match and the frecency score (pure, tested) |
 | `usage.rs` | what's remembered of use, and the searches run (tested) |

@@ -135,7 +135,7 @@ NixOS configuration).
 ## Refresh rate on battery
 
 **Lower the refresh rate on battery** (`battery_refresh` in `displays.json`) is the shell's
-(`services/power_refresh.rs`). Every five seconds it reads amane's `Battery`. On battery, it
+(`services/power/power_refresh.rs`). Every five seconds it reads amane's `Battery`. On battery, it
 moves each display to its slowest rate at the same resolution (60 Hz on this panel) with niri's
 temporary `niri msg output … mode`, and remembers the rate it had. On AC, or once the switch is
 off, it puts that rate back. `displays.kdl` keeps the AC rate throughout, so a config reload on

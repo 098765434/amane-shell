@@ -1,6 +1,6 @@
 # Dock
 
-The macOS Big Sur dock, for the windows open on every workspace (`src/components/dock/`). It's one
+The macOS Big Sur dock, for the windows open on every workspace (`src/surfaces/dock/`). It's one
 frosted glass card over the bar on every monitor (`App::window_per_monitor`), namespace
 `amane.dock`.
 
@@ -121,7 +121,7 @@ It reuses the kit's [`EdgeReveal`, `app_icon`, `Divider::vertical` and
 
 ### workspace_menu
 
-The shell's `src/components/workspace_menu.rs`, which the launcher's app menu uses too.
+The shell's `src/surfaces/context_menu/workspace_menu.rs`, which the launcher's app menu uses too.
 
 `workspace_menu::all(pick)` is a submenu of every workspace, `pick` run with the chosen one's
 id. `workspace_menu::on_focused_output(pick)` is the focused monitor's workspaces, the empty one

@@ -1,6 +1,6 @@
 # Desktop Widgets
 
-macOS's desktop widgets on the wallpaper (`src/components/widgets/`). Quick Settings' tiles are
+macOS's desktop widgets on the wallpaper (`src/surfaces/widgets/`). Quick Settings' tiles are
 controls; widgets are readings: the batteries, the processor, memory, temperature, the network
 and the disks. Each is a frosted card on a clear surface under the windows, laid out on Quick
 Settings' grid across the whole screen (the surface itself is only as big as the cards), and the same kind can be placed more than once, each
@@ -139,7 +139,7 @@ overview itself.
 
 ## Backends
 
-`system_stats` (`src/services/system_stats.rs`) is one service on one 2 s tick, so a desktop of
+`system_stats` (`src/services/desktop/system_stats.rs`) is one service on one 2 s tick, so a desktop of
 widgets redraws once a tick: `/proc/stat` (the processor and each core), `/proc/meminfo` (memory
 in use is what isn't available, as `free` counts it, and swap), `/proc/net/dev` and
 `/proc/net/route` (each interface's rates, and the default route), `/sys/class/hwmon` (each

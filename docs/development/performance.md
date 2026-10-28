@@ -107,7 +107,7 @@ dock's magnification). To remember where the pointer is for a later click or men
   }
   ```
 
-  See `services/connections.rs` (shell `ab23c67`) and `services/system_stats.rs` (shell `dab460e`).
+  See `services/network/connections.rs` (shell `ab23c67`) and `services/desktop/system_stats.rs` (shell `dab460e`).
 - **Write only what's shown.**
   - Compare at the precision you draw. Network compares signal strength by the Wi-Fi wedge it
     shows (amane `0856be2`).
@@ -142,7 +142,7 @@ dock's magnification). To remember where the pointer is for a later click or men
   - the dock's `anim`;
   - `theme::reduced_motion()` for anything custom (a flick's coast, a press pulse).
 - **Don't name `time` in a shader** unless it animates. A shader whose source mentions `time` (even
-  in a comment) redraws every frame. `kit/src/glass.rs` has a test guarding this.
+  in a comment) redraws every frame. `kit/src/look/glass.rs` has a test guarding this.
 - **Pulse once.** `on_drag` reports the press and then every motion. Start a press effect on the
   first report only (kit's buttons, shell `c1bef96`).
 

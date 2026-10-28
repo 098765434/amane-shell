@@ -1,6 +1,6 @@
 # Status bar
 
-A layer-shell bar (`src/components/status_bar/mod.rs`), full-width, anchored to the bottom (or the
+A layer-shell bar (`src/surfaces/status_bar/mod.rs`), full-width, anchored to the bottom (or the
 top, see [Settings](#settings)) on the `Top` layer with `Zone::Reserve`. Namespace `amane.status-bar`. The root is a rounded
 `Rectangle` holding one `Row` justified `SpaceBetween`: workspaces on the left and the status
 cluster on the right. The bar is one uniform frosted strip, like macOS 27's toolbar: its layer
@@ -62,7 +62,7 @@ From left to right:
 4. The **Quick Settings** button (see [quick-settings.md](quick-settings.md)).
 5. The **notification** icon: a moon while Do Not Disturb is on, a bell while something arrived
    unseen, nothing otherwise. Click it for the center, right-click for Do Not Disturb.
-6. The **timer** chip, only while the launcher's timer runs (`services/timer.rs`): a timer glyph
+6. The **timer** chip, only while the launcher's timer runs (`services/launcher/timer.rs`): a timer glyph
    and the time left in `sys.type.numeric`, counting down by the second. Its tooltip is the
    timer's label; a click opens the launcher in Actions, where it can be cancelled (see
    [launcher.md](launcher.md#actions)). amane has no timers, so the bar asks for a frame just
@@ -110,10 +110,10 @@ shader.
 - `components/battery.rs`: a battery reads low from UPower's warning level, or at 15 % and below
   when nothing gives one (`battery::low`, `battery::LOW`), so the bar and Quick Settings agree.
   `battery::color` and `battery::tint` give the colour that says so.
-- `services/clock.rs`: the `Clock` service (time and date), also read by the notification center.
+- `services/launcher/clock.rs`: the `Clock` service (time and date), also read by the notification center.
 - `dock/window_menu.rs`: a window's and a pinned app's context menus, opened from the dock. Their
   "Move to Workspace" and "Open in Workspace" submenus are the shared
-  `components/workspace_menu.rs`, which the launcher's app menu uses too.
+  `surfaces/context_menu/workspace_menu.rs`, which the launcher's app menu uses too.
 
 ## Related
 

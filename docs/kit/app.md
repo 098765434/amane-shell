@@ -1,6 +1,6 @@
 # App scaffolding
 
-What an app beside the shell needs to look like the shell (`kit/src/app.rs`,
+What an app beside the shell needs to look like the shell (`kit/src/platform/app.rs`,
 `amane_kit::app`): its window, text fields, a dialog and a sidebar to move between pages. Shell
 Settings is built from it ([settings-app.md](../shell/settings-app.md)).
 

@@ -1,7 +1,7 @@
 # Quick Settings
 
 GNOME's quick settings menu, drawn as the macOS Control Center
-(`src/components/quick_settings/`). As on macOS Tahoe the card itself has no background: it's a
+(`src/surfaces/quick_settings/`). As on macOS Tahoe the card itself has no background: it's a
 clear surface above the bar's right end holding frosted glass modules, laid out as Control
 Center is — Wi‑Fi and Bluetooth tiles beside Now Playing, the Focus tile and round buttons, a
 Display card and a Sound card with their sliders, then the battery and more round buttons.
@@ -56,10 +56,10 @@ A page's last row opens the app with the rest of its settings when that app is i
 page is the whole manager.
 
 A device that asks to pair while the Bluetooth page isn't showing asks through the shell's alert
-(`components/bluetooth_prompt.rs`): Pair or Cancel for a code to confirm, the code to type on a
+(`surfaces/alert/bluetooth.rs`): Pair or Cancel for a code to confirm, the code to type on a
 keyboard, and **Enter Code…**, which opens the page, for a code to type here. The shell is
 BlueZ's pairing agent (`Bluetooth::serve_agent`). A connected device's battery warns once at
-20 % and once at 10 % per connection (`services/bt_battery.rs`).
+20 % and once at 10 % per connection (`services/network/bt_battery.rs`).
 
 The bar also shows GNOME's status icons, each only while it applies:
 
@@ -275,7 +275,7 @@ password field types without a click first. A click outside doesn't close it.
 
 ## Components
 
-The parts are in `src/components/quick_settings/`:
+The parts are in `src/surfaces/quick_settings/`:
 
 - **`tile.rs` (`QuickToggle`, `module`)**: GNOME's QuickToggle in Control Center's shapes
   (`Style`): a `Card` (a glass capsule two, three or four cells wide), a `Row` (one line of a module), a
@@ -305,7 +305,7 @@ The parts are in `src/components/quick_settings/`:
 - **`customize/`**: the Customize window: `mod.rs` the sheet, the sidebar, the pane (every
   control on a plain tint, named), the footer, the still drag layer and the control in hand;
   `catalog.rs` the categories, what each shows and the search (pure, tested).
-- **`glass_region`** (the kit's, `kit/src/glass_region.rs`): the frost behind a piece of glass as a blur shape, and its transforms.
+- **`glass_region`** (the kit's, `kit/src/look/glass_region.rs`): the frost behind a piece of glass as a blur shape, and its transforms.
 - **`tiles/media.rs`**: the square Now Playing module.
 - **`slider_card.rs`**: the Display and Sound cards: a title over each thin slider, a small
   glyph before the track and a large faint one after it, and a right click (`Card::on_secondary`)
@@ -360,7 +360,7 @@ and `quick.drag.scale` (see [penpot-backlog.md](../design-system/penpot-backlog.
 ## The alert
 
 The Power Off page's Restart…, Power Off… and Log Out… ask first in the shell's alert
-(`src/components/alert.rs`): macOS's alert in the middle of the screen, a kit
+(`src/surfaces/alert/mod.rs`): macOS's alert in the middle of the screen, a kit
 [`Dialog`](../kit/components.md#dialog) on thick glass. `alert::show(dialog)` puts it on the
 `amane.alert` surface, as big as its card, which frosts itself and holds the keyboard until
 answered; its layer rule rounds it (`dialog.radius`) and gives it niri's shadow (`0 18 48`). In

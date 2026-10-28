@@ -80,7 +80,7 @@ band. The launcher turns it sideways through its categories.
 
 ## The dock's `Anim`
 
-The dock keeps every animation it runs in one table, `DOCK` in `src/components/dock/motion.rs`
+The dock keeps every animation it runs in one table, `DOCK` in `src/surfaces/dock/motion.rs`
 (shell code, not the kit's): an `Anim` each (`Anim::spring(ms, bounce)`, `Anim::ease(ms)`, `.off()`),
 made through `dock::motion::anim`, which gives a motion that arrives at once when it's off, so the view
 never asks. `AMANE_DOCK_ANIMATIONS=off` turns them all off. See

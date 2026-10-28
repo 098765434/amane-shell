@@ -22,6 +22,6 @@ change, during drags too. The `id` must be unique and stable: it keys the hex fi
 the picker remembers, so dragging through grey or black doesn't lose the hue.
 
 Each square and strip measures its own drag and stays still while its handle moves, as amane's
-drag measurement needs (see `shell/src/components/quick_settings/edit.rs` for the same pattern).
+drag measurement needs (see `shell/src/surfaces/quick_settings/edit.rs` for the same pattern).
 
 The module also has `parse_hex`, `to_hex`, `to_color`, `rgb_to_hsv` and `hsv_to_rgb`.

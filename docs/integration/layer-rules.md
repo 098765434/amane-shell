@@ -4,7 +4,7 @@ Each layer-shell surface the shell opens is given a **namespace** via amane's
 `LayerWindow::namespace(...)`. niri matches those namespaces in `layer-rule` blocks to apply
 backdrop blur and corner rounding. Two things must agree:
 
-1. the Rust source — `LayerWindow::namespace("…")` in `src/components/**`;
+1. the Rust source — `LayerWindow::namespace("…")` in `src/surfaces/**`;
 2. `niri-layer-rule.kdl` — the rules, **generated** by `src/tokens/layer_rules.rs` from those
    namespace constants and the design tokens (corner radii are `sys.radius.popover`, or
    `notification.card.radius` for toasts: the radius the cards are drawn with).
@@ -29,7 +29,7 @@ The bar is the one plain-frost surface (`frost`): niri frosts all of it, square,
 since it reserves its zone and only the wallpaper is ever behind it.
 
 Where niri has the `glass` material (`amane::material_available`), it draws the lit edge too, so
-the cards leave out the shader's (`kit/src/glass.rs`) and their hairlines. A niri config
+the cards leave out the shader's (`kit/src/look/glass.rs`) and their hairlines. A niri config
 without the material, or without these rules installed, gets plain frost, and the shell lights
 the edges itself; install the rules after every change (below), or menus lose their edge.
 

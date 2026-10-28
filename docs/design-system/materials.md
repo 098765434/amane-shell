@@ -158,6 +158,6 @@ A piece of glass is built with its material's methods:
 ## Look test
 
 `examples/liquid_glass.rs` is a look test, not shell code: glass cards over a wallpaper it draws
-itself, lit by the kit's edge shader (`kit/src/glass.wgsl`) with stronger values, for judging the
+itself, lit by the kit's edge shader (`kit/src/look/glass.wgsl`) with stronger values, for judging the
 glass edge before it goes into the shell. Its `//!` header lists the `GLASS_*` variables it
 takes.

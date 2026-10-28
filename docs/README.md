@@ -24,6 +24,27 @@ them.
 Building and running are in the [README](../README.md); contributing in
 [CONTRIBUTING.md](../CONTRIBUTING.md).
 
+## Source layout
+
+A module's folder says what kind of thing it is. A new one goes where its kind is.
+
+| Folder | What goes there |
+|---|---|
+| `src/surfaces/` | a surface of its own: the status bar, dock, launcher, notifications, Quick Settings, widgets, context menu and alert, each with its doc in `shell/` |
+| `src/components/` | the shell's pieces that several surfaces share (`panel`, `battery`, `grid`, `search_field`, `text_edit`), and the kit's modules re-exported under their old paths |
+| `src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; helpers in `process.rs` and `state.rs` |
+| `src/tokens/` | what the shell generates from the tokens (niri's layer rules) |
+| `kit/src/controls/` | what's pressed, dragged or picked: buttons, slider, dropdown, colour picker, tag, control sizes |
+| `kit/src/containers/` | what content sits in: card, list, divider, app bar, dialog, tooltip, scroll view, flow, arrangement |
+| `kit/src/look/` | the look of glass: materials, the edge shader, glass regions, Shader Lab's looks |
+| `kit/src/animation/` | motion, kinetic, pager, edge reveal |
+| `kit/src/foundation/` | layout primitives, icons, colour arithmetic |
+| `kit/src/platform/` | an app's window, app icons, the settings file, markers |
+| `kit/src/tokens/`, `theme.rs` | the design tokens and the theme they resolve with |
+
+The kit's folders don't show in its paths: every module is re-exported at the root, so it's
+`amane_kit::card`, not `amane_kit::containers::card`.
+
 ## Shell surfaces
 
 | Surface | What it does | Doc |

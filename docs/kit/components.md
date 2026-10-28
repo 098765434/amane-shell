@@ -7,19 +7,19 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 
 | Component | `kit/src/` | M3 counterpart | Used for |
 |---|---|---|---|
-| `Card` | `card.rs` | [Cards](https://m3.material.io/components/cards/overview) | the notification center's sheet, context menus, tooltips |
-| `TopAppBar` | `app_bar.rs` | [Top app bar](https://m3.material.io/components/app-bars/overview) (small) | the title row of each Quick Settings page and of the center |
-| `List`, `ListItem` | `list.rs` | [Lists](https://m3.material.io/components/lists/overview) | networks, Bluetooth devices, audio devices, peripherals |
-| `Divider` | `divider.rs` | [Divider](https://m3.material.io/components/divider/overview) | context-menu separators, the dock's rules between workspaces (`Divider::vertical`) |
-| `Slider` | `slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume, Quick Settings' sliders |
-| `tooltip` | `tooltip.rs` | [Tooltips](https://m3.material.io/components/tooltips/overview) (plain) | the bar's volume level and battery charge |
-| `app_icon` | `app_icon.rs` | none | the dock's icons, notification cards' app icons, the launcher's apps |
-| `EdgeReveal` | `edge_reveal.rs` | none | the dock hiding at the bottom edge, the status bar at either |
-| `ScrollView` | `scroll_view.rs` | none | the launcher's grid, results and pill bar, the Customize window's panes |
-| `Flow` | `flow.rs` | none | the Customize window's controls, flowing into rows |
-| `Dialog` | `dialog.rs` | [Dialogs](https://m3.material.io/components/dialogs/overview) (basic) | the shell's alert, an app's modal dialog |
-| `Tag` | `tag.rs` | [Chips](https://m3.material.io/components/chips/overview) (assist, without the action) | the Displays page's facts about a screen |
-| `Arrangement` | `arrangement.rs` | none | the Displays page's screens, dragged into place |
+| `Card` | `containers/card.rs` | [Cards](https://m3.material.io/components/cards/overview) | the notification center's sheet, context menus, tooltips |
+| `TopAppBar` | `containers/app_bar.rs` | [Top app bar](https://m3.material.io/components/app-bars/overview) (small) | the title row of each Quick Settings page and of the center |
+| `List`, `ListItem` | `containers/list.rs` | [Lists](https://m3.material.io/components/lists/overview) | networks, Bluetooth devices, audio devices, peripherals |
+| `Divider` | `containers/divider.rs` | [Divider](https://m3.material.io/components/divider/overview) | context-menu separators, the dock's rules between workspaces (`Divider::vertical`) |
+| `Slider` | `controls/slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume, Quick Settings' sliders |
+| `tooltip` | `containers/tooltip.rs` | [Tooltips](https://m3.material.io/components/tooltips/overview) (plain) | the bar's volume level and battery charge |
+| `app_icon` | `platform/app_icon.rs` | none | the dock's icons, notification cards' app icons, the launcher's apps |
+| `EdgeReveal` | `animation/edge_reveal.rs` | none | the dock hiding at the bottom edge, the status bar at either |
+| `ScrollView` | `containers/scroll_view.rs` | none | the launcher's grid, results and pill bar, the Customize window's panes |
+| `Flow` | `containers/flow.rs` | none | the Customize window's controls, flowing into rows |
+| `Dialog` | `containers/dialog.rs` | [Dialogs](https://m3.material.io/components/dialogs/overview) (basic) | the shell's alert, an app's modal dialog |
+| `Tag` | `controls/tag.rs` | [Chips](https://m3.material.io/components/chips/overview) (assist, without the action) | the Displays page's facts about a screen |
+| `Arrangement` | `containers/arrangement.rs` | none | the Displays page's screens, dragged into place |
 
 ## Card
 

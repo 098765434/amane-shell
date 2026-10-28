@@ -1,7 +1,7 @@
 # Notifications
 
 Toasts, a notification center and Do Not Disturb, in the style of macOS and iOS
-(`src/components/notifications/`). amane is the notification daemon: its `Notifications`
+(`src/surfaces/notifications/`). amane is the notification daemon: its `Notifications`
 service owns `org.freedesktop.Notifications`, keeps the list and talks to senders (see
 [amane `system/notifications.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md)). Everything here is presentation: how long a toast shows, how
 cards stack, what Do Not Disturb hides.
@@ -110,7 +110,7 @@ or past file reads as off.
 `notifications [toggle | clear | dnd [on|off|toggle]]` opens or closes the center, clears it, and
 switches Do Not Disturb ([ipc.md](../integration/ipc.md#notifications)).
 
-## Motion (`amane_kit::motion`, `kit/src/motion.rs`)
+## Motion (`amane_kit::motion`, `kit/src/animation/motion.rs`)
 
 Both surfaces place cards through one keyed animator, shared with the rest of the shell. The view says where each card should be
 (a `Pose`: offset, scale, opacity, content opacity) every time it runs. Each card springs there
