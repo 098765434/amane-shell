@@ -1,7 +1,7 @@
 //! Material Symbols codepoints (the font stack is token `sys.type.icon`),
 //! and the pickers that choose one for a device or a reading, so the bar,
 //! Quick Settings and the notifications all agree. Draw them with
-//! [`layout::icon`](super::layout::icon), or, where a control can also show
+//! [`layout::icon`](crate::layout::icon), or, where a control can also show
 //! a mark the font hasn't got, as a [`Glyph`] with [`glyph`].
 
 use amane::{
@@ -9,7 +9,7 @@ use amane::{
     Row, Size,
 };
 
-use super::layout::{boxed, fixed_width, icon};
+use crate::layout::{boxed, fixed_width, icon};
 
 pub const ICON_APPS: char = '\u{e5c3}';
 pub const ICON_VOLUME_UP: char = '\u{e050}';

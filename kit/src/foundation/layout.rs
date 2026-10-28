@@ -1,7 +1,7 @@
 //! Layout primitives every component builds with: small free functions that
 //! have no look of their own beyond the `sys.*` tokens they're handed.
 //! Anything with a look, states or a builder is a component instead (see
-//! [`list`](super::list), [`card`](super::card) and the rest).
+//! [`list`](crate::list), [`card`](crate::card) and the rest).
 
 use std::cell::Cell;
 

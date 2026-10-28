@@ -706,7 +706,7 @@ mod tests {
         ("notifications/", "notification"),
         ("quick_settings/", "quick"),
         // the kit's dialog, and the shell's alert that shows it
-        ("dialog.rs", "dialog"),
+        ("containers/dialog.rs", "dialog"),
         ("alert.rs", "dialog"),
     ];
 

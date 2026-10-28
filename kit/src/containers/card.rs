@@ -5,7 +5,7 @@
 //! vibrant labels and fills ([`material::label`]). Drawn in the shell's macOS look: `sys.radius.popover` corners,
 //! and frosted when the compositor can blur what's below (a departure from
 //! M3, which has no translucent material), its edge lit like
-//! [`glass`](super::glass) when asked. M3's elevated card is left out:
+//! [`glass`](crate::glass) when asked. M3's elevated card is left out:
 //! there's no `sys.shadow` role yet.
 //!
 //! A card records where the pointer is over it ([`layout::cursor`]), so a
