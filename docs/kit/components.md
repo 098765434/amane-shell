@@ -18,6 +18,8 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `ScrollView` | `scroll_view.rs` | none | the launcher's grid, results and pill bar, the Customize window's panes |
 | `Flow` | `flow.rs` | none | the Customize window's controls, flowing into rows |
 | `Dialog` | `dialog.rs` | [Dialogs](https://m3.material.io/components/dialogs/overview) (basic) | the shell's alert, an app's modal dialog |
+| `Tag` | `tag.rs` | [Chips](https://m3.material.io/components/chips/overview) (assist, without the action) | the Displays page's facts about a screen |
+| `Arrangement` | `arrangement.rs` | none | the Displays page's screens, dragged into place |
 
 ## Card
 
@@ -165,6 +167,33 @@ rule for a floating window of an amane app (a dialog floats) gives it the corner
 (`0 18 48`) and the thick glass. Without that rule it's on the window background. The shell shows
 the same card as its alert, in the middle of the screen
 ([quick-settings.md](../shell/quick-settings.md#the-alert)).
+
+`.countdown(seconds, f)` makes it answer by itself: a line under the message counts down
+("Going back in 15 seconds."), and at zero the dialog closes and runs `f`, usually the cancel
+button's action. The count starts when it opens. A `Tick` service redraws the dialog's window
+once a second, and stays quiet while no countdown dialog is open. Shell Settings uses it to
+undo a display change nobody confirmed ([displays.md](../shell/displays.md)).
+
+## Tag
+
+`Tag::new(text)` is a short fact as a capsule, `control.mini` tall: a caption on the secondary
+fill, or `.accent(true)` for the one fact to see first (the accent's colour on its 16 % tint).
+`size()` gives its width and height before it's built. `tag::tags(width, tags)` lays several out
+in rows that wrap, through [`Flow`](#flow), and says how tall they came out.
+
+## Arrangement
+
+`Arrangement::new(id, screens, width, height)` draws `Screen`s (a label and a logical-pixel
+rectangle each) where they sit relative to each other, scaled to fit the area with a fifth of it
+spare around them and centred, the `.selected(index)` one in the accent. A press picks a screen
+(`.on_select`); a drag of more than 3 px carries it, drawn over the others, and on release
+`arrangement::snap` puts it against the nearest edge of another screen, overlapping along it,
+with its edges lined up to that screen's when within a tenth of its size. `.on_move(index, x, y)`
+then gets its new top-left in logical pixels. A lone screen can't be dragged.
+
+The drag is measured on one still layer the size of the area, under the screens, which take no
+input themselves, so the screen moving under the pointer never changes what the pointer is
+measured against. It's all quads.
 
 ## Under the components
 

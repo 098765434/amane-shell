@@ -16,7 +16,7 @@ widgets.
 | Service | Reads | Changes with |
 |---|---|---|
 | `session` | what logind allows (`CanSuspend`, `CanReboot`, `CanPowerOff`), asked once | logind `Suspend`/`Reboot`/`PowerOff`, `Session.Lock`; logging out quits niri |
-| `night_light` | its own state file | runs `wlsunset` held at one temperature; stopping it gives the screens their colours back |
+| `night_light` | its own state file | runs `wlsunset` at one temperature all day or on a schedule; stopping it gives the screens their colours back |
 | `dark_style` | amane's `Appearance` (the Settings portal) | `dconf write /org/gnome/desktop/interface/color-scheme` |
 | `rfkill` | `/sys/class/rfkill`, polled each second | `rfkill block all` / `unblock all` |
 | `keyboard_backlight` | the first `*::kbd_backlight` LED, polled | logind `SetBrightness("leds", …)` |
@@ -39,8 +39,9 @@ without a probe write), and the page has the command to copy. The shell never es
 
 **Night light owns `wlsunset`.** The compositor gives the colour ramps to one program at a time,
 so turning night light on stops any other `wlsunset`. A `spawn-at-startup "wlsunset" …` line in
-the niri config would fight the shell's, so remove it. It's manual only: on at the chosen
-temperature until turned off. Its state (`on 4000`) is kept in
+the niri config would fight the shell's, so remove it. By default it's on at the chosen
+temperature until turned off; Shell Settings' Displays page can give it a schedule (sunset to
+sunrise, or set hours), which `wlsunset` follows by itself. Its state (`on 4000 manual`) is kept in
 `$XDG_STATE_HOME/amane-shell/night-light`, so it comes back on after a restart. A last-used VPN
 is kept beside it, in `vpn`.
 
@@ -106,7 +107,7 @@ file means the default:
 | `dock-pins` | the dock's pins, one a line | `dock/pins.rs` |
 | `quick-settings` | Quick Settings' layout (JSON) | `quick_settings/layout.rs` |
 | `widgets` | each monitor's widgets and their settings (JSON) | `widgets/store.rs` |
-| `night-light` | whether night light is on, and how warm (`on 4000`) | `services/night_light.rs` |
+| `night-light` | whether night light is on, how warm and when (`on 4000 manual`, `on 3500 sun 59.92 10.75`, `on 4000 hours 21:00 07:00`; a line without the schedule is all day) | `services/night_light.rs` |
 | `vpn` | the last VPN used | `services/connections.rs` |
 | `launcher-usage.json` | how much each result was used, and the last searches | `launcher/usage.rs` |
 | `clipboard/` | the clipboard history: `index.json` and a file a copy | `services/clipboard_history.rs` |

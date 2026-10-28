@@ -5,6 +5,7 @@
 mod about;
 mod appearance;
 mod desktop;
+mod displays;
 mod dock;
 mod launcher;
 mod quick_settings;
@@ -14,9 +15,9 @@ mod system;
 use amane::{Center, Column, Key, Row, ScrollArea, Service, Size, Text, Widget, Window};
 use amane_kit::app::{Dialog, Page, app, app_window, sidebar, standard_shortcut};
 use amane_kit::icons::{
-    ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DNS, ICON_HISTORY, ICON_INFO, ICON_LAYERS,
-    ICON_LOCK, ICON_MORE_HORIZ, ICON_PACKAGE, ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TUNE,
-    ICON_UPDATE,
+    ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO,
+    ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_PACKAGE, ICON_SEARCH, ICON_SETTINGS,
+    ICON_STORAGE, ICON_TUNE, ICON_UPDATE,
 };
 use amane_kit::layout::boxed;
 use amane_kit::material::{self, Level};
@@ -48,14 +49,15 @@ impl Service for Navigation {
 }
 
 // the sidebar's rows: two sections, each over its pages
-const SYS_ABOUT: usize = 9;
-const SYS_GENERAL: usize = 10;
-const SYS_APPS: usize = 11;
-const SYS_SERVICES: usize = 12;
-const SYS_POWER: usize = 13;
-const SYS_STORAGE: usize = 14;
-const SYS_HISTORY: usize = 15;
-const SYS_UPDATE: usize = 16;
+const DISPLAYS: usize = 3;
+const SYS_ABOUT: usize = 10;
+const SYS_GENERAL: usize = 11;
+const SYS_APPS: usize = 12;
+const SYS_SERVICES: usize = 13;
+const SYS_POWER: usize = 14;
+const SYS_STORAGE: usize = 15;
+const SYS_HISTORY: usize = 16;
+const SYS_UPDATE: usize = 17;
 
 /// The page `--page <name>` opens: the sidebar's names, lowercased, or a
 /// System page's short name.
@@ -63,11 +65,12 @@ fn page_named(name: &str) -> Option<usize> {
     Some(match name.trim().to_lowercase().as_str() {
         "appearance" => 1,
         "desktop" => 2,
-        "status-bar" | "bar" => 3,
-        "dock" => 4,
-        "quick-settings" => 5,
-        "spotlight" | "launcher" => 6,
-        "about-shell" => 7,
+        "displays" | "display" | "monitors" => DISPLAYS,
+        "status-bar" | "bar" => 4,
+        "dock" => 5,
+        "quick-settings" => 6,
+        "spotlight" | "launcher" => 7,
+        "about-shell" => 8,
         "about" | "system" | "computer" => SYS_ABOUT,
         "general" => SYS_GENERAL,
         "apps" | "software" => SYS_APPS,
@@ -78,6 +81,15 @@ fn page_named(name: &str) -> Option<usize> {
         "update" | "updates" => SYS_UPDATE,
         _ => return None,
     })
+}
+
+/// Shows the page `--page <name>` would, from a page's own button.
+pub fn go(name: &str) {
+    if let Some(page) = page_named(name) {
+        let mut nav = Navigation::write();
+        nav.page = page;
+        nav.overlay = None;
+    }
 }
 
 /// The page named after `--page` in `args`, if any.
@@ -130,11 +142,12 @@ fn main() {
         .run();
 }
 
-fn pages() -> [Page; 17] {
+fn pages() -> [Page; 18] {
     [
         Page::section("Shell"),
         Page::new(ICON_DARK_MODE, "Appearance"),
         Page::new(ICON_APPS, "Desktop"),
+        Page::new(ICON_DISPLAY, "Displays"),
         Page::new(ICON_MORE_HORIZ, "Status Bar"),
         Page::new(ICON_LAYERS, "Dock"),
         Page::new(ICON_TUNE, "Quick Settings"),
@@ -187,6 +200,8 @@ fn main_window() -> Window {
     };
 
     let pages = pages();
+    // its poll rests while another page shows
+    displays::showing(page == DISPLAYS && overlay.is_none());
 
     let nav = sidebar("settings.nav", &pages, page, |page| {
         let mut nav = Navigation::write();
@@ -202,18 +217,23 @@ fn main_window() -> Window {
             boxed(appearance::page()),
         ),
         2 => ("Desktop", "settings.scroll.desktop", boxed(desktop::page())),
-        3 => (
+        DISPLAYS => (
+            "Displays",
+            "settings.scroll.displays",
+            boxed(displays::page()),
+        ),
+        4 => (
             "Status Bar",
             "settings.scroll.status-bar",
             boxed(status_bar::page()),
         ),
-        4 => ("Dock", "settings.scroll.dock", boxed(dock::page())),
-        5 => (
+        5 => ("Dock", "settings.scroll.dock", boxed(dock::page())),
+        6 => (
             "Quick Settings",
             "settings.scroll.quick-settings",
             boxed(quick_settings::page()),
         ),
-        6 => (
+        7 => (
             "Spotlight",
             "settings.scroll.spotlight",
             boxed(launcher::page()),

@@ -100,6 +100,23 @@ shows or hides one of the optional status icons, `volume`, `bluetooth`, `network
 `battery`, `keep-awake`, `privacy`, `status-icons` or `notifications`, in `status-bar.json`.
 `taskbar` is the same command under the bar's old name.
 
+### `night-light`
+
+`night-light [state | on | off | toggle | temperature <K> | schedule <when>]`
+([displays.md](../shell/displays.md#night-light)), which Shell Settings' Displays page calls.
+No arguments is `state`.
+
+| Call | Does |
+|---|---|
+| `state` | answers like the state file: `on 4000 manual`, `off 3500 sun 59.92 10.75`, `on 4000 hours 21:00 07:00` |
+| `on`, `off`, `toggle` | turns it on or off; under a schedule, on means it follows the schedule |
+| `temperature <K>` | how warm, 2500–6000 K (clamped); the night's under a schedule |
+| `schedule manual` | all day while on |
+| `schedule sun <lat> <lon>` | from sunset to sunrise there |
+| `schedule hours <HH:MM> <HH:MM>` | from the first time to the second, overnight when the second is earlier |
+
+Without `wlsunset` it answers `wlsunset isn't installed`.
+
 ### Context menus
 
 See [context-menu.md](../shell/context-menu.md#why-arming) for why a menu opened from outside is armed first.

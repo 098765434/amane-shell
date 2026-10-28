@@ -7,7 +7,7 @@ file by hand works the same way.
 
 Only one copy runs: launching it again brings the open window forward, and `--page <name>`
 (`general`, `apps`, `services`, `power`, `storage`, `history`, `update`, `about`; or a Shell
-page's name) opens that page, cold or in the running copy (`App::on_activate`): Spotlight's
+page's name, like `displays`) opens that page, cold or in the running copy (`App::on_activate`): Spotlight's
 system actions and the update toast use it. `--package <attr>` opens Apps with that nixpkgs
 package's details. The flake installs it with a `.desktop` entry, so
 the launcher lists it as *Shell Settings*.
@@ -15,8 +15,8 @@ the launcher lists it as *Shell Settings*.
 ## The window
 
 An `app_window` titled "Shell Settings", 760 × 760 (at least 600 × 740), with a 200 px
-[`sidebar`](../kit/app.md#sidebar) in two sections, **Shell** (seven pages, the shell's own
-settings) and **System** (eight, the NixOS configuration), and the page's title over its settings,
+[`sidebar`](../kit/app.md#sidebar) in two sections, **Shell** (eight pages, the shell's own
+settings and the displays) and **System** (eight, the NixOS configuration), and the page's title over its settings,
 each a caption over its control. Each page scrolls in an amane `ScrollArea` that keeps its own
 offset. Ctrl+W closes it (`standard_shortcut`), unless a system build is running: then it asks
 first ("Stop the build?"), as does the compositor's close.
@@ -61,6 +61,14 @@ the new colour. What each setting does to the look is in
 Writes `desktop.json` (`desktop.rs`): **Show widgets on the desktop** (`show_widgets`, a switch)
 and **Widget style** (`widget_style`): Dim while windows are open (`automatic`, the default),
 Always full (`full`) or Always dimmed (`dim`). See [widgets.md](widgets.md).
+
+### Displays
+
+Each screen niri drives, with what it can do read from the screen itself (OLED, HDR, the
+variable refresh range, the gamut, the bit depth): resolution, refresh rate, variable refresh,
+scale, rotation and arrangement, written to niri's `displays.kdl`, plus brightness, Night Light's
+schedule and OLED care. Changes that could leave a screen unreadable are kept only when confirmed.
+See [displays.md](displays.md).
 
 ### Status Bar
 

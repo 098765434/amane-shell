@@ -215,6 +215,9 @@ fn main() -> ExitCode {
     .ipc("widgets", widgets::ipc)
     // `printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("status-bar", status_bar::ipc)
+    // Shell Settings' Displays page:
+    // `printf 'night-light\nschedule\nhours\n21:00\n07:00\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    .ipc("night-light", services::night_light::ipc)
     // its name while it was the taskbar, for scripts and keybinds
     .ipc("taskbar", status_bar::ipc)
     // a sample alert for trying it out, in debug builds:

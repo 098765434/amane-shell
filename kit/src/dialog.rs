@@ -18,15 +18,21 @@
 //! fit, and stack otherwise, as macOS's do; [`Dialog::stacked`] and
 //! [`Dialog::side_by_side`] choose for it. Return answers with the default
 //! button, Escape with the cancel button.
+//!
+//! [`Dialog::countdown`] answers by itself when nobody does: a line counts
+//! the seconds down, and at zero the dialog closes and runs its action, as
+//! a display change that's kept only when confirmed.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::{Mutex, PoisonError};
+use std::time::{Duration, Instant};
 
 use amane::{
-    Center, Color, Column, Image, Key, Padding, Rectangle, Row, Size, Start, Text, Widget, Window,
-    close_window, open_window_with,
+    Center, Color, Column, Image, Key, Padding, Rectangle, Row, Service, Size, Start, Text, Widget,
+    Window, close_window, open_window_with,
 };
 
 use crate::app::{field_box, frosted, standard_shortcut, text_field, window_bg};
@@ -111,6 +117,15 @@ pub struct Field {
     pub secret: bool,
 }
 
+/// An answer given by itself once the time is up.
+#[derive(Clone)]
+struct Countdown {
+    seconds: u32,
+    // set when the dialog opens
+    deadline: Option<Instant>,
+    action: Rc<dyn Fn()>,
+}
+
 #[derive(Clone)]
 pub struct Dialog {
     name: String,
@@ -121,11 +136,47 @@ pub struct Dialog {
     icon: Option<Icon>,
     answers: Vec<Answer>,
     layout: Layout,
+    countdown: Option<Countdown>,
 }
 
 thread_local! {
     // each open app dialog, which its window's view reads every frame
     static OPEN: RefCell<HashMap<String, Dialog>> = RefCell::new(HashMap::new());
+}
+
+// the open dialogs counting down, by name, which keep the tick going
+static COUNTING: Mutex<Option<HashSet<String>>> = Mutex::new(None);
+
+fn counting(name: &str, on: bool) {
+    let mut names = COUNTING.lock().unwrap_or_else(PoisonError::into_inner);
+    let names = names.get_or_insert_with(HashSet::new);
+    if on {
+        names.insert(name.to_string());
+    } else {
+        names.remove(name);
+    }
+}
+
+/// A second's tick for the dialogs counting down: it redraws the windows
+/// that read it once a second, and stays quiet while none counts.
+struct Tick;
+
+impl Service for Tick {
+    fn new() -> Self {
+        Tick
+    }
+
+    fn interval() -> Duration {
+        Duration::from_secs(1)
+    }
+
+    fn update(&mut self) -> bool {
+        COUNTING
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .as_ref()
+            .is_some_and(|names| !names.is_empty())
+    }
 }
 
 impl Dialog {
@@ -140,6 +191,7 @@ impl Dialog {
             icon: None,
             answers: Vec::new(),
             layout: Layout::Auto,
+            countdown: None,
         }
     }
 
@@ -204,6 +256,38 @@ impl Dialog {
         self
     }
 
+    /// Answers by itself after `seconds`: closes and runs `action`, with a
+    /// line counting down meanwhile. Pass the cancel button's action to
+    /// undo what nobody confirmed.
+    pub fn countdown(mut self, seconds: u32, action: impl Fn() + 'static) -> Self {
+        self.countdown = Some(Countdown {
+            seconds,
+            deadline: None,
+            action: Rc::new(action),
+        });
+        self
+    }
+
+    /// The seconds left, rounded up; the whole count until it opens.
+    fn seconds_left(&self) -> Option<u32> {
+        let countdown = self.countdown.as_ref()?;
+        Some(match countdown.deadline {
+            Some(deadline) => {
+                let left = deadline.saturating_duration_since(Instant::now());
+                left.as_secs_f32().ceil() as u32
+            }
+            None => countdown.seconds,
+        })
+    }
+
+    fn countdown_line(&self) -> Option<String> {
+        let left = self.seconds_left()?;
+        Some(format!(
+            "Going back in {left} second{}.",
+            if left == 1 { "" } else { "s" }
+        ))
+    }
+
     /// Buttons one above the other, whatever fits.
     pub fn stacked(mut self) -> Self {
         self.layout = Layout::Stacked;
@@ -225,8 +309,13 @@ impl Dialog {
     }
 
     /// Opens it in a modal window over the app window with this name.
-    pub fn open(self, parent: &str) {
+    pub fn open(mut self, parent: &str) {
         let name = self.name.clone();
+        if let Some(countdown) = &mut self.countdown {
+            countdown.deadline =
+                Some(Instant::now() + Duration::from_secs(countdown.seconds.into()));
+            counting(&name, true);
+        }
         OPEN.with_borrow_mut(|open| {
             open.insert(name.clone(), self);
         });
@@ -311,6 +400,9 @@ impl Dialog {
             height +=
                 dialog::text::gap() + message(&detail.text, Color::TRANSPARENT).height_in(width);
         }
+        if let Some(line) = self.countdown_line() {
+            height += dialog::text::gap() + message(&line, Color::TRANSPARENT).height_in(width);
+        }
         height + dialog::text::inset_bottom()
     }
 
@@ -380,6 +472,9 @@ impl Dialog {
                 material::label(Level::Secondary)
             };
             text.push(boxed(message(&detail.text, color)));
+        }
+        if let Some(line) = self.countdown_line() {
+            text.push(boxed(message(&line, material::label(Level::Secondary))));
         }
         rows.push(boxed(
             Rectangle::new()
@@ -518,7 +613,17 @@ fn window(name: &str, parent: &str) -> Window {
     let close: Rc<dyn Fn()> = Rc::new(move || {
         close_window(&closing);
         OPEN.with_borrow_mut(|open| open.remove(&closing));
+        counting(&closing, false);
     });
+
+    if let Some(countdown) = &shown.countdown {
+        // read for its once-a-second redraw
+        drop(Tick::read());
+        if shown.seconds_left() == Some(0) {
+            close();
+            (countdown.action)();
+        }
+    }
 
     let radius = dialog::radius();
     let glass = frosted();
@@ -550,6 +655,7 @@ fn window(name: &str, parent: &str) -> Window {
         // closing it from the compositor is the same as no answer
         .on_close(move || {
             OPEN.with_borrow_mut(|open| open.remove(&closed));
+            counting(&closed, false);
             true
         })
         .on_key(move |key| {
@@ -632,6 +738,19 @@ mod tests {
 
         assert!((two.height() - 152.0).abs() < 0.5, "{}", two.height());
         assert!((three.height() - 216.0).abs() < 0.5, "{}", three.height());
+    }
+
+    #[test]
+    fn a_countdown_adds_its_line_and_counts_from_the_whole() {
+        let plain = Dialog::new("t", "Title").button("Revert", || {});
+        let counted = plain.clone().countdown(15, || {});
+        assert_eq!(counted.seconds_left(), Some(15));
+        assert_eq!(
+            counted.countdown_line().as_deref(),
+            Some("Going back in 15 seconds.")
+        );
+        assert!(counted.height() > plain.height());
+        assert_eq!(plain.seconds_left(), None);
     }
 
     #[test]

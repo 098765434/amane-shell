@@ -39,6 +39,7 @@
 pub mod app;
 pub mod app_bar;
 pub mod app_icon;
+pub mod arrangement;
 pub mod buttons;
 pub mod card;
 pub mod color;
@@ -63,6 +64,7 @@ pub mod pager;
 pub mod scroll_view;
 pub mod settings;
 pub mod slider;
+pub mod tag;
 pub mod theme;
 pub mod tokens;
 pub mod tooltip;

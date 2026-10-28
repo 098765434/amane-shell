@@ -31,6 +31,8 @@ pub const ICON_MIC_OFF: char = '\u{e02b}';
 pub const ICON_SPEAKER: char = '\u{e32d}';
 pub const ICON_PHONE: char = '\u{e32c}';
 pub const ICON_COMPUTER: char = '\u{e30a}';
+/// A screen on its stand (`desktop_windows`).
+pub const ICON_DISPLAY: char = '\u{e30c}';
 pub const ICON_DEVICE_OTHER: char = '\u{e337}';
 pub const ICON_BLUETOOTH: char = '\u{e1a7}';
 pub const ICON_BLUETOOTH_CONNECTED: char = '\u{e1a8}';

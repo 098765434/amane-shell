@@ -36,6 +36,7 @@ Building and running are in the [README](../README.md); contributing in
 | Desktop widgets | readings and a clock on the wallpaper, on Quick Settings' grid | [shell/widgets.md](shell/widgets.md) |
 | Alert | macOS's alert in the middle of the screen, for questions like "Restart now?" | [shell/quick-settings.md#the-alert](shell/quick-settings.md#the-alert) |
 | Shell Settings | the settings app: appearance, the desktop's widgets, Spotlight, and the System pages that manage the NixOS configuration | [shell/settings-app.md](shell/settings-app.md) |
+| Displays | Shell Settings' page for the screens: what each can do (OLED, HDR, VRR range), resolution, refresh, scale, rotation, arrangement, Night Light's schedule | [shell/displays.md](shell/displays.md) |
 | Context menu | nested xdg-popup menus: the dock's, the launcher's, the widgets', Do Not Disturb's and a Bluetooth device's | [shell/context-menu.md](shell/context-menu.md) |
 
 ## amane-kit
@@ -43,7 +44,7 @@ Building and running are in the [README](../README.md); contributing in
 | Topic | Doc |
 |---|---|
 | Buttons, switch, checkbox, radio, dropdown, control sizes | [kit/controls.md](kit/controls.md) |
-| Card, list, slider, dialog, scroll view and the other building blocks; the modules under them | [kit/components.md](kit/components.md) |
+| Card, list, slider, dialog, tag, arrangement, scroll view and the other building blocks; the modules under them | [kit/components.md](kit/components.md) |
 | An app's window, text fields and sidebar | [kit/app.md](kit/app.md) |
 | The colour picker, and hex and HSV helpers | [kit/color-picker.md](kit/color-picker.md) |
 | Saved Shader Lab looks, and putting one on a rectangle | [kit/lab.md](kit/lab.md) |

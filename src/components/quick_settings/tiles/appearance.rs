@@ -16,7 +16,7 @@ use crate::components::quick_settings::detail::DetailPage;
 use crate::components::quick_settings::tile::QuickToggle;
 use crate::components::slider::Slider;
 use crate::services::dark_style;
-use crate::services::night_light::{self, NightLight};
+use crate::services::night_light::{self, NightLight, Schedule};
 
 pub(crate) fn brightness_cell(span: Span, inert: bool) -> Option<Box<dyn Widget>> {
     let brightness = Brightness::read();
@@ -50,10 +50,10 @@ pub(crate) fn night_light_toggle() -> Option<QuickToggle> {
         return None;
     }
     let on = light.on();
-    let subtitle = if on {
-        format!("{} K", light.temperature())
-    } else {
-        String::from("Off")
+    let subtitle = match (on, light.schedule()) {
+        (false, _) => String::from("Off"),
+        (true, Schedule::Manual) => format!("{} K", light.temperature()),
+        (true, _) => String::from("Scheduled"),
     };
     drop(light);
 
