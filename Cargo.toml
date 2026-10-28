@@ -43,7 +43,7 @@ members = ["kit", "apps/settings", "apps/shader-lab"]
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
 # sibling checkout during local co-development. See README.
-amane = { git = "https://github.com/098765434/amane", rev = "2e06481616b0afc8d17d0e4146272d77bd36d739" }
+amane = { git = "https://github.com/098765434/amane", rev = "ac012d84750d36912aefbc90933923ef76e160af" }
 
 # amane's vello fork: scratch buffers sized for a shell (about 29 MB a set
 # instead of 165, vello_encoding) that are let go when idle (vello). A patch
