@@ -460,11 +460,24 @@ pub fn save(displays: &Displays, what: &str) -> Result<(), String> {
     commit(&folder, &[&file], &format!("displays: {what}"))
 }
 
-/// Into place by a rename, so niri never reads half a file.
+/// Into place by a rename, so niri never reads half a file; the text is on
+/// disk before the rename and the rename after it, or a crash in between can
+/// leave the file empty (btrfs and ext4 both may), which loses every
+/// display's settings.
 fn write_atomic(path: &Path, text: &str) -> Result<(), String> {
+    use std::io::Write as _;
+
     let temp = path.with_extension("kdl.tmp");
-    fs::write(&temp, text).map_err(|e| format!("{}: {e}", temp.display()))?;
-    fs::rename(&temp, path).map_err(|e| format!("{}: {e}", path.display()))
+    let fail = |at: &Path, e: std::io::Error| format!("{}: {e}", at.display());
+    let mut file = fs::File::create(&temp).map_err(|e| fail(&temp, e))?;
+    file.write_all(text.as_bytes())
+        .and_then(|()| file.sync_all())
+        .map_err(|e| fail(&temp, e))?;
+    fs::rename(&temp, path).map_err(|e| fail(path, e))?;
+    if let Some(folder) = path.parent() {
+        let _ = fs::File::open(folder).and_then(|folder| folder.sync_all());
+    }
+    Ok(())
 }
 
 fn in_repo(folder: &Path) -> bool {
@@ -491,7 +504,9 @@ fn commit(folder: &Path, paths: &[&Path], message: &str) -> Result<(), String> {
         .iter()
         .map(|p| p.to_string_lossy().into_owned())
         .collect();
-    let mut add = vec!["add", "--"];
+    // git leaves loose objects unsynced by default, and a crash then leaves the
+    // commit as empty files: a broken HEAD
+    let mut add = vec!["-c", "core.fsync=committed", "add", "--"];
     add.extend(paths.iter().map(String::as_str));
     run("git", &add, Some(folder))?;
     // nothing to commit when the files came out the same
@@ -500,7 +515,7 @@ fn commit(folder: &Path, paths: &[&Path], message: &str) -> Result<(), String> {
     if run("git", &staged, Some(folder)).is_ok() {
         return Ok(());
     }
-    let mut args = vec!["commit", "-q", "-m", message, "--"];
+    let mut args = vec!["-c", "core.fsync=committed", "commit", "-q", "-m", message, "--"];
     args.extend(paths.iter().map(String::as_str));
     run("git", &args, Some(folder)).map(|_| ())
 }

@@ -79,9 +79,13 @@ pub fn failure(stderr: &[u8], stdout: &[u8], code: Option<i32>) -> String {
     said[said.len().saturating_sub(12)..].join("\n")
 }
 
-/// Runs git in the repo.
+/// Runs git in the repo, syncing what it writes: git leaves loose objects
+/// unsynced by default, and a crash after a commit then leaves it as empty
+/// files, a HEAD git can't read.
 pub fn git(args: &[&str]) -> Result<String, String> {
-    run("git", args, Some(&repo()))
+    let mut all = vec!["-c", "core.fsync=committed"];
+    all.extend_from_slice(args);
+    run("git", &all, Some(&repo()))
 }
 
 /// Runs nix in the repo, without the dirty-tree warning.

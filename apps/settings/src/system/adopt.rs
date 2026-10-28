@@ -247,7 +247,12 @@ fn rewrite(root: &Path, planned: &Move) -> Result<(), String> {
 
 /// Commits the file and the settings as one `move:` commit.
 fn commit(root: &Path, file: &str, what: &str) -> Result<(), String> {
-    let git = |args: &[&str]| run("git", args, Some(root));
+    // synced, as nixos::git does
+    let git = |args: &[&str]| {
+        let mut all = vec!["-c", "core.fsync=committed"];
+        all.extend_from_slice(args);
+        run("git", &all, Some(root))
+    };
     git(&["add", "--", file, SETTINGS_FILE])?;
     git(&[
         "commit",
