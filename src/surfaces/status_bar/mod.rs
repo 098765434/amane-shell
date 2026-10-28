@@ -50,14 +50,14 @@ use crate::surfaces::notifications::{self, DoNotDisturb};
 use crate::components::panel::{self, Panel, is_open};
 use crate::surfaces::quick_settings::{self, Page};
 use crate::components::slider;
-use crate::services::clock::Clock;
-use crate::services::connections::Connections;
-use crate::services::keep_awake::KeepAwake;
-use crate::services::night_light::NightLight;
-use crate::services::privacy::Privacy;
-use crate::services::rfkill::Rfkill;
-use crate::services::tailscale::{State as TailscaleState, Tailscale};
-use crate::services::timer::Countdown;
+use crate::services::launcher::clock::Clock;
+use crate::services::network::connections::Connections;
+use crate::services::power::keep_awake::KeepAwake;
+use crate::services::display::night_light::NightLight;
+use crate::services::desktop::privacy::Privacy;
+use crate::services::network::rfkill::Rfkill;
+use crate::services::network::tailscale::{State as TailscaleState, Tailscale};
+use crate::services::launcher::timer::Countdown;
 
 use crate::tokens::{bar, sys};
 
@@ -646,7 +646,7 @@ fn notification_icon() -> Option<Box<dyn Widget>> {
 /// The launcher's timer while it runs, counting down by the second; a
 /// click opens the launcher's actions, where it can be cancelled.
 fn timer() -> Option<Box<dyn Widget>> {
-    let (left, label) = crate::services::timer::left()?;
+    let (left, label) = crate::services::launcher::timer::left()?;
     // amane has no timers: a frame comes as each second turns over, asked
     // for once a second however often the bar redraws
     let due = left.as_secs();
@@ -655,7 +655,7 @@ fn timer() -> Option<Box<dyn Widget>> {
             Duration::from_nanos(u64::from(left.subsec_nanos())) + TICK,
         );
     }
-    let text = crate::services::timer::format(left);
+    let text = crate::services::launcher::timer::format(left);
     let width = text_width(&text, sys::r#type::numeric())
         + bar::indicator::width()
         + sys::space::inset::s() * 2.0;

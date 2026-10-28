@@ -19,9 +19,9 @@ use crate::components::icons::{
     ICON_SLEEP, ICON_TIMER, ICON_TUNE, ICON_UPDATE, ICON_VPN,
 };
 use crate::surfaces::quick_settings::{self, ControlId};
-use crate::services::keep_awake::KeepAwake;
-use crate::services::session::Session;
-use crate::services::timer;
+use crate::services::power::keep_awake::KeepAwake;
+use crate::services::power::session::Session;
+use crate::services::launcher::timer;
 
 use super::entries::Icon;
 use super::model::{self, SessionAction};

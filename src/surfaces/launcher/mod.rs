@@ -62,8 +62,8 @@ use crate::components::motion;
 use crate::components::pager::{Pager, PagerMotion};
 use crate::components::panel::{self, Panel, close, is_open, overlay};
 use crate::components::text_edit::{self, Field};
-use crate::services::clipboard_history;
-use crate::services::file_search::{self, FileKind};
+use crate::services::launcher::clipboard_history;
+use crate::services::launcher::file_search::{self, FileKind};
 use amane_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
 
 use entries::{Entry, Scope};

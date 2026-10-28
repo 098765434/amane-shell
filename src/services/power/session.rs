@@ -8,7 +8,7 @@
 
 use amane::{Argument, Bus, Service};
 
-use super::run;
+use crate::services::run;
 
 const LOGIND: &str = "org.freedesktop.login1";
 const MANAGER_PATH: &str = "/org/freedesktop/login1";

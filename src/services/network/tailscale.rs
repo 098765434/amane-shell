@@ -24,7 +24,7 @@ use std::time::{Duration, Instant};
 use amane::Service;
 use serde_json::Value;
 
-use super::{installed, run};
+use crate::services::{installed, run};
 
 const BINARY: &str = "tailscale";
 
@@ -528,9 +528,9 @@ fn parse_prefs(json: &str) -> Option<Prefs> {
 mod tests {
     use super::*;
 
-    const RUNNING: &str = include_str!("../../tests/fixtures/tailscale/status.json");
-    const NEEDS_LOGIN: &str = include_str!("../../tests/fixtures/tailscale/needs-login.json");
-    const PREFS: &str = include_str!("../../tests/fixtures/tailscale/prefs.json");
+    const RUNNING: &str = include_str!("../../../tests/fixtures/tailscale/status.json");
+    const NEEDS_LOGIN: &str = include_str!("../../../tests/fixtures/tailscale/needs-login.json");
+    const PREFS: &str = include_str!("../../../tests/fixtures/tailscale/prefs.json");
 
     #[test]
     fn a_running_tailnet_lists_its_peers_online_first() {

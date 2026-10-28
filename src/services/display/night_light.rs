@@ -22,7 +22,7 @@ use std::time::Duration;
 
 use amane::Service;
 
-use super::{Latest, run_now, save_state, state_file};
+use crate::services::{Latest, run_now, save_state, state_file};
 
 const FILE: &str = "night-light";
 
@@ -148,7 +148,7 @@ impl Service for NightLight {
 
 impl NightLight {
     pub fn present(&self) -> bool {
-        super::installed("wlsunset")
+        crate::services::installed("wlsunset")
     }
 
     pub fn on(&self) -> bool {

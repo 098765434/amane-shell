@@ -17,7 +17,7 @@ use amane::serde::Deserialize;
 use amane::{Battery, Service};
 use amane_kit::settings::displays;
 
-use super::run_now;
+use crate::services::run_now;
 
 const EVERY: Duration = Duration::from_secs(5);
 

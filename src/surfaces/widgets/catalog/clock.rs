@@ -19,7 +19,7 @@ use super::{Face, accent, caption_style, line, place};
 use crate::components::layout::{text_height, text_width};
 use crate::components::motion;
 use crate::surfaces::widgets::kind::WidgetSize;
-use crate::services::clock::Clock;
+use crate::services::launcher::clock::Clock;
 use crate::theme;
 
 amane_kit::marker! {

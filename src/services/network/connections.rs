@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use amane::Service;
 
-use super::{run_now, state_file};
+use crate::services::{run_now, state_file};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Vpn {
@@ -153,7 +153,7 @@ impl Connections {
 }
 
 fn remember_vpn(uuid: &str) {
-    super::save_state("vpn", &format!("{uuid}\n"));
+    crate::services::save_state("vpn", &format!("{uuid}\n"));
 }
 
 /// Runs an `nmcli` change off the UI thread, then reads again.

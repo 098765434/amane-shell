@@ -14,7 +14,7 @@ use crate::components::layout::boxed;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::components::slider::Slider;
-use crate::services::keyboard_backlight::KeyboardBacklight;
+use crate::services::power::keyboard_backlight::KeyboardBacklight;
 
 thread_local! {
     // what turning it back on restores; none means the brightest

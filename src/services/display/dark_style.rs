@@ -10,13 +10,13 @@
 
 use amane::{Appearance, Service};
 
-use super::run;
+use crate::services::run;
 
 const KEY: &str = "/org/gnome/desktop/interface/color-scheme";
 
 /// Whether the shell can read the preference back at all.
 pub fn present() -> bool {
-    Appearance::read().present() && super::installed("dconf")
+    Appearance::read().present() && crate::services::installed("dconf")
 }
 
 pub fn dark() -> bool {

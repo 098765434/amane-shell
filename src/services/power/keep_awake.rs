@@ -24,7 +24,7 @@ use std::time::{Duration, SystemTime};
 
 use amane::{Argument, Bus, Service};
 
-use super::{Latest, run};
+use crate::services::{Latest, run};
 
 const SCREENSAVER: &str = "org.freedesktop.ScreenSaver";
 const SCREENSAVER_PATH: &str = "/org/freedesktop/ScreenSaver";

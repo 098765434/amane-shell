@@ -2,7 +2,7 @@
 //! its page: what's wrong if anything, this device, the exit node, the
 //! three settings `tailscale set` changes, and the tailnet's devices.
 //! Hidden without the `tailscale` binary; read-only, and saying how to fix
-//! it, without the operator grant. See [`crate::services::tailscale`].
+//! it, without the operator grant. See [`crate::services::network::tailscale`].
 
 use amane::{Column, Parent, ScrollArea, Service, Size, Widget};
 
@@ -17,7 +17,7 @@ use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::services::run;
-use crate::services::tailscale::{Peer, State, Tailscale};
+use crate::services::network::tailscale::{Peer, State, Tailscale};
 use crate::tokens::sys;
 
 const ADMIN_CONSOLE: &str = "https://login.tailscale.com/admin";

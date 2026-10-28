@@ -120,10 +120,10 @@ pub(super) fn available(page: Page) -> bool {
         Page::Bluetooth => Bluetooth::read().available(),
         Page::PowerMode => PowerProfile::read().present(),
         Page::Power => Battery::read().present(),
-        Page::NightLight => crate::services::night_light::NightLight::read().present(),
-        Page::Keyboard => crate::services::keyboard_backlight::KeyboardBacklight::read().present(),
-        Page::Tailscale => crate::services::tailscale::Tailscale::read().present(),
-        Page::KeepAwake => crate::services::keep_awake::KeepAwake::read().present(),
+        Page::NightLight => crate::services::display::night_light::NightLight::read().present(),
+        Page::Keyboard => crate::services::power::keyboard_backlight::KeyboardBacklight::read().present(),
+        Page::Tailscale => crate::services::network::tailscale::Tailscale::read().present(),
+        Page::KeepAwake => crate::services::power::keep_awake::KeepAwake::read().present(),
     }
 }
 

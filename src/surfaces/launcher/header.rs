@@ -25,7 +25,7 @@ use crate::components::material::{self, FillLevel, Level, Material};
 use crate::components::motion;
 use crate::components::scroll_view::ScrollView;
 use crate::components::text_edit::Field;
-use crate::services::clipboard_history;
+use crate::services::launcher::clipboard_history;
 use crate::tokens::{Styled, TextStyle, sys};
 
 use super::entries::Scope;

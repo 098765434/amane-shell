@@ -14,7 +14,7 @@ use crate::components::list::{List, ListItem};
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
-use crate::services::keep_awake::{KeepAwake, LIMITS};
+use crate::services::power::keep_awake::{KeepAwake, LIMITS};
 
 /// "1 h 24 min", "2 h" or "15 min", to the minute rounded up, so a hold
 /// never reads as over while it's still on.

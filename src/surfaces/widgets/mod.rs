@@ -49,7 +49,7 @@ use crate::components::layout::{blank, boxed};
 use crate::components::material::{self, Material};
 use crate::components::motion::{self, Arrive, Item, Pose};
 use crate::surfaces::status_bar;
-use crate::services::system_stats::SystemStats;
+use crate::services::desktop::system_stats::SystemStats;
 use crate::tokens::sys;
 use amane_kit::settings::{ACCENTS, WidgetStyle, desktop};
 

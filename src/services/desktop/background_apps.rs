@@ -10,7 +10,7 @@
 
 use amane::{Bus, Service, Value};
 
-use super::run_now;
+use crate::services::run_now;
 
 const MONITOR: &str = "org.freedesktop.background.Monitor";
 const PATH: &str = "/org/freedesktop/background/monitor";

@@ -14,14 +14,14 @@ use super::tiles::{
 };
 use crate::components::grid::GridKey;
 use crate::components::layout::boxed;
-use crate::services::background_apps::BackgroundApps;
-use crate::services::connections::Connections;
-use crate::services::dark_style;
-use crate::services::keep_awake::KeepAwake;
-use crate::services::keyboard_backlight::KeyboardBacklight;
-use crate::services::night_light::NightLight;
-use crate::services::rfkill::Rfkill;
-use crate::services::tailscale::Tailscale;
+use crate::services::desktop::background_apps::BackgroundApps;
+use crate::services::network::connections::Connections;
+use crate::services::display::dark_style;
+use crate::services::power::keep_awake::KeepAwake;
+use crate::services::power::keyboard_backlight::KeyboardBacklight;
+use crate::services::display::night_light::NightLight;
+use crate::services::network::rfkill::Rfkill;
+use crate::services::network::tailscale::Tailscale;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ControlId {

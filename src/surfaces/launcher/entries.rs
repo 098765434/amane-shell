@@ -10,8 +10,8 @@ use amane::DesktopApp;
 
 use crate::components::panel::close;
 use crate::components::text_edit;
-use crate::services::clipboard_history::{self, Clip};
-use crate::services::file_search::{self, FileKind};
+use crate::services::launcher::clipboard_history::{self, Clip};
+use crate::services::launcher::file_search::{self, FileKind};
 use crate::services::run_now;
 
 use super::usage;

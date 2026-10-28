@@ -10,7 +10,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use super::run_now;
+use crate::services::run_now;
 
 amane_kit::marker! {
     /// A search finished: what asked for its hits draws again.

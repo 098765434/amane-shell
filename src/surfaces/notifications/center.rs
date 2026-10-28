@@ -29,7 +29,7 @@ use crate::components::layout::{blank, boxed, cursor, split_row};
 use crate::components::material::{self, Level, Material};
 use crate::components::motion::{self, Arrive, Item, Pose};
 use crate::components::panel::{Panel, dismissable, is_open, overlay};
-use crate::services::clock::Clock;
+use crate::services::launcher::clock::Clock;
 use crate::tokens::{Styled, notification, sys};
 
 /// Layer-surface namespace; the niri `layer-rule` matches it for blur, and

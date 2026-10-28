@@ -10,7 +10,7 @@ use super::{
 };
 use crate::components::layout::{icon, text_height};
 use crate::surfaces::widgets::kind::{WidgetKind, WidgetSize};
-use crate::services::system_stats::{Series, SystemStats};
+use crate::services::desktop::system_stats::{Series, SystemStats};
 use crate::tokens::sys;
 
 /// Hotter than this reads in the critical colour.

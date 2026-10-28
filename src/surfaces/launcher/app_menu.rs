@@ -13,7 +13,7 @@ use crate::components::icons::{ICON_ADD, ICON_OPEN_IN_NEW};
 use crate::components::layout::cursor;
 use crate::components::panel::close;
 use crate::surfaces::context_menu::workspace_menu;
-use crate::services::file_search;
+use crate::services::launcher::file_search;
 use crate::tokens::sys;
 
 use super::LAUNCHER_NS;

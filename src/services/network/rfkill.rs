@@ -9,7 +9,7 @@ use std::path::Path;
 
 use amane::Service;
 
-use super::run;
+use crate::services::run;
 
 const ROOT: &str = "/sys/class/rfkill";
 

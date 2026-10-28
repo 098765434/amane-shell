@@ -19,7 +19,7 @@ use std::time::Duration;
 use amane::Service;
 use serde_json::Value;
 
-use super::run_now;
+use crate::services::run_now;
 
 const CASTS_EVERY: Duration = Duration::from_secs(2);
 
@@ -207,7 +207,7 @@ fn summary(nodes: &HashMap<u64, Node>, own_pid: u32) -> (Vec<String>, bool) {
 mod tests {
     use super::*;
 
-    const FIXTURE: &str = include_str!("../../tests/fixtures/pipewire/monitor.json");
+    const FIXTURE: &str = include_str!("../../../tests/fixtures/pipewire/monitor.json");
 
     /// The fixture's batches, split as `pw-dump --monitor` prints them.
     fn batches() -> Vec<Value> {

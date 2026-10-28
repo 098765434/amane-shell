@@ -13,7 +13,7 @@ use crate::components::layout::boxed;
 use crate::components::list::{List, ListItem};
 use crate::components::panel::close;
 use crate::surfaces::quick_settings::detail::DetailPage;
-use crate::services::session::Session;
+use crate::services::power::session::Session;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Action {

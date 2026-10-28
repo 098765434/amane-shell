@@ -10,7 +10,7 @@ use crate::components::icons::ICON_UPDATE;
 use crate::components::panel::close;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::services::installed;
-use crate::services::updates::Updates;
+use crate::services::desktop::updates::Updates;
 
 const SETTINGS: &str = "amane-settings";
 

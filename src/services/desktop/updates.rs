@@ -6,7 +6,7 @@
 use amane::{Service, watch_file};
 use serde_json::Value;
 
-use super::state_file;
+use crate::services::state_file;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Updates {

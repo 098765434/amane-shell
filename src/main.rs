@@ -86,9 +86,9 @@ fn main() -> ExitCode {
     amane::Bluetooth::serve_agent();
     // and it is the session's polkit agent: the password prompt is its alert
     amane::Polkit::serve_agent();
-    services::bt_battery::watch();
+    services::network::bt_battery::watch();
     // and lowers the displays' refresh rate on battery, when asked to
-    services::power_refresh::watch();
+    services::power::power_refresh::watch();
 
     let share = ContextMenu::new()
         .item(
@@ -219,7 +219,7 @@ fn main() -> ExitCode {
     .ipc("status-bar", status_bar::ipc)
     // Shell Settings' Displays page:
     // `printf 'night-light\nschedule\nhours\n21:00\n07:00\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("night-light", services::night_light::ipc)
+    .ipc("night-light", services::display::night_light::ipc)
     // its name while it was the taskbar, for scripts and keybinds
     .ipc("taskbar", status_bar::ipc)
     // a sample alert for trying it out, in debug builds:

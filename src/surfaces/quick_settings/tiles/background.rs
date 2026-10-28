@@ -13,7 +13,7 @@ use crate::components::list::{self, List, ListItem};
 use crate::components::material::{self, Level};
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
-use crate::services::background_apps::BackgroundApps;
+use crate::services::desktop::background_apps::BackgroundApps;
 use crate::tokens::sys;
 
 fn count(n: usize) -> String {

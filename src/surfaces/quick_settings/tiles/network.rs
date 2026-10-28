@@ -30,9 +30,9 @@ use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::detail::page_width;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
-use crate::services::connections::Connections;
-use crate::services::connections::Vpn;
-use crate::services::rfkill::Rfkill;
+use crate::services::network::connections::Connections;
+use crate::services::network::connections::Vpn;
+use crate::services::network::rfkill::Rfkill;
 use crate::tokens::sys;
 
 /// How often the Wi‑Fi page looks for networks again.

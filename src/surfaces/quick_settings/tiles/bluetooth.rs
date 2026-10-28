@@ -39,7 +39,7 @@ use crate::surfaces::quick_settings::QuickSettings;
 use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
-use crate::services::rfkill::Rfkill;
+use crate::services::network::rfkill::Rfkill;
 use crate::tokens::{Styled, sys};
 
 /// Registry key for the rebuilt-per-device right-click menu.

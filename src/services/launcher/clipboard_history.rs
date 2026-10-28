@@ -24,7 +24,7 @@ use amane::serde::{Deserialize, Serialize};
 use amane::{Service, Windows};
 use amane_kit::settings::ClipboardHistory as Settings;
 
-use super::{run_now, save_state, state_file};
+use crate::services::{run_now, save_state, state_file};
 
 amane_kit::marker! {
     /// The history changed: what read the clips draws again.

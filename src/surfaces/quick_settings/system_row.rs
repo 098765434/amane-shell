@@ -11,7 +11,7 @@ use crate::components::battery;
 use crate::components::icons::{ICON_LOCK, ICON_POWER, ICON_SCREENSHOT, battery_glyph};
 use crate::components::motion;
 use crate::components::panel::close;
-use crate::services::session::Session;
+use crate::services::power::session::Session;
 
 /// The battery, when there is one: its charge and how long it lasts.
 pub(super) fn battery_toggle() -> Option<QuickToggle> {

@@ -15,8 +15,8 @@ use crate::components::layout::{boxed, caption};
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::components::slider::Slider;
-use crate::services::dark_style;
-use crate::services::night_light::{self, NightLight, Schedule};
+use crate::services::display::dark_style;
+use crate::services::display::night_light::{self, NightLight, Schedule};
 
 pub(crate) fn brightness_cell(span: Span, inert: bool) -> Option<Box<dyn Widget>> {
     let brightness = Brightness::read();

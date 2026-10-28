@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use amane::{Argument, Bus, Service};
 
-use super::Latest;
+use crate::services::Latest;
 
 const LEDS: &str = "/sys/class/leds";
 
