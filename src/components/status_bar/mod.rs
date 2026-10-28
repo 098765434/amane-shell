@@ -12,17 +12,21 @@
 //!
 //! Where it sits, what it's made of, its clock and which icons it shows
 //! are `~/.config/amane-shell/status-bar.json` (Shell Settings), followed
-//! live.
+//! live. With `auto_hide` it slides past its edge ([`EdgeReveal`]) and
+//! keeps no room from windows, coming back when the pointer meets the edge
+//! or Quick Settings or the notification center is open, which spares an
+//! OLED panel a strip that never changes.
 
 mod indicators;
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::time::Duration;
 
 use amane::{
-    Audio, Battery, Bluetooth, BluetoothDevice, Center, Color, Full, Justify, Keyboard, Layer,
-    LayerWindow, Link, Network, Parent, PowerProfile, Rectangle, Row, Scroll, ScrollSource,
-    Service, Size, Start, Vertical, Widget, Workspace, Workspaces, Zone, window_size,
+    Animation, Audio, Battery, Bluetooth, BluetoothDevice, Center, Color, Easing, Full, InputArea,
+    Justify, Keyboard, Layer, LayerWindow, Link, Network, Parent, PowerProfile, Rectangle, Row,
+    Scroll, ScrollSource, Service, Size, Start, Vertical, Widget, Workspace, Workspaces, Zone,
+    window_size,
 };
 use amane_kit::settings::{BarPosition, BarStyle, status_bar};
 use amane_kit::theme::{self, Mode};
@@ -31,6 +35,7 @@ use crate::components::battery;
 use crate::components::buttons::{
     ButtonBuilder, DrawnButton, IconButton, PushButton, Shape, Style,
 };
+use crate::components::edge_reveal::EdgeReveal;
 use crate::components::icons::{
     Glyph, ICON_AIRPLANE, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE,
     ICON_CAMERA, ICON_DND, ICON_KEEP_AWAKE, ICON_MIC, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS,
@@ -68,9 +73,24 @@ pub const BAR_NS: &str = "amane.status-bar";
 /// TODO(token): `bar.scroll.step` once Penpot has it.
 const SCROLL_STEP: f32 = 3.0;
 
+/// How tall the strip along the edge is that brings a hidden bar back.
+const STRIP: f32 = 2.0;
+
 thread_local! {
     // touchpad scroll over the workspaces not yet made into a step
     static SCROLLED: Cell<f32> = const { Cell::new(0.0) };
+
+    // where the hiding bar is, when it hides
+    static REVEAL: RefCell<EdgeReveal> = RefCell::new(EdgeReveal::new(
+        Animation::new(0.0)
+            .duration(if theme::reduced_motion() {
+                Duration::ZERO
+            } else {
+                Duration::from_millis(220)
+            })
+            .easing(Easing::Out),
+        Duration::from_millis(400),
+    ));
 }
 
 /// The edge the bar runs along; the panels and cards that keep clear of
@@ -97,14 +117,45 @@ pub fn bar() -> LayerWindow {
 
     let style = status_bar().style;
     let height = sys::size::panel::height();
+    let (width, _) = window_size();
+
+    // how far it's slid past its edge: 0 in place, `height` gone
+    let hiding = status_bar().auto_hide;
+    let (offset, input) = REVEAL.with_borrow_mut(|reveal| {
+        reveal.set_top(edge() == Vertical::Top);
+        reveal.keep_out(!hiding || is_open(Panel::QuickSettings) || is_open(Panel::Notifications));
+        let progress = reveal.progress(0.0);
+        let shown = InputArea {
+            x: 0,
+            y: 0,
+            width: width.max(1.0) as i32,
+            height: height as i32,
+        };
+        let input = reveal.input_region(width, height, STRIP, progress, shown);
+        let away = (1.0 - progress) * height;
+        let offset = match edge() {
+            Vertical::Top => -away,
+            _ => away,
+        };
+        (offset, input)
+    });
 
     let panel = Rectangle::new()
         .width(Parent)
         .height(Parent)
         .radius(bar::radius())
         .fill(fill(style))
-        .padding(pad(sys::space::inset::m(), bar::panel::padding_y()));
+        .padding(pad(sys::space::inset::m(), bar::panel::padding_y()))
+        .translate(0.0, offset);
     let panel = track_cursor(panel).child(sections);
+    let panel = Rectangle::new()
+        .width(Parent)
+        .height(Parent)
+        .fill(Color::TRANSPARENT)
+        .on_hover(|over| REVEAL.with_borrow_mut(|reveal| reveal.hover(over)))
+        // a pointer that arrived without an enter still counts
+        .on_move(|_| REVEAL.with_borrow_mut(|reveal| reveal.hover(true)))
+        .child(panel);
 
     let window = LayerWindow::new()
         .width(Full)
@@ -112,22 +163,28 @@ pub fn bar() -> LayerWindow {
         .vibrant(style != BarStyle::Solid && material::vibrant());
 
     // Frosted leaves niri's layer rule to frost the whole strip in the bar's
-    // material; the others say where themselves
+    // material; the others say where themselves. A hiding bar says where too,
+    // so the frost slides away with it.
     let window = match style {
-        BarStyle::Frosted => window,
-        BarStyle::Glass => {
-            let (width, _) = window_size();
-            window.blur_shapes(vec![
-                Material::Control.shape(0.0, 0.0, width, height, 0.0, 1.0),
-            ])
-        }
+        BarStyle::Frosted if !hiding => window,
+        BarStyle::Frosted => window.blur_shapes(vec![
+            Material::Bar.shape(0.0, offset, width, height, 0.0, 1.0),
+        ]),
+        BarStyle::Glass => window.blur_shapes(vec![
+            Material::Control.shape(0.0, offset, width, height, 0.0, 1.0),
+        ]),
         BarStyle::Solid => window.blur_shapes(Vec::new()),
+    };
+    let window = if hiding {
+        window.input_region(input)
+    } else {
+        window
     };
 
     window
         .anchor_vertical(edge())
         .layer(Layer::Top)
-        .space(Zone::Reserve)
+        .space(if hiding { Zone::Ignore } else { Zone::Reserve })
         // None so bar clicks never steal keyboard focus from the active app
         // (macOS menu-bar behavior); the panels take keys when clicked into.
         .keyboard(Keyboard::None)

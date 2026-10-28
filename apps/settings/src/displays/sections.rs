@@ -3,10 +3,13 @@
 //! monitor, OLED care on an LCD) is left out.
 
 use std::cell::Cell;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
+use std::time::Duration;
 
 use amane::{
-    Brightness, Center, Color, Column, Rectangle, Row, Service, Size, Text, TextInput, Widget,
+    Battery, Brightness, Center, Color, Column, Rectangle, Row, Service, Size, Text, TextInput,
+    Widget,
 };
 use amane_kit::app::{Dialog, field_box, text_field};
 use amane_kit::arrangement::{Arrangement, Screen};
@@ -16,7 +19,10 @@ use amane_kit::dropdown::Dropdown;
 use amane_kit::layout::{boxed, text_height};
 use amane_kit::list::{List, ListItem, with_row_width};
 use amane_kit::material::{self, Level};
-use amane_kit::settings::{appearance, change_appearance, change_dock, dock};
+use amane_kit::settings::{
+    appearance, change_appearance, change_displays, change_dock, change_status_bar, displays, dock,
+    status_bar,
+};
 use amane_kit::slider::Slider;
 use amane_kit::tag::{Tag, tags};
 use amane_kit::theme::Mode as Scheme;
@@ -24,6 +30,7 @@ use amane_kit::tokens::{Styled, sys};
 
 use super::caps::Caps;
 use super::config::{self, Displays as Saved, Setup, Vrr};
+use super::ddc::{self, Ddc, Feature, Monitor};
 use super::niri::{self, Change, Mode, Output, Transform};
 use super::trial::try_change;
 use super::{Screens, block_name, save, save_all, saved_block};
@@ -341,7 +348,7 @@ pub fn header(ctx: &Ctx) -> Box<dyn Widget> {
 
 pub fn brightness(ctx: &Ctx) -> Option<Box<dyn Widget>> {
     if !ctx.output.built_in() {
-        return None;
+        return Some(external_brightness(&ctx.output));
     }
     let light = Brightness::read();
     if !light.present() {
@@ -363,6 +370,53 @@ pub fn brightness(ctx: &Ctx) -> Option<Box<dyn Widget>> {
         .gap(sys::space::gap::m())
         .align(Center),
     )))
+}
+
+/// A monitor's own brightness and contrast, over DDC/CI.
+fn external_brightness(output: &Output) -> Box<dyn Widget> {
+    let (brightness, contrast) = match Ddc::monitor(&output.name) {
+        Monitor::Reading => {
+            return boxed(setting("Brightness", note("Asking the display…")));
+        }
+        Monitor::Silent => {
+            return boxed(setting(
+                "Brightness",
+                note(
+                    "This display doesn't take brightness from the computer (DDC/CI). Its own buttons set it.",
+                ),
+            ));
+        }
+        Monitor::Levels {
+            brightness,
+            contrast,
+            ..
+        } => (brightness, contrast),
+    };
+    let slider = |feature: Feature, level: ddc::Level| {
+        let connector = output.name.clone();
+        Row::new(vec![
+            boxed(
+                Slider::new(level.percent(), 240.0)
+                    .wheel(false)
+                    .on_value_change(move |percent| Ddc::set(&connector, feature, percent))
+                    .build(),
+            ),
+            boxed(note(format!("{} %", level.percent()))),
+        ])
+        .gap(sys::space::gap::m())
+        .align(Center)
+    };
+    let mut rows: Vec<Box<dyn Widget>> = Vec::new();
+    if let Some(level) = brightness {
+        rows.push(boxed(setting(
+            "Brightness",
+            slider(Feature::Brightness, level),
+        )));
+    }
+    if let Some(level) = contrast {
+        rows.push(boxed(setting("Contrast", slider(Feature::Contrast, level))));
+    }
+    boxed(Column::new(rows).gap(sys::space::gap::l()))
 }
 
 /// The resolutions it lists, largest first, each once.
@@ -474,6 +528,7 @@ pub fn refresh_rate(ctx: &Ctx) -> Option<Box<dyn Widget>> {
     if rates.len() < 2 {
         return Some(boxed(setting("Refresh rate", note(hz(now.hz())))));
     }
+    let slowest = hz(rates[0].hz());
     let at = rates
         .iter()
         .position(|m| m.refresh_rate == now.refresh_rate);
@@ -506,7 +561,26 @@ pub fn refresh_rate(ctx: &Ctx) -> Option<Box<dyn Widget>> {
             .on_select(pick)
             .build()
     };
-    Some(boxed(setting("Refresh rate", control)))
+    let mut column: Vec<Box<dyn Widget>> = vec![boxed(control)];
+    if Battery::read().present() {
+        column.push(boxed(labelled(
+            "Lower the refresh rate on battery",
+            Switch::new(
+                "settings.displays.battery-refresh",
+                displays().battery_refresh,
+            )
+            .on_toggle(|on| change_displays(|now| now.battery_refresh = on))
+            .build(),
+        )));
+        column.push(boxed(note(format!(
+            "On battery every display runs at its slowest rate ({} here), and goes back on AC.",
+            slowest
+        ))));
+    }
+    Some(boxed(setting(
+        "Refresh rate",
+        Column::new(column).gap(sys::space::gap::xs()),
+    )))
 }
 
 const VRR_APP: &str = "settings.displays.vrr-app";
@@ -762,37 +836,121 @@ pub fn rotation(ctx: &Ctx) -> Box<dyn Widget> {
     ))
 }
 
+/// Where the HDR brightness slider runs, in nits.
+const SDR_WHITE: (f64, f64) = (80., 480.);
+
 pub fn hdr(ctx: &Ctx) -> Box<dyn Widget> {
     let caps = &ctx.caps;
-    let what = if caps.hdr10() {
-        let peak = caps.peak_nits().map_or(String::new(), |nits| {
-            format!(", up to {} nits", nits.round())
+    let output = ctx.output.clone();
+    if !caps.hdr10() {
+        return boxed(setting(
+            "High dynamic range",
+            note("This display doesn't support HDR."),
+        ));
+    }
+
+    let peak = output
+        .peak_luminance
+        .or(caps.peak_nits().map(f64::from))
+        .map_or(String::new(), |nits| {
+            format!(" up to {} nits", nits.round())
         });
-        let wide = if caps.wide_encoding() {
-            " in BT.2020 colour"
-        } else {
-            ""
-        };
-        format!(
-            "This display shows HDR10{peak}{wide}. niri can't send HDR yet, so it stays off \
-             and everything shows in standard range."
-        )
-    } else {
-        String::from("This display doesn't support HDR.")
-    };
+    if !output.hdr_supported {
+        return boxed(setting(
+            "High dynamic range",
+            note(format!(
+                "This display shows HDR10{peak}, but niri can't drive it here: it needs a niri \
+                 with HDR, and the display on the main graphics card."
+            )),
+        ));
+    }
+
+    let on = output.hdr_enabled;
+    let switched = output.clone();
+    let switch = Switch::new("settings.displays.hdr", on)
+        .disabled(!ctx.editable() || !output.on())
+        .on_toggle(move |hdr| {
+            try_change(
+                &switched,
+                Change::Hdr(hdr),
+                Change::Hdr(!hdr),
+                format!("{} HDR {}", switched.name, if hdr { "on" } else { "off" }),
+                move |block| block.hdr = hdr,
+            );
+        })
+        .build();
+
+    let mut column: Vec<Box<dyn Widget>> = vec![
+        boxed(labelled("Use HDR", switch)),
+        boxed(note(format!(
+            "HDR10{peak}. The screen blanks for a moment while it switches. The desktop looks \
+             the same; HDR video and games show brighter highlights: mpv with --vo=gpu-next, \
+             Firefox with gfx.wayland.hdr, and Vulkan games asking for HDR."
+        ))),
+    ];
+
+    if on {
+        let nits = output.sdr_brightness.unwrap_or(203.);
+        let (low, high) = SDR_WHITE;
+        let at = (((nits - low) / (high - low)).clamp(0., 1.) * 100.).round() as u8;
+        let slid = output.clone();
+        column.push(boxed(setting(
+            "HDR brightness",
+            Column::new(vec![
+                boxed(
+                    Row::new(vec![
+                        boxed(
+                            Slider::new(at, 240.0)
+                                .wheel(false)
+                                .inert(!ctx.editable())
+                                .on_value_change(move |value| {
+                                    let nits =
+                                        (low + (high - low) * f64::from(value) / 100.).round();
+                                    sdr_brightness(&slid, nits);
+                                })
+                                .build(),
+                        ),
+                        boxed(note(format!("{} nits", nits.round()))),
+                    ])
+                    .gap(sys::space::gap::m())
+                    .align(Center),
+                ),
+                boxed(note(
+                    "How bright white windows and text are. The backlight may not follow the \
+                     usual brightness while HDR is on.",
+                )),
+            ])
+            .gap(sys::space::gap::xs()),
+        )));
+    }
+
     boxed(setting(
         "High dynamic range",
-        Column::new(vec![
-            boxed(labelled(
-                "Use HDR",
-                Switch::new("settings.displays.hdr", false)
-                    .disabled(true)
-                    .build(),
-            )),
-            boxed(note(what)),
-        ])
-        .gap(sys::space::gap::xs()),
+        Column::new(column).gap(sys::space::gap::s()),
     ))
+}
+
+/// Shows `nits` at once, and saves it once the slider has rested for a moment, so a drag is
+/// one commit.
+fn sdr_brightness(output: &Output, nits: f64) {
+    static LATEST: AtomicU64 = AtomicU64::new(0);
+    let turn = LATEST.fetch_add(1, Ordering::Relaxed) + 1;
+    let output = output.clone();
+    thread::spawn(move || {
+        if let Err(error) = niri::apply(&output.name, &Change::SdrBrightness(nits)) {
+            Screens::fail(error);
+            return;
+        }
+        Screens::refresh();
+        thread::sleep(Duration::from_millis(800));
+        if LATEST.load(Ordering::Relaxed) == turn {
+            save(
+                &output,
+                format!("{} HDR brightness {nits} nits", output.name),
+                move |block| block.sdr_brightness = Some(nits),
+            );
+        }
+    });
 }
 
 // ───── night light ──────────────────────────────────────────────────────────
@@ -809,6 +967,7 @@ pub fn oled_care(ctx: &Ctx) -> Option<Box<dyn Widget>> {
     }
     let dark = appearance().mode == Some(Scheme::Dark);
     let hidden = dock().auto_hide;
+    let bar_hidden = status_bar().auto_hide;
     Some(boxed(setting(
         "OLED care",
         Column::new(vec![
@@ -826,6 +985,12 @@ pub fn oled_care(ctx: &Ctx) -> Option<Box<dyn Widget>> {
                 "Hide the dock until the pointer meets the screen's edge",
                 Switch::new("settings.displays.oled.dock", hidden)
                     .on_toggle(|on| change_dock(|now| now.auto_hide = on))
+                    .build(),
+            )),
+            boxed(labelled(
+                "Hide the status bar until the pointer meets the screen's edge",
+                Switch::new("settings.displays.oled.bar", bar_hidden)
+                    .on_toggle(|on| change_status_bar(|now| now.auto_hide = on))
                     .build(),
             )),
             boxed(

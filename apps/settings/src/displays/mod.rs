@@ -14,6 +14,7 @@
 
 mod caps;
 mod config;
+mod ddc;
 mod drm;
 mod edid;
 mod night;
@@ -212,6 +213,12 @@ fn current_block(saved: &Saved, output: &Output) -> OutputConfig {
         block.transform = logical.transform;
     }
     block.off = !output.on();
+    if output.hdr_supported {
+        block.hdr = output.hdr_enabled;
+        if output.hdr_enabled {
+            block.sdr_brightness = output.sdr_brightness.map(f64::round);
+        }
+    }
     block
 }
 

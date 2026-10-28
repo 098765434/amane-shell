@@ -41,6 +41,10 @@ pub struct OutputConfig {
     pub position: Option<(i32, i32)>,
     pub vrr: Vrr,
     pub focus_at_startup: bool,
+    /// HDR10, when the display takes it.
+    pub hdr: bool,
+    /// SDR white in HDR mode, in nits; niri's default (203) when unset.
+    pub sdr_brightness: Option<f64>,
     /// `#rrggbb` behind the workspaces in the overview.
     pub backdrop: Option<String>,
 }
@@ -103,6 +107,12 @@ impl Displays {
             }
             if output.focus_at_startup {
                 line(String::from("focus-at-startup"));
+            }
+            if output.hdr {
+                line(String::from("hdr"));
+            }
+            if let Some(nits) = output.sdr_brightness {
+                line(format!("sdr-brightness {}", nits.round()));
             }
             if let Some(color) = &output.backdrop {
                 line(format!("backdrop-color {}", quote(color)));
@@ -199,6 +209,8 @@ impl Displays {
                     };
                 }
                 "focus-at-startup" => output.focus_at_startup = true,
+                "hdr" => output.hdr = true,
+                "sdr-brightness" => output.sdr_brightness = value.parse().ok(),
                 "backdrop-color" => output.backdrop = unquote(value),
                 _ => {}
             }
@@ -550,6 +562,8 @@ layout {
                     vrr: Vrr::Always,
                     focus_at_startup: true,
                     backdrop: Some(String::from("#101010")),
+                    hdr: true,
+                    sdr_brightness: Some(300.),
                 },
             ],
             vrr_apps: vec![

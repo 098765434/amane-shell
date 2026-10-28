@@ -97,6 +97,7 @@ Bar page), followed live:
 | `date_format` | the clock tooltip's day: `long` ("Sunday 25 October"), `short` ("Sun 25 Oct"), `numeric` (the locale's `%x`) |
 | `show_workspaces`, `scroll_workspaces` | the pips, and whether scrolling over them moves between workspaces |
 | `hidden` | the status icons left out (above) |
+| `auto_hide` | slides the bar past its edge (an [`EdgeReveal`](../kit/components.md#edgereveal) at the top or bottom) and keeps no room from windows (`Zone::Ignore`). It comes back while the pointer is on a 2 px strip at the edge or on the bar, or while Quick Settings or the notification center is open, and goes again 400 ms after. Its frost becomes a blur shape that slides with it. At the bottom, a hiding dock (Overlay) takes the edge first |
 
 Every style draws only rectangles and glyphs (the quad pipeline); the glass is niri's, not a
 shader.

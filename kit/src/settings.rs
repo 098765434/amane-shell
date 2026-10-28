@@ -152,6 +152,32 @@ pub fn change_desktop(edit: impl FnOnce(&mut Desktop)) {
     Config::<Desktop>::change(edit);
 }
 
+/// The displays: what the shell does to them, beside what niri's own
+/// `displays.kdl` keeps.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct Displays {
+    /// On battery, run each display at its slowest refresh rate (at the
+    /// same resolution), and go back on AC.
+    pub battery_refresh: bool,
+}
+
+impl Settings for Displays {
+    const APP: &'static str = "amane-shell";
+    const FILE: &'static str = "displays";
+}
+
+/// The display settings as they are now; a view that reads them redraws
+/// when they change.
+pub fn displays() -> RwLockReadGuard<'static, Config<Displays>> {
+    Config::<Displays>::read()
+}
+
+/// Changes the display settings and saves them, for input handlers.
+pub fn change_displays(edit: impl FnOnce(&mut Displays)) {
+    Config::<Displays>::change(edit);
+}
+
 /// How the launcher shows the apps in its Apps mode.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
@@ -319,6 +345,10 @@ pub struct StatusBar {
 
     /// The icons left out, by their names, like "volume".
     pub hidden: Vec<String>,
+
+    /// Hidden past the screen's edge until the pointer meets it, as the
+    /// dock can be; it keeps no room from windows then.
+    pub auto_hide: bool,
 }
 
 impl Default for StatusBar {
@@ -332,6 +362,7 @@ impl Default for StatusBar {
             show_workspaces: true,
             scroll_workspaces: true,
             hidden: Vec::new(),
+            auto_hide: false,
         }
     }
 }

@@ -131,8 +131,23 @@ pub fn page() -> Column {
         "Quick Settings and the clock always show. Each Quick Settings page can show or hide its icon too.",
     )));
 
+    let hiding = Column::new(vec![
+        boxed(labelled(
+            "Hide the status bar until the pointer meets the screen's edge",
+            Switch::new("settings.bar.auto-hide", now.auto_hide)
+                .on_toggle(|on| change_status_bar(|now| now.auto_hide = on))
+                .build(),
+        )),
+        boxed(note(
+            "Hidden, it keeps no room from windows, and comes back with Quick Settings or the \
+             notification center too. At the bottom, a hiding dock takes the edge first.",
+        )),
+    ])
+    .gap(sys::space::gap::s());
+
     Column::new(vec![
         boxed(setting("Position", position)),
+        boxed(setting("Hiding", hiding)),
         boxed(setting("Material", Column::new(styles))),
         boxed(setting("Clock", clock)),
         boxed(setting("Date in the clock's tooltip", date_format.build())),

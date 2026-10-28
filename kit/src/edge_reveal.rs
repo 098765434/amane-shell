@@ -35,6 +35,8 @@ pub struct EdgeReveal {
     // when the pointer left, while the delay runs
     left: Option<Instant>,
     delay: Duration,
+    // it hides at the top edge, not the bottom
+    top: bool,
 }
 
 impl EdgeReveal {
@@ -47,7 +49,19 @@ impl EdgeReveal {
             kept: false,
             left: None,
             delay,
+            top: false,
         }
+    }
+
+    /// Hides at the top edge instead of the bottom, as a bar along the top
+    /// does: the strip that takes the pointer is along the top.
+    pub fn at_top(mut self, top: bool) -> Self {
+        self.top = top;
+        self
+    }
+
+    pub fn set_top(&mut self, top: bool) {
+        self.top = top;
     }
 
     /// The pointer came onto the surface (`true`) or left it.
@@ -97,8 +111,10 @@ impl EdgeReveal {
     }
 
     /// Where the surface, `width` by `height`, takes the pointer: the
-    /// `strip` along its bottom edge while hidden, and `shown` too while
-    /// any of it is out.
+    /// `strip` along its edge (the bottom, or the top [`at_top`]) while
+    /// hidden, and `shown` too while any of it is out.
+    ///
+    /// [`at_top`]: EdgeReveal::at_top
     pub fn input_region(
         &self,
         width: f32,
@@ -109,7 +125,11 @@ impl EdgeReveal {
     ) -> Vec<InputArea> {
         let edge = InputArea {
             x: 0,
-            y: (height - strip).max(0.0) as i32,
+            y: if self.top {
+                0
+            } else {
+                (height - strip).max(0.0) as i32
+            },
             width: width.max(1.0) as i32,
             height: strip.max(1.0) as i32,
         };
@@ -202,5 +222,12 @@ mod tests {
         edge.hover(true);
         let out = edge.progress(0.0);
         assert_eq!(edge.input_region(100.0, 50.0, 2.0, out, area()).len(), 2);
+    }
+
+    #[test]
+    fn at_the_top_the_strip_is_along_the_top() {
+        let edge = reveal(30).at_top(true);
+        let hidden = edge.input_region(100.0, 50.0, 2.0, 0.0, area());
+        assert_eq!((hidden[0].y, hidden[0].height), (0, 2));
     }
 }

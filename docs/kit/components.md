@@ -14,7 +14,7 @@ the shell's macOS look. They read `sys.*` tokens only, so any component can use 
 | `Slider` | `slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume, Quick Settings' sliders |
 | `tooltip` | `tooltip.rs` | [Tooltips](https://m3.material.io/components/tooltips/overview) (plain) | the bar's volume level and battery charge |
 | `app_icon` | `app_icon.rs` | none | the dock's icons, notification cards' app icons, the launcher's apps |
-| `EdgeReveal` | `edge_reveal.rs` | none | the dock hiding at the bottom edge |
+| `EdgeReveal` | `edge_reveal.rs` | none | the dock hiding at the bottom edge, the status bar at either |
 | `ScrollView` | `scroll_view.rs` | none | the launcher's grid, results and pill bar, the Customize window's panes |
 | `Flow` | `flow.rs` | none | the Customize window's controls, flowing into rows |
 | `Dialog` | `dialog.rs` | [Dialogs](https://m3.material.io/components/dialogs/overview) (basic) | the shell's alert, an app's modal dialog |
@@ -121,8 +121,8 @@ A surface that hides at a screen edge until the pointer touches it, holding no v
 onto the surface and leaves it, reads `progress(hold)` once a frame (0 hidden … 1 out, at least
 `hold`, which lets something else bring it out, like niri's overview), and sets the surface's
 input region from `input_region(width, height, strip, progress, shown)`: only the `strip` along
-the bottom edge while hidden, and `shown` too while any of it is out. Once the pointer has been
-gone for `delay`, it goes back in.
+the bottom edge (the top, made `at_top(true)` or `set_top(true)`) while hidden, and `shown` too
+while any of it is out. Once the pointer has been gone for `delay`, it goes back in.
 
 `keep_out(bool)` holds it out whatever the pointer does: the dock calls it every frame with
 whether its menu is open, an icon is held, or files are held over it. Once let go, it goes back in

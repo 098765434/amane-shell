@@ -25,6 +25,16 @@ pub struct Output {
     pub is_custom_mode: bool,
     pub vrr_supported: bool,
     pub vrr_enabled: bool,
+    /// HDR, from a niri that has it; an older one leaves these out.
+    #[serde(default)]
+    pub hdr_supported: bool,
+    #[serde(default)]
+    pub hdr_enabled: bool,
+    /// SDR white in HDR mode, in nits.
+    #[serde(default)]
+    pub sdr_brightness: Option<f64>,
+    #[serde(default)]
+    pub peak_luminance: Option<f64>,
     pub logical: Option<Logical>,
 }
 
@@ -181,6 +191,9 @@ pub enum Change {
         on: bool,
         on_demand: bool,
     },
+    Hdr(bool),
+    /// SDR white in HDR mode, in nits.
+    SdrBrightness(f64),
 }
 
 impl Change {
@@ -205,6 +218,8 @@ impl Change {
             Change::Position(x, y) => {
                 json!({"Position": {"position": {"Specific": {"x": x, "y": y}}}})
             }
+            Change::Hdr(on) => json!({"Hdr": {"hdr": on}}),
+            Change::SdrBrightness(nits) => json!({"SdrBrightness": {"nits": nits}}),
             Change::Vrr { on, on_demand } => {
                 json!({"Vrr": {"vrr": {"vrr": on, "on_demand": on_demand}}})
             }

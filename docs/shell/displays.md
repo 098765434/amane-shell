@@ -2,8 +2,9 @@
 
 Shell Settings' **Displays** page (`apps/settings/src/displays/`) shows each screen niri drives,
 with what the screen can do found out from the screen itself, and changes its resolution, refresh
-rate, variable refresh, scale, rotation and place. It also holds brightness, Night Light's
-schedule and, on an OLED panel, OLED care. `amane-settings --page displays` opens it.
+rate, variable refresh, scale, rotation, place and HDR. It also holds brightness (a monitor's
+own over DDC/CI), lowering the refresh rate on battery, Night Light's schedule and, on an OLED
+panel, OLED care. `amane-settings --page displays` opens it.
 
 ## What a screen can do
 
@@ -76,24 +77,25 @@ A `config.kdl` with uncommitted edits is refused.
 |---|---|---|
 | Arrangement | the screens to drag ([`Arrangement`](../kit/components.md#arrangement)), with two or more; a dropdown picks the screen the page shows, the ones switched off too | `position x= y=`, at once |
 | Header | the name, the diagonal, the panel and connector, the mode, and the [tags](../kit/components.md#tag) | none |
-| Brightness | slider, on a built-in panel, through amane's `Brightness` (logind) | none |
+| Brightness | slider, on a built-in panel, through amane's `Brightness` (logind); on a monitor, Brightness and Contrast over DDC/CI ([below](#a-monitors-own-brightness)) | none |
 | Resolution | dropdown, largest first, the preferred one marked "(Default)", with what it looks like after scaling | `mode`, tried first |
-| Refresh rate | segmented (a dropdown past five rates), the rates at this resolution | `mode`, tried first |
+| Refresh rate | segmented (a dropdown past five rates), the rates at this resolution; with a battery, **Lower the refresh rate on battery** ([below](#refresh-rate-on-battery)) | `mode`, tried first; the switch in `displays.json` |
 | Variable refresh rate | segmented: Off, On demand, Always; the range it follows; under On demand, the apps that turn it on (by app id, with **Add** and **Remove**) | `variable-refresh-rate [on-demand=true]` and the `window-rule`, at once |
 | Scale | dropdown, 100–300 % in quarters, each "looks like W × H", and any other scale already in use | `scale`, tried first |
 | Rotation | dropdown: Standard, 90°, 180°, 270°, flipped and flipped turned (counter-clockwise, as niri turns) | `transform`, tried first |
-| High dynamic range | a switch that stays off, and what the screen can do | none (below) |
+| High dynamic range | **Use HDR**, tried first, with what the screen shows; while on, **HDR brightness**, 80–480 nits ([below](#hdr)) | `hdr`, `sdr-brightness` |
 | Night Light | a switch, how warm, and when: All day, Sunset to sunrise, Set hours | the shell's state ([below](#night-light)) |
-| OLED care | on an OLED panel: Dark appearance, hiding the dock, and **Screen Sleep Timing…** (Power & Lock) | `appearance.json`, `dock.json` |
+| OLED care | on an OLED panel: Dark appearance, hiding the dock, hiding the status bar, and **Screen Sleep Timing…** (Power & Lock) | `appearance.json`, `dock.json`, `status-bar.json` |
 | This display | with two or more: Use this display (not the last one lit), Main display | `off` (tried first), `focus-at-startup` (one at most) |
 | Advanced… | Custom scale (0.5–4, or a percentage), Custom mode (`2560x1600@90`), Overview backdrop (`#rrggbb`), and the raw facts each source gave | `scale`, `mode custom=true`, `backdrop-color` |
 
 **Trying a change.** A change that could leave a screen unreadable is tried first: resolution,
-refresh rate, scale, rotation, a custom mode, and turning a screen off. niri makes it, and
+refresh rate, scale, rotation, a custom mode, HDR, and turning a screen off. niri makes it, and
 "Keep these display settings?" asks with a 15-second countdown
 ([`Dialog::countdown`](../kit/components.md#dialog)). **Keep Changes** writes it. **Revert**,
 Escape, or nobody answering puts the old setting back over IPC, and nothing is written. Brightness,
-variable refresh, the place, the main display and the backdrop apply at once.
+variable refresh, the place, the main display and the backdrop apply at once. HDR brightness
+applies at once and is written once the slider rests, so a drag is one commit.
 
 **Variable refresh.** niri's on-demand mode turns VRR on only while a window that a
 `variable-refresh-rate true` rule matches is on the screen, so On demand without any apps does
@@ -102,12 +104,43 @@ On demand suits them.
 
 ## HDR
 
-The page reads HDR support (HDR10 needs PQ in the EDID and `HDR_OUTPUT_METADATA` on the
-connector) and says what the screen can do, but its switch stays off. niri renders 8-bit only and
-clears the HDR metadata and colorspace whenever it sets up a connector, so nothing could turn HDR
-on. HDR in niri is its own piece of work: 10-bit scanout, PQ encoding with the SDR content mapped
-into it, the metadata, and `wp-color-management-v1` for apps. The switch will drive it once niri
-does.
+niri drives an output in HDR10 when its EDID says it decodes PQ (see niri's
+[hdr.md](https://github.com/098765434/niri/blob/ocbk/docs/fork/display/hdr.md)). The page shows
+what the screen can do (HDR10 support and peak, from the EDID and from niri's `peak_luminance`),
+and:
+
+- **Use HDR** is niri's `hdr` (`Change::Hdr`). It's tried first because niri sets the output up
+  again from scratch, so the screen blanks for a moment. Saved as `hdr` in `displays.kdl`.
+- **HDR brightness** is where SDR white sits in HDR mode (`sdr-brightness`, niri's default 203
+  nits). The desktop looks the same in HDR mode; this is how bright it is. The note says the
+  backlight may not follow the usual brightness while HDR is on, as on some amdgpu OLED panels.
+- The note names what shows HDR: mpv with `--vo=gpu-next`, Firefox with `gfx.wayland.hdr`, and
+  Vulkan games that ask for HDR. These describe their colour through `wp-color-management-v1`,
+  and niri shows their highlights up to the panel's peak.
+
+A display that supports HDR10 under a niri without it (an older build, or a screen on another GPU)
+gets a note instead of the switch. The `Output` mirror reads niri's HDR fields with
+`serde(default)`, so an older niri still parses.
+
+## A monitor's own brightness
+
+An external monitor has no backlight the kernel controls, but most take brightness and contrast
+over DDC/CI (`ddc.rs`). The connector's sysfs folder links to its I²C bus (`ddc` → `i2c-N`), so
+the page asks `ddcutil --bus N --brief getvcp 10` and `12` once, off the UI thread, and shows the
+answers as sliders. A slider sends `setvcp` once it has rested for 150 ms, since each call takes a
+tenth of a second or more. A monitor that doesn't answer gets a note that its own buttons set it.
+This needs `ddcutil` and access to `/dev/i2c-*` (`hardware.i2c.enable` and the `i2c` group in the
+NixOS configuration).
+
+## Refresh rate on battery
+
+**Lower the refresh rate on battery** (`battery_refresh` in `displays.json`) is the shell's
+(`services/power_refresh.rs`). Every five seconds it reads amane's `Battery`. On battery, it
+moves each display to its slowest rate at the same resolution (60 Hz on this panel) with niri's
+temporary `niri msg output … mode`, and remembers the rate it had. On AC, or once the switch is
+off, it puts that rate back. `displays.kdl` keeps the AC rate throughout, so a config reload on
+battery brings it back for a moment, until the next check lowers it again. niri is only asked while
+on battery, or while a display is waiting to go back.
 
 ## Night Light
 
@@ -126,5 +159,5 @@ While a schedule is set, the Quick Settings tile reads "Scheduled".
 ## Cost
 
 The page is quads: the kit's controls, `Tag` and `Arrangement` included. Nothing on it draws with
-vello. Its poll rests while another page shows (`displays::showing`), and the countdown's tick runs
+vello. DDC calls and niri requests run off the UI thread. Its poll rests while another page shows (`displays::showing`), and the countdown's tick runs
 only while a countdown dialog is open.

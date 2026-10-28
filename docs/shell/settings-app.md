@@ -77,6 +77,7 @@ Writes `status-bar.json` (`status_bar.rs`); see [status-bar.md](status-bar.md#se
 | Setting | Control | Field |
 |---|---|---|
 | Position | segmented: Bottom, Top | `position` |
+| Hiding | switch: Hide the status bar until the pointer meets the screen's edge | `auto_hide` |
 | Material | radios: Frosted, Glass, Solid (black in dark mode, white in light) | `style` |
 | Clock | switches: 24-hour time, Show seconds | `clock_24h`, `clock_seconds` |
 | Date in the clock's tooltip | dropdown: Sunday 25 October, Sun 25 Oct, the locale's numbers | `date_format` |
@@ -300,7 +301,8 @@ with **Back**.
 
 ## The files
 
-`appearance.json`, `desktop.json`, `status-bar.json`, `dock.json`, `launcher.json` and `nixos.json`
+`appearance.json`, `desktop.json`, `status-bar.json`, `dock.json`, `launcher.json`, `displays.json`
+(`battery_refresh`) and `nixos.json`
 (`repo`, `host`: where the NixOS configuration is) are JSON in
 `$XDG_CONFIG_HOME/amane-shell/` (else `~/.config/amane-shell/`), read and
 written through amane's `Config` by `amane_kit::settings`. A missing field takes its default, so

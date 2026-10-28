@@ -87,6 +87,8 @@ fn main() -> ExitCode {
     // and it is the session's polkit agent: the password prompt is its alert
     amane::Polkit::serve_agent();
     services::bt_battery::watch();
+    // and lowers the displays' refresh rate on battery, when asked to
+    services::power_refresh::watch();
 
     let share = ContextMenu::new()
         .item(

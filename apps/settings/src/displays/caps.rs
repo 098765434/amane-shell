@@ -72,14 +72,6 @@ impl Caps {
             .map(u64::from)
             .or_else(|| self.connector.as_ref()?.max_bpc)
     }
-
-    pub fn wide_encoding(&self) -> bool {
-        self.edid.as_ref().is_some_and(|edid| {
-            edid.colorimetry
-                .iter()
-                .any(|name| name.starts_with("BT2020"))
-        })
-    }
 }
 
 #[cfg(test)]

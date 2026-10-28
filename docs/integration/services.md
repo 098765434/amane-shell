@@ -17,6 +17,7 @@ widgets.
 |---|---|---|
 | `session` | what logind allows (`CanSuspend`, `CanReboot`, `CanPowerOff`), asked once | logind `Suspend`/`Reboot`/`PowerOff`, `Session.Lock`; logging out quits niri |
 | `night_light` | its own state file | runs `wlsunset` at one temperature all day or on a schedule; stopping it gives the screens their colours back |
+| `power_refresh` | `displays.json` | on battery, each display's slowest refresh rate at its resolution, through niri's temporary output mode; the rate it had back on AC ([displays.md](../shell/displays.md#refresh-rate-on-battery)) |
 | `dark_style` | amane's `Appearance` (the Settings portal) | `dconf write /org/gnome/desktop/interface/color-scheme` |
 | `rfkill` | `/sys/class/rfkill`, polled each second | `rfkill block all` / `unblock all` |
 | `keyboard_backlight` | the first `*::kbd_backlight` LED, polled | logind `SetBrightness("leds", …)` |

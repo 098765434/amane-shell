@@ -6,6 +6,7 @@
 //!
 //! - [`session`] — lock, suspend, restart, power off and log out (logind).
 //! - [`night_light`] — a warm screen, by running `wlsunset`.
+//! - [`power_refresh`] — the displays' slowest refresh rate on battery.
 //! - [`dark_style`] — the system's light/dark preference (dconf).
 //! - [`rfkill`] — airplane mode: every radio blocked.
 //! - [`keyboard_backlight`] — the keyboard's light (sysfs and logind).
@@ -38,6 +39,7 @@ pub mod file_search;
 pub mod keep_awake;
 pub mod keyboard_backlight;
 pub mod night_light;
+pub mod power_refresh;
 pub mod privacy;
 pub mod rfkill;
 pub mod session;
