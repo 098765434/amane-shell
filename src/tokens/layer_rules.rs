@@ -6,14 +6,14 @@
 
 use std::fmt::Write;
 
-use crate::components::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
-use crate::components::alert::ALERT_NS;
-use crate::components::dock::DOCK_NS;
-use crate::components::launcher::LAUNCHER_NS;
-use crate::components::notifications::{CENTER_NS, TOAST_NS};
-use crate::components::quick_settings::QS_NS;
-use crate::components::status_bar::BAR_NS;
-use crate::components::widgets::WIDGETS_NS;
+use crate::surfaces::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
+use crate::surfaces::alert::ALERT_NS;
+use crate::surfaces::dock::DOCK_NS;
+use crate::surfaces::launcher::LAUNCHER_NS;
+use crate::surfaces::notifications::{CENTER_NS, TOAST_NS};
+use crate::surfaces::quick_settings::QS_NS;
+use crate::surfaces::status_bar::BAR_NS;
+use crate::surfaces::widgets::WIDGETS_NS;
 use crate::theme::{Density, Mode};
 use amane_kit::material::Material;
 

@@ -9,7 +9,7 @@ use std::cell::Cell;
 use amane::{Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Vertical, Zone, mark_all};
 
 use crate::components::material;
-use crate::components::{context_menu, launcher, notifications, quick_settings, status_bar};
+use crate::surfaces::{context_menu, launcher, notifications, quick_settings, status_bar};
 use crate::tokens::sys;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -1,5 +1,6 @@
 mod components;
 mod services;
+mod surfaces;
 mod tokens;
 
 // the theme lives in the kit, so apps share it
@@ -9,10 +10,9 @@ use std::process::ExitCode;
 
 use amane::App;
 
-use components::context_menu::{self, ContextMenu, Icon, MenuItem};
-use components::{
-    alert, dock, launcher, notifications, quick_settings, status_bar, tooltip, widgets,
-};
+use components::tooltip;
+use surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
+use surfaces::{alert, dock, launcher, notifications, quick_settings, status_bar, widgets};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {

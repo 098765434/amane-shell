@@ -707,7 +707,7 @@ mod tests {
         ("quick_settings/", "quick"),
         // the kit's dialog, and the shell's alert that shows it
         ("containers/dialog.rs", "dialog"),
-        ("alert.rs", "dialog"),
+        ("alert/", "dialog"),
     ];
 
     fn component_sources() -> Vec<(String, String)> {
@@ -722,9 +722,14 @@ mod tests {
             }
         }
 
-        // the shell's components, and the kit's shared ones, which belong to no component
+        // the shell's surfaces, and the shared pieces of the shell and the kit,
+        // which belong to no component
         let kit = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-        let roots = [kit.join("../src/components"), kit.join("src")];
+        let roots = [
+            kit.join("../src/surfaces"),
+            kit.join("../src/components"),
+            kit.join("src"),
+        ];
 
         let mut sources = Vec::new();
         for root in roots {
