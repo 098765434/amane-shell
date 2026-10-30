@@ -52,14 +52,15 @@ The modes also answer to `applications` (for `apps`) and `home` or `search` (the
 
 ### `quick-settings`
 
-`quick-settings [toggle | open [<page>] | close | edit | customize | reset-layout | controls | (show | hide) <control>]`
+`quick-settings [toggle [<page>] | open [<page>] | close | edit | customize | reset-layout | controls | (show | hide) <control>]`
 ([quick-settings.md](../shell/quick-settings.md)). No arguments toggles it.
 
 | Call | Does |
 |---|---|
 | `toggle`, `close` | opens or closes the card |
 | `open` | opens it on the grid |
-| `open <page>` | opens it on a page: `grid`, `sound`, `wifi`, `vpn`, `bluetooth`, `power-mode`, `power`, `night-light`, `do-not-disturb`, `keyboard`, `session`, `background-apps`, `tailscale`, `keep-awake`. A page the machine can't show answers `page <name> has nothing to show on this machine` |
+| `open <page>` | opens a page on its own, as its status icon does (no grid behind it, no back chevron): `grid`, `sound`, `wifi`, `vpn`, `bluetooth`, `power-mode`, `power`, `night-light`, `do-not-disturb`, `keyboard`, `session`, `background-apps`, `tailscale`, `keep-awake`. A page the machine can't show answers `page <name> has nothing to show on this machine` |
+| `toggle <page>` | as `open <page>`, or closes it when that page is showing on its own |
 | `edit`, `customize` | opens the grid in edit mode with the Customize window |
 | `reset-layout` | puts back the default layout |
 | `controls` | one line a control this machine has: its name, a tab, and `shown` or `hidden` (Shell Settings' Quick Settings page lists these) |

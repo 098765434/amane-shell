@@ -234,7 +234,7 @@ impl WidgetKind {
     pub fn open(self) {
         let first = |programs: &[&'static str]| programs.iter().copied().find(|p| installed(p));
         match self {
-            Self::Battery => quick_settings::open(Page::Power),
+            Self::Battery => quick_settings::open_alone(Page::Power),
             // nothing to open: the time is all it shows
             Self::Clock => {}
             Self::Network => {

@@ -1,7 +1,8 @@
 //! Detail page — what a tile opens: GNOME's submenu, drawn as a macOS
 //! Control Center page that slides over the grid.
 //!
-//! A back chevron and the setting's name (and what it's doing), an optional
+//! A back chevron (none on a page opened on its own, from its status
+//! icon) and the setting's name (and what it's doing), an optional
 //! switch for it, a hairline, then its body — networks, devices, choices —
 //! and, pinned at the bottom, an optional "Show in Status Bar" switch for the
 //! setting's status icon and an optional link to the app that has the rest
@@ -19,7 +20,7 @@ use std::rc::Rc;
 use amane::{Center, Color, Column, Parent, Rectangle, Size, Stack, Start, Widget};
 
 use super::grid::{Canvas, Metrics};
-use super::{back, ramp};
+use super::{ALONE, back, ramp};
 use crate::components::app_bar::TopAppBar;
 use crate::components::buttons::Switch;
 use crate::components::control_size;
@@ -140,17 +141,27 @@ impl DetailPage {
         let row = sys::size::row::height();
         let gap = sys::space::gap::s();
 
+        // a page opened on its own has no grid to go back to; a page inside
+        // a page still goes back to the one it's in
+        let on_back = self
+            .back
+            
+            .or_else(|| (!ALONE.get()).then(|| Rc::new(back) as Rc<dyn Fn()>));
+
         // the title has what the back chevron and the switch leave
         let width = page_width();
         let gap_s = sys::space::gap::s();
-        let mut text_w = width - sys::size::control::height() - gap_s;
+        let mut text_w = width;
+        if on_back.is_some() {
+            text_w -= sys::size::control::height() + gap_s;
+        }
         if self.switch.is_some() {
             text_w -= control_size::current().switch().width + gap_s;
         }
-        let on_back = self.back.unwrap_or_else(|| Rc::new(back));
-        let mut bar = TopAppBar::new(self.title)
-            .back(format!("{}.back", self.id), move || on_back())
-            .elide_to(text_w.max(1.0));
+        let mut bar = TopAppBar::new(self.title).elide_to(text_w.max(1.0));
+        if let Some(on_back) = on_back {
+            bar = bar.back(format!("{}.back", self.id), move || on_back());
+        }
         if let Some(subtitle) = self.subtitle {
             bar = bar.subtitle(subtitle);
         }

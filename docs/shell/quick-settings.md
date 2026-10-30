@@ -11,8 +11,15 @@ It's opened from the bar's Control Center button (the slider glyph, between the 
 notification bell), and closed by the same button, by Escape, or by opening the notification
 center, whose one-open-at-a-time state it shares (`Panel::QuickSettings`). It's the only place
 for sound, Wi‑Fi, Bluetooth and power: the bar's volume, Bluetooth, network and battery icons open
-it straight on their page, and each of those pages has a **Show in Status Bar** switch for its icon
-(see [status-bar.md](status-bar.md#status-icons)).
+their page **on its own**: no grid behind it and no back chevron, only that icon lit (the Control
+Center button lights only for the whole card), Escape closes it, and the icon again closes it; the
+Control Center button over such a page brings the whole card. Each of those pages has a **Show in
+Status Bar** switch for its icon (see [status-bar.md](status-bar.md#status-icons)). A page inside a
+page (a Bluetooth device's) keeps its chevron back to the page it's in.
+
+While the card shows, its surface covers the output (clear of the bar), so a click anywhere outside
+the card closes it, as the launcher does; the bar stays clickable, so another status icon swaps
+the page. In edit mode clicks outside the card and the Customize window go through instead.
 
 ## What's in it
 
@@ -265,13 +272,14 @@ page's sheet, one piece, wears `glass::apply` itself.
 
 ## IPC and the keyboard
 
-`quick-settings [toggle | open [<page>] | close | edit | customize | reset-layout]` opens the card,
-a page of it, or edit mode from a script or a keybind ([ipc.md](../integration/ipc.md#quick-settings),
+`quick-settings [toggle [<page>] | open [<page>] | close | edit | customize | reset-layout]` opens
+the card, a page of it on its own (as its status icon does; `toggle <page>` closes it again), or
+edit mode from a script or a keybind ([ipc.md](../integration/ipc.md#quick-settings),
 with the page names).
 
 The card takes the keyboard while it's open (`Keyboard::Exclusive`: it's modal, as Control
 Center is), so Escape works from the first moment however the card was opened, and the Wi‑Fi
-password field types without a click first. A click outside doesn't close it.
+password field types without a click first. A click outside closes it.
 
 ## Components
 

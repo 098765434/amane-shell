@@ -535,8 +535,15 @@ fn quick_settings_button() -> Box<dyn Widget> {
             ICON_TUNE,
             material::label(Level::Secondary),
         )
-        .active(is_open(Panel::QuickSettings))
-        .on_press(|| panel::toggle(Panel::QuickSettings))
+        .active(is_open(Panel::QuickSettings) && !quick_settings::alone())
+        // over a status icon's page, it brings the whole card instead
+        .on_press(|| {
+            if quick_settings::alone() {
+                quick_settings::open(Page::Grid);
+            } else {
+                panel::toggle(Panel::QuickSettings);
+            }
+        })
         .tooltip(BAR_NS, "Quick Settings")
         .build(),
     )
@@ -729,9 +736,9 @@ fn bar_icon(id: &'static str, glyph: impl Into<Glyph>, color: Color) -> IconButt
         .width(bar::indicator::width())
 }
 
-/// A status glyph opening its Quick Settings `page`, and highlighted while
-/// that page shows. The grid's are left alone, or opening Quick Settings
-/// would light them all.
+/// A status glyph opening its Quick Settings `page` on its own, closing it
+/// again, and highlighted while that page shows. The grid's open the whole
+/// card and are left alone, or opening Quick Settings would light them all.
 fn status_icon(
     id: &'static str,
     glyph: impl Into<Glyph>,
@@ -741,7 +748,13 @@ fn status_icon(
 ) -> IconButton {
     bar_icon(id, glyph, color)
         .active(page != Page::Grid && quick_settings::showing(page))
-        .on_press(move || quick_settings::open(page))
+        .on_press(move || {
+            if page == Page::Grid {
+                quick_settings::open(page);
+            } else {
+                quick_settings::toggle_alone(page);
+            }
+        })
         .tooltip(BAR_NS, tip)
 }
 

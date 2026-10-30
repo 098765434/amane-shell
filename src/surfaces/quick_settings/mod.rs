@@ -17,27 +17,33 @@
 //! modules, or the whole card while a page is on it.
 //!
 //! The card has one height, the grid's (the rows in use, or all of them
-//! in edit mode), for the grid and every page. A surface resized every
-//! frame costs a compositor round-trip and a second draw each time; keeping
-//! one size while anything moves is what makes the motion smooth. The
-//! surface is resized only at rest, when the grid gains or loses a row, or
-//! edit mode changes it.
+//! in edit mode), for the grid and every page, and changes only at rest,
+//! when the grid gains or loses a row or edit mode changes it: the grid
+//! slides to its new place rather than jumping. The surface itself keeps
+//! the output's size the whole time the card shows.
 //!
 //! It's the one place for sound, Wi‑Fi, Bluetooth and power: the bar's
 //! status icons (each optional, see the pages' "Show in Status Bar") open
 //! straight to their page. It shares the notification center's
 //! one-open-at-a-time state ([`Panel::QuickSettings`]), opened from the
 //! bar's Control Center button, a status icon, or over IPC:
-//! `quick-settings [toggle | open <page> | close]`. See
+//! `quick-settings [toggle [<page>] | open [<page>] | close]`. See
 //! `docs/shell/quick-settings.md`.
+//!
+//! A status icon opens its page on its own (`open_alone`): no grid behind
+//! it and no back chevron, Escape closes it, and the icon again closes it.
+//!
+//! While the card shows, its surface covers the output (clear of the bar)
+//! with the card at the bar's corner, so a click anywhere outside the card
+//! closes it, as the launcher does.
 //!
 //! Edit mode opens the Customize window (`customize`) beside the card, as
 //! macOS's Customize Control Center does. amane can't carry a drag from one
-//! surface to another, so while editing this one surface covers the output
-//! and holds both: the card where it always is, at the bottom-right, and
-//! the window in the middle, with one still layer under both that every
-//! drag is measured on. Clicks outside the two go through to what's under
-//! them (`input_region`).
+//! surface to another, so the one surface holds both: the card where it
+//! always is, at the bottom-right, and the window in the middle, with one
+//! still layer under both that every drag is measured on. While editing,
+//! clicks outside the two go through to what's under them
+//! (`input_region`).
 
 mod controls;
 mod customize;
@@ -88,6 +94,10 @@ thread_local! {
     // the page drawn over the grid, which stays while sliding back out
     static DETAIL: Cell<Page> = const { Cell::new(Page::Grid) };
 
+    // whether the page was opened on its own, from outside the card (a
+    // status icon): no way back to the grid, and Escape closes
+    static ALONE: Cell<bool> = const { Cell::new(false) };
+
     // 0 closed … 1 open: the card fades, swells and rises in over the bar
     static OPEN: RefCell<Animation> = RefCell::new(motion::pop(0.0));
 
@@ -115,8 +125,31 @@ thread_local! {
 
 // ───── runtime ───────────────────────────────────────────────────────────────
 
-/// Opens on `page`, or goes there when open already.
+/// Opens on `page`, or goes there when open already; a page has its way
+/// back to the grid.
 pub fn open(page: Page) {
+    ALONE.set(false);
+    show(page);
+}
+
+/// Opens `page` on its own, as from the bar's status icons: no grid behind
+/// it and no way back to it, and Escape closes it. The grid opens as
+/// [`open`] does.
+pub fn open_alone(page: Page) {
+    ALONE.set(page != Page::Grid);
+    show(page);
+}
+
+/// [`open_alone`], or closes it when it's showing already.
+pub fn toggle_alone(page: Page) {
+    if alone() && PAGE.get() == page {
+        close();
+    } else {
+        open_alone(page);
+    }
+}
+
+fn show(page: Page) {
     if !is_open(Panel::QuickSettings) {
         panel::toggle(Panel::QuickSettings);
     }
@@ -126,6 +159,12 @@ pub fn open(page: Page) {
 /// Whether Quick Settings is open on `page`.
 pub fn showing(page: Page) -> bool {
     is_open(Panel::QuickSettings) && PAGE.get() == page
+}
+
+/// Whether Quick Settings is open on a page on its own (see
+/// [`open_alone`]).
+pub fn alone() -> bool {
+    is_open(Panel::QuickSettings) && ALONE.get()
 }
 
 /// Back to the grid.
@@ -179,7 +218,7 @@ fn escape() {
         } else {
             edit::leave();
         }
-    } else if PAGE.get() == Page::Grid {
+    } else if PAGE.get() == Page::Grid || ALONE.get() {
         close();
     } else {
         back();
@@ -202,6 +241,7 @@ fn hidden() {
         pages::left(DETAIL.get());
     }
     DETAIL.set(Page::Grid);
+    ALONE.set(false);
     SWAP.set(Page::Grid);
     SLIDE.with_borrow_mut(|slide| *slide = motion::zoom(0.0));
     OPENED_AT.set(None);
@@ -217,14 +257,21 @@ fn hidden() {
 /// page too little room for its list.
 const MIN_PAGE_ROWS: u8 = 5;
 
-/// `amane-shell` IPC: `quick-settings [toggle | open <page> | close]`.
+/// `amane-shell` IPC: `quick-settings [toggle [<page>] | open [<page>] | close]`.
 pub fn ipc(args: &[String]) -> String {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     match args.as_slice() {
         [] | ["toggle"] => panel::toggle(Panel::QuickSettings),
         ["open"] => open(Page::Grid),
-        ["open", name] => match Page::named(name) {
-            Some(page) if pages::available(page) => open(page),
+        // a page by name opens on its own, as from its status icon
+        [action @ ("open" | "toggle"), name] => match Page::named(name) {
+            Some(page) if pages::available(page) => {
+                if *action == "open" {
+                    open_alone(page);
+                } else {
+                    toggle_alone(page);
+                }
+            }
             Some(_) => return format!("page {name} has nothing to show on this machine"),
             None => return format!("unknown page {name}; pages: {}", Page::NAMES.join(", ")),
         },
@@ -284,7 +331,7 @@ pub fn ipc(args: &[String]) -> String {
         }
         _ => {
             return String::from(
-                "usage: quick-settings [toggle | open <page> | close | edit | customize | reset-layout | controls | (show | hide) <control>]",
+                "usage: quick-settings [toggle [<page>] | open [<page>] | close | edit | customize | reset-layout | controls | (show | hide) <control>]",
             );
         }
     }
@@ -340,9 +387,14 @@ pub fn surface() -> LayerWindow {
             .child(blank());
     }
 
-    // a page whose setting has gone gives way to the grid
-    if PAGE.get() != Page::Grid && !pages::available(PAGE.get()) {
-        back();
+    // a page whose setting has gone gives way to the grid, or closes when
+    // there's no grid behind it
+    if open && PAGE.get() != Page::Grid && !pages::available(PAGE.get()) {
+        if ALONE.get() {
+            close();
+        } else {
+            back();
+        }
     }
     let page = PAGE.get();
     // the zoom's spring overshoots a little; what it draws at is clamped
@@ -396,11 +448,9 @@ pub fn surface() -> LayerWindow {
         shift.value()
     });
 
-    // Closing, the card keeps the size it had: a surface resized right
-    // before it hides still has the compositor's answers to the resize on
-    // their way, and amane draws on those after the hide, which niri rejects.
-    // Nor does it resize while a control is held: the rows may change under
-    // the drag, and the one size holds until the drop.
+    // Closing, the card keeps the size it had, shrinking into the bar's
+    // corner as it was. Nor does it resize while a control is held: the rows
+    // may change under the drag, and the one size holds until the drop.
     let outer = if open && edit::drag().is_none() {
         (inner + inset * 2.0).max(1.0)
     } else {
@@ -552,13 +602,12 @@ pub fn surface() -> LayerWindow {
         Vec::new()
     };
 
-    // Where the card is on the surface. In card mode the surface is the
-    // card, so this is (0, 0); while editing the surface covers the output
-    // and the card keeps its place at the bar's right-hand corner, the same
-    // place its margins give it. Worked out from the surface's size rather than the
-    // mode, so the one frame amane draws at the old size as the mode
-    // changes (the view runs before the new size is sent) draws the card
-    // where it is either way.
+    // Where the card is on the surface. The surface covers the output while
+    // the card shows, and the card keeps its place at the bar's right-hand
+    // corner, the same place its margins would give it. Worked out from the
+    // surface's size, so the one frame amane draws at the hidden size as it
+    // shows (the view runs before the new size is sent) draws the card at
+    // its corner too.
     let (screen_w, screen_h) = window_size();
     let margin = popover_margin();
     let card_at = (
@@ -572,18 +621,6 @@ pub fn surface() -> LayerWindow {
     let canvas_at = (card_at.0 + inset, card_at.1 + inset + grid_top + shift);
     customize::set_canvas_origin(canvas_at.0, canvas_at.1);
 
-    let full = edit::editing() || customize::visible();
-    if !full {
-        return window(width, outer.round())
-            .visible(true)
-            .blur_shapes(frost)
-            .child(card);
-    }
-
-    // editing: the surface covers the output; the card is drawn where it
-    // always is, the Customize window beside it, the control in hand over
-    // both, and the one still layer every drag is measured on under all of
-    // it (first, so nothing that changes under a drag comes before it)
     frost = glass_region::transformed(frost, 1.0, (0.0, 0.0), card_at);
     let card = Rectangle::new()
         .width(Size::Fixed(width))
@@ -597,27 +634,60 @@ pub fn surface() -> LayerWindow {
         width,
         height: outer,
     };
-    let mut root: Vec<Box<dyn Widget>> = vec![customize::drag_layer(), boxed(card)];
-    let mut input = vec![input_area(card_area)];
-    if let Some(built) = customize::view((screen_w, screen_h), card_area) {
-        root.push(built.widget);
-        frost.extend(built.frost);
-        input.push(input_area(built.area));
-    }
-    if let Some((ghost, shape)) = customize::ghost(canvas_at) {
-        root.push(ghost);
-        frost.push(shape);
-    }
+
+    let editing = edit::editing() || customize::visible();
+    let (root, input): (Vec<Box<dyn Widget>>, Option<Vec<InputArea>>) = if editing {
+        // the Customize window beside the card, the control in hand over
+        // both, and the one still layer every drag is measured on under all
+        // of it (first, so nothing that changes under a drag comes before
+        // it); clicks outside the two go through to what's under them
+        let mut root: Vec<Box<dyn Widget>> = vec![customize::drag_layer(), boxed(card)];
+        let mut input = vec![input_area(card_area)];
+        if let Some(built) = customize::view((screen_w, screen_h), card_area) {
+            root.push(built.widget);
+            frost.extend(built.frost);
+            input.push(input_area(built.area));
+        }
+        if let Some((ghost, shape)) = customize::ghost(canvas_at) {
+            root.push(ghost);
+            frost.push(shape);
+        }
+        (root, Some(input))
+    } else {
+        // a click anywhere outside the card closes it; one on the card,
+        // between its controls or on a slider, stays with the card. Closing,
+        // clicks go through to what's under it.
+        let root = vec![
+            boxed(
+                Rectangle::new()
+                    .width(Parent)
+                    .height(Parent)
+                    .fill(Color::TRANSPARENT)
+                    .on_click(|_| close()),
+            ),
+            boxed(
+                Rectangle::new()
+                    .width(Size::Fixed(width))
+                    .height(Size::Fixed(outer))
+                    .fill(Color::TRANSPARENT)
+                    .translate(card_at.0, card_at.1)
+                    .on_click(|_| {}),
+            ),
+            boxed(card),
+        ];
+        (root, (!open).then(Vec::new))
+    };
+
     let surface = Rectangle::new()
         .width(Parent)
         .height(Parent)
         .fill(Color::TRANSPARENT)
         .child(Stack::new(root).width(Parent).height(Parent));
-    full_window()
-        .visible(true)
-        .input_region(input)
-        .blur_shapes(frost)
-        .child(track_cursor(surface))
+    let mut layer = full_window().visible(true).blur_shapes(frost);
+    if let Some(input) = input {
+        layer = layer.input_region(input);
+    }
+    layer.child(track_cursor(surface))
 }
 
 /// `area` as a part of the surface that takes the pointer, rounded
@@ -730,7 +800,8 @@ fn surface_width() -> f32 {
     px.extent(grid::Canvas::tokens().cols) + quick::grid::margin() * 2.0
 }
 
-/// The overlay surface in the bar's right-hand corner, `height` tall.
+/// The overlay surface in the bar's right-hand corner, `height` tall: what
+/// stays mapped, hidden, while the card is closed.
 fn window(width: f32, height: f32) -> LayerWindow {
     let base = LayerWindow::new()
         .width(width)
@@ -739,8 +810,9 @@ fn window(width: f32, height: f32) -> LayerWindow {
     overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right)
 }
 
-/// The surface over the whole output while editing (clear of what the bar
-/// reserves, as the card is): the card and the Customize window on it.
+/// The surface over the whole output while the card shows (clear of what
+/// the bar reserves, as the card is): the card, and the Customize window
+/// while editing.
 fn full_window() -> LayerWindow {
     let base = LayerWindow::new()
         .width(WindowSize::Full)
