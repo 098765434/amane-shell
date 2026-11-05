@@ -8,14 +8,11 @@ use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 
-use amane::{Center, Column, Row, Service, Size, Widget, watch_file};
+use amane::{Column, Service, watch_file};
 use amane_kit::buttons::{PushButton, Style};
-use amane_kit::card::Card;
+use amane_kit::color::Accent;
+use amane_kit::form::FormRow;
 use amane_kit::icons::{ICON_CHECK, ICON_UPDATE};
-use amane_kit::layout::{boxed, icon};
-use amane_kit::list::{List, ListItem, with_row_width};
-use amane_kit::material::{self, Level};
-use amane_kit::tokens::{Styled, sys};
 use chrono::{DateTime, Local, Utc};
 use serde_json::Value;
 
@@ -24,7 +21,7 @@ use super::job::{BuildJob, Phase, Target};
 use super::nixos::repo;
 use super::repo::short;
 use super::{controls, state_dir};
-use crate::{Navigation, PAGE_WIDTH, note};
+use crate::{Navigation, group, groups};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Input {
@@ -305,7 +302,7 @@ impl Service for Lock {
 
 /// What a check found, while its job is around; else what the scheduled
 /// check last found.
-fn result_card(job: &BuildJob, check: &Check) -> Option<Box<dyn Widget>> {
+fn result_card(job: &BuildJob, check: &Check) -> Option<FormRow> {
     let (glyph, text, button) = match (&job.target, &job.phase) {
         (Target::Update { .. }, Phase::UpToDate) => {
             (ICON_CHECK, String::from("Everything is up to date."), None)
@@ -352,49 +349,25 @@ fn result_card(job: &BuildJob, check: &Check) -> Option<Box<dyn Widget>> {
         ),
     };
 
-    let mut row: Vec<Box<dyn Widget>> = vec![
-        boxed(icon(
-            glyph,
-            sys::size::icon::s(),
-            material::label(Level::Secondary),
-        )),
-        boxed(
-            amane::Text::new(text)
-                .style(sys::r#type::label())
-                .color(material::label(Level::Primary))
-                .elide(),
-        ),
-    ];
+    let accent = if glyph == ICON_CHECK {
+        Accent::Green
+    } else {
+        Accent::Blue
+    };
+    let mut row = FormRow::new("settings.update.result", text).icon(glyph, accent);
     if let Some((label, what)) = button {
         let running = job.running();
-        row.push(boxed(
+        row = row.trailing(
             PushButton::new("settings.update.card", label)
-                .style(Style::Plain)
                 .disabled(running && what == Button::UpdateAll)
                 .on_press(move || match what {
                     Button::Changes => Navigation::write().overlay = Some(Overlay::Changes),
                     Button::UpdateAll => BuildJob::start_update(Vec::new()),
                 })
                 .build(),
-        ));
+        );
     }
-
-    // a card fills its parent: one row tall
-    Some(boxed(
-        amane::Rectangle::new()
-            .width(Size::Parent)
-            .height(Size::Fixed(
-                sys::size::row::height() + 2.0 * sys::space::inset::m(),
-            ))
-            .fill(amane::Color::TRANSPARENT)
-            .child(
-                Card::new(vec![boxed(
-                    Row::new(row).gap(sys::space::gap::m()).align(Center),
-                )])
-                .padding(sys::space::inset::m())
-                .build(),
-            ),
-    ))
+    Some(row)
 }
 
 /// What the card's button does.
@@ -415,80 +388,70 @@ pub fn page() -> Column {
         _ => check.changes.iter().collect(),
     };
 
-    let list = with_row_width(PAGE_WIDTH, || {
-        let items: Vec<ListItem> = lock
-            .inputs
-            .iter()
-            .map(|input| {
-                let detail = match moved.iter().find(|c| c.name == input.name) {
-                    Some(change) => format!(
-                        "{} → {}",
-                        change.from.as_deref().map_or(String::from("∅"), short),
-                        change.to.as_deref().map_or(String::from("∅"), short)
-                    ),
-                    None => format!(
-                        "{}{}",
-                        input.ago(),
-                        input
-                            .rev
-                            .as_deref()
-                            .map_or(String::new(), |rev| format!(" · {}", short(rev)))
-                    ),
-                };
-                let name = input.name.clone();
-                ListItem::new(
-                    format!("settings.update.{}", input.name),
-                    format!("{} · {detail}", input.name),
-                )
-                .bare(true)
-                .trailing(
-                    PushButton::new(format!("settings.update.one.{}", input.name), "Update")
-                        .style(Style::Plain)
-                        .disabled(running)
-                        .on_press(move || BuildJob::start_update(vec![name.clone()]))
-                        .build(),
-                )
-            })
-            .collect();
-        List::new(items)
-            .header("Inputs")
-            .empty(
-                lock.error
-                    .clone()
-                    .unwrap_or_else(|| String::from("No inputs.")),
-            )
-            .build()
+    let inputs = lock.inputs.iter().map(|input| {
+        let detail = match moved.iter().find(|c| c.name == input.name) {
+            Some(change) => format!(
+                "{} → {}",
+                change.from.as_deref().map_or(String::from("∅"), short),
+                change.to.as_deref().map_or(String::from("∅"), short)
+            ),
+            None => format!(
+                "{}{}",
+                input.ago(),
+                input
+                    .rev
+                    .as_deref()
+                    .map_or(String::new(), |rev| format!(" · {}", short(rev)))
+            ),
+        };
+        let name = input.name.clone();
+        FormRow::new(
+            format!("settings.update.{}", input.name),
+            input.name.clone(),
+        )
+        .subtitle(detail)
+        .trailing(
+            PushButton::new(format!("settings.update.one.{}", input.name), "Update")
+                .disabled(running)
+                .on_press(move || BuildJob::start_update(vec![name.clone()]))
+                .build(),
+        )
     });
+    let mut inputs = group()
+        .header("Inputs")
+        .rows(inputs)
+        .footer("Update on one input bumps just that one. Applying writes flake.lock and commits it with the settings.");
+    if inputs.is_empty() {
+        inputs = inputs.row(FormRow::new(
+            "settings.update.no-inputs",
+            lock.error
+                .clone()
+                .unwrap_or_else(|| String::from("No inputs")),
+        ));
+    }
 
-    let mut parts: Vec<Box<dyn Widget>> = vec![boxed(
-        Row::new(vec![
-            boxed(
-                PushButton::new("settings.update.check", "Check for Updates")
+    let mut top = group().row(
+        FormRow::new("settings.update.check-row", "Check for updates")
+            .subtitle("Builds the updated system first; nothing is written until you apply it")
+            .trailing(
+                PushButton::new("settings.update.check", "Check Now")
                     .style(Style::Filled)
                     .disabled(running)
                     .on_press(|| BuildJob::start_update(Vec::new()))
                     .build(),
             ),
-            boxed(note(
-                "Builds the updated system first; nothing is written until you apply it.",
-            )),
-        ])
-        .gap(sys::space::gap::m())
-        .align(Center),
-    )];
-    parts.extend(result_card(&job, &check));
-    parts.push(boxed(list));
-    parts.push(boxed(note(
-        "Update on one input bumps just that one. Applying writes flake.lock and commits it with the settings.",
-    )));
-    parts.extend(controls::for_page("update"));
-    parts.push(boxed(note(
-        "The automatic check relocks beside the repository and notifies; it never builds or applies.",
-    )));
+    );
+    if let Some(result) = result_card(&job, &check) {
+        top = top.row(result);
+    }
 
-    Column::new(parts)
-        .gap(sys::space::gap::l())
-        .width(Size::Parent)
+    groups(vec![
+        top,
+        inputs,
+        group().rows(controls::rows("update")).footer(
+            "The automatic check relocks beside the repository and notifies; it never builds or applies.",
+        ),
+    ])
 }
 
 #[cfg(test)]

@@ -10,12 +10,12 @@ use std::process::{Command, Stdio};
 use std::sync::{Mutex, PoisonError};
 use std::thread;
 
-use amane::{Apps, Center, Color, Column, Rectangle, Row, Service, Size, Text, Widget};
+use amane::{Apps, Color, Column, Rectangle, Service, Size, Text, Widget};
 use amane_kit::app_icon::entry_tile;
 use amane_kit::buttons::{PushButton, Style};
+use amane_kit::form::FormRow;
 use amane_kit::icons::{ICON_PACKAGE, ICON_TERMINAL};
 use amane_kit::layout::{boxed, icon};
-use amane_kit::list::{List, ListItem, trailing_text, with_row_width};
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
 use serde::Deserialize;
@@ -25,7 +25,7 @@ use super::apps::{PACKAGES, Standing, change_packages, present, standing};
 use super::catalog::{Catalog, Named};
 use super::installed::Launchers;
 use super::nixos::{Managed, Snapshot, failure, host, repo};
-use crate::{Navigation, PAGE_WIDTH, note};
+use crate::{Navigation, PAGE_WIDTH, group, note};
 
 /// What `--apply` makes of the package: plain JSON whatever the meta's shape.
 const APPLY: &str = r#"p: let
@@ -288,14 +288,8 @@ fn paragraph(text: Text) -> Rectangle {
         .child(text)
 }
 
-fn fact(id: &str, name: &str, value: impl Widget + 'static) -> ListItem {
-    ListItem::new(format!("settings.package.{id}"), name)
-        .bare(true)
-        .trailing(value)
-}
-
-fn value(text: impl Into<String>) -> Text {
-    trailing_text(text, material::label(Level::Primary))
+fn fact(id: &str, name: &str) -> FormRow {
+    FormRow::new(format!("settings.package.{id}"), name)
 }
 
 pub fn view() -> Column {
@@ -321,7 +315,7 @@ pub fn view() -> Column {
     };
 
     let app = launchers.app(&apps, &meta.pname, &meta.version);
-    let side = 48.0;
+    let side = 40.0;
     let tile: Box<dyn Widget> = match &app {
         Some(app) => boxed(entry_tile(app, side)),
         None => boxed(icon(
@@ -341,21 +335,7 @@ pub fn view() -> Column {
     if !meta.version.is_empty() {
         identity.push_str(&format!(" · {}", meta.version));
     }
-    let header = Row::new(vec![
-        tile,
-        boxed(Column::new(vec![
-            boxed(
-                Text::new(name)
-                    .style(sys::r#type::title())
-                    .color(material::label(Level::Primary)),
-            ),
-            boxed(note(identity)),
-        ])),
-    ])
-    .gap(sys::space::gap::m())
-    .align(Center);
-
-    let mut parts: Vec<Box<dyn Widget>> = vec![boxed(header)];
+    let mut parts: Vec<Box<dyn Widget>> = Vec::new();
     if !meta.description.is_empty() {
         parts.push(boxed(paragraph(
             Text::new(meta.description.clone())
@@ -408,45 +388,42 @@ pub fn view() -> Column {
         (None, None) => String::from("Not installed"),
     };
 
-    let mut facts = vec![fact("status", "Status", value(status))];
+    let mut facts = vec![fact("status", "Status").value(status)];
     if !meta.licenses.is_empty() {
         let mut licence = meta.licenses.join(", ");
         // nixpkgs' own unfree licence already says so
         if !meta.free && !licence.to_lowercase().contains("unfree") {
             licence.push_str(" · Unfree");
         }
-        facts.push(fact("licence", "Licence", value(licence)));
+        facts.push(fact("licence", "Licence").value(licence));
     }
     if !meta.main_program.is_empty() {
-        facts.push(fact("command", "Command", value(meta.main_program.clone())));
+        facts.push(fact("command", "Command").value(meta.main_program.clone()));
     }
     if !meta.homepage.is_empty() {
         let url = meta.homepage.clone();
         facts.push(
-            fact(
-                "homepage",
-                "Homepage",
-                PushButton::new("settings.package.homepage.open", "Open")
-                    .style(Style::Plain)
-                    .on_press(move || {
-                        let _ = Command::new("xdg-open")
-                            .arg(&url)
-                            .stdin(Stdio::null())
-                            .stdout(Stdio::null())
-                            .stderr(Stdio::null())
-                            .spawn();
-                    })
-                    .build(),
-            )
-            .supporting(meta.homepage.clone()),
+            fact("homepage", "Homepage")
+                .trailing(
+                    PushButton::new("settings.package.homepage.open", "Open")
+                        .on_press(move || {
+                            let _ = Command::new("xdg-open")
+                                .arg(&url)
+                                .stdin(Stdio::null())
+                                .stdout(Stdio::null())
+                                .stderr(Stdio::null())
+                                .spawn();
+                        })
+                        .build(),
+                )
+                .subtitle(meta.homepage.clone()),
         );
     }
-    parts.push(boxed(with_row_width(PAGE_WIDTH, || {
-        List::new(facts).build()
-    })));
 
     // what can be done
-    let mut buttons: Vec<Box<dyn Widget>> = Vec::new();
+    let mut header = FormRow::new("settings.package.header", name)
+        .leading(Column::new(vec![tile]), side)
+        .subtitle(identity);
     if let Some(entry) = entry {
         let (label, add) = match added {
             Some(Standing::Installed) => (Some("Remove"), false),
@@ -457,35 +434,35 @@ pub fn view() -> Column {
         };
         if let Some(label) = label {
             let (e, m, a) = (entry.clone(), managed.clone(), attr.clone());
-            buttons.push(boxed(
+            header = header.trailing(
                 PushButton::new("settings.package.change", label)
                     .style(if add { Style::Filled } else { Style::Tonal })
                     .disabled(!entry.managed() || (add && problem.is_some()))
                     .on_press(move || change_packages(&e, &m, &a, add))
                     .build(),
-            ));
+            );
         }
     }
     if let Some(app) = app {
-        buttons.push(boxed(
+        header = header.trailing(
             PushButton::new("settings.package.open", "Open App")
                 .style(Style::Tonal)
                 .on_press(move || app.launch())
                 .build(),
-        ));
+        );
     }
-    parts.push(boxed(
-        Row::new(buttons).gap(sys::space::gap::s()).align(Center),
-    ));
-    if from_file.is_some() && added.is_none() {
-        parts.push(boxed(note(
-            "Part of your configuration: edit that file to remove it, then Apply.",
-        )));
+    let footer = if from_file.is_some() && added.is_none() {
+        "Part of your configuration: edit that file to remove it, then Apply."
     } else if !matches!(added, None | Some(Standing::Installed)) {
-        parts.push(boxed(note("Takes effect after Apply.")));
-    }
+        "Takes effect after Apply."
+    } else {
+        ""
+    };
 
-    Column::new(parts)
+    let mut column: Vec<Box<dyn Widget>> = vec![boxed(group().row(header).build())];
+    column.extend(parts);
+    column.push(boxed(group().rows(facts).footer(footer).build()));
+    Column::new(column)
         .gap(sys::space::gap::l())
         .width(Size::Parent)
 }

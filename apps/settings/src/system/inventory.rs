@@ -12,23 +12,22 @@ use std::sync::{Mutex, Once, PoisonError};
 use std::thread;
 use std::time::SystemTime;
 
-use amane::{Center, Column, DesktopApp, Row, Service, TextInput, Widget};
+use amane::{DesktopApp, Service, TextInput, Widget};
 use amane_kit::app::{Dialog, field_box, text_field};
-use amane_kit::buttons::{PushButton, Segment, SegmentedButton, Style};
-use amane_kit::layout::boxed;
-use amane_kit::list::{List, ListItem};
+use amane_kit::buttons::{PushButton, Segment, SegmentedButton};
+use amane_kit::form::{FormRow, Group};
 use amane_kit::tokens::sys;
 
 use super::adopt;
 use super::apps::Found;
 use super::apps::{
-    Flatpaks, Looks, Removal, Standing, change_packages, leading, standings, uninstall,
+    Flatpaks, Looks, Removal, Standing, change_packages, icon_side, leading, standings, uninstall,
 };
 use super::catalog::lookup_in;
 use super::controls::{self, Feedback};
 use super::nixos::{Entry, MANAGED_MODULE, Managed, Snapshot, repo, strings};
 use super::package::Details;
-use crate::{note, setting};
+use crate::group;
 
 /// The filter field, which keeps its text under this id.
 const FILTER: &str = "settings.system.apps.filter";
@@ -359,16 +358,12 @@ fn supporting(item: &Item) -> String {
     parts.join(" · ")
 }
 
-fn row(item: &Item, entry: Option<&Entry>, managed: &Managed, removal: &Removal) -> ListItem {
+fn row(item: &Item, entry: Option<&Entry>, managed: &Managed, removal: &Removal) -> FormRow {
     let key = item.attr.clone().unwrap_or_else(|| item.pname.clone());
     let id = |what: &str| format!("settings.apps.installed.{what}.{key}");
-    let mut row = ListItem::new(id("row"), &item.name)
-        .leading_widget(leading(item.app.as_ref()))
-        .supporting(supporting(item))
-        .bare(true);
-    if item.gone.is_some() {
-        row = row.color(sys::color::status::critical::text());
-    }
+    let mut row = FormRow::new(id("row"), item.name.clone())
+        .leading(leading(item.app.as_ref()), icon_side())
+        .subtitle(supporting(item));
     if let Some(attr) = item.attr.clone() {
         row = row.on_press(move || Details::open(&attr));
     }
@@ -383,7 +378,6 @@ fn row(item: &Item, entry: Option<&Entry>, managed: &Managed, removal: &Removal)
             let (e, m, a) = (entry.clone(), managed.clone(), key.clone());
             Some(
                 PushButton::new(id("change"), label)
-                    .style(Style::Plain)
                     .disabled(!entry.managed())
                     .on_press(move || change_packages(&e, &m, &a, add))
                     .build(),
@@ -392,7 +386,6 @@ fn row(item: &Item, entry: Option<&Entry>, managed: &Managed, removal: &Removal)
         (Source::File(file), Some(entry)) => item.attr.as_ref().map(|attr| {
             let (e, file, attr) = (entry.clone(), file.clone(), attr.clone());
             PushButton::new(id("move"), "Move…")
-                .style(Style::Plain)
                 .disabled(!entry.managed())
                 .on_press(move || adopt::confirm_package(&e, &file, &attr))
                 .build()
@@ -405,7 +398,6 @@ fn row(item: &Item, entry: Option<&Entry>, managed: &Managed, removal: &Removal)
                     id("uninstall"),
                     if busy { "Removing…" } else { "Uninstall…" },
                 )
-                .style(Style::Plain)
                 .disabled(removal.busy.is_some())
                 .on_press(move || {
                     let app = app.clone();
@@ -435,7 +427,7 @@ pub fn section(
     feedback: &Feedback,
     snapshot: &Snapshot,
     looks: &Looks,
-) -> Box<dyn Widget> {
+) -> Group {
     // the list's first poll is half a minute off
     static LOOKED: Once = Once::new();
     LOOKED.call_once(Flatpaks::refresh);
@@ -461,7 +453,7 @@ pub fn section(
         .collect();
     let picked = shows.iter().position(|s| *s == show);
     let chips = SegmentedButton::new("settings.apps.installed.show", segments, picked)
-        .width(360.0)
+        .width(440.0)
         .on_select(move |index, _| {
             let shows: Vec<Show> = SHOWS
                 .into_iter()
@@ -474,45 +466,45 @@ pub fn section(
         .build();
     let field = text_field(FILTER, "Filter…");
 
-    let rows: Vec<ListItem> = all
+    let rows: Vec<FormRow> = all
         .iter()
         .filter(|item| item.shown_by(show) && item.matches(&filter))
         .map(|item| row(item, entry, managed, &removal))
         .collect();
 
-    let mut lines: Vec<Box<dyn Widget>> = vec![
-        boxed(
-            Row::new(vec![boxed(chips), boxed(field_box(FILTER, field, 160.0))])
-                .gap(sys::space::gap::s())
-                .align(Center),
-        ),
-        boxed(
-            List::new(rows)
-                .empty(if filter.trim().is_empty() {
-                    "Nothing of this kind installed."
-                } else {
-                    "Nothing installed matches."
-                })
-                .build(),
-        ),
-    ];
-    if let Some(entry) = entry {
-        lines.extend(controls::notes(entry, managed, feedback));
-    }
-    if let Some(error) = removal.error.as_ref().or(flatpaks.error.as_ref()) {
-        lines.push(boxed(
-            note(error.clone()).color(sys::color::status::critical::text()),
+    let chips_height = match chips.height() {
+        amane::Size::Fixed(height) => height,
+        amane::Size::Parent => sys::size::control::height(),
+    };
+    let filters = FormRow::new("settings.apps.installed.filters", "Show")
+        .trailing(field_box(FILTER, field, 160.0))
+        .detail(chips, chips_height);
+    let mut group = group().header("Installed").row(filters);
+    if rows.is_empty() {
+        group = group.row(FormRow::new(
+            "settings.apps.installed.none",
+            if filter.trim().is_empty() {
+                "Nothing of this kind installed"
+            } else {
+                "Nothing installed matches"
+            },
         ));
     }
-    lines.push(boxed(note(
+    group = group.rows(rows);
+
+    let mut notes: Vec<String> = Vec::new();
+    if let Some(entry) = entry {
+        let (summary, _) = controls::summary(entry, managed, feedback);
+        notes.push(format!("{summary}."));
+    }
+    if let Some(error) = removal.error.as_ref().or(flatpaks.error.as_ref()) {
+        notes.push(error.clone());
+    }
+    notes.push(String::from(
         "Press a package for its details. Move… takes one a .nix file lists into Settings; \
          Flatpaks come from `flatpak install`, outside the configuration.",
-    )));
-
-    boxed(setting(
-        "Installed",
-        Column::new(lines).gap(sys::space::gap::xs()),
-    ))
+    ));
+    group.footer(notes.join(" "))
 }
 
 #[cfg(test)]

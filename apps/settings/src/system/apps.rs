@@ -11,13 +11,13 @@ use std::sync::{Mutex, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use amane::{Apps, Center, Column, DesktopApp, Rectangle, Row, Service, Size, TextInput, Widget};
+use amane::{Apps, Center, Column, DesktopApp, Rectangle, Service, Size, TextInput};
 use amane_kit::app::{field_box, text_field};
 use amane_kit::app_icon::entry_tile;
-use amane_kit::buttons::{PushButton, Style};
+use amane_kit::buttons::PushButton;
+use amane_kit::form::{FormRow, Group};
 use amane_kit::icons::ICON_PACKAGE;
-use amane_kit::layout::{boxed, icon};
-use amane_kit::list::{List, ListItem, leading_side, with_row_width};
+use amane_kit::layout::icon;
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::sys;
 use serde_json::Value;
@@ -28,7 +28,7 @@ use super::installed::Launchers;
 use super::inventory::{self, FileAttrs};
 use super::nixos::{Entry, Managed, Snapshot, failure, repo, run, strings};
 use super::package::Details;
-use crate::{PAGE_WIDTH, note, setting};
+use crate::{group, groups};
 
 /// The registry id of the list of added packages.
 pub const PACKAGES: &str = "packages";
@@ -581,9 +581,14 @@ impl Looks<'_> {
     }
 }
 
+/// How big an app's icon is before its row.
+pub fn icon_side() -> f32 {
+    28.0 * sys::density::factor()
+}
+
 /// A row's leading tile: the app's icon, else a package glyph the same size.
 pub fn leading(app: Option<&DesktopApp>) -> Rectangle {
-    let side = leading_side();
+    let side = icon_side();
     match app {
         Some(app) => entry_tile(app, side),
         None => Rectangle::new()
@@ -606,7 +611,7 @@ fn search_section(
     catalog: &Catalog,
     looks: &Looks,
     checking: Option<&str>,
-) -> Box<dyn Widget> {
+) -> Group {
     let placeholder = if catalog.ready {
         format!("Search {} packages…", thousands(catalog.count))
     } else {
@@ -615,48 +620,45 @@ fn search_section(
     let field = text_field(SEARCH, &placeholder)
         .on_change(Search::typed)
         .on_submit(|_| Search::run());
-    let mut lines: Vec<Box<dyn Widget>> = vec![boxed(
-        Row::new(vec![
-            boxed(field_box(SEARCH, field, 240.0)),
-            boxed(
-                PushButton::new("settings.apps.search", "Search")
-                    .disabled(search.running)
-                    .on_press(Search::run)
-                    .build(),
-            ),
-        ])
-        .gap(sys::space::gap::s())
-        .align(Center),
-    )];
+    let search_row = FormRow::new("settings.apps.search-row", "Search")
+        .trailing(field_box(SEARCH, field, 240.0))
+        .trailing(
+            PushButton::new("settings.apps.search", "Search")
+                .disabled(search.running)
+                .on_press(Search::run)
+                .build(),
+        );
+    let mut group = group().header("Add App").row(search_row);
+    let mut notes: Vec<String> = Vec::new();
 
     if let Some(since) = catalog.building {
         let secs = since.elapsed().as_secs();
-        lines.push(boxed(note(format!(
+        notes.push(format!(
             "Preparing the app catalog… {}:{:02}. Once per nixpkgs update; the first can take a few minutes.",
             secs / 60,
             secs % 60
-        ))));
+        ));
     } else if let Some(error) = &catalog.error {
-        lines.push(boxed(
-            note(format!(
-                "Searching with nix: the catalog couldn't be built. {error}"
-            ))
-            .color(sys::color::status::critical::text()),
+        notes.push(format!(
+            "Searching with nix: the catalog couldn't be built. {error}"
         ));
     }
 
     // the catalog answers at once, so the last results stay until it has
     if search.running && !catalog.ready {
         let slow = search.started.is_some_and(|at| at.elapsed() >= SLOW);
-        lines.push(boxed(note(if slow {
-            "Building the search index… the first search after an update takes a few minutes."
-        } else {
-            "Searching…"
-        })));
-    } else if let Some(error) = &search.error {
-        lines.push(boxed(
-            note(error.clone()).color(sys::color::status::critical::text()),
+        group = group.row(FormRow::new(
+            "settings.apps.searching",
+            if slow {
+                "Building the search index… the first search after an update takes a few minutes"
+            } else {
+                "Searching…"
+            },
         ));
+    } else if let Some(error) = &search.error {
+        group = group.row(
+            FormRow::new("settings.apps.search-error", "The search failed").subtitle(error.clone()),
+        );
     } else if !search.query.is_empty() && search.queued.is_none() {
         let added: Vec<String> = entry
             .map(|e| managed.list(&e.id, &e.value))
@@ -666,7 +668,7 @@ fn search_section(
             .iter()
             .map(|p| p.name.as_str())
             .collect();
-        let items: Vec<ListItem> = search
+        let rows: Vec<FormRow> = search
             .results
             .iter()
             .map(|found| {
@@ -683,10 +685,9 @@ fn search_section(
                 let mine = checking == Some(found.attr.as_str());
                 let (attr, open) = (found.attr.clone(), found.attr.clone());
                 let e = entry.cloned();
-                ListItem::new(format!("settings.apps.found.{}", found.attr), headline)
-                    .leading_widget(leading(app.as_ref()))
-                    .supporting(found.description.clone())
-                    .bare(true)
+                FormRow::new(format!("settings.apps.found.{}", found.attr), headline)
+                    .leading(leading(app.as_ref()), icon_side())
+                    .subtitle(found.description.clone())
                     .on_press(move || Details::open(&open))
                     .trailing(
                         PushButton::new(
@@ -699,7 +700,6 @@ fn search_section(
                                 "Add"
                             },
                         )
-                        .style(Style::Tonal)
                         .disabled(there || checking.is_some() || entry.is_none_or(|e| !e.managed()))
                         .on_press(move || {
                             let Some(e) = e.clone() else { return };
@@ -714,28 +714,27 @@ fn search_section(
                     )
             })
             .collect();
-        lines.push(boxed(
-            List::new(items)
-                .empty(if search.running {
+        if rows.is_empty() {
+            group = group.row(FormRow::new(
+                "settings.apps.nothing",
+                if search.running {
                     String::from("Searching…")
                 } else {
-                    format!("Nothing in nixpkgs matches \"{}\".", search.query)
-                })
-                .build(),
-        ));
+                    format!("Nothing in nixpkgs matches \"{}\"", search.query)
+                },
+            ));
+        }
+        group = group.rows(rows);
         if search.total > search.results.len() {
-            lines.push(boxed(note(format!(
+            notes.push(format!(
                 "The best {} of {} matches: type more to narrow them down.",
                 search.results.len(),
                 search.total
-            ))));
+            ));
         }
     }
 
-    boxed(setting(
-        "Add App",
-        Column::new(lines).gap(sys::space::gap::xs()),
-    ))
+    group.footer(notes.join(" "))
 }
 
 /// 108517 as "108,517".
@@ -773,24 +772,18 @@ pub fn page() -> Column {
         named: &named,
     };
 
-    with_row_width(PAGE_WIDTH, || {
-        let parts: Vec<Box<dyn Widget>> = vec![
-            search_section(
-                entry,
-                &managed,
-                &snapshot,
-                &search,
-                &catalog,
-                &looks,
-                details.checking.as_deref(),
-            ),
-            inventory::section(entry, &managed, &feedback, &snapshot, &looks),
-        ];
-
-        Column::new(parts)
-            .gap(sys::space::gap::l())
-            .width(Size::Parent)
-    })
+    groups(vec![
+        search_section(
+            entry,
+            &managed,
+            &snapshot,
+            &search,
+            &catalog,
+            &looks,
+            details.checking.as_deref(),
+        ),
+        inventory::section(entry, &managed, &feedback, &snapshot, &looks),
+    ])
 }
 
 #[cfg(test)]

@@ -23,7 +23,7 @@ use std::rc::Rc;
 use amane::{Center, Color, Column, Padding, Rectangle, Row, Size, Text, Widget};
 
 use crate::color::Accent;
-use crate::layout::{boxed, icon, text_height, wrapped_lines};
+use crate::layout::{boxed, icon, text_height, text_width, wrapped_lines};
 use crate::macform::symbol::{Symbol, symbol};
 use crate::macform::theme::{self, px};
 use crate::macform::{MacLeadingIcon, hover_fill, on_press};
@@ -63,10 +63,12 @@ pub struct FormRow {
     title: String,
     subtitle: Option<String>,
     icon: Option<(char, Accent)>,
+    leading: Option<(Box<dyn Widget>, f32)>,
     trailing: Vec<Box<dyn Widget>>,
     detail: Option<(Box<dyn Widget>, f32)>,
     on_press: Option<Rc<dyn Fn()>>,
     disabled: bool,
+    selected: bool,
 }
 
 impl FormRow {
@@ -78,11 +80,19 @@ impl FormRow {
             title: title.into(),
             subtitle: None,
             icon: None,
+            leading: None,
             trailing: Vec::new(),
             detail: None,
             on_press: None,
             disabled: false,
+            selected: false,
         }
+    }
+
+    /// Filled as the one picked, in a list of rows to choose from.
+    pub fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
+        self
     }
 
     /// A second line under the title, in grey, wrapped to the room left.
@@ -95,6 +105,13 @@ impl FormRow {
     /// `glyph` on a tile of `accent` before the title.
     pub fn icon(mut self, glyph: char, accent: Accent) -> Self {
         self.icon = Some((glyph, accent));
+        self
+    }
+
+    /// Anything `side` wide before the title in place of a tile, such as
+    /// an app's icon.
+    pub fn leading(mut self, widget: impl Widget + 'static, side: f32) -> Self {
+        self.leading = Some((boxed(widget), side));
         self
     }
 
@@ -136,10 +153,10 @@ impl FormRow {
     /// Where the title starts, from the row's leading edge.
     fn text_start(&self) -> f32 {
         pad_h()
-            + if self.icon.is_some() {
-                tile_side() + tile_gap()
-            } else {
-                0.0
+            + match (&self.leading, self.icon) {
+                (Some((_, side)), _) => side + tile_gap(),
+                (None, Some(_)) => tile_side() + tile_gap(),
+                (None, None) => 0.0,
             }
     }
 
@@ -175,7 +192,11 @@ impl FormRow {
     fn head_height(&self, width: f32) -> f32 {
         let lines = self.subtitle_lines(width).len() as f32;
         let text = text_height(title_font()) + lines * text_height(subtitle_font());
-        (text + px(16.0)).max(theme::row_min_height())
+        let leading = self
+            .leading
+            .as_ref()
+            .map_or(0.0, |(_, side)| side + px(12.0));
+        (text + px(16.0)).max(theme::row_min_height()).max(leading)
     }
 
     /// How tall the row is in a group `width` wide.
@@ -194,11 +215,23 @@ impl FormRow {
         let lines = self.subtitle_lines(width);
         let start = self.text_start();
 
-        let mut text: Vec<Box<dyn Widget>> = vec![boxed(
-            Text::new(self.title.clone())
-                .style(title_font())
-                .color(theme::label_primary()),
-        )];
+        // a title too long for the room left is cut short with an ellipsis
+        let room = (width - start - pad_h() - self.trailing_width() - px(12.0)).max(60.0);
+        let title = Text::new(self.title.clone())
+            .style(title_font())
+            .color(theme::label_primary());
+        let title: Box<dyn Widget> = if text_width(&self.title, title_font()) > room {
+            boxed(
+                Rectangle::new()
+                    .width(Size::Fixed(room))
+                    .height(Size::Fixed(text_height(title_font())))
+                    .clip()
+                    .child(title.elide()),
+            )
+        } else {
+            boxed(title)
+        };
+        let mut text: Vec<Box<dyn Widget>> = vec![title];
         for line in lines {
             text.push(boxed(
                 Text::new(line)
@@ -209,7 +242,9 @@ impl FormRow {
         let text = Column::new(text);
 
         let mut leading: Vec<Box<dyn Widget>> = Vec::new();
-        if let Some((glyph, accent)) = self.icon {
+        if let Some((widget, _)) = self.leading {
+            leading.push(widget);
+        } else if let Some((glyph, accent)) = self.icon {
             leading.push(boxed(MacLeadingIcon::new(glyph).accent(accent).build()));
         }
         leading.push(boxed(text));
@@ -251,14 +286,14 @@ impl FormRow {
             ));
         }
 
+        let base_fill = if self.selected {
+            sys::color::state::selected()
+        } else {
+            Color::TRANSPARENT
+        };
         let fill = match &self.on_press {
-            Some(_) => hover_fill(
-                &self.id,
-                Color::TRANSPARENT,
-                theme::label_primary(),
-                self.disabled,
-            ),
-            None => Color::TRANSPARENT,
+            Some(_) => hover_fill(&self.id, base_fill, theme::label_primary(), self.disabled),
+            None => base_fill,
         };
 
         let base = Rectangle::new()
