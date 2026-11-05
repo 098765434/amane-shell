@@ -26,6 +26,7 @@ zbus = "5.19.0"
 chrono = "0.4"
 # statvfs, for how full the disks are (already in the lock, through amane)
 libc = "0.2"
+qrcode = { version = "0.14", default-features = false }
 
 [profile.dev]
 debug = "line-tables-only"

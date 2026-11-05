@@ -4,8 +4,9 @@
 //! phones on the network that could pair, with a phone's request to pair
 //! under them (an alert asks instead while the page isn't showing,
 //! `alert::phone`). A paired phone's page: battery, Ring, Send Files…,
-//! Messages and Phone Input (in `amane-messages`), the clipboard, the
-//! phone's remote for this computer, and Forget.
+//! Messages and Phone Input (in `amane-messages`), its Screen (in
+//! `amane-mirror`, set up by `phone_screen`), the clipboard, the phone's
+//! remote for this computer, and Forget.
 //!
 //! The phone's notifications and media need nothing here: the shell is the
 //! notification server and Now Playing reads every MPRIS player, so they
@@ -112,7 +113,9 @@ pub(crate) fn page() -> DetailPage {
     if let Some(id) = shown {
         let device = KdeConnect::read().device(&id).cloned();
         match device {
-            Some(device) if device.paired() => return device_page(device),
+            Some(device) if device.paired() => {
+                return super::phone_screen::page(&device).unwrap_or_else(|| device_page(device));
+            }
             // forgotten: back to the list
             _ => DEVICE.set(None),
         }
@@ -128,6 +131,7 @@ pub(crate) fn page() -> DetailPage {
 /// The page was left: its own device page closes, and the next showing
 /// searches the network again.
 pub(crate) fn left() {
+    super::phone_screen::left();
     DEVICE.set(None);
     SEARCHED.set(false);
 }
@@ -518,6 +522,7 @@ fn action_rows(device: &PhoneDevice) -> Vec<ListItem> {
             );
         }
     }
+    rows.extend(super::phone_screen::row(device, chevron));
     rows
 }
 
