@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Phone Screen
+Comment=Your phone's screen and sound, mirrored and controlled from here
+Keywords=Phone;Android;Mirror;Screen;scrcpy;
+Exec=amane-mirror
+Icon=phone
+Categories=Utility;
+StartupNotify=true

@@ -1,0 +1,16 @@
+[package]
+name = "amane-mirror"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "The phone's screen, sound and camera through scrcpy's server, drawn by the shell; works beside KDE Connect."
+license = "MIT"
+repository = "https://github.com/098765434/amane-shell"
+authors = ["ocbk"]
+
+[dependencies]
+amane = { workspace = true }
+amane-kit = { path = "../../kit" }
+ffmpeg-next = { version = "9", default-features = false, features = ["codec", "format"] }
+libpulse-binding = "2"
+libpulse-simple-binding = "2"

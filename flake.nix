@@ -51,7 +51,22 @@
           seatd
           vulkan-loader
           pam # amane links -lpam (session/seat); host-provided in the devShell
+          ffmpeg # amane-mirror decodes the phone's screen and sound (VAAPI on the GPU)
         ];
+
+      # scrcpy's server, alone: amane-mirror pushes it to the phone. Copied out
+      # of the scrcpy package so the closure doesn't keep scrcpy's own client
+      # and its libraries; its version is the protocol amane-mirror speaks.
+      scrcpyServerFor =
+        pkgs:
+        pkgs.runCommand "scrcpy-server-${pkgs.scrcpy.version}" { } ''
+          install -Dm644 ${pkgs.scrcpy}/share/scrcpy/scrcpy-server $out/share/scrcpy/scrcpy-server
+        '';
+
+      scrcpyEnvFor = pkgs: {
+        SCRCPY_SERVER = "${scrcpyServerFor pkgs}/share/scrcpy/scrcpy-server";
+        SCRCPY_VERSION = pkgs.scrcpy.version;
+      };
 
       # The system GPU driver dir goes first so wgpu's Vulkan loader finds the
       # system ICDs and the driver's own libwayland.
@@ -88,7 +103,7 @@
             rustc = rustToolchain;
           };
 
-          amane-shell = rustPlatform.buildRustPackage {
+          amane-shell = rustPlatform.buildRustPackage ({
             pname = "amane-shell";
             inherit ((lib.importTOML ./Cargo.toml).package) version;
 
@@ -123,13 +138,15 @@
               };
             };
 
-            # the shell, and the apps beside it (Shell Settings, Messages, Shader Lab)
+            # the shell, and the apps beside it (Shell Settings, Messages, Phone Screen, Shader Lab)
             cargoBuildFlags = [ "--workspace" ];
             cargoTestFlags = [ "--workspace" ];
 
             nativeBuildInputs = [
               pkgs.pkg-config
               pkgs.makeWrapper
+              # ffmpeg's bindings are generated against its headers
+              rustPlatform.bindgenHook
             ];
             buildInputs = runtimeLibs;
 
@@ -139,11 +156,12 @@
             postInstall = ''
               install -Dm644 apps/settings/amane-settings.desktop -t $out/share/applications
               install -Dm644 apps/messages/amane-messages.desktop -t $out/share/applications
+              install -Dm644 apps/mirror/amane-mirror.desktop -t $out/share/applications
               install -Dm644 apps/shader-lab/amane-shader-lab.desktop -t $out/share/applications
             '';
 
             postFixup = ''
-              for program in amane-shell amane-settings amane-messages amane-shader-lab; do
+              for program in amane-shell amane-settings amane-messages amane-mirror amane-shader-lab; do
                 wrapProgram $out/bin/$program \
                   --prefix LD_LIBRARY_PATH : "${ldLibraryPath pkgs}" \
                   --run ${lib.escapeShellArg vulkanIcdFallback}
@@ -156,7 +174,7 @@
               license = lib.licenses.mit;
               platforms = lib.platforms.linux;
             };
-          };
+          } // scrcpyEnvFor pkgs);
         in
         {
           default = amane-shell;
@@ -172,9 +190,12 @@
           runtimeLibs = runtimeLibsFor pkgs;
         in
         {
-          default = pkgs.mkShell {
+          default = pkgs.mkShell ({
             packages = [ rustToolchain ];
-            nativeBuildInputs = [ pkgs.pkg-config ];
+            nativeBuildInputs = [
+              pkgs.pkg-config
+              pkgs.rustPlatform.bindgenHook
+            ];
             buildInputs = runtimeLibs;
 
             # The runtime wiring, without hardcoded /nix/store hashes. The system
@@ -184,7 +205,7 @@
               export LD_LIBRARY_PATH="${ldLibraryPath pkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
               ${vulkanIcdFallback}
             '';
-          };
+          } // scrcpyEnvFor pkgs);
         }
       );
 

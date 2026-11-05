@@ -6,8 +6,8 @@
 
 use std::fmt::Write;
 
-use crate::surfaces::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
 use crate::surfaces::alert::ALERT_NS;
+use crate::surfaces::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
 use crate::surfaces::dock::DOCK_NS;
 use crate::surfaces::launcher::LAUNCHER_NS;
 use crate::surfaces::notifications::{CENTER_NS, TOAST_NS};
@@ -247,6 +247,10 @@ pub fn rules() -> Vec<LayerRule> {
 /// material, their popups in the menu's (`kit::app::app` names them).
 pub const APP_IDS: &[&str] = &["amane-settings", "amane-messages"];
 
+/// The phone's screen (`apps/mirror`): its own floating window, shaped
+/// like a phone, opaque so nothing frosts behind it.
+pub const PHONE_SCREEN_APP_ID: &str = "amane-mirror";
+
 /// The line `gen-layer-rules.sh` looks for; everything after it goes into
 /// the niri config.
 const SENTINEL: &str = "//<<<GENERATED-RULES-BELOW>>>";
@@ -324,6 +328,7 @@ pub fn render(rules: &[LayerRule]) -> String {
     }
 
     out.push_str(&render_windows(APP_IDS));
+    out.push_str(&render_phone_screen());
     out.push_str(&render_materials(&materials()));
     out
 }
@@ -385,6 +390,34 @@ fn render_windows(app_ids: &[&str]) -> String {
         let _ = writeln!(out, "        material \"{}\"", Material::Sheet.niri_name());
         out.push_str("    }\n}\n");
     }
+    out
+}
+
+/// The phone's screen opens floating, at the size it asks for (a phone's
+/// shape), with the alert's corners and shadow; it draws every pixel
+/// itself, so there's no blur behind it.
+fn render_phone_screen() -> String {
+    let key = Key::new(Mode::Dark, Density::Comfortable);
+    let radius = with_key(key, dialog::radius);
+
+    let mut out = String::from(
+        "\n// The phone's screen: a floating window shaped like the phone, with the alert's\n\
+         // corners and shadow.\n",
+    );
+    out.push_str("window-rule {\n");
+    let _ = writeln!(
+        out,
+        "    match app-id=\"{}\"",
+        kdl_string(&anchored(PHONE_SCREEN_APP_ID))
+    );
+    out.push_str("    open-floating true\n");
+    let _ = writeln!(out, "    geometry-corner-radius {radius}");
+    out.push_str("    clip-to-geometry true\n");
+    out.push_str("    shadow {\n        on\n");
+    let _ = writeln!(out, "        softness {ALERT_SHADOW_SOFTNESS}");
+    let _ = writeln!(out, "        offset x=0 y={ALERT_SHADOW_Y}");
+    let _ = writeln!(out, "        color \"{SHADOW_COLOR}\"");
+    out.push_str("    }\n}\n");
     out
 }
 
@@ -544,7 +577,10 @@ mod tests {
             let (_, value) = m.settings.iter().find(|(s, _)| s == name).expect(name);
             value.parse().expect("a number")
         };
-        for (big, small) in [("glass", "glass-small"), ("glass-still", "glass-small-still")] {
+        for (big, small) in [
+            ("glass", "glass-small"),
+            ("glass-still", "glass-small-still"),
+        ] {
             let (big, small) = (find(big), find(small));
             for setting in ["blur-passes", "bevel", "refraction"] {
                 assert!(
@@ -558,7 +594,14 @@ mod tests {
                 setting.starts_with("blur-") || setting == "bevel" || setting == "refraction"
             };
             let rest: Vec<_> = big.settings.iter().filter(|s| !sized(s)).collect();
-            assert_eq!(rest, small.settings.iter().filter(|s| !sized(s)).collect::<Vec<_>>());
+            assert_eq!(
+                rest,
+                small
+                    .settings
+                    .iter()
+                    .filter(|s| !sized(s))
+                    .collect::<Vec<_>>()
+            );
         }
     }
 
@@ -583,8 +626,9 @@ mod tests {
         let apps = [
             include_str!("../../apps/settings/src/main.rs"),
             include_str!("../../apps/messages/src/main.rs"),
+            include_str!("../../apps/mirror/src/main.rs"),
         ];
-        for app_id in APP_IDS {
+        for app_id in APP_IDS.iter().chain([&PHONE_SCREEN_APP_ID]) {
             assert!(
                 apps.iter()
                     .any(|app| app.contains(&format!("app(\"{app_id}\")"))),

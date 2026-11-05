@@ -279,6 +279,21 @@ window-rule {
     }
 }
 
+// The phone's screen: a floating window shaped like the phone, with the alert's
+// corners and shadow.
+window-rule {
+    match app-id="^amane-mirror$"
+    open-floating true
+    geometry-corner-radius 34
+    clip-to-geometry true
+    shadow {
+        on
+        softness 48
+        offset x=0 y=18
+        color "#00000073"
+    }
+}
+
 // The shell's materials (material.* tokens), by the names it asks for: liquid
 // glass, its clear variant for media, and frost without a lens; each `-still`
 // twin is for reduced motion. They replace a hand-written `materials {}` of
