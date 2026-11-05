@@ -16,8 +16,13 @@ the launcher lists it as *Shell Settings*.
 
 An `app_window` titled "Shell Settings", 760 × 760 (at least 600 × 740), with a 200 px
 [`sidebar`](../kit/app.md#sidebar) in two sections, **Shell** (eight pages, the shell's own
-settings and the displays) and **System** (eight, the NixOS configuration), and the page's title over its settings,
-each a caption over its control. Each page scrolls in an amane `ScrollArea` that keeps its own
+settings and the displays) and **System** (eight, the NixOS configuration), each page's glyph on
+a coloured tile, and the page's title over its settings. The settings are macOS-style grouped rows
+([`form`](../kit/components.md#form)): rounded cards of rows, each a title (and a grey subtitle)
+with its control at the trailing edge, a radio group under its title, a slider across its row,
+captions above the groups and notes below them. While the changes, the build log or a package's
+details stand in for the page, a back/forward pill sits before the title, and back returns to
+the page. Each page scrolls in an amane `ScrollArea` that keeps its own
 offset. Ctrl+W closes it (`standard_shortcut`), unless a system build is running: then it asks
 first ("Stop the build?"), as does the compositor's close.
 
@@ -134,7 +139,7 @@ The NixOS configuration in `~/nixos-config`, through the contract in
 
 ### About This Computer
 
-`system/about.rs`. A banner saying whether the running system is this configuration ("Up to
+`system/about.rs`. A status row saying whether the running system is this configuration ("Up to
 date", or why not: settings changed, uncommitted files, commits not applied, a differing
 evaluation), with **Show Changes** and **Apply…**; then the NixOS version and nixpkgs commit,
 the kernel, the generation ("65 of 66"), the commit the running system was built from with its
@@ -258,14 +263,14 @@ made from it).
 
 `system/storage.rs`. How full `/nix` and `/boot` are (meters), **Check What a Clean-up Frees**
 (`nix-collect-garbage --dry-run`), and the registry's controls for this page: **Boot entries
-kept** (a slider, 1–50).
+kept** (a stepper, 1–50). Whole-number settings from the registry are steppers.
 
 ### Software Update
 
 `system/update.rs`. **Check for Updates** writes a fresh lock beside the repo
 (`nix flake update --output-lock-file $XDG_STATE_HOME/amane-shell/nixos/update.lock`), and if
 any root input moved, builds the working tree with it (`nix build --reference-lock-file`) and
-compares it with the running system, through the Apply bar like any build; a card then says
+compares it with the running system, through the Apply bar like any build; a row then says
 "Update ready: 2 inputs change · 143 packages change · needs a restart" with **Show Changes**
 (the inputs' commits first, then the packages). The Apply bar's **Apply Now** / **Apply at
 Restart** / **Try** activate it; after a `switch` or `boot` the lock goes into the repo as
@@ -275,7 +280,7 @@ with how long ago it was updated and its commit (the old and new commits while a
 around), and **Update** to check just that input.
 
 The scheduled check ([nixos.md](../integration/nixos.md#the-scheduled-check)) fills the same
-card between checks: "Checked 2 hours ago · updates for nixpkgs, amane-shell" with **Update
+row between checks: "Checked 2 hours ago · updates for nixpkgs, amane-shell" with **Update
 All**, "Checked yesterday · up to date", or why it couldn't; the inputs it saw move read `from
 → to` in the list. **Check automatically** (Daily, Weekly, Never) is the timer's setting, a
 managed setting like the others. The shell shows the check's toast, and its Software Update
@@ -297,7 +302,7 @@ tile (Quick Settings, Add Controls → Utilities) names the inputs while somethi
 
 **Show Changes** and **Show Log** take the page's place (the settings waiting, then the
 packages that update, are added and removed; the build's last 300 lines, with **Copy Log**),
-with **Back**.
+with the back pill before the title.
 
 ## The files
 

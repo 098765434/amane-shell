@@ -70,29 +70,34 @@ it reads on any surface. Turning on, it blends to `sys.color.accent.bg`. The
 ## Checkbox and Radio
 
 `Checkbox::new(id, checked)` and `Radio::new(id, selected)` take an optional `.label(…)` that takes
-the click too, `.disabled(…)`, and `.on_toggle(|checked| …)` or `.on_select(|| …)`. Each is a
-control-height row (`sys.size.control.height`, `sys.radius.raised` corners) with the hover layer,
-the box at the current control size (`control_size::current().checkbox()`), and the label in
-`sys.type.label`.
+the click too, `.disabled(…)`, and `.on_toggle(|checked| …)` or `.on_select(|| …)`. They're drawn
+in the macform look (macOS's): a 16 px mark (times the density) with the label 3 px after it in
+the control font (13 medium), the whole control as wide as its mark and label and
+`theme::control_height()` (24) tall.
 
-- **Checkbox**: off, a box outlined in the secondary label colour; on, filled
-  `sys.color.accent.bg` with a check in `sys.color.accent.fg`. A setting that applies at once
-  reads better as a `Switch`; a checkbox suits choices confirmed together.
+- **Checkbox**: off, a box (radius 5.5) of `fieldFill` in a 1 px `fieldBorder`; on, the accent
+  around a drawn checkmark (`macform::symbol`). The fill crossfades over 300 ms. A setting that
+  applies at once reads better as a `Switch`; a checkbox suits choices confirmed together.
 - **Radio**: a group is radios sharing what's chosen, each `selected` when the setting equals
-  its value. Chosen, the circle fills with the accent around a `sys.color.accent.fg` dot
-  (`radio_dot()`); choosing the chosen one does nothing. Shell Settings uses them for every
-  one-of-a-few choice.
+  its value. Chosen, the circle fills with the accent around a 4.8 px white dot; choosing the
+  chosen one does nothing. Shell Settings puts a group under its row's title
+  (`FormRow::detail`).
 
 ## Dropdown
 
-`dropdown::Dropdown::new(id, options, selected)` is one choice out of a list, after M3's exposed
-dropdown menu and drawn like macOS's pop-up button: a control-height button with the chosen option
-and a chevron, as wide as the widest option unless given `.width(…)`. A click opens a menu of the
-options at the pointer, the chosen one checked, as an xdg-popup on a `Material::Popover` card;
-choosing one (`.on_select(|index| …)`), clicking outside or Escape closes it. In a normal window
-it finds its parent window itself; on a layer window, pass the surface's namespace with
-`.layer(ns)`. For a few options that all fit, radios read better. Shell Settings' accent and text
-size are dropdowns.
+`dropdown::Dropdown::new(id, options, selected)` is one choice out of a list, drawn like macOS's
+pop-up button (the macform pull-down): a `controlFill` button, radius 6, with the chosen option
+and a drawn chevron, as wide as the widest option unless given `.width(…)`.
+`Dropdown::items(id, Vec<MenuItem>, Option<usize>)` takes options with glyphs (`MenuItem::new(text)
+.icon(glyph).trailing(glyph)`) and none chosen, which shows `.fallback(text)`.
+
+A click opens the menu lined up under the button (right edges together, 4 px below, flipped above
+when there's no room): an xdg-popup of a `menuFill` panel, radius 8, with 24 px rows, the chosen
+one filled with the accent. It fades in with a 4 px slide. The pointer or Up, Down and Enter pick
+a row (`.on_select(|index| …)`); Escape or a click outside closes it. The button finds where it is
+on its window with `on_track`. In a normal window the menu finds its parent window itself; on a
+layer window, pass the surface's namespace with `.layer(ns)`. For a few options that all fit,
+radios read better.
 
 ## Control sizes
 
@@ -103,24 +108,28 @@ Layout heights (rows, a thin slider's hit area) stay on `sys.size.control.height
 changes the control drawn, not the room panels leave for it. The thin slider has a pill knob at its
 value; an inert slider, a meter, has none.
 
-## macform (experimental)
+## macform
 
-`amane_kit::macform` holds macOS-style controls ported from the old Quickshell `macform`
-set, kept apart from the kit's own so the two can be compared before either replaces the other.
-Nothing in the shell uses them. `cargo run -p amane-kit --example macform` shows each next to
-its kit counterpart (app_id `amane-macform-gallery`, so it runs beside the bar).
+`amane_kit::macform` holds the macOS-style controls ported from the old Quickshell `macform` set.
+The kit's `Radio`, `Checkbox`, `Dropdown`, `field_box`, `ListItem::leading_tile` and the
+sidebar's tiles draw with its pieces; the rest are its own types, which Shell Settings uses
+where it needs them. `cargo run -p amane-kit --example macform` shows them beside the kit's other
+controls (app_id `amane-macform-gallery`, so it runs beside the bar; `MACFORM_PAGE=<n>` opens on
+a page).
 
-- Controls: `MacSwitch`, `MacCheckbox`, `MacRadioButton`, `MacSlider` (0.0–1.0),
-  `MacStepper` (hold to repeat, reported on release), `MacTextField` (red edge on a failed
-  `validate`), `MacPushButton`, `MacPopUpButton`, `MacPullDown`, `MacComboBox`,
-  `MacSegmentedNav` (back/forward) and `MacLeadingIcon`.
+- `MacStepper` (a number field with up and down halves; hold to repeat, reported on release;
+  the wheel steps), used for Shell Settings' whole-number settings.
+- `MacSegmentedNav`, the back/forward pill, before Shell Settings' title in a sub-view.
+- `MacLeadingIcon`, a 20 px (28 large) tile of an `Accent` (or any colour) with a white glyph.
+- `MacTextField` (red edge on a failed `validate`), `MacComboBox` (a field with a menu of
+  suggestions), `MacPopUpButton` (an 18 px circle that opens a menu), `MacSwitch`, `MacSlider`
+  (0.0–1.0) and `MacPushButton`, beside the kit's own for now.
 - `macform::theme` maps the original MacTheme to `sys.*` tokens where the dark values match
   (labels, `fill.secondary`, separator, accent) and keeps the rest as literals with a light twin.
-  Sizes are the original's Figma pixels times `sys.density.factor`.
+  Sizes are the original's Figma pixels times `sys.density.factor`. `color::Accent` holds the 13
+  system accents the tiles take.
 - `macform::symbol` draws the SF Symbols the controls use (chevrons, checkmark, ellipsis,
   info) as round-joined strokes, which stay on the quad pipeline.
-- Menus (pull-down, pop-up button, combo box) are xdg-popups lined up under their control,
-  found with `on_track`, and take Up, Down, Enter and Escape.
 - Left out: the Material press ripple and the menu's scale-in (a fade and a 4 px slide instead).
 
 ## Pending tokens

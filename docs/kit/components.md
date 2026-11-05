@@ -48,7 +48,8 @@ taller than its content.
 
 `ListItem::new(id, headline)` is a one-line M3 list item, or two-line with `.supporting(text)`
 (a caption under the headline, elided too; the row is `sys.size.row.two-line-height`). It has a `.leading(glyph)` (or
-`.leading_tile(glyph)`, the glyph on a small accent tile, as a sidebar names its sections, or
+`.leading_tile(glyph)`, the glyph on a `MacLeadingIcon` tile of the accent, as a sidebar names its
+sections, or `.leading_tile_accent(glyph, Accent)` on a tile of one of the system accents, or
 `.leading_widget(…)`, any widget in its place, such as an app's `app_icon::entry_tile` at
 `list::leading_side()`), the
 headline (elided), and `.trailing(…)` items such as `list::check()`, a lock glyph, or
@@ -62,6 +63,27 @@ a list needs it.
 
 `List::new(items)` stacks items `sys.space.gap.xs` apart, under an optional `.header(…)`
 caption, with an `.empty(…)` note while there are none.
+
+## Form
+
+`form` lays settings out as macOS's System Settings does, and is what Shell Settings' pages are
+built from. A `Group::new()` is a rounded card (radius 12, `groupFill`) of rows with hairlines
+between them, starting past each row's tile; `.header(text)` is a caption above it and
+`.footer(text)` a note below it, wrapped to its `.width(…)` (504 by default, Shell Settings'
+page). `.row(FormRow)`, `.rows(…)`, `.slider(SliderRow)` and `.custom(widget, height)` add to it,
+and `.build()` gives a `Column`. Every row knows its height, so a group sizes itself
+(`Group::height()`).
+
+- `FormRow::new(id, title)`: 42 px tall with one line (more with a `.subtitle(…)`, which wraps),
+  12 px in. `.icon(glyph, Accent)` puts a `MacLeadingIcon` before the title, or `.leading(widget,
+  side)` anything else (an app's icon). `.trailing(widget)` adds a control at the trailing edge
+  (several sit side by side), `.value(text)` a grey value. `.detail(widget, height)` puts a block
+  under the title, lined up with it (a radio group, a field and its button, tags).
+  `.on_press(…)` makes the whole row a button with a chevron, to open what it names;
+  `.selected(true)` fills it as the one picked; `.disabled(true)` dims it. A title too long for
+  the room left is cut short with an ellipsis.
+- `SliderRow::new(title, |width| slider)`: the title and its `.value(…)` over a slider across the
+  row, with a `.glyph(…)` or `.icon(…)` before them.
 
 ## Divider and Slider
 

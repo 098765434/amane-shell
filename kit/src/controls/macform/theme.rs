@@ -65,9 +65,10 @@ pub fn menu_fill() -> Color {
     }
 }
 
-/// `groupFill`: white @ 0.05, a settings group's card.
+/// `groupFill`: white @ 0.05, a settings group's card (black @ 0.04 in
+/// light, where the window is already white).
 pub fn group_fill() -> Color {
-    if dark() { ink(0.05) } else { Color::WHITE }
+    if dark() { ink(0.05) } else { ink(0.04) }
 }
 
 /// `divider`: the kit's separator (white @ 0.10).
