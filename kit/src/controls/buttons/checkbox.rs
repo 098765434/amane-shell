@@ -1,22 +1,21 @@
 //! Checkbox — a setting that's on or off, in a list of independent ones.
 //!
-//! Modelled on Material 3's checkbox: a small square that fills with the
-//! accent and shows a check when on, with an optional label beside it that
-//! takes the click too. Where a setting applies at once, a [`Switch`] reads
+//! Drawn like macOS's (the macform look): a 16 px box, radius 5.5,
+//! `fieldFill` in a hairline while off, filling with the accent around a
+//! drawn checkmark when on, with an optional label 3 px after it that takes
+//! the click too. Where a setting applies at once, a [`Switch`] reads
 //! better; a checkbox suits choices confirmed together, like a dialog's.
 //!
 //! [`Switch`]: super::Switch
 
 use std::rc::Rc;
 
-use amane::{Center, Color, Radius, Rectangle, Row, Size, Text, children};
+use amane::{Center, Rectangle, Size};
 
-use super::{Actions, interactive, state_fill};
-use crate::control_size;
-use crate::icons::ICON_CHECK;
-use crate::layout::{icon, pad};
-use crate::material::{self, Level};
-use crate::tokens::{Styled, sys};
+use super::{Actions, interactive};
+use crate::macform::symbol::{Symbol, symbol};
+use crate::macform::theme::{self, px};
+use crate::macform::{crossfade, labelled};
 
 /// A checkbox. `id` keys its hover, so it must be unique and stable.
 pub struct Checkbox {
@@ -57,25 +56,23 @@ impl Checkbox {
     }
 
     pub fn build(self) -> Rectangle {
-        let (side, radius) = control_size::current().checkbox();
-
+        let side = px(16.0);
+        let fill = crossfade(
+            &format!("{}.fill", self.id),
+            self.checked,
+            theme::field_fill(),
+            theme::tint(),
+        );
         let mark = Rectangle::new()
             .width(Size::Fixed(side))
             .height(Size::Fixed(side))
-            .radius(Radius::Fixed(radius))
+            .radius(px(5.5))
+            .fill(fill)
             .align_child(Center, Center);
-
         let mark = if self.checked {
-            mark.fill(sys::color::accent::bg()).child(icon(
-                ICON_CHECK,
-                side * 0.85,
-                sys::color::accent::fg(),
-            ))
+            mark.child(symbol(Symbol::Checkmark, px(11.0), theme::glyph_on_tint()))
         } else {
-            mark.fill(Color::TRANSPARENT).border(
-                sys::border::hairline() * 1.5,
-                material::label(Level::Secondary),
-            )
+            mark.border(1.0, theme::field_border())
         };
 
         let toggle = self.on_toggle;
@@ -85,34 +82,8 @@ impl Checkbox {
             ..Actions::default()
         };
 
-        let base = row(&self.id, mark, self.label, self.disabled);
+        let base = labelled(mark, self.label);
 
         interactive(base, self.id, self.disabled, actions)
     }
-}
-
-/// The mark and its label in a hover-lit row, shared with the radio.
-pub(super) fn row(id: &str, mark: Rectangle, label: Option<String>, disabled: bool) -> Rectangle {
-    let gap = sys::space::gap::s();
-
-    let content = match label {
-        Some(label) => Row::new(children![
-            mark,
-            Text::new(label)
-                .style(sys::r#type::label())
-                .color(material::label(Level::Primary)),
-        ])
-        .gap(gap)
-        .align(Center),
-        None => Row::new(children![mark]),
-    };
-
-    Rectangle::new()
-        .width(Size::Parent)
-        .height(Size::Fixed(sys::size::control::height()))
-        .radius(Radius::Fixed(sys::radius::raised()))
-        .fill(state_fill(id, Color::TRANSPARENT, disabled))
-        .padding(pad(sys::space::inset::s(), 0.0))
-        .align_child(amane::Start, Center)
-        .child(content)
 }

@@ -1,7 +1,7 @@
 //! The macform controls next to the kit's own, to compare and try:
 //! `cargo run -p amane-kit --example macform`.
 //!
-//! Each row shows one kind of control twice: the kit's today on the left,
+//! Each row shows one kind of control twice: the kit's on the left,
 //! the macform port on the right, sharing the same state, with what it
 //! holds written after it. `AMANE_THEME=light|dark` and
 //! `AMANE_DENSITY=compact` show the other looks.
@@ -19,9 +19,8 @@ use amane_kit::icons::{
 use amane_kit::layout::boxed;
 use amane_kit::macform::theme::{self as mac, Accent};
 use amane_kit::macform::{
-    MacCheckbox, MacComboBox, MacLeadingIcon, MacPopUpButton, MacPullDown, MacPushButton,
-    MacRadioButton, MacSegmentedNav, MacSlider, MacStepper, MacSwitch, MacTextField, MenuItem,
-    Symbol, symbol,
+    MacComboBox, MacLeadingIcon, MacPopUpButton, MacPushButton, MacSegmentedNav, MacSlider,
+    MacStepper, MacSwitch, MacTextField, MenuItem, Symbol, symbol,
 };
 use amane_kit::material::{self, Level};
 use amane_kit::slider::Slider;
@@ -219,7 +218,7 @@ fn toggles(s: &Lab) -> Vec<Box<dyn Widget>> {
                 .build(),
         ));
         mac_radios.push(boxed(
-            MacRadioButton::new(format!("mac.size.{i}"), s.size == i)
+            Radio::new(format!("mac.size.{i}"), s.size == i)
                 .label(*size)
                 .on_select(move || Lab::write().size = i)
                 .build(),
@@ -280,13 +279,13 @@ fn toggles(s: &Lab) -> Vec<Box<dyn Widget>> {
             ]),
             column(vec![
                 boxed(
-                    MacCheckbox::new("mac.sounds", s.sounds)
+                    Checkbox::new("mac.sounds", s.sounds)
                         .label("Play sounds")
                         .on_toggle(|on| Lab::write().sounds = on)
                         .build(),
                 ),
                 boxed(
-                    MacCheckbox::new("mac.badges", s.badges)
+                    Checkbox::new("mac.badges", s.badges)
                         .label("Show badges")
                         .on_toggle(|on| Lab::write().badges = on)
                         .build(),
@@ -508,11 +507,11 @@ fn selectors(s: &Lab) -> Vec<Box<dyn Widget>> {
             )
             .on_select(|i| Lab::write().accent = i)
             .build(),
-            MacPullDown::new("mac.accent", accents, Some(s.accent))
+            Dropdown::items("mac.accent", accents, Some(s.accent))
                 .on_select(|i| Lab::write().accent = i)
                 .build(),
             format!(
-                "accent {} (kit menu opens at the pointer, macform under the button)",
+                "accent {} (both are the kit's Dropdown now)",
                 ACCENTS[s.accent]
             ),
         ),
@@ -520,7 +519,7 @@ fn selectors(s: &Lab) -> Vec<Box<dyn Widget>> {
             "With icons",
             ROW_H,
             caption(""),
-            MacPullDown::new("mac.sort", sorts.clone(), Some(s.sort))
+            Dropdown::items("mac.sort", sorts.clone(), Some(s.sort))
                 .width(150.0)
                 .on_select(|i| Lab::write().sort = i)
                 .build(),
@@ -769,7 +768,7 @@ fn settings_rows(s: &Lab) -> Vec<Box<dyn Widget>> {
                     Accent::Purple,
                     "Accent colour",
                     boxed(
-                        MacPullDown::new("rows.accent", accents, Some(s.accent))
+                        Dropdown::items("rows.accent", accents, Some(s.accent))
                             .on_select(|i| Lab::write().accent = i)
                             .build(),
                     ),

@@ -538,6 +538,21 @@ mod tests {
     }
 
     #[test]
+    fn radios_and_checkboxes_build_in_every_state() {
+        for on in [false, true] {
+            for disabled in [false, true] {
+                let _ = Radio::new("test.radio", on)
+                    .label("Option")
+                    .disabled(disabled)
+                    .build();
+                let _ = Checkbox::new("test.checkbox", on)
+                    .disabled(disabled)
+                    .build();
+            }
+        }
+    }
+
+    #[test]
     fn leaving_another_button_keeps_the_hover() {
         hover("a", true);
         hover("b", true);

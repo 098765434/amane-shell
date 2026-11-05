@@ -103,60 +103,7 @@ pub fn shadow_color() -> Color {
     with_alpha(Color::BLACK, if dark() { 0.7 } else { 0.35 })
 }
 
-/// The 13 system accents, for leading-icon tiles.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Accent {
-    Red,
-    Orange,
-    Yellow,
-    Green,
-    Mint,
-    Teal,
-    Cyan,
-    Blue,
-    Indigo,
-    Purple,
-    Pink,
-    Brown,
-    Gray,
-}
-
-impl Accent {
-    pub const ALL: [Accent; 13] = [
-        Self::Red,
-        Self::Orange,
-        Self::Yellow,
-        Self::Green,
-        Self::Mint,
-        Self::Teal,
-        Self::Cyan,
-        Self::Blue,
-        Self::Indigo,
-        Self::Purple,
-        Self::Pink,
-        Self::Brown,
-        Self::Gray,
-    ];
-
-    pub fn color(self) -> Color {
-        let hex: u32 = match self {
-            Self::Red => 0xff383c,
-            Self::Orange => 0xff8d28,
-            Self::Yellow => 0xffcc00,
-            Self::Green => 0x34c759,
-            Self::Mint => 0x00c8b3,
-            Self::Teal => 0x00c3d0,
-            Self::Cyan => 0x00c0e8,
-            Self::Blue => 0x0088ff,
-            Self::Indigo => 0x6155f5,
-            Self::Purple => 0xcb30e0,
-            Self::Pink => 0xff2d55,
-            Self::Brown => 0xac7f5e,
-            Self::Gray => 0x98989d,
-        };
-        Color::rgb((hex >> 16) as u8, (hex >> 8) as u8, hex as u8)
-    }
-}
+pub use crate::color::Accent;
 
 // ---- geometry: the original's Figma pixels, times the density ----
 

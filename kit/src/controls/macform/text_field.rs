@@ -109,13 +109,7 @@ impl MacTextField {
     pub fn build(self) -> Rectangle {
         let id = self.id;
         let error = self.error.unwrap_or_else(|| failed(id));
-        let edge = if error {
-            theme::error()
-        } else if TextInput::has_focus(id) {
-            theme::tint()
-        } else {
-            theme::field_border()
-        };
+        let edge = if error { theme::error() } else { edge(id) };
 
         let change = self.on_change;
         let submit = self.on_submit;
@@ -144,20 +138,37 @@ impl MacTextField {
             input = input.focused();
         }
 
-        Rectangle::new()
-            .width(self.width)
-            .height(Size::Fixed(theme::control_height()))
-            .radius(theme::field_radius())
-            .fill(theme::field_fill())
-            .border(1.0, edge)
-            .padding(amane::Padding {
-                left: px(8.0),
-                right: px(4.0),
-                top: 0.0,
-                bottom: 0.0,
-            })
-            .align_child(amane::Start, Center)
-            .clip()
-            .child(input)
+        frame(input, self.width, edge)
     }
+}
+
+/// The edge of field `id`: the accent while it has the keys, else the
+/// hairline `fieldBorder`.
+pub(crate) fn edge(id: &'static str) -> amane::Color {
+    if TextInput::has_focus(id) {
+        theme::tint()
+    } else {
+        theme::field_border()
+    }
+}
+
+/// The box a text input sits in: 24 px tall, radius 6, `fieldFill` in a
+/// 1 px `edge`, the text 8 px in. [`field_box`](crate::app::field_box)
+/// draws with it too.
+pub(crate) fn frame(input: TextInput, width: impl Into<Size>, edge: amane::Color) -> Rectangle {
+    Rectangle::new()
+        .width(width)
+        .height(Size::Fixed(theme::control_height()))
+        .radius(theme::field_radius())
+        .fill(theme::field_fill())
+        .border(1.0, edge)
+        .padding(amane::Padding {
+            left: px(8.0),
+            right: px(4.0),
+            top: 0.0,
+            bottom: 0.0,
+        })
+        .align_child(amane::Start, Center)
+        .clip()
+        .child(input)
 }

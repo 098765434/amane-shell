@@ -25,9 +25,11 @@ use amane::{
 };
 
 use crate::buttons::{Actions, interactive, state_fill};
-use crate::color::with_alpha;
+use crate::color::{Accent, with_alpha};
 use crate::layout::{boxed, caption, icon, pad, text_height};
-use crate::material::{self, FillLevel, Level, Material};
+use crate::macform::theme as mac;
+use crate::macform::{MacLeadingIcon, text_field};
+use crate::material::{self, Level, Material};
 use crate::tokens::{Styled, sys};
 
 pub use crate::dialog::Dialog;
@@ -94,29 +96,16 @@ pub fn standard_shortcut(key: Key) -> bool {
 pub fn text_field(id: &'static str, placeholder: &str) -> TextInput {
     TextInput::new(id)
         .placeholder(placeholder)
-        .size(sys::r#type::label().size)
-        .color(material::label(Level::Primary))
-        .selection_color(with_alpha(sys::color::accent::bg(), 0.35))
+        .size(mac::control_font().size)
+        .color(mac::label_primary())
+        .selection_color(with_alpha(mac::tint(), 0.4))
 }
 
-/// The box a [`text_field`] sits in.
+/// The box a [`text_field`] sits in, drawn like macOS's (the macform
+/// look): radius 6, `fieldFill` in a hairline that takes the accent while
+/// the field has the keys.
 pub fn field_box(id: &'static str, input: TextInput, width: impl Into<Size>) -> Rectangle {
-    let ring = if TextInput::has_focus(id) {
-        (sys::border::hairline() * 2.0, sys::color::accent::bg())
-    } else {
-        (sys::border::hairline(), material::separator())
-    };
-
-    Rectangle::new()
-        .width(width)
-        .height(Size::Fixed(sys::size::control::height()))
-        .radius(Radius::Fixed(sys::radius::raised()))
-        .fill(material::fill_role(FillLevel::Secondary))
-        .border(ring.0, ring.1)
-        .padding(pad(sys::space::inset::s(), 0.0))
-        .align_child(amane::Start, Center)
-        .clip()
-        .child(input)
+    text_field::frame(input, width, text_field::edge(id))
 }
 
 /// One row in a [`sidebar`]: a page, with its glyph and its name, or a
@@ -126,6 +115,9 @@ pub struct Page {
     pub name: String,
     /// A title over a run of pages, not a page: it can't be selected.
     pub section: bool,
+    /// The tile its glyph sits on, as macOS's System Settings draws its
+    /// sidebar; with none the glyph is drawn bare.
+    pub accent: Option<Accent>,
 }
 
 impl Page {
@@ -134,7 +126,14 @@ impl Page {
             glyph: Some(glyph),
             name: name.into(),
             section: false,
+            accent: None,
         }
+    }
+
+    /// Its glyph on a tile of `accent`.
+    pub fn accent(mut self, accent: Accent) -> Self {
+        self.accent = Some(accent);
+        self
     }
 
     /// A section's title, as macOS's sidebar groups its pages. It takes an
@@ -144,6 +143,7 @@ impl Page {
             glyph: None,
             name: name.into(),
             section: true,
+            accent: None,
         }
     }
 }
@@ -212,7 +212,16 @@ pub fn sidebar(
                 .align_child(amane::Start, Center)
                 .child(
                     Row::new(vec![
-                        boxed(icon(page.glyph.unwrap_or(' '), sys::size::icon::s(), fg)),
+                        match page.accent {
+                            Some(accent) => boxed(
+                                MacLeadingIcon::new(page.glyph.unwrap_or(' '))
+                                    .accent(accent)
+                                    .build(),
+                            ),
+                            None => {
+                                boxed(icon(page.glyph.unwrap_or(' '), sys::size::icon::s(), fg))
+                            }
+                        },
                         boxed(
                             Text::new(page.name.clone())
                                 .style(sys::r#type::label())

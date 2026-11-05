@@ -1,7 +1,9 @@
 //! Radio — one choice out of a few, all in sight.
 //!
-//! Modelled on Material 3's radio button: a ring that takes the accent and a
-//! dot when chosen, with an optional label that takes the click too. A group
+//! Drawn like macOS's (the macform look): a 16 px circle, `fieldFill` in a
+//! hairline while not chosen, filling with the accent around a white dot
+//! when chosen, with an optional label 3 px after it that takes the click
+//! too. It is as wide as its mark and label. A group
 //! is just radios that share what's chosen: build one per option, each
 //! `selected` when the setting equals its value. For many options, or little
 //! room, a [`Dropdown`] fits better.
@@ -10,13 +12,11 @@
 
 use std::rc::Rc;
 
-use amane::{Center, Color, Radius, Rectangle, Size};
+use amane::{Center, Radius, Rectangle, Size};
 
-use super::checkbox::row;
 use super::{Actions, interactive};
-use crate::control_size;
-use crate::material::{self, Level};
-use crate::tokens::sys;
+use crate::macform::theme::{self, px};
+use crate::macform::{crossfade, labelled};
 
 /// A radio button. `id` keys its hover, so it must be unique and stable.
 pub struct Radio {
@@ -57,27 +57,31 @@ impl Radio {
     }
 
     pub fn build(self) -> Rectangle {
-        let size = control_size::current();
-        let side = size.checkbox().0;
-        let ring = sys::border::hairline() * 1.5;
-
-        // chosen, the box fills with the accent around a dot, as in macOS
+        let side = px(16.0);
+        let fill = crossfade(
+            &format!("{}.fill", self.id),
+            self.selected,
+            theme::field_fill(),
+            theme::tint(),
+        );
+        // chosen, the circle fills with the accent around a white dot
         let mark = Rectangle::new()
             .width(Size::Fixed(side))
             .height(Size::Fixed(side))
             .radius(Radius::Full)
+            .fill(fill)
             .align_child(Center, Center);
         let mark = if self.selected {
-            mark.fill(sys::color::accent::bg()).child(
+            let dot = px(4.8);
+            mark.child(
                 Rectangle::new()
-                    .width(Size::Fixed(size.radio_dot()))
-                    .height(Size::Fixed(size.radio_dot()))
+                    .width(Size::Fixed(dot))
+                    .height(Size::Fixed(dot))
                     .radius(Radius::Full)
-                    .fill(sys::color::accent::fg()),
+                    .fill(theme::glyph_on_tint()),
             )
         } else {
-            mark.fill(Color::TRANSPARENT)
-                .border(ring, material::label(Level::Secondary))
+            mark.border(1.0, theme::field_border())
         };
 
         // choosing what's already chosen asks for nothing
@@ -86,7 +90,7 @@ impl Radio {
             ..Actions::default()
         };
 
-        let base = row(&self.id, mark, self.label, self.disabled);
+        let base = labelled(mark, self.label);
 
         interactive(base, self.id, self.disabled, actions)
     }

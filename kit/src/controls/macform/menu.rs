@@ -78,7 +78,15 @@ struct Menu {
     /// The control's corner on its window, and its size.
     origin: Point,
     size: (f32, f32),
-    window: String,
+    parent: Parent,
+}
+
+/// The surface a menu opens over: a normal window by name, or a layer
+/// window by namespace.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Parent {
+    Window(String),
+    Layer(&'static str),
 }
 
 thread_local! {
@@ -93,7 +101,7 @@ const FADE: Duration = Duration::from_millis(200);
 
 /// Records `id`'s items and handler for a menu that's open or may open,
 /// keeping its open state and position. Call on every build.
-pub(super) fn register(
+pub(crate) fn register(
     id: &str,
     items: Vec<MenuItem>,
     shown: Vec<usize>,
@@ -101,7 +109,23 @@ pub(super) fn register(
     size: (f32, f32),
     on_select: Rc<dyn Fn(usize)>,
 ) {
-    let window = current_window();
+    register_on(id, items, shown, active, size, on_select, None);
+}
+
+/// [`register`], over the layer window `layer` when one is given.
+pub(crate) fn register_on(
+    id: &str,
+    items: Vec<MenuItem>,
+    shown: Vec<usize>,
+    active: Option<usize>,
+    size: (f32, f32),
+    on_select: Rc<dyn Fn(usize)>,
+    layer: Option<&'static str>,
+) {
+    let parent = match layer {
+        Some(namespace) => Parent::Layer(namespace),
+        None => Parent::Window(current_window()),
+    };
     MENUS.with_borrow_mut(|menus| {
         let menu = menus.entry(id.to_string()).or_insert_with(|| Menu {
             items: Vec::new(),
@@ -113,7 +137,7 @@ pub(super) fn register(
             keyed: None,
             origin: Point { x: 0.0, y: 0.0 },
             size,
-            window: window.clone(),
+            parent: parent.clone(),
         });
         if menu.shown != shown {
             menu.keyed = None;
@@ -123,12 +147,12 @@ pub(super) fn register(
         menu.active = active;
         menu.on_select = on_select;
         menu.size = size;
-        menu.window = window;
+        menu.parent = parent;
     });
 }
 
 /// `control` with its corner tracked, for the menu to line up with it.
-pub(super) fn track(id: &str, control: Rectangle) -> Rectangle {
+pub(crate) fn track(id: &str, control: Rectangle) -> Rectangle {
     let id = id.to_string();
     control.on_track(move |at: Point| {
         let window = pointer_position();
@@ -143,12 +167,12 @@ pub(super) fn track(id: &str, control: Rectangle) -> Rectangle {
     })
 }
 
-pub(super) fn is_open(id: &str) -> bool {
+pub(crate) fn is_open(id: &str) -> bool {
     MENUS.with_borrow(|menus| menus.get(id).is_some_and(|menu| menu.open))
 }
 
 /// Opens `id`'s menu under its control, or closes it if it's open.
-pub(super) fn toggle(id: &str) {
+pub(crate) fn toggle(id: &str) {
     if is_open(id) {
         close(id);
     } else {
@@ -156,7 +180,7 @@ pub(super) fn toggle(id: &str) {
     }
 }
 
-pub(super) fn open(id: &str) {
+pub(crate) fn open(id: &str) {
     let opened = MENUS.with_borrow_mut(|menus| {
         let menu = menus.get_mut(id)?;
         if menu.open {
@@ -174,7 +198,7 @@ pub(super) fn open(id: &str) {
     amane::open_popup(move || popup(&id));
 }
 
-pub(super) fn close(id: &str) {
+pub(crate) fn close(id: &str) {
     MENUS.with_borrow_mut(|menus| {
         if let Some(menu) = menus.get_mut(id) {
             menu.open = false;
@@ -184,7 +208,7 @@ pub(super) fn close(id: &str) {
 }
 
 /// Moves the keyboard row by `step`, from the active row if none yet.
-pub(super) fn key(id: &str, key: Key) -> bool {
+pub(crate) fn key(id: &str, key: Key) -> bool {
     let chosen = MENUS.with_borrow_mut(|menus| {
         let menu = menus.get_mut(id)?;
         let rows = menu.shown.len();
@@ -263,11 +287,11 @@ fn popup(id: &str) -> Popup {
                 menu.keyed,
                 menu.origin,
                 menu.size,
-                menu.window.clone(),
+                menu.parent.clone(),
             )
         })
     });
-    let Some((items, shown, active, open, opened, keyed, origin, size, window)) = state else {
+    let Some((items, shown, active, open, opened, keyed, origin, size, parent)) = state else {
         return Popup::new("amane.macform.menu")
             .size(1, 1)
             .anchor_rect(0, 0, 1, 1)
@@ -329,7 +353,7 @@ fn popup(id: &str) -> Popup {
     let escaped = id.to_string();
     let dismissed = id.to_string();
 
-    Popup::new("amane.macform.menu")
+    let popup = Popup::new("amane.macform.menu")
         .size(
             (width + MARGIN * 2.0).ceil() as u32,
             (height + MARGIN * 2.0).ceil() as u32,
@@ -349,8 +373,12 @@ fn popup(id: &str) -> Popup {
                 | ConstraintAdjustment::SLIDE_Y,
         )
         .grab()
-        .visible(open)
-        .parent_window(&window)
+        .visible(open);
+    let popup = match parent {
+        Parent::Window(window) => popup.parent_window(&window),
+        Parent::Layer(namespace) => popup.parent(namespace),
+    };
+    popup
         .on_dismiss(move || close(&dismissed))
         .on_key(move |k| {
             key(&escaped, k);
@@ -458,7 +486,7 @@ mod tests {
                     keyed: Some(2),
                     origin: Point { x: 10.0, y: 10.0 },
                     size: (110.0, 24.0),
-                    window: "test".into(),
+                    parent: Parent::Window("test".into()),
                 },
             );
         });

@@ -17,8 +17,10 @@ use std::rc::Rc;
 use amane::{Center, Color, Column, Parent, Rectangle, Row, Size, Start, Text, Widget};
 
 use crate::buttons::{Actions, interactive, state_fill};
+use crate::color::Accent;
 use crate::icons::ICON_CHECK;
 use crate::layout::{boxed, caption, clipped_label, icon, pad, split_row};
+use crate::macform::MacLeadingIcon;
 use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, sys};
 
@@ -45,8 +47,10 @@ pub struct ListItem {
     leading: Option<char>,
     // in place of the glyph: an app's icon
     leading_widget: Option<Box<dyn Widget>>,
-    // the leading glyph on an accent tile, as a sidebar names a section
+    // the leading glyph on a coloured tile, as a sidebar names a section:
+    // the system accent, or one of the named accents
     tile: bool,
+    tile_accent: Option<Accent>,
     trailing: Vec<Box<dyn Widget>>,
     selected: bool,
     // no fill of its own: only the selected and hover fills
@@ -64,6 +68,7 @@ impl ListItem {
             leading: None,
             leading_widget: None,
             tile: false,
+            tile_accent: None,
             trailing: Vec::new(),
             selected: false,
             bare: false,
@@ -97,6 +102,15 @@ impl ListItem {
     pub fn leading_tile(mut self, glyph: char) -> Self {
         self.leading = Some(glyph);
         self.tile = true;
+        self
+    }
+
+    /// The leading glyph on a tile of one of the named accents, as macOS's
+    /// System Settings marks its rows.
+    pub fn leading_tile_accent(mut self, glyph: char, accent: Accent) -> Self {
+        self.leading = Some(glyph);
+        self.tile = true;
+        self.tile_accent = Some(accent);
         self
     }
 
@@ -152,15 +166,14 @@ impl ListItem {
             leading.push(widget);
         } else if let Some(glyph) = self.leading {
             if self.tile {
-                let side = leading_side();
+                let fill = self
+                    .tile_accent
+                    .map_or_else(sys::color::accent::bg, Accent::color);
                 leading.push(boxed(
-                    Rectangle::new()
-                        .width(Size::Fixed(side))
-                        .height(Size::Fixed(side))
-                        .radius(sys::radius::raised())
-                        .fill(sys::color::accent::bg())
-                        .align_child(Center, Center)
-                        .child(icon(glyph, sys::size::icon::s(), sys::color::accent::fg())),
+                    MacLeadingIcon::new(glyph)
+                        .color(fill)
+                        .side(leading_side())
+                        .build(),
                 ));
             } else {
                 leading.push(boxed(icon(glyph, sys::size::icon::m(), color)));
