@@ -308,16 +308,13 @@ pub fn view() -> Column {
 
     let meta = match &details.meta {
         None => {
-            return Column::new(vec![boxed(note("Reading the package…")), back()])
+            return Column::new(vec![boxed(note("Reading the package…"))])
                 .gap(sys::space::gap::l());
         }
         Some(Err(error)) => {
-            return Column::new(vec![
-                boxed(paragraph(
-                    note(error.clone()).color(sys::color::status::critical::text()),
-                )),
-                back(),
-            ])
+            return Column::new(vec![boxed(paragraph(
+                note(error.clone()).color(sys::color::status::critical::text()),
+            ))])
             .gap(sys::space::gap::l());
         }
         Some(Ok(meta)) => meta,
@@ -449,7 +446,7 @@ pub fn view() -> Column {
     })));
 
     // what can be done
-    let mut buttons: Vec<Box<dyn Widget>> = vec![back()];
+    let mut buttons: Vec<Box<dyn Widget>> = Vec::new();
     if let Some(entry) = entry {
         let (label, add) = match added {
             Some(Standing::Installed) => (Some("Remove"), false),
@@ -491,15 +488,6 @@ pub fn view() -> Column {
     Column::new(parts)
         .gap(sys::space::gap::l())
         .width(Size::Parent)
-}
-
-fn back() -> Box<dyn Widget> {
-    boxed(
-        PushButton::new("settings.package.back", "Back")
-            .style(Style::Plain)
-            .on_press(|| Navigation::write().overlay = None)
-            .build(),
-    )
 }
 
 #[cfg(test)]

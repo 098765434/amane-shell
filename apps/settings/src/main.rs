@@ -14,12 +14,15 @@ mod system;
 
 use amane::{Center, Column, Key, Row, ScrollArea, Service, Size, Text, Widget, Window};
 use amane_kit::app::{Dialog, Page, app, app_window, sidebar, standard_shortcut};
+use amane_kit::color::Accent;
 use amane_kit::icons::{
     ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO,
     ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_PACKAGE, ICON_SEARCH, ICON_SETTINGS,
     ICON_STORAGE, ICON_TUNE, ICON_UPDATE,
 };
 use amane_kit::layout::boxed;
+use amane_kit::macform::MacSegmentedNav;
+use amane_kit::macform::theme as mac;
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
 
@@ -145,23 +148,23 @@ fn main() {
 fn pages() -> [Page; 18] {
     [
         Page::section("Shell"),
-        Page::new(ICON_DARK_MODE, "Appearance"),
-        Page::new(ICON_APPS, "Desktop"),
-        Page::new(ICON_DISPLAY, "Displays"),
-        Page::new(ICON_MORE_HORIZ, "Status Bar"),
-        Page::new(ICON_LAYERS, "Dock"),
-        Page::new(ICON_TUNE, "Quick Settings"),
-        Page::new(ICON_SEARCH, "Spotlight"),
-        Page::new(ICON_COMPUTER, "About"),
+        Page::new(ICON_DARK_MODE, "Appearance").accent(Accent::Blue),
+        Page::new(ICON_APPS, "Desktop").accent(Accent::Cyan),
+        Page::new(ICON_DISPLAY, "Displays").accent(Accent::Teal),
+        Page::new(ICON_MORE_HORIZ, "Status Bar").accent(Accent::Gray),
+        Page::new(ICON_LAYERS, "Dock").accent(Accent::Indigo),
+        Page::new(ICON_TUNE, "Quick Settings").accent(Accent::Gray),
+        Page::new(ICON_SEARCH, "Spotlight").accent(Accent::Purple),
+        Page::new(ICON_COMPUTER, "About").accent(Accent::Gray),
         Page::section("System"),
-        Page::new(ICON_INFO, "About This Computer"),
-        Page::new(ICON_SETTINGS, "General"),
-        Page::new(ICON_PACKAGE, "Apps"),
-        Page::new(ICON_DNS, "Services"),
-        Page::new(ICON_LOCK, "Power & Lock"),
-        Page::new(ICON_STORAGE, "Storage"),
-        Page::new(ICON_HISTORY, "History"),
-        Page::new(ICON_UPDATE, "Software Update"),
+        Page::new(ICON_INFO, "About This Computer").accent(Accent::Gray),
+        Page::new(ICON_SETTINGS, "General").accent(Accent::Gray),
+        Page::new(ICON_PACKAGE, "Apps").accent(Accent::Blue),
+        Page::new(ICON_DNS, "Services").accent(Accent::Green),
+        Page::new(ICON_LOCK, "Power & Lock").accent(Accent::Orange),
+        Page::new(ICON_STORAGE, "Storage").accent(Accent::Gray),
+        Page::new(ICON_HISTORY, "History").accent(Accent::Brown),
+        Page::new(ICON_UPDATE, "Software Update").accent(Accent::Red),
     ]
 }
 
@@ -322,14 +325,7 @@ fn main_window() -> Window {
         ),
     };
 
-    let mut column: Vec<Box<dyn Widget>> = vec![
-        boxed(
-            Text::new(title)
-                .style(sys::r#type::title())
-                .color(material::label(Level::Primary)),
-        ),
-        body,
-    ];
+    let mut column: Vec<Box<dyn Widget>> = vec![boxed(header(title, overlay.is_some())), body];
     if let Some(bar) = apply_bar::apply_bar() {
         column.push(bar);
     }
@@ -357,6 +353,28 @@ fn main_window() -> Window {
         .min_size(600.0, 740.0)
         .on_shortcut(shortcut)
         .on_close(may_close)
+}
+
+/// The page's title, after the back and forward pill while a view (the
+/// changes, the log, a package) stands in for the page: back returns to it.
+fn header(title: &str, inner: bool) -> Row {
+    let mut parts: Vec<Box<dyn Widget>> = Vec::new();
+    if inner {
+        parts.push(boxed(
+            MacSegmentedNav::new("settings.header.nav")
+                .back_enabled(true)
+                .forward_enabled(false)
+                .on_back(|| Navigation::write().overlay = None)
+                .build(),
+        ));
+    }
+    parts.push(boxed(
+        Text::new(title)
+            .style(mac::page_title_font())
+            .color(mac::label_primary())
+            .elide(),
+    ));
+    Row::new(parts).gap(10.0).align(Center)
 }
 
 /// A control with its name after it on one line, for a switch.

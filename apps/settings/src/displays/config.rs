@@ -515,7 +515,15 @@ fn commit(folder: &Path, paths: &[&Path], message: &str) -> Result<(), String> {
     if run("git", &staged, Some(folder)).is_ok() {
         return Ok(());
     }
-    let mut args = vec!["-c", "core.fsync=committed", "commit", "-q", "-m", message, "--"];
+    let mut args = vec![
+        "-c",
+        "core.fsync=committed",
+        "commit",
+        "-q",
+        "-m",
+        message,
+        "--",
+    ];
     args.extend(paths.iter().map(String::as_str));
     run("git", &args, Some(folder)).map(|_| ())
 }

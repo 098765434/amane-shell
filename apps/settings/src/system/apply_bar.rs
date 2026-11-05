@@ -250,12 +250,6 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
     ))
 }
 
-fn back() -> Box<dyn Widget> {
-    button("back", "Back", Style::Tonal, || {
-        Navigation::write().overlay = None
-    })
-}
-
 /// The built system beside the running one.
 pub fn changes_view() -> Column {
     with_row_width(PAGE_WIDTH, changes)
@@ -266,7 +260,7 @@ fn changes() -> Column {
     let managed = Managed::read();
     let snapshot = Snapshot::read();
 
-    let mut parts: Vec<Box<dyn Widget>> = vec![back()];
+    let mut parts: Vec<Box<dyn Widget>> = Vec::new();
 
     if let Target::Update { changes, .. } = &job.target
         && !changes.is_empty()
@@ -375,12 +369,9 @@ pub fn log_view() -> Column {
 
     Column::new(vec![
         boxed(
-            Row::new(vec![
-                back(),
-                button("copy", "Copy Log", Style::Plain, move || {
-                    amane::Clipboard::copy(copy.clone());
-                }),
-            ])
+            Row::new(vec![button("copy", "Copy Log", Style::Plain, move || {
+                amane::Clipboard::copy(copy.clone());
+            })])
             .gap(sys::space::gap::s()),
         ),
         boxed(
