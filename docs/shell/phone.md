@@ -2,12 +2,17 @@
 
 The phone through KDE Connect, drawn as part of the shell. `kdeconnectd` runs on
 its own, and nothing of KDE's ever shows: no Plasma, no Kirigami, no
-`kdeconnect-sms`. There are three surfaces:
+`kdeconnect-sms`. Beside it, the phone's **screen, sound and camera** come through
+scrcpy's server over adb (see [Phone Screen](#phone-screen-scrcpy)). There are
+four surfaces:
 
 - **Quick Settings' Phone page:** pairing, battery, Ring, Send Files…, the
-  clipboard, and the phone's remote for this computer.
+  phone's screen and camera, the clipboard, and the phone's remote for this
+  computer.
 - **The bar's phone icon:** the phone's charge, beside the battery.
 - **Messages** (`amane-messages`): the phone's text messages and Phone Input.
+- **Phone Screen** (`amane-mirror`): the phone's screen and sound, driven from
+  here, and its apps in windows of their own.
 
 All three read the fork's `KdeConnect` and `PhoneMessages` services
 ([`system/kdeconnect.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/kdeconnect.md)).
@@ -104,7 +109,80 @@ picks the first connected phone that has messages.
 Contact names come from the vCards the phone's Contacts plugin syncs. Without
 it, conversations show numbers.
 
+## Phone Screen (scrcpy)
+
+KDE Connect can't show the phone's screen, play its sound or use its camera.
+scrcpy's server can, and `amane-mirror` is a client for it drawn by amane. The
+two work together:
+
+- **KDE Connect finds the phone.** Its address (`PhoneDevice::addresses`) picks
+  the adb device, and adb is asked to stay connected to it. Its name and
+  battery are KDE Connect's.
+- **The clipboard stays KDE Connect's.** While its Share Automatically is on,
+  scrcpy's own clipboard sync is off, so a copy isn't echoed back. Ctrl+V in
+  the screen still pastes this computer's clipboard into the phone.
+- **Notifications stay KDE Connect's.** A phone notification gets **Open on
+  Phone**, which opens its app (`surfaces/notifications/phone.rs`).
+- **Phone Input** stays for when adb isn't there. Messages offers **Show
+  Screen** beside it when it is.
+
+### Setting it up
+
+1. On the phone, turn on Developer options, then **Wireless debugging**.
+2. Phone page → the phone → **Set Up Screen Sharing…** shows a QR code. On the
+   phone: Wireless debugging → **Pair device with QR code**, and scan it. The
+   pairing code works too ("Pair device with pairing code"; type it under the
+   QR code), and so does a USB cable with USB debugging on.
+3. The row becomes **Screen**. From then on the screen opens whenever Wireless
+   debugging is on; Android turns it off on a reboot or another network.
+
+The fork's `Adb` service finds Wireless debugging over mDNS, which needs UDP
+5353 open (nixos-config `modules/desktop.nix`). The phones set up are kept in
+`~/.config/amane-shell/phone-screen.json`.
+
+### The screen
+
+`amane-mirror --device <id>` is a floating window shaped like the phone (its
+niri rule is generated with the others).
+
+- A press and drag is a finger, the right button is **Back**, the middle one
+  **Home**, and the wheel or touchpad scrolls where the pointer is.
+- Text typed is typed as text, so any layout and accent arrives as meant. Other
+  keys are Android's keycodes, with Ctrl and Alt as shortcuts on the phone.
+- The bar under it: volume, rotate, **Back**, **Home**, **Recents**, the
+  notification shade, and the phone's own screen off while it's mirrored.
+- Files dropped on it go to the phone's Downloads, and APKs are installed.
+- The phone's sound plays here as the stream "Phone" (Android 11 and later),
+  and its speaker goes quiet meanwhile.
+- H.264 is decoded on the GPU through VAAPI (`AMANE_MIRROR_SOFTWARE=1` uses the
+  processor), and each frame goes to amane's `Video` as NV12, drawn by the quad
+  pipeline.
+
+### The phone's apps
+
+Spotlight finds the phone's apps by name ("On Galaxy S24"; Shell Settings →
+Spotlight → Phone apps). Each one opens alone in a window of its own: a virtual
+display on the phone, twice the window's size at 320 dpi, that resizes with
+the window. Its app id is `amane-mirror.<package>`, and its bar is just Back.
+The list comes from `amane-mirror --list-apps` into
+`~/.cache/amane-shell/phone-apps.json`, asked for again after a day. An app's
+window has no sound of its own; the screen's window plays the phone's.
+
+### The camera as a webcam
+
+Phone page → the phone → **Use as Webcam** (and **Back Camera**). It runs
+`amane-mirror --camera front|back` as the user unit `amane-phone-camera`, so a
+shell restart doesn't end a call. It writes 1280×720 frames to the v4l2loopback
+device named "Phone Camera", which video call apps list. It needs Android 12.
+
 ## Limits
+
+These come from adb and scrcpy:
+
+- Wireless debugging is off after the phone restarts; turn it on again.
+- The camera needs Android 12, and sound needs Android 11.
+- scrcpy's server version is the client's protocol: it comes from nixpkgs'
+  `scrcpy` at build time, and the two move together.
 
 These come from KDE Connect itself:
 

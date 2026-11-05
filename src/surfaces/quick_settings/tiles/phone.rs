@@ -410,6 +410,14 @@ fn device_body(device: &PhoneDevice, height: f32) -> Vec<Box<dyn Widget>> {
         body.push(boxed(List::new(actions).build()));
     }
 
+    let camera = super::phone_screen::camera_rows(device);
+    if !camera.is_empty() {
+        body.push(boxed(List::new(camera).header("Camera").build()));
+        body.push(boxed(
+            caption("The phone's camera shows as “Phone Camera” in video call apps.").wrap(),
+        ));
+    }
+
     let clipboard = clipboard_rows(device);
     if !clipboard.is_empty() {
         body.push(boxed(List::new(clipboard).header("Clipboard").build()));

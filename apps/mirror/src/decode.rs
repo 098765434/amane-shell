@@ -101,6 +101,22 @@ impl Decoder {
         key: bool,
         mut show: impl FnMut(VideoFrame),
     ) -> Result<(), String> {
+        self.decode_frames(data, pts, key, |frame| {
+            if let Some(frame) = nv12(frame) {
+                show(frame);
+            }
+        })
+    }
+
+    /// Decodes one packet, handing each finished frame as ffmpeg has it,
+    /// in memory (copied back from the GPU when VAAPI decoded it).
+    pub fn decode_frames(
+        &mut self,
+        data: &[u8],
+        pts: Option<u64>,
+        key: bool,
+        mut show: impl FnMut(&ffmpeg::frame::Video),
+    ) -> Result<(), String> {
         let mut packet = ffmpeg::Packet::copy(data);
         packet.set_pts(pts.map(|pts| pts as i64));
         if key {
@@ -133,9 +149,7 @@ impl Decoder {
                 &self.decoded
             };
 
-            if let Some(frame) = nv12(frame) {
-                show(frame);
-            }
+            show(frame);
         }
 
         Ok(())
@@ -207,10 +221,24 @@ pub fn nv12(frame: &ffmpeg::frame::Video) -> Option<VideoFrame> {
 /// Reads the video socket until it ends: the codec, the sessions and the
 /// packets, each frame published to `feed`; `session` hears each new size.
 pub fn run(
-    mut stream: impl Read,
+    stream: impl Read,
     feed: &VideoFeed,
     hardware: bool,
+    session: impl FnMut(u32, u32, bool),
+) -> Result<(), String> {
+    run_frames(stream, hardware, session, |frame| {
+        if let Some(frame) = nv12(frame) {
+            feed.publish(frame);
+        }
+    })
+}
+
+/// Like `run`, handing each frame to `sink` as ffmpeg decoded it.
+pub fn run_frames(
+    mut stream: impl Read,
+    hardware: bool,
     mut session: impl FnMut(u32, u32, bool),
+    mut sink: impl FnMut(&ffmpeg::frame::Video),
 ) -> Result<(), String> {
     let codec = Codec::from_id(read_u32(&mut stream)?);
 
@@ -256,7 +284,7 @@ pub fn run(
                     data = setup;
                 }
 
-                decoder.decode(&data, Some(pts), key, |frame| feed.publish(frame))?;
+                decoder.decode_frames(&data, Some(pts), key, &mut sink)?;
             }
         }
     }

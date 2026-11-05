@@ -11,10 +11,12 @@
 //! window of its own instead: a virtual display that resizes with the
 //! window, under its own app id (`amane-mirror.<package>`), so each app is
 //! a window of its own. `--list-apps --serial <serial> --device <id>`
-//! writes the phone's apps for Spotlight and exits.
+//! writes the phone's apps for Spotlight and exits. `--camera front|back`
+//! makes the phone's camera this computer's webcam, without a window.
 
 mod apps;
 mod audio;
+mod camera;
 mod decode;
 mod input;
 mod protocol;
@@ -191,6 +193,16 @@ fn main() {
         });
     }
 
+    if let Some(facing) = flag(&args, "--camera") {
+        std::process::exit(match webcam(&args, &facing) {
+            Ok(()) => 0,
+            Err(why) => {
+                eprintln!("amane-mirror: camera: {why}");
+                1
+            }
+        });
+    }
+
     follow(&args);
 
     // each phone app is a window, and an app, of its own
@@ -314,6 +326,32 @@ fn main_window() -> Window {
         .min_size(280.0, 480.0)
         .on_shortcut(standard_shortcut)
         .on_key(|key: Key| input::key(key))
+}
+
+/// `--camera front|back`: the phone's camera into the "Phone Camera"
+/// device until the phone stops it. The phone comes from `--serial`, or
+/// is waited for: KDE Connect's phone at its address, or the one on USB.
+fn webcam(args: &[String], facing: &str) -> Result<(), String> {
+    let facing = match facing {
+        "front" => server::Facing::Front,
+        "back" => server::Facing::Back,
+        other => return Err(format!("--camera takes front or back, not {other}")),
+    };
+
+    follow(args);
+
+    // the services fill in on their own threads; give them a moment to find the phone
+    for _ in 0..50 {
+        let phone = phone();
+        if let Some(phone) = &phone {
+            want(phone);
+        }
+        if let Some(serial) = serial(phone.as_ref()) {
+            return camera::run(&serial, facing);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    Err("adb doesn't have the phone.".into())
 }
 
 /// Where the screen would be: what's happening, and a Retry once it's over.

@@ -21,7 +21,7 @@ use amane::{
 };
 use qrcode::{Color as Module, EcLevel, QrCode};
 
-use crate::components::buttons::{PushButton, Style};
+use crate::components::buttons::{PushButton, Style, Switch};
 use crate::components::layout::{boxed, caption};
 use crate::components::list::ListItem;
 use crate::components::material::{self, Level};
@@ -160,6 +160,124 @@ pub(crate) fn row(device: &PhoneDevice, chevron: impl Fn() -> Text) -> Option<Li
         .on_press(move || start(&id)),
     )
 }
+
+// ───── the camera as a webcam ───────────────────────────────────────────────
+
+/// The user unit the webcam runs as, apart from the shell's own.
+const CAMERA_UNIT: &str = "amane-phone-camera";
+
+/// The loopback device's name, as nixos-config loads v4l2loopback.
+const CAMERA_LABEL: &str = "Phone Camera";
+
+/// Which camera the webcam is, while it runs.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Facing {
+    Front,
+    Back,
+}
+
+thread_local! {
+    // whether the webcam runs, and which camera, as last looked
+    static CAMERA: RefCell<(Option<std::time::Instant>, Option<Facing>)> =
+        const { RefCell::new((None, None)) };
+}
+
+fn loopback() -> bool {
+    std::fs::read_dir("/sys/class/video4linux").is_ok_and(|entries| {
+        entries.flatten().any(|entry| {
+            std::fs::read_to_string(entry.path().join("name"))
+                .is_ok_and(|name| name.trim() == CAMERA_LABEL)
+        })
+    })
+}
+
+/// The running webcam's camera, from its process; looked at once a second.
+fn camera() -> Option<Facing> {
+    let (looked, facing) = CAMERA.with_borrow(|camera| *camera);
+    if looked.is_some_and(|looked| looked.elapsed() < std::time::Duration::from_secs(1)) {
+        return facing;
+    }
+    let facing = std::fs::read_dir("/proc").ok().and_then(|entries| {
+        entries.flatten().find_map(|entry| {
+            let line = std::fs::read(entry.path().join("cmdline")).ok()?;
+            let words: Vec<&[u8]> = line.split(|b| *b == 0).collect();
+            let at = words.iter().position(|word| *word == b"--camera")?;
+            if !words.iter().any(|word| {
+                word.ends_with(MIRROR_APP.as_bytes()) || word.ends_with(b".amane-mirror-wrapped")
+            }) {
+                return None;
+            }
+            match words.get(at + 1) {
+                Some(&b"back") => Some(Facing::Back),
+                _ => Some(Facing::Front),
+            }
+        })
+    });
+    CAMERA.set((Some(std::time::Instant::now()), facing));
+    facing
+}
+
+fn set_camera(device: &str, facing: Option<Facing>) {
+    let stop = format!("systemctl --user stop {CAMERA_UNIT}.service");
+    let command = match facing {
+        None => stop,
+        Some(facing) => {
+            let which = if facing == Facing::Back {
+                "back"
+            } else {
+                "front"
+            };
+            format!(
+                "{stop}; systemd-run --user --unit={CAMERA_UNIT} --collect --quiet \
+                 {MIRROR_APP} --camera {which} --device '{device}'"
+            )
+        }
+    };
+    amane::spawn(&command);
+    CAMERA.set((Some(std::time::Instant::now()), facing));
+    QuickSettings::changed();
+}
+
+/// The webcam's rows, when the loopback device is there and adb has the phone.
+pub(crate) fn camera_rows(device: &PhoneDevice) -> Vec<ListItem> {
+    if !installed(MIRROR_APP) || !loopback() || !ready(device) {
+        return Vec::new();
+    }
+    let running = camera();
+    let on = running.is_some();
+    let id = device.id().to_string();
+
+    let (toggled, pressed) = (id.clone(), id.clone());
+    let mut rows = vec![
+        ListItem::new("amane.qs.phone.device.webcam", "Use as Webcam")
+            .leading(ICON_CAMERA)
+            .trailing(
+                Switch::new("amane.qs.phone.device.webcam.switch", on)
+                    .on_toggle(move |on| set_camera(&toggled, on.then_some(Facing::Front)))
+                    .build(),
+            )
+            .on_press(move || set_camera(&pressed, (!on).then_some(Facing::Front))),
+    ];
+
+    if let Some(facing) = running {
+        let back = facing == Facing::Back;
+        let (toggled, pressed) = (id.clone(), id);
+        let pick = |back: bool| Some(if back { Facing::Back } else { Facing::Front });
+        rows.push(
+            ListItem::new("amane.qs.phone.device.webcam.back", "Back Camera")
+                .trailing(
+                    Switch::new("amane.qs.phone.device.webcam.back.switch", back)
+                        .on_toggle(move |on| set_camera(&toggled, pick(on)))
+                        .build(),
+                )
+                .on_press(move || set_camera(&pressed, pick(!back))),
+        );
+    }
+    rows
+}
+
+/// `photo_camera`, for the webcam's row.
+const ICON_CAMERA: char = '\u{e412}';
 
 /// A short random word from the clock and the process, enough for one pairing.
 fn random(length: usize, alphabet: &[u8]) -> String {
