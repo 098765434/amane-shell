@@ -29,6 +29,8 @@
 //! - [`scroll_view`] — a clipped viewport scrolled along one axis, with a
 //!   scrollbar.
 //! - [`flow`] — fixed-size items flowing into rows, wrapping at a width.
+//! - [`form`] — settings as macOS lays them out: rounded groups of rows,
+//!   each a coloured tile, a title and its control.
 //! - [`arrangement`] — screens dragged into place, as Displays arranges them.
 //!
 //! The look of glass (`look/`):
@@ -75,7 +77,7 @@ pub mod tokens;
 
 pub use animation::{edge_reveal, kinetic, motion, pager};
 pub use containers::{
-    app_bar, arrangement, card, dialog, divider, flow, list, scroll_view, tooltip,
+    app_bar, arrangement, card, dialog, divider, flow, form, list, scroll_view, tooltip,
 };
 pub use controls::{buttons, color_picker, control_size, dropdown, macform, slider, tag};
 pub use foundation::{color, icons, layout};

@@ -6,12 +6,15 @@
 //! holds written after it. `AMANE_THEME=light|dark` and
 //! `AMANE_DENSITY=compact` show the other looks.
 
-use amane::{Center, Column, Rectangle, Row, Service, Size, Start, Text, Widget, Window};
+use amane::{
+    Center, Column, Rectangle, Row, ScrollArea, Service, Size, Start, Text, Widget, Window,
+};
 use amane_kit::app::{Page, app, app_window, field_box, sidebar, standard_shortcut, text_field};
 use amane_kit::buttons::{
     Checkbox, PushButton, Radio, Segment, SegmentedButton, Shape, Style, Switch,
 };
 use amane_kit::dropdown::Dropdown;
+use amane_kit::form::{FormRow, Group, SliderRow};
 use amane_kit::icons::{
     ICON_BLUETOOTH, ICON_DARK_MODE, ICON_DISPLAY, ICON_FOLDER, ICON_NOTIFICATIONS, ICON_SEARCH,
     ICON_SETTINGS, ICON_TUNE, ICON_VOLUME_UP, ICON_WIFI,
@@ -48,7 +51,11 @@ struct Lab {
 impl Service for Lab {
     fn new() -> Self {
         Self {
-            page: 0,
+            // MACFORM_PAGE=5 opens on a page, for screenshots
+            page: std::env::var("MACFORM_PAGE")
+                .ok()
+                .and_then(|p| p.parse().ok())
+                .unwrap_or(0),
             wifi: true,
             bluetooth: false,
             sounds: true,
@@ -125,11 +132,12 @@ fn window() -> Window {
 
     let content = Row::new(vec![
         boxed(Column::new(vec![boxed(nav)]).width(Size::Fixed(180.0))),
-        boxed(
+        boxed(ScrollArea::new(
+            "macform.page",
             Column::new(body)
                 .gap(sys::space::gap::m())
                 .width(Size::Parent),
-        ),
+        )),
     ])
     .gap(sys::space::gap::l())
     .width(Size::Parent)
@@ -636,101 +644,101 @@ fn text(s: &Lab) -> Vec<Box<dyn Widget>> {
     ]
 }
 
-/// macOS Settings-style rows built from the ports, as the old nexus pages
-/// composed them.
+/// macOS Settings-style rows, from the kit's `form`.
 fn settings_rows(s: &Lab) -> Vec<Box<dyn Widget>> {
     let width = 500.0;
-    let divider = || {
-        boxed(
-            Rectangle::new()
-                .width(Size::Parent)
-                .height(Size::Fixed(1.0))
-                .fill(mac::divider()),
-        )
-    };
-    let line = |glyph: char, accent: Accent, title: &str, control: Box<dyn Widget>| {
-        boxed(
-            Rectangle::new()
-                .width(Size::Parent)
-                .height(Size::Fixed(mac::row_min_height()))
-                .padding(amane_kit::layout::pad(mac::row_pad_h(), 0.0))
-                .align_child(Start, Center)
-                .child(amane_kit::layout::split_row(
-                    Row::new(vec![
-                        boxed(MacLeadingIcon::new(glyph).accent(accent).build()),
-                        boxed(
-                            Text::new(title)
-                                .style(mac::control_font())
-                                .color(mac::label_primary()),
-                        ),
-                    ])
-                    .gap(10.0)
-                    .align(Center),
-                    vec![control],
-                )),
-        )
-    };
-
-    let group = |rows: Vec<Box<dyn Widget>>, height: f32| {
-        boxed(
-            Rectangle::new()
-                .width(Size::Fixed(width))
-                .height(Size::Fixed(height))
-                .radius(mac::group_radius())
-                .fill(mac::group_fill())
-                .clip()
-                .child(Column::new(rows).width(Size::Parent)),
-        )
-    };
-
     let accents: Vec<MenuItem> = ACCENTS.iter().map(|a| MenuItem::from(*a)).collect();
-    let rh = mac::row_min_height();
 
-    // the SliderRow: a glyph, then the label and value over a slider
-    let slider_row = boxed(
-        Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(76.0))
-            .radius(mac::group_radius())
-            .fill(mac::group_fill())
-            .padding(amane::Padding {
-                top: 14.0,
-                bottom: 10.0,
-                left: 20.0,
-                right: 20.0,
+    let network = Group::new()
+        .width(width)
+        .header("Network")
+        .row(
+            FormRow::new("rows.wifi", "Wi-Fi")
+                .icon(ICON_WIFI, Accent::Blue)
+                .subtitle(if s.wifi { "Connected to Home" } else { "Off" })
+                .trailing(
+                    MacSwitch::new("rows.wifi.switch", s.wifi)
+                        .on_toggle(|on| Lab::write().wifi = on)
+                        .build(),
+                ),
+        )
+        .row(
+            FormRow::new("rows.bt", "Bluetooth")
+                .icon(ICON_BLUETOOTH, Accent::Indigo)
+                .trailing(
+                    MacSwitch::new("rows.bt.switch", s.bluetooth)
+                        .on_toggle(|on| Lab::write().bluetooth = on)
+                        .build(),
+                ),
+        )
+        .row(
+            FormRow::new("rows.more", "Network details")
+                .icon(ICON_SETTINGS, Accent::Gray)
+                .on_press(|| Lab::write().pressed = String::from("Network details")),
+        )
+        .footer("Turning Wi-Fi off also stops the shell from looking for networks nearby.");
+
+    let mut radios = Vec::new();
+    for (i, size) in SIZES.iter().enumerate() {
+        radios.push(boxed(
+            Radio::new(format!("rows.size.{i}"), s.size == i)
+                .label(*size)
+                .on_select(move || Lab::write().size = i)
+                .build(),
+        ));
+    }
+
+    let look = Group::new()
+        .width(width)
+        .header("Look")
+        .row(
+            FormRow::new("rows.accent", "Accent colour")
+                .icon(ICON_DARK_MODE, Accent::Purple)
+                .trailing(
+                    Dropdown::items("rows.accent.menu", accents, Some(s.accent))
+                        .on_select(|i| Lab::write().accent = i)
+                        .build(),
+                ),
+        )
+        .row(
+            FormRow::new("rows.scale", "Display scale")
+                .icon(ICON_DISPLAY, Accent::Teal)
+                .trailing(
+                    MacStepper::new("rows.scale.step", s.scale)
+                        .range(0.5, 3.0)
+                        .step(0.25)
+                        .on_change(|v| Lab::write().scale = v)
+                        .build(),
+                ),
+        )
+        .row(
+            FormRow::new("rows.size", "Control size")
+                .icon(ICON_TUNE, Accent::Orange)
+                .detail(Column::new(radios), 72.0),
+        );
+
+    let level = s.level;
+    let sound = Group::new()
+        .width(width)
+        .slider(
+            SliderRow::new("Output volume", move |w| {
+                MacSlider::new(level, w)
+                    .on_change(|v| Lab::write().level = v)
+                    .build()
             })
-            .child(
-                Row::new(vec![
-                    boxed(amane_kit::layout::icon(
-                        ICON_VOLUME_UP,
-                        18.0,
-                        mac::label_secondary(),
-                    )),
-                    boxed(
-                        Column::new(vec![
-                            boxed(amane_kit::layout::split_row(
-                                Text::new("Output volume")
-                                    .style(mac::control_font())
-                                    .color(mac::label_primary()),
-                                vec![boxed(
-                                    Text::new(format!("{:.0}%", s.level * 100.0))
-                                        .style(mac::control_font())
-                                        .color(mac::label_secondary()),
-                                )],
-                            )),
-                            boxed(
-                                MacSlider::new(s.level, width - 40.0 - 30.0)
-                                    .on_change(|v| Lab::write().level = v)
-                                    .build(),
-                            ),
-                        ])
-                        .gap(8.0)
-                        .width(Size::Parent),
-                    ),
-                ])
-                .gap(12.0),
-            ),
-    );
+            .glyph(ICON_VOLUME_UP)
+            .value(format!("{:.0}%", s.level * 100.0)),
+        )
+        .row(
+            FormRow::new("rows.reset", "Reset notifications")
+                .icon(ICON_NOTIFICATIONS, Accent::Red)
+                .subtitle("Shows every app's first notification again")
+                .trailing(
+                    MacPushButton::new("rows.reset.button", "Reset…")
+                        .on_press(|| Lab::write().pressed = String::from("Reset"))
+                        .build(),
+                ),
+        );
 
     vec![
         boxed(
@@ -739,69 +747,9 @@ fn settings_rows(s: &Lab) -> Vec<Box<dyn Widget>> {
                 .forward_enabled(false)
                 .build(),
         ),
-        group(
-            vec![
-                line(
-                    ICON_WIFI,
-                    Accent::Blue,
-                    "Wi-Fi",
-                    boxed(
-                        MacSwitch::new("rows.wifi", s.wifi)
-                            .on_toggle(|on| Lab::write().wifi = on)
-                            .build(),
-                    ),
-                ),
-                divider(),
-                line(
-                    ICON_BLUETOOTH,
-                    Accent::Indigo,
-                    "Bluetooth",
-                    boxed(
-                        MacSwitch::new("rows.bt", s.bluetooth)
-                            .on_toggle(|on| Lab::write().bluetooth = on)
-                            .build(),
-                    ),
-                ),
-                divider(),
-                line(
-                    ICON_DARK_MODE,
-                    Accent::Purple,
-                    "Accent colour",
-                    boxed(
-                        Dropdown::items("rows.accent", accents, Some(s.accent))
-                            .on_select(|i| Lab::write().accent = i)
-                            .build(),
-                    ),
-                ),
-                divider(),
-                line(
-                    ICON_DISPLAY,
-                    Accent::Teal,
-                    "Display scale",
-                    boxed(
-                        MacStepper::new("rows.scale", s.scale)
-                            .range(0.5, 3.0)
-                            .step(0.25)
-                            .on_change(|v| Lab::write().scale = v)
-                            .build(),
-                    ),
-                ),
-            ],
-            rh * 4.0 + 3.0,
-        ),
-        slider_row,
-        group(
-            vec![line(
-                ICON_NOTIFICATIONS,
-                Accent::Red,
-                "Reset notifications",
-                boxed(
-                    MacPushButton::new("rows.reset", "Reset…")
-                        .on_press(|| Lab::write().pressed = String::from("Reset"))
-                        .build(),
-                ),
-            )],
-            rh,
-        ),
+        boxed(network.build()),
+        boxed(look.build()),
+        boxed(sound.build()),
+        boxed(caption(format!("last pressed: {}", s.pressed))),
     ]
 }

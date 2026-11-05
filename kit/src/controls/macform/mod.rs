@@ -80,7 +80,7 @@ pub(crate) fn crossfade(key: &str, on: bool, off_color: Color, on_color: Color) 
 
 /// The kit's [`interactive`](crate::buttons::interactive), with the
 /// original's 50% for a disabled control.
-fn interactive(
+pub(crate) fn interactive(
     base: amane::Rectangle,
     id: String,
     disabled: bool,
