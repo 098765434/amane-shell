@@ -245,7 +245,7 @@ pub fn rules() -> Vec<LayerRule> {
 
 /// The amane apps whose windows are frosted behind, in the window
 /// material, their popups in the menu's (`kit::app::app` names them).
-pub const APP_IDS: &[&str] = &["amane-settings"];
+pub const APP_IDS: &[&str] = &["amane-settings", "amane-messages"];
 
 /// The line `gen-layer-rules.sh` looks for; everything after it goes into
 /// the niri config.
@@ -580,10 +580,14 @@ mod tests {
 
     #[test]
     fn every_amane_app_has_a_window_rule() {
-        let settings = include_str!("../../apps/settings/src/main.rs");
+        let apps = [
+            include_str!("../../apps/settings/src/main.rs"),
+            include_str!("../../apps/messages/src/main.rs"),
+        ];
         for app_id in APP_IDS {
             assert!(
-                settings.contains(&format!("app(\"{app_id}\")")),
+                apps.iter()
+                    .any(|app| app.contains(&format!("app(\"{app_id}\")"))),
                 "{app_id} isn't an app id any app uses"
             );
         }

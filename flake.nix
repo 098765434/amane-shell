@@ -123,7 +123,7 @@
               };
             };
 
-            # the shell, and the apps beside it (Shell Settings, Shader Lab)
+            # the shell, and the apps beside it (Shell Settings, Messages, Shader Lab)
             cargoBuildFlags = [ "--workspace" ];
             cargoTestFlags = [ "--workspace" ];
 
@@ -138,11 +138,12 @@
             # /nix/store hashes beyond what makeLibraryPath computes.
             postInstall = ''
               install -Dm644 apps/settings/amane-settings.desktop -t $out/share/applications
+              install -Dm644 apps/messages/amane-messages.desktop -t $out/share/applications
               install -Dm644 apps/shader-lab/amane-shader-lab.desktop -t $out/share/applications
             '';
 
             postFixup = ''
-              for program in amane-shell amane-settings amane-shader-lab; do
+              for program in amane-shell amane-settings amane-messages amane-shader-lab; do
                 wrapProgram $out/bin/$program \
                   --prefix LD_LIBRARY_PATH : "${ldLibraryPath pkgs}" \
                   --run ${lib.escapeShellArg vulkanIcdFallback}

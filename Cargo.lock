@@ -48,6 +48,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "amane-messages"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "amane-kit",
+ "chrono",
+]
+
+[[package]]
 name = "amane-settings"
 version = "0.1.0"
 dependencies = [

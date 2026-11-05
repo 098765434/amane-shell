@@ -159,8 +159,6 @@ pub fn sidebar(
     on_select: impl Fn(usize) + 'static,
 ) -> Rectangle {
     let on_select = Rc::new(on_select);
-    let focused = window_state().focused;
-    let opaque = !frosted();
 
     let rows: Vec<Box<dyn Widget>> = pages
         .iter()
@@ -197,11 +195,7 @@ pub fn sidebar(
                 Color::TRANSPARENT
             };
 
-            let fg = if opaque && !focused {
-                sys::color::sidebar::label::inactive()
-            } else {
-                material::label(Level::Primary)
-            };
+            let fg = sidebar_label();
 
             let base = Rectangle::new()
                 .width(Size::Parent)
@@ -243,6 +237,31 @@ pub fn sidebar(
         })
         .collect();
 
+    sidebar_panel(
+        Column::new(rows)
+            .gap(sys::space::gap::_2xs())
+            .width(Size::Parent),
+    )
+}
+
+/// The colour of a label in a [`sidebar_panel`]: primary, or greyer on
+/// an opaque panel while another window has the focus.
+pub fn sidebar_label() -> Color {
+    if !frosted() && !window_state().focused {
+        sys::color::sidebar::label::inactive()
+    } else {
+        material::label(Level::Primary)
+    }
+}
+
+/// The panel a [`sidebar`] sits on, around any `content`: a list of
+/// conversations, say. Over a frosted window it's the window's own glass;
+/// on an opaque one, a panel of the sidebar's colour, paler while another
+/// window has the focus. Draw the labels in it with [`sidebar_label`].
+pub fn sidebar_panel(content: impl Widget + 'static) -> Rectangle {
+    let focused = window_state().focused;
+    let opaque = !frosted();
+
     let bg = match (opaque, focused) {
         (false, _) => Material::Sidebar.tint(),
         (true, true) => sys::color::sidebar::bg::active(),
@@ -256,11 +275,7 @@ pub fn sidebar(
         .radius(radius)
         .fill(bg)
         .padding(pad(sys::space::inset::s(), sys::space::inset::s()))
-        .child(
-            Column::new(rows)
-                .gap(sys::space::gap::_2xs())
-                .width(Size::Parent),
-        );
+        .child(content);
 
     if opaque {
         return sidebar;

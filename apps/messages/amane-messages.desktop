@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Messages
+Comment=Your phone's text messages, through KDE Connect
+Keywords=SMS;Text;Phone;KDE Connect;
+Exec=amane-messages
+Icon=internet-chat
+Categories=Network;InstantMessaging;
+StartupNotify=true
