@@ -58,6 +58,9 @@ From left to right:
    - **Tailscale**: its nine-dot mark, only while connected. Accent while routing through an exit
      node; the tooltip shows the address or the exit node.
    - **Keep Awake**: a cup, accent while it holds anything; the tooltip shows the time left.
+   - **Phone**: a phone through KDE Connect, while it's connected and has sent its charge;
+     accent while charging, red when low; the tooltip shows its name and charge
+     ([phone.md](phone.md)).
    - **Battery**: accent while charging, red when low; the tooltip shows the charge.
 4. The **Quick Settings** button (see [quick-settings.md](quick-settings.md)).
 5. The **notification** icon: a moon while Do Not Disturb is on, a bell while something arrived
@@ -75,7 +78,7 @@ stay even.
 
 ## Status icons
 
-Volume, Bluetooth, network, Tailscale, Keep Awake and battery are optional, and so are three
+Volume, Bluetooth, network, Tailscale, Keep Awake, the phone and battery are optional, and so are three
 groups: `privacy` (screen sharing, camera, microphone), `status-icons` (Night Light, VPN, power
 mode, Airplane Mode) and `notifications` (the bell or the moon). Each Quick Settings page that has
 one ends in a **Show in Status Bar** switch; Shell Settings' Status Bar page has a switch for

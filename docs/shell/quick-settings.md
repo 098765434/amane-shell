@@ -30,6 +30,7 @@ when the machine has what it drives, as in GNOME, and the grid packs around what
 |---|---|---|---|
 | Wi‑Fi | the network joined, "Connecting…", "Not Connected", "Off" or "Hardware switch off"; "<ssid> Hotspot" while the machine is one | the disc switches the radio (or stops the hotspot); the tile opens the page | the networks (rescanned every 15 s while shown; "Searching…" or "Wi‑Fi is off" while there are none), joining with a password; the page stays open and the row says "Connecting…" |
 | Bluetooth | the device connected, how many are, "Turning On…" or "Off" | the disc switches the adapter (lifting rfkill's soft block first); the tile opens the page | My Devices and Other Devices (named ones, the strongest first), searching and discoverable as this computer's name while shown; a row says "Connecting…", "Pairing…" or why it failed ("Not reachable"), else the battery and a check; a paired device's ⓘ or right click opens its own page (Connect, Battery, Connect Automatically, Name, kind and address, Forget This Device… with an alert); a pairing code to confirm, type or show sits under the list. Off, it says why: off, airplane mode or a hardware switch |
+| Phone | a tile, waiting in the window's Suggestions by default; the phone connected and its charge, "Not Connected", "No Phone" or "Off"; hidden without KDE Connect | opens the page | My Devices and Other Devices, a phone's request to pair with its code; a phone's own page with Battery, Ring, Send Files…, Messages and Phone Input, the clipboard, the phone's remote for this computer and Forget ([phone.md](phone.md)) |
 | Airplane Mode | a round button (or a tile) | switches every radio | — |
 | Tailscale | a tile with Tailscale's mark (drawn, as the font hasn't got it), waiting in the window's Suggestions by default; "via <exit node>", this device's address, "Connecting…", "Not logged in", "Disconnected" or "Daemon not running"; hidden without the `tailscale` binary | the disc connects or disconnects (`tailscale up` / `down`), or logs in when logged out; the tile opens the page | what's wrong (no daemon; **Log In…**, which opens the browser once the control plane hands out the URL; no operator grant, with the command to copy; a failed change; tailscaled's own warnings), This Device (a click copies the address), Exit Node (None or a peer that offers itself; offline ones can't be picked), Accept Routes, Accept DNS and Block Incoming switches, and the tailnet's Devices, online first (a click copies the address); Show in Status Bar; Admin Console… |
 | VPN, Wired | tiles, waiting in the window's Suggestions by default; VPN says "Off", the tunnel that's up or how many are; Wired the connection or "Not Connected" | the disc switches; the VPN tile opens its page | VPN: a switch in the header for the preferred tunnel, and one per profile |
@@ -66,7 +67,9 @@ A device that asks to pair while the Bluetooth page isn't showing asks through t
 (`surfaces/alert/bluetooth.rs`): Pair or Cancel for a code to confirm, the code to type on a
 keyboard, and **Enter Code…**, which opens the page, for a code to type here. The shell is
 BlueZ's pairing agent (`Bluetooth::serve_agent`). A connected device's battery warns once at
-20 % and once at 10 % per connection (`services/network/bt_battery.rs`).
+20 % and once at 10 % per connection (`services/network/bt_battery.rs`), and so does a phone
+through KDE Connect while it isn't charging. A phone asking to pair through KDE Connect asks
+the same way (`surfaces/alert/phone.rs`) while the Phone page isn't showing.
 
 The bar also shows GNOME's status icons, each only while it applies:
 
@@ -170,8 +173,8 @@ The layout is kept in `$XDG_STATE_HOME/amane-shell/quick-settings`:
 
 The ids are `wifi`, `bluetooth`, `now-playing`, `vpn`, `wired`, `focus`, `dark-style`,
 `night-light`, `display`, `sound`, `battery`, `power-mode`, `keyboard`, `airplane`,
-`background-apps`, `screenshot`, `lock`, `power-off`, `tailscale`, `keep-awake` and
-`software-update`. A control
+`background-apps`, `screenshot`, `lock`, `power-off`, `tailscale`, `keep-awake`,
+`software-update` and `phone`. A control
 without `col`/`row` is hidden (it waits in the window's Suggestions). A file from an older
 version is ignored. One that places something off the canvas or over another control moves it to
 the first free cells (or hides it); a control the file doesn't name is added hidden, so a control

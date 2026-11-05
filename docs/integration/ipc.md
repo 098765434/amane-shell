@@ -59,7 +59,7 @@ The modes also answer to `applications` (for `apps`) and `home` or `search` (the
 |---|---|
 | `toggle`, `close` | opens or closes the card |
 | `open` | opens it on the grid |
-| `open <page>` | opens a page on its own, as its status icon does (no grid behind it, no back chevron): `grid`, `sound`, `wifi`, `vpn`, `bluetooth`, `power-mode`, `power`, `night-light`, `do-not-disturb`, `keyboard`, `session`, `background-apps`, `tailscale`, `keep-awake`. A page the machine can't show answers `page <name> has nothing to show on this machine` |
+| `open <page>` | opens a page on its own, as its status icon does (no grid behind it, no back chevron): `grid`, `sound`, `wifi`, `vpn`, `bluetooth`, `power-mode`, `power`, `night-light`, `do-not-disturb`, `keyboard`, `session`, `background-apps`, `tailscale`, `keep-awake`, `phone`. A page the machine can't show answers `page <name> has nothing to show on this machine` |
 | `toggle <page>` | as `open <page>`, or closes it when that page is showing on its own |
 | `edit`, `customize` | opens the grid in edit mode with the Customize window |
 | `reset-layout` | puts back the default layout |
@@ -115,7 +115,7 @@ Errors start with `error:` (`no room for it`, `no monitor`, `no widget <id>`).
 
 `status-bar (show | hide | toggle) <icon>` ([status-bar.md](../shell/status-bar.md#status-icons)):
 shows or hides one of the optional status icons, `volume`, `bluetooth`, `network`, `tailscale`,
-`battery`, `keep-awake`, `privacy`, `status-icons` or `notifications`, in `status-bar.json`.
+`battery`, `phone`, `keep-awake`, `privacy`, `status-icons` or `notifications`, in `status-bar.json`.
 `taskbar` is the same command under the bar's old name.
 
 ### `night-light`

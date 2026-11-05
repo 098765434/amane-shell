@@ -28,6 +28,7 @@ fn main_window() -> amane::Window {
 | `text_field(id, placeholder)` | a one-line `TextInput` in the control font (13), its selection in the accent; its text is kept under `id` |
 | `field_box(id, input, width)` | the box a text field sits in, in the macform look: 24 px tall, radius 6, `fieldFill` in a 1 px `fieldBorder` that takes the accent while it has the keys |
 | `Page`, `sidebar(…)` | a settings-style sidebar ([below](#sidebar)) |
+| `sidebar_panel(content)`, `sidebar_label()` | the sidebar's panel around anything else (Messages' inbox), and the colour for labels on it |
 | `Dialog` | the kit's alert, re-exported; `.open(parent)` shows it in a modal window over the app's ([components.md](components.md#dialog)) |
 
 The other controls (buttons, switch, radio, dropdown) are in [controls.md](controls.md); the
@@ -50,6 +51,9 @@ between `app_window` and the sidebar may then be a `Rectangle`. Where it doesn't
 an opaque panel (`sys.color.sidebar.bg.active`), paler with greyer labels
 (`sys.color.sidebar.bg.inactive`, `sys.color.sidebar.label.inactive`) while another window has the
 focus.
+
+`sidebar_panel(content)` is that panel around any content, for a sidebar that isn't a list of
+pages, like Messages' inbox; draw its labels in `sidebar_label()`, which greys them the same way.
 
 amane's side, its normal windows, is [`windows/app-windows.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/windows/app-windows.md).
 Whether the window is frosted is read from the config: the shell's generated niri config defines
