@@ -8,6 +8,7 @@
 //! shadow.
 
 pub mod bluetooth;
+pub mod phone;
 pub mod polkit;
 
 use std::cell::{Cell, RefCell};
@@ -76,9 +77,10 @@ fn unfold(open: bool) -> f32 {
 
 /// The surface: hidden while no alert shows, else the card, swelling in.
 pub fn surface() -> LayerWindow {
-    // a device asking to pair, or polkit asking for a password, asks here;
-    // reading Bluetooth and Polkit for it wakes this view
+    // a device or phone asking to pair, or polkit asking for a password,
+    // asks here; reading Bluetooth, KdeConnect and Polkit for it wakes this view
     bluetooth::sync();
+    phone::sync();
     polkit::sync();
     Alert::watch();
     let open = OPEN.get();

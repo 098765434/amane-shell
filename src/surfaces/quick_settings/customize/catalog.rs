@@ -115,7 +115,8 @@ pub(crate) fn category_of(id: ControlId) -> Category {
         | ControlId::Airplane
         | ControlId::Vpn
         | ControlId::Wired
-        | ControlId::Tailscale => Category::Connectivity,
+        | ControlId::Tailscale
+        | ControlId::Phone => Category::Connectivity,
         ControlId::Display | ControlId::NightLight | ControlId::DarkStyle => {
             Category::DisplayBrightness
         }

@@ -12,6 +12,7 @@ pub mod keyboard;
 pub mod media;
 pub mod network;
 pub mod notifications;
+pub mod phone;
 pub mod power;
 pub mod session;
 pub mod software_update;

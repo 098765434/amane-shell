@@ -12,11 +12,12 @@ use amane_kit::settings::{BarPosition, BarStyle, DateFormat, change_status_bar, 
 use crate::{group, groups, radios_height, switch_row};
 
 /// The icons it can leave out, by the names the shell knows them by.
-const ICONS: [(&str, &str); 9] = [
+const ICONS: [(&str, &str); 10] = [
     ("volume", "Volume"),
     ("bluetooth", "Bluetooth"),
     ("network", "Network"),
     ("battery", "Battery"),
+    ("phone", "Phone battery, while connected"),
     ("tailscale", "Tailscale, while connected"),
     ("keep-awake", "Keep Awake, while on"),
     ("status-icons", "Night Light, VPN, power mode, Airplane"),

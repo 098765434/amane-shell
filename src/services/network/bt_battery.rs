@@ -1,13 +1,14 @@
-//! A connected Bluetooth device running low: a notification at 20 % and
-//! again at 10 %, once each per connection, as phones warn about a headset.
-//! Read from the fork's `Bluetooth` service once a minute, as a battery
-//! that reports itself changes slowly.
+//! A connected Bluetooth device, or a phone through KDE Connect, running
+//! low: a notification at 20 % and again at 10 %, once each per connection,
+//! as phones warn about a headset. Read from the fork's `Bluetooth` and
+//! `KdeConnect` services once a minute, as a battery that reports itself
+//! changes slowly.
 
 use std::collections::BTreeMap;
 use std::sync::Once;
 use std::time::Duration;
 
-use amane::{Bluetooth, Notify, Service, Urgency};
+use amane::{Bluetooth, KdeConnect, Notify, Service, Urgency};
 
 /// The levels warned at, highest first.
 const LEVELS: [u8; 2] = [20, 10];
@@ -48,6 +49,23 @@ fn check(warned: &mut BTreeMap<String, u8>) {
         })
         .collect();
     drop(bluetooth);
+
+    // a phone through KDE Connect warns the same way, unless it's charging
+    let phones = KdeConnect::read();
+    let devices: Vec<(String, String, u8)> = devices
+        .into_iter()
+        .chain(phones.devices().iter().filter_map(|phone| {
+            let battery = phone.battery().filter(|b| !b.charging)?;
+            phone.connected().then(|| {
+                (
+                    format!("kdeconnect:{}", phone.id()),
+                    phone.name().to_string(),
+                    battery.percent,
+                )
+            })
+        }))
+        .collect();
+    drop(phones);
 
     // a device that disconnected is warned again on its next connection
     warned.retain(|address, _| devices.iter().any(|(a, _, _)| a == address));

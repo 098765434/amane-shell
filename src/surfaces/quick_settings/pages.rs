@@ -3,7 +3,7 @@
 use super::controls::ControlId;
 use super::detail::DetailPage;
 use super::tiles::{
-    appearance, background, bluetooth, keep_awake, keyboard, network, notifications, power,
+    appearance, background, bluetooth, keep_awake, keyboard, network, notifications, phone, power,
     session, sound, tailscale,
 };
 
@@ -25,11 +25,12 @@ pub enum Page {
     BackgroundApps,
     Tailscale,
     KeepAwake,
+    Phone,
 }
 
 impl Page {
     /// Every page by its IPC name, the grid first.
-    const ALL: [(&'static str, Page); 14] = [
+    const ALL: [(&'static str, Page); 15] = [
         ("grid", Self::Grid),
         ("sound", Self::Sound),
         ("wifi", Self::Wifi),
@@ -44,10 +45,11 @@ impl Page {
         ("background-apps", Self::BackgroundApps),
         ("tailscale", Self::Tailscale),
         ("keep-awake", Self::KeepAwake),
+        ("phone", Self::Phone),
     ];
 
-    pub const NAMES: [&'static str; 14] = {
-        let mut names = [""; 14];
+    pub const NAMES: [&'static str; 15] = {
+        let mut names = [""; 15];
         let mut i = 0;
         while i < names.len() {
             names[i] = Self::ALL[i].0;
@@ -74,6 +76,7 @@ impl Page {
             Self::BackgroundApps => &[ControlId::BackgroundApps],
             Self::Tailscale => &[ControlId::Tailscale],
             Self::KeepAwake => &[ControlId::KeepAwake],
+            Self::Phone => &[ControlId::Phone],
         }
     }
 
@@ -103,6 +106,7 @@ pub(super) fn page(page: Page) -> DetailPage {
         Page::BackgroundApps => background::page(),
         Page::Tailscale => tailscale::page(),
         Page::KeepAwake => keep_awake::page(),
+        Page::Phone => phone::page(),
     }
 }
 
@@ -121,9 +125,12 @@ pub(super) fn available(page: Page) -> bool {
         Page::PowerMode => PowerProfile::read().present(),
         Page::Power => Battery::read().present(),
         Page::NightLight => crate::services::display::night_light::NightLight::read().present(),
-        Page::Keyboard => crate::services::power::keyboard_backlight::KeyboardBacklight::read().present(),
+        Page::Keyboard => {
+            crate::services::power::keyboard_backlight::KeyboardBacklight::read().present()
+        }
         Page::Tailscale => crate::services::network::tailscale::Tailscale::read().present(),
         Page::KeepAwake => crate::services::power::keep_awake::KeepAwake::read().present(),
+        Page::Phone => phone::available(),
     }
 }
 
@@ -132,6 +139,7 @@ pub(super) fn left(page: Page) {
     match page {
         Page::Wifi => network::left_wifi(),
         Page::Bluetooth => bluetooth::left(),
+        Page::Phone => phone::left(),
         _ => {}
     }
 }

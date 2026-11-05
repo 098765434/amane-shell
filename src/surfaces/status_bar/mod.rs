@@ -24,9 +24,9 @@ use std::time::Duration;
 
 use amane::{
     Animation, Audio, Battery, Bluetooth, BluetoothDevice, Center, Color, Easing, Full, InputArea,
-    Justify, Keyboard, Layer, LayerWindow, Link, Network, Parent, PowerProfile, Rectangle, Row,
-    Scroll, ScrollSource, Service, Size, Start, Vertical, Widget, Workspace, Workspaces, Zone,
-    window_size,
+    Justify, KdeConnect, Keyboard, Layer, LayerWindow, Link, Network, Parent, PowerProfile,
+    Rectangle, Row, Scroll, ScrollSource, Service, Size, Start, Vertical, Widget, Workspace,
+    Workspaces, Zone, window_size,
 };
 use amane_kit::settings::{BarPosition, BarStyle, status_bar};
 use amane_kit::theme::{self, Mode};
@@ -39,25 +39,25 @@ use crate::components::edge_reveal::EdgeReveal;
 use crate::components::icons::{
     Glyph, ICON_AIRPLANE, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE,
     ICON_CAMERA, ICON_DND, ICON_KEEP_AWAKE, ICON_MIC, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS,
-    ICON_SCREEN_SHARE, ICON_TIMER, ICON_TUNE, ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE,
-    ICON_WIFI_OFF, audio_glyph, battery_glyph, power_profile_glyph, wifi_glyph,
+    ICON_PHONE, ICON_SCREEN_SHARE, ICON_TIMER, ICON_TUNE, ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI,
+    ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph, battery_glyph, power_profile_glyph, wifi_glyph,
 };
-use crate::surfaces::launcher;
 use crate::components::layout::{boxed, cursor, fixed_width, pad, text_width, track_cursor};
 use crate::components::material::{self, Level, Material};
 use crate::components::motion;
-use crate::surfaces::notifications::{self, DoNotDisturb};
 use crate::components::panel::{self, Panel, is_open};
-use crate::surfaces::quick_settings::{self, Page};
 use crate::components::slider;
-use crate::services::launcher::clock::Clock;
-use crate::services::network::connections::Connections;
-use crate::services::power::keep_awake::KeepAwake;
-use crate::services::display::night_light::NightLight;
 use crate::services::desktop::privacy::Privacy;
+use crate::services::display::night_light::NightLight;
+use crate::services::launcher::clock::Clock;
+use crate::services::launcher::timer::Countdown;
+use crate::services::network::connections::Connections;
 use crate::services::network::rfkill::Rfkill;
 use crate::services::network::tailscale::{State as TailscaleState, Tailscale};
-use crate::services::launcher::timer::Countdown;
+use crate::services::power::keep_awake::KeepAwake;
+use crate::surfaces::launcher;
+use crate::surfaces::notifications::{self, DoNotDisturb};
+use crate::surfaces::quick_settings::{self, Page};
 
 use crate::tokens::{bar, sys};
 
@@ -340,6 +340,7 @@ fn status() -> Row {
             optional(Indicator::Network, network),
             optional(Indicator::Tailscale, tailscale),
             optional(Indicator::KeepAwake, keep_awake),
+            optional(Indicator::Phone, phone),
             optional(Indicator::Battery, battery),
             Some(quick_settings_button()),
             optional(Indicator::Notifications, notification_icon),
@@ -524,6 +525,32 @@ fn battery() -> Option<Box<dyn Widget>> {
             tip,
         )
         .build(),
+    ))
+}
+
+/// The phone KDE Connect has, with its charge, while it's connected:
+/// critical while low, accent while charging, like the battery beside it.
+fn phone() -> Option<Box<dyn Widget>> {
+    let kdeconnect = KdeConnect::read();
+    let phone = kdeconnect.primary()?;
+    let name = phone.name().to_string();
+    let charge = phone.battery()?;
+    drop(kdeconnect);
+
+    let (color, tip) = if charge.charging {
+        (
+            sys::color::accent::bg(),
+            format!("{name} {}% · charging", charge.percent),
+        )
+    } else {
+        (
+            battery::color(charge.percent, false, material::label(Level::Secondary)),
+            format!("{name} {}%", charge.percent),
+        )
+    };
+
+    Some(boxed(
+        status_icon("amane.bar.phone", ICON_PHONE, color, Page::Phone, tip).build(),
     ))
 }
 

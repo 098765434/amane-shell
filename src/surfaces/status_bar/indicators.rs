@@ -25,6 +25,8 @@ pub enum Indicator {
     Network,
     Tailscale,
     Battery,
+    /// A phone through KDE Connect, with its charge, while it's connected.
+    Phone,
     KeepAwake,
     /// Screen sharing, camera and microphone, while in use.
     Privacy,
@@ -35,12 +37,13 @@ pub enum Indicator {
 }
 
 impl Indicator {
-    pub const ALL: [Indicator; 9] = [
+    pub const ALL: [Indicator; 10] = [
         Self::Volume,
         Self::Bluetooth,
         Self::Network,
         Self::Tailscale,
         Self::Battery,
+        Self::Phone,
         Self::KeepAwake,
         Self::Privacy,
         Self::StatusIcons,
@@ -54,6 +57,7 @@ impl Indicator {
             Self::Network => "network",
             Self::Tailscale => "tailscale",
             Self::Battery => "battery",
+            Self::Phone => "phone",
             Self::KeepAwake => "keep-awake",
             Self::Privacy => "privacy",
             Self::StatusIcons => "status-icons",

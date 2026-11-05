@@ -10,18 +10,18 @@ use super::system_row;
 use super::tile::{QuickToggle, Style};
 use super::tiles::{
     airplane, appearance, background, bluetooth, keep_awake, keyboard, media, network,
-    notifications, power, software_update, sound, tailscale,
+    notifications, phone, power, software_update, sound, tailscale,
 };
 use crate::components::grid::GridKey;
 use crate::components::layout::boxed;
 use crate::services::desktop::background_apps::BackgroundApps;
-use crate::services::network::connections::Connections;
 use crate::services::display::dark_style;
-use crate::services::power::keep_awake::KeepAwake;
-use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::services::display::night_light::NightLight;
+use crate::services::network::connections::Connections;
 use crate::services::network::rfkill::Rfkill;
 use crate::services::network::tailscale::Tailscale;
+use crate::services::power::keep_awake::KeepAwake;
+use crate::services::power::keyboard_backlight::KeyboardBacklight;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ControlId {
@@ -46,12 +46,13 @@ pub enum ControlId {
     Tailscale,
     KeepAwake,
     SoftwareUpdate,
+    Phone,
 }
 
 impl ControlId {
     /// Control Center's order, then the ones added since (a control's
     /// place here keys its motion).
-    pub const ALL: [ControlId; 21] = [
+    pub const ALL: [ControlId; 22] = [
         Self::Wifi,
         Self::NowPlaying,
         Self::Bluetooth,
@@ -73,6 +74,7 @@ impl ControlId {
         Self::Tailscale,
         Self::KeepAwake,
         Self::SoftwareUpdate,
+        Self::Phone,
     ];
 
     /// The name kept in the layout file.
@@ -99,6 +101,7 @@ impl ControlId {
             Self::Tailscale => "tailscale",
             Self::KeepAwake => "keep-awake",
             Self::SoftwareUpdate => "software-update",
+            Self::Phone => "phone",
         }
     }
 
@@ -130,6 +133,7 @@ impl ControlId {
             Self::Tailscale => "Tailscale",
             Self::KeepAwake => "Keep Awake",
             Self::SoftwareUpdate => "Software Update",
+            Self::Phone => "Phone",
         }
     }
 
@@ -145,6 +149,7 @@ impl ControlId {
             | Self::Tailscale
             | Self::KeepAwake
             | Self::SoftwareUpdate
+            | Self::Phone
             | Self::Focus
             | Self::Battery => &[Span::M, Span::W3, Span::FULL],
             _ => &[Span::S, Span::M],
@@ -162,6 +167,7 @@ impl ControlId {
             | Self::Tailscale
             | Self::KeepAwake
             | Self::SoftwareUpdate
+            | Self::Phone
             | Self::Focus
             | Self::Battery => Span::M,
             _ => Span::S,
@@ -172,7 +178,12 @@ impl ControlId {
     pub fn hidden_by_default(self) -> bool {
         matches!(
             self,
-            Self::Vpn | Self::Wired | Self::Tailscale | Self::KeepAwake | Self::SoftwareUpdate
+            Self::Vpn
+                | Self::Wired
+                | Self::Tailscale
+                | Self::KeepAwake
+                | Self::SoftwareUpdate
+                | Self::Phone
         )
     }
 
@@ -227,6 +238,7 @@ pub fn build(id: ControlId, span: Span, ctx: &Ctx) -> Option<Box<dyn Widget>> {
         ControlId::Tailscale => toggle(tailscale::toggle()),
         ControlId::KeepAwake => toggle(keep_awake::toggle()),
         ControlId::SoftwareUpdate => toggle(software_update::toggle()),
+        ControlId::Phone => toggle(phone::toggle()),
     }
 }
 
@@ -252,6 +264,7 @@ pub fn quick_toggle(id: ControlId) -> Option<QuickToggle> {
         ControlId::Tailscale => tailscale::toggle(),
         ControlId::KeepAwake => keep_awake::toggle(),
         ControlId::SoftwareUpdate => software_update::toggle(),
+        ControlId::Phone => phone::toggle(),
         ControlId::NowPlaying | ControlId::Display | ControlId::Sound => None,
     }
 }
@@ -287,6 +300,7 @@ pub fn available(id: ControlId) -> bool {
         ControlId::KeepAwake => KeepAwake::read().present(),
         // addable with Shell Settings around; its cells stay empty until an update waits
         ControlId::SoftwareUpdate => software_update::available(),
+        ControlId::Phone => phone::available(),
     }
 }
 

@@ -18,7 +18,7 @@ use crate::{group, groups, switch_row};
 const SHELL: &str = "amane";
 
 /// Each control's name, by the shell's name for it.
-const NAMES: [(&str, &str); 20] = [
+const NAMES: [(&str, &str); 21] = [
     ("wifi", "Wi-Fi"),
     ("bluetooth", "Bluetooth"),
     ("now-playing", "Now Playing"),
@@ -39,6 +39,7 @@ const NAMES: [(&str, &str); 20] = [
     ("power-off", "Power"),
     ("tailscale", "Tailscale"),
     ("keep-awake", "Keep Awake"),
+    ("phone", "Phone"),
 ];
 
 /// The controls this machine has and whether each is on the canvas, as the
