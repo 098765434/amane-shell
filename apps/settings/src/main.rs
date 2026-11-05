@@ -14,7 +14,9 @@ mod system;
 
 use amane::{Center, Column, Key, Row, ScrollArea, Service, Size, Text, Widget, Window};
 use amane_kit::app::{Dialog, Page, app, app_window, sidebar, standard_shortcut};
+use amane_kit::buttons::Switch;
 use amane_kit::color::Accent;
+use amane_kit::form::{FormRow, Group};
 use amane_kit::icons::{
     ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO,
     ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_PACKAGE, ICON_SEARCH, ICON_SETTINGS,
@@ -400,6 +402,37 @@ pub fn note(text: impl Into<String>) -> Text {
     Text::new(text)
         .style(sys::r#type::caption())
         .color(material::label(Level::Secondary))
+}
+
+/// A group of settings rows as wide as a page.
+pub fn group() -> Group {
+    Group::new().width(PAGE_WIDTH)
+}
+
+/// A page: its groups, a little apart.
+pub fn groups(groups: Vec<Group>) -> Column {
+    Column::new(
+        groups
+            .into_iter()
+            .filter(|group| !group.is_empty())
+            .map(|group| boxed(group.build()))
+            .collect(),
+    )
+    .gap(sys::space::gap::l())
+}
+
+/// A row with a switch at its trailing edge.
+pub fn switch_row(id: &str, title: &str, on: bool, toggle: impl Fn(bool) + 'static) -> FormRow {
+    FormRow::new(id, title).trailing(
+        Switch::new(format!("{id}.switch"), on)
+            .on_toggle(toggle)
+            .build(),
+    )
+}
+
+/// How tall a column of `count` radios is, for a row's detail.
+pub fn radios_height(count: usize) -> f32 {
+    count as f32 * mac::control_height()
 }
 
 /// A setting's name over its control, the way every page lays them out.

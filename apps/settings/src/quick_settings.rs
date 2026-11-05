@@ -7,13 +7,12 @@
 use std::fs;
 use std::path::PathBuf;
 
-use amane::{Column, Row, Service, ipc_call, watch_file};
+use amane::{Column, Service, ipc_call, watch_file};
 use amane_kit::app::Dialog;
-use amane_kit::buttons::{PushButton, Switch};
-use amane_kit::layout::boxed;
-use amane_kit::tokens::sys;
+use amane_kit::buttons::PushButton;
+use amane_kit::form::FormRow;
 
-use crate::{labelled, note, setting};
+use crate::{group, groups, switch_row};
 
 /// The shell's app id, whose IPC socket this page calls.
 const SHELL: &str = "amane";
@@ -119,70 +118,58 @@ fn named(name: &str) -> &str {
 
 pub fn page() -> Column {
     let Some(controls) = QuickControls::read().controls.clone() else {
-        return Column::new(vec![
-            boxed(note(
-                "The shell isn't answering, so its Quick Settings can't be changed from here.",
-            )),
-            boxed(
-                PushButton::new("settings.quick.retry", "Try Again")
-                    .on_press(|| QuickControls::write().controls = ask())
-                    .build(),
+        return groups(vec![
+            group().row(
+                FormRow::new("settings.quick.retry-row", "The shell isn't answering")
+                    .subtitle("Its Quick Settings can't be changed from here until it does")
+                    .trailing(
+                        PushButton::new("settings.quick.retry", "Try Again")
+                            .on_press(|| QuickControls::write().controls = ask())
+                            .build(),
+                    ),
             ),
-        ])
-        .gap(sys::space::gap::m());
+        ]);
     };
 
-    let layout = Row::new(vec![
-        boxed(
-            PushButton::new("settings.quick.customize", "Customize…")
-                .on_press(|| tell(&["customize"]))
-                .build(),
-        ),
-        boxed(
-            PushButton::new("settings.quick.reset", "Reset Layout…")
-                .on_press(|| {
-                    Dialog::new(
-                        "settings.quick.reset-dialog",
-                        "Reset the Quick Settings layout?",
-                    )
-                    .message("Every control goes back to its place and size as shipped.")
-                    .button("Cancel", || {})
-                    .destructive("Reset", || tell(&["reset-layout"]))
-                    .open("main");
-                })
-                .build(),
-        ),
-    ])
-    .gap(sys::space::gap::m());
-
-    let switches: Vec<_> = controls
-        .into_iter()
-        .map(|(name, shown)| {
-            let label = named(&name).to_string();
-            boxed(labelled(
-                &label,
-                Switch::new(format!("settings.quick.control.{name}"), shown)
-                    .on_toggle(move |on| tell(&[if on { "show" } else { "hide" }, &name]))
-                    .build(),
-            ))
+    let customize = PushButton::new("settings.quick.customize", "Customize…")
+        .on_press(|| tell(&["customize"]))
+        .build();
+    let reset = PushButton::new("settings.quick.reset", "Reset…")
+        .on_press(|| {
+            Dialog::new(
+                "settings.quick.reset-dialog",
+                "Reset the Quick Settings layout?",
+            )
+            .message("Every control goes back to its place and size as shipped.")
+            .button("Cancel", || {})
+            .destructive("Reset", || tell(&["reset-layout"]))
+            .open("main");
         })
-        .collect();
+        .build();
 
-    Column::new(vec![
-        boxed(setting(
-            "Layout",
-            Column::new(vec![
-                boxed(layout),
-                boxed(note(
-                    "Customize opens Quick Settings to move and resize its controls.",
-                )),
-            ])
-            .gap(sys::space::gap::s()),
-        )),
-        boxed(setting(
-            "Controls",
-            Column::new(switches).gap(sys::space::gap::s()),
-        )),
+    let switches = controls.into_iter().map(|(name, shown)| {
+        let label = named(&name).to_string();
+        switch_row(
+            &format!("settings.quick.control.{name}"),
+            &label,
+            shown,
+            move |on| tell(&[if on { "show" } else { "hide" }, &name]),
+        )
+    });
+
+    groups(vec![
+        group()
+            .header("Layout")
+            .row(
+                FormRow::new("settings.quick.customize-row", "Customize")
+                    .subtitle("Opens Quick Settings to move and resize its controls")
+                    .trailing(customize),
+            )
+            .row(
+                FormRow::new("settings.quick.reset-row", "Reset layout")
+                    .subtitle("Every control back to its place and size as shipped")
+                    .trailing(reset),
+            ),
+        group().header("Controls").rows(switches),
     ])
-    .gap(sys::space::gap::l())
 }

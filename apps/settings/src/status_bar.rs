@@ -3,13 +3,13 @@
 //! `status-bar.json`, which the shell follows at once.
 
 use amane::{Column, Widget};
-use amane_kit::buttons::{Radio, Segment, SegmentedButton, Switch};
+use amane_kit::buttons::{Radio, Segment, SegmentedButton};
 use amane_kit::dropdown::Dropdown;
+use amane_kit::form::FormRow;
 use amane_kit::layout::boxed;
 use amane_kit::settings::{BarPosition, BarStyle, DateFormat, change_status_bar, status_bar};
-use amane_kit::tokens::sys;
 
-use crate::{labelled, note, setting};
+use crate::{group, groups, radios_height, switch_row};
 
 /// The icons it can leave out, by the names the shell knows them by.
 const ICONS: [(&str, &str); 9] = [
@@ -19,15 +19,9 @@ const ICONS: [(&str, &str); 9] = [
     ("battery", "Battery"),
     ("tailscale", "Tailscale, while connected"),
     ("keep-awake", "Keep Awake, while on"),
-    (
-        "status-icons",
-        "Night Light, VPN, power mode and Airplane Mode, while on",
-    ),
-    ("notifications", "New notifications and Do Not Disturb"),
-    (
-        "privacy",
-        "Camera, microphone and screen sharing, while in use",
-    ),
+    ("status-icons", "Night Light, VPN, power mode, Airplane"),
+    ("notifications", "Notifications and Do Not Disturb"),
+    ("privacy", "Camera, microphone, screen sharing"),
 ];
 
 const POSITIONS: [(&str, BarPosition); 2] =
@@ -36,7 +30,10 @@ const POSITIONS: [(&str, BarPosition); 2] =
 const STYLES: [(&str, BarStyle); 3] = [
     ("Frosted", BarStyle::Frosted),
     ("Glass", BarStyle::Glass),
-    ("Solid: black in dark mode, white in light", BarStyle::Solid),
+    (
+        "Solid (black in dark mode, white in light)",
+        BarStyle::Solid,
+    ),
 ];
 
 pub fn page() -> Column {
@@ -84,78 +81,73 @@ pub fn page() -> Column {
     .width(240.0)
     .on_select(|index| change_status_bar(|now| now.date_format = DateFormat::ALL[index]));
 
-    let clock = Column::new(vec![
-        boxed(labelled(
-            "24-hour time",
-            Switch::new("settings.bar.clock-24h", now.clock_24h)
-                .on_toggle(|on| change_status_bar(|now| now.clock_24h = on))
-                .build(),
-        )),
-        boxed(labelled(
-            "Show seconds",
-            Switch::new("settings.bar.clock-seconds", now.clock_seconds)
-                .on_toggle(|on| change_status_bar(|now| now.clock_seconds = on))
-                .build(),
-        )),
-    ])
-    .gap(sys::space::gap::s());
+    let icons = ICONS.into_iter().map(|(name, label)| {
+        switch_row(
+            &format!("settings.bar.icon.{name}"),
+            label,
+            now.shows(name),
+            move |on| change_status_bar(|now| now.set_shown(name, on)),
+        )
+    });
 
-    let workspaces = Column::new(vec![
-        boxed(labelled(
-            "Show workspaces",
-            Switch::new("settings.bar.workspaces", now.show_workspaces)
-                .on_toggle(|on| change_status_bar(|now| now.show_workspaces = on))
-                .build(),
-        )),
-        boxed(labelled(
-            "Scroll over them to move between workspaces",
-            Switch::new("settings.bar.scroll-workspaces", now.scroll_workspaces)
-                .on_toggle(|on| change_status_bar(|now| now.scroll_workspaces = on))
-                .build(),
-        )),
-    ])
-    .gap(sys::space::gap::s());
-
-    let mut icons: Vec<Box<dyn Widget>> = ICONS
-        .into_iter()
-        .map(|(name, label)| {
-            boxed(labelled(
-                label,
-                Switch::new(format!("settings.bar.icon.{name}"), now.shows(name))
-                    .on_toggle(move |on| change_status_bar(|now| now.set_shown(name, on)))
-                    .build(),
+    groups(vec![
+        group()
+            .row(FormRow::new("settings.bar.position", "Position").trailing(position))
+            .row(
+                switch_row(
+                    "settings.bar.auto-hide",
+                    "Hide automatically",
+                    now.auto_hide,
+                    |on| change_status_bar(|now| now.auto_hide = on),
+                )
+                .subtitle("Until the pointer meets the screen's edge"),
+            )
+            .footer(
+                "Hidden, it keeps no room from windows, and comes back with Quick Settings or the \
+                 notification center too. At the bottom, a hiding dock takes the edge first.",
+            ),
+        group().row(
+            FormRow::new("settings.bar.material", "Material")
+                .detail(Column::new(styles), radios_height(STYLES.len())),
+        ),
+        group()
+            .header("Clock")
+            .row(switch_row(
+                "settings.bar.clock-24h",
+                "24-hour time",
+                now.clock_24h,
+                |on| change_status_bar(|now| now.clock_24h = on),
             ))
-        })
-        .collect();
-    icons.push(boxed(note(
-        "Quick Settings and the clock always show. Each Quick Settings page can show or hide its icon too.",
-    )));
-
-    let hiding = Column::new(vec![
-        boxed(labelled(
-            "Hide the status bar until the pointer meets the screen's edge",
-            Switch::new("settings.bar.auto-hide", now.auto_hide)
-                .on_toggle(|on| change_status_bar(|now| now.auto_hide = on))
-                .build(),
-        )),
-        boxed(note(
-            "Hidden, it keeps no room from windows, and comes back with Quick Settings or the \
-             notification center too. At the bottom, a hiding dock takes the edge first.",
-        )),
+            .row(switch_row(
+                "settings.bar.clock-seconds",
+                "Show seconds",
+                now.clock_seconds,
+                |on| change_status_bar(|now| now.clock_seconds = on),
+            ))
+            .row(
+                FormRow::new("settings.bar.date", "Date in the tooltip")
+                    .trailing(date_format.build()),
+            ),
+        group()
+            .header("Workspaces")
+            .row(switch_row(
+                "settings.bar.workspaces",
+                "Show workspaces",
+                now.show_workspaces,
+                |on| change_status_bar(|now| now.show_workspaces = on),
+            ))
+            .row(
+                switch_row(
+                    "settings.bar.scroll-workspaces",
+                    "Scroll to switch",
+                    now.scroll_workspaces,
+                    |on| change_status_bar(|now| now.scroll_workspaces = on),
+                )
+                .subtitle("Scroll over the workspaces to move between them"),
+            ),
+        group().header("Show in the status bar").rows(icons).footer(
+            "Quick Settings and the clock always show. Each Quick Settings page can show or \
+                 hide its icon too.",
+        ),
     ])
-    .gap(sys::space::gap::s());
-
-    Column::new(vec![
-        boxed(setting("Position", position)),
-        boxed(setting("Hiding", hiding)),
-        boxed(setting("Material", Column::new(styles))),
-        boxed(setting("Clock", clock)),
-        boxed(setting("Date in the clock's tooltip", date_format.build())),
-        boxed(setting("Workspaces", workspaces)),
-        boxed(setting(
-            "Show in the status bar",
-            Column::new(icons).gap(sys::space::gap::s()),
-        )),
-    ])
-    .gap(sys::space::gap::l())
 }

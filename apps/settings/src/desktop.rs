@@ -3,22 +3,18 @@
 //! shell follows at once.
 
 use amane::{Column, Widget};
-use amane_kit::buttons::{Radio, Switch};
+use amane_kit::buttons::Radio;
+use amane_kit::form::FormRow;
 use amane_kit::layout::boxed;
 use amane_kit::settings::{WidgetStyle, change_desktop, desktop};
-use amane_kit::tokens::sys;
 
-use crate::setting;
+use crate::{group, groups, radios_height, switch_row};
 
 pub fn page() -> Column {
     let (show, style) = {
         let now = desktop();
         (now.show_widgets, now.widget_style)
     };
-
-    let shown = Switch::new("settings.show-widgets", show)
-        .on_toggle(|on| change_desktop(|now| now.show_widgets = on))
-        .build();
 
     let styles = [
         ("Dim while windows are open", WidgetStyle::Automatic),
@@ -38,9 +34,18 @@ pub fn page() -> Column {
         })
         .collect();
 
-    Column::new(vec![
-        boxed(setting("Show widgets on the desktop", shown)),
-        boxed(setting("Widget style", Column::new(style_radios))),
+    groups(vec![
+        group()
+            .row(switch_row(
+                "settings.show-widgets",
+                "Show widgets on the desktop",
+                show,
+                |on| change_desktop(|now| now.show_widgets = on),
+            ))
+            .row(
+                FormRow::new("settings.widget-style", "Widget style")
+                    .detail(Column::new(style_radios), radios_height(3))
+                    .disabled(!show),
+            ),
     ])
-    .gap(sys::space::gap::l())
 }

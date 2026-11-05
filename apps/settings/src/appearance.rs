@@ -6,12 +6,12 @@
 use amane::{Column, Widget};
 use amane_kit::buttons::{Radio, Switch};
 use amane_kit::dropdown::Dropdown;
+use amane_kit::form::FormRow;
 use amane_kit::layout::boxed;
 use amane_kit::settings::{ACCENTS, appearance, change_appearance};
 use amane_kit::theme::{Density, Glass, Mode};
-use amane_kit::tokens::sys;
 
-use crate::setting;
+use crate::{group, groups, radios_height};
 
 /// Accents saved before macOS 27's colours, and the entry that shows for
 /// each; picking it again saves the new colour.
@@ -185,15 +185,49 @@ pub fn page() -> Column {
     .width(180.0)
     .on_select(|index| change_appearance(|now| now.text_scale = TEXT_SIZES[index].1));
 
-    Column::new(vec![
-        boxed(setting("Appearance", Column::new(mode_radios))),
-        boxed(setting("Accent colour", accents.build())),
-        boxed(setting("Density", Column::new(density_radios))),
-        boxed(setting("Text size", sizes.build())),
-        boxed(setting("Glass", Column::new(glass_radios))),
-        boxed(setting("Adaptive glass", adaptive)),
-        boxed(setting("Vibrant labels", vibrant)),
-        boxed(setting("Motion", Column::new(motion_radios))),
+    let solid = glass == Glass::Solid;
+    let glass_note = if solid {
+        "Solid glass has no backdrop to follow or blend with."
+    } else {
+        ""
+    };
+
+    groups(vec![
+        group()
+            .row(
+                FormRow::new("settings.appearance.mode", "Appearance")
+                    .detail(Column::new(mode_radios), radios_height(3)),
+            )
+            .row(
+                FormRow::new("settings.appearance.accent", "Accent colour")
+                    .trailing(accents.build()),
+            )
+            .row(FormRow::new("settings.appearance.text", "Text size").trailing(sizes.build())),
+        group().row(
+            FormRow::new("settings.appearance.density", "Density")
+                .detail(Column::new(density_radios), radios_height(2)),
+        ),
+        group()
+            .row(
+                FormRow::new("settings.appearance.glass", "Glass")
+                    .detail(Column::new(glass_radios), radios_height(3)),
+            )
+            .row(
+                FormRow::new("settings.appearance.adaptive", "Adaptive glass")
+                    .subtitle("Small glass turns light or dark with what's behind it")
+                    .trailing(adaptive)
+                    .disabled(solid),
+            )
+            .row(
+                FormRow::new("settings.appearance.vibrant", "Vibrant labels")
+                    .subtitle("Labels blend with the frosted backdrop")
+                    .trailing(vibrant)
+                    .disabled(solid),
+            )
+            .footer(glass_note),
+        group().row(
+            FormRow::new("settings.appearance.motion", "Motion")
+                .detail(Column::new(motion_radios), radios_height(3)),
+        ),
     ])
-    .gap(sys::space::gap::l())
 }

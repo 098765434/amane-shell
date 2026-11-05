@@ -1,42 +1,31 @@
 //! What's running, and where its settings are kept.
 
-use amane::{Column, Config, Text};
-use amane_kit::layout::boxed;
+use amane::{Column, Config};
+use amane_kit::form::FormRow;
 use amane_kit::settings::{Appearance, Desktop, Dock, Launcher, StatusBar};
-use amane_kit::tokens::{Styled, sys};
 
-use crate::setting;
-use amane_kit::material::{self, Level};
+use crate::{group, groups};
 
 pub fn page() -> Column {
-    let line = |text: String| {
-        Text::new(text)
-            .style(sys::r#type::label())
-            .color(material::label(Level::Primary))
-    };
-
     let files = [
-        Config::<Appearance>::path(),
-        Config::<Desktop>::path(),
-        Config::<StatusBar>::path(),
-        Config::<Dock>::path(),
-        Config::<Launcher>::path(),
+        ("Appearance", Config::<Appearance>::path()),
+        ("Desktop", Config::<Desktop>::path()),
+        ("Status Bar", Config::<StatusBar>::path()),
+        ("Dock", Config::<Dock>::path()),
+        ("Spotlight", Config::<Launcher>::path()),
     ]
-    .map(|path| path.display().to_string())
-    .join("\n");
+    .map(|(name, path)| {
+        FormRow::new(format!("settings.about.file.{name}"), name)
+            .subtitle(path.display().to_string())
+    });
 
-    Column::new(vec![
-        boxed(setting(
-            "Shell Settings",
-            line(format!("version {}", env!("CARGO_PKG_VERSION"))),
-        )),
-        boxed(setting("Settings files", line(files))),
-        boxed(setting(
-            "Overrides",
-            line(String::from(
-                "AMANE_THEME, AMANE_DENSITY and AMANE_TEXT_SCALE, when set, win over these settings",
-            )),
-        )),
+    groups(vec![
+        group().row(
+            FormRow::new("settings.about.version", "Shell Settings")
+                .value(format!("version {}", env!("CARGO_PKG_VERSION"))),
+        ),
+        group().header("Settings files").rows(files).footer(
+            "AMANE_THEME, AMANE_DENSITY and AMANE_TEXT_SCALE, when set, win over these settings.",
+        ),
     ])
-    .gap(sys::space::gap::l())
 }
