@@ -71,6 +71,16 @@ pub fn group_fill() -> Color {
     if dark() { ink(0.05) } else { ink(0.04) }
 }
 
+/// A received message's bubble, as Messages greys it: #3B3B3D in dark
+/// mode, #E9E9EB in light.
+pub fn bubble_received() -> Color {
+    if dark() {
+        Color::rgb(0x3b, 0x3b, 0x3d)
+    } else {
+        Color::rgb(0xe9, 0xe9, 0xeb)
+    }
+}
+
 /// `divider`: the kit's separator (white @ 0.10).
 pub fn divider() -> Color {
     material::separator()

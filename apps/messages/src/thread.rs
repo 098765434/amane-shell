@@ -10,26 +10,23 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 
 use amane::{
-    Center, Column, End, PhoneDevice, PhoneMessages, Radius, Rectangle, Row, SMS_PAGE, ScrollArea,
-    Service, Size, SmsKind, SmsMessage, Start, Text, TextInput, Widget,
+    Center, Column, End, PhoneDevice, PhoneMessages, Rectangle, Row, SMS_PAGE, ScrollArea, Service,
+    Size, SmsKind, SmsMessage, Start, Text, TextInput, Widget,
 };
 use amane_kit::app::{field_box, text_field};
 use amane_kit::buttons::{PushButton, Style};
-use amane_kit::color::with_alpha;
-use amane_kit::layout::{boxed, caption, fixed_width, text_height, text_width};
-use amane_kit::macform::theme as mac;
+use amane_kit::layout::{boxed, caption, fixed_width, text_height};
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
 
+use crate::bubble::{self, Look};
 use crate::{content_width, inbox, time, title};
 
 const SCROLL: &str = "messages.thread";
 const COMPOSE: &str = "messages.compose";
 
-/// A bubble's insets and corners.
-const PAD_X: f32 = 12.0;
-const PAD_Y: f32 = 7.0;
-const BUBBLE_RADIUS: f32 = 16.0;
+/// How far a run's time sits in from its bubbles' edge.
+const STAMP_INSET: f32 = 6.0;
 
 /// Messages of one side further apart than this get their own time.
 const RUN_GAP_MS: i64 = 10 * 60 * 1000;
@@ -136,13 +133,14 @@ fn bubbles(history: &[SmsMessage]) -> Vec<Box<dyn Widget>> {
             items.push(boxed(centred(caption(time::day(message.date())))));
         }
 
-        items.push(boxed(bubble(message)));
-
         let ends_run = next.is_none_or(|next| {
             next.outgoing() != message.outgoing()
                 || next.date() - message.date() > RUN_GAP_MS
                 || time::new_day(message.date(), next.date())
         });
+
+        // the tail goes on the last of a run, the one with the time under it
+        items.push(boxed(bubble(message, ends_run)));
         if ends_run || message.pending() || message.kind() == SmsKind::Failed {
             items.push(boxed(stamp(message)));
         }
@@ -157,40 +155,26 @@ fn centred(widget: impl Widget + 'static) -> Row {
         .justify(Center)
 }
 
-fn bubble(message: &SmsMessage) -> Rectangle {
-    let style = sys::r#type::label();
+fn bubble(message: &SmsMessage, tail: bool) -> Rectangle {
     let body = match (message.body(), message.attachments()) {
         ("", 0) => String::new(),
         ("", n) => format!("{n} attachment{}", if n == 1 { "" } else { "s" }),
         (body, _) => body.to_string(),
     };
 
-    let widest = (content_width() * 0.7).max(120.0);
-    let width = (text_width(&body, style) + 2.0 * PAD_X + 2.0).min(widest);
-    let text = Text::new(body)
-        .style(style)
-        .color(if message.outgoing() {
-            sys::color::accent::fg()
-        } else {
-            mac::label_primary()
-        })
-        .wrap();
-    let height = text.height_in(width - 2.0 * PAD_X) + 2.0 * PAD_Y;
-
-    let fill = match message.kind() {
-        SmsKind::Failed => sys::color::status::critical::bg(),
-        _ if message.pending() => with_alpha(sys::color::accent::bg(), 0.55),
-        _ if message.outgoing() => sys::color::accent::bg(),
-        _ => mac::control_fill(),
+    let look = match message.kind() {
+        SmsKind::Failed => Look::Failed,
+        _ if message.pending() => Look::Pending,
+        _ if message.outgoing() => Look::Sent,
+        _ => Look::Received,
     };
 
-    let bubble = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
-        .radius(Radius::Fixed(BUBBLE_RADIUS))
-        .fill(fill)
-        .padding(amane_kit::layout::pad(PAD_X, PAD_Y))
-        .child(text);
+    let widest = (content_width() * 0.7).max(120.0);
+    let bubble = bubble::bubble(&body, look, tail, widest);
+    let height = match bubble.height() {
+        Size::Fixed(height) => height,
+        _ => 0.0,
+    };
 
     side(message.outgoing(), height).child(bubble)
 }
@@ -222,7 +206,7 @@ fn stamp(message: &SmsMessage) -> Rectangle {
     };
     let height = text_height(sys::r#type::caption()) + 4.0;
     side(message.outgoing(), height)
-        .padding(amane_kit::layout::pad(PAD_X / 2.0, 0.0))
+        .padding(amane_kit::layout::pad(STAMP_INSET, 0.0))
         .child(Text::new(text).style(sys::r#type::caption()).color(color))
 }
 

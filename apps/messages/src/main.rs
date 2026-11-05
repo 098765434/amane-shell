@@ -10,6 +10,7 @@
 //! runs, it switches to them. Without a device it picks the first connected
 //! phone that has messages.
 
+mod bubble;
 mod inbox;
 mod input;
 mod thread;

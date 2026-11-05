@@ -79,8 +79,15 @@ own window rule that frosts behind it.
   (the time today, "Yesterday", a weekday, then a date). An unread one is bold,
   with the accent's dot. ⟳ asks the phone again, since a sleeping phone sends
   nothing until asked.
-- **A conversation:** grey bubbles on the left and accent ones on the right,
-  each day named over it, and the time under each run (one side, under 10
+- **A conversation:** bubbles drawn after Messages' (`apps/messages/src/bubble.rs`).
+  - Grey on the left; on the right, a gradient from the accent lightened to the accent.
+  - Each bubble is a pill, mirrored between the two sides, sized to its text up to 70 % of the
+    width.
+  - The last bubble of a run has the curled tail at its bottom corner.
+  - The outline is one vector path, made for each size, that amane fills, with the gradient, on
+    the quad pipeline.
+
+  Each day is named over its messages, and the time sits under each run (one side, under 10
   minutes apart). It opens on the newest messages and follows new ones down.
   **Load Earlier Messages** asks for 50 more. A reply shows at once, dimmed with
   "Sending…", until the phone sends it back. A failed one is red, "Not
