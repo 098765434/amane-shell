@@ -103,6 +103,26 @@ Layout heights (rows, a thin slider's hit area) stay on `sys.size.control.height
 changes the control drawn, not the room panels leave for it. The thin slider has a pill knob at its
 value; an inert slider, a meter, has none.
 
+## macform (experimental)
+
+`amane_kit::macform` holds macOS-style controls ported from the old Quickshell `macform`
+set, kept apart from the kit's own so the two can be compared before either replaces the other.
+Nothing in the shell uses them. `cargo run -p amane-kit --example macform` shows each next to
+its kit counterpart (app_id `amane-macform-gallery`, so it runs beside the bar).
+
+- Controls: `MacSwitch`, `MacCheckbox`, `MacRadioButton`, `MacSlider` (0.0–1.0),
+  `MacStepper` (hold to repeat, reported on release), `MacTextField` (red edge on a failed
+  `validate`), `MacPushButton`, `MacPopUpButton`, `MacPullDown`, `MacComboBox`,
+  `MacSegmentedNav` (back/forward) and `MacLeadingIcon`.
+- `macform::theme` maps the original MacTheme to `sys.*` tokens where the dark values match
+  (labels, `fill.secondary`, separator, accent) and keeps the rest as literals with a light twin.
+  Sizes are the original's Figma pixels times `sys.density.factor`.
+- `macform::symbol` draws the SF Symbols the controls use (chevrons, checkmark, ellipsis,
+  info) as round-joined strokes, which stay on the quad pipeline.
+- Menus (pull-down, pop-up button, combo box) are xdg-popups lined up under their control,
+  found with `on_track`, and take Up, Down, Enter and Escape.
+- Left out: the Material press ripple and the menu's scale-in (a fade and a 4 px slide instead).
+
 ## Pending tokens
 
 These are constants until they exist in Penpot (marked `TODO(token)` in the code):

@@ -4,5 +4,6 @@ pub mod buttons;
 pub mod color_picker;
 pub mod control_size;
 pub mod dropdown;
+pub mod macform;
 pub mod slider;
 pub mod tag;

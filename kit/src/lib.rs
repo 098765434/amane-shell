@@ -15,6 +15,8 @@
 //! - [`color_picker`] — a colour, from a square, a hue strip or hex.
 //! - [`control_size`] — the control sizes, and the one in use.
 //! - [`tag`] — a small fact about something, like M3's assist chip.
+//! - [`macform`] — experimental macOS-style controls ported from Quickshell,
+//!   shown against the kit's own by the `macform` example.
 //!
 //! Containers (`containers/`):
 //!
@@ -75,7 +77,7 @@ pub use animation::{edge_reveal, kinetic, motion, pager};
 pub use containers::{
     app_bar, arrangement, card, dialog, divider, flow, list, scroll_view, tooltip,
 };
-pub use controls::{buttons, color_picker, control_size, dropdown, slider, tag};
+pub use controls::{buttons, color_picker, control_size, dropdown, macform, slider, tag};
 pub use foundation::{color, icons, layout};
 pub use look::{glass, glass_region, lab, material};
 pub use platform::{app, app_icon, marker, settings};
