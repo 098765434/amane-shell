@@ -8,17 +8,18 @@ use std::thread;
 use std::time::Duration;
 
 use amane::{
-    Battery, Brightness, Center, Color, Column, Rectangle, Row, Service, Size, Text, TextInput,
-    Widget,
+    Battery, Brightness, Center, Color, Rectangle, Row, Service, Size, Text, TextInput, Widget,
 };
 use amane_kit::app::{Dialog, field_box, text_field};
 use amane_kit::arrangement::{Arrangement, Screen};
-use amane_kit::buttons::{PushButton, Segment, SegmentedButton, Style, Switch};
-use amane_kit::card::Card;
+use amane_kit::buttons::{PushButton, Segment, SegmentedButton, Switch};
+use amane_kit::color::Accent;
 use amane_kit::dropdown::Dropdown;
-use amane_kit::layout::{boxed, text_height};
-use amane_kit::list::{List, ListItem, with_row_width};
-use amane_kit::material::{self, Level};
+use amane_kit::form::{FormRow, Group, SliderRow};
+use amane_kit::icons::{ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_DISPLAY, ICON_INFO};
+use amane_kit::layout::boxed;
+use amane_kit::macform::MacLeadingIcon;
+use amane_kit::macform::theme as mac;
 use amane_kit::settings::{
     appearance, change_appearance, change_displays, change_dock, change_status_bar, displays, dock,
     status_bar,
@@ -34,7 +35,7 @@ use super::ddc::{self, Ddc, Feature, Monitor};
 use super::niri::{self, Change, Mode, Output, Transform};
 use super::trial::try_change;
 use super::{Screens, block_name, save, save_all, saved_block};
-use crate::{PAGE_WIDTH, labelled, note, setting};
+use crate::{PAGE_WIDTH, group, switch_row};
 
 /// What every section reads.
 pub struct Ctx {
@@ -87,12 +88,16 @@ fn hz(rate: f64) -> String {
 
 // ───── moving the config's own blocks ───────────────────────────────────────
 
-pub fn setup_banner(setup: &Setup) -> Option<Box<dyn Widget>> {
+pub fn setup_banner(setup: &Setup) -> Option<Group> {
     match setup {
         Setup::Ready(_) => None,
-        Setup::Missing => Some(boxed(note(
-            "niri's config.kdl wasn't found, so changes here can't be kept.",
-        ))),
+        Setup::Missing => Some(
+            group().row(
+                FormRow::new("settings.displays.missing", "Changes here can't be kept")
+                    .icon(ICON_INFO, Accent::Orange)
+                    .subtitle("niri's config.kdl wasn't found"),
+            ),
+        ),
         Setup::Unmoved(blocks) => {
             let names: Vec<String> = blocks.iter().map(|b| b.output.name.clone()).collect();
             let what = if names.is_empty() {
@@ -100,20 +105,23 @@ pub fn setup_banner(setup: &Setup) -> Option<Box<dyn Widget>> {
             } else {
                 format!("niri's config.kdl sets {} itself.", names.join(", "))
             };
-            Some(boxed(
-                Column::new(vec![
-                    boxed(note(format!(
-                        "{what} Move the display settings to Shell Settings to change them here; \
-                         until then this page only shows them."
-                    ))),
-                    boxed(
-                        PushButton::new("settings.displays.move", "Move to Settings…")
-                            .on_press(confirm_move)
-                            .build(),
+            Some(
+                group()
+                    .row(
+                        FormRow::new("settings.displays.unmoved", "Shown, not changed here")
+                            .icon(ICON_INFO, Accent::Orange)
+                            .subtitle(what)
+                            .trailing(
+                                PushButton::new("settings.displays.move", "Move to Settings…")
+                                    .on_press(confirm_move)
+                                    .build(),
+                            ),
+                    )
+                    .footer(
+                        "Move the display settings to Shell Settings to change them here; \
+                         until then this page only shows them.",
                     ),
-                ])
-                .gap(sys::space::gap::s()),
-            ))
+            )
         }
     }
 }
@@ -153,9 +161,9 @@ pub fn error_line(error: String) -> Text {
 
 /// The screens laid out to drag, with two or more, and a picker that
 /// also reaches the ones switched off.
-pub fn arrangement(ctx: &Ctx) -> Vec<Box<dyn Widget>> {
+pub fn arrangement(ctx: &Ctx) -> Option<Group> {
     if ctx.outputs.len() < 2 {
-        return Vec::new();
+        return None;
     }
     let placed: Vec<&Output> = ctx.outputs.iter().filter(|o| o.logical.is_some()).collect();
     let screens: Vec<Screen> = placed
@@ -182,32 +190,39 @@ pub fn arrangement(ctx: &Ctx) -> Vec<Box<dyn Widget>> {
     let movable: Vec<Output> = placed.iter().map(|o| (*o).clone()).collect();
     let editable = ctx.editable();
 
-    let area = Arrangement::new("settings.displays.arrangement", screens, PAGE_WIDTH, 180.0)
-        .selected(selected)
-        .on_select(move |index| {
-            if let Some(name) = names.get(index) {
-                Screens::write().selected = Some(name.clone());
+    let inset = sys::space::inset::m();
+    let area_height = 180.0;
+    let area = Arrangement::new(
+        "settings.displays.arrangement",
+        screens,
+        PAGE_WIDTH - inset * 2.0,
+        area_height,
+    )
+    .selected(selected)
+    .on_select(move |index| {
+        if let Some(name) = names.get(index) {
+            Screens::write().selected = Some(name.clone());
+        }
+    })
+    .on_move(move |index, x, y| {
+        let (Some(output), Some(name)) = (movable.get(index), moved_names.get(index)) else {
+            return;
+        };
+        if !editable {
+            return;
+        }
+        let (output, name) = (output.clone(), name.clone());
+        let what = format!("{name} at {x}, {y}");
+        thread::spawn(move || {
+            if let Err(error) = niri::apply(&name, &Change::Position(x, y)) {
+                Screens::fail(error);
             }
-        })
-        .on_move(move |index, x, y| {
-            let (Some(output), Some(name)) = (movable.get(index), moved_names.get(index)) else {
-                return;
-            };
-            if !editable {
-                return;
-            }
-            let (output, name) = (output.clone(), name.clone());
-            let what = format!("{name} at {x}, {y}");
-            thread::spawn(move || {
-                if let Err(error) = niri::apply(&name, &Change::Position(x, y)) {
-                    Screens::fail(error);
-                }
-            });
-            save(&output, what, move |block| {
-                block.position = Some((x, y));
-            });
-        })
-        .build();
+        });
+        save(&output, what, move |block| {
+            block.position = Some((x, y));
+        });
+    })
+    .build();
 
     let labels: Vec<String> = ctx
         .outputs
@@ -217,7 +232,7 @@ pub fn arrangement(ctx: &Ctx) -> Vec<Box<dyn Widget>> {
     let all: Vec<String> = ctx.outputs.iter().map(|o| o.name.clone()).collect();
     let at = all.iter().position(|n| *n == ctx.output.name).unwrap_or(0);
     let picker = Dropdown::new("settings.displays.picker", labels, at)
-        .width(280.0)
+        .width(260.0)
         .on_select(move |index| {
             if let Some(name) = all.get(index) {
                 Screens::write().selected = Some(name.clone());
@@ -225,19 +240,20 @@ pub fn arrangement(ctx: &Ctx) -> Vec<Box<dyn Widget>> {
         })
         .build();
 
-    vec![
-        boxed(setting(
-            "Arrangement",
-            Column::new(vec![
-                boxed(area),
-                boxed(note(
-                    "Drag a display to where it sits beside the others; it snaps to their edges.",
-                )),
-            ])
-            .gap(sys::space::gap::xs()),
-        )),
-        boxed(setting("Display", picker)),
-    ]
+    Some(
+        group()
+            .header("Arrangement")
+            .custom(
+                Rectangle::new()
+                    .width(Size::Parent)
+                    .height(Size::Fixed(area_height + inset * 2.0))
+                    .padding(inset)
+                    .child(area),
+                area_height + inset * 2.0,
+            )
+            .row(FormRow::new("settings.displays.picker-row", "Display").trailing(picker))
+            .footer("Drag a display to where it sits beside the others; it snaps to their edges."),
+    )
 }
 
 // ───── what it is ───────────────────────────────────────────────────────────
@@ -280,7 +296,7 @@ fn facts(output: &Output, caps: &Caps) -> Vec<Tag> {
     found
 }
 
-pub fn header(ctx: &Ctx) -> Box<dyn Widget> {
+pub fn header(ctx: &Ctx) -> Group {
     let output = &ctx.output;
     let mut details = Vec::new();
     if let Some(inches) = output.inches() {
@@ -303,88 +319,74 @@ pub fn header(ctx: &Ctx) -> Box<dyn Widget> {
         None => details.push(String::from("Off")),
     }
 
-    let padding = sys::space::inset::l();
-    let inner = PAGE_WIDTH - padding * 2.0;
+    // the tags line up under the title, past the tile
+    let tile = 28.0 * sys::density::factor();
+    let inner = PAGE_WIDTH - mac::row_pad_h() * 2.0 - tile - 10.0;
     let (facts, facts_h) = tags(inner, facts(output, &ctx.caps));
-    let gap = sys::space::gap::s();
-    let height = padding * 2.0
-        + text_height(sys::r#type::title())
-        + gap
-        + text_height(sys::r#type::caption())
-        + if facts_h > 0.0 { gap + facts_h } else { 0.0 };
-
-    let card = Card::new(vec![boxed(
-        Column::new(vec![
-            boxed(
-                Text::new(ctx.name())
-                    .style(sys::r#type::title())
-                    .color(material::label(Level::Primary)),
-            ),
-            boxed(note(details.join(" · "))),
-            boxed(
-                Rectangle::new()
-                    .width(Size::Fixed(inner))
-                    .height(Size::Fixed(facts_h))
-                    .fill(Color::TRANSPARENT)
-                    .child(facts),
-            ),
-        ])
-        .gap(gap),
-    )])
-    .padding(padding)
-    .build();
-
-    // a card fills its parent
-    boxed(
-        Rectangle::new()
-            .width(Size::Fixed(PAGE_WIDTH))
-            .height(Size::Fixed(height))
-            .fill(Color::TRANSPARENT)
-            .child(card),
-    )
+    let row = FormRow::new("settings.displays.header", ctx.name())
+        .leading(
+            MacLeadingIcon::new(ICON_DISPLAY)
+                .accent(Accent::Teal)
+                .large(true)
+                .build(),
+            tile,
+        )
+        .subtitle(details.join(" · "));
+    let row = if facts_h > 0.0 {
+        row.detail(
+            Rectangle::new()
+                .width(Size::Fixed(inner))
+                .height(Size::Fixed(facts_h))
+                .fill(Color::TRANSPARENT)
+                .child(facts),
+            facts_h,
+        )
+    } else {
+        row
+    };
+    group().row(row)
 }
 
 // ───── its picture ──────────────────────────────────────────────────────────
 
-pub fn brightness(ctx: &Ctx) -> Option<Box<dyn Widget>> {
+/// The brightness rows: the backlight's, or a monitor's own over DDC/CI.
+pub fn brightness(ctx: &Ctx, group: Group) -> Group {
     if !ctx.output.built_in() {
-        return Some(external_brightness(&ctx.output));
+        return external_brightness(&ctx.output, group);
     }
     let light = Brightness::read();
     if !light.present() {
-        return None;
+        return group;
     }
     let percent = light.percent();
     drop(light);
-    Some(boxed(setting(
-        "Brightness",
-        Row::new(vec![
-            boxed(
-                Slider::new(percent, 240.0)
-                    .wheel(false)
-                    .on_value_change(Brightness::set)
-                    .build(),
-            ),
-            boxed(note(format!("{percent} %"))),
-        ])
-        .gap(sys::space::gap::m())
-        .align(Center),
-    )))
+    group.slider(
+        SliderRow::new("Brightness", move |width| {
+            Slider::new(percent, width)
+                .wheel(false)
+                .on_value_change(Brightness::set)
+                .build()
+        })
+        .glyph(ICON_BRIGHTNESS_HIGH)
+        .value(format!("{percent} %")),
+    )
 }
 
 /// A monitor's own brightness and contrast, over DDC/CI.
-fn external_brightness(output: &Output) -> Box<dyn Widget> {
+fn external_brightness(output: &Output, group: Group) -> Group {
     let (brightness, contrast) = match Ddc::monitor(&output.name) {
         Monitor::Reading => {
-            return boxed(setting("Brightness", note("Asking the display…")));
+            return group.row(
+                FormRow::new("settings.displays.ddc", "Brightness").value("Asking the display…"),
+            );
         }
         Monitor::Silent => {
-            return boxed(setting(
-                "Brightness",
-                note(
-                    "This display doesn't take brightness from the computer (DDC/CI). Its own buttons set it.",
+            return group.row(
+                FormRow::new("settings.displays.ddc", "Brightness").subtitle(
+                    "This display doesn't take brightness from the computer (DDC/CI). Its own \
+                     buttons set it.",
                 ),
-            ));
+            );
         }
         Monitor::Levels {
             brightness,
@@ -392,31 +394,36 @@ fn external_brightness(output: &Output) -> Box<dyn Widget> {
             ..
         } => (brightness, contrast),
     };
-    let slider = |feature: Feature, level: ddc::Level| {
+    let slider = |title: &str, glyph: char, feature: Feature, level: ddc::Level| {
         let connector = output.name.clone();
-        Row::new(vec![
-            boxed(
-                Slider::new(level.percent(), 240.0)
-                    .wheel(false)
-                    .on_value_change(move |percent| Ddc::set(&connector, feature, percent))
-                    .build(),
-            ),
-            boxed(note(format!("{} %", level.percent()))),
-        ])
-        .gap(sys::space::gap::m())
-        .align(Center)
+        let percent = level.percent();
+        SliderRow::new(title, move |width| {
+            Slider::new(percent, width)
+                .wheel(false)
+                .on_value_change(move |percent| Ddc::set(&connector, feature, percent))
+                .build()
+        })
+        .glyph(glyph)
+        .value(format!("{percent} %"))
     };
-    let mut rows: Vec<Box<dyn Widget>> = Vec::new();
+    let mut group = group;
     if let Some(level) = brightness {
-        rows.push(boxed(setting(
+        group = group.slider(slider(
             "Brightness",
-            slider(Feature::Brightness, level),
-        )));
+            ICON_BRIGHTNESS_HIGH,
+            Feature::Brightness,
+            level,
+        ));
     }
     if let Some(level) = contrast {
-        rows.push(boxed(setting("Contrast", slider(Feature::Contrast, level))));
+        group = group.slider(slider(
+            "Contrast",
+            ICON_BRIGHTNESS_LOW,
+            Feature::Contrast,
+            level,
+        ));
     }
-    boxed(Column::new(rows).gap(sys::space::gap::l()))
+    group
 }
 
 /// The resolutions it lists, largest first, each once.
@@ -461,7 +468,7 @@ fn mode_change(output: &Output, to: Mode) {
     );
 }
 
-pub fn resolution(ctx: &Ctx) -> Box<dyn Widget> {
+pub fn resolution(ctx: &Ctx) -> FormRow {
     let output = ctx.output.clone();
     let sizes = sizes(&output);
     let preferred = output
@@ -484,10 +491,10 @@ pub fn resolution(ctx: &Ctx) -> Box<dyn Widget> {
 
     let looks = output
         .logical
-        .map(|l| format!("Looks like {} × {}.", l.width, l.height));
+        .map(|l| format!("Looks like {} × {}", l.width, l.height));
     let ctx_output = output.clone();
     let dropdown = Dropdown::new("settings.displays.resolution", labels, at)
-        .width(240.0)
+        .width(220.0)
         .disabled(!ctx.editable() || !output.on())
         .on_select(move |index| {
             let Some(&size) = sizes.get(index) else {
@@ -512,27 +519,27 @@ pub fn resolution(ctx: &Ctx) -> Box<dyn Widget> {
         })
         .build();
 
-    let mut column: Vec<Box<dyn Widget>> = vec![boxed(dropdown)];
-    if let Some(looks) = looks {
-        column.push(boxed(note(looks)));
-    }
-    boxed(setting(
-        "Resolution",
-        Column::new(column).gap(sys::space::gap::xs()),
-    ))
+    FormRow::new("settings.displays.resolution-row", "Resolution")
+        .subtitle(looks.unwrap_or_default())
+        .trailing(dropdown)
 }
 
-pub fn refresh_rate(ctx: &Ctx) -> Option<Box<dyn Widget>> {
-    let now = ctx.output.mode()?;
+pub fn refresh_rate(ctx: &Ctx) -> Vec<FormRow> {
+    let Some(now) = ctx.output.mode() else {
+        return Vec::new();
+    };
     let rates = rates(&ctx.output, (now.width, now.height));
     if rates.len() < 2 {
-        return Some(boxed(setting("Refresh rate", note(hz(now.hz())))));
+        return vec![
+            FormRow::new("settings.displays.refresh-row", "Refresh rate").value(hz(now.hz())),
+        ];
     }
     let slowest = hz(rates[0].hz());
     let at = rates
         .iter()
         .position(|m| m.refresh_rate == now.refresh_rate);
     let labels: Vec<String> = rates.iter().map(|m| hz(m.hz())).collect();
+    let count = labels.len();
     let output = ctx.output.clone();
     let pick = move |index: usize| {
         if let Some(to) = rates.get(index).copied()
@@ -541,56 +548,59 @@ pub fn refresh_rate(ctx: &Ctx) -> Option<Box<dyn Widget>> {
             mode_change(&output, to);
         }
     };
-    let control: Rectangle = if !ctx.editable() {
-        Rectangle::new()
-            .width(Size::Fixed(240.0))
-            .height(Size::Fixed(text_height(sys::r#type::caption())))
-            .fill(Color::TRANSPARENT)
-            .child(note(hz(now.hz())))
+    let row = FormRow::new("settings.displays.refresh-row", "Refresh rate");
+    let row = if !ctx.editable() {
+        row.value(hz(now.hz()))
     } else if labels.len() <= 5 {
-        SegmentedButton::new(
+        let segmented = SegmentedButton::new(
             "settings.displays.refresh",
             labels.into_iter().map(Segment::new).collect(),
             at,
         )
         .on_select(move |index, _| pick(index))
-        .build()
+        .build();
+        // two or three rates fit at the trailing edge; more go under the name
+        if count <= 3 {
+            row.trailing(segmented)
+        } else {
+            let height = match segmented.height() {
+                Size::Fixed(height) => height,
+                Size::Parent => mac::control_height(),
+            };
+            row.detail(segmented, height)
+        }
     } else {
-        Dropdown::new("settings.displays.refresh", labels, at.unwrap_or(0))
-            .width(240.0)
-            .on_select(pick)
-            .build()
+        row.trailing(
+            Dropdown::new("settings.displays.refresh", labels, at.unwrap_or(0))
+                .on_select(pick)
+                .build(),
+        )
     };
-    let mut column: Vec<Box<dyn Widget>> = vec![boxed(control)];
+    let mut rows = vec![row];
     if Battery::read().present() {
-        column.push(boxed(labelled(
-            "Lower the refresh rate on battery",
-            Switch::new(
+        rows.push(
+            switch_row(
                 "settings.displays.battery-refresh",
+                "Slower on battery",
                 displays().battery_refresh,
+                |on| change_displays(|now| now.battery_refresh = on),
             )
-            .on_toggle(|on| change_displays(|now| now.battery_refresh = on))
-            .build(),
-        )));
-        column.push(boxed(note(format!(
-            "On battery every display runs at its slowest rate ({} here), and goes back on AC.",
-            slowest
-        ))));
+            .subtitle(format!(
+                "Every display runs at its slowest rate ({slowest} here) until it's on AC again"
+            )),
+        );
     }
-    Some(boxed(setting(
-        "Refresh rate",
-        Column::new(column).gap(sys::space::gap::xs()),
-    )))
+    rows
 }
 
 const VRR_APP: &str = "settings.displays.vrr-app";
 
-pub fn variable_refresh(ctx: &Ctx) -> Option<Box<dyn Widget>> {
+pub fn variable_refresh(ctx: &Ctx) -> Group {
     if !ctx.output.vrr_supported {
-        return Some(boxed(setting(
-            "Variable refresh rate",
-            note("This display can't vary its refresh rate."),
-        )));
+        return group().row(
+            FormRow::new("settings.displays.vrr-row", "Variable refresh rate")
+                .value("Not supported"),
+        );
     }
     let now = ctx.vrr();
     let output = ctx.output.clone();
@@ -646,55 +656,40 @@ pub fn variable_refresh(ctx: &Ctx) -> Option<Box<dyn Widget>> {
     } else {
         "Some panels flicker at low frame rates while it's on."
     };
-    let mut column: Vec<Box<dyn Widget>> = vec![
-        boxed(control),
-        boxed(note(format!(
-            "{range}On demand turns it on only while one of the apps below shows. {flicker}"
-        ))),
-    ];
+    let mut group = group()
+        .row(FormRow::new("settings.displays.vrr-row", "Variable refresh rate").trailing(control))
+        .footer(format!(
+            "{range}On demand turns it on only while one of the apps above shows. {flicker}"
+        ));
     if now == Vrr::OnDemand {
-        column.push(vrr_apps(ctx));
+        group = vrr_apps(ctx, group);
     }
-    Some(boxed(setting(
-        "Variable refresh rate",
-        Column::new(column).gap(sys::space::gap::xs()),
-    )))
+    group
 }
 
 /// The apps that turn on-demand variable refresh on, with a field to add
 /// one by its app id.
-fn vrr_apps(ctx: &Ctx) -> Box<dyn Widget> {
+fn vrr_apps(ctx: &Ctx, group: Group) -> Group {
     let apps = ctx
         .saved
         .as_ref()
         .map(|saved| saved.vrr_apps.clone())
         .unwrap_or_default();
-    let items: Vec<ListItem> = apps
-        .iter()
-        .map(|app| {
-            let gone = app.clone();
-            ListItem::new(format!("settings.displays.vrr-app.{app}"), app.clone())
-                .bare(true)
-                .trailing(
-                    PushButton::new(format!("settings.displays.vrr-remove.{app}"), "Remove")
-                        .style(Style::Plain)
-                        .on_press(move || {
-                            let gone = gone.clone();
-                            save_all(
-                                format!("on-demand variable refresh without {gone}"),
-                                move |saved| {
-                                    saved.vrr_apps.retain(|app| *app != gone);
-                                },
-                            );
-                        })
-                        .build(),
-                )
-        })
-        .collect();
-    let list = with_row_width(PAGE_WIDTH, || {
-        List::new(items)
-            .empty("No apps yet: add one by its app id (niri msg windows shows them).")
-            .build()
+    let rows = apps.iter().map(|app| {
+        let gone = app.clone();
+        FormRow::new(format!("settings.displays.vrr-app.{app}"), app.clone()).trailing(
+            PushButton::new(format!("settings.displays.vrr-remove.{app}"), "Remove")
+                .on_press(move || {
+                    let gone = gone.clone();
+                    save_all(
+                        format!("on-demand variable refresh without {gone}"),
+                        move |saved| {
+                            saved.vrr_apps.retain(|app| *app != gone);
+                        },
+                    );
+                })
+                .build(),
+        )
     });
 
     let add = |text: &str| {
@@ -714,27 +709,35 @@ fn vrr_apps(ctx: &Ctx) -> Box<dyn Widget> {
     };
     let field =
         text_field(VRR_APP, "App id, like steam_app_1091500").on_submit(move |text| add(&text));
-    let row = Row::new(vec![
-        boxed(field_box(VRR_APP, field, 280.0)),
-        boxed(
-            PushButton::new("settings.displays.vrr-add", "Add")
-                .on_press(move || add(&TextInput::text(VRR_APP)))
-                .build(),
-        ),
-    ])
-    .gap(sys::space::gap::s())
-    .align(Center);
-
-    boxed(Column::new(vec![boxed(list), boxed(row)]).gap(sys::space::gap::s()))
+    let add_row = FormRow::new("settings.displays.vrr-add-row", "Add an app")
+        .subtitle(if apps.is_empty() {
+            "None yet: niri msg windows shows their app ids"
+        } else {
+            ""
+        })
+        .detail(
+            Row::new(vec![
+                boxed(field_box(VRR_APP, field, 280.0)),
+                boxed(
+                    PushButton::new("settings.displays.vrr-add", "Add")
+                        .on_press(move || add(&TextInput::text(VRR_APP)))
+                        .build(),
+                ),
+            ])
+            .gap(sys::space::gap::s())
+            .align(Center),
+            mac::control_height(),
+        );
+    group.rows(rows).row(add_row)
 }
 
 /// The scales offered, as macOS's "Looks like" choices.
 const SCALES: [f64; 9] = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0];
 
-pub fn scale(ctx: &Ctx) -> Box<dyn Widget> {
+pub fn scale(ctx: &Ctx) -> FormRow {
     let output = ctx.output.clone();
     let Some(logical) = output.logical else {
-        return boxed(setting("Scale", note("Off")));
+        return FormRow::new("settings.displays.scale-row", "Scale").value("Off");
     };
     let mode = output.mode();
     // the physical size a scale divides, turned as shown
@@ -770,7 +773,7 @@ pub fn scale(ctx: &Ctx) -> Box<dyn Widget> {
         .unwrap_or(0);
     let from = logical.scale;
     let dropdown = Dropdown::new("settings.displays.scale", labels, at)
-        .width(300.0)
+        .width(280.0)
         .disabled(!ctx.editable())
         .on_select(move |index| {
             if let Some(&to) = scales.get(index)
@@ -780,16 +783,9 @@ pub fn scale(ctx: &Ctx) -> Box<dyn Widget> {
             }
         })
         .build();
-    boxed(setting(
-        "Scale",
-        Column::new(vec![
-            boxed(dropdown),
-            boxed(note(
-                "Larger makes text and controls bigger, with less room for windows.",
-            )),
-        ])
-        .gap(sys::space::gap::xs()),
-    ))
+    FormRow::new("settings.displays.scale-row", "Scale")
+        .subtitle("Larger makes text and controls bigger")
+        .trailing(dropdown)
 }
 
 fn scale_change(output: &Output, from: f64, to: f64) {
@@ -802,7 +798,7 @@ fn scale_change(output: &Output, from: f64, to: f64) {
     );
 }
 
-pub fn rotation(ctx: &Ctx) -> Box<dyn Widget> {
+pub fn rotation(ctx: &Ctx) -> FormRow {
     let output = ctx.output.clone();
     let from = output.logical.map(|l| l.transform).unwrap_or_default();
     let labels: Vec<String> = Transform::ALL
@@ -811,7 +807,6 @@ pub fn rotation(ctx: &Ctx) -> Box<dyn Widget> {
         .collect();
     let at = Transform::ALL.iter().position(|t| *t == from).unwrap_or(0);
     let dropdown = Dropdown::new("settings.displays.rotation", labels, at)
-        .width(240.0)
         .disabled(!ctx.editable() || !output.on())
         .on_select(move |index| {
             let to = Transform::ALL[index];
@@ -826,27 +821,21 @@ pub fn rotation(ctx: &Ctx) -> Box<dyn Widget> {
             }
         })
         .build();
-    boxed(setting(
-        "Rotation",
-        Column::new(vec![
-            boxed(dropdown),
-            boxed(note("Turned counter-clockwise, as the screen is.")),
-        ])
-        .gap(sys::space::gap::xs()),
-    ))
+    FormRow::new("settings.displays.rotation-row", "Rotation")
+        .subtitle("Turned counter-clockwise, as the screen is")
+        .trailing(dropdown)
 }
 
 /// Where the HDR brightness slider runs, in nits.
 const SDR_WHITE: (f64, f64) = (80., 480.);
 
-pub fn hdr(ctx: &Ctx) -> Box<dyn Widget> {
+pub fn hdr(ctx: &Ctx) -> Group {
     let caps = &ctx.caps;
     let output = ctx.output.clone();
+    let title = "High dynamic range";
     if !caps.hdr10() {
-        return boxed(setting(
-            "High dynamic range",
-            note("This display doesn't support HDR."),
-        ));
+        return group()
+            .row(FormRow::new("settings.displays.hdr-row", title).value("Not supported"));
     }
 
     let peak = output
@@ -856,13 +845,12 @@ pub fn hdr(ctx: &Ctx) -> Box<dyn Widget> {
             format!(" up to {} nits", nits.round())
         });
     if !output.hdr_supported {
-        return boxed(setting(
-            "High dynamic range",
-            note(format!(
+        return group().row(
+            FormRow::new("settings.displays.hdr-row", title).subtitle(format!(
                 "This display shows HDR10{peak}, but niri can't drive it here: it needs a niri \
-                 with HDR, and the display on the main graphics card."
+             with HDR, and the display on the main graphics card."
             )),
-        ));
+        );
     }
 
     let on = output.hdr_enabled;
@@ -880,54 +868,43 @@ pub fn hdr(ctx: &Ctx) -> Box<dyn Widget> {
         })
         .build();
 
-    let mut column: Vec<Box<dyn Widget>> = vec![
-        boxed(labelled("Use HDR", switch)),
-        boxed(note(format!(
-            "HDR10{peak}. The screen blanks for a moment while it switches. The desktop looks \
-             the same; HDR video and games show brighter highlights: mpv with --vo=gpu-next, \
-             Firefox with gfx.wayland.hdr, and Vulkan games asking for HDR."
-        ))),
-    ];
+    let mut group = group().header(title).row(
+        FormRow::new("settings.displays.hdr-row", "Use HDR")
+            .subtitle(format!("HDR10{peak}"))
+            .trailing(switch),
+    );
+    let mut footer = String::from(
+        "The screen blanks for a moment while it switches. The desktop looks the same; HDR \
+         video and games show brighter highlights: mpv with --vo=gpu-next, Firefox with \
+         gfx.wayland.hdr, and Vulkan games asking for HDR.",
+    );
 
     if on {
         let nits = output.sdr_brightness.unwrap_or(203.);
         let (low, high) = SDR_WHITE;
         let at = (((nits - low) / (high - low)).clamp(0., 1.) * 100.).round() as u8;
         let slid = output.clone();
-        column.push(boxed(setting(
-            "HDR brightness",
-            Column::new(vec![
-                boxed(
-                    Row::new(vec![
-                        boxed(
-                            Slider::new(at, 240.0)
-                                .wheel(false)
-                                .inert(!ctx.editable())
-                                .on_value_change(move |value| {
-                                    let nits =
-                                        (low + (high - low) * f64::from(value) / 100.).round();
-                                    sdr_brightness(&slid, nits);
-                                })
-                                .build(),
-                        ),
-                        boxed(note(format!("{} nits", nits.round()))),
-                    ])
-                    .gap(sys::space::gap::m())
-                    .align(Center),
-                ),
-                boxed(note(
-                    "How bright white windows and text are. The backlight may not follow the \
-                     usual brightness while HDR is on.",
-                )),
-            ])
-            .gap(sys::space::gap::xs()),
-        )));
+        let inert = !ctx.editable();
+        group = group.slider(
+            SliderRow::new("HDR brightness", move |width| {
+                Slider::new(at, width)
+                    .wheel(false)
+                    .inert(inert)
+                    .on_value_change(move |value| {
+                        let nits = (low + (high - low) * f64::from(value) / 100.).round();
+                        sdr_brightness(&slid, nits);
+                    })
+                    .build()
+            })
+            .value(format!("{} nits", nits.round())),
+        );
+        footer.push_str(
+            " HDR brightness is how bright white windows and text are; the backlight may not \
+             follow the usual brightness while HDR is on.",
+        );
     }
 
-    boxed(setting(
-        "High dynamic range",
-        Column::new(column).gap(sys::space::gap::s()),
-    ))
+    group.footer(footer)
 }
 
 /// Shows `nits` at once, and saves it once the slider has rested for a moment, so a drag is
@@ -955,57 +932,54 @@ fn sdr_brightness(output: &Output, nits: f64) {
 
 // ───── night light ──────────────────────────────────────────────────────────
 
-pub fn night_light() -> Vec<Box<dyn Widget>> {
+pub fn night_light() -> Group {
     super::night::section()
 }
 
 // ───── OLED care ────────────────────────────────────────────────────────────
 
-pub fn oled_care(ctx: &Ctx) -> Option<Box<dyn Widget>> {
+pub fn oled_care(ctx: &Ctx) -> Option<Group> {
     if !ctx.caps.oled() {
         return None;
     }
     let dark = appearance().mode == Some(Scheme::Dark);
     let hidden = dock().auto_hide;
     let bar_hidden = status_bar().auto_hide;
-    Some(boxed(setting(
-        "OLED care",
-        Column::new(vec![
-            boxed(note(
+    Some(
+        group()
+            .header("OLED care")
+            .row(switch_row(
+                "settings.displays.oled.dark",
+                "Dark appearance",
+                dark,
+                |on| change_appearance(|now| now.mode = on.then_some(Scheme::Dark)),
+            ))
+            .row(switch_row(
+                "settings.displays.oled.dock",
+                "Hide the dock automatically",
+                hidden,
+                |on| change_dock(|now| now.auto_hide = on),
+            ))
+            .row(switch_row(
+                "settings.displays.oled.bar",
+                "Hide the status bar automatically",
+                bar_hidden,
+                |on| change_status_bar(|now| now.auto_hide = on),
+            ))
+            .row(
+                FormRow::new("settings.displays.oled.sleep", "Screen sleep timing")
+                    .on_press(|| crate::go("power")),
+            )
+            .footer(
                 "An OLED's pixels wear with what stays lit for hours. Dark colours, a dock that \
                  hides and a screen that sleeps when idle all spare them.",
-            )),
-            boxed(labelled(
-                "Dark appearance",
-                Switch::new("settings.displays.oled.dark", dark)
-                    .on_toggle(|on| change_appearance(|now| now.mode = on.then_some(Scheme::Dark)))
-                    .build(),
-            )),
-            boxed(labelled(
-                "Hide the dock until the pointer meets the screen's edge",
-                Switch::new("settings.displays.oled.dock", hidden)
-                    .on_toggle(|on| change_dock(|now| now.auto_hide = on))
-                    .build(),
-            )),
-            boxed(labelled(
-                "Hide the status bar until the pointer meets the screen's edge",
-                Switch::new("settings.displays.oled.bar", bar_hidden)
-                    .on_toggle(|on| change_status_bar(|now| now.auto_hide = on))
-                    .build(),
-            )),
-            boxed(
-                PushButton::new("settings.displays.oled.sleep", "Screen Sleep Timing…")
-                    .on_press(|| crate::go("power"))
-                    .build(),
             ),
-        ])
-        .gap(sys::space::gap::s()),
-    )))
+    )
 }
 
 // ───── more than one ────────────────────────────────────────────────────────
 
-pub fn multiple(ctx: &Ctx) -> Option<Box<dyn Widget>> {
+pub fn multiple(ctx: &Ctx) -> Option<Group> {
     if ctx.outputs.len() < 2 {
         return None;
     }
@@ -1064,17 +1038,16 @@ pub fn multiple(ctx: &Ctx) -> Option<Box<dyn Widget>> {
         })
         .build();
 
-    Some(boxed(setting(
-        "This display",
-        Column::new(vec![
-            boxed(labelled("Use this display", use_it)),
-            boxed(labelled(
-                "Main display: niri starts with it focused",
-                main_switch,
-            )),
-        ])
-        .gap(sys::space::gap::s()),
-    )))
+    Some(
+        group()
+            .header("This display")
+            .row(FormRow::new("settings.displays.enabled-row", "Use this display").trailing(use_it))
+            .row(
+                FormRow::new("settings.displays.main-row", "Main display")
+                    .subtitle("niri starts with it focused")
+                    .trailing(main_switch),
+            ),
+    )
 }
 
 // ───── advanced ─────────────────────────────────────────────────────────────
@@ -1087,115 +1060,110 @@ const CUSTOM_SCALE: &str = "settings.displays.custom-scale";
 const CUSTOM_MODE: &str = "settings.displays.custom-mode";
 const BACKDROP: &str = "settings.displays.backdrop";
 
-pub fn advanced(ctx: &Ctx) -> Box<dyn Widget> {
+pub fn advanced(ctx: &Ctx) -> Group {
     let open = ADVANCED.get();
     let toggle = PushButton::new(
         "settings.displays.advanced",
-        if open { "Hide Advanced" } else { "Advanced…" },
+        if open { "Hide" } else { "Show" },
     )
-    .style(Style::Plain)
     .on_press(move || ADVANCED.set(!open))
     .build();
+    let group = group().row(
+        FormRow::new("settings.displays.advanced-row", "Advanced")
+            .subtitle("Custom scale and mode, the overview's backdrop, what the display reports")
+            .trailing(toggle),
+    );
     if !open {
-        return boxed(toggle);
+        return group;
     }
 
     let editable = ctx.editable();
     let output = ctx.output.clone();
-    let mut rows: Vec<Box<dyn Widget>> = vec![boxed(toggle)];
 
     // any scale niri takes
     let scale_output = output.clone();
     let from = output.logical.map_or(1.0, |l| l.scale);
-    rows.push(boxed(setting(
-        "Custom scale",
-        field_row(CUSTOM_SCALE, "1.6", editable, move |text| {
-            match text.trim().trim_end_matches('%').trim().parse::<f64>() {
-                Ok(value) => {
-                    // a percentage, or a factor
-                    let to = if value > 10.0 { value / 100.0 } else { value };
-                    if (0.5..=4.0).contains(&to) {
-                        scale_change(&scale_output, from, to);
-                    } else {
-                        Screens::fail(String::from("A scale goes from 0.5 to 4."));
+    let custom_scale = FormRow::new("settings.displays.custom-scale-row", "Custom scale")
+        .subtitle("A factor or a percentage, from 0.5 to 4")
+        .detail(
+            field_row(CUSTOM_SCALE, "1.6", editable, move |text| {
+                match text.trim().trim_end_matches('%').trim().parse::<f64>() {
+                    Ok(value) => {
+                        // a percentage, or a factor
+                        let to = if value > 10.0 { value / 100.0 } else { value };
+                        if (0.5..=4.0).contains(&to) {
+                            scale_change(&scale_output, from, to);
+                        } else {
+                            Screens::fail(String::from("A scale goes from 0.5 to 4."));
+                        }
                     }
+                    Err(_) => Screens::fail(String::from("A scale is a number, like 1.6.")),
                 }
-                Err(_) => Screens::fail(String::from("A scale is a number, like 1.6.")),
-            }
-        }),
-    )));
+            }),
+            mac::control_height(),
+        );
 
     // a mode the monitor doesn't list
     let mode_output = output.clone();
-    rows.push(boxed(setting(
-        "Custom mode",
-        Column::new(vec![
-            boxed(field_row(
-                CUSTOM_MODE,
-                "2560x1600@90",
-                editable,
-                move |text| {
-                    let Some((w, h, rate)) = parse_mode(text) else {
-                        Screens::fail(String::from("A mode reads like 2560x1600@90."));
-                        return;
-                    };
-                    let Some(from) = mode_output.mode() else {
-                        return;
-                    };
-                    try_change(
-                        &mode_output,
-                        Change::CustomMode(w, h, rate),
-                        Change::Mode(from),
-                        format!("{} custom mode {w}x{h}@{rate}", mode_output.name),
-                        move |block| {
-                            block.mode = Some((w, h, rate));
-                            block.custom = true;
-                        },
-                    );
-                },
-            )),
-            boxed(note(
-                "A mode the display doesn't list can leave it blank; it goes back by itself \
-                 unless kept.",
-            )),
-        ])
-        .gap(sys::space::gap::xs()),
-    )));
+    let custom_mode = FormRow::new("settings.displays.custom-mode-row", "Custom mode")
+        .subtitle(
+            "A mode the display doesn't list can leave it blank; it goes back by itself unless kept",
+        )
+        .detail(
+            field_row(CUSTOM_MODE, "2560x1600@90", editable, move |text| {
+                let Some((w, h, rate)) = parse_mode(text) else {
+                    Screens::fail(String::from("A mode reads like 2560x1600@90."));
+                    return;
+                };
+                let Some(from) = mode_output.mode() else {
+                    return;
+                };
+                try_change(
+                    &mode_output,
+                    Change::CustomMode(w, h, rate),
+                    Change::Mode(from),
+                    format!("{} custom mode {w}x{h}@{rate}", mode_output.name),
+                    move |block| {
+                        block.mode = Some((w, h, rate));
+                        block.custom = true;
+                    },
+                );
+            }),
+            mac::control_height(),
+        );
 
     // behind the workspaces in the overview
     let backdrop_output = output.clone();
-    rows.push(boxed(setting(
-        "Overview backdrop",
-        field_row(BACKDROP, "#1e1e2e", editable, move |text| {
-            let color = text.trim().to_string();
-            let valid = color.len() == 7
-                && color.starts_with('#')
-                && color[1..].chars().all(|c| c.is_ascii_hexdigit());
-            if !valid && !color.is_empty() {
-                Screens::fail(String::from("A colour reads like #1e1e2e."));
-                return;
-            }
-            save(
-                &backdrop_output,
-                format!("{} backdrop {color}", backdrop_output.name),
-                move |block| block.backdrop = (!color.is_empty()).then_some(color),
-            );
-        }),
-    )));
+    let backdrop = FormRow::new("settings.displays.backdrop-row", "Overview backdrop")
+        .subtitle("A colour like #1e1e2e behind the workspaces")
+        .detail(
+            field_row(BACKDROP, "#1e1e2e", editable, move |text| {
+                let color = text.trim().to_string();
+                let valid = color.len() == 7
+                    && color.starts_with('#')
+                    && color[1..].chars().all(|c| c.is_ascii_hexdigit());
+                if !valid && !color.is_empty() {
+                    Screens::fail(String::from("A colour reads like #1e1e2e."));
+                    return;
+                }
+                save(
+                    &backdrop_output,
+                    format!("{} backdrop {color}", backdrop_output.name),
+                    move |block| block.backdrop = (!color.is_empty()).then_some(color),
+                );
+            }),
+            mac::control_height(),
+        );
 
     // what was read from the screen itself
-    rows.push(boxed(setting(
-        "Read from the display",
-        Column::new(
-            raw_facts(ctx)
-                .into_iter()
-                .map(|line| boxed(note(line)))
-                .collect(),
-        )
-        .gap(sys::space::gap::_2xs()),
-    )));
+    let read = FormRow::new("settings.displays.raw-row", "Read from the display")
+        .subtitle(raw_facts(ctx).join("\n"));
 
-    boxed(Column::new(rows).gap(sys::space::gap::l()))
+    group
+        .row(custom_scale)
+        .row(custom_mode)
+        .row(backdrop)
+        .row(read)
 }
 
 /// A text field and its Set button.

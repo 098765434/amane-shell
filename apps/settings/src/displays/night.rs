@@ -11,14 +11,16 @@ use std::fs;
 use std::path::PathBuf;
 use std::thread;
 
-use amane::{Center, Column, Row, Service, TextInput, ipc_call, watch_file};
+use amane::{Center, Row, Service, TextInput, Widget, ipc_call, watch_file};
 use amane_kit::app::{field_box, text_field};
-use amane_kit::buttons::{PushButton, Segment, SegmentedButton, Switch};
+use amane_kit::buttons::{PushButton, Segment, SegmentedButton};
+use amane_kit::form::{FormRow, Group, SliderRow};
 use amane_kit::layout::boxed;
+use amane_kit::macform::theme as mac;
 use amane_kit::slider::Slider;
 use amane_kit::tokens::sys;
 
-use crate::{labelled, note, setting};
+use crate::{group, switch_row};
 
 const SHELL: &str = "amane";
 
@@ -159,43 +161,37 @@ const LONGITUDE: &str = "settings.displays.night.longitude";
 const FROM: &str = "settings.displays.night.from";
 const TO: &str = "settings.displays.night.to";
 
-pub fn section() -> Vec<Box<dyn amane::Widget>> {
+pub fn section() -> Group {
     let Some(light) = NightLight::read().light.clone() else {
-        return vec![boxed(setting(
-            "Night Light",
-            Column::new(vec![
-                boxed(note(
-                    "The shell isn't answering, or wlsunset isn't installed, so Night Light \
-                     can't be set here.",
-                )),
-                boxed(
-                    PushButton::new("settings.displays.night.retry", "Try Again")
-                        .on_press(|| {
-                            thread::spawn(|| NightLight::write().light = ask());
-                        })
-                        .build(),
-                ),
-            ])
-            .gap(sys::space::gap::s()),
-        ))];
+        return group().header("Night Light").row(
+            FormRow::new(
+                "settings.displays.night.missing",
+                "Night Light isn't available",
+            )
+            .subtitle("The shell isn't answering, or wlsunset isn't installed")
+            .trailing(
+                PushButton::new("settings.displays.night.retry", "Try Again")
+                    .on_press(|| {
+                        thread::spawn(|| NightLight::write().light = ask());
+                    })
+                    .build(),
+            ),
+        );
     };
 
     let warmth = (COOLEST - light.kelvin.clamp(WARMEST, COOLEST)) * 100 / (COOLEST - WARMEST);
-    let temperature = Row::new(vec![
-        boxed(
-            Slider::new(warmth as u8, 240.0)
-                .wheel(false)
-                .dimmed(!light.on)
-                .on_value_change(|value| {
-                    let kelvin = COOLEST - (COOLEST - WARMEST) * u32::from(value) / 100;
-                    tell(vec![String::from("temperature"), kelvin.to_string()]);
-                })
-                .build(),
-        ),
-        boxed(note(format!("{} K, warmer to the right", light.kelvin))),
-    ])
-    .gap(sys::space::gap::m())
-    .align(Center);
+    let on = light.on;
+    let temperature = SliderRow::new("Colour temperature", move |width| {
+        Slider::new(warmth as u8, width)
+            .wheel(false)
+            .dimmed(!on)
+            .on_value_change(|value| {
+                let kelvin = COOLEST - (COOLEST - WARMEST) * u32::from(value) / 100;
+                tell(vec![String::from("temperature"), kelvin.to_string()]);
+            })
+            .build()
+    })
+    .value(format!("{} K, warmer to the right", light.kelvin));
 
     let at = match light.schedule {
         Schedule::Manual => 0,
@@ -224,46 +220,52 @@ pub fn section() -> Vec<Box<dyn amane::Widget>> {
         _ => tell(words(&["schedule", "hours", "21:00", "07:00"])),
     })
     .build();
+    let schedule_h = match schedule.height() {
+        amane::Size::Fixed(height) => height,
+        amane::Size::Parent => mac::control_height(),
+    };
 
-    let mut column: Vec<Box<dyn amane::Widget>> = vec![
-        boxed(labelled(
+    let group = group()
+        .header("Night Light")
+        .row(switch_row(
+            "settings.displays.night.on",
             "Warm the screen's colours",
-            Switch::new("settings.displays.night.on", light.on)
-                .on_toggle(|on| tell(words(&[if on { "on" } else { "off" }])))
-                .build(),
-        )),
-        boxed(temperature),
-        boxed(schedule),
-    ];
+            light.on,
+            |on| tell(words(&[if on { "on" } else { "off" }])),
+        ))
+        .slider(temperature)
+        .row(
+            FormRow::new("settings.displays.night.schedule-row", "Schedule")
+                .detail(schedule, schedule_h),
+        );
     match &light.schedule {
-        Schedule::Manual => column.push(boxed(note("Warm all day while it's on."))),
-        Schedule::Sun(lat, lon) => {
-            column.push(boxed(pair(
-                (LATITUDE, "Latitude", &format!("{lat:.2}")),
-                (LONGITUDE, "Longitude", &format!("{lon:.2}")),
-                |lat, lon| tell(words(&["schedule", "sun", lat, lon])),
-            )));
-            column.push(boxed(note(
+        Schedule::Manual => group.footer("Warm all day while it's on."),
+        Schedule::Sun(lat, lon) => group
+            .row(
+                FormRow::new("settings.displays.night.place", "Place").detail(
+                    pair(
+                        (LATITUDE, "Latitude", &format!("{lat:.2}")),
+                        (LONGITUDE, "Longitude", &format!("{lon:.2}")),
+                        |lat, lon| tell(words(&["schedule", "sun", lat, lon])),
+                    ),
+                    mac::control_height(),
+                ),
+            )
+            .footer(
                 "Warm from sunset to sunrise here, the screen's own colours by day. The place \
                  starts at your time zone's.",
-            )));
-        }
-        Schedule::Hours(from, to) => {
-            column.push(boxed(pair(
-                (FROM, "From", from),
-                (TO, "To", to),
-                |from, to| tell(words(&["schedule", "hours", from, to])),
-            )));
-            column.push(boxed(note(
-                "Warm between these times, as HH:MM, overnight when To is earlier.",
-            )));
-        }
+            ),
+        Schedule::Hours(from, to) => group
+            .row(
+                FormRow::new("settings.displays.night.hours", "Hours").detail(
+                    pair((FROM, "From", from), (TO, "To", to), |from, to| {
+                        tell(words(&["schedule", "hours", from, to]))
+                    }),
+                    mac::control_height(),
+                ),
+            )
+            .footer("Warm between these times, as HH:MM, overnight when To is earlier."),
     }
-
-    vec![boxed(setting(
-        "Night Light",
-        Column::new(column).gap(sys::space::gap::s()),
-    ))]
 }
 
 /// Two short fields and a Set button that sends both.

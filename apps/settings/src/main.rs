@@ -379,20 +379,6 @@ fn header(title: &str, inner: bool) -> Row {
     Row::new(parts).gap(10.0).align(Center)
 }
 
-/// A control with its name after it on one line, for a switch.
-pub fn labelled(name: &str, control: impl Widget + 'static) -> Row {
-    Row::new(vec![
-        boxed(control),
-        boxed(
-            Text::new(name)
-                .style(sys::r#type::label())
-                .color(material::label(Level::Primary)),
-        ),
-    ])
-    .gap(sys::space::gap::m())
-    .align(Center)
-}
-
 /// How wide a list's rows are on a page: the window's default width less
 /// its insets, the sidebar and the gap between.
 pub const PAGE_WIDTH: f32 = 760.0 - 2.0 * 16.0 - 200.0 - 24.0;
@@ -433,17 +419,4 @@ pub fn switch_row(id: &str, title: &str, on: bool, toggle: impl Fn(bool) + 'stat
 /// How tall a column of `count` radios is, for a row's detail.
 pub fn radios_height(count: usize) -> f32 {
     count as f32 * mac::control_height()
-}
-
-/// A setting's name over its control, the way every page lays them out.
-pub fn setting(name: &str, control: impl Widget + 'static) -> Column {
-    Column::new(vec![
-        boxed(
-            Text::new(name)
-                .style(sys::r#type::caption())
-                .color(material::label(Level::Secondary)),
-        ),
-        boxed(control),
-    ])
-    .gap(sys::space::gap::xs())
 }

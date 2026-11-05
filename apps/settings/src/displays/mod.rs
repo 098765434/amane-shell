@@ -28,10 +28,11 @@ use std::time::Duration;
 
 use amane::{Column, Service};
 use amane_kit::buttons::PushButton;
+use amane_kit::form::{FormRow, Group};
 use amane_kit::layout::boxed;
 use amane_kit::tokens::sys;
 
-use crate::note;
+use crate::{group, groups};
 use caps::Caps;
 use config::{Displays as Saved, OutputConfig, Setup};
 use niri::Output;
@@ -258,25 +259,37 @@ pub fn save_all(what: String, edit: impl FnOnce(&mut Saved) + Send + 'static) {
     });
 }
 
+/// `group` built onto `rows`, if there is one with anything in it.
+fn add(rows: &mut Vec<Box<dyn amane::Widget>>, group: Option<Group>) {
+    if let Some(group) = group.filter(|group| !group.is_empty()) {
+        rows.push(boxed(group.build()));
+    }
+}
+
 pub fn page() -> Column {
     let screens = Screens::read();
     let Some(outputs) = screens.outputs.clone() else {
         drop(screens);
-        return Column::new(vec![
-            boxed(note("niri isn't answering, so its displays can't be read.")),
-            boxed(
-                PushButton::new("settings.displays.retry", "Try Again")
-                    .on_press(|| {
-                        thread::spawn(Screens::refresh);
-                    })
-                    .build(),
+        return groups(vec![
+            group().row(
+                FormRow::new("settings.displays.silent", "niri isn't answering")
+                    .subtitle("Its displays can't be read until it does")
+                    .trailing(
+                        PushButton::new("settings.displays.retry", "Try Again")
+                            .on_press(|| {
+                                thread::spawn(Screens::refresh);
+                            })
+                            .build(),
+                    ),
             ),
-        ])
-        .gap(sys::space::gap::m());
+        ]);
     };
     let Some(output) = screens.selected_output().cloned() else {
         drop(screens);
-        return Column::new(vec![boxed(note("niri has no displays."))]);
+        return groups(vec![group().row(FormRow::new(
+            "settings.displays.none",
+            "niri has no displays",
+        ))]);
     };
     let caps = screens.caps_of(&output.name);
     let setup = screens.setup.clone();
@@ -295,23 +308,26 @@ pub fn page() -> Column {
     };
 
     let mut rows: Vec<Box<dyn amane::Widget>> = Vec::new();
-    rows.extend(sections::setup_banner(&setup));
+    add(&mut rows, sections::setup_banner(&setup));
     if let Some(error) = error {
         rows.push(boxed(sections::error_line(error)));
     }
-    rows.extend(sections::arrangement(&ctx));
-    rows.push(sections::header(&ctx));
-    rows.extend(sections::brightness(&ctx));
-    rows.push(sections::resolution(&ctx));
-    rows.extend(sections::refresh_rate(&ctx));
-    rows.extend(sections::variable_refresh(&ctx));
-    rows.push(sections::scale(&ctx));
-    rows.push(sections::rotation(&ctx));
-    rows.push(sections::hdr(&ctx));
-    rows.extend(sections::night_light());
-    rows.extend(sections::oled_care(&ctx));
-    rows.extend(sections::multiple(&ctx));
-    rows.push(sections::advanced(&ctx));
+    add(&mut rows, sections::arrangement(&ctx));
+    add(&mut rows, Some(sections::header(&ctx)));
+
+    // the picture: how bright, how big, how fast, which way up
+    let picture = sections::brightness(&ctx, group())
+        .row(sections::resolution(&ctx))
+        .rows(sections::refresh_rate(&ctx))
+        .row(sections::scale(&ctx))
+        .row(sections::rotation(&ctx));
+    add(&mut rows, Some(picture));
+    add(&mut rows, Some(sections::variable_refresh(&ctx)));
+    add(&mut rows, Some(sections::hdr(&ctx)));
+    add(&mut rows, Some(sections::night_light()));
+    add(&mut rows, sections::oled_care(&ctx));
+    add(&mut rows, sections::multiple(&ctx));
+    add(&mut rows, Some(sections::advanced(&ctx)));
 
     Column::new(rows).gap(sys::space::gap::l())
 }
