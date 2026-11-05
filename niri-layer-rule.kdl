@@ -279,10 +279,10 @@ window-rule {
     }
 }
 
-// The phone's screen: a floating window shaped like the phone, with the alert's
-// corners and shadow.
+// The phone's screen, and its apps opened alone: floating windows shaped like
+// the phone, with the alert's corners and shadow.
 window-rule {
-    match app-id="^amane-mirror$"
+    match app-id="^amane-mirror(\\..+)?$"
     open-floating true
     geometry-corner-radius 34
     clip-to-geometry true

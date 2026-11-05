@@ -6,7 +6,14 @@
 //! `amane-mirror --device <kdeconnect id>` mirrors that phone; `--serial
 //! <adb serial>` names the adb device instead. Without either it mirrors
 //! KDE Connect's connected phone, or the one phone on USB.
+//!
+//! `--app <package> [--name <label>]` opens one of the phone's apps in a
+//! window of its own instead: a virtual display that resizes with the
+//! window, under its own app id (`amane-mirror.<package>`), so each app is
+//! a window of its own. `--list-apps --serial <serial> --device <id>`
+//! writes the phone's apps for Spotlight and exits.
 
+mod apps;
 mod audio;
 mod decode;
 mod input;
@@ -48,12 +55,33 @@ const ICON_SCREEN_OFF: char = '\u{e201}';
 struct Target {
     device: Option<String>,
     serial: Option<String>,
+    /// One app on a virtual display, by package, and its name.
+    app: Option<(String, Option<String>)>,
 }
 
 static TARGET: Mutex<Target> = Mutex::new(Target {
     device: None,
     serial: None,
+    app: None,
 });
+
+/// The virtual display's density: twice Android's baseline, so an app laid
+/// out at the window's logical size has twice its pixels, sharp on a HiDPI
+/// screen.
+const APP_DPI: u32 = 320;
+
+thread_local! {
+    // the virtual display's size last asked for, in its pixels
+    static DISPLAY_SIZE: std::cell::Cell<(u16, u16)> = const { std::cell::Cell::new((0, 0)) };
+}
+
+fn app_target() -> Option<(String, Option<String>)> {
+    TARGET
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .app
+        .clone()
+}
 
 // the addresses already handed to adb to stay connected to
 static WANTED: Mutex<Option<HashSet<IpAddr>>> = Mutex::new(None);
@@ -78,6 +106,9 @@ fn follow(args: &[String]) {
     }
     if let Some(serial) = flag(args, "--serial") {
         target.serial = Some(serial);
+    }
+    if let Some(app) = flag(args, "--app") {
+        target.app = Some((app, flag(args, "--name")));
     }
 }
 
@@ -149,8 +180,26 @@ fn want(phone: &Phone) {
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+
+    if args.iter().any(|arg| arg == "--list-apps") {
+        std::process::exit(match apps::write(&args) {
+            Ok(()) => 0,
+            Err(why) => {
+                eprintln!("amane-mirror: {why}");
+                1
+            }
+        });
+    }
+
     follow(&args);
-    app("amane-mirror")
+
+    // each phone app is a window, and an app, of its own
+    let id = match app_target() {
+        Some((package, _)) => format!("amane-mirror.{package}"),
+        None => String::from("amane-mirror"),
+    };
+
+    app(&id)
         .normal_window("main", main_window)
         .on_activate(follow)
         .run();
@@ -175,6 +224,14 @@ fn main_window() -> Window {
         let mut options = server::Options::screen(&serial);
         // KDE Connect already shares it; both would echo each change back
         options.clipboard_autosync = !phone.as_ref().is_some_and(|phone| phone.shares_clipboard);
+        if let Some((package, _)) = app_target() {
+            let (width, height) = display_size();
+            options.new_display = Some(format!("{width}x{height}/{APP_DPI}"));
+            options.start_app = Some(package);
+            // the phone's sound comes with its screen's window, not each app's
+            options.audio = false;
+            DISPLAY_SIZE.set((width, height));
+        }
         session::start(options);
     }
 
@@ -183,6 +240,18 @@ fn main_window() -> Window {
         width,
         height: (height - BAR_HEIGHT).max(1.0),
     };
+
+    // an app's display follows its window
+    if app_target().is_some() && phase == Phase::Live {
+        let wanted = display_size();
+        if wanted != DISPLAY_SIZE.get() && wanted.0 > 0 && wanted.1 > 0 {
+            DISPLAY_SIZE.set(wanted);
+            session::send(protocol::Control::ResizeDisplay {
+                width: wanted.0,
+                height: wanted.1,
+            });
+        }
+    }
 
     let screen: Box<dyn Widget> = match &phase {
         Phase::Live => boxed(Video::new(&session::FEED).radius(sys::radius::raised())),
@@ -211,14 +280,25 @@ fn main_window() -> Window {
         .on_track(input::track)
         .on_drop(push_files);
 
-    let layout = Column::new(vec![boxed(video), boxed(bar(screen_off))])
+    let bar = if app_target().is_some() {
+        app_bar()
+    } else {
+        bar(screen_off)
+    };
+
+    let layout = Column::new(vec![boxed(video), boxed(bar)])
         .width(Size::Parent)
         .height(Size::Parent);
 
-    let title = if name.is_empty() {
-        "Phone Screen".to_string()
+    let title = match app_target() {
+        Some((package, label)) => label.unwrap_or(package),
+        None if name.is_empty() => "Phone Screen".to_string(),
+        None => name,
+    };
+    let (initial_width, initial_height) = if app_target().is_some() {
+        (480.0, 800.0)
     } else {
-        name
+        (420.0, 860.0)
     };
 
     Window::new()
@@ -230,7 +310,7 @@ fn main_window() -> Window {
                 .child(layout),
         )
         .title(&title)
-        .size(420.0, 860.0)
+        .size(initial_width, initial_height)
         .min_size(280.0, 480.0)
         .on_shortcut(standard_shortcut)
         .on_key(|key: Key| input::key(key))
@@ -275,6 +355,33 @@ fn status(title: &str, detail: &str, retry: bool) -> Rectangle {
                 .align(Center)
                 .width(Size::Parent)
                 .height(Size::Parent),
+        )
+}
+
+/// The virtual display's size for the window's video area, in its pixels:
+/// twice the logical size, even, as encoders want.
+fn display_size() -> (u16, u16) {
+    let (width, height) = amane::window_size();
+    let (width, height) = if width <= 0.0 {
+        (480.0, 800.0)
+    } else {
+        (width, height)
+    };
+    let even = |value: f32| ((value * 2.0) as u16) & !1;
+    (even(width), even((height - BAR_HEIGHT).max(100.0)))
+}
+
+/// An app's bar: Back, the one key an app needs that a click can't give.
+fn app_bar() -> Rectangle {
+    Rectangle::new()
+        .width(Size::Parent)
+        .height(Size::Fixed(BAR_HEIGHT))
+        .align_child(Center, Center)
+        .child(
+            IconButton::new("amane.mirror.back", ICON_BACK)
+                .on_press(input::back)
+                .tooltip("main", "Back")
+                .build(),
         )
 }
 

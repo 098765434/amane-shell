@@ -248,7 +248,8 @@ pub fn rules() -> Vec<LayerRule> {
 pub const APP_IDS: &[&str] = &["amane-settings", "amane-messages"];
 
 /// The phone's screen (`apps/mirror`): its own floating window, shaped
-/// like a phone, opaque so nothing frosts behind it.
+/// like a phone, opaque so nothing frosts behind it; each of the phone's
+/// apps opened alone is `amane-mirror.<package>`.
 pub const PHONE_SCREEN_APP_ID: &str = "amane-mirror";
 
 /// The line `gen-layer-rules.sh` looks for; everything after it goes into
@@ -401,15 +402,16 @@ fn render_phone_screen() -> String {
     let radius = with_key(key, dialog::radius);
 
     let mut out = String::from(
-        "\n// The phone's screen: a floating window shaped like the phone, with the alert's\n\
-         // corners and shadow.\n",
+        "\n// The phone's screen, and its apps opened alone: floating windows shaped like\n\
+         // the phone, with the alert's corners and shadow.\n",
     );
     out.push_str("window-rule {\n");
-    let _ = writeln!(
-        out,
-        "    match app-id=\"{}\"",
-        kdl_string(&anchored(PHONE_SCREEN_APP_ID))
+    // the screen's id alone, or with an app's package after a dot
+    let pattern = format!(
+        "{}(\\..+)?$",
+        anchored(PHONE_SCREEN_APP_ID).trim_end_matches('$')
     );
+    let _ = writeln!(out, "    match app-id=\"{}\"", kdl_string(&pattern));
     out.push_str("    open-floating true\n");
     let _ = writeln!(out, "    geometry-corner-radius {radius}");
     out.push_str("    clip-to-geometry true\n");
@@ -628,13 +630,16 @@ mod tests {
             include_str!("../../apps/messages/src/main.rs"),
             include_str!("../../apps/mirror/src/main.rs"),
         ];
-        for app_id in APP_IDS.iter().chain([&PHONE_SCREEN_APP_ID]) {
+        for app_id in APP_IDS {
             assert!(
                 apps.iter()
                     .any(|app| app.contains(&format!("app(\"{app_id}\")"))),
                 "{app_id} isn't an app id any app uses"
             );
         }
+        // the phone's screen names its id apart, as its apps add theirs to it
+        assert!(apps[2].contains(&format!("String::from(\"{PHONE_SCREEN_APP_ID}\")")));
+        assert!(apps[2].contains(&format!("format!(\"{PHONE_SCREEN_APP_ID}.{{package}}\")")));
     }
 
     #[test]

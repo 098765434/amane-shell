@@ -132,6 +132,11 @@ fn run(options: &Options) -> Result<(), String> {
 
         thread::spawn(move || write_control(control, messages));
         thread::spawn(move || read_device(reader));
+
+        // the server waits a moment for its virtual display before starting it there
+        if let Some(app) = &options.start_app {
+            send(Control::StartApp(app.clone()));
+        }
     }
 
     if let Some(audio) = connection.audio.take() {

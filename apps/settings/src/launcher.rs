@@ -12,8 +12,9 @@ use amane_kit::settings::{AppsLayout, change_launcher, launcher};
 use crate::{group, groups, radios_height, switch_row};
 
 /// The sources the search draws on, by the ids the launcher knows them by.
-const PROVIDERS: [(&str, &str); 6] = [
+const PROVIDERS: [(&str, &str); 7] = [
     ("apps", "Applications"),
+    ("phone-apps", "Phone apps"),
     ("actions", "Actions"),
     ("files", "Files"),
     ("answers", "Calculations and conversions"),

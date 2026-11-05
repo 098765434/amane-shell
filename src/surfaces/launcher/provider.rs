@@ -93,8 +93,17 @@ pub(super) struct Found {
 }
 
 /// Every provider, in the order their fallbacks list.
-fn providers() -> [&'static dyn Provider; 7] {
-    [&Answers, &Apps, &Actions, &Files, &Clipboard, &Url, &Web]
+fn providers() -> [&'static dyn Provider; 8] {
+    [
+        &Answers,
+        &Apps,
+        &super::phone_apps::PhoneApps,
+        &Actions,
+        &Files,
+        &Clipboard,
+        &Url,
+        &Web,
+    ]
 }
 
 /// What `query` finds in its mode, narrowed to `scope` if there is one,

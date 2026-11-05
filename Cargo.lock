@@ -74,6 +74,7 @@ dependencies = [
  "ffmpeg-next",
  "libpulse-binding",
  "libpulse-simple-binding",
+ "serde_json",
 ]
 
 [[package]]

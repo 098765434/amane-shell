@@ -37,6 +37,7 @@ mod grid;
 mod header;
 mod mode;
 mod model;
+mod phone_apps;
 mod provider;
 mod rank;
 mod results;

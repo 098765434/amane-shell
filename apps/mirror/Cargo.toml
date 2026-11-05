@@ -14,3 +14,4 @@ amane-kit = { path = "../../kit" }
 ffmpeg-next = { version = "9", default-features = false, features = ["codec", "format"] }
 libpulse-binding = "2"
 libpulse-simple-binding = "2"
+serde_json = "1"

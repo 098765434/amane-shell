@@ -54,6 +54,9 @@ pub struct Options {
     /// resizes with the window.
     pub new_display: Option<String>,
     pub camera: Option<(Facing, String)>,
+    /// An app to start once connected (on the virtual display, if there's
+    /// one), by package; not a server argument but a control message.
+    pub start_app: Option<String>,
 }
 
 impl Options {
@@ -69,6 +72,7 @@ impl Options {
             clipboard_autosync: true,
             new_display: None,
             camera: None,
+            start_app: None,
         }
     }
 
