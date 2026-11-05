@@ -55,7 +55,7 @@ mod pages;
 mod slider_card;
 mod system_row;
 mod tile;
-mod tiles;
+pub(crate) mod tiles;
 
 use std::cell::{Cell, RefCell};
 use std::time::Instant;

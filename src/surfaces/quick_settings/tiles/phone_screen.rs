@@ -51,8 +51,13 @@ struct Pairing {
     code: String,
 }
 
+type Known = Option<(Option<std::time::SystemTime>, BTreeSet<String>)>;
+
 thread_local! {
     static PAIRING: RefCell<Option<Pairing>> = const { RefCell::new(None) };
+
+    // the remembered phones, and when their file was written
+    static KNOWN: RefCell<Known> = const { RefCell::new(None) };
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -70,10 +75,27 @@ fn file() -> Option<PathBuf> {
 }
 
 fn remembered() -> Remembered {
-    file()
-        .and_then(|path| std::fs::read_to_string(path).ok())
+    let Some(path) = file() else {
+        return Remembered::default();
+    };
+    // read again only when the file changed: cards ask on every draw
+    let modified = std::fs::metadata(&path)
+        .and_then(|meta| meta.modified())
+        .ok();
+    if let Some(known) = KNOWN.with_borrow(|known| {
+        known
+            .as_ref()
+            .filter(|(when, _)| *when == modified)
+            .map(|(_, devices)| devices.clone())
+    }) {
+        return Remembered { devices: known };
+    }
+    let known: Remembered = std::fs::read_to_string(&path)
+        .ok()
         .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default()
+        .unwrap_or_default();
+    KNOWN.set(Some((modified, known.devices.clone())));
+    known
 }
 
 fn remember(device: &str) {

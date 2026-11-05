@@ -188,7 +188,7 @@ pub fn measure(n: &Notification, place: Place) -> Layout {
     let content = text.max(notification::card::icon_size()).max(trailing);
 
     let mut height = padding.top + padding.bottom + content;
-    if !n.actions().is_empty() {
+    if has_actions(n) {
         height += gap + sys::size::control::height();
     }
 
@@ -344,7 +344,7 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
     .gap(sys::space::gap::m());
 
     let mut rows: Vec<Box<dyn Widget>> = vec![boxed(top)];
-    if !n.actions().is_empty() {
+    if has_actions(n) {
         rows.push(boxed(actions(
             n,
             width - padding.left - padding.right,
@@ -380,14 +380,21 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
     }
 }
 
-/// The sender's actions as equal buttons across `width`.
+/// Whether the card has a row of buttons: the sender's, or Open on Phone.
+fn has_actions(n: &Notification) -> bool {
+    !n.actions().is_empty() || super::phone::open_command(n).is_some()
+}
+
+/// The sender's actions as equal buttons across `width`, then Open on
+/// Phone for one of the phone's notifications.
 fn actions(n: &Notification, width: f32, color: Color) -> Row {
-    let count = n.actions().len() as f32;
+    let phone = super::phone::open_command(n);
+    let count = (n.actions().len() + usize::from(phone.is_some())) as f32;
     let gap = sys::space::gap::s();
     let each = ((width - gap * (count - 1.0)) / count).max(1.0);
     let id = n.id();
 
-    let buttons = n
+    let mut buttons: Vec<Box<dyn Widget>> = n
         .actions()
         .iter()
         .map(|action| {
@@ -405,6 +412,23 @@ fn actions(n: &Notification, width: f32, color: Color) -> Row {
             )
         })
         .collect();
+
+    if let Some(command) = phone {
+        buttons.push(boxed(
+            PushButton::new(
+                format!("amane.notification.{id}.action.phone"),
+                super::phone::LABEL,
+            )
+            .width(each)
+            .text(sys::r#type::label())
+            .color(color)
+            .on_press(move || {
+                amane::spawn_activated(&command);
+                Notifications::dismiss(id);
+            })
+            .build(),
+        ));
+    }
 
     Row::new(buttons).gap(gap)
 }

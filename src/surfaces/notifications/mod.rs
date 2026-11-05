@@ -16,6 +16,7 @@
 pub mod card;
 pub mod center;
 pub mod dnd;
+pub mod phone;
 pub mod toasts;
 
 use amane::Notifications;
