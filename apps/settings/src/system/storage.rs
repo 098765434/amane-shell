@@ -4,15 +4,14 @@
 use std::ffi::CString;
 use std::thread;
 
-use amane::{Center, Column, Row, Service, Size, Widget};
+use amane::{Column, Service};
 use amane_kit::buttons::PushButton;
-use amane_kit::layout::boxed;
+use amane_kit::form::FormRow;
 use amane_kit::slider::Slider;
-use amane_kit::tokens::sys;
 
 use super::controls;
 use super::nixos::run;
-use crate::{note, setting};
+use crate::{group, groups};
 
 /// Used and total bytes of the file system at `path`.
 fn disk(path: &str) -> Option<(u64, u64)> {
@@ -97,25 +96,21 @@ impl Garbage {
     }
 }
 
-fn meter(path: &str) -> Row {
+/// How full the file system at `path` is, as a row with a meter.
+fn meter(id: &str, title: &str, path: &str) -> FormRow {
+    let row = FormRow::new(format!("settings.storage.{id}"), title);
     match disk(path) {
         Some((used, total)) => {
             let percent = (used * 100 / total.max(1)) as u8;
-            {
-                Row::new(vec![
-                    boxed(Slider::new(percent, 240.0).inert(true).build()),
-                    boxed(note(format!(
-                        "{} of {} used · {} free",
-                        human(used),
-                        human(total),
-                        human(total.saturating_sub(used))
-                    ))),
-                ])
-                .gap(sys::space::gap::m())
-                .align(Center)
-            }
+            row.subtitle(format!(
+                "{} of {} used · {} free",
+                human(used),
+                human(total),
+                human(total.saturating_sub(used))
+            ))
+            .trailing(Slider::new(percent, 140.0).inert(true).build())
         }
-        None => Row::new(vec![boxed(note("Not mounted."))]),
+        None => row.subtitle("Not mounted"),
     }
 }
 
@@ -123,41 +118,36 @@ pub fn page() -> Column {
     let garbage = Garbage::read();
     let _ = run; // the dry run goes through Command for its stderr
 
-    let mut parts: Vec<Box<dyn Widget>> = vec![
-        boxed(setting("Nix store (/nix)", meter("/nix"))),
-        boxed(setting("Boot partition (/boot)", meter("/boot"))),
-        boxed(setting(
-            "Clean up",
-            Column::new(vec![
-                boxed(
-                    Row::new(vec![
-                        boxed(
-                            PushButton::new("settings.storage.check", "Check What a Clean-up Frees")
-                                .disabled(garbage.running)
-                                .on_press(Garbage::check)
-                                .build(),
-                        ),
-                        boxed(note(if garbage.running {
-                            String::from("Looking…")
-                        } else {
-                            garbage.result.clone().unwrap_or_default()
-                        })),
-                    ])
-                    .gap(sys::space::gap::m())
-                    .align(Center),
-                ),
-                boxed(note(
-                    "Old generations and unreferenced store paths. The weekly clean-up keeps the last 14 days; run `sudo nix-collect-garbage -d` to free it all now.",
-                )),
-            ])
-            .gap(sys::space::gap::xs()),
-        )),
-    ];
-    parts.extend(controls::for_page("storage"));
+    let found = if garbage.running {
+        String::from("Looking…")
+    } else {
+        garbage
+            .result
+            .clone()
+            .unwrap_or_else(|| String::from("Old generations and unreferenced store paths"))
+    };
 
-    Column::new(parts)
-        .gap(sys::space::gap::l())
-        .width(Size::Parent)
+    groups(vec![
+        group()
+            .row(meter("nix", "Nix store (/nix)", "/nix"))
+            .row(meter("boot", "Boot partition (/boot)", "/boot")),
+        group()
+            .row(
+                FormRow::new("settings.storage.clean", "Clean up")
+                    .subtitle(found)
+                    .trailing(
+                        PushButton::new("settings.storage.check", "Check…")
+                            .disabled(garbage.running)
+                            .on_press(Garbage::check)
+                            .build(),
+                    ),
+            )
+            .footer(
+                "The weekly clean-up keeps the last 14 days; run `sudo nix-collect-garbage -d` \
+                 to free it all now.",
+            ),
+        group().rows(controls::rows("storage")),
+    ])
 }
 
 #[cfg(test)]

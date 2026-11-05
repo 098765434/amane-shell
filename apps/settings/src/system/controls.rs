@@ -7,13 +7,16 @@ use amane::{Column, Row, Service, TextInput, Widget};
 use amane_kit::app::{field_box, text_field};
 use amane_kit::buttons::{PushButton, Style, Switch};
 use amane_kit::dropdown::Dropdown;
+use amane_kit::form::FormRow;
 use amane_kit::layout::boxed;
+use amane_kit::macform::MacStepper;
+use amane_kit::macform::theme as mac;
 use amane_kit::slider::Slider;
 use amane_kit::tokens::sys;
 use serde_json::Value;
 
 use super::adopt;
-use super::nixos::{Control, Entry, Managed, Snapshot, show, show_as};
+use super::nixos::{Control, Entry, Managed, Snapshot, Tier, show, show_as};
 use crate::{labelled, note, setting};
 
 /// What the last Set said when it refused a value.
@@ -136,6 +139,169 @@ pub fn switch(entry: &Entry, managed: &Managed) -> Switch {
     Switch::new(format!("settings.system.{}", entry.id), on)
         .disabled(!entry.managed())
         .on_toggle(move |on| set(&e, Value::Bool(on)))
+}
+
+/// A `'static` id for a stepper's field, made once per setting.
+fn stepper_id(id: &str) -> &'static str {
+    thread_local! {
+        static IDS: std::cell::RefCell<std::collections::HashMap<String, &'static str>> =
+            std::cell::RefCell::new(std::collections::HashMap::new());
+    }
+    IDS.with_borrow_mut(|ids| {
+        *ids.entry(id.to_string())
+            .or_insert_with(|| Box::leak(format!("settings.system.stepper.{id}").into_boxed_str()))
+    })
+}
+
+/// What [`notes`] says, as one line for a row's subtitle, and the Move to
+/// Settings… button when the setting is set by hand somewhere it can be
+/// moved from.
+pub fn summary(
+    entry: &Entry,
+    managed: &Managed,
+    feedback: &Feedback,
+) -> (String, Option<PushButton>) {
+    let pending = managed.current.get(&entry.id) != managed.committed.get(&entry.id);
+    let mut parts: Vec<String> = Vec::new();
+    let mut button = None;
+
+    if let Some((id, why)) = &feedback.error
+        && *id == entry.id
+    {
+        parts.push(format!("Not set: {why}"));
+    }
+    if !entry.managed() {
+        let places: Vec<String> = match entry.set_at.as_slice() {
+            [] => entry
+                .set_elsewhere()
+                .iter()
+                .map(|f| f.to_string())
+                .collect(),
+            at => at
+                .iter()
+                .map(|(file, line)| format!("{file}:{line}"))
+                .collect(),
+        };
+        let movable = adopt::plan(entry).is_ok();
+        parts.push(format!(
+            "Set in {}{}",
+            places.join(", "),
+            if movable {
+                ""
+            } else {
+                "; edit it by hand to change it here"
+            }
+        ));
+        if movable {
+            let e = entry.clone();
+            button = Some(
+                PushButton::new(
+                    format!("settings.system.move.{}", entry.id),
+                    "Move to Settings…",
+                )
+                .on_press(move || adopt::confirm(&e)),
+            );
+        }
+    } else if pending {
+        let was = managed.committed.get(&entry.id).map_or_else(
+            || show_as(&entry.control, &entry.default),
+            |v| show_as(&entry.control, v),
+        );
+        parts.push(format!("Was {was} · waiting for Apply"));
+    } else if entry.tier == Tier::Restart {
+        // "after Apply" goes for every row, and the page says it once
+        parts.push(entry.tier.note().to_string());
+    }
+    (parts.join(" · "), button)
+}
+
+/// The row for one registry setting: its control at the trailing edge,
+/// what [`summary`] says under its name.
+pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<FormRow> {
+    let value = managed.value(&entry.id, &entry.value).clone();
+    let locked = !entry.managed();
+    let (subtitle, mover) = summary(entry, managed, feedback);
+    let row = FormRow::new(
+        format!("settings.system.row.{}", entry.id),
+        entry.label.clone(),
+    )
+    .subtitle(subtitle);
+
+    let row = match &entry.control {
+        // the Apps page draws the list itself
+        Control::Packages => return None,
+        Control::Switch => row.trailing(switch(entry, managed).build()),
+        Control::Int { min, max } => {
+            let (min, max) = (*min, *max);
+            let now = value.as_i64().unwrap_or(min).clamp(min, max);
+            let e = entry.clone();
+            row.trailing(
+                MacStepper::new(stepper_id(&entry.id), now as f64)
+                    .range(min as f64, max as f64)
+                    .width(80.0)
+                    .disabled(locked)
+                    .on_change(move |value| set(&e, Value::from(value.round() as i64)))
+                    .build(),
+            )
+        }
+        Control::Choice(choices) => {
+            let labels = choices.iter().map(|c| c.label.clone()).collect();
+            let selected = choices.iter().position(|c| c.value == value).unwrap_or(0);
+            let e = entry.clone();
+            let values: Vec<Value> = choices.iter().map(|c| c.value.clone()).collect();
+            row.trailing(
+                Dropdown::new(
+                    format!("settings.system.choice.{}", entry.id),
+                    labels,
+                    selected,
+                )
+                .disabled(locked)
+                .on_select(move |i| {
+                    if let Some(value) = values.get(i) {
+                        set(&e, value.clone());
+                    }
+                })
+                .build(),
+            )
+        }
+        Control::TimeZone | Control::Text => {
+            let id = field_id(&entry.id);
+            let shown = show(&value);
+            if TextInput::text(id).is_empty() && !shown.is_empty() {
+                TextInput::set_text(id, &shown);
+            }
+            let e = entry.clone();
+            let e2 = entry.clone();
+            let field = text_field(id, &shown).on_submit(move |text| {
+                set(&e, Value::from(text.trim()));
+            });
+            row.trailing(field_box(id, field, 180.0)).trailing(
+                PushButton::new(format!("settings.system.set.{}", entry.id), "Set")
+                    .disabled(locked)
+                    .on_press(move || {
+                        set(&e2, Value::from(TextInput::text(id).trim()));
+                    })
+                    .build(),
+            )
+        }
+    };
+
+    Some(match mover {
+        Some(button) => row.detail(Row::new(vec![boxed(button.build())]), mac::control_height()),
+        None => row,
+    })
+}
+
+/// A row for each setting the registry lists on `page`.
+pub fn rows(page: &str) -> Vec<FormRow> {
+    let snapshot = Snapshot::read();
+    let managed = Managed::read();
+    let feedback = Feedback::read();
+    snapshot
+        .for_page(page)
+        .into_iter()
+        .filter_map(|entry| row(entry, &managed, &feedback))
+        .collect()
 }
 
 pub fn for_page(page: &str) -> Vec<Box<dyn Widget>> {

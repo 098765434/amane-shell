@@ -2,24 +2,15 @@
 //! and variant, each a managed setting; the console keymap follows the
 //! keyboard layout (`console.useXkbConfig`).
 
-use amane::{Column, Size, Widget};
-use amane_kit::layout::boxed;
-use amane_kit::tokens::sys;
+use amane::Column;
 
 use super::controls;
-use crate::note;
+use crate::{group, groups};
 
 pub fn page() -> Column {
-    let mut parts: Vec<Box<dyn Widget>> = controls::for_page("general");
-    parts.push(boxed(
-        note(
-            "The name and keyboard take effect after Apply; a new language needs a restart. \
-             Layouts and variants are the names localectl lists; the console keymap follows \
-             the layout.",
-        )
-        .wrap(),
-    ));
-    Column::new(parts)
-        .gap(sys::space::gap::l())
-        .width(Size::Parent)
+    groups(vec![group().rows(controls::rows("general")).footer(
+        "The name and keyboard take effect after Apply; a new language needs a restart. \
+         Layouts and variants are the names localectl lists; the console keymap follows \
+         the layout.",
+    )])
 }

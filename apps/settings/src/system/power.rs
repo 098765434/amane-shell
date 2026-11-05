@@ -1,31 +1,24 @@
 //! Power & Lock: the idle timeouts behind hypridle (`amane.idle.*` in the
 //! registry), and whether hypridle is running.
 
-use amane::{Column, Service, Size, Widget};
-use amane_kit::layout::boxed;
-use amane_kit::tokens::sys;
+use amane::{Column, Service};
+use amane_kit::form::FormRow;
 
 use super::controls;
 use super::services::{Units, status_text};
-use crate::note;
+use crate::{group, groups};
 
 pub fn page() -> Column {
     let units = Units::read();
 
-    let mut parts: Vec<Box<dyn Widget>> = controls::for_page("power");
-    parts.push(boxed(
-        note(
+    groups(vec![
+        group().rows(controls::rows("power")).footer(
             "hypridle dims the screen, locks it (swaylock) and turns it off after these idle \
              times. Locking before sleep and the lock shortcut stay as they are.",
-        )
-        .wrap(),
-    ));
-    parts.push(boxed(note(format!(
-        "hypridle: {}",
-        status_text(units.get("hypridle.service", true))
-    ))));
-
-    Column::new(parts)
-        .gap(sys::space::gap::l())
-        .width(Size::Parent)
+        ),
+        group().row(
+            FormRow::new("settings.power.hypridle", "hypridle")
+                .value(status_text(units.get("hypridle.service", true))),
+        ),
+    ])
 }

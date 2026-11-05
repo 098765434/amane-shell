@@ -7,16 +7,17 @@ use std::collections::BTreeMap;
 use std::thread;
 use std::time::Duration;
 
-use amane::{Center, Column, Row, Service, Size, Widget};
-use amane_kit::buttons::{PushButton, Style};
+use amane::{Column, Row, Service};
+use amane_kit::buttons::PushButton;
+use amane_kit::form::FormRow;
 use amane_kit::layout::boxed;
-use amane_kit::tokens::sys;
+use amane_kit::macform::theme as mac;
 
 use super::controls::{self, Feedback};
 use super::job::BuildJob;
 use super::nixos::{Managed, Snapshot, run};
 use super::storage::human;
-use crate::{labelled, note};
+use crate::{group, groups};
 
 /// A unit as systemd reports it.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -209,16 +210,23 @@ pub fn page() -> Column {
         .filter_map(|entry| entry.on_demand.as_deref())
         .collect();
 
-    let mut parts: Vec<Box<dyn Widget>> = vec![boxed(note(
+    let mut services = group().footer(
         "Switches take effect after Apply. Start and Stop act now, and don't survive a restart.",
-    ))];
+    );
 
     if snapshot.loading && entries.is_empty() {
-        parts.push(boxed(note("Reading the configuration…")));
-    } else if let Some(error) = &snapshot.error {
-        parts.push(boxed(
-            note(error.clone()).color(sys::color::status::critical::text()),
+        services = services.row(FormRow::new(
+            "settings.services.loading",
+            "Reading the configuration…",
         ));
+    } else if let Some(error) = &snapshot.error {
+        services = services.row(
+            FormRow::new(
+                "settings.services.error",
+                "The configuration didn't evaluate",
+            )
+            .subtitle(error.lines().last().unwrap_or("").to_string()),
+        );
     }
 
     for entry in entries {
@@ -234,36 +242,17 @@ pub fn page() -> Column {
             .as_deref()
             .and_then(|unit| units.get(unit, entry.user_scope));
 
-        let mut lines: Vec<Box<dyn Widget>> = Vec::new();
-
-        let mut head: Vec<Box<dyn Widget>> = vec![boxed(labelled(
-            &entry.label,
-            controls::switch(entry, &managed).build(),
-        ))];
+        let (summary, mover) = controls::summary(entry, &managed, &feedback);
+        let mut lines: Vec<String> = Vec::new();
         if entry.unit.is_some() {
-            head.push(boxed(note(status_text(state))));
+            lines.push(status_text(state));
         }
-        lines.push(boxed(
-            Row::new(head).gap(sys::space::gap::m()).align(Center),
-        ));
-        lines.extend(controls::notes(entry, &managed, &feedback));
+        lines.push(summary);
 
-        if let Some(link) = entry.on_demand.as_deref().and_then(|id| snapshot.entry(id)) {
-            lines.push(boxed(labelled(
-                &link.label,
-                controls::switch(link, &managed)
-                    .disabled(!link.managed() || !enabled)
-                    .build(),
-            )));
-            let pending = managed.current.get(&link.id) != managed.committed.get(&link.id);
-            let refused = feedback
-                .error
-                .as_ref()
-                .is_some_and(|(id, _)| *id == link.id);
-            if pending || refused || !link.managed() {
-                lines.extend(controls::notes(link, &managed, &feedback));
-            }
-        }
+        let mut row = FormRow::new(
+            format!("settings.services.row.{}", entry.id),
+            entry.label.clone(),
+        );
 
         if let Some(unit) = entry.unit.clone()
             && enabled
@@ -276,34 +265,59 @@ pub fn page() -> Column {
                 ("start", "Start")
             };
             let busy = actions.busy.as_deref() == Some(unit.as_str());
-            let user = entry.user_scope;
-            let unit2 = unit.clone();
-            let mut row: Vec<Box<dyn Widget>> = vec![boxed(
-                PushButton::new(format!("settings.services.{verb}.{}", entry.id), label)
-                    .style(Style::Tonal)
-                    .disabled(building || busy || !units.looked)
-                    .on_press(move || act(unit2.clone(), user, verb))
-                    .build(),
-            )];
             if busy {
-                row.push(boxed(note("Working…")));
+                lines.push(String::from("Working…"));
             }
-            lines.push(boxed(Row::new(row).gap(sys::space::gap::m()).align(Center)));
             if let Some((failed, why)) = &actions.error
                 && *failed == unit
             {
-                lines.push(boxed(
-                    note(why.clone()).color(sys::color::status::critical::text()),
-                ));
+                lines.push(why.clone());
             }
+            let user = entry.user_scope;
+            let unit2 = unit.clone();
+            row = row.trailing(
+                PushButton::new(format!("settings.services.{verb}.{}", entry.id), label)
+                    .disabled(building || busy || !units.looked)
+                    .on_press(move || act(unit2.clone(), user, verb))
+                    .build(),
+            );
         }
+        row = row
+            .subtitle(lines.join(" · "))
+            .trailing(controls::switch(entry, &managed).build());
+        if let Some(mover) = mover {
+            row = row.detail(Row::new(vec![boxed(mover.build())]), mac::control_height());
+        }
+        services = services.row(row);
 
-        parts.push(boxed(Column::new(lines).gap(sys::space::gap::xs())));
+        if let Some(link) = entry.on_demand.as_deref().and_then(|id| snapshot.entry(id)) {
+            let pending = managed.current.get(&link.id) != managed.committed.get(&link.id);
+            let refused = feedback
+                .error
+                .as_ref()
+                .is_some_and(|(id, _)| *id == link.id);
+            let mut linked_row = FormRow::new(
+                format!("settings.services.row.{}", link.id),
+                format!("{}: {}", entry.label, link.label.to_lowercase()),
+            )
+            .trailing(
+                controls::switch(link, &managed)
+                    .disabled(!link.managed() || !enabled)
+                    .build(),
+            );
+            if pending || refused || !link.managed() {
+                let (summary, mover) = controls::summary(link, &managed, &feedback);
+                linked_row = linked_row.subtitle(summary);
+                if let Some(mover) = mover {
+                    linked_row = linked_row
+                        .detail(Row::new(vec![boxed(mover.build())]), mac::control_height());
+                }
+            }
+            services = services.row(linked_row);
+        }
     }
 
-    Column::new(parts)
-        .gap(sys::space::gap::l())
-        .width(Size::Parent)
+    groups(vec![services])
 }
 
 #[cfg(test)]
