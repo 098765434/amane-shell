@@ -84,7 +84,7 @@ A `config.kdl` with uncommitted edits is refused.
 | Variable refresh rate | dropdown: Off, On demand, Always; the range it follows; under On demand, the apps that turn it on (by app id with **Add**, or from a menu of the apps open; **Remove**) | `variable-refresh-rate [on-demand=true]` and the `window-rule`, at once |
 | Scale | dropdown, 100–300 % in quarters, each "looks like W × H", and any other scale already in use | `scale`, tried first |
 | Rotation | dropdown: Standard, 90°, 180°, 270°, flipped and flipped turned (counter-clockwise, as niri turns) | `transform`, tried first |
-| High dynamic range | **Use HDR**, tried first, with what the screen shows and an ⓘ naming the apps that show HDR; while on, **HDR brightness**, 80–480 nits ([below](#hdr)) | `hdr`, `sdr-brightness` |
+| High dynamic range | **Use HDR**, tried first, with what the screen shows and an ⓘ naming the apps that show HDR; while on, **Brightness** moves SDR white ([below](#hdr)) | `hdr`, `sdr-brightness` |
 | Advanced › (sub-page) | Custom scale (0.5–4, or a percentage), Custom mode (`2560x1600@90`), Overview backdrop (`#rrggbb`), and the raw facts each source gave | `scale`, `mode custom=true`, `backdrop-color` |
 | All Displays | with a battery, **Slower on battery** ([below](#refresh-rate-on-battery)) | `displays.json` |
 | Night Light | a switch, how warm, and when: All day, Sunset to sunrise, Set hours | the shell's state ([below](#night-light)) |
@@ -96,8 +96,8 @@ turning a screen off. niri makes it, and
 "Keep these display settings?" asks with a 15-second countdown
 ([`Dialog::countdown`](../kit/components.md#dialog)). **Keep Changes** writes it. **Revert**,
 Escape, or nobody answering puts the old setting back over IPC, and nothing is written. Brightness,
-variable refresh, the place, the main display and the backdrop apply at once. HDR brightness
-applies at once and is written once the slider rests, so a drag is one commit.
+variable refresh, the place, the main display and the backdrop apply at once. In HDR, the
+brightness is written by the shell once it rests (see [HDR](#hdr)).
 
 **Variable refresh.** niri's on-demand mode turns VRR on only while a window that a
 `variable-refresh-rate true` rule matches is on the screen, so On demand without any apps does
@@ -113,9 +113,16 @@ and:
 
 - **Use HDR** is niri's `hdr` (`Change::Hdr`). It's tried first because niri sets the output up
   again from scratch, so the screen blanks for a moment. Saved as `hdr` in `displays.kdl`.
-- **HDR brightness** is where SDR white sits in HDR mode (`sdr-brightness`, niri's default 203
-  nits). The desktop looks the same in HDR mode; this is how bright it is. The note says the
-  backlight may not follow the usual brightness while HDR is on, as on some amdgpu OLED panels.
+- **Brightness** while HDR is on is where SDR white sits (`sdr-brightness`, niri's default 203
+  nits), not the backlight: in PQ the OLED takes its light from the signal and ignores the
+  backlight. amane's `Brightness` asks niri every two seconds whether the built-in panel is in
+  HDR and, while it is, maps its 1–100 % onto 25–500 nits (or the panel's peak, if lower) in even
+  steps of the eye, each percent the same factor brighter. So the keys, Quick Settings, this page
+  and hypridle's dimming all work the same in and out of HDR. niri holds that change only until
+  its config is read again, so the shell (`services/display/hdr_white.rs`) writes the
+  `sdr-brightness` line into the panel's block in `displays.kdl` once a level has rested for a
+  second. It changes only that line and commits nothing; the next change made on this page
+  commits it.
 - The note names what shows HDR: mpv with `--vo=gpu-next`, Firefox with `gfx.wayland.hdr`, and
   Vulkan games that ask for HDR. These describe their colour through `wp-color-management-v1`,
   and niri shows their highlights up to the panel's peak.

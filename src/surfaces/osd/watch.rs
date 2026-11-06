@@ -4,9 +4,9 @@
 //! of the display reads the services, so it runs as one of them changes,
 //! and shows what differs from the last reading.
 //!
-//! Left out, on purpose: the screen's brightness (hypridle dims it on idle
-//! with `brightnessctl`, which the display shouldn't answer; its keys come
-//! through [`keys`](super::keys)), and the microphone's level (apps turn it
+//! Left out, on purpose: the screen's brightness (hypridle dims it on idle,
+//! which the display shouldn't answer; its keys come through
+//! [`keys`](super::keys)), and the microphone's level (apps turn it
 //! up and down themselves; only muting shows).
 //!
 //! Nothing shows for the first reading, a device that's gone or not found

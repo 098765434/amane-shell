@@ -91,6 +91,8 @@ fn main() -> ExitCode {
     services::network::bt_battery::watch();
     // and lowers the displays' refresh rate on battery, when asked to
     services::power::power_refresh::watch();
+    // and keeps the screen's brightness in HDR, which niri only holds until a reload
+    services::display::hdr_white::watch();
 
     let share = ContextMenu::new()
         .item(

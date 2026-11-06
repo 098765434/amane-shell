@@ -33,8 +33,7 @@ Nothing shows for:
 - the services reporting a key's own change a moment later (it already showed);
 - what Quick Settings' controls change while it's open (they're their own feedback); the lock keys
   still show;
-- the screen's brightness changed by anything but the keys (hypridle dims it on idle with
-  `brightnessctl`);
+- the screen's brightness changed by anything but the keys, such as hypridle dimming it on idle;
 - the microphone's level (apps turn it themselves); only muting shows.
 
 ## The keys
@@ -46,7 +45,12 @@ answers `ok` (it isn't running, or is older than this command):
 XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nvolume\\nup\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock)\" = ok ] || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+ -l 1.0"; }
 ```
 
-Volume and brightness step 5%, 1% with Shift. Raising the volume unmutes, as on macOS. The keys
+hypridle dims through the same socket, `osd brightness dim 10` and `osd brightness restore`, so
+it dims in HDR too (falling back to `brightnessctl -s` and `-r`). Dimming shows nothing, never
+brightens, and keeps the level it dimmed from; that level is never written as the HDR brightness.
+
+Volume and brightness step 5%, 1% with Shift. In HDR they move SDR white rather than the backlight
+(see [Displays](displays.md#hdr)). Raising the volume unmutes, as on macOS. The keys
 never take the screen to black (1% at least). The airplane key isn't bound: the kernel's rfkill
 handler already acts on it, and the display shows the change.
 

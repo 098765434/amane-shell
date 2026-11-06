@@ -16,6 +16,7 @@ use amane::{Audio, Brightness, PowerProfile, Service};
 use super::{Readout, show};
 use crate::components::icons::{ICON_AIRPLANE, power_profile_glyph};
 use crate::components::slider::STEP;
+use crate::services::display::hdr_white;
 use crate::services::network::rfkill::Rfkill;
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::surfaces::launcher::profile_name;
@@ -25,7 +26,7 @@ use crate::surfaces::launcher::profile_name;
 const SETTLE: Duration = Duration::from_millis(1000);
 
 const USAGE: &str = "usage: osd volume up|down|mute [fine] | mic mute \
-    | brightness up|down [fine] | kbd-light up|down|cycle | airplane toggle \
+    | brightness up|down [fine] | brightness dim <percent> | brightness restore | kbd-light up|down|cycle | airplane toggle \
     | profile cycle | show volume|mic|brightness|kbd-light";
 
 thread_local! {
@@ -33,6 +34,9 @@ thread_local! {
     static VOLUME: Cell<Option<(u8, Instant)>> = const { Cell::new(None) };
     static BRIGHTNESS: Cell<Option<(u8, Instant)>> = const { Cell::new(None) };
     static LIGHT: Cell<Option<(u32, Instant)>> = const { Cell::new(None) };
+
+    // the brightness idle dimmed from, until it's put back
+    static UNDIMMED: Cell<Option<u8>> = const { Cell::new(None) };
 
     // when a key last changed anything
     static PRESSED: Cell<Option<Instant>> = const { Cell::new(None) };
@@ -71,6 +75,11 @@ pub fn ipc(args: &[String]) -> String {
         ["mic", "mute"] => mic_mute(),
         ["brightness", "up", ..] => brightness(i16::from(step)),
         ["brightness", "down", ..] => brightness(-i16::from(step)),
+        ["brightness", "dim", percent] => match percent.parse() {
+            Ok(percent) => dim(percent),
+            Err(_) => return String::from(USAGE),
+        },
+        ["brightness", "restore"] => restore(),
         ["kbd-light", "up"] => light(Light::Up),
         ["kbd-light", "down"] => light(Light::Down),
         ["kbd-light", "cycle"] => light(Light::Cycle),
@@ -156,6 +165,36 @@ fn brightness(by: i16) {
     BRIGHTNESS.set(Some((level, Instant::now())));
     pressed();
     show(Readout::Brightness(level));
+}
+
+/*
+ * idle's dimming (hypridle's dim listener): quietly, with no display,
+ * and through amane's Brightness so it dims in HDR too, where the
+ * backlight doesn't. never brighter than it was
+ */
+fn dim(percent: u8) {
+    let screen = Brightness::read();
+    let (present, now) = (screen.present(), screen.percent());
+    drop(screen);
+    if !present || now <= percent {
+        return;
+    }
+    if UNDIMMED.get().is_none() {
+        UNDIMMED.set(Some(now));
+    }
+    hdr_white::dimmed(true);
+    Brightness::set(percent.max(1));
+}
+
+fn restore() {
+    if let Some(level) = UNDIMMED.take() {
+        Brightness::set(level);
+    }
+    // once the level is back, or the dim one could still be read as rested
+    std::thread::spawn(|| {
+        std::thread::sleep(Duration::from_secs(3));
+        hdr_white::dimmed(false);
+    });
 }
 
 enum Light {

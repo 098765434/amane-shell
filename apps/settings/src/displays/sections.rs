@@ -2,13 +2,9 @@
 //! shown ([`Ctx`]). A section that doesn't apply to it (brightness on a
 //! monitor, OLED care on an LCD) is left out.
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
-use std::time::Duration;
 
-use amane::{
-    Battery, Brightness, Center, Color, Rectangle, Row, Service, Size, Text, TextInput,
-};
+use amane::{Battery, Brightness, Center, Color, Rectangle, Row, Service, Size, Text, TextInput};
 use amane_kit::app::{Dialog, field_box, text_field};
 use amane_kit::arrangement::{Arrangement, Screen};
 use amane_kit::buttons::{IconButton, PushButton, Switch};
@@ -884,9 +880,6 @@ pub fn rotation(ctx: &Ctx) -> FormRow {
     FormRow::new("settings.displays.rotation-row", "Rotation").trailing(dropdown)
 }
 
-/// Where the HDR brightness slider runs, in nits.
-const SDR_WHITE: (f64, f64) = (80., 480.);
-
 pub fn hdr(ctx: &Ctx) -> Group {
     let caps = &ctx.caps;
     let output = ctx.output.clone();
@@ -938,7 +931,7 @@ pub fn hdr(ctx: &Ctx) -> Group {
                 .open("main");
         })
         .build();
-    let mut group = group().header(title).row(
+    let group = group().header(title).row(
         FormRow::new("settings.displays.hdr-row", "Use HDR")
             .subtitle(format!("HDR10{peak}"))
             .trailing(apps)
@@ -950,54 +943,13 @@ pub fn hdr(ctx: &Ctx) -> Group {
     );
 
     if on {
-        let nits = output.sdr_brightness.unwrap_or(203.);
-        let (low, high) = SDR_WHITE;
-        let at = (((nits - low) / (high - low)).clamp(0., 1.) * 100.).round() as u8;
-        let slid = output.clone();
-        let inert = !ctx.editable();
-        group = group.slider(
-            SliderRow::new("HDR brightness", move |width| {
-                Slider::new(at, width)
-                    .wheel(false)
-                    .inert(inert)
-                    .on_value_change(move |value| {
-                        let nits = (low + (high - low) * f64::from(value) / 100.).round();
-                        sdr_brightness(&slid, nits);
-                    })
-                    .build()
-            })
-            .value(format!("{} nits", nits.round())),
-        );
         footer.push_str(
-            " HDR brightness is how bright white windows and text are; the backlight may not \
-             follow the usual brightness while HDR is on.",
+            " While HDR is on, Brightness sets how bright white windows and text are, from the \
+             keys, Quick Settings and the slider above alike.",
         );
     }
 
     group.footer(footer)
-}
-
-/// Shows `nits` at once, and saves it once the slider has rested for a moment, so a drag is
-/// one commit.
-fn sdr_brightness(output: &Output, nits: f64) {
-    static LATEST: AtomicU64 = AtomicU64::new(0);
-    let turn = LATEST.fetch_add(1, Ordering::Relaxed) + 1;
-    let output = output.clone();
-    thread::spawn(move || {
-        if let Err(error) = niri::apply(&output.name, &Change::SdrBrightness(nits)) {
-            Screens::fail(error);
-            return;
-        }
-        Screens::refresh();
-        thread::sleep(Duration::from_millis(800));
-        if LATEST.load(Ordering::Relaxed) == turn {
-            save(
-                &output,
-                format!("{} HDR brightness {nits} nits", output.name),
-                move |block| block.sdr_brightness = Some(nits),
-            );
-        }
-    });
 }
 
 // ───── night light ──────────────────────────────────────────────────────────

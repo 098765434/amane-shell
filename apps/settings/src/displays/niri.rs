@@ -192,8 +192,6 @@ pub enum Change {
         on_demand: bool,
     },
     Hdr(bool),
-    /// SDR white in HDR mode, in nits.
-    SdrBrightness(f64),
 }
 
 impl Change {
@@ -219,7 +217,6 @@ impl Change {
                 json!({"Position": {"position": {"Specific": {"x": x, "y": y}}}})
             }
             Change::Hdr(on) => json!({"Hdr": {"hdr": on}}),
-            Change::SdrBrightness(nits) => json!({"SdrBrightness": {"nits": nits}}),
             Change::Vrr { on, on_demand } => {
                 json!({"Vrr": {"vrr": {"vrr": on, "on_demand": on_demand}}})
             }
