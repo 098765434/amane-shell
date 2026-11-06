@@ -4,6 +4,6 @@ Name=Messages
 Comment=Your phone's text messages, through KDE Connect
 Keywords=SMS;Text;Phone;KDE Connect;
 Exec=amane-messages
-Icon=internet-chat
+Icon=amane-messages
 Categories=Network;InstantMessaging;
 StartupNotify=true

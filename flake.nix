@@ -156,6 +156,8 @@
             postInstall = ''
               install -Dm644 apps/settings/amane-settings.desktop -t $out/share/applications
               install -Dm644 apps/messages/amane-messages.desktop -t $out/share/applications
+              install -Dm644 apps/settings/amane-settings.png -t $out/share/icons/hicolor/512x512/apps
+              install -Dm644 apps/messages/amane-messages.png -t $out/share/icons/hicolor/512x512/apps
               install -Dm644 apps/mirror/amane-mirror.desktop -t $out/share/applications
               install -Dm644 apps/shader-lab/amane-shader-lab.desktop -t $out/share/applications
             '';

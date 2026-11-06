@@ -3,6 +3,6 @@ Type=Application
 Name=Shell Settings
 Comment=Change how amane-shell looks
 Exec=amane-settings
-Icon=preferences-desktop
+Icon=amane-settings
 Categories=Settings;DesktopSettings;
 StartupNotify=true
