@@ -230,9 +230,30 @@ laptop's CPU. A 2,000-row, 3-epoch run takes 4.5 minutes, and a 20,000-row one a
 |---|---|---|---|
 | Base Needle 3 | 74 | 4 | 174 |
 | Round 1: 2,000 rows of templates, 15% negatives | 99 | 48 | 138 |
+| Round 2: 20,000 rows, 40% negatives; rank 16, lr 1e-4 | 105 | 6 | 174 |
+| Rank 16, lr 3e-4 (the sweep's best) | 115 | 5 | 176 |
+| Rank 64, lr 1e-4 | 114 | 5 | 175 |
+| Rank 64, lr 3e-4 | 111 | 4 | 177 |
+
+All of these are with the rules, all 3 epochs, batch 16. None got a Destructive command wrong.
 
 Round 1 (2026-11-06) learned to call, but called wrongly far more often: "I can't hear
 anything" as lock, "light theme" as night light on. It wasn't adopted.
+
+Round 2 (2026-11-07): the sweep's best, scored once on the test set:
+
+| | Commands right of 152 | Wrong | Negatives of 48 | p95 |
+|---|---|---|---|---|
+| Base Needle 3, with the rules | 73 | 2 | 47 | 64 ms |
+| Rank 16, lr 3e-4, with the rules | 84 | 4 | 46 | 56 ms |
+| Rank 16, lr 3e-4, alone | 38 | 4 | 46 | 61 ms |
+
+It wasn't adopted. Shipping needs 86 right, at most 2 wrong, and as many negatives left
+alone as the base model. Its wrong calls were "play that again from before" and "play
+store" as play, "calculator app for android" as open Calculator, and "turn everything off
+for the night" as night light off. Most of what it misses are wordings no template has,
+such as "crank up the volume" or "I'm getting on a plane": it learns the templates, not the
+meaning. Paraphrased training data is the next step.
 
 ## Files
 
