@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Drop
+GenericName=File Shelf
+Comment=Drop files on folders, apps, your phone or an upload, from the status bar
+Exec=amane-drop open
+Icon=folder-download
+Terminal=false
+Categories=Utility;FileTools;
+Keywords=dropzone;shelf;upload;share;sftp;s3;imgur;
+StartupNotify=false

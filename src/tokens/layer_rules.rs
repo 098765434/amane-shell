@@ -74,6 +74,9 @@ const BANNER_SHADOW_SOFTNESS: f32 = 48.0;
 const ALERT_SHADOW_SOFTNESS: f32 = 48.0;
 const ALERT_SHADOW_Y: f32 = 18.0;
 
+/// amane-drop's grid; its own app, so named here rather than imported.
+const DROP_NS: &str = "amane.drop";
+
 /// One rule per frosted surface.
 pub fn rules() -> Vec<LayerRule> {
     // radii don't vary with mode or density (a contract test checks it)
@@ -237,6 +240,18 @@ pub fn rules() -> Vec<LayerRule> {
             }),
             frost: None,
             popups: None,
+            clear: true,
+            desktop: false,
+        },
+        LayerRule {
+            namespace: DROP_NS,
+            comment: String::from(
+                "amane-drop's grid (apps/drop): a clear full-screen surface that frosts only\n\
+                      its card, with a blur shape of its own, as Quick Settings does.",
+            ),
+            card: None,
+            frost: None,
+            popups: Some(popover),
             clear: true,
             desktop: false,
         },

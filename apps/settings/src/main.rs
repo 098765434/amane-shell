@@ -7,6 +7,7 @@ mod appearance;
 mod desktop;
 mod displays;
 mod dock;
+mod drop;
 mod launcher;
 mod previews;
 mod quick_settings;
@@ -26,7 +27,7 @@ use amane_kit::form::{FormRow, Group};
 use amane_kit::icons::{
     ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO,
     ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_PACKAGE, ICON_SEARCH, ICON_SETTINGS,
-    ICON_STORAGE, ICON_TUNE, ICON_UPDATE,
+    ICON_STORAGE, ICON_TRAY, ICON_TUNE, ICON_UPDATE,
 };
 use amane_kit::layout::boxed;
 use amane_kit::macform::MacSegmentedNav;
@@ -170,14 +171,16 @@ fn forward() {
 
 // the sidebar's rows: two sections, each over its pages
 const DISPLAYS: usize = 3;
-const SYS_ABOUT: usize = 10;
-const SYS_GENERAL: usize = 11;
-const SYS_APPS: usize = 12;
-const SYS_SERVICES: usize = 13;
-const SYS_POWER: usize = 14;
-const SYS_STORAGE: usize = 15;
-const SYS_HISTORY: usize = 16;
-const SYS_UPDATE: usize = 17;
+const DROP: usize = 8;
+const ABOUT_SHELL: usize = 9;
+const SYS_ABOUT: usize = 11;
+const SYS_GENERAL: usize = 12;
+const SYS_APPS: usize = 13;
+const SYS_SERVICES: usize = 14;
+const SYS_POWER: usize = 15;
+const SYS_STORAGE: usize = 16;
+const SYS_HISTORY: usize = 17;
+const SYS_UPDATE: usize = 18;
 
 /// The page `--page <name>` opens: the sidebar's names, lowercased, or a
 /// System page's short name.
@@ -190,7 +193,8 @@ pub fn page_named(name: &str) -> Option<usize> {
         "dock" => 5,
         "quick-settings" => 6,
         "spotlight" | "launcher" => 7,
-        "about-shell" => 8,
+        "drop" | "amane-drop" => DROP,
+        "about-shell" => ABOUT_SHELL,
         "about" | "system" | "computer" => SYS_ABOUT,
         "general" => SYS_GENERAL,
         "apps" | "software" => SYS_APPS,
@@ -204,7 +208,14 @@ pub fn page_named(name: &str) -> Option<usize> {
 }
 
 /// The sub-pages a `--page` name can reach, as `page/sub`.
-const SUBS: [&str; 5] = ["clock", "weather", "items", "files", "advanced"];
+const SUBS: [&str; 6] = [
+    "clock",
+    "weather",
+    "items",
+    "activities",
+    "files",
+    "advanced",
+];
 
 /// A place by name: a page's name, or `page/sub` for one of its sub-pages.
 fn place_named(name: &str) -> Option<Place> {
@@ -283,7 +294,7 @@ fn main() {
         .run();
 }
 
-fn pages() -> [Page; 18] {
+fn pages() -> [Page; 19] {
     [
         Page::section("Shell"),
         Page::new(ICON_DARK_MODE, "Appearance").accent(Accent::Blue),
@@ -293,6 +304,7 @@ fn pages() -> [Page; 18] {
         Page::new(ICON_LAYERS, "Dock").accent(Accent::Indigo),
         Page::new(ICON_TUNE, "Quick Settings").accent(Accent::Gray),
         Page::new(ICON_SEARCH, "Spotlight").accent(Accent::Purple),
+        Page::new(ICON_TRAY, "Drop").accent(Accent::Orange),
         Page::new(ICON_COMPUTER, "About").accent(Accent::Gray),
         Page::section("System"),
         Page::new(ICON_INFO, "About This Computer").accent(Accent::Gray),
@@ -364,7 +376,7 @@ fn sub_page(page: usize, name: &str) -> Option<(String, Box<dyn Widget>)> {
     match page {
         4 => status_bar::sub(name),
         DISPLAYS => displays::sub(name),
-        8 => about::sub(name),
+        ABOUT_SHELL => about::sub(name),
         SYS_ABOUT => system::about::sub(name),
         _ => None,
     }
@@ -427,6 +439,7 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
                     "settings.scroll.spotlight",
                     boxed(launcher::page()),
                 ),
+                DROP => ("Drop", "settings.scroll.drop", boxed(drop::page())),
                 SYS_ABOUT => (
                     "About This Computer",
                     "settings.scroll.system-about",

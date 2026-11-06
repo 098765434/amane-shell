@@ -39,14 +39,14 @@ debug = false
 incremental = false
 
 [workspace]
-members = ["kit", "apps/settings", "apps/messages", "apps/mirror", "apps/shader-lab", "apps/assistant"]
+members = ["kit", "apps/settings", "apps/messages", "apps/mirror", "apps/shader-lab", "apps/assistant", "apps/drop"]
 
 [workspace.dependencies]
 # amane is consumed as a pinned git-dependency on the maintained fork (not a
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
 # sibling checkout during local co-development. See README.
-amane = { git = "https://github.com/098765434/amane", rev = "00b7103f80f3e3eff694f930a0b5be496f6850ff" }
+amane = { git = "https://github.com/098765434/amane", rev = "711ed5fdbc5227b123bfe609437b420c699ac57d" }
 
 # amane's vello fork: scratch buffers sized for a shell (about 29 MB a set
 # instead of 165, vello_encoding) that are let go when idle (vello). A patch

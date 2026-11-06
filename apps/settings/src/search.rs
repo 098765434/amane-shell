@@ -238,10 +238,22 @@ pub const INDEX: &[Entry] = &[
         &["pips"],
     ),
     row(
-        "status-bar",
+        "status-bar/activities",
         "Now Playing",
         "settings.bar.media-always",
         &["music", "media", "spotify"],
+    ),
+    row(
+        "status-bar/activities",
+        "Live Activities",
+        "settings.bar.activities",
+        &["activity", "timer", "screen sharing", "progress", "upload"],
+    ),
+    row(
+        "status-bar/activities",
+        "Allow Live Activities",
+        "settings.bar.activities-compact",
+        &["apps", "permission"],
     ),
     row(
         "status-bar/clock",
@@ -365,6 +377,44 @@ pub const INDEX: &[Entry] = &[
         "settings.launcher.keys.none",
         &["shortcuts", "hotkeys"],
     ),
+    // Drop
+    page("drop", "Drop", &["dropzone", "amane-drop", "grid", "shelf", "share"]),
+    row(
+        "drop",
+        "Tiles a row",
+        "settings.drop.columns",
+        &["columns", "grid size"],
+    ),
+    row(
+        "drop",
+        "Copy the link",
+        "settings.drop.copy-link",
+        &["clipboard", "upload link", "recently shared"],
+    ),
+    row(
+        "drop",
+        "Send to Phone",
+        "settings.drop.phone",
+        &["kde connect", "phone", "share"],
+    ),
+    row(
+        "drop",
+        "Imgur",
+        "settings.drop.imgur.id.row",
+        &["client id", "upload pictures"],
+    ),
+    row(
+        "drop",
+        "SFTP server",
+        "settings.drop.sftp.host.row",
+        &["ssh", "scp", "upload", "server"],
+    ),
+    row(
+        "drop",
+        "S3 bucket",
+        "settings.drop.s3.bucket.row",
+        &["aws", "r2", "minio", "upload", "bucket"],
+    ),
     // About
     page("about-shell", "About Shell Settings", &["version"]),
     page(
@@ -443,6 +493,7 @@ fn where_is(place: &str) -> String {
         ("dock", "Dock"),
         ("quick-settings", "Quick Settings"),
         ("spotlight", "Spotlight"),
+        ("drop", "Drop"),
         ("about-shell", "About"),
         ("about", "About This Computer"),
         ("general", "General"),
@@ -608,6 +659,7 @@ mod tests {
             "dock",
             "quick-settings",
             "spotlight",
+            "drop",
             "about-shell",
             "about",
             "general",

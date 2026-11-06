@@ -26,7 +26,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amane"
 version = "0.1.2"
-source = "git+https://github.com/098765434/amane?rev=00b7103f80f3e3eff694f930a0b5be496f6850ff#00b7103f80f3e3eff694f930a0b5be496f6850ff"
+source = "git+https://github.com/098765434/amane?rev=711ed5fdbc5227b123bfe609437b420c699ac57d#711ed5fdbc5227b123bfe609437b420c699ac57d"
 dependencies = [
  "bitflags",
  "inotify",
@@ -55,6 +55,15 @@ dependencies = [
  "libpulse-binding",
  "libpulse-simple-binding",
  "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "amane-drop"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "amane-kit",
  "serde_json",
 ]
 

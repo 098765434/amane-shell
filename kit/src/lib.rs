@@ -84,4 +84,4 @@ pub use controls::{
 };
 pub use foundation::{color, icons, layout};
 pub use look::{glass, glass_region, lab, material};
-pub use platform::{app, app_icon, marker, settings};
+pub use platform::{app, app_icon, marker, secrets, settings};

@@ -113,12 +113,12 @@ Writes `status-bar.json` (`status_bar.rs`); see [status-bar.md](status-bar.md#se
 | Material | pictures: Clear, Frosted, Glass, Solid (black in dark mode, white in light) | `style` |
 | Clock › (sub-page) | pictures: Digital, Analog; switches: 24-hour time, Show seconds, Flash the time separators (dimmed under Analog), Show the day of the week; dropdowns: Show the date (When space allows, Always, Never), Date in the tooltip | `clock_style`, `clock_24h`, `clock_seconds`, `flash_separators`, `show_weekday`, `show_date`, `date_format` |
 | Weather › (sub-page) | switch: Show the weather; field: Place (kept on Return or when left) | `weather`, `weather_place` |
-| Items › (sub-page) | every item in the bar's order, each with buttons to move it a place and, for the optional ones, a switch; Reset Order… (asks first); Allow in the Status Bar, a switch per app seen in the tray | `order`, `hidden`, `tray_denied` |
+| Items › (sub-page) | every item in the bar's order, each with buttons to move it a place and, for the optional ones, a switch; Reset Order… (asks first); Allow in the Status Bar, a switch per program seen with its own item (`app:<id>` in `hidden`) and per app seen in the tray | `order`, `hidden`, `tray_denied` |
+| Live Activities › (sub-page) | switch: Show Live Activities; segmented: Show with their text, 1–3; Now Playing's Always show; Allow Live Activities, a switch per app (Now Playing, Timer, Screen Sharing, then each seen) | `hidden` (`activities`), `activities_compact`, `media_always`, `activities_denied` |
 | Workspaces | switches: Show workspaces, and under it Scroll to switch | `show_workspaces`, `scroll_workspaces` |
-| Now Playing | switch: Always show | `media_always` |
 
-The main page's Clock, Weather and Items rows sum up what's set ("24-hour · date when space
-allows", "Oslo", "13 shown").
+The main page's Clock, Weather, Items and Live Activities rows sum up what's set ("24-hour · date
+when space allows", "Oslo", "13 shown", "2 with their text").
 
 ### Dock
 
@@ -155,6 +155,26 @@ Writes `launcher.json` (`launcher.rs`); see [launcher.md](launcher.md).
 
 Quick keys are set in the launcher itself (Actions, Ctrl+K); this page only lists and removes
 them.
+
+### Drop
+
+Writes amane-drop's `grids.json` and `sharing.json` (`drop.rs`); see [drop.md](drop.md).
+
+| Setting | Control | Field |
+|---|---|---|
+| Grids | a row per grid with its tile count: **Rename…** (a dialog), up and down, ✕ (asks first, when there are more than one) | `grids` |
+| Tiles a row | dropdown, 3–6 | `columns` |
+| Grids and their tiles | **Add Grid**, **Open Drop** (`amane-drop open`) | |
+| After an upload | switches: Copy the link, Show a notification | `copy_link`, `notify` |
+| Imgur | Client ID | `imgur_client_id` |
+| SFTP | Server, Port, User name, Folder, Web address; Private key (**Choose…**, ✕); Password or Key passphrase | `sftp.*` |
+| S3 | Endpoint, Region, Bucket, Folder, Access key ID; Secret access key; Web address; Anyone can read uploads | `s3.*` |
+
+Send to Phone and 0x0.st need nothing; their rows say so. Text fields keep what's typed on Return
+or once they lose the keys. A password field empties once its text is kept in the keyring
+(`amane_kit::secrets`, through `secret-tool`); its row then says "In the keyring" and offers
+**Forget**. Where no keyring answers, the S3 group's note says secrets are in
+`~/.config/amane-drop/secrets.json`, readable only by the user.
 
 ### About
 

@@ -54,6 +54,15 @@
           ffmpeg # amane-mirror decodes the phone's screen and sound (VAAPI on the GPU)
         ];
 
+      # The programs amane-drop runs: curl for uploads, secret-tool (libsecret)
+      # for the keyring, wl-copy for links.
+      dropToolsFor =
+        pkgs: with pkgs; [
+          curl
+          libsecret
+          wl-clipboard
+        ];
+
       # scrcpy's server, alone: amane-mirror pushes it to the phone. Copied out
       # of the scrcpy package so the closure doesn't keep scrcpy's own client
       # and its libraries; its version is the protocol amane-mirror speaks.
@@ -166,13 +175,14 @@
             cargoLock = {
               lockFile = ./Cargo.lock;
               outputHashes = {
-                "amane-0.1.2" = "sha256-/MnPjijY89DObPsdGRP/MbfoE8HJAs1ci73BkQ6Jscc=";
+                "amane-0.1.2" = "sha256-p78gSQaG0KGWfqbJu88jzJQV9DtBcin1vA8h817/ilI=";
                 "vello-0.11.0" = "sha256-4bzBYT9BUIb0oMjB1rKJpxXhdT20lVQ4HTCTWsar/cc=";
                 "vello_encoding-0.11.0" = "sha256-4bzBYT9BUIb0oMjB1rKJpxXhdT20lVQ4HTCTWsar/cc=";
               };
             };
 
-            # the shell, and the apps beside it (Shell Settings, Messages, Phone Screen, Shader Lab)
+            # the shell, and the apps beside it (Shell Settings, Messages, Phone Screen,
+            # Shader Lab, Drop)
             cargoBuildFlags = [ "--workspace" ];
             cargoTestFlags = [ "--workspace" ];
 
@@ -194,13 +204,21 @@
               install -Dm644 apps/messages/amane-messages.png -t $out/share/icons/hicolor/512x512/apps
               install -Dm644 apps/mirror/amane-mirror.desktop -t $out/share/applications
               install -Dm644 apps/shader-lab/amane-shader-lab.desktop -t $out/share/applications
+              install -Dm644 apps/drop/amane-drop.desktop -t $out/share/applications
             '';
 
             postFixup = ''
-              for program in amane-shell amane-settings amane-messages amane-mirror amane-shader-lab; do
+              for program in amane-shell amane-settings amane-messages amane-mirror amane-shader-lab amane-drop; do
                 wrapProgram $out/bin/$program \
                   --prefix LD_LIBRARY_PATH : "${ldLibraryPath pkgs}" \
                   --run ${lib.escapeShellArg vulkanIcdFallback}
+              done
+              # Drop uploads with curl, keeps passwords with secret-tool and
+              # copies links with wl-copy; Shell Settings keeps its passwords
+              # too. After PATH, so the system's own copies win.
+              for program in amane-drop amane-settings; do
+                wrapProgram $out/bin/$program \
+                  --suffix PATH : "${lib.makeBinPath (dropToolsFor pkgs)}"
               done
               # the assistant's daemon: no GPU, its models from the store, and
               # Cactus told not to report anything (it has no network code; this

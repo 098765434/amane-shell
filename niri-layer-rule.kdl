@@ -207,6 +207,23 @@ layer-rule {
     }
 }
 
+// amane-drop's grid (apps/drop): a clear full-screen surface that frosts only
+// its card, with a blur shape of its own, as Quick Settings does.
+layer-rule {
+    match namespace="^amane\\.drop$"
+    background-effect {
+        xray false
+    }
+
+    popups {
+        geometry-corner-radius 10
+        background-effect {
+            blur true
+            material "glass"
+        }
+    }
+}
+
 // An amane app's windows: frosted behind, the window drawing its own tint
 // over the frost (the window material), and its popups like the shell's.
 window-rule {
