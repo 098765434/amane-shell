@@ -45,7 +45,10 @@ fn main() {
         eprintln!("usage: amane-train-watch HOST RUN [--plain]");
         std::process::exit(2);
     };
-    if !name.chars().all(|c| c.is_ascii_alphanumeric() || "._-".contains(c)) {
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || "._-".contains(c))
+    {
         eprintln!("amane-train-watch: {name:?} isn't a run name");
         std::process::exit(2);
     }
@@ -219,7 +222,15 @@ impl Watch {
     /// Whether the run's unit is still going on the host.
     fn going(&self) -> bool {
         Command::new("tailscale")
-            .args(["ssh", &self.host, "--", "systemctl", "--user", "is-active", "--quiet"])
+            .args([
+                "ssh",
+                &self.host,
+                "--",
+                "systemctl",
+                "--user",
+                "is-active",
+                "--quiet",
+            ])
             .arg(format!("needle-ft-{}", self.name))
             .stdin(Stdio::null())
             .stdout(Stdio::null())
@@ -235,7 +246,10 @@ impl Watch {
             .stdin(Stdio::null())
             .status()
             .map_err(|error| error.to_string())?;
-        status.success().then_some(()).ok_or_else(|| status.to_string())
+        status
+            .success()
+            .then_some(())
+            .ok_or_else(|| status.to_string())
     }
 
     fn show(&mut self, run: &Run, alert: bool) {
@@ -279,7 +293,11 @@ impl Watch {
             Phase::Failed => "error",
             _ => "update",
         };
-        let mut content = ActivityContent::new("Training", ItemIcon::Glyph(String::from(glyph)), &self.title(run));
+        let mut content = ActivityContent::new(
+            "Training",
+            ItemIcon::Glyph(String::from(glyph)),
+            &self.title(run),
+        );
         content.subtitle = run.summary();
         content.relevance = 0.6;
         content.progress = run.progress();
@@ -288,8 +306,14 @@ impl Watch {
             Phase::Starting => Trailing::Text(String::from("Starting")),
             Phase::Scoring => Trailing::Text(String::from("Scoring")),
             Phase::Building => Trailing::Text(String::from("Building")),
-            Phase::Done => Trailing::Text(run.accuracy.clone().unwrap_or_else(|| String::from("Done"))),
-            Phase::Failed => Trailing::Text(String::from(if run.last == "stopped" { "Stopped" } else { "Failed" })),
+            Phase::Done => {
+                Trailing::Text(run.accuracy.clone().unwrap_or_else(|| String::from("Done")))
+            }
+            Phase::Failed => Trailing::Text(String::from(if run.last == "stopped" {
+                "Stopped"
+            } else {
+                "Failed"
+            })),
         };
         content.tint = match run.phase {
             Phase::Done => Some(Tint::Green),

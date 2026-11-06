@@ -158,7 +158,10 @@ pub fn run(mut engine: Engine, cases: &str, snapshot: &str, json: bool) -> Resul
             p50_ms: p(0.5).round(),
             p95_ms: p(0.95).round(),
         };
-        println!("{}", serde_json::to_string(&score).map_err(|e| e.to_string())?);
+        println!(
+            "{}",
+            serde_json::to_string(&score).map_err(|e| e.to_string())?
+        );
         return Ok(());
     }
     println!(

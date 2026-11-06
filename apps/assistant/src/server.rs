@@ -140,7 +140,12 @@ fn read(
                         levels.send(&Message::Level { rms });
                         let _ = pieces.send(Job::Audio(pcm, rms));
                     },
-                    move |error| failures.send(&Message::Error { id: Some(id), error }),
+                    move |error| {
+                        failures.send(&Message::Error {
+                            id: Some(id),
+                            error,
+                        })
+                    },
                 ));
                 Job::ListenStart { language, keywords }
             }
@@ -188,7 +193,10 @@ fn work(mut engine: Engine, queue: Receiver<Job>, out: &Out) {
                         engine: ENGINE.into(),
                         models,
                     }),
-                    Err(error) => out.send(&Message::Error { id: Some(id), error }),
+                    Err(error) => out.send(&Message::Error {
+                        id: Some(id),
+                        error,
+                    }),
                 },
                 Job::Complete { id, .. } if Some(index) != newest => out.send(&Message::Error {
                     id: Some(id),
@@ -207,7 +215,10 @@ fn work(mut engine: Engine, queue: Receiver<Job>, out: &Out) {
                             answer,
                             ms: started.elapsed().as_millis() as u64,
                         }),
-                        Err(error) => out.send(&Message::Error { id: Some(id), error }),
+                        Err(error) => out.send(&Message::Error {
+                            id: Some(id),
+                            error,
+                        }),
                     }
                 }
                 Job::ListenStart { language, keywords } => {
@@ -258,7 +269,10 @@ fn work(mut engine: Engine, queue: Receiver<Job>, out: &Out) {
                             text,
                             ms: started.elapsed().as_millis() as u64,
                         }),
-                        Err(error) => out.send(&Message::Error { id: Some(id), error }),
+                        Err(error) => out.send(&Message::Error {
+                            id: Some(id),
+                            error,
+                        }),
                     }
                 }
                 Job::ListenCancel => {

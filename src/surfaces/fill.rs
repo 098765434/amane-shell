@@ -19,8 +19,8 @@
 use std::sync::Mutex;
 
 use amane::{
-    Center, Color, Column, FieldPurpose, FillError, FocusedField, Popup, Rectangle,
-    Row, Service, Size, Text, Widget,
+    Center, Color, Column, FieldPurpose, FillError, FocusedField, Popup, Rectangle, Row, Service,
+    Size, Text, Widget,
 };
 use amane_kit::buttons::{Actions, hovered, interactive};
 use amane_kit::layout::{boxed, icon, pad};
@@ -124,10 +124,16 @@ pub fn ipc(args: &[String]) -> String {
         ["lock"] => Vault::lock(),
         ["configure", server, email, rest @ ..] => {
             if !valid_server(server) || !valid_email(email) {
-                return String::from("error: the server must be https:// (or http://localhost), and the email an address");
+                return String::from(
+                    "error: the server must be https:// (or http://localhost), and the email an address",
+                );
             }
 
-            Vault::configure(server.to_string(), email.to_string(), rest.first() == Some(&"forget"));
+            Vault::configure(
+                server.to_string(),
+                email.to_string(),
+                rest.first() == Some(&"forget"),
+            );
         }
         ["lock-timeout", seconds] => match seconds.parse() {
             Ok(seconds) => Vault::set_lock_timeout(seconds),
@@ -165,13 +171,19 @@ pub fn valid_server(server: &str) -> bool {
     };
 
     !rest.is_empty()
-        && !server.chars().any(|letter| letter.is_whitespace() || letter.is_control())
+        && !server
+            .chars()
+            .any(|letter| letter.is_whitespace() || letter.is_control())
 }
 
 fn valid_email(email: &str) -> bool {
     email.len() <= 254
-        && email.split_once('@').is_some_and(|(name, domain)| !name.is_empty() && domain.contains('.'))
-        && !email.chars().any(|letter| letter.is_whitespace() || letter.is_control())
+        && email
+            .split_once('@')
+            .is_some_and(|(name, domain)| !name.is_empty() && domain.contains('.'))
+        && !email
+            .chars()
+            .any(|letter| letter.is_whitespace() || letter.is_control())
 }
 
 // the vault's state for the Passwords page, without anything secret
@@ -183,9 +195,28 @@ fn status() -> String {
 
     let mut lines = vec![
         format!("status={:?}", vault.status()),
-        format!("entries={}", vault.entries().iter().filter(|entry| entry.is_login()).count()),
-        format!("busy={}", vault.busy().map(|busy| format!("{busy:?}")).unwrap_or_default()),
-        format!("error={}", vault.error().map(|error| error.describe()).unwrap_or_default()),
+        format!(
+            "entries={}",
+            vault
+                .entries()
+                .iter()
+                .filter(|entry| entry.is_login())
+                .count()
+        ),
+        format!(
+            "busy={}",
+            vault
+                .busy()
+                .map(|busy| format!("{busy:?}"))
+                .unwrap_or_default()
+        ),
+        format!(
+            "error={}",
+            vault
+                .error()
+                .map(|error| error.describe())
+                .unwrap_or_default()
+        ),
         format!("server={}", config.base_url),
         format!("email={}", config.email),
         format!("lock_timeout={}", config.lock_timeout),
@@ -203,7 +234,10 @@ fn status() -> String {
         format!("secure_fill={}", field.can_fill()),
     ];
 
-    if let Some(synced) = vault.synced().and_then(|at| at.duration_since(std::time::UNIX_EPOCH).ok()) {
+    if let Some(synced) = vault
+        .synced()
+        .and_then(|at| at.duration_since(std::time::UNIX_EPOCH).ok())
+    {
         lines.push(format!("synced={}", synced.as_secs()));
     }
 
@@ -354,12 +388,32 @@ fn content(shown: &Shown, generation: u64) -> (Vec<Box<dyn Widget>>, f32) {
                 rows.push(boxed(entry_row(shown, found, verified.clone(), generation)));
             }
         }
-        Status::Locked => rows.push(boxed(action_row("fill.unlock", ICON_LOCK, "Unlock Bitwarden…", Vault::unlock))),
-        Status::LoggedOut => rows.push(boxed(action_row("fill.sign-in", ICON_LOCK, "Sign in to Bitwarden…", Vault::sign_in))),
-        Status::NotConfigured => rows.push(boxed(action_row("fill.set-up", ICON_LOCK, "Set up Passwords…", open_settings))),
+        Status::Locked => rows.push(boxed(action_row(
+            "fill.unlock",
+            ICON_LOCK,
+            "Unlock Bitwarden…",
+            Vault::unlock,
+        ))),
+        Status::LoggedOut => rows.push(boxed(action_row(
+            "fill.sign-in",
+            ICON_LOCK,
+            "Sign in to Bitwarden…",
+            Vault::sign_in,
+        ))),
+        Status::NotConfigured => rows.push(boxed(action_row(
+            "fill.set-up",
+            ICON_LOCK,
+            "Set up Passwords…",
+            open_settings,
+        ))),
     }
 
-    rows.push(boxed(action_row("fill.search", ICON_SEARCH, "Search vault…", search)));
+    rows.push(boxed(action_row(
+        "fill.search",
+        ICON_SEARCH,
+        "Search vault…",
+        search,
+    )));
 
     let note = with(|state| state.note.clone()).filter(|(at, _)| *at == generation);
     if let Some((_, note)) = note {
@@ -422,7 +476,12 @@ fn header(shown: &Shown, generation: u64) -> Rectangle {
         .height(Size::Fixed(theme::menu_item_height()))
         .padding(pad(px(8.0), 0.0))
         .align_child(amane::Start, Center)
-        .child(Row::new(parts).gap(px(6.0)).align(Center).width(Size::Parent))
+        .child(
+            Row::new(parts)
+                .gap(px(6.0))
+                .align(Center)
+                .width(Size::Parent),
+        )
 }
 
 fn entry_row(shown: &Shown, found: &Match, app: Option<Verified>, generation: u64) -> Rectangle {
@@ -473,7 +532,12 @@ fn entry_row(shown: &Shown, found: &Match, app: Option<Verified>, generation: u6
             .fill(hover(&key))
             .padding(pad(px(10.0), 0.0))
             .align_child(amane::Start, Center)
-            .child(Row::new(parts).gap(px(8.0)).align(Center).width(Size::Parent)),
+            .child(
+                Row::new(parts)
+                    .gap(px(8.0))
+                    .align(Center)
+                    .width(Size::Parent),
+            ),
         key,
         false,
         press(move || {
@@ -483,7 +547,12 @@ fn entry_row(shown: &Shown, found: &Match, app: Option<Verified>, generation: u6
                 return;
             }
 
-            fill(&entry, what, generation, app.clone().filter(|_| !remembered));
+            fill(
+                &entry,
+                what,
+                generation,
+                app.clone().filter(|_| !remembered),
+            );
         }),
     )
 }
@@ -534,7 +603,10 @@ fn remember_row(app: Option<&Verified>) -> Rectangle {
     let on = with(|state| state.remember);
     let name = app.map_or("this app", |app| app.name.as_str());
 
-    let text = format!("{} Remember the choice for {name}", if on { "☑" } else { "☐" });
+    let text = format!(
+        "{} Remember the choice for {name}",
+        if on { "☑" } else { "☐" }
+    );
 
     interactive(
         Rectangle::new()
@@ -579,7 +651,10 @@ fn search() {
 }
 
 fn open_settings() {
-    crate::services::run("amane-settings", vec![String::from("--page"), String::from("passwords")]);
+    crate::services::run(
+        "amane-settings",
+        vec![String::from("--page"), String::from("passwords")],
+    );
 }
 
 /*
@@ -599,7 +674,10 @@ fn fill(entry: &rbw::Entry, what: What, generation: u64, remember_for: Option<Ve
         // locked since the last look: say so, rather than let rbw ask in a dialog not the shell's
         if !rbw::unlocked() {
             Vault::look_now();
-            return done(generation, Err(String::from("The vault locked; unlock it first")));
+            return done(
+                generation,
+                Err(String::from("The vault locked; unlock it first")),
+            );
         }
 
         let secret = match what {
@@ -614,7 +692,12 @@ fn fill(entry: &rbw::Entry, what: What, generation: u64, remember_for: Option<Ve
 
         let secret = match secret {
             Ok(secret) if !secret.is_empty() => secret,
-            Ok(_) => return done(generation, Err(String::from("That entry has nothing to fill"))),
+            Ok(_) => {
+                return done(
+                    generation,
+                    Err(String::from("That entry has nothing to fill")),
+                );
+            }
             Err(error) => return done(generation, Err(error.describe().to_string())),
         };
 

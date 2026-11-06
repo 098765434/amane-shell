@@ -129,7 +129,10 @@ pub(super) fn entry(reading: &Reading, apps: &[DesktopApp]) -> Option<Entry> {
 /// What `command` is called, its icon, and running it; `None` to run when
 /// there's nothing to do ("Night Light Is On").
 #[allow(clippy::type_complexity)]
-fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<(String, Icon, Option<Rc<dyn Fn()>>)> {
+fn proposal(
+    command: &Command,
+    apps: &[DesktopApp],
+) -> Option<(String, Icon, Option<Rc<dyn Fn()>>)> {
     let run = |f: Rc<dyn Fn()>| Some(f);
     Some(match command {
         Command::Switch { control, state } => {
@@ -143,7 +146,11 @@ fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<(String, Icon, Opt
             let on = toggle.is_checked();
             if !toggle.switches() {
                 let toggle = Rc::new(toggle);
-                return Some((name.to_string(), Icon::Glyph(glyph), run(Rc::new(move || toggle.fire()))));
+                return Some((
+                    name.to_string(),
+                    Icon::Glyph(glyph),
+                    run(Rc::new(move || toggle.fire())),
+                ));
             }
             let to = match state {
                 State::On => true,
@@ -156,7 +163,11 @@ fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<(String, Icon, Opt
             }
             let title = format!("Turn {name} {}", if to { "On" } else { "Off" });
             let toggle = Rc::new(toggle);
-            (title, Icon::Glyph(glyph), run(Rc::new(move || toggle.fire())))
+            (
+                title,
+                Icon::Glyph(glyph),
+                run(Rc::new(move || toggle.fire())),
+            )
         }
         Command::Level { level, target } => {
             let (name, up, down) = match level {
@@ -204,7 +215,11 @@ fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<(String, Icon, Opt
             };
             if to == muted {
                 let now = if muted { "Muted" } else { "On" };
-                return Some((format!("Sound Is Already {now}"), Icon::Glyph(ICON_VOLUME_OFF), None));
+                return Some((
+                    format!("Sound Is Already {now}"),
+                    Icon::Glyph(ICON_VOLUME_OFF),
+                    None,
+                ));
             }
             (
                 String::from(if to { "Mute Sound" } else { "Unmute Sound" }),
@@ -276,7 +291,9 @@ fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<(String, Icon, Opt
             (
                 format!("Start Timer · {named}"),
                 Icon::Glyph(ICON_TIMER),
-                run(Rc::new(move || timer::start(length, format!("{named} timer")))),
+                run(Rc::new(move || {
+                    timer::start(length, format!("{named} timer"))
+                })),
             )
         }
         Command::CancelTimer => (

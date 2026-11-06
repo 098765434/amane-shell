@@ -15,7 +15,6 @@ use amane::{Blend, Center, Color, Rectangle, Row, Stack, Start, Text, Widget};
 use amane_kit::settings::{AppsLayout, change_launcher};
 
 use crate::components::color::with_alpha;
-use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::components::icons::{
     ICON_CHECK, ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MIC, ICON_MORE_HORIZ, ICON_SEARCH,
 };
@@ -27,6 +26,7 @@ use crate::components::scroll_view::ScrollView;
 use crate::components::text_edit::Field;
 use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history;
+use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::tokens::{Styled, TextStyle, sys};
 
 use super::entries::Scope;

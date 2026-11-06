@@ -59,21 +59,32 @@ pub fn fill_behind(entry: Entry, give: Give) {
 
         if !rbw::unlocked() {
             super::Vault::look_now();
-            return tell("Nothing was filled", "The vault is locked. Unlock it first.");
+            return tell(
+                "Nothing was filled",
+                "The vault is locked. Unlock it first.",
+            );
         }
 
         let secret = match fetch(&entry, give) {
             Ok(secret) => secret,
-            Err(error) => return tell(&format!("Couldn't get the {}", give.noun()), error.describe()),
+            Err(error) => {
+                return tell(
+                    &format!("Couldn't get the {}", give.noun()),
+                    error.describe(),
+                );
+            }
         };
 
         FocusedField::fill(secret.into_text(), field.generation, move |result| {
             if let Err(error) = result {
-                tell("Nothing was filled", match error {
-                    FillError::Changed => "Another window took the keyboard first",
-                    FillError::Locked => "The screen is locked",
-                    _ => "The field couldn't take it",
-                });
+                tell(
+                    "Nothing was filled",
+                    match error {
+                        FillError::Changed => "Another window took the keyboard first",
+                        FillError::Locked => "The screen is locked",
+                        _ => "The field couldn't take it",
+                    },
+                );
             }
         });
     });
@@ -87,7 +98,10 @@ pub fn fill_behind(entry: Entry, give: Give) {
 pub fn copy_entry(entry: &Entry, give: Give) {
     if !rbw::unlocked() {
         super::Vault::look_now();
-        return tell("Nothing was copied", "The vault is locked. Unlock it first.");
+        return tell(
+            "Nothing was copied",
+            "The vault is locked. Unlock it first.",
+        );
     }
 
     match fetch(entry, give) {
@@ -99,7 +113,10 @@ pub fn copy_entry(entry: &Entry, give: Give) {
                 "Marked as a password, and cleared from the clipboard after 30 seconds.",
             );
         }
-        Err(error) => tell(&format!("Couldn't get the {}", give.noun()), error.describe()),
+        Err(error) => tell(
+            &format!("Couldn't get the {}", give.noun()),
+            error.describe(),
+        ),
     }
 }
 
@@ -174,5 +191,8 @@ fn wait_for_field(window: u64) -> Option<Field> {
 }
 
 fn tell(summary: &str, body: &str) {
-    Notify::new(summary).body(body).icon("dialog-password").send();
+    Notify::new(summary)
+        .body(body)
+        .icon("dialog-password")
+        .send();
 }

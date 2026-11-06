@@ -18,8 +18,8 @@ use super::digits::{self, HEIGHT, WIDTH};
 use super::{Face, accent, caption_style, line, place};
 use crate::components::layout::{text_height, text_width};
 use crate::components::motion;
-use crate::surfaces::widgets::kind::WidgetSize;
 use crate::services::launcher::clock::Clock;
+use crate::surfaces::widgets::kind::WidgetSize;
 use crate::theme;
 
 amane_kit::marker! {

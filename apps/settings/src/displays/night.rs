@@ -293,9 +293,7 @@ pub fn section() -> Group {
             |on| tell(words(&[if on { "on" } else { "off" }])),
         ))
         .slider(temperature)
-        .row(
-            FormRow::new("settings.displays.night.schedule-row", "Schedule").trailing(schedule),
-        );
+        .row(FormRow::new("settings.displays.night.schedule-row", "Schedule").trailing(schedule));
     let error = error.map(|why| format!("{why}\n")).unwrap_or_default();
     match &light.schedule {
         Schedule::Manual => group.footer(format!("{error}Warm all day while it's on.")),

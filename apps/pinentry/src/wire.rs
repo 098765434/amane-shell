@@ -76,7 +76,10 @@ pub fn read_request(from: &mut impl Read) -> io::Result<Prompt> {
     from.read_exact(&mut magic)?;
 
     if &magic != MAGIC {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "not a pinentry request"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "not a pinentry request",
+        ));
     }
 
     let mut text = || -> io::Result<String> {
@@ -128,7 +131,10 @@ pub fn read_answer(from: &mut impl Read) -> io::Result<Answer> {
 
 fn write_field(to: &mut impl Write, bytes: &[u8], limit: usize) -> io::Result<()> {
     if bytes.len() > limit {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput, "field too long"));
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "field too long",
+        ));
     }
 
     to.write_all(&(bytes.len() as u16).to_le_bytes())?;

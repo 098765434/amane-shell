@@ -39,7 +39,8 @@ impl Sender {
     pub fn send(&mut self, request: Request) -> io::Result<u64> {
         let id = self.next;
         self.next += 1;
-        let mut line = serde_json::to_string(&Envelope { id, request }).map_err(io::Error::other)?;
+        let mut line =
+            serde_json::to_string(&Envelope { id, request }).map_err(io::Error::other)?;
         line.push('\n');
         self.stream.write_all(line.as_bytes())?;
         Ok(id)

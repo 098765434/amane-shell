@@ -28,13 +28,15 @@ const POLITE_START: &[&str] = &[
 const POLITE_END: &[&str] = &["please", "for me", "now", "thanks", "thank you"];
 
 /// Words that turn a command round; a query with one is the model's.
-const NEGATIONS: &[&str] = &["dont", "do not", "not", "never", "without", "no", "cant", "wont"];
+const NEGATIONS: &[&str] = &[
+    "dont", "do not", "not", "never", "without", "no", "cant", "wont",
+];
 
 /// How a question starts, once what's polite is off ("can you" is, "can i"
 /// isn't): asking about a thing isn't asking for it.
 const QUESTIONS: &[&str] = &[
-    "how", "what", "whats", "why", "when", "where", "who", "which", "is", "are", "does",
-    "do i", "do you", "can i", "should", "will it",
+    "how", "what", "whats", "why", "when", "where", "who", "which", "is", "are", "does", "do i",
+    "do you", "can i", "should", "will it",
 ];
 
 /// Whether the model is worth asking about `query`, once no rule read it.
@@ -46,9 +48,10 @@ pub fn worth_asking(query: &str, snapshot: &Snapshot) -> bool {
     if !q.contains(' ') {
         return false;
     }
-    let question = QUESTIONS
-        .iter()
-        .any(|start| q.strip_prefix(start).is_some_and(|rest| rest.starts_with(' ')));
+    let question = QUESTIONS.iter().any(|start| {
+        q.strip_prefix(start)
+            .is_some_and(|rest| rest.starts_with(' '))
+    });
     !question && snapshot.switch(&q).is_none() && snapshot.app(&q).is_none()
 }
 
@@ -146,13 +149,14 @@ fn level(q: &str, snapshot: &Snapshot) -> Option<Command> {
         })
     };
     match q {
-        "louder" | "make louder" | "make sound louder" | "volume up" | "turn up" | "turn up volume" | "turn volume up" | "turn sound up"
-        | "turn up sound" | "increase volume" | "raise volume" | "more volume" | "sound up" => {
+        "louder" | "make louder" | "make sound louder" | "volume up" | "turn up"
+        | "turn up volume" | "turn volume up" | "turn sound up" | "turn up sound"
+        | "increase volume" | "raise volume" | "more volume" | "sound up" => {
             return Some(volume(Target::Up));
         }
-        "quieter" | "make quieter" | "make softer" | "softer" | "volume down" | "turn down" | "turn down volume"
-        | "turn volume down" | "turn sound down" | "turn down sound" | "lower volume"
-        | "decrease volume" | "less volume" | "sound down" | "too loud" => {
+        "quieter" | "make quieter" | "make softer" | "softer" | "volume down" | "turn down"
+        | "turn down volume" | "turn volume down" | "turn sound down" | "turn down sound"
+        | "lower volume" | "decrease volume" | "less volume" | "sound down" | "too loud" => {
             return Some(volume(Target::Down));
         }
         "max volume" | "full volume" | "maximum volume" | "volume max" => {
@@ -167,13 +171,32 @@ fn level(q: &str, snapshot: &Snapshot) -> Option<Command> {
         "unmute" | "unmute sound" | "unmute volume" | "unmute audio" | "unmute speakers" => {
             return Some(Command::Mute { state: State::Off });
         }
-        "brighter" | "make brighter" | "make screen brighter" | "brightness up" | "increase brightness" | "raise brightness"
-        | "brighten screen" | "turn up brightness" | "turn brightness up" | "too dark" => {
+        "brighter"
+        | "make brighter"
+        | "make screen brighter"
+        | "brightness up"
+        | "increase brightness"
+        | "raise brightness"
+        | "brighten screen"
+        | "turn up brightness"
+        | "turn brightness up"
+        | "too dark" => {
             return brightness(Target::Up);
         }
-        "dimmer" | "make dimmer" | "make screen dimmer" | "dim" | "dim screen" | "dim display" | "brightness down" | "decrease brightness"
-        | "lower brightness" | "turn down brightness" | "turn brightness down" | "too bright"
-        | "screen too bright" | "screen is too bright" => {
+        "dimmer"
+        | "make dimmer"
+        | "make screen dimmer"
+        | "dim"
+        | "dim screen"
+        | "dim display"
+        | "brightness down"
+        | "decrease brightness"
+        | "lower brightness"
+        | "turn down brightness"
+        | "turn brightness down"
+        | "too bright"
+        | "screen too bright"
+        | "screen is too bright" => {
             return brightness(Target::Down);
         }
         _ => {}
@@ -207,13 +230,19 @@ fn media(q: &str) -> Option<Command> {
     let media = match q.as_str() {
         "next" | "next song" | "next track" | "skip" | "skip song" | "skip track"
         | "play next song" | "play next track" | "next one" => Media::Next,
-        "previous" | "previous song" | "previous track" | "last song" | "last track"
-        | "go back song" | "back song" | "play previous song" | "play previous track"
-        | "go back to previous song" | "go back to previous track" => {
-            Media::Previous
-        }
-        "pause" | "pause music" | "pause song" | "pause video" | "pause playback" | "stop music"
-        | "stop playback" | "stop song" => Media::Pause,
+        "previous"
+        | "previous song"
+        | "previous track"
+        | "last song"
+        | "last track"
+        | "go back song"
+        | "back song"
+        | "play previous song"
+        | "play previous track"
+        | "go back to previous song"
+        | "go back to previous track" => Media::Previous,
+        "pause" | "pause music" | "pause song" | "pause video" | "pause playback"
+        | "stop music" | "stop playback" | "stop song" => Media::Pause,
         "play" | "resume" | "play music" | "resume music" | "resume playback" | "unpause" => {
             Media::Play
         }
@@ -266,7 +295,11 @@ fn switch(q: &str, snapshot: &Snapshot) -> Option<Command> {
 
 fn switch_command(switch: &crate::snapshot::Switch, state: State) -> Command {
     // a button (Screenshot) only presses
-    let state = if switch.on.is_none() { State::Toggle } else { state };
+    let state = if switch.on.is_none() {
+        State::Toggle
+    } else {
+        state
+    };
     Command::Switch {
         control: switch.control.clone(),
         state,
@@ -278,8 +311,13 @@ fn power(q: &str, snapshot: &Snapshot) -> Option<Command> {
     let power = match q.as_str() {
         "lock" | "lock screen" | "lock computer" | "lock laptop" | "lock session" => Power::Lock,
         "log out" | "logout" | "sign out" | "log off" => Power::LogOut,
-        "sleep" | "suspend" | "go to sleep" | "put computer to sleep" | "put laptop to sleep"
-        | "suspend computer" | "suspend laptop" => Power::Sleep,
+        "sleep"
+        | "suspend"
+        | "go to sleep"
+        | "put computer to sleep"
+        | "put laptop to sleep"
+        | "suspend computer"
+        | "suspend laptop" => Power::Sleep,
         "restart" | "reboot" | "restart computer" | "reboot computer" | "restart laptop"
         | "reboot laptop" => Power::Restart,
         "shut down" | "shutdown" | "power off" | "turn off computer" | "turn off laptop"
@@ -319,10 +357,17 @@ fn timer(q: &str, snapshot: &Snapshot) -> Option<Command> {
     ) {
         return snapshot.timer_running.then_some(Command::CancelTimer);
     }
-    let rest = ["set timer for ", "start timer for ", "timer for ", "set timer ", "start timer ", "timer "]
-        .iter()
-        .find_map(|start| q.strip_prefix(start))
-        .or_else(|| q.strip_suffix(" timer"))?;
+    let rest = [
+        "set timer for ",
+        "start timer for ",
+        "timer for ",
+        "set timer ",
+        "start timer ",
+        "timer ",
+    ]
+    .iter()
+    .find_map(|start| q.strip_prefix(start))
+    .or_else(|| q.strip_suffix(" timer"))?;
     let seconds = duration(rest)?;
     (seconds > 0).then_some(Command::Timer { seconds })
 }
@@ -381,10 +426,16 @@ pub fn duration(text: &str) -> Option<u64> {
 
 fn power_mode(q: &str, snapshot: &Snapshot) -> Option<Command> {
     let q = bare(q);
-    let name = ["switch to ", "set power mode to ", "power mode ", "use ", "set "]
-        .iter()
-        .find_map(|start| q.strip_prefix(start))
-        .unwrap_or(&q);
+    let name = [
+        "switch to ",
+        "set power mode to ",
+        "power mode ",
+        "use ",
+        "set ",
+    ]
+    .iter()
+    .find_map(|start| q.strip_prefix(start))
+    .unwrap_or(&q);
     let name = name.strip_suffix(" power mode").unwrap_or(name);
     if !name.ends_with(" mode") && !q.starts_with("power mode") && !q.starts_with("set power mode")
     {
@@ -469,9 +520,20 @@ mod tests {
 
     #[test]
     fn media() {
-        assert_eq!(reads("skip this song"), Some(Command::Media { media: Media::Next }));
-        assert_eq!(reads("next track"), Some(Command::Media { media: Media::Next }));
-        assert_eq!(reads("pause the music"), Some(Command::Media { media: Media::Pause }));
+        assert_eq!(
+            reads("skip this song"),
+            Some(Command::Media { media: Media::Next })
+        );
+        assert_eq!(
+            reads("next track"),
+            Some(Command::Media { media: Media::Next })
+        );
+        assert_eq!(
+            reads("pause the music"),
+            Some(Command::Media {
+                media: Media::Pause
+            })
+        );
         assert_eq!(reads("play"), Some(Command::Media { media: Media::Play }));
     }
 
@@ -485,18 +547,31 @@ mod tests {
         assert_eq!(reads("disable bluetooth"), sw("bluetooth", State::Off));
         assert_eq!(reads("toggle dark mode"), sw("dark-style", State::Toggle));
         assert_eq!(reads("switch to dark mode"), sw("dark-style", State::On));
-        assert_eq!(reads("disconnect from the internet"), sw("wifi", State::Off));
+        assert_eq!(
+            reads("disconnect from the internet"),
+            sw("wifi", State::Off)
+        );
         assert_eq!(reads("screenshot on"), sw("screenshot", State::Toggle));
         assert_eq!(reads("turn on teleporter"), None);
     }
 
     #[test]
     fn power() {
-        assert_eq!(reads("lock the screen"), Some(Command::Power { power: Power::Lock }));
-        assert_eq!(reads("shut down"), Some(Command::Power { power: Power::PowerOff }));
+        assert_eq!(
+            reads("lock the screen"),
+            Some(Command::Power { power: Power::Lock })
+        );
+        assert_eq!(
+            reads("shut down"),
+            Some(Command::Power {
+                power: Power::PowerOff
+            })
+        );
         assert_eq!(
             reads("put the laptop to sleep"),
-            Some(Command::Power { power: Power::Sleep })
+            Some(Command::Power {
+                power: Power::Sleep
+            })
         );
         assert_eq!(reads("don't let the computer go to sleep"), None);
         assert_eq!(reads("do not shut down"), None);
@@ -504,21 +579,40 @@ mod tests {
 
     #[test]
     fn apps() {
-        assert_eq!(reads("open firefox"), Some(Command::Open { app: "firefox".into() }));
-        assert_eq!(reads("launch the terminal"), Some(Command::Open { app: "com.mitchellh.ghostty".into() }));
-        assert_eq!(reads("open visual studio"), Some(Command::Open { app: "code".into() }));
+        assert_eq!(
+            reads("open firefox"),
+            Some(Command::Open {
+                app: "firefox".into()
+            })
+        );
+        assert_eq!(
+            reads("launch the terminal"),
+            Some(Command::Open {
+                app: "com.mitchellh.ghostty".into()
+            })
+        );
+        assert_eq!(
+            reads("open visual studio"),
+            Some(Command::Open { app: "code".into() })
+        );
         assert_eq!(reads("open the pod bay doors"), None);
         assert_eq!(reads("firefox"), None, "a bare name is Spotlight's");
     }
 
     #[test]
     fn timers() {
-        assert_eq!(reads("timer 5 minutes"), Some(Command::Timer { seconds: 300 }));
+        assert_eq!(
+            reads("timer 5 minutes"),
+            Some(Command::Timer { seconds: 300 })
+        );
         assert_eq!(
             reads("set a timer for 1 hour 30 minutes"),
             Some(Command::Timer { seconds: 5400 })
         );
-        assert_eq!(reads("5 minute timer"), Some(Command::Timer { seconds: 300 }));
+        assert_eq!(
+            reads("5 minute timer"),
+            Some(Command::Timer { seconds: 300 })
+        );
         assert_eq!(reads("timer 1h30m"), Some(Command::Timer { seconds: 5400 }));
         assert_eq!(reads("timer 1:30"), Some(Command::Timer { seconds: 90 }));
         assert_eq!(reads("timer soon"), None);
@@ -529,11 +623,15 @@ mod tests {
     fn power_modes() {
         assert_eq!(
             reads("switch to power saver mode"),
-            Some(Command::PowerMode { profile: "power-saver".into() })
+            Some(Command::PowerMode {
+                profile: "power-saver".into()
+            })
         );
         assert_eq!(
             reads("performance mode"),
-            Some(Command::PowerMode { profile: "performance".into() })
+            Some(Command::PowerMode {
+                profile: "performance".into()
+            })
         );
         assert_eq!(reads("balanced"), None);
     }

@@ -397,13 +397,17 @@ impl Identities {
             identities.checking.retain(|checking| *checking != key);
 
             if identities.known.len() >= IDENTITIES {
-                identities.known.retain(|_, (_, at)| at.elapsed() < IDENTITY_FOR);
+                identities
+                    .known
+                    .retain(|_, (_, at)| at.elapsed() < IDENTITY_FOR);
             }
             if identities.known.len() >= IDENTITIES {
                 identities.known.clear();
             }
 
-            identities.known.insert(key, (identity, std::time::Instant::now()));
+            identities
+                .known
+                .insert(key, (identity, std::time::Instant::now()));
         });
 
         None

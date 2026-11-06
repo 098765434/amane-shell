@@ -145,7 +145,6 @@ impl DetailPage {
         // a page still goes back to the one it's in
         let on_back = self
             .back
-            
             .or_else(|| (!ALONE.get()).then(|| Rc::new(back) as Rc<dyn Fn()>));
 
         // the title has what the back chevron and the switch leave

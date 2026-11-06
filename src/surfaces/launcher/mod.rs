@@ -31,8 +31,8 @@
 
 mod actions;
 mod answers;
-mod assistant;
 mod app_menu;
+mod assistant;
 mod entries;
 mod grid;
 mod header;
@@ -727,7 +727,11 @@ fn heard() {
     let Some(heard) = assistant_service::take_heard() else {
         return;
     };
-    let text = heard.trim().trim_end_matches(['.', '!', '?']).trim().to_string();
+    let text = heard
+        .trim()
+        .trim_end_matches(['.', '!', '?'])
+        .trim()
+        .to_string();
     if !is_open(Panel::Launcher) || text.is_empty() {
         return;
     }
@@ -1591,8 +1595,7 @@ fn window() -> LayerWindow {
         // modal while open: every key is the launcher's from the first moment
         .keyboard(Keyboard::Exclusive)
         .on_key(on_key);
-    overlay(base, LAUNCHER_NS, Vertical::Middle, Horizontal::Middle)
-        .output(panel::on_output())
+    overlay(base, LAUNCHER_NS, Vertical::Middle, Horizontal::Middle).output(panel::on_output())
 }
 
 /// A click on `app`: a launch, or its menu at the pointer.

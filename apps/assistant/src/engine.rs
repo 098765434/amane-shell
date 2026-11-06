@@ -108,7 +108,11 @@ impl Engine {
     /// Needle's answer for `text`, offered `tools` with `system`'s facts.
     pub fn complete(&mut self, system: &str, tools: &str, text: &str) -> Result<Value, String> {
         self.load()?;
-        if self.session.as_ref().is_none_or(|(s, t)| s != system || t != tools) {
+        if self
+            .session
+            .as_ref()
+            .is_none_or(|(s, t)| s != system || t != tools)
+        {
             let index = self.cache.join(format!("tools-{:016x}.idx", hash(tools)));
             init(system, tools, &index)?;
             self.session = Some((system.to_string(), tools.to_string()));
@@ -118,7 +122,11 @@ impl Engine {
         serde_json::from_str(&answer).map_err(|error| format!("Cactus answered oddly: {error}"))
     }
 
-    pub fn listen_start(&mut self, language: Option<&str>, keywords: &[String]) -> Result<(), String> {
+    pub fn listen_start(
+        &mut self,
+        language: Option<&str>,
+        keywords: &[String],
+    ) -> Result<(), String> {
         self.load()?;
         // what was left of one before
         if self.listening.is_some() {
@@ -209,7 +217,9 @@ fn last_error(what: &str) -> String {
     let error = if error.is_null() {
         String::new()
     } else {
-        unsafe { CStr::from_ptr(error) }.to_string_lossy().into_owned()
+        unsafe { CStr::from_ptr(error) }
+            .to_string_lossy()
+            .into_owned()
     };
     if error.is_empty() {
         format!("{what} failed")
@@ -221,7 +231,10 @@ fn last_error(what: &str) -> String {
 /// Runs `call` with an output buffer, again with a bigger one if it
 /// didn't fit, giving what it wrote.
 #[cfg(cactus)]
-fn with_out(what: &str, mut call: impl FnMut(*mut c_char, c_int) -> c_int) -> Result<String, String> {
+fn with_out(
+    what: &str,
+    mut call: impl FnMut(*mut c_char, c_int) -> c_int,
+) -> Result<String, String> {
     let mut size = OUT;
     for _ in 0..2 {
         let mut out = vec![0 as c_char; size];
@@ -271,7 +284,14 @@ fn init(system: &str, tools: &str, index: &Path) -> Result<(), String> {
 fn complete(text: &str) -> Result<String, String> {
     let input = cstring(text)?;
     with_out("answering", |out, capacity| unsafe {
-        ffi::cactus_complete(input.as_ptr(), std::ptr::null(), 0, MAX_TOKENS, out, capacity)
+        ffi::cactus_complete(
+            input.as_ptr(),
+            std::ptr::null(),
+            0,
+            MAX_TOKENS,
+            out,
+            capacity,
+        )
     })
 }
 

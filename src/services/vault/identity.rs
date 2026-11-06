@@ -100,7 +100,9 @@ pub fn check(owner: &FieldOwner) -> Identity {
         return Identity::Unverified(Why::NotFromStore);
     }
 
-    let Some(package) = fs::canonicalize(&entry.path).ok().and_then(|path| store_path(&path))
+    let Some(package) = fs::canonicalize(&entry.path)
+        .ok()
+        .and_then(|path| store_path(&path))
     else {
         return Identity::Unverified(Why::NotFromStore);
     };
@@ -137,7 +139,10 @@ fn same_program(package: &Path, program: &Path) -> bool {
 
     let (package_name, program_name) = (package_name(package), package_name(program));
 
-    let twin = [format!("{package_name}-unwrapped"), format!("{package_name}-bin")];
+    let twin = [
+        format!("{package_name}-unwrapped"),
+        format!("{package_name}-bin"),
+    ];
 
     twin.contains(&program_name) && needs(package, program)
 }
@@ -161,9 +166,11 @@ fn is_runtime(exe: &Path) -> bool {
 
     starts.iter().any(|start| {
         name == *start
-            || name
-                .strip_prefix(start)
-                .is_some_and(|rest| rest.starts_with(|letter: char| letter.is_ascii_digit() || letter == '.' || letter == '-'))
+            || name.strip_prefix(start).is_some_and(|rest| {
+                rest.starts_with(|letter: char| {
+                    letter.is_ascii_digit() || letter == '.' || letter == '-'
+                })
+            })
     })
 }
 
@@ -286,7 +293,10 @@ fn desktop_entry(app_id: &str) -> Option<DesktopEntry> {
         for file in files.flatten() {
             let path = file.path();
 
-            if path.extension().is_none_or(|extension| extension != "desktop") {
+            if path
+                .extension()
+                .is_none_or(|extension| extension != "desktop")
+            {
                 continue;
             }
 
@@ -331,7 +341,9 @@ fn read_entry(path: PathBuf) -> Option<DesktopEntry> {
     let categories = value("Categories=").unwrap_or_default();
     let mime = value("MimeType=").unwrap_or_default();
 
-    let browser = categories.split(';').any(|category| category == "WebBrowser")
+    let browser = categories
+        .split(';')
+        .any(|category| category == "WebBrowser")
         || mime
             .split(';')
             .any(|kind| kind == "x-scheme-handler/http" || kind == "x-scheme-handler/https");
@@ -354,7 +366,11 @@ fn application_folders() -> Vec<PathBuf> {
 
     let data = std::env::var("XDG_DATA_DIRS")
         .unwrap_or_else(|_| String::from("/usr/local/share:/usr/share"));
-    folders.extend(data.split(':').filter(|folder| !folder.is_empty()).map(PathBuf::from));
+    folders.extend(
+        data.split(':')
+            .filter(|folder| !folder.is_empty())
+            .map(PathBuf::from),
+    );
 
     folders
         .into_iter()
@@ -380,11 +396,15 @@ mod tests {
         assert_eq!(package_name(&store), "telegram-desktop");
 
         assert_eq!(
-            package_name(Path::new("/nix/store/0123456789abcdfghijklmnpqrsvwxyz-vscode-1.105.1")),
+            package_name(Path::new(
+                "/nix/store/0123456789abcdfghijklmnpqrsvwxyz-vscode-1.105.1"
+            )),
             "vscode"
         );
         assert_eq!(
-            package_name(Path::new("/nix/store/0123456789abcdfghijklmnpqrsvwxyz-7zz-25.01")),
+            package_name(Path::new(
+                "/nix/store/0123456789abcdfghijklmnpqrsvwxyz-7zz-25.01"
+            )),
             "7zz"
         );
 
@@ -416,21 +436,42 @@ mod tests {
 
     #[test]
     fn loaders_and_interpreters_are_runtimes() {
-        let store = |name: &str| PathBuf::from(format!("/nix/store/0123456789abcdfghijklmnpqrsvwxyz-x-1/bin/{name}"));
+        let store = |name: &str| {
+            PathBuf::from(format!(
+                "/nix/store/0123456789abcdfghijklmnpqrsvwxyz-x-1/bin/{name}"
+            ))
+        };
 
-        for name in ["ld-linux-x86-64.so.2", "python3", "python3.12", "node", ".bash-wrapped", "electron", "java", "sh"] {
+        for name in [
+            "ld-linux-x86-64.so.2",
+            "python3",
+            "python3.12",
+            "node",
+            ".bash-wrapped",
+            "electron",
+            "java",
+            "sh",
+        ] {
             assert!(is_runtime(&store(name)), "{name}");
         }
-        for name in ["telegram-desktop", "code", ".firefox-wrapped", "shotwell", "nodepad"] {
+        for name in [
+            "telegram-desktop",
+            "code",
+            ".firefox-wrapped",
+            "shotwell",
+            "nodepad",
+        ] {
             assert!(!is_runtime(&store(name)), "{name}");
         }
     }
 
     #[test]
     fn only_the_package_or_its_twin_is_the_program() {
-        let package = Path::new("/nix/store/0123456789abcdfghijklmnpqrsvwxyz-telegram-desktop-5.6.3");
+        let package =
+            Path::new("/nix/store/0123456789abcdfghijklmnpqrsvwxyz-telegram-desktop-5.6.3");
         let glibc = Path::new("/nix/store/0123456789abcdfghijklmnpqrsvwxyz-glibc-2.40-66");
-        let lookalike = Path::new("/nix/store/0123456789abcdfghijklmnpqrsvwxyz-telegram-desktop-evil-1");
+        let lookalike =
+            Path::new("/nix/store/0123456789abcdfghijklmnpqrsvwxyz-telegram-desktop-evil-1");
 
         assert!(same_program(package, package));
         assert!(!same_program(package, glibc));

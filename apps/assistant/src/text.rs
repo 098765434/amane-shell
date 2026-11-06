@@ -25,7 +25,10 @@ mod tests {
     #[test]
     fn text_is_compared_plainly() {
         assert_eq!(normalize("Wi‑Fi"), "wifi");
-        assert_eq!(normalize("  Turn on Night Light, please! "), "turn on night light please");
+        assert_eq!(
+            normalize("  Turn on Night Light, please! "),
+            "turn on night light please"
+        );
         assert_eq!(normalize("Volume to 40%."), "volume to 40%");
         assert_eq!(normalize("don't"), "dont");
         assert_eq!(normalize("1:30"), "1:30");

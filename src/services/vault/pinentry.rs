@@ -226,7 +226,9 @@ fn trusted(stream: &UnixStream) -> bool {
         "XDG_RUNTIME_DIR",
         "RBW_PROFILE",
     ] {
-        let ours = std::env::var(variable).ok().filter(|value| !value.is_empty());
+        let ours = std::env::var(variable)
+            .ok()
+            .filter(|value| !value.is_empty());
 
         let Some(theirs) = peer::environment(agent, variable) else {
             return false;
@@ -275,7 +277,11 @@ fn ask(prompt: Prompt) -> Answer {
     ASKING.lock().unwrap_or_else(PoisonError::into_inner).take();
 
     let mut entry = PinEntry::write();
-    if entry.question.as_ref().is_some_and(|question| question.id == id) {
+    if entry
+        .question
+        .as_ref()
+        .is_some_and(|question| question.id == id)
+    {
         entry.question = None;
     }
 

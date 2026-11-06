@@ -11,9 +11,9 @@ use std::cell::Cell;
 
 use amane::{AuthRequest, Polkit, Service, TextInput};
 
-use crate::surfaces::alert;
 use crate::components::dialog::{Dialog, Field, Icon};
 use crate::components::icons::ICON_LOCK;
+use crate::surfaces::alert;
 
 /// The alert's name, so only this alert is closed when polkitd stops asking.
 const NAME: &str = "amane.alert.polkit";

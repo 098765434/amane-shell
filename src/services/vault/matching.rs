@@ -28,7 +28,12 @@ pub struct Match {
 }
 
 /// The entries for an app, best first, each once.
-pub fn matches(app: &Verified, app_id: &str, entries: &[Entry], settings: &Passwords) -> Vec<Match> {
+pub fn matches(
+    app: &Verified,
+    app_id: &str,
+    entries: &[Entry],
+    settings: &Passwords,
+) -> Vec<Match> {
     let mut found: Vec<Match> = Vec::new();
 
     let mut add = |entry: &Entry, reason: Reason| {
@@ -97,15 +102,31 @@ pub fn domain_of(desktop_id: &str) -> Option<String> {
     }
 
     let name = parts[1].to_ascii_lowercase();
-    if name.is_empty() || !name.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'-') {
+    if name.is_empty()
+        || !name
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+    {
         return None;
     }
 
     // github.io, gnome.org and the like host many projects: an app under them isn't their site
     if matches!(
         name.as_str(),
-        "github" | "gitlab" | "codeberg" | "sourceforge" | "freedesktop" | "gnome" | "kde"
-            | "flathub" | "mozilla" | "nixos" | "sr" | "srht" | "launchpad" | "googlecode"
+        "github"
+            | "gitlab"
+            | "codeberg"
+            | "sourceforge"
+            | "freedesktop"
+            | "gnome"
+            | "kde"
+            | "flathub"
+            | "mozilla"
+            | "nixos"
+            | "sr"
+            | "srht"
+            | "launchpad"
+            | "googlecode"
     ) {
         return None;
     }
@@ -118,7 +139,11 @@ pub fn host_of(uri: &str) -> Option<String> {
     let uri = uri.trim();
 
     let rest = match uri.split_once("://") {
-        Some((scheme, rest)) if scheme.eq_ignore_ascii_case("https") || scheme.eq_ignore_ascii_case("http") => rest,
+        Some((scheme, rest))
+            if scheme.eq_ignore_ascii_case("https") || scheme.eq_ignore_ascii_case("http") =>
+        {
+            rest
+        }
         Some(_) => return None,
         // Bitwarden takes a bare host as a website
         None => uri,
@@ -126,7 +151,11 @@ pub fn host_of(uri: &str) -> Option<String> {
 
     let host = rest.split(['/', '?', '#']).next()?;
     let host = host.rsplit_once('@').map_or(host, |(_, host)| host);
-    let host = host.split(':').next()?.trim_end_matches('.').to_ascii_lowercase();
+    let host = host
+        .split(':')
+        .next()?
+        .trim_end_matches('.')
+        .to_ascii_lowercase();
 
     (!host.is_empty() && host.contains('.')).then_some(host)
 }
@@ -164,8 +193,14 @@ mod tests {
 
     #[test]
     fn domains_from_reverse_dns() {
-        assert_eq!(domain_of("org.telegram.desktop").as_deref(), Some("telegram.org"));
-        assert_eq!(domain_of("com.discordapp.Discord").as_deref(), Some("discordapp.com"));
+        assert_eq!(
+            domain_of("org.telegram.desktop").as_deref(),
+            Some("telegram.org")
+        );
+        assert_eq!(
+            domain_of("com.discordapp.Discord").as_deref(),
+            Some("discordapp.com")
+        );
         assert_eq!(domain_of("firefox"), None);
         assert_eq!(domain_of("io.github.someone.App"), None);
         assert_eq!(domain_of("org.gnome.Calendar"), None);
@@ -176,9 +211,15 @@ mod tests {
 
     #[test]
     fn hosts_of_websites_only() {
-        assert_eq!(host_of("https://web.telegram.org/k/").as_deref(), Some("web.telegram.org"));
+        assert_eq!(
+            host_of("https://web.telegram.org/k/").as_deref(),
+            Some("web.telegram.org")
+        );
         assert_eq!(host_of("telegram.org").as_deref(), Some("telegram.org"));
-        assert_eq!(host_of("https://user@telegram.org:443").as_deref(), Some("telegram.org"));
+        assert_eq!(
+            host_of("https://user@telegram.org:443").as_deref(),
+            Some("telegram.org")
+        );
         assert_eq!(host_of("androidapp://org.telegram.messenger"), None);
         assert_eq!(host_of("moz-extension://abc"), None);
         assert!(on_domain("web.telegram.org", "telegram.org"));

@@ -137,12 +137,21 @@ pub fn config() -> Option<Config> {
     let text = std::fs::read_to_string(path).ok()?;
     let value: Value = serde_json::from_str(&text).ok()?;
 
-    let text = |key: &str| value.get(key).and_then(Value::as_str).unwrap_or("").to_string();
+    let text = |key: &str| {
+        value
+            .get(key)
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string()
+    };
 
     Some(Config {
         email: text("email"),
         base_url: text("base_url"),
-        lock_timeout: value.get("lock_timeout").and_then(Value::as_u64).unwrap_or(3600),
+        lock_timeout: value
+            .get("lock_timeout")
+            .and_then(Value::as_u64)
+            .unwrap_or(3600),
         pinentry: text("pinentry"),
     })
 }
@@ -403,7 +412,10 @@ mod tests {
 
     #[test]
     fn errors_are_read_not_kept() {
-        assert_eq!(Error::read(b"rbw unlock: failed to read password from pinentry: pinentry cancelled"), Error::Cancelled);
+        assert_eq!(
+            Error::read(b"rbw unlock: failed to read password from pinentry: pinentry cancelled"),
+            Error::Cancelled
+        );
         assert_eq!(Error::read(b"rbw get: agent is locked"), Error::Locked);
         assert_eq!(Error::read(b"rbw login: failed to log in to bitwarden instance: unregistered device, run rbw register"), Error::NeedsRegister);
         assert_eq!(Error::read(b"something else"), Error::Failed);

@@ -12,8 +12,8 @@ use amane::DesktopApp;
 use amane_kit::settings::{QuickKey, launcher};
 
 use crate::components::icons::{
-    ICON_CALCULATE, ICON_CONTENT_COPY, ICON_DESCRIPTION, ICON_FOLDER, ICON_LOCK,
-    ICON_OPEN_IN_NEW, ICON_SEARCH, ICON_SWAP,
+    ICON_CALCULATE, ICON_CONTENT_COPY, ICON_DESCRIPTION, ICON_FOLDER, ICON_LOCK, ICON_OPEN_IN_NEW,
+    ICON_SEARCH, ICON_SWAP,
 };
 use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history::{self, Clip, Kind as ClipKind};
@@ -275,9 +275,9 @@ impl Provider for Assistant {
         if query.needle.is_empty() || out.iter().any(|found| found.group == Group::Answer) {
             return;
         }
-        let Some(reading) = assistant_service::read(query.text, || {
-            super::assistant::snapshot(query.apps)
-        }) else {
+        let Some(reading) =
+            assistant_service::read(query.text, || super::assistant::snapshot(query.apps))
+        else {
             return;
         };
         let outright = out
@@ -729,11 +729,16 @@ impl Provider for Passwords {
         match vault.status() {
             Status::Unlocked => {}
             Status::Locked => return push(only("unlock", "Unlock Bitwarden…", Vault::unlock)),
-            Status::LoggedOut => return push(only("sign-in", "Sign in to Bitwarden…", Vault::sign_in)),
+            Status::LoggedOut => {
+                return push(only("sign-in", "Sign in to Bitwarden…", Vault::sign_in));
+            }
             Status::NotConfigured => {
                 return push(
                     only("set-up", "Set up Passwords in Shell Settings…", || {
-                        crate::services::run("amane-settings", vec![String::from("--page"), String::from("passwords")]);
+                        crate::services::run(
+                            "amane-settings",
+                            vec![String::from("--page"), String::from("passwords")],
+                        );
                     })
                     .subtitle("Bitwarden through rbw"),
                 );
@@ -749,8 +754,14 @@ impl Provider for Passwords {
             .filter(|entry| {
                 needle.is_empty()
                     || entry.name.to_lowercase().contains(&needle)
-                    || entry.user.as_deref().is_some_and(|user| user.to_lowercase().contains(&needle))
-                    || entry.uris.iter().any(|uri| uri.to_lowercase().contains(&needle))
+                    || entry
+                        .user
+                        .as_deref()
+                        .is_some_and(|user| user.to_lowercase().contains(&needle))
+                    || entry
+                        .uris
+                        .iter()
+                        .any(|uri| uri.to_lowercase().contains(&needle))
             })
             .take(MAX_ROWS)
             .collect();

@@ -9,8 +9,8 @@ use super::{
     label_style, line, percent, place, primary, ring_with, secondary, sparkline,
 };
 use crate::components::layout::{icon, text_height};
-use crate::surfaces::widgets::kind::{WidgetKind, WidgetSize};
 use crate::services::desktop::system_stats::{Series, SystemStats};
+use crate::surfaces::widgets::kind::{WidgetKind, WidgetSize};
 use crate::tokens::sys;
 
 /// Hotter than this reads in the critical colour.

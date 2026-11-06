@@ -97,7 +97,11 @@ impl Run {
             "finished" => {
                 let status = words.first().and_then(|w| w.parse().ok()).unwrap_or(1);
                 self.status = Some(status);
-                self.phase = if status == 0 { Phase::Done } else { Phase::Failed };
+                self.phase = if status == 0 {
+                    Phase::Done
+                } else {
+                    Phase::Failed
+                };
             }
             _ => {}
         }
@@ -157,7 +161,10 @@ impl Run {
                 }
                 parts.join(" · ")
             }
-            Phase::Scoring => format!("scoring held-out calls · val {:.3}", self.val.unwrap_or(f32::NAN)),
+            Phase::Scoring => format!(
+                "scoring held-out calls · val {:.3}",
+                self.val.unwrap_or(f32::NAN)
+            ),
             Phase::Building => String::from("building the archive"),
             Phase::Done => {
                 let mut parts = Vec::new();
@@ -242,7 +249,10 @@ mod tests {
         assert!(r.finished());
         assert_eq!(r.summary(), "held-out 98/199 · val 0.198");
         r.feed("21:04:00   dev       41/60 right, 0 wrong");
-        assert_eq!(r.summary(), "held-out 98/199 · val 0.198 · dev 41/60 right, 0 wrong");
+        assert_eq!(
+            r.summary(),
+            "held-out 98/199 · val 0.198 · dev 41/60 right, 0 wrong"
+        );
     }
 
     #[test]
@@ -252,12 +262,18 @@ mod tests {
             "20:58:11   finished  2",
         ]);
         assert_eq!(r.phase, Phase::Failed);
-        assert_eq!(r.summary(), "cactus finetune: error: argument --epochs: expected one argument");
+        assert_eq!(
+            r.summary(),
+            "cactus finetune: error: argument --epochs: expected one argument"
+        );
     }
 
     #[test]
     fn the_rate_spans_midnight() {
-        let r = run(&["23:59:50   step 10/100  loss 1", "00:00:10   step 20/100  loss 1"]);
+        let r = run(&[
+            "23:59:50   step 10/100  loss 1",
+            "00:00:10   step 20/100  loss 1",
+        ]);
         assert_eq!(r.per_step(), Some(2.0));
     }
 

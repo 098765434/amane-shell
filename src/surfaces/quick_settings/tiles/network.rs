@@ -25,14 +25,14 @@ use crate::components::layout::{boxed, caption, fixed_width, icon, nothing, text
 use crate::components::list::{self, List, ListItem};
 use crate::components::material::{self, Level};
 use crate::components::motion::redraw_after;
+use crate::services::network::connections::Connections;
+use crate::services::network::connections::Vpn;
+use crate::services::network::rfkill::Rfkill;
 use crate::surfaces::quick_settings::QuickSettings;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::detail::page_width;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
-use crate::services::network::connections::Connections;
-use crate::services::network::connections::Vpn;
-use crate::services::network::rfkill::Rfkill;
 use crate::tokens::sys;
 
 /// How often the Wi‑Fi page looks for networks again.

@@ -13,11 +13,11 @@ use crate::components::layout::{boxed, caption, icon};
 use crate::components::list::{self, List, ListItem};
 use crate::components::material::{self, Level};
 use crate::components::panel::close;
+use crate::services::network::tailscale::{Peer, State, Tailscale};
+use crate::services::run;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
-use crate::services::run;
-use crate::services::network::tailscale::{Peer, State, Tailscale};
 use crate::tokens::sys;
 
 const ADMIN_CONSOLE: &str = "https://login.tailscale.com/admin";

@@ -809,8 +809,7 @@ fn window(width: f32, height: f32) -> LayerWindow {
         .width(width)
         .height(height)
         .margin(popover_margin());
-    overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right)
-        .output(panel::on_output())
+    overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right).output(panel::on_output())
 }
 
 /// The surface over the whole output while the card shows (clear of what
@@ -820,8 +819,7 @@ fn full_window() -> LayerWindow {
     let base = LayerWindow::new()
         .width(WindowSize::Full)
         .height(WindowSize::Full);
-    overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right)
-        .output(panel::on_output())
+    overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right).output(panel::on_output())
 }
 
 /// `base` taking the keyboard: the card is modal while open, so Escape

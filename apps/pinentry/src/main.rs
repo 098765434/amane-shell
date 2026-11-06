@@ -178,7 +178,10 @@ fn read_line(from: &mut impl BufRead) -> io::Result<Option<String>> {
         return Ok(Some("X".repeat(assuan::LINE_LIMIT)));
     }
 
-    while bytes.last().is_some_and(|byte| *byte == b'\n' || *byte == b'\r') {
+    while bytes
+        .last()
+        .is_some_and(|byte| *byte == b'\n' || *byte == b'\r')
+    {
         bytes.pop();
     }
 

@@ -192,7 +192,10 @@ mod tests {
         assert_eq!(parse("getpin"), Ok(Command::GetPin));
         assert_eq!(parse("BYE"), Ok(Command::Bye));
         assert_eq!(parse("OPTION ttyname=/dev/pts/1"), Ok(Command::Ignored));
-        assert_eq!(parse("GETINFO pid"), Ok(Command::GetInfo(String::from("pid"))));
+        assert_eq!(
+            parse("GETINFO pid"),
+            Ok(Command::GetInfo(String::from("pid")))
+        );
         assert_eq!(parse("CONFIRM"), Ok(Command::Unsupported));
     }
 
@@ -207,7 +210,10 @@ mod tests {
     #[test]
     fn escapes_data() {
         assert_eq!(escape("a%b\nc\rd").as_str(), "a%25b%0Ac%0Dd");
-        assert_eq!(unescape(&escape("pä%ss\nword")).as_deref(), Some("pä%ss\nword"));
+        assert_eq!(
+            unescape(&escape("pä%ss\nword")).as_deref(),
+            Some("pä%ss\nword")
+        );
     }
 
     #[test]

@@ -65,7 +65,11 @@ const ROLES: [Role; 10] = [
         glyph: ICON_WEB,
         accent: Accent::Blue,
         key: "x-scheme-handler/https",
-        kinds: Kinds::Fixed(&["x-scheme-handler/http", "text/html", "application/xhtml+xml"]),
+        kinds: Kinds::Fixed(&[
+            "x-scheme-handler/http",
+            "text/html",
+            "application/xhtml+xml",
+        ]),
     },
     Role {
         id: "mail",
@@ -303,19 +307,20 @@ fn kind_of(typed: &str) -> Option<String> {
 
 fn file_types() -> Column {
     let typed = TextInput::text(TYPE_FIELD);
-    let mut search = group()
-        .header("Choose an App")
-        .row(
-            FormRow::new("settings.defaults.type-row", "Kind of file")
-                .subtitle("An extension, like md or png, or a type, like text/markdown")
-                .trailing(field_box(TYPE_FIELD, text_field(TYPE_FIELD, "md"), 200.0)),
-        );
+    let mut search = group().header("Choose an App").row(
+        FormRow::new("settings.defaults.type-row", "Kind of file")
+            .subtitle("An extension, like md or png, or a type, like text/markdown")
+            .trailing(field_box(TYPE_FIELD, text_field(TYPE_FIELD, "md"), 200.0)),
+    );
     if let Some(kind) = kind_of(&typed) {
         search = search.row(kind_row("settings.defaults.found", &kind).child());
     } else if !typed.trim().is_empty() {
         search = search.row(
-            FormRow::new("settings.defaults.unknown", "No kind of file has that extension")
-                .child(),
+            FormRow::new(
+                "settings.defaults.unknown",
+                "No kind of file has that extension",
+            )
+            .child(),
         );
     }
 
@@ -338,7 +343,8 @@ fn file_types() -> Column {
                 }
             })
             .build();
-        chosen = chosen.row(kind_row(&format!("settings.defaults.own.{kind}"), &kind).trailing(reset));
+        chosen =
+            chosen.row(kind_row(&format!("settings.defaults.own.{kind}"), &kind).trailing(reset));
     }
     groups(vec![search, chosen])
 }

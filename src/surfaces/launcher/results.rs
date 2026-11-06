@@ -403,10 +403,8 @@ pub(super) fn answer_card(answer: &Entry, width: f32, selected: bool, query: &st
                 boxed(
                     Rectangle::new()
                         .width(
-                            (width
-                                - inset * 2.0
-                                - text_width(hint, sys::r#type::caption()))
-                            .max(0.0),
+                            (width - inset * 2.0 - text_width(hint, sys::r#type::caption()))
+                                .max(0.0),
                         )
                         .height(ANSWER_H)
                         .fill(Color::TRANSPARENT)

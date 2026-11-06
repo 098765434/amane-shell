@@ -15,7 +15,11 @@ const SO_PEERPIDFD: libc::c_int = 77;
 pub fn socket_path() -> Option<PathBuf> {
     let runtime = std::env::var_os("XDG_RUNTIME_DIR")?;
 
-    Some(Path::new(&runtime).join("amane-shell").join("pinentry.sock"))
+    Some(
+        Path::new(&runtime)
+            .join("amane-shell")
+            .join("pinentry.sock"),
+    )
 }
 
 /// The process at the other end, held by a pidfd while it's looked at.
@@ -50,7 +54,10 @@ impl Peer {
         }
 
         if credentials.pid <= 0 {
-            return Err(io::Error::new(io::ErrorKind::NotFound, "peer has no process"));
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "peer has no process",
+            ));
         }
 
         let mut pidfd: libc::c_int = -1;
@@ -173,7 +180,10 @@ mod tests {
         assert!(is_program(&store("rbw-agent"), &["rbw-agent"]));
         assert!(is_program(&store(".amane-shell-wrapped"), &["amane-shell"]));
         assert!(!is_program(&store("rbw-agent-evil"), &["rbw-agent"]));
-        assert!(!is_program(Path::new("/home/me/bin/rbw-agent"), &["rbw-agent"]));
+        assert!(!is_program(
+            Path::new("/home/me/bin/rbw-agent"),
+            &["rbw-agent"]
+        ));
         assert!(!is_program(Path::new("/tmp/rbw-agent"), &["rbw-agent"]));
     }
 
@@ -183,7 +193,9 @@ mod tests {
 
         assert!(exe(me).is_some());
         assert!(parent(me).is_some());
-        assert!(environment(me, "AMANE_SURELY_UNSET_VARIABLE").is_some_and(|value| value.is_none()));
+        assert!(
+            environment(me, "AMANE_SURELY_UNSET_VARIABLE").is_some_and(|value| value.is_none())
+        );
     }
 
     #[test]

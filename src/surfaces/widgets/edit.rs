@@ -23,7 +23,6 @@ use super::{
     BAND, Geometry, RADIUS, THRESHOLD, changed, commit, current, gallery, shown, with_desk,
 };
 use crate::components::buttons::{IconButton, Shape, Style};
-use crate::surfaces::context_menu;
 use crate::components::control_size::ControlSize;
 use crate::components::grid::Layout;
 use crate::components::grid::drag::{Drag, Origin, Session, follow};
@@ -33,6 +32,7 @@ use crate::components::icons::{ICON_REMOVE, ICON_RESIZE};
 use crate::components::layout::{boxed, icon};
 use crate::components::material::{self, FillLevel, Level};
 use crate::components::motion::Pose;
+use crate::surfaces::context_menu;
 use crate::tokens::sys;
 
 /// The key a widget lifted from the gallery has until it lands.

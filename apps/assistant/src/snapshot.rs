@@ -151,7 +151,8 @@ impl Snapshot {
         }
         let starting = |app: &&App| {
             let own = text::normalize(&app.name);
-            own.strip_prefix(&name).is_some_and(|rest| rest.starts_with(' '))
+            own.strip_prefix(&name)
+                .is_some_and(|rest| rest.starts_with(' '))
         };
         let of_kind = |app: &&App| app.kinds.contains(&name);
         only(self.apps.iter().filter(starting)).or_else(|| only(self.apps.iter().filter(of_kind)))
@@ -258,7 +259,10 @@ mod tests {
         assert_eq!(snapshot.app("visual studio").unwrap().id, "code");
         assert_eq!(snapshot.app("files").unwrap().id, "org.gnome.Nautilus");
         assert!(snapshot.app("vis").is_none());
-        assert_eq!(snapshot.app("terminal").unwrap().id, "com.mitchellh.ghostty");
+        assert_eq!(
+            snapshot.app("terminal").unwrap().id,
+            "com.mitchellh.ghostty"
+        );
         assert!(snapshot.app("").is_none());
     }
 

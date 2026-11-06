@@ -98,7 +98,12 @@ thread_local! {
 pub fn page() -> Column {
     let status = VaultStatus::read();
 
-    let mut pages = vec![vault(&status), account(&status), security(&status), fill(&status)];
+    let mut pages = vec![
+        vault(&status),
+        account(&status),
+        security(&status),
+        fill(&status),
+    ];
     pages.extend(apps());
 
     groups(pages)
@@ -171,7 +176,12 @@ fn vault(status: &VaultStatus) -> amane_kit::form::Group {
 
     let error = status.get("error");
     if !error.is_empty() {
-        let mut row = problem_row("settings.passwords.error", "The last command failed", error, "");
+        let mut row = problem_row(
+            "settings.passwords.error",
+            "The last command failed",
+            error,
+            "",
+        );
 
         if error.contains("registering") {
             row = row.trailing(
@@ -234,8 +244,11 @@ fn account(status: &VaultStatus) -> amane_kit::form::Group {
                 )),
         )
         .row(
-            FormRow::new("settings.passwords.email.row", "Email")
-                .trailing(field_box(EMAIL, text_field(EMAIL, "you@example.org"), FIELD_WIDTH)),
+            FormRow::new("settings.passwords.email.row", "Email").trailing(field_box(
+                EMAIL,
+                text_field(EMAIL, "you@example.org"),
+                FIELD_WIDTH,
+            )),
         )
         .row(FormRow::new("settings.passwords.save.row", "").trailing(save));
 
@@ -252,7 +265,10 @@ fn account(status: &VaultStatus) -> amane_kit::form::Group {
 }
 
 fn save(had_account: bool) {
-    let server = TextInput::text(SERVER).trim().trim_end_matches('/').to_string();
+    let server = TextInput::text(SERVER)
+        .trim()
+        .trim_end_matches('/')
+        .to_string();
     let email = TextInput::text(EMAIL).trim().to_string();
 
     let send = move |forget: bool| {
@@ -439,7 +455,9 @@ fn apps() -> Vec<amane_kit::form::Group> {
             FormRow::new(id.clone(), app).trailing(
                 IconButton::new(format!("{id}.remove"), ICON_CLOSE)
                     .on_press(move || {
-                        change_passwords(|passwords| passwords.excluded_apps.retain(|app| *app != gone));
+                        change_passwords(|passwords| {
+                            passwords.excluded_apps.retain(|app| *app != gone)
+                        });
                     })
                     .build(),
             )

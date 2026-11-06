@@ -29,8 +29,14 @@ fn main() {
     println!("cargo::rustc-link-arg-bins={}", archive.display());
     match std::env::var_os("LIBCXX_DIR").map(PathBuf::from) {
         Some(cxx) => {
-            println!("cargo::rustc-link-arg-bins={}", cxx.join("libc++.a").display());
-            println!("cargo::rustc-link-arg-bins={}", cxx.join("libc++abi.a").display());
+            println!(
+                "cargo::rustc-link-arg-bins={}",
+                cxx.join("libc++.a").display()
+            );
+            println!(
+                "cargo::rustc-link-arg-bins={}",
+                cxx.join("libc++abi.a").display()
+            );
         }
         None => println!("cargo::rustc-link-arg-bins=-lc++"),
     }

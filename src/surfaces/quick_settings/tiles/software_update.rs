@@ -8,9 +8,9 @@ use amane::Service;
 
 use crate::components::icons::ICON_UPDATE;
 use crate::components::panel::close;
-use crate::surfaces::quick_settings::tile::QuickToggle;
-use crate::services::installed;
 use crate::services::desktop::updates::Updates;
+use crate::services::installed;
+use crate::surfaces::quick_settings::tile::QuickToggle;
 
 const SETTINGS: &str = "amane-settings";
 

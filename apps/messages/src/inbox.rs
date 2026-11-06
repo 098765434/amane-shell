@@ -109,13 +109,12 @@ fn header(device: Option<&PhoneDevice>) -> Row {
         )
     };
 
-    let mut parts: Vec<Box<dyn Widget>> =
-        vec![boxed(
-            Column::new(vec![boxed(
-                Row::new(title).gap(sys::space::gap::s()).align(Center),
-            )])
-            .width(Size::Parent),
-        )];
+    let mut parts: Vec<Box<dyn Widget>> = vec![boxed(
+        Column::new(vec![boxed(
+            Row::new(title).gap(sys::space::gap::s()).align(Center),
+        )])
+        .width(Size::Parent),
+    )];
     parts.push(button(
         "messages.refresh",
         ICON_REFRESH,

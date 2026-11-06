@@ -21,7 +21,10 @@ fn main() {
 }
 
 fn window() -> Window {
-    let pill = Rectangle::new().width(WIDTH).height(HEIGHT).radius(HEIGHT / 2.0);
+    let pill = Rectangle::new()
+        .width(WIDTH)
+        .height(HEIGHT)
+        .radius(HEIGHT / 2.0);
 
     // red if the look isn't saved, so a missing one shows
     let styled: Stack = match lab::look("dock-glass", WIDTH, HEIGHT, HEIGHT / 2.0) {

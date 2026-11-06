@@ -10,20 +10,38 @@ use serde::{Deserialize, Serialize};
 pub enum Command {
     /// One of Control Center's switches, by its control's name
     /// ("night-light", "wifi").
-    Switch { control: String, state: State },
+    Switch {
+        control: String,
+        state: State,
+    },
     /// The volume or the screen's brightness.
-    Level { level: Level, target: Target },
+    Level {
+        level: Level,
+        target: Target,
+    },
     /// The speakers' mute.
-    Mute { state: State },
+    Mute {
+        state: State,
+    },
     /// An app, by its desktop id.
-    Open { app: String },
-    Media { media: Media },
-    Power { power: Power },
+    Open {
+        app: String,
+    },
+    Media {
+        media: Media,
+    },
+    Power {
+        power: Power,
+    },
     /// A timer for this many seconds.
-    Timer { seconds: u64 },
+    Timer {
+        seconds: u64,
+    },
     CancelTimer,
     /// A power profile, by the daemon's name for it ("power-saver").
-    PowerMode { profile: String },
+    PowerMode {
+        profile: String,
+    },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

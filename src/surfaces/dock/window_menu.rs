@@ -7,8 +7,8 @@ use amane::Windows;
 use super::model::{self, Space, Win};
 use super::pins::{self, Pin};
 use crate::components::app_icon;
-use crate::surfaces::context_menu::{self, ContextMenu, MenuItem};
 use crate::surfaces::context_menu::workspace_menu;
+use crate::surfaces::context_menu::{self, ContextMenu, MenuItem};
 
 /// Registry key for the dynamically-rebuilt per-window menu.
 const WINDOW_MENU_KEY: &str = "amane.dock.window-menu";

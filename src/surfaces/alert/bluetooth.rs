@@ -11,8 +11,8 @@ use std::cell::Cell;
 
 use amane::{Bluetooth, PairingAnswer, PairingKind, PairingRequest, Service};
 
-use crate::surfaces::alert;
 use crate::components::dialog::Dialog;
+use crate::surfaces::alert;
 use crate::surfaces::quick_settings::{self, Page};
 
 /// The alert's name, so only this alert is closed when BlueZ stops asking.
@@ -84,7 +84,9 @@ fn dialog(request: &PairingRequest, device: &str) -> Dialog {
             Dialog::new(NAME, format!("“{device}” wants to pair"))
                 .message(format!("Enter the code for “{device}” to pair with it."))
                 .button("Cancel", refuse)
-                .main_button("Enter Code…", || quick_settings::open_alone(Page::Bluetooth))
+                .main_button("Enter Code…", || {
+                    quick_settings::open_alone(Page::Bluetooth)
+                })
         }
     }
 }

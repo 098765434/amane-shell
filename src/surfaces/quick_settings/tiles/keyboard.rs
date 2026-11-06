@@ -11,10 +11,10 @@ use super::super::{Page, open};
 use crate::components::buttons::{Segment, SegmentedButton};
 use crate::components::icons::ICON_KEYBOARD_LIGHT;
 use crate::components::layout::boxed;
-use crate::surfaces::quick_settings::detail::DetailPage;
-use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::components::slider::Slider;
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
+use crate::surfaces::quick_settings::detail::DetailPage;
+use crate::surfaces::quick_settings::tile::QuickToggle;
 
 thread_local! {
     // what turning it back on restores; none means the brightest

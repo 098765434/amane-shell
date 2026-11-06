@@ -17,9 +17,9 @@ use crate::components::icons::{
 use crate::components::layout::{boxed, caption, split_row};
 use crate::components::list::{self, List, ListItem};
 use crate::components::material;
+use crate::components::slider::Slider;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::detail::page_width;
-use crate::components::slider::Slider;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
 

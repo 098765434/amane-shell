@@ -16,8 +16,8 @@ use amane::{DesktopApp, Service, TextInput};
 use amane_kit::app::{Dialog, field_box, text_field};
 use amane_kit::buttons::PushButton;
 use amane_kit::dropdown::Dropdown;
-use amane_kit::layout::boxed;
 use amane_kit::form::{FormRow, Group};
+use amane_kit::layout::boxed;
 
 use super::adopt;
 use super::apps::Found;
@@ -473,7 +473,10 @@ pub fn section(
         .collect();
 
     let filters = FormRow::new("settings.apps.installed.filters", "Show").trailing(
-        amane::Row::new(vec![boxed(chips.build()), boxed(field_box(FILTER, field, 160.0))])
+        amane::Row::new(vec![
+            boxed(chips.build()),
+            boxed(field_box(FILTER, field, 160.0)),
+        ])
         .gap(8.0)
         .align(amane::Center),
     );

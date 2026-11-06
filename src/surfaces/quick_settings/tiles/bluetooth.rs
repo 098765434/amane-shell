@@ -23,10 +23,8 @@ use amane::{
 
 use super::super::{Page, QS_NS, open};
 use super::connected_count;
-use crate::surfaces::alert;
 use crate::components::battery;
 use crate::components::buttons::{IconButton, PushButton, Style, Switch};
-use crate::surfaces::context_menu::{self, ContextMenu, MenuItem};
 use crate::components::control_size::ControlSize;
 use crate::components::dialog::Dialog;
 use crate::components::icons::{
@@ -35,11 +33,13 @@ use crate::components::icons::{
 use crate::components::layout::{boxed, caption, cursor, fixed_width, text_height};
 use crate::components::list::{self, List, ListItem};
 use crate::components::material::{self, Level};
+use crate::services::network::rfkill::Rfkill;
+use crate::surfaces::alert;
+use crate::surfaces::context_menu::{self, ContextMenu, MenuItem};
 use crate::surfaces::quick_settings::QuickSettings;
 use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
-use crate::services::network::rfkill::Rfkill;
 use crate::tokens::{Styled, sys};
 
 /// Registry key for the rebuilt-per-device right-click menu.
