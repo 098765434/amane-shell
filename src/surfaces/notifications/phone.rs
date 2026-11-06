@@ -3,7 +3,9 @@
 //! `PhoneDevice::notifications()` carries the app's package (from
 //! Android's notification key), and the button opens that app in a window
 //! of its own (`amane-mirror --app`). It's offered once the phone's screen
-//! was set up on the Phone page, or adb has the phone anyway.
+//! was set up on the Phone page, or adb has the phone anyway. A text
+//! message's notification also gets **Open in Messages**, which opens
+//! `amane-messages` on that person's conversation.
 
 use amane::{KdeConnect, Notification, PhoneNotification, Service};
 
@@ -25,35 +27,71 @@ fn same(summary: &str, body: &str, phone: &PhoneNotification) -> bool {
     !phone.title.is_empty() && shows(&phone.title) && shows(&phone.text)
 }
 
-/// The command that opens `notification`'s app on the phone, if it's one
-/// of the phone's and its screen can be shown.
-pub fn open_command(notification: &Notification) -> Option<String> {
+/// The phone's messaging apps: their notifications are text messages,
+/// which Messages (`amane-messages`) shows here.
+const MESSAGING: [&str; 2] = [
+    "com.samsung.android.messaging",
+    "com.google.android.apps.messaging",
+];
+
+/// What Open in Messages says.
+pub const MESSAGES_LABEL: &str = "Open in Messages";
+
+fn quoted(text: &str) -> String {
+    format!("'{}'", text.replace('\'', r"'\''"))
+}
+
+/// The buttons a phone's notification gets, as their labels and the
+/// commands they run: Open in Messages for a text message, and Open on
+/// Phone (its app in a window of its own) once the phone's screen can be
+/// shown.
+pub fn commands(notification: &Notification) -> Vec<(&'static str, String)> {
     if !from_kdeconnect(notification) {
-        return None;
+        return Vec::new();
     }
 
     let kdeconnect = KdeConnect::read();
     for device in kdeconnect.paired() {
-        if !device.connected()
-            || !(phone_screen::set_up(device.id()) || phone_screen::ready(device))
-        {
+        if !device.connected() {
             continue;
         }
         let found = device.notifications().iter().find(|phone| {
             phone.package.is_some() && same(notification.summary(), notification.body(), phone)
         });
-        if let Some(found) = found {
-            let package = found.package.as_deref()?;
-            return Some(format!(
-                "{} --device '{}' --app '{}' --name '{}'",
-                phone_screen::MIRROR_APP,
-                device.id(),
-                package,
-                found.app.replace('\'', r"'\''"),
+        let Some(found) = found else {
+            continue;
+        };
+        let Some(package) = found.package.as_deref() else {
+            continue;
+        };
+
+        let mut commands = Vec::new();
+        if MESSAGING.contains(&package) && device.can_message() {
+            commands.push((
+                MESSAGES_LABEL,
+                format!(
+                    "{} --device {} --view messages --thread-of {}",
+                    crate::surfaces::quick_settings::tiles::phone::MESSAGES_APP,
+                    quoted(device.id()),
+                    quoted(&found.title),
+                ),
             ));
         }
+        if phone_screen::set_up(device.id()) || phone_screen::ready(device) {
+            commands.push((
+                LABEL,
+                format!(
+                    "{} --device {} --app {} --name {}",
+                    phone_screen::MIRROR_APP,
+                    quoted(device.id()),
+                    quoted(package),
+                    quoted(&found.app),
+                ),
+            ));
+        }
+        return commands;
     }
-    None
+    Vec::new()
 }
 
 #[cfg(test)]

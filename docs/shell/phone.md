@@ -78,36 +78,80 @@ but not while it charges.
 `amane-messages` is an app beside Shell Settings (`apps/messages`), with its
 own window rule that frosts behind it.
 
-- **The inbox** (the sidebar): the phone's conversations, newest first. Each has
-  the contact's initials in a colour kept for the name (grey for a bare number),
-  the name, the latest message ("You: …" for this side) and when it was sent
-  (the time today, "Yesterday", a weekday, then a date). An unread one is bold,
-  with the accent's dot. ⟳ asks the phone again, since a sleeping phone sends
-  nothing until asked.
+- **The inbox** (the sidebar): the phone's conversations, newest first.
+  - Each row has the contact's photo from the phone's contacts, or their
+    initials in a colour kept for the name (grey for a bare number). A group
+    has the group mark and is named for its people: "Kari, Per and Ola".
+  - The row shows the name, the latest message ("You: …" for this side; "Photo"
+    or "Video" for an attachment alone) and when it was sent (the time today,
+    "Yesterday", a weekday, then a date).
+  - An unread one is bold, with the accent's dot, and the header counts them.
+    KDE Connect can't mark a message read on the phone, so opening a
+    conversation here clears it on this computer
+    (`~/.cache/amane-shell/messages/read.json`); a newer message brings it
+    back.
+  - The search field (Ctrl+F) filters by name, number or message.
+  - ⟳ asks the phone again, since a sleeping phone sends nothing until asked.
+    After 20 s with nothing, it says the phone didn't answer and offers Try
+    Again.
+  - ✎ (Ctrl+N) starts a **new message**: the To field suggests contacts by
+    name or part of a number (Enter takes the first) or takes a typed number.
+    Picking someone you already have a conversation with opens it. Otherwise
+    the message starts a conversation that shows at once and becomes the
+    phone's thread when it sends it back.
 - **A conversation:** bubbles drawn after Messages' (`apps/messages/src/bubble.rs`).
   - Grey on the left; on the right, a gradient from the accent lightened to the accent.
   - Each bubble is a pill, mirrored between the two sides, sized to its text up to 70 % of the
-    width.
+    width. Its size is measured once per message and width.
   - The last bubble of a run has the curled tail at its bottom corner.
   - The outline is one vector path, made for each size, that amane fills, with the gradient, on
     the quad pipeline.
+  - One to three emoji alone are drawn large, without a bubble. Emoji are in
+    color everywhere.
+  - In a group, the sender's name is over each run they wrote, and their small
+    avatar beside its last bubble.
+  - Photos and videos show as their thumbnails (a play mark on a video). Other
+    files are a chip. A click fetches the whole file from the phone and opens
+    it.
+  - Each link in a message gets a chip under it that opens it.
+  - A right click on a message offers Copy, Copy Code (a 4–8 digit code in a
+    message about a code), Open and Copy Link, the attachments, and on a failed
+    one Send Again and Delete.
 
   Each day is named over its messages, and the time sits under each run (one side, under 10
-  minutes apart). It opens on the newest messages and follows new ones down.
-  **Load Earlier Messages** asks for 50 more. A reply shows at once, dimmed with
-  "Sending…", until the phone sends it back. A failed one is red, "Not
-  Delivered".
+  minutes apart). It opens on the newest messages, and follows new ones down while
+  the newest is in view; scrolled up, a **New Message** pill says one came.
+  **Load Earlier Messages** asks for 50 more, and what's shown stays put as they
+  come in above. A reply shows at once, dimmed with "Sending…", until the phone
+  sends it back. One that isn't back in 2 minutes, or that the phone says
+  failed, is red, "Not Delivered · Send Again".
+- **The reply field** grows to five lines. Enter sends, and Shift+Enter starts a
+  new line. 📎 attaches files, as does dropping them on the conversation. They
+  show as chips over the field, marked when they're over 1 MB, which carriers
+  may refuse. Each conversation keeps its half-written reply while another is
+  shown.
+- **Show on Phone** in a conversation's header opens the phone's own messaging
+  app in a window (`amane-mirror --app`), once its screen is set up and its
+  apps are listed.
 - **Phone Input:** a trackpad (drag moves the phone's pointer, a tap clicks, a
   right click long-presses, scrolling scrolls) with Left/Middle/Right buttons.
   Keys typed while it shows go to the field focused on the phone; the hint says
   whether one is focused. Ctrl and Super stay this computer's shortcuts.
 
-`amane-messages --device <id> --view messages|input` opens on a phone and a
-view. Launched again while it runs, it switches to them. Without `--device`, it
-picks the first connected phone that has messages.
+Alt+Up and Alt+Down (or Ctrl+Tab and Ctrl+Shift+Tab) move through the
+conversations. Escape clears the search, or leaves a new message.
 
-Contact names come from the vCards the phone's Contacts plugin syncs. Without
-it, conversations show numbers.
+`amane-messages --device <id> --view messages|input|new` opens on a phone and a
+view, and `--thread-of <name or number>` on that person's conversation once the
+phone has sent it. Launched again while it runs, it switches to them. Without
+`--device`, it picks the first connected phone that has messages.
+
+A text message's notification (from Samsung's or Google's Messages) gets
+**Open in Messages**, which opens that conversation here; it sits beside Open
+on Phone.
+
+Contact names and photos come from the vCards the phone's Contacts plugin
+syncs. Without it, conversations show numbers.
 
 ## Phone Screen (scrcpy)
 
@@ -188,9 +232,10 @@ These come from KDE Connect itself:
 
 - A sleeping phone can't be woken. It answers when it wakes.
 - A conversation's history only exists once the phone has sent it.
-- Pictures and group MMS only show as an attachment count.
-- Starting a new conversation isn't offered: there's only a reply in an
-  existing one.
+- A message can't be marked read on the phone, or deleted; read marks are
+  this computer's own.
+- The phone sends thumbnails with messages; a whole file is fetched when it's
+  opened.
 - A reply that shows as sent was taken by the daemon; delivery is the phone's.
 
 ## Checking it with a phone
@@ -204,8 +249,13 @@ These come from KDE Connect itself:
    `~/Downloads`.
 5. Control This Computer on → the phone's Run Command lists the four; Lock
    Screen locks.
-6. Messages: the inbox fills with names. A conversation loads, and a reply
-   appears as Sending… and then sent. A text to the phone appears live.
+6. Messages: the inbox fills with names and photos. A conversation loads, and a
+   reply appears as Sending… and then sent. A text to the phone appears live,
+   and scrolled up, the New Message pill shows. Load Earlier keeps your place.
+   A photo MMS shows its thumbnail and opens; a picture attached here arrives.
+   New Message to a contact makes a conversation that becomes the phone's. A
+   right click copies a code. An SMS toast's Open in Messages opens its
+   conversation.
 7. Clipboard both ways; Share Automatically off writes `autoShare=false`.
 8. Phone Input: the trackpad moves the phone's pointer; with a field focused on
    the phone, typing lands there.

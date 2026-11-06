@@ -64,6 +64,7 @@ dependencies = [
  "amane",
  "amane-kit",
  "chrono",
+ "serde_json",
 ]
 
 [[package]]

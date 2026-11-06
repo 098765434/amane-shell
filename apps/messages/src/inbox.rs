@@ -1,15 +1,18 @@
 //! The inbox: the phone's conversations, newest first, each with its
-//! contact's initials, name, latest message and when; an unread one in
-//! bold with the accent's dot. Phone Input sits under them.
+//! contact's photo or initials, name, latest message and when; an unread
+//! one in bold with the accent's dot. A search field over them filters by
+//! name, number or message, and New Message starts one. Phone Input sits
+//! under them.
 
 use std::rc::Rc;
 
 use amane::{
-    Center, Color, Column, PhoneDevice, PhoneMessages, Radius, Rectangle, Row, ScrollArea, Service,
-    Size, SmsThread, Text, Widget,
+    Center, Color, Column, Image, PhoneDevice, PhoneMessages, Radius, Rectangle, Row, ScrollArea,
+    Service, Size, SmsState, SmsThread, Text, TextInput, Widget,
 };
-use amane_kit::app::sidebar_label;
+use amane_kit::app::{field_box, sidebar_label, text_field};
 use amane_kit::buttons::{Actions, IconButton, interactive, state_fill};
+use amane_kit::buttons::{PushButton, Style};
 use amane_kit::color::Accent;
 use amane_kit::control_size::ControlSize;
 use amane_kit::icons::ICON_KEYBOARD;
@@ -17,11 +20,27 @@ use amane_kit::layout::{boxed, caption, icon, pad, text_height};
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
 
-use crate::{Navigation, View, time};
+use crate::{Navigation, View, read, thread, time};
 
-/// `refresh` and `person`.
+/// `refresh`, `person`, `group` and `edit_square`.
 const ICON_REFRESH: char = '\u{e5d5}';
 const ICON_PERSON: char = '\u{e7fd}';
+const ICON_GROUP: char = '\u{e7ef}';
+const ICON_NEW: char = '\u{f88d}';
+
+/// The search field's id.
+pub const SEARCH: &str = "messages.search";
+
+thread_local! {
+    // the search field is to take the keys when next built (Ctrl+F)
+    static FOCUS_SEARCH: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Puts the keys in the search field.
+pub fn focus_search() {
+    FOCUS_SEARCH.set(true);
+    amane::mark_all();
+}
 
 const AVATAR: f32 = 36.0;
 
@@ -33,6 +52,7 @@ pub fn view(device: Option<&PhoneDevice>, view: View) -> Column {
     };
 
     if device.can_message() {
+        parts.push(boxed(search()));
         parts.push(boxed(conversations(view)));
     } else {
         parts.push(boxed(
@@ -56,42 +76,145 @@ pub fn view(device: Option<&PhoneDevice>, view: View) -> Column {
         .height(Size::Parent)
 }
 
-/// The phone's name and a button asking it for its messages again: a
-/// phone that was asleep sends nothing until asked.
+/// The phone's name with how many conversations are unread, a button
+/// asking it for its messages again (a phone that was asleep sends nothing
+/// until asked), and New Message.
 fn header(device: Option<&PhoneDevice>) -> Row {
     let name = device.map_or("Messages", PhoneDevice::name).to_string();
-    let refresh = IconButton::new("messages.refresh", ICON_REFRESH)
-        .size(sys::size::icon::s())
-        .height(ControlSize::Medium.height())
-        .width(ControlSize::Medium.height())
-        .on_press(PhoneMessages::refresh)
-        .tooltip("main", "Check for New Messages")
-        .build();
-    Row::new(vec![
+    let unread = PhoneMessages::read()
+        .threads()
+        .iter()
+        .filter(|thread| read::unread(thread))
+        .count();
+
+    let mut title: Vec<Box<dyn Widget>> = vec![boxed(
+        Text::new(name)
+            .style(sys::r#type::title())
+            .color(sidebar_label())
+            .elide(),
+    )];
+    if unread > 0 {
+        title.push(boxed(badge(unread)));
+    }
+
+    let button = |id: &'static str, glyph: char, tip: &'static str, press: fn()| {
         boxed(
-            Text::new(name)
-                .style(sys::r#type::title())
-                .color(sidebar_label())
-                .elide(),
-        ),
-        boxed(refresh),
-    ])
-    .width(Size::Parent)
-    .align(Center)
+            IconButton::new(id, glyph)
+                .size(sys::size::icon::s())
+                .height(ControlSize::Medium.height())
+                .width(ControlSize::Medium.height())
+                .on_press(press)
+                .tooltip("main", tip)
+                .build(),
+        )
+    };
+
+    let mut parts: Vec<Box<dyn Widget>> =
+        vec![boxed(
+            Column::new(vec![boxed(
+                Row::new(title).gap(sys::space::gap::s()).align(Center),
+            )])
+            .width(Size::Parent),
+        )];
+    parts.push(button(
+        "messages.refresh",
+        ICON_REFRESH,
+        "Check for New Messages",
+        PhoneMessages::refresh,
+    ));
+    if device.is_some_and(|device| device.can_message() && device.reachable()) {
+        parts.push(button(
+            "messages.new",
+            ICON_NEW,
+            "New Message (Ctrl+N)",
+            || Navigation::show(View::New),
+        ));
+    }
+    Row::new(parts).width(Size::Parent).align(Center)
+}
+
+/// How many conversations are unread, in the accent's pill.
+fn badge(count: usize) -> Rectangle {
+    let text = count.to_string();
+    let style = sys::r#type::caption();
+    let width = (amane_kit::layout::text_width(&text, style) + 12.0).max(20.0);
+    Rectangle::new()
+        .width(Size::Fixed(width))
+        .height(Size::Fixed(20.0))
+        .radius(Radius::Full)
+        .fill(sys::color::accent::bg())
+        .align_child(Center, Center)
+        .child(
+            Text::new(text)
+                .style(style)
+                .weight(600)
+                .color(sys::color::accent::fg()),
+        )
+}
+
+/// The field that filters the conversations.
+fn search() -> Rectangle {
+    let mut input = text_field(SEARCH, "Search").on_change(|_| amane::mark_all());
+    if FOCUS_SEARCH.get() {
+        input = input.focused();
+        if TextInput::has_focus(SEARCH) {
+            FOCUS_SEARCH.set(false);
+        }
+    }
+    field_box(SEARCH, input, Size::Parent)
+}
+
+/// Whether `thread` is one the search asks for.
+fn matches(thread: &SmsThread, query: &str) -> bool {
+    if query.is_empty() {
+        return true;
+    }
+    let query = query.to_lowercase();
+    let digits: String = query.chars().filter(char::is_ascii_digit).collect();
+    thread.title().to_lowercase().contains(&query)
+        || thread.latest().body().to_lowercase().contains(&query)
+        || (digits.len() >= 3
+            && thread.addresses().iter().any(|address| {
+                address
+                    .chars()
+                    .filter(char::is_ascii_digit)
+                    .collect::<String>()
+                    .contains(&digits)
+            }))
+}
+
+/// The conversations the search shows, in order, for moving through them
+/// with the keyboard.
+pub fn shown_ids() -> Vec<i64> {
+    let query = TextInput::text(SEARCH);
+    PhoneMessages::read()
+        .threads()
+        .iter()
+        .filter(|thread| matches(thread, query.trim()))
+        .map(SmsThread::id)
+        .collect()
 }
 
 fn conversations(view: View) -> ScrollArea {
     let messages = PhoneMessages::read();
-    let threads: Vec<SmsThread> = messages.threads().to_vec();
+    let query = TextInput::text(SEARCH);
+    let threads: Vec<SmsThread> = messages
+        .threads()
+        .iter()
+        .filter(|thread| matches(thread, query.trim()))
+        .cloned()
+        .collect();
+    let state = messages.state();
+    let any = !messages.threads().is_empty();
     drop(messages);
 
     let shown = match view {
         View::Thread(thread) => thread,
-        View::Input => None,
+        View::Input | View::New => None,
     };
 
     let rows: Vec<Box<dyn Widget>> = if threads.is_empty() {
-        vec![boxed(caption("Waiting for the phone…"))]
+        empty(state, any)
     } else {
         threads
             .iter()
@@ -115,18 +238,52 @@ fn row_height() -> f32 {
         .max(AVATAR + 12.0)
 }
 
+/// Why there's no conversation to list, and what to do.
+fn empty(state: SmsState, any: bool) -> Vec<Box<dyn Widget>> {
+    if any {
+        return vec![boxed(caption("No conversation matches."))];
+    }
+    match state {
+        SmsState::NoAnswer => vec![
+            boxed(caption(
+                "No answer from the phone. Unlock it and open KDE Connect on it, or start a conversation.",
+            )),
+            boxed(
+                PushButton::new("messages.inbox.retry", "Try Again")
+                    .style(Style::Tonal)
+                    .on_press(PhoneMessages::refresh)
+                    .build(),
+            ),
+        ],
+        SmsState::Ready => vec![boxed(caption("No conversations yet."))],
+        SmsState::Idle | SmsState::Syncing => vec![boxed(caption("Asking the phone…"))],
+    }
+}
+
+/// What a message shows as in the list: its words, else what's attached.
+fn snippet(latest: &amane::SmsMessage) -> String {
+    let attached = latest.attachments();
+    let words = match (latest.body().trim(), attached.first()) {
+        ("", None) => return String::new(),
+        ("", Some(part)) if part.image() => String::from("Photo"),
+        ("", Some(part)) if part.video() => String::from("Video"),
+        ("", Some(_)) => String::from("Attachment"),
+        (body, _) => one_line(body),
+    };
+    if latest.outgoing() {
+        format!("You: {words}")
+    } else {
+        words
+    }
+}
+
 fn row(thread: &SmsThread, chosen: bool) -> Rectangle {
     let id = thread.id();
     let key = format!("messages.inbox.{id}");
-    let unread = thread.unread();
+    let unread = read::unread(thread);
 
     let latest = thread.latest();
-    let snippet = match (latest.body().trim(), latest.attachments()) {
-        ("", 0) => String::new(),
-        ("", _) => String::from("Attachment"),
-        (body, _) if latest.outgoing() => format!("You: {}", one_line(body)),
-        (body, _) => one_line(body),
-    };
+    let snippet = snippet(latest);
 
     let (on_accent, label) = if chosen {
         (true, sys::color::accent::fg())
@@ -139,7 +296,13 @@ fn row(thread: &SmsThread, chosen: bool) -> Rectangle {
         material::label(Level::Secondary)
     };
 
-    let name = Text::new(thread.title().to_string())
+    let title = if thread.group() {
+        let names: Vec<String> = thread.title().split(", ").map(String::from).collect();
+        thread::group_title(&names)
+    } else {
+        thread.title().to_string()
+    };
+    let name = Text::new(title)
         .style(sys::r#type::label())
         .weight(if unread { 700 } else { 500 })
         .color(label)
@@ -178,7 +341,7 @@ fn row(thread: &SmsThread, chosen: bool) -> Rectangle {
         .child(
             Row::new(vec![
                 boxed(unread_dot(unread && !chosen)),
-                boxed(avatar(thread.title())),
+                boxed(avatar_for(thread, AVATAR)),
                 boxed(
                     Column::new(vec![boxed(top), boxed(bottom)])
                         .gap(2.0)
@@ -215,9 +378,44 @@ fn unread_dot(shown: bool) -> Rectangle {
         })
 }
 
+/// A conversation's picture: the contact's photo, or initials, or for a
+/// group the group's mark.
+pub fn avatar_for(thread: &SmsThread, size: f32) -> Rectangle {
+    if thread.group() {
+        return Rectangle::new()
+            .width(Size::Fixed(size))
+            .height(Size::Fixed(size))
+            .radius(Radius::Full)
+            .fill(Accent::Gray.color())
+            .align_child(Center, Center)
+            .child(icon(ICON_GROUP, size * 0.55, Color::WHITE));
+    }
+    match thread.addresses().first() {
+        Some(address) => avatar_of(address, size),
+        None => avatar(thread.title(), size),
+    }
+}
+
+/// The person with this number: their photo, or their initials.
+pub fn avatar_of(address: &str, size: f32) -> Rectangle {
+    let messages = PhoneMessages::read();
+    let photo = messages.photo(address).map(std::path::Path::to_path_buf);
+    let name = messages.name(address).to_string();
+    drop(messages);
+    match photo {
+        Some(photo) => Rectangle::new()
+            .width(Size::Fixed(size))
+            .height(Size::Fixed(size))
+            .radius(Radius::Full)
+            .fill(Image::cover(photo).thumbnail(size as u32 * 2, size as u32 * 2))
+            .clip(),
+        None => avatar(&name, size),
+    }
+}
+
 /// A contact's initials in a circle of a colour kept for their name; a
 /// person for a bare number.
-pub fn avatar(name: &str) -> Rectangle {
+pub fn avatar(name: &str, size: f32) -> Rectangle {
     let initials: String = name
         .split_whitespace()
         .filter_map(|word| word.chars().next())
@@ -227,19 +425,19 @@ pub fn avatar(name: &str) -> Rectangle {
         .collect();
 
     let mark: Box<dyn Widget> = if initials.is_empty() {
-        boxed(icon(ICON_PERSON, 20.0, Color::WHITE))
+        boxed(icon(ICON_PERSON, size * 0.55, Color::WHITE))
     } else {
         boxed(
             Text::new(initials)
-                .size(14.0)
+                .size((size * 0.39).round())
                 .weight(600)
                 .color(Color::WHITE),
         )
     };
 
     Rectangle::new()
-        .width(Size::Fixed(AVATAR))
-        .height(Size::Fixed(AVATAR))
+        .width(Size::Fixed(size))
+        .height(Size::Fixed(size))
         .radius(Radius::Full)
         .fill(colour_for(name))
         .align_child(Center, Center)

@@ -382,14 +382,14 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
 
 /// Whether the card has a row of buttons: the sender's, or Open on Phone.
 fn has_actions(n: &Notification) -> bool {
-    !n.actions().is_empty() || super::phone::open_command(n).is_some()
+    !n.actions().is_empty() || !super::phone::commands(n).is_empty()
 }
 
-/// The sender's actions as equal buttons across `width`, then Open on
-/// Phone for one of the phone's notifications.
+/// The sender's actions as equal buttons across `width`, then Open in
+/// Messages and Open on Phone for one of the phone's notifications.
 fn actions(n: &Notification, width: f32, color: Color) -> Row {
-    let phone = super::phone::open_command(n);
-    let count = (n.actions().len() + usize::from(phone.is_some())) as f32;
+    let phone = super::phone::commands(n);
+    let count = (n.actions().len() + phone.len()) as f32;
     let gap = sys::space::gap::s();
     let each = ((width - gap * (count - 1.0)) / count).max(1.0);
     let id = n.id();
@@ -413,11 +413,11 @@ fn actions(n: &Notification, width: f32, color: Color) -> Row {
         })
         .collect();
 
-    if let Some(command) = phone {
+    for (label, command) in phone {
         buttons.push(boxed(
             PushButton::new(
-                format!("amane.notification.{id}.action.phone"),
-                super::phone::LABEL,
+                format!("amane.notification.{id}.action.phone.{label}"),
+                label,
             )
             .width(each)
             .text(sys::r#type::label())

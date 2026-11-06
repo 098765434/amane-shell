@@ -5,19 +5,30 @@
 //! under it; the content is the open conversation with a reply field, or
 //! the trackpad and keyboard that drive the phone.
 //!
-//! `amane-messages --device <id> --view messages|input` opens on a phone
-//! and a view (Quick Settings' Phone page does); launched again while it
-//! runs, it switches to them. Without a device it picks the first connected
-//! phone that has messages.
+//! `amane-messages --device <id> --view messages|input|new` opens on a
+//! phone and a view (Quick Settings' Phone page does), and `--thread-of
+//! <name or number>` on that person's conversation (a notification's Open
+//! in Messages does); launched again while it runs, it switches to them.
+//! Without a device it picks the first connected phone that has messages.
+//!
+//! Ctrl+N starts a new message, Ctrl+F searches, Alt+Up and Alt+Down (or
+//! Ctrl+Tab) move through the conversations, Escape leaves the search or
+//! the new message.
 
 mod bubble;
+mod compose;
 mod inbox;
 mod input;
+mod links;
+mod new_message;
+mod phone;
+mod read;
 mod thread;
 mod time;
 
 use amane::{
-    Column, KdeConnect, Key, PhoneDevice, PhoneMessages, Row, Service, Size, Text, Widget, Window,
+    Column, KdeConnect, Key, PhoneDevice, PhoneMessages, Row, Service, Size, Text, TextInput,
+    Widget, Window,
 };
 use amane_kit::app::{app, app_window, sidebar_panel, standard_shortcut};
 use amane_kit::layout::{boxed, caption};
@@ -34,6 +45,8 @@ pub enum View {
     Thread(Option<i64>),
     /// The trackpad and keyboard.
     Input,
+    /// A message to someone new.
+    New,
 }
 
 pub struct Navigation {
@@ -41,6 +54,9 @@ pub struct Navigation {
     /// connected one with messages.
     device: Option<String>,
     pub view: View,
+    /// A conversation asked for by its person's name or number, opened
+    /// once the phone has sent it.
+    wanted: Option<String>,
 }
 
 impl Service for Navigation {
@@ -48,6 +64,7 @@ impl Service for Navigation {
         Self {
             device: None,
             view: View::Thread(None),
+            wanted: None,
         }
     }
 
@@ -57,7 +74,93 @@ impl Service for Navigation {
 
 impl Navigation {
     pub fn show(view: View) {
+        let before = Navigation::read().view;
+        if view != View::New && before == View::New {
+            new_message::reset();
+        }
+        if view == View::New && before != View::New {
+            new_message::focus();
+        }
         Navigation::write().view = view;
+    }
+}
+
+/// The conversation with `wanted` (its title, or a number in it), once
+/// it's there.
+fn find_thread(wanted: &str) -> Option<i64> {
+    let messages = PhoneMessages::read();
+    let digits: String = wanted.chars().filter(char::is_ascii_digit).collect();
+    let threads = messages.threads();
+    threads
+        .iter()
+        .find(|thread| thread.title() == wanted)
+        .or_else(|| {
+            threads
+                .iter()
+                .find(|thread| thread.title().eq_ignore_ascii_case(wanted))
+        })
+        .or_else(|| {
+            (digits.len() >= 7).then(|| {
+                threads.iter().find(|thread| {
+                    thread.addresses().iter().any(|address| {
+                        let own: String = address.chars().filter(char::is_ascii_digit).collect();
+                        own.ends_with(&digits) || digits.ends_with(&own)
+                    })
+                })
+            })?
+        })
+        .map(amane::SmsThread::id)
+}
+
+/// Moves `step` conversations down the list (up when negative).
+fn step_thread(step: isize) {
+    let ids = inbox::shown_ids();
+    if ids.is_empty() {
+        return;
+    }
+    let now = match Navigation::read().view {
+        View::Thread(Some(id)) => ids.iter().position(|shown| *shown == id),
+        _ => None,
+    };
+    let next = match now {
+        Some(at) => (at as isize + step).clamp(0, ids.len() as isize - 1) as usize,
+        None if step < 0 => ids.len() - 1,
+        None => 0,
+    };
+    Navigation::show(View::Thread(Some(ids[next])));
+}
+
+/// The window's shortcuts, after the ones every window has.
+fn shortcut(key: Key) -> bool {
+    if standard_shortcut(key) {
+        return true;
+    }
+    let held = amane::modifiers();
+    match key {
+        Key::Character('n') if held.ctrl => {
+            Navigation::show(View::New);
+            true
+        }
+        Key::Character('f') if held.ctrl => {
+            if matches!(Navigation::read().view, View::Input) {
+                Navigation::show(View::Thread(None));
+            }
+            inbox::focus_search();
+            true
+        }
+        Key::Tab if held.ctrl => {
+            step_thread(if held.shift { -1 } else { 1 });
+            true
+        }
+        Key::Up if held.alt => {
+            step_thread(-1);
+            true
+        }
+        Key::Down if held.alt => {
+            step_thread(1);
+            true
+        }
+        _ => false,
     }
 }
 
@@ -98,8 +201,19 @@ fn follow(args: &[String]) {
     }
     match flag(args, "--view").as_deref() {
         Some("input") => nav.view = View::Input,
-        Some("messages") if nav.view == View::Input => nav.view = View::Thread(None),
+        Some("new") => {
+            if nav.view != View::New {
+                new_message::focus();
+            }
+            nav.view = View::New;
+        }
+        Some("messages") if matches!(nav.view, View::Input | View::New) => {
+            nav.view = View::Thread(None);
+        }
         _ => {}
+    }
+    if let Some(wanted) = flag(args, "--thread-of") {
+        nav.wanted = Some(wanted);
     }
 }
 
@@ -122,12 +236,41 @@ fn main_window() -> Window {
         PhoneMessages::open(device.id());
     }
 
+    // a conversation asked for by name opens once the phone has sent it
+    let wanted = Navigation::read().wanted.clone();
+    if let Some(wanted) = wanted
+        && let Some(thread) = find_thread(&wanted)
+    {
+        let mut nav = Navigation::write();
+        nav.wanted = None;
+        nav.view = View::Thread(Some(thread));
+    }
+
+    // a conversation started here follows the phone's thread it became
+    if let View::Thread(Some(id)) = Navigation::read().view
+        && id < 0
+        && let Some(moved) = PhoneMessages::read().moved(id)
+    {
+        Navigation::write().view = View::Thread(Some(moved));
+    }
+
     let view = Navigation::read().view;
 
     let content: Box<dyn Widget> = match (&device, view) {
         (None, _) => boxed(no_phone()),
         (Some(device), View::Input) => boxed(input::view(device)),
+        (Some(_), View::New) => boxed(new_message::view()),
         (Some(device), View::Thread(thread)) => boxed(thread::view(device, thread)),
+    };
+
+    let window_title = match view {
+        View::Thread(Some(id)) => PhoneMessages::read().thread(id).map_or_else(
+            || String::from("Messages"),
+            |thread| thread.title().to_string(),
+        ),
+        View::New => String::from("New Message"),
+        View::Input => String::from("Phone Input"),
+        View::Thread(None) => String::from("Messages"),
     };
 
     let layout = Row::new(vec![
@@ -150,13 +293,23 @@ fn main_window() -> Window {
     .height(Size::Parent);
 
     app_window(layout)
-        .title("Messages")
-        .size(860.0, 640.0)
+        .title(&window_title)
+        .size(900.0, 660.0)
         .min_size(640.0, 420.0)
-        .on_shortcut(standard_shortcut)
+        .on_shortcut(shortcut)
         .on_key(|key: Key| {
-            if Navigation::read().view == View::Input {
+            let view = Navigation::read().view;
+            if view == View::Input {
                 input::key(key);
+                return;
+            }
+            if key == Key::Escape {
+                if !TextInput::text(inbox::SEARCH).is_empty() {
+                    TextInput::set_text(inbox::SEARCH, "");
+                    amane::mark_all();
+                } else if view == View::New {
+                    Navigation::show(View::Thread(None));
+                }
             }
         })
 }

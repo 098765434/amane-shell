@@ -9,8 +9,8 @@
 use std::cell::Cell;
 
 use amane::{
-    Adb, Button, Center, Column, Cursor, KdeConnect, Key, PhoneClick, PhoneDevice, PhoneKey,
-    PhoneModifiers, Point, Radius, Rectangle, Row, Service, Size, Text,
+    Button, Center, Column, Cursor, KdeConnect, Key, PhoneClick, PhoneDevice, PhoneKey,
+    PhoneModifiers, Point, Radius, Rectangle, Row, Size, Text,
 };
 use amane_kit::buttons::{PushButton, Style};
 use amane_kit::icons::ICON_KEYBOARD;
@@ -59,7 +59,7 @@ pub fn view(device: &PhoneDevice) -> Column {
         "Tap a text field on the phone to type on it."
     };
 
-    let heading: Box<dyn amane::Widget> = if screen_available(device) {
+    let heading: Box<dyn amane::Widget> = if crate::phone::screen_available(device) {
         let shown = id.clone();
         boxed(
             Row::new(vec![
@@ -105,30 +105,6 @@ pub fn view(device: &PhoneDevice) -> Column {
     .gap(sys::space::gap::l())
     .width(Size::Parent)
     .height(Size::Parent)
-}
-
-/// The phone's screen can be shown instead (`amane-mirror`): adb has the
-/// phone at an address KDE Connect knows, or its screen was set up on the
-/// Phone page before.
-fn screen_available(device: &PhoneDevice) -> bool {
-    let adb = Adb::read();
-    if device
-        .addresses()
-        .iter()
-        .any(|address| adb.ready_at(*address).is_some())
-    {
-        return true;
-    }
-    drop(adb);
-
-    let config = std::env::var_os("XDG_CONFIG_HOME")
-        .map(std::path::PathBuf::from)
-        .or_else(|| {
-            std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join(".config"))
-        });
-    config
-        .and_then(|dir| std::fs::read_to_string(dir.join("amane-shell/phone-screen.json")).ok())
-        .is_some_and(|text| text.contains(&format!("\"{}\"", device.id())))
 }
 
 fn trackpad(id: String) -> Rectangle {

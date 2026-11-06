@@ -7,6 +7,9 @@
 //! tail joined into the pill's bottom corner, so it stays sharp at any
 //! scale; amane draws it, and its gradient, on the quad pipeline.
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+
 use amane::{Canvas, Color, Gradient, Path, Rectangle, Shape, Size, Stack, Text};
 use amane_kit::color::{over, with_alpha};
 use amane_kit::layout::{boxed, pad, text_height, text_width};
@@ -108,6 +111,29 @@ pub fn size(text: &str, widest: f32) -> (f32, f32) {
     (width, (lines + 2.0 * pad_y).max(LINE_HEIGHT * s))
 }
 
+thread_local! {
+    // each message's bubble size at a width: measuring text is the costly part of a redraw
+    static SIZES: RefCell<HashMap<(i64, u32), (f32, f32)>> = RefCell::new(HashMap::new());
+}
+
+/// [`size`], kept for the message `key` at `widest`: a message's text
+/// never changes, so it's measured once for each width the window has.
+pub fn cached_size(key: i64, text: &str, widest: f32) -> (f32, f32) {
+    let at = (key, widest.to_bits());
+    if let Some(size) = SIZES.with_borrow(|sizes| sizes.get(&at).copied()) {
+        return size;
+    }
+    let measured = size(text, widest);
+    SIZES.with_borrow_mut(|sizes| {
+        // a window dragged through many widths leaves old ones behind
+        if sizes.len() > 4096 {
+            sizes.clear();
+        }
+        sizes.insert(at, measured);
+    });
+    measured
+}
+
 /// One step of an outline: as `Path` takes them.
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Step {
@@ -180,11 +206,12 @@ fn lighter(color: Color, amount: f32) -> Color {
     over(with_alpha(Color::WHITE, amount), color)
 }
 
-/// A bubble holding `text`, at most `widest` across, with its tail when it
-/// ends a run: a `width` × `height + tail` widget.
-pub fn bubble(text: &str, look: Look, tail: bool, widest: f32) -> Rectangle {
+/// A bubble holding `text` (the message `key`'s), at most `widest`
+/// across, with its tail when it ends a run: a `width` × `height + tail`
+/// widget.
+pub fn bubble(key: i64, text: &str, look: Look, tail: bool, widest: f32) -> Rectangle {
     let s = unit();
-    let (width, height) = size(text, widest);
+    let (width, height) = cached_size(key, text, widest);
     let total = height + if tail { TAIL_BELOW * s } else { 0.0 };
     let side = look.side();
 
@@ -234,6 +261,23 @@ pub fn bubble(text: &str, look: Look, tail: bool, widest: f32) -> Rectangle {
             ),
             boxed(words),
         ]))
+}
+
+/// How big a few emoji sent alone are drawn, without a bubble.
+pub const EMOJI_SIZE: f32 = 40.0;
+
+/// A message of a few emoji alone: large, with no bubble behind them.
+pub fn emoji(text: &str) -> Rectangle {
+    let style = TextStyle {
+        size: EMOJI_SIZE,
+        ..sys::r#type::label()
+    };
+    let width = text_width(text.trim(), style) + 4.0;
+    let height = text_height(style) + 4.0;
+    Rectangle::new()
+        .width(Size::Fixed(width))
+        .height(Size::Fixed(height))
+        .child(Text::new(text.trim().to_string()).style(style))
 }
 
 #[cfg(test)]
@@ -332,6 +376,9 @@ mod tests {
     #[test]
     fn a_bubble_grows_with_its_text_and_stops_at_the_widest() {
         let (short_w, short_h) = size("ok", 400.0);
+        assert_eq!(cached_size(1, "ok", 400.0), (short_w, short_h));
+        // the same message at the same width isn't measured again
+        assert_eq!(cached_size(1, "changed", 400.0), (short_w, short_h));
         let (long_w, long_h) = size(&"word ".repeat(80), 400.0);
         assert!((short_h - LINE_HEIGHT * unit()).abs() < 0.01);
         assert!(short_w >= MIN_WIDTH * unit());
