@@ -620,14 +620,21 @@ fn search_section(
     let field = text_field(SEARCH, &placeholder)
         .on_change(Search::typed)
         .on_submit(|_| Search::run());
-    let search_row = FormRow::new("settings.apps.search-row", "Search")
-        .trailing(field_box(SEARCH, field, 240.0))
-        .trailing(
+    // the catalog answers as you type; without it, Return or Search asks nix
+    let mut search_row = FormRow::new("settings.apps.search-row", "Find an app")
+        .icon(
+            amane_kit::icons::ICON_SEARCH,
+            amane_kit::color::Accent::Blue,
+        )
+        .trailing(field_box(SEARCH, field, 240.0));
+    if !catalog.ready {
+        search_row = search_row.trailing(
             PushButton::new("settings.apps.search", "Search")
                 .disabled(search.running)
                 .on_press(Search::run)
                 .build(),
         );
+    }
     let mut group = group().header("Add App").row(search_row);
     let mut notes: Vec<String> = Vec::new();
 
@@ -640,21 +647,24 @@ fn search_section(
         ));
     } else if let Some(error) = &catalog.error {
         notes.push(format!(
-            "Searching with nix: the catalog couldn't be built. {error}"
+            "The app catalog couldn't be prepared, so searches ask nix and take longer. {error}"
         ));
     }
 
     // the catalog answers at once, so the last results stay until it has
     if search.running && !catalog.ready {
         let slow = search.started.is_some_and(|at| at.elapsed() >= SLOW);
-        group = group.row(FormRow::new(
-            "settings.apps.searching",
-            if slow {
-                "Building the search index… the first search after an update takes a few minutes"
-            } else {
-                "Searching…"
-            },
-        ));
+        group = group.row(
+            FormRow::new(
+                "settings.apps.searching",
+                if slow {
+                    "Building the search index… the first search after an update takes a few minutes"
+                } else {
+                    "Searching…"
+                },
+            )
+            .loading(),
+        );
     } else if let Some(error) = &search.error {
         group = group.row(
             FormRow::new("settings.apps.search-error", "The search failed").subtitle(error.clone()),

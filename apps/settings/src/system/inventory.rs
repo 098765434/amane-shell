@@ -511,8 +511,9 @@ pub fn section(
         notes.push(error.clone());
     }
     notes.push(String::from(
-        "Press a package for its details. Move… takes one a .nix file lists into Settings; \
-         Flatpaks come from `flatpak install`, outside the configuration.",
+        "Press an app for its details. Move… hands an app listed in one of your own \
+         configuration files over to Settings. Flatpaks are installed apart from the \
+         configuration.",
     ));
     group.footer(notes.join(" "))
 }

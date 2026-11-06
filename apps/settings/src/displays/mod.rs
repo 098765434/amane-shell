@@ -302,8 +302,12 @@ pub fn page() -> Column {
         drop(screens);
         return groups(vec![
             group().row(
-                FormRow::new("settings.displays.silent", "niri isn't answering")
-                    .subtitle("Its displays can't be read until it does")
+                FormRow::new("settings.displays.silent", "The compositor isn't answering")
+                    .icon(
+                        amane_kit::icons::ICON_WARNING,
+                        amane_kit::color::Accent::Orange,
+                    )
+                    .subtitle("The displays can't be read until it does")
                     .trailing(
                         PushButton::new("settings.displays.retry", "Try Again")
                             .on_press(|| {
@@ -318,7 +322,7 @@ pub fn page() -> Column {
         drop(screens);
         return groups(vec![group().row(FormRow::new(
             "settings.displays.none",
-            "niri has no displays",
+            "No displays are connected",
         ))]);
     };
     let caps = screens.caps_of(&output.name);
@@ -352,17 +356,46 @@ pub fn page() -> Column {
         .row(sections::scale(&ctx))
         .row(sections::rotation(&ctx));
     add(&mut rows, Some(picture));
+    add(&mut rows, sections::multiple(&ctx));
     add(&mut rows, Some(sections::variable_refresh(&ctx)));
     add(&mut rows, Some(sections::hdr(&ctx)));
+    add(&mut rows, Some(sections::advanced_link()));
+    // what holds for every display
+    add(&mut rows, sections::all_displays(&ctx));
     add(&mut rows, Some(sections::night_light()));
     add(&mut rows, sections::oled_care(&ctx));
-    add(&mut rows, sections::multiple(&ctx));
-    add(&mut rows, Some(sections::advanced(&ctx)));
 
     Column::new(rows).gap(sys::space::gap::l())
 }
 
-/// The page's sub-pages, by name: none yet.
-pub fn sub(_name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
-    None
+/// The page's sub-pages: Advanced, for the display picked.
+pub fn sub(name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
+    if name != "advanced" {
+        return None;
+    }
+    let screens = Screens::read();
+    let outputs = screens.outputs.clone()?;
+    let output = screens.selected_output().cloned()?;
+    let caps = screens.caps_of(&output.name);
+    let saved = match &screens.setup {
+        Setup::Ready(saved) => Some(saved.clone()),
+        _ => None,
+    };
+    let error = screens.error.as_ref().map(|(error, _)| error.clone());
+    drop(screens);
+    let ctx = sections::Ctx {
+        output,
+        outputs,
+        caps,
+        saved,
+    };
+    let mut rows: Vec<Box<dyn amane::Widget>> = Vec::new();
+    if let Some(error) = error {
+        rows.push(boxed(sections::error_line(error)));
+    }
+    add(&mut rows, Some(sections::advanced(&ctx)));
+    Some((
+        format!("{} — Advanced", ctx.name()),
+        boxed(Column::new(rows).gap(sys::space::gap::l())),
+    ))
 }

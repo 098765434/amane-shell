@@ -233,6 +233,28 @@ pub fn outputs() -> Option<BTreeMap<String, Output>> {
     serde_json::from_value(reply.get("Outputs")?.clone()).ok()
 }
 
+/// The app ids of the windows open now, each once, sorted.
+pub fn window_app_ids() -> Vec<String> {
+    let Ok(reply) = request(&json!("Windows")) else {
+        return Vec::new();
+    };
+    app_ids(&reply)
+}
+
+fn app_ids(reply: &Value) -> Vec<String> {
+    let mut ids: Vec<String> = reply
+        .get("Windows")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|window| window.get("app_id")?.as_str().map(String::from))
+        .filter(|id| !id.is_empty())
+        .collect();
+    ids.sort();
+    ids.dedup();
+    ids
+}
+
 /// Makes `change` to the output named `output` until the config is read
 /// again.
 pub fn apply(output: &str, change: &Change) -> Result<(), String> {
@@ -275,6 +297,15 @@ mod tests {
     use super::*;
 
     const REPLY: &str = r#"{"eDP-1":{"name":"eDP-1","make":"Lenovo Group Limited","model":"ATNA40HQ10-0 ","serial":null,"physical_size":[300,190],"modes":[{"width":2880,"height":1800,"refresh_rate":60000,"is_preferred":true},{"width":2880,"height":1800,"refresh_rate":120000,"is_preferred":false}],"current_mode":1,"is_custom_mode":false,"vrr_supported":true,"vrr_enabled":false,"logical":{"x":0,"y":0,"width":1645,"height":1028,"scale":1.75,"transform":"Normal"}}}"#;
+
+    #[test]
+    fn open_windows_give_their_app_ids_once() {
+        let reply = json!({"Windows": [
+            {"app_id": "steam_app_1"}, {"app_id": "firefox"}, {"app_id": "firefox"},
+            {"app_id": null}, {"app_id": ""}
+        ]});
+        assert_eq!(app_ids(&reply), ["firefox", "steam_app_1"]);
+    }
 
     #[test]
     fn reads_niris_outputs() {

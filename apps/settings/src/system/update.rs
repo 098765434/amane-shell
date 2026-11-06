@@ -392,8 +392,14 @@ pub fn page() -> Column {
         let detail = match moved.iter().find(|c| c.name == input.name) {
             Some(change) => format!(
                 "{} → {}",
-                change.from.as_deref().map_or(String::from("∅"), short),
-                change.to.as_deref().map_or(String::from("∅"), short)
+                change
+                    .from
+                    .as_deref()
+                    .map_or(String::from("not pinned"), short),
+                change
+                    .to
+                    .as_deref()
+                    .map_or(String::from("not pinned"), short)
             ),
             None => format!(
                 "{}{}",
@@ -405,29 +411,33 @@ pub fn page() -> Column {
             ),
         };
         let name = input.name.clone();
-        FormRow::new(
-            format!("settings.update.{}", input.name),
-            input.name.clone(),
-        )
-        .subtitle(detail)
-        .trailing(
-            PushButton::new(format!("settings.update.one.{}", input.name), "Update")
-                .disabled(running)
-                .on_press(move || BuildJob::start_update(vec![name.clone()]))
-                .build(),
-        )
+        let (title, detail) = match friendly(&input.name) {
+            Some(friendly) => (friendly.to_string(), format!("{} · {detail}", input.name)),
+            None => (input.name.clone(), detail),
+        };
+        FormRow::new(format!("settings.update.{}", input.name), title)
+            .subtitle(detail)
+            .trailing(
+                PushButton::new(format!("settings.update.one.{}", input.name), "Update")
+                    .disabled(running)
+                    .on_press(move || BuildJob::start_update(vec![name.clone()]))
+                    .build(),
+            )
     });
     let mut inputs = group()
-        .header("Inputs")
+        .header("Components")
         .rows(inputs)
-        .footer("Update on one input bumps just that one. Applying writes flake.lock and commits it with the settings.");
-    if inputs.is_empty() {
-        inputs = inputs.row(FormRow::new(
-            "settings.update.no-inputs",
-            lock.error
-                .clone()
-                .unwrap_or_else(|| String::from("No inputs")),
-        ));
+        .footer("Update on one component brings just that one up to date. Nothing changes until you apply it.");
+    if !inputs.has_rows() {
+        inputs = inputs.row(match &lock.error {
+            Some(error) => crate::problem_row(
+                "settings.update.no-inputs",
+                "The components couldn't be read",
+                "The configuration's list of versions (flake.lock) didn't read.",
+                error,
+            ),
+            None => FormRow::new("settings.update.no-inputs", "No components"),
+        });
     }
 
     let mut top = group().row(
@@ -449,9 +459,23 @@ pub fn page() -> Column {
         top,
         inputs,
         group().rows(controls::rows("update")).footer(
-            "The automatic check relocks beside the repository and notifies; it never builds or applies.",
+            "The automatic check looks for newer versions and lets you know; it never builds or applies anything.",
         ),
     ])
+}
+
+/// A plain name for the components most configurations have.
+fn friendly(input: &str) -> Option<&'static str> {
+    Some(match input {
+        "nixpkgs" => "NixOS packages",
+        "home-manager" => "Home Manager",
+        "niri" | "niri-fork" => "Compositor",
+        "amane-shell" => "Shell",
+        "amane" => "Shell toolkit",
+        "lanzaboote" => "Secure Boot",
+        "disko" => "Disk layout",
+        _ => return None,
+    })
 }
 
 #[cfg(test)]

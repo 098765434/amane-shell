@@ -8,6 +8,7 @@ use std::thread;
 use std::time::Duration;
 
 use amane::{Column, Row, Service};
+use amane_kit::app::Dialog;
 use amane_kit::buttons::PushButton;
 use amane_kit::form::FormRow;
 use amane_kit::layout::boxed;
@@ -142,6 +143,39 @@ impl Units {
     }
 }
 
+/// How wide a service's status dot is, with the room around it.
+const DOT: f32 = 10.0;
+
+/// Green while running, red when it failed, grey otherwise.
+fn status_dot(state: Option<&UnitState>) -> amane::Rectangle {
+    use amane::{Color, Rectangle, Size};
+    let color = match state.map(|state| state.active.as_str()) {
+        Some("active") => Color::from("#30d158"),
+        Some("activating" | "deactivating") => Color::from("#ffd600"),
+        Some("failed") => Color::from("#ff4245"),
+        _ => mac::label_tertiary(),
+    };
+    Rectangle::new()
+        .width(Size::Fixed(DOT))
+        .height(Size::Fixed(DOT))
+        .fill(Color::TRANSPARENT)
+        .align_child(amane::Center, amane::Center)
+        .child(
+            Rectangle::new()
+                .width(Size::Fixed(8.0))
+                .height(Size::Fixed(8.0))
+                .radius(4.0)
+                .fill(color),
+        )
+}
+
+/// Units a remote session may be coming in through.
+fn remote(unit: &str) -> bool {
+    ["sshd", "tailscaled", "sunshine"]
+        .iter()
+        .any(|name| unit.trim_end_matches(".service") == *name)
+}
+
 /// A subtitle's parts, apart by " · ", leaving out the empty ones.
 pub fn join_parts(parts: &[String]) -> String {
     parts
@@ -271,9 +305,11 @@ pub fn page() -> Column {
             format!("settings.services.row.{}", entry.id),
             entry.label.clone(),
         );
-        // its state is still being asked
+        // its state is still being asked; once known, a dot says it
         if entry.unit.is_some() && !units.looked {
             row = row.loading();
+        } else if entry.unit.is_some() {
+            row = row.leading(status_dot(state), DOT);
         }
 
         if let Some(unit) = entry.unit.clone()
@@ -298,10 +334,29 @@ pub fn page() -> Column {
             }
             let user = entry.user_scope;
             let unit2 = unit.clone();
+            let label_of = entry.label.clone();
             row = row.trailing(
                 PushButton::new(format!("settings.services.{verb}.{}", entry.id), label)
                     .disabled(building || busy || !units.looked)
-                    .on_press(move || act(unit2.clone(), user, verb))
+                    .on_press(move || {
+                        // stopping what a remote session rides on asks first
+                        if verb == "stop" && remote(&unit2) {
+                            let unit = unit2.clone();
+                            Dialog::new(
+                                "settings.services.stop-dialog",
+                                format!("Stop {label_of}?"),
+                            )
+                            .message(
+                                "Anyone connected through it, you included if you're not at \
+                                 this computer, is cut off until it starts again.",
+                            )
+                            .button("Cancel", || {})
+                            .destructive("Stop", move || act(unit.clone(), user, "stop"))
+                            .open("main");
+                        } else {
+                            act(unit2.clone(), user, verb);
+                        }
+                    })
                     .build(),
             );
         }
@@ -321,8 +376,10 @@ pub fn page() -> Column {
                 .is_some_and(|(id, _)| *id == link.id);
             let mut linked_row = FormRow::new(
                 format!("settings.services.row.{}", link.id),
-                format!("{}: {}", entry.label, link.label.to_lowercase()),
+                "Start only when needed",
             )
+            .subtitle("Starts when something connects, and stops when idle")
+            .child()
             .trailing(
                 controls::switch(link, &managed)
                     .disabled(!link.managed() || !enabled)

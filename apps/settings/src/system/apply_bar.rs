@@ -56,7 +56,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
     let (text, buttons): (Box<dyn Widget>, Vec<Box<dyn Widget>>) = match &job.phase {
         Phase::Idle if changes.is_empty() => return None,
         Phase::UpToDate => (
-            boxed(line("Already up to date: every input is at its newest.")),
+            boxed(line("Everything is up to date.")),
             vec![button(
                 "dismiss",
                 "Dismiss",

@@ -225,7 +225,7 @@ pub fn section() -> Group {
                 "settings.displays.night.missing",
                 "Night Light isn't available",
             )
-            .subtitle("The shell isn't answering, or wlsunset isn't installed")
+            .subtitle("The shell isn't answering, or Night Light isn't installed (wlsunset)")
             .trailing(
                 PushButton::new("settings.displays.night.retry", "Try Again")
                     .on_press(|| {

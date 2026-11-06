@@ -9,8 +9,8 @@ use crate::{group, groups};
 
 pub fn page() -> Column {
     groups(vec![group().rows(controls::rows("general")).footer(
-        "The name and keyboard take effect after Apply; a new language needs a restart. \
-         Layouts and variants are the names localectl lists; the console keymap follows \
-         the layout.",
+        "Changes take effect after Apply; a new language needs a restart. A layout is a \
+         short name like us or no, and a variant one of its kinds, like dvorak; the text \
+         console uses the same layout.",
     )])
 }

@@ -2,7 +2,6 @@
 //! shown ([`Ctx`]). A section that doesn't apply to it (brightness on a
 //! monitor, OLED care on an LCD) is left out.
 
-use std::cell::Cell;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::Duration;
@@ -12,7 +11,7 @@ use amane::{
 };
 use amane_kit::app::{Dialog, field_box, text_field};
 use amane_kit::arrangement::{Arrangement, Screen};
-use amane_kit::buttons::{PushButton, Segment, SegmentedButton, Switch};
+use amane_kit::buttons::{IconButton, PushButton, Segment, SegmentedButton, Switch};
 use amane_kit::color::Accent;
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::{FormRow, Group, SliderRow};
@@ -65,7 +64,7 @@ impl Ctx {
             })
     }
 
-    fn name(&self) -> String {
+    pub fn name(&self) -> String {
         display_name(&self.output)
     }
 }
@@ -232,16 +231,17 @@ pub fn arrangement(ctx: &Ctx) -> Option<Group> {
         if !editable {
             return;
         }
+        // kept only when confirmed, as a new mode is: a screen moved
+        // somewhere unreachable comes back by itself
         let (output, name) = (output.clone(), name.clone());
-        let what = format!("{name} at {x}, {y}");
-        thread::spawn(move || {
-            if let Err(error) = niri::apply(&name, &Change::Position(x, y)) {
-                Screens::fail(error);
-            }
-        });
-        save(&output, what, move |block| {
-            block.position = Some((x, y));
-        });
+        let (from_x, from_y) = output.logical.map_or((0, 0), |l| (l.x, l.y));
+        try_change(
+            &output,
+            Change::Position(x, y),
+            Change::Position(from_x, from_y),
+            format!("{name} at {x}, {y}"),
+            move |block| block.position = Some((x, y)),
+        );
     })
     .build();
 
@@ -329,7 +329,10 @@ pub fn header(ctx: &Ctx) -> Group {
     {
         details.push(format!("{} {name}", output.make));
     }
-    details.push(output.name.clone());
+    // a port's name says something only for a display plugged in
+    if !output.built_in() {
+        details.push(output.name.clone());
+    }
     match output.mode() {
         Some(mode) => details.push(format!(
             "{} × {} at {}",
@@ -597,9 +600,23 @@ pub fn refresh_rate(ctx: &Ctx) -> Vec<FormRow> {
                 .build(),
         )
     };
-    let mut rows = vec![row];
-    if Battery::read().present() {
-        rows.push(
+    let _ = slowest;
+    vec![row]
+}
+
+/// What holds for every display: a slower rate on battery.
+pub fn all_displays(ctx: &Ctx) -> Option<Group> {
+    if !Battery::read().present() {
+        return None;
+    }
+    let slowest = ctx
+        .output
+        .mode()
+        .map(|now| rates(&ctx.output, (now.width, now.height)))
+        .and_then(|rates| rates.first().map(|mode| hz(mode.hz())));
+    let here = slowest.map_or(String::new(), |rate| format!(" ({rate} here)"));
+    Some(
+        group().header("All Displays").row(
             switch_row(
                 "settings.displays.battery-refresh",
                 "Slower on battery",
@@ -607,11 +624,10 @@ pub fn refresh_rate(ctx: &Ctx) -> Vec<FormRow> {
                 |on| change_displays(|now| now.battery_refresh = on),
             )
             .subtitle(format!(
-                "Every display runs at its slowest rate ({slowest} here) until it's on AC again"
+                "Every display runs at its slowest rate{here} until it's plugged in again"
             )),
-        );
-    }
-    rows
+        ),
+    )
 }
 
 const VRR_APP: &str = "settings.displays.vrr-app";
@@ -731,28 +747,74 @@ fn vrr_apps(ctx: &Ctx, group: Group) -> Group {
             },
         );
     };
-    let field =
-        text_field(VRR_APP, "App id, like steam_app_1091500").on_submit(move |text| add(&text));
+    let field = text_field(VRR_APP, "Add a game or app…").on_submit(move |text| add(&text));
     let add_row = FormRow::new("settings.displays.vrr-add-row", "Add an app")
         .subtitle(if apps.is_empty() {
-            "None yet: niri msg windows shows their app ids"
+            "None yet. Pick one that's open, or type its app id"
         } else {
             ""
         })
         .detail(
             Row::new(vec![
-                boxed(field_box(VRR_APP, field, 280.0)),
+                boxed(field_box(VRR_APP, field, 200.0)),
                 boxed(
                     PushButton::new("settings.displays.vrr-add", "Add")
                         .on_press(move || add(&TextInput::text(VRR_APP)))
                         .build(),
                 ),
+                boxed(open_apps_menu(&apps, add)),
             ])
             .gap(sys::space::gap::s())
             .align(Center),
             mac::control_height(),
         );
     group.rows(rows).row(add_row)
+}
+
+/// The app ids of the windows open now, looked up off the UI thread at
+/// most every few seconds; the page draws again when they're in.
+fn open_app_ids() -> Vec<String> {
+    use std::sync::Mutex;
+    use std::sync::atomic::AtomicBool;
+    use std::time::Instant;
+    static OPEN: Mutex<(Option<Instant>, Vec<String>)> = Mutex::new((None, Vec::new()));
+    static LOOKING: AtomicBool = AtomicBool::new(false);
+    let Ok(open) = OPEN.lock() else {
+        return Vec::new();
+    };
+    let stale = open
+        .0
+        .is_none_or(|at| at.elapsed() > std::time::Duration::from_secs(5));
+    if stale && !LOOKING.swap(true, std::sync::atomic::Ordering::AcqRel) {
+        thread::spawn(|| {
+            let ids = niri::window_app_ids();
+            if let Ok(mut open) = OPEN.lock() {
+                *open = (Some(Instant::now()), ids);
+            }
+            LOOKING.store(false, std::sync::atomic::Ordering::Release);
+            drop(Screens::write());
+        });
+    }
+    open.1.clone()
+}
+
+/// A small menu of the apps open now, to add one without knowing its id.
+fn open_apps_menu(added: &[String], add: impl Fn(&str) + Clone + 'static) -> Rectangle {
+    let ids: Vec<String> = open_app_ids()
+        .into_iter()
+        .filter(|id| !added.contains(id))
+        .collect();
+    let items = ids.iter().map(amane_kit::macform::MenuItem::new).collect();
+    let picked = ids.clone();
+    amane_kit::macform::MacPopUpButton::new("settings.displays.vrr-open-apps")
+        .items(items, None)
+        .disabled(ids.is_empty())
+        .on_select(move |index| {
+            if let Some(id) = picked.get(index) {
+                add(id);
+            }
+        })
+        .build()
 }
 
 /// The scales offered, as macOS's "Looks like" choices.
@@ -845,9 +907,7 @@ pub fn rotation(ctx: &Ctx) -> FormRow {
             }
         })
         .build();
-    FormRow::new("settings.displays.rotation-row", "Rotation")
-        .subtitle("Turned counter-clockwise, as the screen is")
-        .trailing(dropdown)
+    FormRow::new("settings.displays.rotation-row", "Rotation").trailing(dropdown)
 }
 
 /// Where the HDR brightness slider runs, in nits.
@@ -871,8 +931,8 @@ pub fn hdr(ctx: &Ctx) -> Group {
     if !output.hdr_supported {
         return group().row(
             FormRow::new("settings.displays.hdr-row", title).subtitle(format!(
-                "This display shows HDR10{peak}, but niri can't drive it here: it needs a niri \
-             with HDR, and the display on the main graphics card."
+                "This display shows HDR10{peak}, but the compositor can't drive it here: it \
+                 needs to be on the main graphics card."
             )),
         );
     }
@@ -892,15 +952,27 @@ pub fn hdr(ctx: &Ctx) -> Group {
         })
         .build();
 
+    let apps = IconButton::new("settings.displays.hdr-apps", ICON_INFO)
+        .on_press(|| {
+            Dialog::new("settings.displays.hdr-apps-dialog", "Apps that show HDR")
+                .message(
+                    "mpv with --vo=gpu-next, Firefox with gfx.wayland.hdr turned on in \
+                     about:config, and Vulkan games that ask for HDR. Everything else looks \
+                     as it does without HDR.",
+                )
+                .button("OK", || {})
+                .open("main");
+        })
+        .build();
     let mut group = group().header(title).row(
         FormRow::new("settings.displays.hdr-row", "Use HDR")
             .subtitle(format!("HDR10{peak}"))
+            .trailing(apps)
             .trailing(switch),
     );
     let mut footer = String::from(
-        "The screen blanks for a moment while it switches. The desktop looks the same; HDR \
-         video and games show brighter highlights: mpv with --vo=gpu-next, Firefox with \
-         gfx.wayland.hdr, and Vulkan games asking for HDR.",
+        "The screen blanks for a moment while it switches. The desktop looks the same; video \
+         and games that support HDR show brighter highlights.",
     );
 
     if on {
@@ -1078,7 +1150,7 @@ pub fn multiple(ctx: &Ctx) -> Option<Group> {
             .row(FormRow::new("settings.displays.enabled-row", "Use this display").trailing(use_it))
             .row(
                 FormRow::new("settings.displays.main-row", "Main display")
-                    .subtitle("niri starts with it focused")
+                    .subtitle("Where windows open first after you log in")
                     .trailing(main_switch),
             ),
     )
@@ -1086,31 +1158,23 @@ pub fn multiple(ctx: &Ctx) -> Option<Group> {
 
 // ───── advanced ─────────────────────────────────────────────────────────────
 
-thread_local! {
-    static ADVANCED: Cell<bool> = const { Cell::new(false) };
-}
-
 const CUSTOM_SCALE: &str = "settings.displays.custom-scale";
 const CUSTOM_MODE: &str = "settings.displays.custom-mode";
 const BACKDROP: &str = "settings.displays.backdrop";
 
-pub fn advanced(ctx: &Ctx) -> Group {
-    let open = ADVANCED.get();
-    let toggle = PushButton::new(
-        "settings.displays.advanced",
-        if open { "Hide" } else { "Show" },
-    )
-    .on_press(move || ADVANCED.set(!open))
-    .build();
-    let group = group().row(
+/// A row that opens the Advanced sub-page.
+pub fn advanced_link() -> Group {
+    group().row(
         FormRow::new("settings.displays.advanced-row", "Advanced")
             .subtitle("Custom scale and mode, the overview's backdrop, what the display reports")
-            .trailing(toggle),
-    );
-    if !open {
-        return group;
-    }
+            .on_press(|| crate::open(crate::View::Sub("advanced"))),
+    )
+}
 
+/// The Advanced sub-page: a custom scale or mode, the overview's backdrop,
+/// and what the display says of itself.
+pub fn advanced(ctx: &Ctx) -> Group {
+    let group = group();
     let editable = ctx.editable();
     let output = ctx.output.clone();
 

@@ -4,7 +4,7 @@
 //! for Apply; a setting another file sets is shown locked, with where.
 
 use amane::{Row, Service, TextInput};
-use amane_kit::app::{field_box, text_field};
+use amane_kit::app::{commit_on_blur, field_box, text_field};
 use amane_kit::buttons::{PushButton, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
@@ -201,21 +201,18 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
             if TextInput::text(id).is_empty() && !shown.is_empty() {
                 TextInput::set_text(id, &shown);
             }
+            // kept on Return, or when the field is left with something new
             let e = entry.clone();
-            let e2 = entry.clone();
-            let field = text_field(id, &shown).on_submit(move |text| {
-                if !locked {
-                    set(&e, Value::from(text.trim()));
+            let kept = shown.clone();
+            let keep = move |text: String| {
+                let text = text.trim().to_string();
+                if !locked && text != kept.trim() {
+                    set(&e, Value::from(text));
                 }
-            });
-            row.trailing(field_box(id, field, 180.0)).trailing(
-                PushButton::new(format!("settings.system.set.{}", entry.id), "Set")
-                    .disabled(locked)
-                    .on_press(move || {
-                        set(&e2, Value::from(TextInput::text(id).trim()));
-                    })
-                    .build(),
-            )
+            };
+            commit_on_blur(id, keep.clone());
+            let field = text_field(id, &shown).on_submit(keep);
+            row.trailing(field_box(id, field, 200.0))
         }
     };
 

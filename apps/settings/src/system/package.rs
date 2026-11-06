@@ -273,7 +273,11 @@ impl Details {
 
 /// The view's title: the package's attribute path.
 pub fn title() -> String {
-    Details::read().attr.clone()
+    let details = Details::read();
+    match &details.meta {
+        Some(Ok(meta)) if !meta.pname.is_empty() => meta.pname.clone(),
+        _ => details.attr.clone(),
+    }
 }
 
 /// Wrapped text as tall as its lines at the page's width: wrapped text

@@ -173,10 +173,6 @@ impl Generations {
     pub fn refresh() {
         thread::spawn(|| store(scan()));
     }
-
-    pub fn find(&self, number: u32) -> Option<&Generation> {
-        self.list.iter().find(|g| g.number == number)
-    }
 }
 
 #[cfg(test)]
