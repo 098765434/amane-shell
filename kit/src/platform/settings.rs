@@ -11,6 +11,8 @@ use std::sync::RwLockReadGuard;
 use amane::serde::{Deserialize, Serialize};
 use amane::{Color, Config, Service, Settings};
 
+use crate::color::Accent;
+use crate::icons::{self, Glyph};
 use crate::theme::{Density, Glass, Mode};
 
 /// The accents to pick from, macOS 27's system colours in their dark
@@ -544,6 +546,148 @@ pub const BAR_ITEMS: [(&str, &str, bool); 16] = [
     ("quick-settings", "Quick Settings", false),
     ("notifications", "Notifications and Do Not Disturb", true),
     ("clock", "Clock", false),
+];
+
+/// The glyph and tile colour Shell Settings shows before a status bar
+/// item: the glyph the bar itself draws at rest.
+pub fn bar_item_icon(name: &str) -> (Glyph, Accent) {
+    let (glyph, accent) = match name {
+        "tray" => (icons::ICON_APPS, Accent::Gray),
+        "privacy" => (icons::ICON_MIC, Accent::Orange),
+        "status-icons" => (icons::ICON_NIGHT_LIGHT, Accent::Indigo),
+        "activities" => (icons::ICON_TIMER, Accent::Purple),
+        "weather" => (icons::ICON_PARTLY_CLOUDY, Accent::Cyan),
+        "volume" => (icons::ICON_VOLUME_UP, Accent::Pink),
+        "bluetooth" => (icons::ICON_BLUETOOTH, Accent::Blue),
+        "network" => (icons::ICON_WIFI, Accent::Blue),
+        "tailscale" => return (Glyph::Tailscale, Accent::Gray),
+        "keep-awake" => (icons::ICON_KEEP_AWAKE, Accent::Brown),
+        "keyboard" => (icons::ICON_KEYBOARD, Accent::Gray),
+        "phone" => (icons::ICON_PHONE, Accent::Green),
+        "battery" => (icons::ICON_BATTERY_FULL, Accent::Green),
+        "quick-settings" => (icons::ICON_TUNE, Accent::Gray),
+        "notifications" => (icons::ICON_NOTIFICATIONS, Accent::Red),
+        "clock" => (icons::ICON_SCHEDULE, Accent::Blue),
+        _ => (icons::ICON_APPS, Accent::Gray),
+    };
+    (Glyph::Font(glyph), accent)
+}
+
+/// Every Quick Settings control, by the shell's name for it, with what
+/// Shell Settings calls it and the glyph its tile shows at rest.
+pub const QS_CONTROLS: [(&str, &str, Glyph, Accent); 22] = [
+    ("wifi", "Wi-Fi", Glyph::Font(icons::ICON_WIFI), Accent::Blue),
+    (
+        "bluetooth",
+        "Bluetooth",
+        Glyph::Font(icons::ICON_BLUETOOTH),
+        Accent::Blue,
+    ),
+    (
+        "now-playing",
+        "Now Playing",
+        Glyph::Font(icons::ICON_MUSIC),
+        Accent::Pink,
+    ),
+    ("vpn", "VPN", Glyph::Font(icons::ICON_VPN), Accent::Blue),
+    (
+        "wired",
+        "Wired network",
+        Glyph::Font(icons::ICON_WIRED),
+        Accent::Blue,
+    ),
+    (
+        "focus",
+        "Do Not Disturb",
+        Glyph::Font(icons::ICON_DND),
+        Accent::Indigo,
+    ),
+    (
+        "dark-style",
+        "Dark Style",
+        Glyph::Font(icons::ICON_DARK_MODE),
+        Accent::Gray,
+    ),
+    (
+        "night-light",
+        "Night Light",
+        Glyph::Font(icons::ICON_NIGHT_LIGHT),
+        Accent::Orange,
+    ),
+    (
+        "display",
+        "Display brightness",
+        Glyph::Font(icons::ICON_BRIGHTNESS_HIGH),
+        Accent::Blue,
+    ),
+    (
+        "sound",
+        "Sound",
+        Glyph::Font(icons::ICON_VOLUME_UP),
+        Accent::Pink,
+    ),
+    (
+        "battery",
+        "Battery",
+        Glyph::Font(icons::ICON_BATTERY_FULL),
+        Accent::Green,
+    ),
+    (
+        "power-mode",
+        "Power Mode",
+        Glyph::Font(icons::ICON_BALANCED),
+        Accent::Green,
+    ),
+    (
+        "keyboard",
+        "Keyboard brightness",
+        Glyph::Font(icons::ICON_KEYBOARD_LIGHT),
+        Accent::Gray,
+    ),
+    (
+        "airplane",
+        "Airplane Mode",
+        Glyph::Font(icons::ICON_AIRPLANE),
+        Accent::Orange,
+    ),
+    (
+        "background-apps",
+        "Background apps",
+        Glyph::Font(icons::ICON_BACKGROUND_APPS),
+        Accent::Gray,
+    ),
+    (
+        "screenshot",
+        "Screenshot",
+        Glyph::Font(icons::ICON_SCREENSHOT),
+        Accent::Gray,
+    ),
+    ("lock", "Lock", Glyph::Font(icons::ICON_LOCK), Accent::Gray),
+    (
+        "power-off",
+        "Power",
+        Glyph::Font(icons::ICON_POWER),
+        Accent::Red,
+    ),
+    ("tailscale", "Tailscale", Glyph::Tailscale, Accent::Gray),
+    (
+        "keep-awake",
+        "Keep Awake",
+        Glyph::Font(icons::ICON_KEEP_AWAKE),
+        Accent::Brown,
+    ),
+    (
+        "phone",
+        "Phone",
+        Glyph::Font(icons::ICON_PHONE),
+        Accent::Green,
+    ),
+    (
+        "software-update",
+        "Software Update",
+        Glyph::Font(icons::ICON_UPDATE),
+        Accent::Gray,
+    ),
 ];
 
 impl StatusBar {

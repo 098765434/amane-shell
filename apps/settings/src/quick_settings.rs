@@ -10,37 +10,15 @@ use std::path::PathBuf;
 use amane::{Column, Service, ipc_call, watch_file};
 use amane_kit::app::Dialog;
 use amane_kit::buttons::PushButton;
+use amane_kit::color::Accent;
 use amane_kit::form::FormRow;
+use amane_kit::icons::{Glyph, ICON_TUNE};
+use amane_kit::settings::QS_CONTROLS;
 
 use crate::{group, groups, switch_row};
 
 /// The shell's app id, whose IPC socket this page calls.
 const SHELL: &str = "amane";
-
-/// Each control's name, by the shell's name for it.
-const NAMES: [(&str, &str); 21] = [
-    ("wifi", "Wi-Fi"),
-    ("bluetooth", "Bluetooth"),
-    ("now-playing", "Now Playing"),
-    ("vpn", "VPN"),
-    ("wired", "Wired network"),
-    ("focus", "Do Not Disturb"),
-    ("dark-style", "Dark Style"),
-    ("night-light", "Night Light"),
-    ("display", "Display brightness"),
-    ("sound", "Sound"),
-    ("battery", "Battery"),
-    ("power-mode", "Power Mode"),
-    ("keyboard", "Keyboard brightness"),
-    ("airplane", "Airplane Mode"),
-    ("background-apps", "Background apps"),
-    ("screenshot", "Screenshot"),
-    ("lock", "Lock"),
-    ("power-off", "Power"),
-    ("tailscale", "Tailscale"),
-    ("keep-awake", "Keep Awake"),
-    ("phone", "Phone"),
-];
 
 /// The controls this machine has and whether each is on the canvas, as the
 /// running shell says; none while the shell doesn't answer.
@@ -126,11 +104,13 @@ fn tell(args: &[&str]) {
     });
 }
 
-fn named(name: &str) -> &str {
-    NAMES
-        .iter()
-        .find(|(id, _)| *id == name)
-        .map_or(name, |(_, label)| label)
+/// A control's label and leading tile, by the shell's name for it; one the
+/// table doesn't know shows under its own name on a grey tile.
+fn named(name: &str) -> (&str, Glyph, Accent) {
+    QS_CONTROLS.iter().find(|(id, ..)| *id == name).map_or(
+        (name, Glyph::Font(ICON_TUNE), Accent::Gray),
+        |(_, label, glyph, accent)| (label, *glyph, *accent),
+    )
 }
 
 pub fn page() -> Column {
@@ -180,13 +160,15 @@ pub fn page() -> Column {
         .build();
 
     let switches = controls.into_iter().map(|(name, shown)| {
-        let label = named(&name).to_string();
+        let (label, glyph, accent) = named(&name);
+        let label = label.to_string();
         switch_row(
             &format!("settings.quick.control.{name}"),
             &label,
             shown,
             move |on| tell(&[if on { "show" } else { "hide" }, &name]),
         )
+        .icon(glyph, accent)
     });
 
     groups(vec![

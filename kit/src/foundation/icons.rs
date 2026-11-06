@@ -167,6 +167,10 @@ pub const ICON_PACKAGE: char = '\u{f720}';
 /// `terminal`: a command-line tool.
 pub const ICON_TERMINAL: char = '\u{eb8e}';
 pub const ICON_TIMER: char = '\u{e425}';
+/// `schedule`: a clock face.
+pub const ICON_SCHEDULE: char = '\u{e8b5}';
+/// `partly_cloudy_day`: the weather.
+pub const ICON_PARTLY_CLOUDY: char = '\u{f172}';
 pub const ICON_DESCRIPTION: char = '\u{e873}';
 pub const ICON_UPLOAD: char = '\u{e2c6}';
 pub const ICON_DOWNLOAD: char = '\u{e2c4}';
@@ -247,7 +251,7 @@ pub fn device_glyph(icon: &str) -> char {
 }
 
 const ICON_POWER_SAVER: char = '\u{ea35}';
-const ICON_BALANCED: char = '\u{eaf6}';
+pub const ICON_BALANCED: char = '\u{eaf6}';
 const ICON_PERFORMANCE: char = '\u{e9e4}';
 
 /// The glyph for a power-profiles-daemon profile.

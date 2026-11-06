@@ -1,23 +1,24 @@
 //! MacLeadingIcon — the coloured tile before a settings row, a list item
 //! or a sidebar page: 20 px (28 large), radius 6, an accent fill and a
-//! white Material Symbols glyph.
+//! white Material Symbols glyph (or a drawn mark, such as Tailscale's).
 
 use amane::{Center, Color, Rectangle, Size};
 
 use super::theme::{self, Accent, px};
+use crate::icons::{Glyph, glyph};
 use crate::layout::icon;
 
 pub struct MacLeadingIcon {
-    glyph: char,
+    glyph: Glyph,
     fill: Color,
     side: Option<f32>,
     large: bool,
 }
 
 impl MacLeadingIcon {
-    pub fn new(glyph: char) -> Self {
+    pub fn new(glyph: impl Into<Glyph>) -> Self {
         Self {
-            glyph,
+            glyph: glyph.into(),
             fill: Accent::Blue.color(),
             side: None,
             large: false,
@@ -51,12 +52,16 @@ impl MacLeadingIcon {
             .side
             .unwrap_or(if self.large { px(28.0) } else { px(20.0) });
         let radius = theme::field_radius() * (side / px(20.0)).clamp(1.0, 1.4);
-        Rectangle::new()
+        let tile = Rectangle::new()
             .width(Size::Fixed(side))
             .height(Size::Fixed(side))
             .radius(radius)
             .fill(self.fill)
-            .align_child(Center, Center)
-            .child(icon(self.glyph, (side * 0.72).round(), Color::WHITE))
+            .align_child(Center, Center);
+        match self.glyph {
+            Glyph::Font(ch) => tile.child(icon(ch, (side * 0.72).round(), Color::WHITE)),
+            // a drawn mark fills its box edge to edge, so it's drawn smaller
+            mark => tile.child(glyph(mark, (side * 0.6).round(), Color::WHITE)),
+        }
     }
 }

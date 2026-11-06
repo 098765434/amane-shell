@@ -13,8 +13,8 @@ use amane_kit::macform::ThumbnailPicker;
 use amane_kit::macform::theme as mac;
 use amane_kit::settings::{
     AutoHide, BAR_ITEMS, BUILTIN_ACTIVITIES, BarPosition, BarStyle, ClockStyle, DateFormat,
-    ShowDate, StatusBar, activities_seen, change_status_bar, status_apps_seen, status_bar,
-    tray_seen,
+    ShowDate, StatusBar, activities_seen, bar_item_icon, change_status_bar, status_apps_seen,
+    status_bar, tray_seen,
 };
 
 use crate::{View, group, groups, previews, switch_row};
@@ -431,7 +431,10 @@ fn item_row(name: &'static str, index: usize, last: usize, shown: bool) -> FormR
                 .height(Size::Fixed(1.0)),
         ));
     }
-    FormRow::new(id, label).trailing(Row::new(trailing).gap(4.0).align(Center))
+    let (glyph, accent) = bar_item_icon(name);
+    FormRow::new(id, label)
+        .icon(glyph, accent)
+        .trailing(Row::new(trailing).gap(4.0).align(Center))
 }
 
 /// Live Activities: whether they show, how many with their text, Now

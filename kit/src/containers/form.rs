@@ -23,6 +23,7 @@ use std::rc::Rc;
 use amane::{Center, Color, Column, Padding, Rectangle, Row, Size, Text, Widget};
 
 use crate::color::Accent;
+use crate::icons::Glyph;
 use crate::layout::{boxed, icon, text_height, text_width, wrapped_lines};
 use crate::macform::symbol::{Symbol, symbol};
 use crate::macform::theme::{self, px};
@@ -82,7 +83,7 @@ pub struct FormRow {
     id: String,
     title: String,
     subtitle: Option<String>,
-    icon: Option<(char, Accent)>,
+    icon: Option<(Glyph, Accent)>,
     leading: Option<(Box<dyn Widget>, f32)>,
     trailing: Vec<Box<dyn Widget>>,
     detail: Option<(Box<dyn Widget>, f32)>,
@@ -154,9 +155,10 @@ impl FormRow {
         self
     }
 
-    /// `glyph` on a tile of `accent` before the title.
-    pub fn icon(mut self, glyph: char, accent: Accent) -> Self {
-        self.icon = Some((glyph, accent));
+    /// `glyph` on a tile of `accent` before the title: a font glyph, or a
+    /// drawn [`Glyph`] such as Tailscale's mark.
+    pub fn icon(mut self, glyph: impl Into<Glyph>, accent: Accent) -> Self {
+        self.icon = Some((glyph.into(), accent));
         self
     }
 
