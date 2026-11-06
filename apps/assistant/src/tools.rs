@@ -10,13 +10,19 @@ use crate::command::{Command, Level, Media, Power, State, Target};
 use crate::snapshot::Snapshot;
 use crate::{Reading, Source};
 
-/// How many apps the open tool names at most.
-pub const MAX_APPS: usize = 40;
+/// How many apps the open tool names at most, the most used first: past
+/// this the prompt grows over 512 tokens, which costs Needle (and training
+/// it) about twice the time. The rules still know every app.
+pub const MAX_APPS: usize = 24;
 
-/// The session facts Needle is told: the day, the language, the device.
-pub fn system(date: &str, locale: &str) -> String {
-    format!("date: {date}; locale: {locale}; device: laptop")
-}
+/// How sure a call is taken to be when the model gives no score (one
+/// fine-tuned here): offered, but as a suggestion, and never run unasked.
+pub const UNSCORED: f32 = 0.6;
+
+/// The session facts Needle is told. None: no command here needs the day
+/// or the place, and the tokens they'd take slow every answer (and
+/// training, past 512 a prompt). The fine-tune is trained without them.
+pub const SYSTEM: &str = "";
 
 fn tool(name: &str, description: &str, properties: Value, required: &[&str]) -> Value {
     json!({
@@ -39,17 +45,10 @@ pub fn tools(snapshot: &Snapshot) -> String {
 
     if !snapshot.switches.is_empty() {
         let names: Vec<String> = snapshot.switches.iter().map(|s| s.name()).collect();
-        let mut description = String::from(
-            "Turn a system setting on or off. Night light makes the screen warmer at night; \
-             dark style is the dark color theme; focus is do not disturb, silencing notifications; \
-             keep awake stops the screen sleeping.",
-        );
-        if names.iter().any(|name| name == "airplane mode") {
-            description.push_str(" Airplane mode turns every radio off.");
-        }
         tools.push(tool(
             "set_switch",
-            &description,
+            "Turn a setting on or off. Night light: warmer screen colors. Dark style: dark theme. \
+             Focus: do not disturb.",
             json!({
                 "setting": {"type": "string", "enum": names},
                 "state": {"type": "string", "enum": ["on", "off", "toggle"]},
@@ -64,11 +63,10 @@ pub fn tools(snapshot: &Snapshot) -> String {
     }
     tools.push(tool(
         "set_level",
-        "Set or change the speaker volume or the screen brightness. Louder or quieter is volume; \
-         brighter or dimmer is brightness.",
+        "Volume (louder, quieter) or screen brightness (brighter, dimmer): a percent, or up or down.",
         json!({
             "what": {"type": "string", "enum": levels},
-            "percent": {"type": "integer", "description": "the level to set, 0 to 100"},
+            "percent": {"type": "integer", "description": "0 to 100"},
             "change": {"type": "string", "enum": ["up", "down"]},
         }),
         &["what"],
@@ -91,8 +89,7 @@ pub fn tools(snapshot: &Snapshot) -> String {
 
     tools.push(tool(
         "media",
-        "Control the music or video playing: play, pause, skip to the next track or go back to \
-         the previous one",
+        "Play, pause, or skip to the next or previous track",
         json!({"command": {"type": "string", "enum": Media::ALL.map(Media::name)}}),
         &["command"],
     ));
@@ -118,10 +115,17 @@ pub fn read(answer: &Value, snapshot: &Snapshot) -> Option<Reading> {
     let name = call.get("name")?.as_str()?;
     let arguments = call.get("arguments")?;
     let command = command(name, arguments, snapshot)?;
+    // the session is the rules' alone: a model's guess at it ("I can't hear
+    // anything" as lock) costs too much when it's wrong
+    if matches!(command, Command::Power { .. }) {
+        return None;
+    }
+    // a model fine-tuned here has no confidence head and says null: its
+    // calls are offered, as suggestions, on the strength of its eval
     let mut confidence = answer
         .get("confidence")
         .and_then(Value::as_f64)
-        .unwrap_or(0.0) as f32;
+        .map_or(UNSCORED, |confidence| confidence as f32);
     let ungrounded = answer
         .pointer("/validation/ungrounded")
         .and_then(Value::as_array)
@@ -147,7 +151,11 @@ fn command(name: &str, arguments: &Value, snapshot: &Snapshot) -> Option<Command
             let state = text(arguments, "state")
                 .and_then(State::named)
                 .unwrap_or(State::Toggle);
-            let state = if switch.on.is_none() { State::Toggle } else { state };
+            let state = if switch.on.is_none() {
+                State::Toggle
+            } else {
+                state
+            };
             Some(Command::Switch {
                 control: switch.control.clone(),
                 state,
@@ -243,6 +251,16 @@ mod tests {
             "confidence": 0.1,
         });
         assert_eq!(read(&answer, &sample()), None);
+    }
+
+    #[test]
+    fn a_call_without_a_score_is_a_suggestion() {
+        let answer = json!({
+            "function_calls": [{"name": "media", "arguments": {"command": "next"}}],
+            "confidence": null,
+        });
+        let reading = read(&answer, &sample()).unwrap();
+        assert!((reading.confidence - UNSCORED).abs() < 1e-6);
     }
 
     #[test]

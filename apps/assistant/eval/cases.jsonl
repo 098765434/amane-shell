@@ -70,3 +70,131 @@
 {"text": "how do I turn on night light", "expect": null}
 {"text": "what is bluetooth", "expect": null}
 {"text": "restaurants near me", "expect": null}
+{"text": "could you make the colors warmer for the evening", "expect": {"do": "switch", "control": "night-light", "state": "on"}}
+{"text": "the screen looks too orange, turn that off", "expect": {"do": "switch", "control": "night-light", "state": "off"}}
+{"text": "cut the blue light", "expect": {"do": "switch", "control": "night-light", "state": "on"}}
+{"text": "enable the night shift thing", "expect": {"do": "switch", "control": "night-light", "state": "on"}}
+{"text": "go back to normal screen colors", "expect": {"do": "switch", "control": "night-light", "state": "off"}}
+{"text": "i prefer a dark interface", "expect": {"do": "switch", "control": "dark-style", "state": "on"}}
+{"text": "everything is too white, darken the theme", "expect": {"do": "switch", "control": "dark-style", "state": "on"}}
+{"text": "light appearance please", "expect": {"do": "switch", "control": "dark-style", "state": "off"}}
+{"text": "no more dark theme", "expect": {"do": "switch", "control": "dark-style", "state": "off"}}
+{"text": "do not disturb", "expect": {"do": "switch", "control": "focus", "state": "on"}}
+{"text": "i'm in a meeting, hold my alerts", "expect": {"do": "switch", "control": "focus", "state": "on"}}
+{"text": "let notifications through again", "expect": {"do": "switch", "control": "focus", "state": "off"}}
+{"text": "end focus mode", "expect": {"do": "switch", "control": "focus", "state": "off"}}
+{"text": "i need to concentrate, stop the pings", "expect": {"do": "switch", "control": "focus", "state": "on"}}
+{"text": "bluetooth on", "expect": {"do": "switch", "control": "bluetooth", "state": "on"}}
+{"text": "kill bluetooth", "expect": {"do": "switch", "control": "bluetooth", "state": "off"}}
+{"text": "i want to pair my headphones, switch on bluetooth", "expect": {"do": "switch", "control": "bluetooth", "state": "on"}}
+{"text": "get me back online", "expect": {"do": "switch", "control": "wifi", "state": "on"}}
+{"text": "turn the wireless off", "expect": {"do": "switch", "control": "wifi", "state": "off"}}
+{"text": "wifi please", "expect": {"do": "switch", "control": "wifi", "state": "on"}}
+{"text": "switch off the wi-fi", "expect": {"do": "switch", "control": "wifi", "state": "off"}}
+{"text": "the flight just landed, turn off airplane mode", "expect": {"do": "switch", "control": "airplane", "state": "off"}}
+{"text": "disable flight mode", "expect": {"do": "switch", "control": "airplane", "state": "off"}}
+{"text": "put it in flight mode", "expect": {"do": "switch", "control": "airplane", "state": "on"}}
+{"text": "stop the screen from going dark while i read", "expect": {"do": "switch", "control": "keep-awake", "state": "on"}}
+{"text": "it can sleep normally now", "expect": {"do": "switch", "control": "keep-awake", "state": "off"}}
+{"text": "stay awake", "expect": {"do": "switch", "control": "keep-awake", "state": "on"}}
+{"text": "turn off keep awake", "expect": {"do": "switch", "control": "keep-awake", "state": "off"}}
+{"text": "capture the screen", "expect": {"do": "switch", "control": "screenshot", "state": "toggle"}}
+{"text": "grab a screenshot", "expect": {"do": "switch", "control": "screenshot", "state": "toggle"}}
+{"text": "screen capture", "expect": {"do": "switch", "control": "screenshot", "state": "toggle"}}
+{"text": "disconnect tailscale", "expect": {"do": "switch", "control": "tailscale", "state": "off"}}
+{"text": "i need the vpn to reach my home server", "expect": {"do": "switch", "control": "tailscale", "state": "on"}}
+{"text": "toggle bluetooth", "expect": {"do": "switch", "control": "bluetooth", "state": "toggle"}}
+{"text": "a bit louder please", "expect": {"do": "level", "level": "volume", "target": "up"}}
+{"text": "raise the volume", "expect": {"do": "level", "level": "volume", "target": "up"}}
+{"text": "the music is too quiet", "expect": {"do": "level", "level": "volume", "target": "up"}}
+{"text": "lower the sound", "expect": {"do": "level", "level": "volume", "target": "down"}}
+{"text": "quieter", "expect": {"do": "level", "level": "volume", "target": "down"}}
+{"text": "that's way too loud, my neighbors", "expect": {"do": "level", "level": "volume", "target": "down"}}
+{"text": "volume 25", "expect": {"do": "level", "level": "volume", "target": {"percent": 25}}}
+{"text": "put the volume at 80 percent", "expect": {"do": "level", "level": "volume", "target": {"percent": 80}}}
+{"text": "set volume to full", "expect": {"do": "level", "level": "volume", "target": {"percent": 100}}}
+{"text": "sound at 10%", "expect": {"do": "level", "level": "volume", "target": {"percent": 10}}}
+{"text": "make the screen brighter", "expect": {"do": "level", "level": "brightness", "target": "up"}}
+{"text": "it's hard to see in the sun", "expect": {"do": "level", "level": "brightness", "target": "up"}}
+{"text": "turn the brightness down", "expect": {"do": "level", "level": "brightness", "target": "down"}}
+{"text": "my eyes hurt from the brightness", "expect": {"do": "level", "level": "brightness", "target": "down"}}
+{"text": "brightness 30", "expect": {"do": "level", "level": "brightness", "target": {"percent": 30}}}
+{"text": "half brightness", "expect": {"do": "level", "level": "brightness", "target": {"percent": 50}}}
+{"text": "lowest brightness", "expect": {"do": "level", "level": "brightness", "target": {"percent": 0}}}
+{"text": "the display is too dim", "expect": {"do": "level", "level": "brightness", "target": "up"}}
+{"text": "browse the web", "expect": {"do": "open", "app": "firefox"}}
+{"text": "i want to look something up online", "expect": {"do": "open", "app": "firefox"}}
+{"text": "open the file manager", "expect": {"do": "open", "app": "org.gnome.Nautilus"}}
+{"text": "show me my downloads folder", "expect": {"do": "open", "app": "org.gnome.Nautilus"}}
+{"text": "i need a command line", "expect": {"do": "open", "app": "com.mitchellh.ghostty"}}
+{"text": "open a terminal window", "expect": {"do": "open", "app": "com.mitchellh.ghostty"}}
+{"text": "let's write some code", "expect": {"do": "open", "app": "code"}}
+{"text": "open visual studio code", "expect": {"do": "open", "app": "code"}}
+{"text": "open my inbox", "expect": {"do": "open", "app": "thunderbird"}}
+{"text": "write an email", "expect": {"do": "open", "app": "thunderbird"}}
+{"text": "open the calculator", "expect": {"do": "open", "app": "org.gnome.Calculator"}}
+{"text": "i need to do some math", "expect": {"do": "open", "app": "org.gnome.Calculator"}}
+{"text": "open spotify", "expect": {"do": "open", "app": "spotify"}}
+{"text": "i want to listen to music", "expect": {"do": "open", "app": "spotify"}}
+{"text": "show my photos", "expect": {"do": "open", "app": "org.gnome.Loupe"}}
+{"text": "open the image viewer", "expect": {"do": "open", "app": "org.gnome.Loupe"}}
+{"text": "open messages", "expect": {"do": "open", "app": "amane-messages"}}
+{"text": "send a text message", "expect": {"do": "open", "app": "amane-messages"}}
+{"text": "change my desktop settings", "expect": {"do": "open", "app": "amane-settings"}}
+{"text": "open settings", "expect": {"do": "open", "app": "amane-settings"}}
+{"text": "next track", "expect": {"do": "media", "media": "next"}}
+{"text": "skip", "expect": {"do": "media", "media": "next"}}
+{"text": "play the next one", "expect": {"do": "media", "media": "next"}}
+{"text": "previous song", "expect": {"do": "media", "media": "previous"}}
+{"text": "play that again from before", "expect": {"do": "media", "media": "previous"}}
+{"text": "pause", "expect": {"do": "media", "media": "pause"}}
+{"text": "hold the music for a second", "expect": {"do": "media", "media": "pause"}}
+{"text": "continue the song", "expect": {"do": "media", "media": "play"}}
+{"text": "start the music again", "expect": {"do": "media", "media": "play"}}
+{"text": "unpause", "expect": {"do": "media", "media": "play"}}
+{"text": "lock my computer", "expect": {"do": "power", "power": "lock"}}
+{"text": "lock it", "expect": {"do": "power", "power": "lock"}}
+{"text": "going for lunch, lock up", "expect": {"do": "power", "power": "lock"}}
+{"text": "suspend the laptop", "expect": {"do": "power", "power": "sleep"}}
+{"text": "put it to sleep", "expect": {"do": "power", "power": "sleep"}}
+{"text": "log me out", "expect": {"do": "power", "power": "log-out"}}
+{"text": "end my session", "expect": {"do": "power", "power": "log-out"}}
+{"text": "power down the machine", "expect": {"do": "power", "power": "power-off"}}
+{"text": "turn everything off for the night", "expect": {"do": "power", "power": "power-off"}}
+{"text": "restart please", "expect": {"do": "power", "power": "restart"}}
+{"text": "how do i change the volume on my phone", "expect": null}
+{"text": "why does bluetooth keep disconnecting", "expect": null}
+{"text": "is night light good for sleep", "expect": null}
+{"text": "what's the best vpn", "expect": null}
+{"text": "does dark mode save battery", "expect": null}
+{"text": "can you lock a car remotely", "expect": null}
+{"text": "bluetooth", "expect": null}
+{"text": "volume", "expect": null}
+{"text": "brightness", "expect": null}
+{"text": "spotify", "expect": null}
+{"text": "terminal", "expect": null}
+{"text": "dark mode", "expect": null}
+{"text": "don't turn on wifi", "expect": null}
+{"text": "don't lock the screen", "expect": null}
+{"text": "never mind", "expect": null}
+{"text": "I can't hear you", "expect": null}
+{"text": "I'm tired", "expect": null}
+{"text": "my screen is cracked", "expect": null}
+{"text": "the wifi at the cafe is slow", "expect": null}
+{"text": "sleep schedule for babies", "expect": null}
+{"text": "restart a stalled download in chrome", "expect": null}
+{"text": "music from the 80s", "expect": null}
+{"text": "next friday's date", "expect": null}
+{"text": "play store", "expect": null}
+{"text": "pause button in excel", "expect": null}
+{"text": "how to take a screenshot on windows", "expect": null}
+{"text": "calculator app for android", "expect": null}
+{"text": "firefox vs chrome", "expect": null}
+{"text": "brightness of venus", "expect": null}
+{"text": "lock picking", "expect": null}
+{"text": "airplane tickets to oslo", "expect": null}
+{"text": "thanks, that's all", "expect": null}
+{"text": "what time is it", "expect": null}
+{"text": "convert 5 dollars to euros", "expect": null}
+{"text": "write a poem about the sea", "expect": null}
+{"text": "open source", "expect": null}

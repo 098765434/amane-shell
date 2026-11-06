@@ -1,0 +1,12 @@
+[package]
+name = "amane-train-watch"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "A Needle fine-tune on another machine, followed from the status bar as a Live Activity."
+license = "MIT"
+repository = "https://github.com/098765434/amane-shell"
+authors = ["ocbk"]
+
+[dependencies]
+amane = { workspace = true }

@@ -39,7 +39,7 @@ debug = false
 incremental = false
 
 [workspace]
-members = ["kit", "apps/settings", "apps/messages", "apps/mirror", "apps/shader-lab", "apps/assistant", "apps/drop"]
+members = ["kit", "apps/settings", "apps/messages", "apps/mirror", "apps/shader-lab", "apps/assistant", "apps/drop", "apps/train-watch"]
 
 [workspace.dependencies]
 # amane is consumed as a pinned git-dependency on the maintained fork (not a

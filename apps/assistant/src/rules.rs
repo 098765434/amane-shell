@@ -30,6 +30,28 @@ const POLITE_END: &[&str] = &["please", "for me", "now", "thanks", "thank you"];
 /// Words that turn a command round; a query with one is the model's.
 const NEGATIONS: &[&str] = &["dont", "do not", "not", "never", "without", "no", "cant", "wont"];
 
+/// How a question starts, once what's polite is off ("can you" is, "can i"
+/// isn't): asking about a thing isn't asking for it.
+const QUESTIONS: &[&str] = &[
+    "how", "what", "whats", "why", "when", "where", "who", "which", "is", "are", "does",
+    "do i", "do you", "can i", "should", "will it",
+];
+
+/// Whether the model is worth asking about `query`, once no rule read it.
+/// Not a word alone, nor the bare name of a switch or an app (Spotlight
+/// already shows that thing), nor a question: each of those, asked, gets a
+/// confident wrong call more often than a right one.
+pub fn worth_asking(query: &str, snapshot: &Snapshot) -> bool {
+    let q = plain(query);
+    if !q.contains(' ') {
+        return false;
+    }
+    let question = QUESTIONS
+        .iter()
+        .any(|start| q.strip_prefix(start).is_some_and(|rest| rest.starts_with(' ')));
+    !question && snapshot.switch(&q).is_none() && snapshot.app(&q).is_none()
+}
+
 /// What `query` asks, if a rule reads it.
 pub fn read(query: &str, snapshot: &Snapshot) -> Option<Command> {
     let words = plain(query);
@@ -376,6 +398,31 @@ fn power_mode(q: &str, snapshot: &Snapshot) -> Option<Command> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn questions_names_and_single_words_arent_asked() {
+        let snapshot = crate::snapshot::sample();
+        for query in [
+            "how do I turn on night light",
+            "what is bluetooth",
+            "can i use bluetooth on a plane",
+            "night light",
+            "dark mode",
+            "firefox",
+            "spotify",
+            "volume",
+        ] {
+            assert!(!worth_asking(query, &snapshot), "{query}");
+        }
+        for query in [
+            "can you make the screen warmer",
+            "I can't hear anything",
+            "go back to the light theme",
+            "don't let the computer go to sleep",
+        ] {
+            assert!(worth_asking(query, &snapshot), "{query}");
+        }
+    }
     use crate::snapshot::sample;
 
     fn reads(query: &str) -> Option<Command> {

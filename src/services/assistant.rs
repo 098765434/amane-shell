@@ -91,8 +91,8 @@ pub fn read(text: &str, snapshot: impl FnOnce() -> Snapshot) -> Option<Reading> 
             source: Source::Rules,
         });
     }
-    // a word alone is a name, not a command: Spotlight's
-    if !text.contains(' ') {
+    // a word alone, a bare name or a question isn't a command: Spotlight's
+    if !rules::worth_asking(text, &snapshot) {
         return None;
     }
     Assistant::watch();
@@ -116,9 +116,8 @@ fn ask(text: String, snapshot: Snapshot, generation: u64) {
     if GENERATION.load(Ordering::SeqCst) != generation {
         return;
     }
-    let system = tools::system(&chrono::Local::now().format("%Y-%m-%d %a").to_string(), &locale());
     let request = Request::Complete {
-        system,
+        system: tools::SYSTEM.to_string(),
         tools: tools::tools(&snapshot),
         text: text.clone(),
     };
@@ -132,15 +131,6 @@ fn ask(text: String, snapshot: Snapshot, generation: u64) {
         state().done = Some((text, None));
         Assistant::changed();
     }
-}
-
-/// The session's language, as Needle is told it: "en-US".
-fn locale() -> String {
-    std::env::var("LANG")
-        .ok()
-        .and_then(|lang| lang.split('.').next().map(|tag| tag.replace('_', "-")))
-        .filter(|tag| !tag.is_empty() && tag != "C" && tag != "POSIX")
-        .unwrap_or_else(|| String::from("en-US"))
 }
 
 /// Sends `request`, connecting first if need be; its id, or `None` when
@@ -198,8 +188,8 @@ fn listen(mut receiver: Receiver) {
                 let Some((_, text, snapshot)) = take(&mut state.waiting, id) else {
                     continue;
                 };
-                let reading = tools::read(&answer, &snapshot)
-                    .filter(|reading| reading.confidence >= OFFERED);
+                let reading =
+                    tools::read(&answer, &snapshot).filter(|reading| reading.confidence >= OFFERED);
                 state.done = Some((text, reading));
             }
             Message::Error { id, error } => {

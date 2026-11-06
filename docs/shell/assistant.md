@@ -27,17 +27,28 @@ Questions and anything else go to Spotlight's usual rows and the web search.
    - A rule matches the whole query or nothing.
    - A negated query ("don't let it sleep") is left to Needle.
    - A rule's reading is certain.
-2. **Needle 3**, 180 ms after the last key, for longer queries the rules don't read.
+2. **Needle 3**, 180 ms after the last key, for the queries the rules don't read and that
+   are worth its guess (`rules::worth_asking`). It isn't asked about:
+   - a word alone;
+   - the bare name of a switch or an app ("night light", "firefox"): Spotlight's rows
+     show that thing;
+   - a question ("how do I turn on night light", "what is bluetooth"; "can you …" is a
+     request, "can I …" a question).
+
+   Asked any of these, it more often makes a confident wrong call than a right one.
    - It's offered five tools (`set_switch`, `set_level`, `open_app`, `media`, `session`,
      [`tools.rs`](../../apps/assistant/src/tools.rs)).
    - Their arguments are `enum`s of what this machine has: its switches by name, its apps
      with the most used first.
    - A call is read back only when every argument names something real. Calls Needle
      holds back as unsure are dropped, and so are calls under 0.3 confidence.
+   - A `session` call is dropped too: locking, sleeping, logging out, restarting and
+     powering off come only from the rules. A wrong guess there ("I can't hear anything"
+     as lock) costs too much.
+   - A fine-tuned model has no confidence: its calls count as 0.6, a suggestion.
    - Below 0.75 the card says "Assistant · Suggested".
 3. **Spotlight's rows**, as always. The assistant stands aside for:
    - a sum or a conversion (they keep the card);
-   - a single word (that's a name);
    - a row that already matches outright, when the reading is Needle's.
 
 What's here is a [`Snapshot`](../../apps/assistant/src/snapshot.rs): the switches and
@@ -163,24 +174,65 @@ others get `superseded`.
 ## Evaluating
 
 ```sh
-amane-assistant eval apps/assistant/eval/cases.jsonl apps/assistant/eval/laptop.json
+amane-assistant eval [--json] apps/assistant/eval/cases.jsonl apps/assistant/eval/laptop.json
 ```
 
-This reads each case, by the rules and then Needle, against the command it should give.
-Negatives should give nothing. `AMANE_ASSISTANT_DEBUG=1` prints Needle's raw answers.
+This reads each case as the shell would: by the rules, then (if it's worth asking) by
+Needle, against the command it should give. Negatives should give nothing.
+- `AMANE_ASSISTANT_NO_RULES=1` scores Needle alone.
+- `AMANE_ASSISTANT_DEBUG=1` prints Needle's raw answers.
+- `--json` prints only the score: right, missed, wrong, negatives left alone, wrong
+  commands that are Destructive, p50 and p95.
 
-On 2026-11-06 it scored:
-- **40 of 60 commands right, all by the rules.**
-- **None wrong.**
-- **12 of 12 negatives left alone.**
+`cases.jsonl` is the **test set**: 200 hand-written cases (152 commands, 48 negatives).
+It's scored once per candidate model, never trained on, never tuned against.
 
-The base Needle 3 offers none of the 20 it misses above 0.3 confidence. These are
-paraphrases like "turn the screen warmer", "I can't hear anything" and "check my email".
-On its own, with five tools, it got 14 of 28 (and ran "skip this song" as **log out**).
-That's why its readings wait for Return, and destructive ones always ask.
+With the base Needle 3, on 2026-11-06:
 
-Next: fine-tune Needle on phrasings generated from these tools (`cactus finetune`, then
-`cactus build --lora`), and drop the result into the models folder.
+| | Commands right | Wrong | Negatives left alone |
+|---|---|---|---|
+| Needle alone | 14 of 152 | 2 | 47 of 48 |
+| Rules, then Needle | 73 of 152 (71 by the rules) | 2 | 47 of 48 |
+
+That's why Needle's readings wait for Return, and destructive ones always ask.
+
+## Fine-tuning
+
+Needle 3 can be tuned with a LoRA adapter on phrasings of these tools
+([`apps/assistant/train/`](../../apps/assistant/train/)). Nothing leaves your machines: the
+data is made locally, training runs offline with telemetry off, and the result is scored
+by the daemon's own engine.
+
+1. **Data:** `gen.py` writes `cactus finetune` rows over 200 made-up machines, with tools
+   from `amane-assistant tools`. Four rows in ten ask for no call (questions, bare names,
+   taken-back commands, things this machine hasn't got, a tool not offered). Each has a
+   reasoning line, so it weighs about as much in the loss as a call does. One template in
+   seven is kept out for the **dev set** (`--dev`), on the eval's laptop.
+2. **Training**, on a machine with an NVIDIA GPU over Tailscale SSH (`remote.sh`):
+   - `remote.sh setup`: a Python 3.12 venv (uv) with `cactus-compute[train]` and JAX on
+     CUDA, the base checkpoint and the tokenizer, all in `~/needle-ft`.
+   - `remote.sh run NAME DATA [FLAGS]`: a systemd user unit `needle-ft-NAME`. It trains,
+     then builds `needle3.cact` with `cactus build` (pointed at the local base archive by
+     `CACTUS_NEEDLE_WEIGHTS`, since the build would otherwise download it).
+   - `remote.sh score NAME DEV`: fetches the archive and scores it here, offline.
+   - `sweep.sh DATA DEV`: trains a grid in turn and ranks it by dev score (right − 3 ×
+     wrong; a wrong Destructive command disqualifies).
+3. **Watching:** `amane-train-watch HOST NAME` ([`apps/train-watch`](../../apps/train-watch))
+   follows the run's log and shows a Live Activity: step, loss, time left, and the
+   validation loss after each epoch. It alerts when the run ends, with the held-out and
+   dev scores. Stop asks first. Log opens a copy of the log. `remote.sh run` starts it on
+   its own while a bar is running; `--plain` prints to the terminal instead.
+
+On an RTX 4080 a step (16 rows, 512 tokens) takes about 0.5 s, against 37 s on the
+laptop's CPU. A 2,000-row, 3-epoch run takes 4.5 minutes, and a 20,000-row one about 35.
+
+| Run | Dev: right of 222 | Wrong | Negatives of 178 |
+|---|---|---|---|
+| Base Needle 3 | 74 | 4 | 174 |
+| Round 1: 2,000 rows of templates, 15% negatives | 99 | 48 | 138 |
+
+Round 1 (2026-11-06) learned to call, but called wrongly far more often: "I can't hear
+anything" as lock, "light theme" as night light on. It wasn't adopted.
 
 ## Files
 
@@ -194,5 +246,10 @@ Next: fine-tune Needle on phrasings generated from these tools (`cactus finetune
 | `apps/assistant/src/engine.rs` | Cactus, through its C API |
 | `apps/assistant/src/server.rs`, `audio.rs` | the socket, the engine's thread, the microphone |
 | `apps/assistant/src/eval.rs` | scoring |
+| `apps/assistant/eval/cases.jsonl`, `laptop.json` | the test set, and the machine it asks |
+| `apps/assistant/train/gen.py` | training and dev data |
+| `apps/assistant/train/remote.sh`, `sweep.sh` | training on a GPU machine, and picking a run |
+| `apps/assistant/train/finetune.sh` | training on this machine's CPU (slow) |
+| `apps/train-watch/` | a run, followed in the bar |
 | `src/services/assistant.rs` | the shell's client: rules, then Needle a moment later; listening |
 | `src/surfaces/launcher/assistant.rs` | the snapshot, and a reading as its card and action |

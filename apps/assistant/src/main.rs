@@ -6,7 +6,9 @@
 //!
 //! ```text
 //! amane-assistant                  serve the shell (the default)
-//! amane-assistant eval CASES SNAP  read each case's text, and score it
+//! amane-assistant eval [--json] CASES SNAP
+//!                                  read each case's text, and score it
+//! amane-assistant tools SNAP       the tools Needle is offered for SNAP, as JSON
 //! ```
 //!
 //! Its models come from `$AMANE_ASSISTANT_MODELS`, else
@@ -22,15 +24,26 @@ use std::path::PathBuf;
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let engine = engine::Engine::new(models_dir(), cache_dir());
-    let result = match args.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
+    let result = match args
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .as_slice()
+    {
         [] | ["serve"] => server::serve(engine),
-        ["eval", cases, snapshot] => eval::run(engine, cases, snapshot),
+        ["eval", cases, snapshot] => eval::run(engine, cases, snapshot, false),
+        ["eval", "--json", cases, snapshot] => eval::run(engine, cases, snapshot, true),
+        ["tools", snapshot] => eval::tools(snapshot),
         ["--version"] => {
-            println!("amane-assistant {} ({})", env!("CARGO_PKG_VERSION"), engine::ENGINE);
+            println!(
+                "amane-assistant {} ({})",
+                env!("CARGO_PKG_VERSION"),
+                engine::ENGINE
+            );
             Ok(())
         }
         _ => Err(String::from(
-            "usage: amane-assistant [serve] | eval CASES.jsonl SNAPSHOT.json",
+            "usage: amane-assistant [serve] | eval [--json] CASES.jsonl SNAPSHOT.json | tools SNAPSHOT.json",
         )),
     };
     if let Err(error) = result {
