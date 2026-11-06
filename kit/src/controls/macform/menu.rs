@@ -79,6 +79,8 @@ struct Menu {
     origin: Point,
     size: (f32, f32),
     parent: Parent,
+    /// Opened by a right click: its corner at the pointer, not under a control.
+    at_pointer: bool,
 }
 
 /// The surface a menu opens over: a normal window by name, or a layer
@@ -138,6 +140,7 @@ pub(crate) fn register_on(
             origin: Point { x: 0.0, y: 0.0 },
             size,
             parent: parent.clone(),
+            at_pointer: false,
         });
         if menu.shown != shown {
             menu.keyed = None;
@@ -165,6 +168,27 @@ pub(crate) fn track(id: &str, control: Rectangle) -> Rectangle {
             }
         });
     })
+}
+
+/// A context menu: opens `items` with its top-left corner at the pointer,
+/// over the current window, and calls `on_select` with the row picked.
+/// Call it from a right click.
+pub fn context_menu(id: &str, items: Vec<MenuItem>, on_select: impl Fn(usize) + 'static) {
+    // a right click while it's open only closes it
+    if is_open(id) {
+        close(id);
+        return;
+    }
+    let shown = (0..items.len()).collect();
+    register(id, items, shown, None, (1.0, 1.0), Rc::new(on_select));
+    let at = pointer_position();
+    MENUS.with_borrow_mut(|menus| {
+        if let Some(menu) = menus.get_mut(id) {
+            menu.origin = at;
+            menu.at_pointer = true;
+        }
+    });
+    open(id);
 }
 
 pub(crate) fn is_open(id: &str) -> bool {
@@ -288,10 +312,12 @@ fn popup(id: &str) -> Popup {
                 menu.origin,
                 menu.size,
                 menu.parent.clone(),
+                menu.at_pointer,
             )
         })
     });
-    let Some((items, shown, active, open, opened, keyed, origin, size, parent)) = state else {
+    let Some((items, shown, active, open, opened, keyed, origin, size, parent, at_pointer)) = state
+    else {
         return Popup::new("amane.macform.menu")
             .size(1, 1)
             .anchor_rect(0, 0, 1, 1)
@@ -364,11 +390,23 @@ fn popup(id: &str) -> Popup {
             size.0.round().max(1.0) as i32,
             size.1.round().max(1.0) as i32,
         )
-        .anchor(PopupAnchor::BottomRight)
-        .gravity(Gravity::BottomLeft)
-        .offset(MARGIN as i32, (GAP - MARGIN) as i32)
+        .anchor(if at_pointer {
+            PopupAnchor::TopLeft
+        } else {
+            PopupAnchor::BottomRight
+        })
+        .gravity(if at_pointer {
+            Gravity::BottomRight
+        } else {
+            Gravity::BottomLeft
+        })
+        .offset(
+            if at_pointer { -MARGIN } else { MARGIN } as i32,
+            if at_pointer { -MARGIN } else { GAP - MARGIN } as i32,
+        )
         .constraint_adjustment(
             ConstraintAdjustment::SLIDE_X
+                | ConstraintAdjustment::FLIP_X
                 | ConstraintAdjustment::FLIP_Y
                 | ConstraintAdjustment::SLIDE_Y,
         )
@@ -487,6 +525,7 @@ mod tests {
                     origin: Point { x: 10.0, y: 10.0 },
                     size: (110.0, 24.0),
                     parent: Parent::Window("test".into()),
+                    at_pointer: false,
                 },
             );
         });

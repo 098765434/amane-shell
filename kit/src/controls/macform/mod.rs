@@ -29,7 +29,7 @@ pub mod theme;
 
 pub use combo_box::MacComboBox;
 pub use leading_icon::MacLeadingIcon;
-pub use menu::MenuItem;
+pub use menu::{MenuItem, context_menu};
 pub use pop_up_button::MacPopUpButton;
 pub use push_button::MacPushButton;
 pub use segmented_nav::MacSegmentedNav;

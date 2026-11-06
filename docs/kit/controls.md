@@ -99,6 +99,10 @@ on its window with `on_track`. In a normal window the menu finds its parent wind
 layer window, pass the surface's namespace with `.layer(ns)`. For a few options that all fit,
 radios read better.
 
+`macform::context_menu(id, items, |index| …)` opens the same menu at the pointer, its top-left
+corner there (flipped or slid to stay on screen), over the current normal window. Call it from a
+right click (`on_click` with `Button::Right`). A second right click while it's open closes it.
+
 ## Control sizes
 
 `control_size` has the macOS 27 kit's five sizes, Mini, Small, Medium, Large and XL. The switch,
