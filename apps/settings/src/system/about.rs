@@ -323,6 +323,16 @@ fn advanced() -> Column {
     )])
 }
 
+/// The page's sub-pages: Advanced.
+pub fn sub(name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
+    (name == "advanced").then(|| {
+        (
+            String::from("Configuration"),
+            Box::new(advanced()) as Box<dyn amane::Widget>,
+        )
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::generation_text;
@@ -336,14 +346,4 @@ mod tests {
         );
         assert_eq!(generation_text(None, None), None);
     }
-}
-
-/// The page's sub-pages: Advanced.
-pub fn sub(name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
-    (name == "advanced").then(|| {
-        (
-            String::from("Configuration"),
-            Box::new(advanced()) as Box<dyn amane::Widget>,
-        )
-    })
 }

@@ -178,8 +178,8 @@ fn interleave(frame: &ffmpeg::frame::Audio, out: &mut Vec<u8>) {
         }
         Sample::I16(Type::Packed) => {
             let data = frame.data(0);
-            for pair in data[..count * channels * 2].chunks_exact(2) {
-                let sample = f32::from(i16::from_le_bytes([pair[0], pair[1]])) / 32768.0;
+            for pair in data[..count * channels * 2].as_chunks::<2>().0 {
+                let sample = f32::from(i16::from_le_bytes(*pair)) / 32768.0;
                 out.extend(sample.to_le_bytes());
             }
         }

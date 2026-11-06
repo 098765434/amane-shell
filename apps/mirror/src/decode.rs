@@ -93,7 +93,9 @@ impl Decoder {
         })
     }
 
-    /// Decodes one packet, handing each frame it finishes to `show`.
+    /// Decodes one packet, handing each frame it finishes to `show`, as
+    /// NV12. Only the decoding test uses it; the app uses `decode_frames`.
+    #[cfg(test)]
     pub fn decode(
         &mut self,
         data: &[u8],

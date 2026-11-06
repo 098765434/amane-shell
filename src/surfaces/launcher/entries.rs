@@ -38,8 +38,9 @@ pub(super) enum Preview {
 /// click on its chip.
 #[derive(Clone, Debug, PartialEq)]
 pub(super) enum Scope {
-    /// An app: its own actions.
-    App(DesktopApp),
+    /// An app: its own actions. Boxed, as an app is much bigger than the
+    /// others.
+    App(Box<DesktopApp>),
     /// A folder: the files in it.
     Folder(PathBuf),
     /// A kind of file, like PDFs.
@@ -182,7 +183,7 @@ impl Entry {
             entry = entry.subtitle(truncate(description, DESCRIPTION_CHARS));
         }
         if !app.actions().is_empty() {
-            entry = entry.scope(Scope::App(app.clone()));
+            entry = entry.scope(Scope::App(Box::new(app.clone())));
         }
         entry
     }

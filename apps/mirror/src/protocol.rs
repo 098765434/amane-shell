@@ -92,9 +92,11 @@ pub const ACTION_UP: u8 = 1;
 pub const ACTION_MOVE: u8 = 2;
 
 pub const KEYCODE_HOME: u32 = 3;
+#[allow(dead_code, reason = "part of the protocol, not sent yet")]
 pub const KEYCODE_BACK: u32 = 4;
 pub const KEYCODE_VOLUME_UP: u32 = 24;
 pub const KEYCODE_VOLUME_DOWN: u32 = 25;
+#[allow(dead_code, reason = "part of the protocol, not sent yet")]
 pub const KEYCODE_POWER: u32 = 26;
 pub const KEYCODE_APP_SWITCH: u32 = 187;
 
@@ -126,6 +128,10 @@ impl Position {
 
 /// What the computer sends the phone, on the control socket.
 #[derive(Debug, Clone, PartialEq)]
+#[allow(
+    dead_code,
+    reason = "the whole control protocol; some messages aren't sent yet"
+)]
 pub enum Control {
     Key {
         action: u8,

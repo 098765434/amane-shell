@@ -47,8 +47,10 @@ impl Recording {
                     return failed(format!("The microphone stopped: {error}"));
                 }
                 let pcm: Vec<f32> = bytes
-                    .chunks_exact(4)
-                    .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .map(|b| f32::from_le_bytes(*b))
                     .collect();
                 let loudness = rms(&pcm);
                 heard(pcm, loudness);
@@ -88,12 +90,16 @@ fn fake(
         Err(error) => return failed(format!("{}: {error}", path.to_string_lossy())),
     };
     let samples: Vec<f32> = bytes
-        .chunks_exact(4)
-        .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .map(|b| f32::from_le_bytes(*b))
         .collect();
     let mut pieces = samples.chunks(PIECE);
     while running.load(Ordering::SeqCst) {
-        let pcm = pieces.next().map_or_else(|| vec![0.0; PIECE], <[f32]>::to_vec);
+        let pcm = pieces
+            .next()
+            .map_or_else(|| vec![0.0; PIECE], <[f32]>::to_vec);
         let loudness = rms(&pcm);
         heard(pcm, loudness);
         std::thread::sleep(std::time::Duration::from_millis(100));

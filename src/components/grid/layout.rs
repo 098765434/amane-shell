@@ -177,6 +177,8 @@ impl<K: GridKey> Layout<K> {
 
     /// This layout with `id` moved so its top-left is `at`, the items in
     /// its way swapped or pushed aside; `None` when that can't be done.
+    /// Only the tests move an item without resizing it.
+    #[cfg(test)]
     pub fn moved(&self, id: K, at: Place) -> Option<Self> {
         let rect = self.rect_of(id)?;
         self.settled(id, Rect::new(at, rect.span), Some(rect))
@@ -184,7 +186,7 @@ impl<K: GridKey> Layout<K> {
 
     /// This layout with `id` at `at`, `span` big (or the nearest size it
     /// comes in), the items in its way swapped or pushed aside as
-    /// [`moved`](Self::moved) does: a hidden item put on the canvas by
+    /// moving one does: a hidden item put on the canvas by
     /// hand, or one on it moved. `None` when that can't be done.
     pub fn placed_at(&self, id: K, span: Span, at: Place) -> Option<Self> {
         self.span_of(id)?;

@@ -113,13 +113,17 @@ pub fn entry_for(app_id: &str) -> Option<DesktopApp> {
     apps.list().get(index).cloned()
 }
 
+// the list an index was made from (its address and length), and each name to
+// the position of the first app in it that has the name
+type NameIndex = ((usize, usize), HashMap<String, usize>);
+
 thread_local! {
     /*
      * each app's names (icon, name, executable) lowercased, to the first
      * app in the list that has it, for the list it was made from: the dock
      * and the notifications look an app up for every icon on every frame
      */
-    static INDEX: RefCell<Option<((usize, usize), HashMap<String, usize>)>> =
+    static INDEX: RefCell<Option<NameIndex>> =
         const { RefCell::new(None) };
 }
 

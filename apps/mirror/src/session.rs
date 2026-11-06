@@ -186,10 +186,7 @@ fn read_device(mut socket: TcpStream) {
     let mut pending: Vec<u8> = Vec::new();
     let mut buffer = [0u8; 4096];
 
-    loop {
-        let Ok(read) = socket.read(&mut buffer) else {
-            break;
-        };
+    while let Ok(read) = socket.read(&mut buffer) {
         if read == 0 {
             break;
         }
