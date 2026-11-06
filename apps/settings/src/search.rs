@@ -415,6 +415,30 @@ pub const INDEX: &[Entry] = &[
         "settings.drop.s3.bucket.row",
         &["aws", "r2", "minio", "upload", "bucket"],
     ),
+    // Passwords
+    page(
+        "passwords",
+        "Passwords",
+        &["bitwarden", "vaultwarden", "rbw", "autofill", "fill", "vault", "login", "keychain"],
+    ),
+    row(
+        "passwords",
+        "Server",
+        "settings.passwords.server.row",
+        &["vaultwarden", "self-hosted", "url", "account"],
+    ),
+    row(
+        "passwords",
+        "Lock after",
+        "settings.passwords.lock-after.row",
+        &["auto-lock", "timeout", "lock"],
+    ),
+    row(
+        "passwords",
+        "Fill passwords in apps",
+        "settings.passwords.fill",
+        &["autofill", "input method", "password field"],
+    ),
     // About
     page("about-shell", "About Shell Settings", &["version"]),
     page(
@@ -514,6 +538,7 @@ fn where_is(place: &str) -> String {
         ("quick-settings", "Quick Settings"),
         ("spotlight", "Spotlight"),
         ("drop", "Drop"),
+        ("passwords", "Passwords"),
         ("about-shell", "About"),
         ("about", "About This Computer"),
         ("general", "General"),
@@ -681,6 +706,7 @@ mod tests {
             "quick-settings",
             "spotlight",
             "drop",
+            "passwords",
             "about-shell",
             "about",
             "general",

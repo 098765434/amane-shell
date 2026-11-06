@@ -29,6 +29,10 @@ chrono = "0.4"
 # statvfs, for how full the disks are (already in the lock, through amane)
 libc = "0.2"
 qrcode = { version = "0.14", default-features = false }
+# passwords: wiped from every buffer they pass through
+zeroize = "1.9"
+# rbw's pinentry: the wire format and peer checks the shell shares with it
+amane-pinentry = { path = "apps/pinentry" }
 
 [profile.dev]
 debug = "line-tables-only"
@@ -39,7 +43,7 @@ debug = false
 incremental = false
 
 [workspace]
-members = ["kit", "apps/settings", "apps/messages", "apps/mirror", "apps/shader-lab", "apps/assistant", "apps/drop", "apps/train-watch"]
+members = ["kit", "apps/pinentry", "apps/settings", "apps/messages", "apps/mirror", "apps/shader-lab", "apps/assistant", "apps/drop", "apps/train-watch"]
 
 [workspace.dependencies]
 # amane is consumed as a pinned git-dependency on the maintained fork (not a

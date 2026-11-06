@@ -187,6 +187,20 @@ changes (`clipboard.enabled` in `launcher.json`, or Shell Settings' Spotlight pa
 To open it from a key, bind `launcher toggle clipboard` in place of another history's picker
 ([ipc.md](../integration/ipc.md#niri-keybinds)).
 
+## Passwords
+
+Bitwarden's logins, through rbw ([passwords.md](passwords.md)). Type `pw ` and a name in the
+pill, or open the mode with `launcher open passwords`; it has no button.
+
+- **Enter** fills the password into the window behind the launcher, through niri's checked
+  fill, once that window has the keyboard back.
+- **The best match** also offers Fill username, Fill two-factor code and Copy password.
+- **Copy**, and a window that can't be filled, put the password on the clipboard instead.
+  It's marked `x-kde-passwordManagerHint` and cleared after 30 seconds.
+- **Locked**, the one row unlocks.
+- **Not remembered:** what was searched and which entry was picked aren't kept with the
+  launcher's usage.
+
 ## Using it
 
 | Do | What happens |

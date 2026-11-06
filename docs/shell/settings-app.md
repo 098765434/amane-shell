@@ -176,6 +176,23 @@ or once they lose the keys. A password field empties once its text is kept in th
 **Forget**. Where no keyring answers, the S3 group's note says secrets are in
 `~/.config/amane-drop/secrets.json`, readable only by the user.
 
+### Passwords
+
+Bitwarden, through rbw ([passwords.md](passwords.md)). The page reads the vault's state from the
+shell's `passwords status` every two seconds, and runs every command through the shell, so an
+unlock is always the shell's own, and its dialog asks.
+
+- **Bitwarden:** locked or not, how many logins, and Unlock…, Lock, Sync or Sign In…;
+  Register… when the server asks for it.
+- **Account:** the server and email; Save points rbw's pinentry at the shell. Changing the
+  account removes the old one's copy of the vault, after asking.
+- **Security:** lock after 5–60 minutes, and lock with the screen.
+- **Fill:**
+  - the toggles: fill in apps, username fields, Spotlight, and hiding while sharing;
+  - a warning when another input method holds the seat, or niri can't fill safely.
+- **Remembered for apps:** each entry linked to an app, by desktop id and package, with ×. The
+  apps never offered fill are listed too.
+
 ### About
 
 The app's card (its icon, name and version), and **Settings files ›**: a sub-page with each

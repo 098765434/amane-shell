@@ -416,6 +416,7 @@ impl<'a> View<'a> {
             Mode::Clipboard if settings.clipboard.enabled => Kind::Results,
             Mode::Clipboard => Kind::Ask,
             Mode::Files => Kind::Results,
+            Mode::Vault => Kind::Results,
         };
 
         let buckets = model::active_buckets(
@@ -646,7 +647,7 @@ fn hidden() {
 /// `amane-shell` IPC: `launcher [toggle | open | close] [mode]`.
 pub fn ipc(args: &[String]) -> String {
     const USAGE: &str =
-        "usage: launcher [toggle | open | close] [apps | files | actions | clipboard]";
+        "usage: launcher [toggle | open | close] [apps | files | actions | clipboard | passwords]";
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     let (verb, mode) = match args.as_slice() {
         [] => ("toggle", None),

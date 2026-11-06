@@ -71,9 +71,9 @@ fn dialog(request: &AuthRequest) -> Dialog {
         Polkit::cancel(id);
     };
     let answer = move || {
-        let typed = TextInput::text(FIELD);
-        TextInput::set_text(FIELD, "");
-        Polkit::answer(id, typed);
+        // taken out, so the field holds no copy; polkit's own call takes a plain String
+        let typed = TextInput::take_secret(FIELD);
+        Polkit::answer(id, String::from(typed.as_str()));
     };
 
     let (placeholder, secret) = match request.prompt() {

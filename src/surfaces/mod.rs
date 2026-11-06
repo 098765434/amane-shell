@@ -7,6 +7,7 @@
 pub mod alert;
 pub mod context_menu;
 pub mod dock;
+pub mod fill;
 pub mod launcher;
 pub mod notifications;
 pub mod osd;

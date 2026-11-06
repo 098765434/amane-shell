@@ -12,7 +12,9 @@ use amane::App;
 
 use components::tooltip;
 use surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
-use surfaces::{alert, dock, launcher, notifications, osd, quick_settings, status_bar, widgets};
+use surfaces::{
+    alert, dock, fill, launcher, notifications, osd, quick_settings, status_bar, widgets,
+};
 
 /// `amane-shell tokens …` runs a token tool and exits instead of the shell.
 fn cli(args: &[String]) -> Option<ExitCode> {
@@ -76,11 +78,27 @@ fn alert_test(args: &[String]) -> String {
     String::from("ok")
 }
 
+/// No core dumps of this process: it holds a password for a moment while filling a field.
+fn no_core_dumps() {
+    let none = libc::rlimit {
+        rlim_cur: 0,
+        rlim_max: 0,
+    };
+    // SAFETY: setrlimit only reads the struct given
+    unsafe {
+        libc::setrlimit(libc::RLIMIT_CORE, &none);
+    }
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if let Some(code) = cli(&args) {
         return code;
     }
+
+    // no core dump of the shell, which passes passwords on their way into a field; rbw and
+    // its agent are started with none too
+    no_core_dumps();
 
     // the shell answers BlueZ's pairing questions, and warns of a device running low
     amane::Bluetooth::serve_agent();
@@ -93,6 +111,8 @@ fn main() -> ExitCode {
     services::power::power_refresh::watch();
     // and keeps the screen's brightness in HDR, which niri only holds until a reload
     services::display::hdr_white::watch();
+    // and rbw's pinentry: the master password asked in the shell's own dialog
+    services::vault::pinentry::serve();
 
     let share = ContextMenu::new()
         .item(
@@ -191,6 +211,11 @@ fn main() -> ExitCode {
     app = app.popup(tooltip::popup);
     app = app.popup(status_bar::activity_popup);
 
+    // the seat's input method, for password fill in other apps; Shell Settings turns it off
+    if amane_kit::settings::passwords().fill_in_apps {
+        app = app.input_method(fill::popup);
+    }
+
     app.ipc("arm", |args| {
         // Expand the anchor fullscreen so the next right-click captures a
         // fresh input serial and opens the menu with a working grab.
@@ -235,6 +260,8 @@ fn main() -> ExitCode {
     // a sample alert for trying it out, in debug builds:
     // `printf 'alert-test\nstacked\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("alert-test", alert_test)
+    // a niri keybind: `printf 'passwords\nsuggest\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    .ipc("passwords", fill::ipc)
     .ipc("close", |_| {
         context_menu::close();
         String::from("ok")

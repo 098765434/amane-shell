@@ -2,7 +2,7 @@
 //! of thing, picked from the round buttons beside it, Ctrl+1 … 4 or IPC
 //! (`launcher open files`).
 
-use crate::components::icons::{ICON_APPS, ICON_CONTENT_PASTE, ICON_FOLDER, ICON_LAYERS};
+use crate::components::icons::{ICON_APPS, ICON_CONTENT_PASTE, ICON_FOLDER, ICON_LAYERS, ICON_LOCK};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum Mode {
@@ -13,6 +13,8 @@ pub(super) enum Mode {
     Files,
     Actions,
     Clipboard,
+    /// Bitwarden's entries (`pw ` in the pill, or `launcher open passwords`); no button.
+    Vault,
 }
 
 impl Mode {
@@ -25,6 +27,7 @@ impl Mode {
             Self::Files => ICON_FOLDER,
             Self::Actions => ICON_LAYERS,
             Self::Clipboard => ICON_CONTENT_PASTE,
+            Self::Vault => ICON_LOCK,
         }
     }
 
@@ -36,6 +39,7 @@ impl Mode {
             Self::Files => "Files",
             Self::Actions => "Actions",
             Self::Clipboard => "Clipboard",
+            Self::Vault => "Passwords",
         }
     }
 
@@ -61,6 +65,7 @@ impl Mode {
             "files" => Some(Self::Files),
             "actions" => Some(Self::Actions),
             "clipboard" => Some(Self::Clipboard),
+            "passwords" | "vault" => Some(Self::Vault),
             _ => None,
         }
     }

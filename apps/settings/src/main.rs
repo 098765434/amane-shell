@@ -9,6 +9,7 @@ mod displays;
 mod dock;
 mod drop;
 mod launcher;
+mod passwords;
 mod previews;
 mod quick_settings;
 mod search;
@@ -178,16 +179,17 @@ const DOCK: usize = 5;
 const QUICK_SETTINGS: usize = 6;
 const SPOTLIGHT: usize = 7;
 const DROP: usize = 8;
-const ABOUT_SHELL: usize = 9;
-const SYS_ABOUT: usize = 11;
-const SYS_GENERAL: usize = 12;
-const SYS_APPS: usize = 13;
-const SYS_DEFAULTS: usize = 14;
-const SYS_SERVICES: usize = 15;
-const SYS_POWER: usize = 16;
-const SYS_STORAGE: usize = 17;
-const SYS_HISTORY: usize = 18;
-const SYS_UPDATE: usize = 19;
+const PASSWORDS: usize = 9;
+const ABOUT_SHELL: usize = 10;
+const SYS_ABOUT: usize = 12;
+const SYS_GENERAL: usize = 13;
+const SYS_APPS: usize = 14;
+const SYS_DEFAULTS: usize = 15;
+const SYS_SERVICES: usize = 16;
+const SYS_POWER: usize = 17;
+const SYS_STORAGE: usize = 18;
+const SYS_HISTORY: usize = 19;
+const SYS_UPDATE: usize = 20;
 
 /// The page `--page <name>` opens: the sidebar's names, lowercased, or a
 /// System page's short name.
@@ -201,6 +203,7 @@ pub fn page_named(name: &str) -> Option<usize> {
         "quick-settings" => QUICK_SETTINGS,
         "spotlight" | "launcher" => SPOTLIGHT,
         "drop" | "amane-drop" => DROP,
+        "passwords" | "bitwarden" => PASSWORDS,
         "about-shell" => ABOUT_SHELL,
         "about" | "system" | "computer" => SYS_ABOUT,
         "general" => SYS_GENERAL,
@@ -303,7 +306,7 @@ fn main() {
         .run();
 }
 
-fn pages() -> [Page; 20] {
+fn pages() -> [Page; 21] {
     [
         Page::section("Shell"),
         Page::new(ICON_DARK_MODE, "Appearance").accent(Accent::Blue),
@@ -314,6 +317,7 @@ fn pages() -> [Page; 20] {
         Page::new(ICON_TUNE, "Quick Settings").accent(Accent::Gray),
         Page::new(ICON_SEARCH, "Spotlight").accent(Accent::Purple),
         Page::new(ICON_TRAY, "Drop").accent(Accent::Orange),
+        Page::new(ICON_LOCK, "Passwords").accent(Accent::Gray),
         Page::new(ICON_COMPUTER, "About").accent(Accent::Gray),
         Page::section("System"),
         Page::new(ICON_INFO, "About This Computer").accent(Accent::Gray),
@@ -451,6 +455,11 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
                     boxed(launcher::page()),
                 ),
                 DROP => ("Drop", "settings.scroll.drop", boxed(drop::page())),
+                PASSWORDS => (
+                    "Passwords",
+                    "settings.scroll.passwords",
+                    boxed(passwords::page()),
+                ),
                 SYS_ABOUT => (
                     "About This Computer",
                     "settings.scroll.system-about",

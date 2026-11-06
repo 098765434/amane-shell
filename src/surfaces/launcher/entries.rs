@@ -88,6 +88,9 @@ pub(super) enum Action {
     Copy(String),
     /// One of the launcher's actions, with what it asked for.
     Run(Rc<dyn Fn()>),
+    /// Runs while the launcher still has the keyboard, then closes it: a copy, which the
+    /// compositor takes only from the focused client. Its use isn't remembered.
+    RunFirst(Rc<dyn Fn()>),
     /// An action that asks for something first: narrows the search to it.
     Ask(Scope),
     /// A row that only says something, like what to type.
@@ -185,6 +188,9 @@ impl Entry {
     }
 }
 
+/// What a password row's key starts with; their use isn't remembered.
+pub(super) const VAULT_KEY: &str = "vault:";
+
 /// How much of an app's description its row shows.
 const DESCRIPTION_CHARS: usize = 64;
 
@@ -208,9 +214,17 @@ pub(super) fn run(entry: &Entry, query: &str) {
             clipboard_history::put_back(clip, true);
             return;
         }
+        Action::RunFirst(run) => {
+            run();
+            close();
+            return;
+        }
         _ => {}
     }
-    usage::record(&entry.key, query);
+    // what was searched for a password, and which entry, isn't kept with the launcher's usage
+    if !entry.key.starts_with(VAULT_KEY) {
+        usage::record(&entry.key, query);
+    }
     close();
     match &entry.action {
         Action::Launch(app) => app.launch(),
@@ -223,7 +237,7 @@ pub(super) fn run(entry: &Entry, query: &str) {
         Action::Copy(value) => text_edit::copy(value),
         Action::Run(run) => run(),
         Action::OpenFile(path) => file_search::open(path),
-        Action::Ask(_) | Action::Hint | Action::Paste(_) => {}
+        Action::Ask(_) | Action::Hint | Action::Paste(_) | Action::RunFirst(_) => {}
     }
 }
 

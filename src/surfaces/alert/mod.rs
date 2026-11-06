@@ -10,6 +10,7 @@
 pub mod bluetooth;
 pub mod phone;
 pub mod polkit;
+pub mod vault_unlock;
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -82,6 +83,7 @@ pub fn surface() -> LayerWindow {
     bluetooth::sync();
     phone::sync();
     polkit::sync();
+    vault_unlock::sync();
     Alert::watch();
     let open = OPEN.get();
     let unfolded = unfold(open);

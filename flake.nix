@@ -113,6 +113,13 @@
 
       # The system GPU driver dir goes first so wgpu's Vulkan loader finds the
       # system ICDs and the driver's own libwayland.
+      # Passwords: the rbw the shell runs and the pinentry amane-pinentry falls back to, by
+      # store path, so no PATH can put another program in their place.
+      vaultEnvFor = pkgs: {
+        AMANE_RBW = "${pkgs.rbw}/bin/rbw";
+        AMANE_PINENTRY_FALLBACK = "${pkgs.pinentry-gnome3}/bin/pinentry-gnome3";
+      };
+
       ldLibraryPath = pkgs: "/run/opengl-driver/lib:${lib.makeLibraryPath (runtimeLibsFor pkgs)}";
 
       # Without VK_ICD_FILENAMES, point the Vulkan loader at the system's
@@ -236,7 +243,7 @@
               license = lib.licenses.mit;
               platforms = lib.platforms.linux;
             };
-          } // scrcpyEnvFor pkgs // cactusEnvFor pkgs);
+          } // scrcpyEnvFor pkgs // cactusEnvFor pkgs // vaultEnvFor pkgs);
         in
         {
           default = amane-shell;
@@ -267,7 +274,7 @@
               export LD_LIBRARY_PATH="${ldLibraryPath pkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
               ${vulkanIcdFallback}
             '';
-          } // scrcpyEnvFor pkgs // cactusEnvFor pkgs);
+          } // scrcpyEnvFor pkgs // cactusEnvFor pkgs // vaultEnvFor pkgs);
         }
       );
 

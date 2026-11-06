@@ -41,6 +41,11 @@
 //! - [`launcher::file_search`] — files by name and content for the launcher's
 //!   Files (LocalSearch's index, or `fd`).
 //!
+//! Passwords (`vault/`):
+//!
+//! - [`vault`] — Bitwarden through rbw: locked or not, its entries without their
+//!   secrets, the shell's pinentry, and which app owns a field (`docs/shell/passwords.md`).
+//!
 //! Shared helpers: [`state_file`] and [`save_state`] (`state.rs`), and
 //! [`run`], [`run_now`], [`installed`] and [`Latest`] (`process.rs`).
 //!
@@ -55,6 +60,7 @@ pub mod launcher;
 pub mod network;
 pub mod power;
 pub mod status_apps;
+pub mod vault;
 
 mod process;
 mod state;

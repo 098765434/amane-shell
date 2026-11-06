@@ -54,6 +54,7 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | Drop | `amane-drop`, a Dropzone-style status app: a grid of folders, apps and actions, and a Drop Bar | [shell/drop.md](shell/drop.md) |
 | Dock | every workspace's windows and pins, rising from the bottom edge and with the overview | [shell/dock.md](shell/dock.md) |
 | Launcher | macOS Tahoe's Spotlight: search, Applications, Files, Actions, Clipboard | [shell/launcher.md](shell/launcher.md) |
+| Passwords | Bitwarden (rbw) fill: a popup by any app's password field, checked by niri; Spotlight's Passwords mode | [shell/passwords.md](shell/passwords.md) |
 | Assistant | system commands typed or spoken in Spotlight, read on this machine by Cactus (Needle 3, Whistle) in the `amane-assistant` daemon | [shell/assistant.md](shell/assistant.md) |
 | Notifications | the notification daemon's toasts, the notification center and Do Not Disturb | [shell/notifications.md](shell/notifications.md) |
 | Quick Settings | GNOME's quick settings in the macOS Control Center look, with Edit Controls | [shell/quick-settings.md](shell/quick-settings.md) |

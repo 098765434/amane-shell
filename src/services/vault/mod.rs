@@ -1,0 +1,411 @@
+//! Bitwarden, through rbw: whether the vault is locked, its entries without their secrets, and
+//! the commands Shell Settings and the fill popup run. See `docs/shell/passwords.md`.
+//!
+//! - [`rbw`]: the rbw commands, by store path, with no secret in an argument.
+//! - [`secret`]: a password or code on its way into a field, wiped when dropped.
+//! - [`pinentry`]: the shell's end of amane-pinentry, the master password in the shell's
+//!   own dialog, only for an unlock the shell started.
+//! - [`identity`] and [`matching`]: which app owns a field, checked, and its entries.
+//!
+//! The entries are kept only while unlocked, in memory, and never with a password; a
+//! password is fetched from rbw when it's filled, and dropped right after.
+
+pub mod deliver;
+pub mod identity;
+pub mod matching;
+pub mod pinentry;
+pub mod rbw;
+pub mod secret;
+
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::{Arc, Condvar, Mutex, PoisonError};
+use std::thread;
+use std::time::{Duration, SystemTime};
+
+use amane::{Argument, Bus, FieldOwner, Service};
+
+pub use identity::Identity;
+pub use rbw::{Entry, Error, Status};
+
+// how often the vault's state is looked at while nothing asks
+const LOOK_EVERY: Duration = Duration::from_secs(15);
+
+const LOGIND: &str = "org.freedesktop.login1";
+const MANAGER_PATH: &str = "/org/freedesktop/login1";
+const MANAGER: &str = "org.freedesktop.login1.Manager";
+const SESSION_PATH: &str = "/org/freedesktop/login1/session/auto";
+const SESSION: &str = "org.freedesktop.login1.Session";
+
+/// What the vault is busy with.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Busy {
+    Unlocking,
+    SigningIn,
+    Registering,
+    Syncing,
+    Locking,
+    Saving,
+}
+
+#[derive(Default)]
+pub struct Vault {
+    status: Status,
+    entries: Arc<Vec<Entry>>,
+    busy: Option<Busy>,
+    error: Option<Error>,
+    synced: Option<SystemTime>,
+    config: Option<rbw::Config>,
+}
+
+// a nudge for the watcher to look again at once
+static LOOK: (Mutex<bool>, Condvar) = (Mutex::new(false), Condvar::new());
+
+impl Service for Vault {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn listen() {
+        thread::spawn(watch_lock);
+
+        loop {
+            look();
+
+            let (asked, nudge) = &LOOK;
+            let asked = asked.lock().unwrap_or_else(PoisonError::into_inner);
+            let (mut asked, _) = nudge
+                .wait_timeout_while(asked, LOOK_EVERY, |asked| !*asked)
+                .unwrap_or_else(PoisonError::into_inner);
+            *asked = false;
+        }
+    }
+}
+
+impl Vault {
+    pub fn status(&self) -> Status {
+        self.status
+    }
+
+    pub fn entries(&self) -> Arc<Vec<Entry>> {
+        self.entries.clone()
+    }
+
+    pub fn busy(&self) -> Option<Busy> {
+        self.busy
+    }
+
+    /// What went wrong with the last command, until the next one.
+    pub fn error(&self) -> Option<Error> {
+        self.error
+    }
+
+    /// When the entries were last read from an unlocked vault.
+    pub fn synced(&self) -> Option<SystemTime> {
+        self.synced
+    }
+
+    /// rbw's settings: the server, the email and the auto-lock time.
+    pub fn config(&self) -> Option<&rbw::Config> {
+        self.config.as_ref()
+    }
+
+    /// Looks at the vault again now, as after the popup opens.
+    pub fn look_now() {
+        let (asked, nudge) = &LOOK;
+        *asked.lock().unwrap_or_else(PoisonError::into_inner) = true;
+        nudge.notify_one();
+    }
+
+    /// Unlocks: the shell's dialog asks for the master password.
+    pub fn unlock() {
+        command(Busy::Unlocking, true, rbw::unlock);
+    }
+
+    /// Signs in to the server set, then unlocks.
+    pub fn sign_in() {
+        command(Busy::SigningIn, true, rbw::login);
+    }
+
+    /// Registers this device with the server, which bitwarden.com asks for; the dialog asks
+    /// for the account's API key.
+    pub fn register() {
+        command(Busy::Registering, true, rbw::register);
+    }
+
+    /// Fetches the vault from the server again.
+    pub fn sync() {
+        command(Busy::Syncing, true, rbw::sync);
+    }
+
+    pub fn lock() {
+        command(Busy::Locking, false, rbw::lock);
+    }
+
+    /*
+     * sets the server and email; a change of either stops the agent, and with `forget` also
+     * removes the old server's copy of the vault
+     */
+    pub fn configure(server: String, email: String, forget: bool) {
+        command(Busy::Saving, false, move || {
+            let current = rbw::config().unwrap_or_default();
+
+            let changed = current.base_url != server || current.email != email;
+
+            if changed {
+                rbw::stop_agent().ok();
+
+                if forget {
+                    rbw::purge().ok();
+                }
+            }
+
+            rbw::config_set("base_url", &server)?;
+            rbw::config_set("email", &email)?;
+
+            // the shell's pinentry, from the system profile, so a rebuild doesn't break it
+            rbw::config_set("pinentry", &pinentry_path())
+        });
+    }
+
+    /// How long the vault stays unlocked while unused, in seconds.
+    pub fn set_lock_timeout(seconds: u64) {
+        let seconds = seconds.clamp(60, 3600);
+
+        command(Busy::Saving, false, move || {
+            rbw::config_set("lock_timeout", &seconds.to_string())?;
+
+            // the agent reads it when it starts
+            rbw::stop_agent()
+        });
+    }
+}
+
+/*
+ * the pinentry rbw is told to run: the one in the profile the shell is installed in (home
+ * manager's per-user profile, or the system's), a path that stays when the shell is rebuilt.
+ * A shell run from a checkout uses the pinentry built beside it
+ */
+pub fn pinentry_path() -> String {
+    let user = std::env::var("USER").unwrap_or_default();
+    let home = std::env::var("HOME").unwrap_or_default();
+
+    let profiles = [
+        format!("/etc/profiles/per-user/{user}/bin/amane-pinentry"),
+        format!("{home}/.nix-profile/bin/amane-pinentry"),
+        String::from("/run/current-system/sw/bin/amane-pinentry"),
+    ];
+
+    if let Some(found) = profiles
+        .into_iter()
+        .find(|path| !user.is_empty() && std::path::Path::new(path).exists())
+    {
+        return found;
+    }
+
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| Some(exe.parent()?.join("amane-pinentry")))
+        .filter(|path| path.exists())
+        .map(|path| path.to_string_lossy().into_owned())
+        .unwrap_or_else(|| String::from("amane-pinentry"))
+}
+
+// a command on a thread of its own, then a fresh look
+fn command(busy: Busy, asks: bool, run: impl FnOnce() -> Result<(), Error> + Send + 'static) {
+    {
+        let mut vault = Vault::write();
+
+        if vault.busy.is_some() {
+            return;
+        }
+
+        vault.busy = Some(busy);
+        vault.error = None;
+    }
+
+    thread::spawn(move || {
+        if asks {
+            pinentry::expect();
+        }
+
+        let result = run();
+
+        // the dialog may come up for this command only, not for what asks after it
+        if asks {
+            pinentry::done_expecting();
+        }
+
+        {
+            let mut vault = Vault::write();
+            vault.busy = None;
+            vault.error = result.err();
+        }
+
+        look();
+    });
+}
+
+// reads the vault's state, and its entries once it's unlocked
+fn look() {
+    let status = rbw::status();
+    let config = rbw::config();
+
+    let (was, had) = {
+        let vault = Vault::read();
+        (vault.status, !vault.entries.is_empty())
+    };
+
+    let entries = match status {
+        Status::Unlocked if was != Status::Unlocked || !had => rbw::list().ok().map(Arc::new),
+        Status::Unlocked => None,
+        _ => Some(Arc::new(Vec::new())),
+    };
+
+    let mut vault = Vault::write();
+
+    let changed = vault.status != status || vault.config != config || entries.is_some();
+
+    vault.status = status;
+    vault.config = config;
+
+    if let Some(entries) = entries {
+        if status == Status::Unlocked {
+            vault.synced = Some(SystemTime::now());
+        }
+
+        vault.entries = entries;
+    }
+
+    if !changed {
+        vault.quiet();
+    }
+}
+
+/// Locks the vault now, as when the screen locks.
+pub fn lock_now() {
+    if rbw::lock().is_ok() {
+        look();
+    }
+}
+
+// the vault locks with the screen and before the computer sleeps, when asked to
+fn watch_lock() {
+    let bus = Bus::system();
+
+    let id = bus.property(LOGIND, SESSION_PATH, SESSION, "Id");
+    let session = if id.text().is_empty() {
+        String::new()
+    } else {
+        bus.call(
+            LOGIND,
+            MANAGER_PATH,
+            MANAGER,
+            "GetSession",
+            &[Argument::from(id.text())],
+        )
+        .text()
+        .to_string()
+    };
+
+    let sleeps = thread::spawn(|| {
+        for signal in Bus::system().signals(MANAGER, "PrepareForSleep") {
+            let going = signal.arguments().first().is_some_and(|value| value.bool());
+
+            if going && wants_lock() {
+                lock_now();
+            }
+        }
+    });
+
+    if !session.is_empty() {
+        for signal in bus.signals(SESSION, "Lock") {
+            if signal.path() == session && wants_lock() {
+                lock_now();
+            }
+        }
+    }
+
+    let _ = sleeps.join();
+}
+
+fn wants_lock() -> bool {
+    amane_kit::settings::passwords().lock_with_screen
+}
+
+/// Which app owns each field seen, once checked; the check runs on a thread, as nix-store
+/// can take a moment the first time.
+#[derive(Default)]
+pub struct Identities {
+    known: HashMap<IdentityKey, (Identity, std::time::Instant)>,
+    checking: Vec<IdentityKey>,
+}
+
+// how long a check is believed: an app installed, removed or shadowed since is seen again
+const IDENTITY_FOR: Duration = Duration::from_secs(600);
+
+// the most owners kept, and checked at once
+const IDENTITIES: usize = 256;
+const CHECKING: usize = 8;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct IdentityKey {
+    exe: Option<PathBuf>,
+    app_id: String,
+    sandboxed: bool,
+}
+
+impl Service for Identities {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn listen() {}
+}
+
+impl Identities {
+    /// The owner's identity, once checked; asking starts the check.
+    pub fn of(owner: &FieldOwner) -> Option<Identity> {
+        let key = IdentityKey {
+            exe: owner.exe.clone(),
+            app_id: owner.app_id.clone(),
+            sandboxed: owner.sandboxed,
+        };
+
+        {
+            let identities = Identities::read();
+
+            if let Some((identity, at)) = identities.known.get(&key)
+                && at.elapsed() < IDENTITY_FOR
+            {
+                return Some(identity.clone());
+            }
+
+            // an app changing its id over and over gets no thread for each
+            if identities.checking.contains(&key) || identities.checking.len() >= CHECKING {
+                return None;
+            }
+        }
+
+        Identities::write().checking.push(key.clone());
+
+        let owner = owner.clone();
+        thread::spawn(move || {
+            let identity = identity::check(&owner);
+
+            let mut identities = Identities::write();
+            identities.checking.retain(|checking| *checking != key);
+
+            if identities.known.len() >= IDENTITIES {
+                identities.known.retain(|_, (_, at)| at.elapsed() < IDENTITY_FOR);
+            }
+            if identities.known.len() >= IDENTITIES {
+                identities.known.clear();
+            }
+
+            identities.known.insert(key, (identity, std::time::Instant::now()));
+        });
+
+        None
+    }
+}
