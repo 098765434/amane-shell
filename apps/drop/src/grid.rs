@@ -27,7 +27,7 @@ use amane_kit::icons::{
 use amane_kit::layout::{boxed, icon, text_width};
 use amane_kit::material::{self, FillLevel, Level, Material};
 use amane_kit::settings::{
-    DropTile, FolderMode, UploadTo, change_drop_grids, drop_grids, drop_sharing,
+    DropTile, FolderMode, UploadTo, change_drop_grids, drop_grids, drop_sharing, status_bar,
 };
 use amane_kit::tokens::{Styled, sys};
 
@@ -95,7 +95,7 @@ fn card_place(screen: (f32, f32), size: (f32, f32), x: Option<f32>, edge: BarEdg
     let margin = 8.0;
     let middle = x.unwrap_or(screen.0 - size.0 / 2.0 - margin);
     let left = (middle - size.0 / 2.0).clamp(margin, (screen.0 - size.0 - margin).max(margin));
-    let bar = sys::size::panel::height() + 6.0;
+    let bar = status_bar().size.height() + 6.0;
     let top = match edge {
         BarEdge::Top => bar,
         BarEdge::Bottom => (screen.1 - bar - size.1).max(margin),

@@ -77,9 +77,9 @@ backdrop readings in [`graphics/blur.md`](https://github.com/098765434/amane/blo
 
 | Service | What reads it |
 |---|---|
-| `Workspaces`, `Windows` | the bar's workspace pips, the dock, the widgets' monitor; window actions (focus, move, close) |
+| `Workspaces`, `Windows` | the bar's workspace shape, the dock, the widgets' monitor; window actions (focus, move, close) |
 | `Overview` | the dock rising with niri's overview, from its progress |
-| `Desktop`, `WorkspaceSwitch` | the widgets: frozen while the desktop is hidden, fading with a workspace switch |
+| `Desktop`, `WorkspaceSwitch` | the widgets: frozen while the desktop is hidden, fading with a workspace switch; the bar's workspace shape, morphing with it |
 | `Notifications` | toasts and the notification center; amane owns `org.freedesktop.Notifications` ([`system/notifications.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md)) |
 | `Audio` | the bar's volume, the Sound card and page ([`system/audio.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/audio.md)) |
 | `Network`, `Bluetooth` | the bar's icons, the Wi‑Fi and Bluetooth tiles and pages; `Bluetooth` also the pairing alert and the low-battery notices, and the shell serves its pairing agent |

@@ -1,11 +1,12 @@
 //! A status bar along the bottom (or top) edge, built on the Amane fork.
 //!
-//! Compact and ambient (matching the previous Waybar's size and palette):
-//! workspaces on the left and the status cluster on the right. The open
+//! Ambient, and one of three sizes ([`size`]): Compact (the previous
+//! Waybar's), Regular and Comfortable. The workspace's shape is on the left
+//! ([`workspace_shape`]) and the status cluster on the right. The open
 //! apps are the [`dock`](crate::surfaces::dock)'s, which rises over the
 //! bar from the bottom edge and while niri's overview is open.
 //!
-//! Every item is a lone glyph (or a workspace's pip) that turns into a white
+//! Every item is a lone glyph (or the workspace's shape) that turns into a white
 //! rounded tile with a black glyph while hovered, and stays one while what
 //! it opens is open. Everything is driven by the Penpot tokens in
 //! `design-tokens/tokens.json` via [`tokens`](crate::tokens).
@@ -22,7 +23,9 @@ mod apps;
 mod chips;
 mod drag;
 mod indicators;
+mod size;
 mod tray;
+mod workspace_shape;
 
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -48,7 +51,7 @@ use crate::components::icons::{
     ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
     battery_glyph, power_profile_glyph, wifi_glyph,
 };
-use crate::components::layout::{boxed, cursor, fixed_width, pad, text_width, track_cursor};
+use crate::components::layout::{boxed, cursor, pad, text_width, track_cursor};
 use crate::components::material::{self, Level, Material};
 use crate::components::panel::{self, Panel, is_open};
 use crate::components::slider;
@@ -67,6 +70,8 @@ pub(crate) use indicators::{Indicator, Item};
 
 pub use activities::popup as activity_popup;
 pub use indicators::{ipc, migrate};
+pub use size::{height, metrics};
+pub use workspace_shape::switch_position;
 
 /// The status bar's layer-surface namespace. The niri `layer-rule` matches
 /// this to frost its popups, and tooltips hang under it.
@@ -128,7 +133,8 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
         sections(&output)
     };
 
-    let height = sys::size::panel::height();
+    let metrics = metrics();
+    let height = metrics.height;
     let (width, _) = window_size();
 
     // how far it's slid past its edge: 0 in place, `height` gone
@@ -157,7 +163,7 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
         .height(Parent)
         .radius(bar::radius())
         .fill(fill(style))
-        .padding(pad(sys::space::inset::m(), bar::panel::padding_y()))
+        .padding(pad(sys::space::inset::m(), metrics.padding_y))
         .translate(0.0, offset);
     let panel = track_cursor(panel).child(sections);
     let (hovered, moved) = (output.clone(), output.clone());
@@ -277,20 +283,23 @@ fn fill(style: BarStyle) -> Color {
 
 // ───── left: workspaces ──────────────────────────────────────────────────────
 
-/// One pip per workspace on monitor `output`; scrolling over them moves
-/// between those.
+/// The one shape that says which of monitor `output`'s workspaces shows
+/// ([`workspace_shape`]); scrolling over it moves between them.
 fn workspaces(output: &str) -> Rectangle {
-    let pips: Vec<Box<dyn Widget>> = Workspaces::read()
-        .list()
-        .iter()
-        .filter(|workspace| on_output(workspace, output))
-        .map(|workspace| boxed(workspace_pip(workspace)))
-        .collect();
+    let width = metrics().item_width;
+    let indicator = {
+        let workspaces = Workspaces::read();
+        let here: Vec<&Workspace> = workspaces
+            .list()
+            .iter()
+            .filter(|workspace| on_output(workspace, output))
+            .collect();
+        workspace_shape::indicator(output, &here, width)
+    };
     let scrolled_on = output.to_string();
-    let pips = Row::new(pips).gap(sys::space::gap::_2xs()).align(Center);
 
     Rectangle::new()
-        .width(Size::Fixed(fixed_width(&pips)))
+        .width(Size::Fixed(width))
         .height(Parent)
         .fill(Color::TRANSPARENT)
         .align_child(Start, Center)
@@ -299,47 +308,7 @@ fn workspaces(output: &str) -> Rectangle {
                 scroll_workspaces(&scrolled_on, scroll);
             }
         })
-        .child(pips)
-}
-
-/// A dot, widened while its workspace is active or focused, in a bar item's
-/// hit area; a click focuses it.
-fn workspace_pip(workspace: &Workspace) -> Rectangle {
-    let id = workspace.id();
-    let lit = workspace.active() || workspace.focused();
-
-    let color = if workspace.urgent() {
-        sys::color::status::critical::bg()
-    } else if lit {
-        material::label(Level::Primary)
-    } else {
-        material::label(Level::Secondary)
-    };
-    let width = if lit {
-        bar::workspace_dot::active_size()
-    } else {
-        bar::workspace_dot::size()
-    };
-    let tip = workspace
-        .name()
-        .map(String::from)
-        .unwrap_or_else(|| format!("Workspace {}", workspace.index()));
-
-    item(DrawnButton::new(
-        format!("amane.bar.workspace.{id}"),
-        move |color| {
-            Rectangle::new()
-                .width(Size::Fixed(width))
-                .height(Size::Fixed(bar::workspace_dot::size()))
-                .radius(bar::workspace_dot::size() / 2.0)
-                .fill(color)
-        },
-    ))
-    .width(bar::indicator::width())
-    .color(color)
-    .on_press(move || Workspaces::focus(id))
-    .tooltip(BAR_NS, tip)
-    .build()
+        .child(indicator)
 }
 
 /// A wheel notch, or [`SCROLL_STEP`] lines of touchpad, focuses the next
@@ -460,7 +429,7 @@ fn status(output: &str, room: f32) -> amane::Stack {
         built = build_all(hidden, dated);
     }
 
-    drag::cluster(output, built, sys::size::panel::height())
+    drag::cluster(output, built, height())
 }
 
 /// What `item` shows now: nothing, one widget, or a few for the privacy
@@ -786,7 +755,7 @@ fn clock(dated: bool) -> Box<dyn Widget> {
             item(DrawnButton::new("amane.bar.clock", move |color| {
                 analog(hour, minute, color)
             }))
-            .width(bar::indicator::width())
+            .width(metrics().item_width)
             .color(material::label(Level::Primary))
             .active(is_open(Panel::Notifications))
             .on_press(|| panel::toggle(Panel::Notifications))
@@ -801,7 +770,7 @@ fn clock(dated: bool) -> Box<dyn Widget> {
 
     boxed(
         item(PushButton::new("amane.bar.clock", time))
-            .text(sys::r#type::numeric())
+            .text(metrics().numeric())
             .width(width)
             .active(is_open(Panel::Notifications))
             .on_press(|| panel::toggle(Panel::Notifications))
@@ -812,23 +781,23 @@ fn clock(dated: bool) -> Box<dyn Widget> {
 
 /// How wide the clock's text is with its colons, whether or not they show.
 fn clock_width(time: &str) -> f32 {
-    text_width(&time.replace('\u{2008}', ":"), sys::r#type::numeric())
+    text_width(&time.replace('\u{2008}', ":"), metrics().numeric())
 }
 
 /// A small clock face with its two hands, as macOS's analog menu bar clock.
 fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
-    const FACE: f32 = 16.0;
+    let face = metrics().icon;
     let hand = |length: f32, thickness: f32, degrees: f32| -> Box<dyn Widget> {
         // a hand from the middle up, in a frame the size of the face that turns
         boxed(
             Rectangle::new()
-                .width(Size::Fixed(FACE))
-                .height(Size::Fixed(FACE))
+                .width(Size::Fixed(face))
+                .height(Size::Fixed(face))
                 .fill(Color::TRANSPARENT)
                 .rotate(degrees)
                 .align_child(Center, Start)
                 .padding(amane::Padding {
-                    top: FACE / 2.0 - length,
+                    top: face / 2.0 - length,
                     ..amane::Padding::default()
                 })
                 .child(
@@ -843,19 +812,20 @@ fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
     let minutes = minute as f32 * 6.0;
     let hours = (hour % 12) as f32 * 30.0 + minute as f32 * 0.5;
     Rectangle::new()
-        .width(Size::Fixed(bar::indicator::width()))
+        .width(Size::Fixed(metrics().item_width))
         .height(Parent)
         .fill(Color::TRANSPARENT)
         .align_child(Center, Center)
         .child(
             Rectangle::new()
-                .width(Size::Fixed(FACE))
-                .height(Size::Fixed(FACE))
-                .radius(FACE / 2.0)
+                .width(Size::Fixed(face))
+                .height(Size::Fixed(face))
+                .radius(face / 2.0)
                 .border(1.5, color)
                 .child(amane::Stack::new(vec![
-                    hand(4.0, 1.5, hours),
-                    hand(6.0, 1.2, minutes),
+                    // drawn for a 16 px face, and grown with a bigger one
+                    hand(4.0 * face / 16.0, 1.5, hours),
+                    hand(6.0 * face / 16.0, 1.2, minutes),
                 ])),
         )
 }
@@ -871,11 +841,11 @@ fn keyboard() -> Option<Box<dyn Widget>> {
     let name = layouts.name().unwrap_or_default().to_string();
     drop(layouts);
     let code = short(&name);
-    let width = text_width(&code, sys::r#type::caption()) + sys::space::inset::s() * 2.0;
+    let width = text_width(&code, metrics().label()) + sys::space::inset::s() * 2.0;
     Some(boxed(
         item(PushButton::new("amane.bar.keyboard", code))
-            .text(sys::r#type::caption())
-            .width(width.max(bar::indicator::width()))
+            .text(metrics().label())
+            .width(width.max(metrics().item_width))
             .on_press(|| {
                 let layouts = KeyboardLayout::read();
                 let current = layouts.current();
@@ -914,13 +884,13 @@ fn weather() -> Option<Box<dyn Widget>> {
     drop(weather);
     let (glyph, words) = describe(now.code, now.day);
     let text = format!("{:.0}°", now.temperature);
-    let width = text_width(&text, sys::r#type::numeric())
-        + bar::indicator::width()
-        + sys::space::inset::s();
+    let width =
+        text_width(&text, metrics().numeric()) + metrics().item_width + sys::space::inset::s();
     Some(boxed(
         item(PushButton::new("amane.bar.weather", text))
             .icon(glyph)
-            .text(sys::r#type::numeric())
+            .icon_size(metrics().icon)
+            .text(metrics().numeric())
             .width(width)
             .tooltip(
                 BAR_NS,
@@ -934,7 +904,7 @@ fn weather() -> Option<Box<dyn Widget>> {
 /// along the bottom, its bottom along the top.
 fn menu_edge() -> i32 {
     match edge() {
-        Vertical::Top => sys::size::panel::height() as i32,
+        Vertical::Top => height() as i32,
         _ => 0,
     }
 }
@@ -953,9 +923,11 @@ fn item<K>(button: ButtonBuilder<K>) -> ButtonBuilder<K> {
 
 /// A bar item that's a lone glyph.
 fn bar_icon(id: &'static str, glyph: impl Into<Glyph>, color: Color) -> IconButton {
+    let metrics = metrics();
     item(IconButton::new(id, glyph))
+        .size(metrics.icon)
         .color(color)
-        .width(bar::indicator::width())
+        .width(metrics.item_width)
 }
 
 /// A status glyph opening its Quick Settings `page` on its own, closing it

@@ -33,6 +33,9 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `dock.running.size` | 4 | `dock/item.rs` (`RUNNING`) |
 | `dock.drag.threshold` | 6 | `dock/drag.rs` (`THRESHOLD`) |
 | `dock.motion.*` (reveal, hide delay, resize, item, magnify scales and lifts, hover, tooltip, spring load) | see `DOCK` | `dock/motion.rs` (`DOCK`); add `dock` to `tokens::COMPONENTS` with the first `dock.*` token |
+| `bar.size.regular.{height,icon,item-width,padding-y}`, `bar.size.comfortable.{…}` | 24, 16, 30, 2; 32, 24, 40, 3 | `kit/src/platform/settings.rs` (`BarSize::height`), `status_bar/size.rs` (`REGULAR`, `COMFORTABLE`); compact keeps `sys.size.panel.height`, `sys.size.icon.m`, `bar.indicator.width`, `bar.panel.padding-y` |
+| `bar.label`, `bar.label-comfortable` (typography) | 13 px and 14 px on a 16 px line | `status_bar/size.rs` (`LABEL`, `LABEL_COMFORTABLE`, `LINE_HEIGHT`) |
+| `bar.workspace.shape.size`, `bar.workspace.shape.area` | 16, a 13 px circle's area | `status_bar/workspace_shape.rs` (`BOX`, `AREA`); `bar.workspace-dot.*` is read by no code now |
 | `widget.grid.cell`, `widget.grid.gap` | 74, 16 | `widgets/mod.rs` (`CELL`, `GAP`: Quick Settings' `quick.grid.cell` and `.gap`, which code outside `quick_settings/` can't read; or promote those to `sys`) |
 | `widget.canvas.margin`, `widget.card.radius`, `widget.shadow` | 24, 22, Quick Settings' shadow | `widgets/mod.rs` (`MARGIN`, `RADIUS`, `shadow`) |
 | `widget.dim.opacity`, `widget.drag.scale`, `widget.drag.band`, `widget.drag.threshold` | 0.45, 1.04, 0.1, 6 | `widgets/mod.rs` (`DIM`, `DRAG_SCALE`, `BAND`, `THRESHOLD`) |

@@ -47,13 +47,13 @@ use amane::{
 use amane_kit::settings::dock as dock_settings;
 
 use crate::components::app_icon;
-use crate::surfaces::context_menu;
 use crate::components::divider::Divider;
 use crate::components::edge_reveal::EdgeReveal;
 use crate::components::glass_region;
 use crate::components::layout::{blank, boxed};
 use crate::components::material::{self, Material};
 use crate::components::motion::redraw_after;
+use crate::surfaces::context_menu;
 use crate::surfaces::status_bar;
 use crate::tokens::sys;
 
@@ -238,7 +238,7 @@ impl Measures {
         // isn't in the way, nor is one a dock that stays out keeps above
         let over_bar = status_bar::edge() == Vertical::Bottom && dock_settings().auto_hide;
         let below = if over_bar {
-            sys::size::panel::height() + sys::space::gap::m()
+            status_bar::height() + sys::space::gap::m()
         } else {
             sys::space::gap::m()
         };

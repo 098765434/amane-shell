@@ -53,9 +53,13 @@ const PAUSED_FOR: Duration = Duration::from_secs(5 * 60);
 const TEXT: f32 = 120.0;
 const TITLE: f32 = 160.0;
 
-/// The leading picture's size, compact and expanded.
-const LEADING: f32 = 18.0;
+/// The leading picture's size expanded; compact, it's [`leading`].
 const LEADING_BIG: f32 = 36.0;
+
+/// The leading picture's size in the bar: a little over a glyph.
+fn leading() -> f32 {
+    super::metrics().icon + 2.0
+}
 
 /// The expanded view's width, and its rows' heights.
 const CARD_WIDTH: f32 = 320.0;
@@ -371,10 +375,11 @@ fn chip(activity: Shown, compact: bool) -> Rectangle {
     };
 
     let inset = sys::space::inset::s();
+    let leading_size = leading();
     let width = match (&trailing, ring) {
-        (Some((text, style)), _) => inset * 2.0 + LEADING + 6.0 + text_width(text, *style),
-        (None, Some(_)) => inset * 2.0 + LEADING + 6.0 + LEADING,
-        (None, None) => crate::tokens::bar::indicator::width(),
+        (Some((text, style)), _) => inset * 2.0 + leading_size + 6.0 + text_width(text, *style),
+        (None, Some(_)) => inset * 2.0 + leading_size + 6.0 + leading_size,
+        (None, None) => super::metrics().item_width,
     };
     let tip = match content.subtitle.is_empty() {
         true => content.title.clone(),
@@ -393,12 +398,16 @@ fn chip(activity: Shown, compact: bool) -> Rectangle {
             } else {
                 color
             };
-            let mut parts = vec![picture(&leading, LEADING, tint.unwrap_or(label), dim)];
+            let mut parts = vec![picture(&leading, leading_size, tint.unwrap_or(label), dim)];
             if let Some((text, style)) = trailing {
                 parts.push(boxed(Text::new(text).style(style).color(label)));
             }
             if let Some(done) = ring {
-                parts.push(boxed(progress_ring(done, LEADING, tint.unwrap_or(label))));
+                parts.push(boxed(progress_ring(
+                    done,
+                    leading_size,
+                    tint.unwrap_or(label),
+                )));
             }
             Rectangle::new()
                 .width(Size::Fixed(width))
@@ -426,13 +435,13 @@ fn trailing_text(trailing: &Trailing, long: bool) -> Option<(String, crate::toke
         Trailing::None | Trailing::Progress(_) => None,
         Trailing::Text(text) if text.is_empty() => None,
         Trailing::Text(text) => {
-            let style = sys::r#type::caption();
+            let style = super::metrics().label();
             Some((clip(text, style, if long { TITLE } else { TEXT }), style))
         }
         Trailing::Countdown(until) => {
             let left = Duration::from_millis(until.saturating_sub(now_ms()).max(0) as u64);
             tick_in(Duration::from_nanos(u64::from(left.subsec_nanos())));
-            Some((timer::format(left), sys::r#type::numeric()))
+            Some((timer::format(left), super::metrics().numeric()))
         }
         Trailing::CountUp(since) => {
             let gone = Duration::from_millis(now_ms().saturating_sub(*since).max(0) as u64);
@@ -440,7 +449,7 @@ fn trailing_text(trailing: &Trailing, long: bool) -> Option<(String, crate::toke
             // whole seconds, as a recording's length shows
             Some((
                 timer::format(Duration::from_secs(gone.as_secs())),
-                sys::r#type::numeric(),
+                super::metrics().numeric(),
             ))
         }
     }

@@ -119,7 +119,7 @@ pub(crate) fn dismissable(base: LayerWindow, keyboard: Keyboard) -> LayerWindow 
 /// Where a card in the bar's right-hand corner sits: `gap.m` in from the
 /// right edge and clear of the bar, above it or below it.
 pub(crate) fn popover_margin() -> Margin {
-    let clear = (sys::size::panel::height() + sys::space::gap::m()) as i32;
+    let clear = (status_bar::height() + sys::space::gap::m()) as i32;
     let top = status_bar::edge() == Vertical::Top;
 
     Margin {

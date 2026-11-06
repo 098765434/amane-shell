@@ -221,6 +221,18 @@ pub const INDEX: &[Entry] = &[
     ),
     row(
         "status-bar",
+        "Bar size",
+        "settings.bar.size",
+        &[
+            "height",
+            "bigger icons",
+            "compact",
+            "regular",
+            "comfortable",
+        ],
+    ),
+    row(
+        "status-bar",
         "Hide the bar automatically",
         "settings.bar.auto-hide",
         &["auto hide", "full screen"],
@@ -235,7 +247,7 @@ pub const INDEX: &[Entry] = &[
         "status-bar",
         "Workspaces in the bar",
         "settings.bar.workspaces",
-        &["pips"],
+        &["pips", "workspace shape"],
     ),
     row(
         "status-bar/activities",
@@ -378,7 +390,11 @@ pub const INDEX: &[Entry] = &[
         &["shortcuts", "hotkeys"],
     ),
     // Drop
-    page("drop", "Drop", &["dropzone", "amane-drop", "grid", "shelf", "share"]),
+    page(
+        "drop",
+        "Drop",
+        &["dropzone", "amane-drop", "grid", "shelf", "share"],
+    ),
     row(
         "drop",
         "Tiles a row",
@@ -419,7 +435,16 @@ pub const INDEX: &[Entry] = &[
     page(
         "passwords",
         "Passwords",
-        &["bitwarden", "vaultwarden", "rbw", "autofill", "fill", "vault", "login", "keychain"],
+        &[
+            "bitwarden",
+            "vaultwarden",
+            "rbw",
+            "autofill",
+            "fill",
+            "vault",
+            "login",
+            "keychain",
+        ],
     ),
     row(
         "passwords",

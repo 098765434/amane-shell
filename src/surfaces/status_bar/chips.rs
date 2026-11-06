@@ -10,7 +10,6 @@ use crate::components::layout::{boxed, cursor, icon};
 use crate::services::desktop::privacy::{Privacy, User};
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::surfaces::quick_settings::{self, Page};
-use crate::tokens::{bar, sys};
 
 use super::{BAR_NS, item, menu_edge};
 
@@ -63,15 +62,16 @@ pub fn privacy() -> Vec<Box<dyn Widget>> {
 }
 
 fn dot(id: &'static str, glyph: char, color: Color, tip: String) -> Rectangle {
+    let metrics = super::metrics();
     item(DrawnButton::new(id, move |_| {
         Rectangle::new()
-            .width(Size::Fixed(bar::indicator::width()))
+            .width(Size::Fixed(metrics.item_width))
             .height(Size::Parent)
             .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
-            .child(icon(glyph, sys::size::icon::s(), color))
+            .child(icon(glyph, metrics.small_icon, color))
     }))
-    .width(bar::indicator::width())
+    .width(metrics.item_width)
     .on_press(privacy_menu)
     .tooltip(BAR_NS, tip)
     .build()

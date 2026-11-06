@@ -28,8 +28,8 @@ use crate::components::list::{self, List, ListItem};
 use crate::components::material::{self, FillLevel, Level, Material};
 use crate::components::motion;
 use crate::components::search_field::SearchField;
-use crate::surfaces::status_bar;
 use crate::components::text_edit::Field;
+use crate::surfaces::status_bar;
 use crate::tokens::{Styled, sys};
 
 // TODO(token): `widget.gallery.{width,height,sidebar,inset,preview}` once
@@ -212,7 +212,7 @@ fn place(geometry: &Geometry) -> Area {
     let width = WIDTH.min(geometry.width - 2.0 * MARGIN).max(1.0);
     let height = HEIGHT.min(geometry.height * 0.5).max(1.0);
     let bar = if status_bar::edge() == Vertical::Bottom {
-        sys::size::panel::height()
+        status_bar::height()
     } else {
         0.0
     };

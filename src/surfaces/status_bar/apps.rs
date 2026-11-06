@@ -16,7 +16,7 @@ use crate::components::layout::{boxed, cursor, text_width};
 use crate::components::material::{self, Level};
 use crate::services::status_apps;
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
-use crate::tokens::{Styled, bar, sys};
+use crate::tokens::{Styled, sys};
 
 use super::activities::picture;
 use super::indicators::Item;
@@ -24,9 +24,6 @@ use super::{BAR_NS, drag, edge, item, menu_edge};
 
 /// How wide an item's title may be.
 const TITLE: f32 = 120.0;
-
-/// The picture's size.
-const ICON: f32 = 16.0;
 
 const MENU_KEY: &str = "amane.bar.app";
 
@@ -51,7 +48,8 @@ pub fn widgets(name: &'static str, output: &str) -> Vec<Box<dyn Widget>> {
 }
 
 fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
-    let style = sys::r#type::caption();
+    let metrics = super::metrics();
+    let style = metrics.label();
     let title = spec
         .title
         .as_deref()
@@ -59,14 +57,14 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
         .map(|title| super::activities::clip(title, style, TITLE));
     let badge = spec.badge.clone().filter(|badge| !badge.is_empty());
     let inset = sys::space::inset::s();
-    let mut width = ICON + inset * 2.0;
+    let mut width = metrics.icon + inset * 2.0;
     if let Some(title) = &title {
         width += 6.0 + text_width(title, style);
     }
     if let Some(badge) = &badge {
         width += 4.0 + text_width(badge, style);
     }
-    let width = width.max(bar::indicator::width());
+    let width = width.max(metrics.item_width);
 
     let id = spec.id.clone();
     let icon = spec.icon.clone();
@@ -83,7 +81,7 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
         } else {
             color
         };
-        let mut parts = vec![picture(&icon, ICON, tint, false)];
+        let mut parts = vec![picture(&icon, metrics.icon, tint, false)];
         if let Some(title) = title {
             parts.push(boxed(Text::new(title).style(style).color(color)));
         }
@@ -146,8 +144,7 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
 
 /// Where the item's middle is on its monitor, and which edge the bar is on.
 fn place(name: &'static str, output: &str) -> (f32, BarEdge) {
-    let x = drag::middle_of(output, Item::App(name))
-        .unwrap_or_else(|| cursor().0 as f32);
+    let x = drag::middle_of(output, Item::App(name)).unwrap_or_else(|| cursor().0 as f32);
     let edge = match edge() {
         Vertical::Top => BarEdge::Top,
         _ => BarEdge::Bottom,

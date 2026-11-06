@@ -5,7 +5,7 @@
 use amane::{Color, Column, Rectangle, Size, Stack, Widget};
 use amane_kit::color::with_alpha;
 use amane_kit::layout::boxed;
-use amane_kit::settings::{BarStyle, WidgetStyle};
+use amane_kit::settings::{BarSize, BarStyle, WidgetStyle};
 use amane_kit::theme::{Glass, Mode};
 
 /// Every picture's size.
@@ -171,7 +171,7 @@ pub fn glass(glass: Glass) -> Rectangle {
 }
 
 /// The bar along the top in `style`, with a few items in it.
-pub fn bar(style: BarStyle) -> Rectangle {
+pub fn bar(style: BarStyle, size: BarSize) -> Rectangle {
     let dark = dark_now();
     let strip = match style {
         BarStyle::Clear => None,
@@ -184,31 +184,33 @@ pub fn bar(style: BarStyle) -> Rectangle {
         BarStyle::Frosted if !dark => with_alpha(Color::BLACK, 0.7),
         _ => with_alpha(Color::WHITE, 0.9),
     };
+    // the compact bar is 12 tall here, the others as much taller as they are
+    let height = (12.0 * size.height() / BarSize::Compact.height()).round();
+    let grow = if size == BarSize::Comfortable {
+        1.5
+    } else {
+        1.0
+    };
+    let middle = |tall: f32| (height - tall) / 2.0;
     let mut layers = wallpaper();
     if let Some(strip) = strip {
-        let mut bar = shape(WIDTH, 12.0, 0.0, strip);
+        let mut bar = shape(WIDTH, height, 0.0, strip);
         if style == BarStyle::Glass {
             bar = bar.border(1.0, with_alpha(Color::WHITE, 0.4));
         }
         layers.push(at(0.0, 0.0, bar));
     }
-    // workspace pips at the left, icons and the clock at the right
-    for index in 0..3 {
-        let width = if index == 0 { 8.0 } else { 3.0 };
-        layers.push(at(
-            5.0 + index as f32 * 6.0 + if index > 0 { 5.0 } else { 0.0 },
-            4.5,
-            shape(width, 3.0, 1.5, ink),
-        ));
-    }
+    // the workspace's shape at the left, icons and the clock at the right
+    layers.push(at(5.0, middle(5.0), shape(5.0, 5.0, 2.5, ink)));
+    let icon = 4.0 * grow;
     for index in 0..3 {
         layers.push(at(
-            52.0 + index as f32 * 7.0,
-            4.0,
-            shape(4.0, 4.0, 2.0, ink),
+            52.0 + index as f32 * 7.0 * grow - if grow > 1.0 { 10.0 } else { 0.0 },
+            middle(icon),
+            shape(icon, icon, icon / 2.0, ink),
         ));
     }
-    layers.push(at(74.0, 4.5, shape(17.0, 3.0, 1.5, ink)));
+    layers.push(at(74.0, middle(3.0), shape(17.0, 3.0, 1.5, ink)));
     picture(layers)
 }
 

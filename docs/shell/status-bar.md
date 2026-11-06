@@ -15,15 +15,34 @@ so only the wallpaper is ever behind it, and niri's cheaper xray blur is enough.
 rises over it. Its popups (tooltips, Do Not Disturb's menu) are frosted too. It is `Keyboard::None`, so clicking it never takes
 focus from the active app.
 
-## Height and the overview
+## Size, height and the overview
 
-The bar keeps its compact height (`sys.size.panel.height`) throughout, the overview included. The
+The bar comes in three sizes (`size`, Shell Settings' Status Bar → Size), all in
+`status_bar/size.rs` (`Metrics`):
+
+| Size | Height | Glyphs | Item width | Text |
+|---|---|---|---|---|
+| Compact (the default, the bar it always was) | 18 (`sys.size.panel.height`) | 16 (`sys.size.icon.m`) | 28 (`bar.indicator.width`) | 13 px |
+| Regular | 24 | 16 | 30 | 13 px |
+| Comfortable | 32 | 24 | 40 | 14 px |
+
+All bar text (the clock, the weather, programs' titles, Live Activities' text, the keyboard
+layout) is on a 16 px line, in `sys.type.label`'s weight, or `sys.type.numeric`'s for figures
+(`Metrics::label`, `::numeric`). Tray pictures, Live Activities' leading pictures (a glyph plus 2),
+the privacy chips (three quarters of a glyph) and the analog clock grow with the glyph. Regular's
+and Comfortable's numbers wait for Penpot ([penpot-backlog.md](../design-system/penpot-backlog.md)).
+
+What keeps clear of the bar asks `status_bar::height()`: Quick Settings and the other cards
+(`panel::popover_margin`), the dock's gap, the widgets' canvas and gallery. Apps outside the shell
+(amane-drop) read `BarSize::height()` from the kit.
+
+The bar keeps its height throughout, the overview included. The
 open apps are the [dock](dock.md)'s, which rises over the bar from the bottom edge and while niri's
 overview opens, in step with its zoom. niri's own keybind (Mod+O) toggles the overview.
 
 ## Items
 
-Every item is a bar-height button (`bar.indicator.width` wide) with a tooltip. While hovered, it
+Every item is a bar-height button (the size's item width) with a tooltip. While hovered, it
 turns into a white rounded tile (`bar.indicator.active.bg`, `sys.radius.raised`) with its glyph
 black (`bar.indicator.active.fg`). It stays that way while what it opens is open:
 
@@ -35,13 +54,27 @@ The glyphs that open Quick Settings' grid (privacy, the "on" glyphs) only light 
 opening Quick Settings would light them all. The look comes from `ButtonBuilder::highlight` and
 `::active` ([controls.md](../kit/controls.md)); the bar's `item()` helper applies it to every item.
 
-### Left: workspaces (`workspaces`)
+### Left: workspaces (`workspaces`, `workspace_shape.rs`)
 
-One **pip** per workspace on the bar's monitor, each a `DrawnButton`. A pip widens and
-brightens when its workspace is active or focused, and turns red when it's urgent. Clicking a pip
-focuses its workspace, and its tooltip is the workspace's name or "Workspace N". Scrolling anywhere
-over the pips focuses the next or previous workspace: one per wheel notch, or one per
-`SCROLL_STEP` lines of touchpad scroll. Scrolling stops at either end.
+One **shape** says which of the monitor's workspaces shows: the first a circle, then a square, a
+triangle, a diamond, a pentagon, a hexagon and a five-point star; after those a heptagon, an
+octagon, and stars with 6, 7, 8… points. It sits in a 16 px box, the text's line, whatever the
+bar's size, and turns red while any workspace there is urgent.
+
+It morphs as niri moves: each shape is its edge's distance from its middle at 120 even angles,
+corners softened by averaging neighbours, scaled to cover the area of a 13 px circle (or as much
+as fits) and centred. Part way between two workspaces it's the two mixed (smoothstep-eased, so it
+rests near the true shapes) and turned up to 15°. The position is niri's fork's
+`WorkspaceSwitchProgress` (`WorkspaceSwitch`), so it follows a swipe's finger, a cancelled swipe and
+the keyboard's spring; `switch_position` keeps a rubber band at the end shape and settles within
+0.01 of a landing (the widgets' fade shares it). niri reports only the focused monitor, so on the
+others the shape springs (280 ms, no bounce) to the workspace shown, and that spring is kept where
+niri last said so nothing jumps when focus leaves.
+
+It's one closed straight-sided `Path` in a `Canvas`, so it draws as a single quad outline (no
+vello). Clicking it opens niri's overview (`Windows::toggle_overview`); its tooltip is the
+workspace's name or "Workspace N". Scrolling over it focuses the next or previous workspace: one per
+wheel notch, or one per `SCROLL_STEP` lines of touchpad scroll, stopping at either end.
 
 ### Right: the status cluster (`status`)
 
@@ -219,7 +252,8 @@ Bar page), followed live:
 | `weather`, `weather_place` | the Weather item (`services/desktop/weather.rs`): Open-Meteo, the place found once by its geocoding, read every half hour and whenever the place changes; nothing is fetched while it's off. Its glyph and temperature, the tooltip the place, the conditions and the day's high and low; a moon on clear nights |
 | `order`, `tray_denied` | the items' order and the apps kept out (above); programs' items are in `order` as `app:<id>`. The older `media` and `timer` read as `activities` |
 | `date_format` | the clock tooltip's day: `long` ("Sunday 25 October"), `short` ("Sun 25 Oct"), `numeric` (the locale's `%x`) |
-| `show_workspaces`, `scroll_workspaces` | the pips, and whether scrolling over them moves between workspaces |
+| `size` | `compact` (the default), `regular` or `comfortable` (above) |
+| `show_workspaces`, `scroll_workspaces` | the workspace's shape, and whether scrolling over it moves between workspaces |
 | `hidden` | the status icons left out (above) |
 | `auto_hide` | `never`, `always`, `desktop` (while the bar's monitor shows a workspace with no windows) or `fullscreen` (while a window on that workspace is fullscreen: `WindowInfo::fullscreen`, which needs the niri fork's `is_fullscreen`), as macOS's four choices; the old `true`/`false` read as `always`/`never`. Hiding slides the bar past its edge (an [`EdgeReveal`](../kit/components.md#edgereveal) at the top or bottom) and keeps no room from windows (`Zone::Ignore`). It comes back while the pointer is on a 2 px strip at the edge or on the bar, or while Quick Settings or the notification center is open, and goes again 400 ms after. Its frost becomes a blur shape that slides with it. At the bottom, a hiding dock (Overlay) takes the edge first |
 

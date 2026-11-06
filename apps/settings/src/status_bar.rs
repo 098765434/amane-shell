@@ -12,9 +12,9 @@ use amane_kit::layout::{boxed, fixed_width};
 use amane_kit::macform::ThumbnailPicker;
 use amane_kit::macform::theme as mac;
 use amane_kit::settings::{
-    AutoHide, BAR_ITEMS, BUILTIN_ACTIVITIES, BarPosition, BarStyle, ClockStyle, DateFormat,
-    ShowDate, StatusBar, activities_seen, bar_item_icon, change_status_bar, status_apps_seen,
-    status_bar, tray_seen,
+    AutoHide, BAR_ITEMS, BUILTIN_ACTIVITIES, BarPosition, BarSize, BarStyle, ClockStyle,
+    DateFormat, ShowDate, StatusBar, activities_seen, bar_item_icon, change_status_bar,
+    status_apps_seen, status_bar, tray_seen,
 };
 
 use crate::{View, group, groups, previews, switch_row};
@@ -56,6 +56,18 @@ pub fn page() -> Column {
     .on_select(|index| change_status_bar(|now| now.position = POSITIONS[index].1))
     .build();
 
+    let size = Dropdown::new(
+        "settings.bar.size",
+        BarSize::ALL.map(|size| String::from(size.label())).to_vec(),
+        BarSize::ALL
+            .iter()
+            .position(|size| *size == now.size)
+            .unwrap_or(0),
+    )
+    .width(200.0)
+    .on_select(|index| change_status_bar(|now| now.size = BarSize::ALL[index]))
+    .build();
+
     let hiding = [
         "Never",
         "Always",
@@ -79,7 +91,7 @@ pub fn page() -> Column {
         .chosen(STYLES.iter().position(|(_, style)| *style == now.style))
         .on_select(|index| change_status_bar(|now| now.style = STYLES[index].1));
     for (label, style) in STYLES {
-        styles = styles.option(previews::bar(style), label);
+        styles = styles.option(previews::bar(style, now.size), label);
     }
     let styles_height = styles.height();
 
@@ -88,6 +100,11 @@ pub fn page() -> Column {
     groups(vec![
         group()
             .row(FormRow::new("settings.bar.position", "Position").trailing(position))
+            .row(
+                FormRow::new("settings.bar.size", "Size")
+                    .subtitle("How tall it is, and how big its icons are")
+                    .trailing(size),
+            )
             .row(
                 FormRow::new("settings.bar.auto-hide", "Hide automatically")
                     .subtitle("Until the pointer meets the screen's edge")
@@ -143,6 +160,10 @@ pub fn page() -> Column {
                 .subtitle("Scroll over the workspaces to move between them")
                 .child()
                 .disabled(!now.show_workspaces),
+            )
+            .footer(
+                "One shape per workspace: a circle, then a square, a triangle and on, changing \
+                 as you move between them. Click it for the overview.",
             ),
     ])
 }

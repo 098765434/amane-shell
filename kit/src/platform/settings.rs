@@ -488,6 +488,42 @@ impl<'de> Deserialize<'de> for AutoHide {
     }
 }
 
+/// How tall the status bar is, and how big its icons are.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum BarSize {
+    /// 18 px with 16 px icons, the size it always was.
+    #[default]
+    Compact,
+    /// 24 px with 16 px icons.
+    Regular,
+    /// 32 px with 24 px icons.
+    Comfortable,
+}
+
+impl BarSize {
+    pub const ALL: [BarSize; 3] = [Self::Compact, Self::Regular, Self::Comfortable];
+
+    /// How tall the bar is: `sys.size.panel.height` compact.
+    /// TODO(token): `bar.size.regular.height`, `bar.size.comfortable.height`.
+    pub fn height(self) -> f32 {
+        match self {
+            Self::Compact => crate::tokens::sys::size::panel::height(),
+            Self::Regular => 24.0,
+            Self::Comfortable => 32.0,
+        }
+    }
+
+    /// Its name in Shell Settings.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Compact => "Compact",
+            Self::Regular => "Regular",
+            Self::Comfortable => "Comfortable",
+        }
+    }
+}
+
 /// The clock's face.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
@@ -546,6 +582,7 @@ impl DateFormat {
 pub struct StatusBar {
     pub position: BarPosition,
     pub style: BarStyle,
+    pub size: BarSize,
 
     /// 24-hour time, else 12-hour with AM and PM.
     pub clock_24h: bool,
@@ -602,6 +639,7 @@ impl Default for StatusBar {
         Self {
             position: BarPosition::Bottom,
             style: BarStyle::Frosted,
+            size: BarSize::Compact,
             clock_24h: true,
             clock_seconds: false,
             date_format: DateFormat::Long,
@@ -1552,6 +1590,7 @@ mod tests {
 
         assert_eq!(bar.position, BarPosition::Top);
         assert_eq!(bar.style, BarStyle::Frosted);
+        assert_eq!(bar.size, BarSize::Compact);
         assert!(bar.show_workspaces);
         assert!(!bar.shows("volume"));
 
@@ -1561,6 +1600,14 @@ mod tests {
 
         assert!(bar.shows("volume"));
         assert_eq!(bar.hidden, vec![String::from("battery")]);
+    }
+
+    #[test]
+    fn the_status_bar_keeps_its_size() {
+        let bar: StatusBar = serde_json::from_str(r#"{ "size": "comfortable" }"#).unwrap();
+        assert_eq!(bar.size, BarSize::Comfortable);
+        let json = serde_json::to_string(&bar).unwrap();
+        assert!(json.contains(r#""size":"comfortable""#));
     }
 
     #[test]

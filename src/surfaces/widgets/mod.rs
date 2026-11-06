@@ -38,7 +38,6 @@ use amane::{
     Widget, WindowSize, WorkspaceSwitch, Workspaces, Zone,
 };
 
-use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::components::glass::{self, Rim};
 use crate::components::glass_region;
 use crate::components::grid::Layout;
@@ -48,9 +47,9 @@ use crate::components::icons::ICON_CHECK;
 use crate::components::layout::{blank, boxed};
 use crate::components::material::{self, Material};
 use crate::components::motion::{self, Arrive, Item, Pose};
-use crate::surfaces::status_bar;
 use crate::services::desktop::system_stats::SystemStats;
-use crate::tokens::sys;
+use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
+use crate::surfaces::status_bar;
 use amane_kit::settings::{ACCENTS, WidgetStyle, desktop};
 
 use kind::{Category, WidgetKey, WidgetKind, WidgetSize};
@@ -110,7 +109,7 @@ impl Geometry {
     fn of(width: f32, height: f32) -> Self {
         let px = metrics();
         let area_w = width - 2.0 * MARGIN;
-        let bar = sys::size::panel::height();
+        let bar = status_bar::height();
         let area_h = height - bar - 2.0 * MARGIN;
         let canvas = Canvas::fit(&px, area_w, area_h);
         let (x, y) = px.centred_origin(&canvas, area_w, area_h);
@@ -153,7 +152,12 @@ impl Geometry {
     /// The whole canvas, in its own pixels.
     fn whole(&self) -> (f32, f32, f32, f32) {
         let px = metrics();
-        (0.0, 0.0, px.extent(self.canvas.cols), px.extent(self.canvas.rows))
+        (
+            0.0,
+            0.0,
+            px.extent(self.canvas.cols),
+            px.extent(self.canvas.rows),
+        )
     }
 
     /// `point` on the surface, in the canvas's pixels.
@@ -490,11 +494,9 @@ fn switching(output: &str) -> Option<f32> {
         .iter()
         .filter(|ws| ws.output() == Some(output))
         .collect();
-    let last = here.len().checked_sub(1)? as f64;
-    // a rubber band past either end stays on the end one
-    let at = switch.workspace_idx().clamp(0.0, last);
-    // niri stops reporting a few thousandths short of a landing
-    if (at - at.round()).abs() < 0.01 {
+    // kept to the ends and settled on a landing, as the bar's shape is
+    let at = f64::from(status_bar::switch_position(&switch, output, here.len())?);
+    if at == at.round() {
         return None;
     }
     // the switch counts from 0, niri's workspace indices from 1
@@ -693,7 +695,8 @@ fn cards_extent(layout: &Layout<WidgetKey>) -> (f32, f32, f32, f32) {
     let mut bounds: Option<(f32, f32, f32, f32)> = None;
     for (_, rect) in layout.placed() {
         let slot = px.slot(rect);
-        let (left, top, right, bottom) = (slot.x, slot.y, slot.x + slot.width, slot.y + slot.height);
+        let (left, top, right, bottom) =
+            (slot.x, slot.y, slot.x + slot.width, slot.y + slot.height);
         bounds = Some(match bounds {
             None => (left, top, right, bottom),
             Some((l, t, r, b)) => (l.min(left), t.min(top), r.max(right), b.max(bottom)),
@@ -1185,7 +1188,7 @@ mod tests {
     fn a_screen_is_whole_cells_inside_the_margin_and_over_the_bar() {
         let geometry = Geometry::of(1920.0, 1080.0);
         let px = metrics();
-        let bar = sys::size::panel::height();
+        let bar = status_bar::height();
         assert!(px.extent(geometry.canvas.cols) <= 1920.0 - 2.0 * MARGIN);
         assert!(px.extent(geometry.canvas.cols + 1) > 1920.0 - 2.0 * MARGIN);
         assert!(

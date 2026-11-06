@@ -50,7 +50,7 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 
 | Surface | What it does | Doc |
 |---|---|---|
-| Status bar | the bar: workspace pips, status icons, programs' items, Live Activities, Quick Settings, notifications and the clock | [shell/status-bar.md](shell/status-bar.md) |
+| Status bar | the bar in three sizes: the workspace's shape, status icons, programs' items, Live Activities, Quick Settings, notifications and the clock | [shell/status-bar.md](shell/status-bar.md) |
 | Drop | `amane-drop`, a Dropzone-style status app: a grid of folders, apps and actions, and a Drop Bar | [shell/drop.md](shell/drop.md) |
 | Dock | every workspace's windows and pins, rising from the bottom edge and with the overview | [shell/dock.md](shell/dock.md) |
 | Launcher | macOS Tahoe's Spotlight: search, Applications, Files, Actions, Clipboard | [shell/launcher.md](shell/launcher.md) |

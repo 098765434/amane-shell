@@ -19,15 +19,12 @@ use crate::components::buttons::DrawnButton;
 use crate::components::layout::{boxed, cursor};
 use crate::components::material::{self, Level};
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
-use crate::tokens::{bar, sys};
+use crate::tokens::sys;
 
 use super::{BAR_NS, bar_icon, item, menu_edge};
 
 /// `keyboard_double_arrow_right`: the items that didn't fit.
 const ICON_MORE: char = '\u{eac9}';
-
-/// How big an app's icon is in the bar.
-const ICON: f32 = 16.0;
 
 const MENU_KEY: &str = "amane.bar.tray";
 const MORE_KEY: &str = "amane.bar.tray.more";
@@ -96,7 +93,7 @@ pub fn icons(shown: &[Shown], hidden: usize) -> Vec<Box<dyn Widget>> {
 
 /// How wide `count` icons are, gaps after each included.
 pub fn width_of(count: usize) -> f32 {
-    count as f32 * (bar::indicator::width() + sys::space::gap::_2xs())
+    count as f32 * (super::metrics().item_width + sys::space::gap::_2xs())
 }
 
 fn icon(shown: &Shown) -> Rectangle {
@@ -114,7 +111,7 @@ fn icon(shown: &Shown) -> Rectangle {
         format!("amane.bar.tray.{}", shown.key),
         move |color| picture_of(picture, attention, color),
     ))
-    .width(bar::indicator::width())
+    .width(super::metrics().item_width)
     .color(material::label(Level::Secondary))
     .on_press(move || press(&pressed))
     .on_secondary(move || ask_menu(&secondary))
@@ -137,14 +134,15 @@ fn icon(shown: &Shown) -> Rectangle {
 /// The app's picture, or a dot in `color` for one that sent none; ringed
 /// in the accent while it wants attention.
 fn picture_of(picture: Option<PathBuf>, attention: bool, color: Color) -> Rectangle {
+    let size = super::metrics().icon;
     let inner = match picture {
         Some(path) => Rectangle::new()
-            .width(Size::Fixed(ICON))
-            .height(Size::Fixed(ICON))
+            .width(Size::Fixed(size))
+            .height(Size::Fixed(size))
             .fill(Image::contain(path)),
         None => Rectangle::new()
-            .width(Size::Fixed(ICON / 2.0))
-            .height(Size::Fixed(ICON / 2.0))
+            .width(Size::Fixed(size / 2.0))
+            .height(Size::Fixed(size / 2.0))
             .radius(Radius::Full)
             .fill(color),
     };
@@ -154,8 +152,8 @@ fn picture_of(picture: Option<PathBuf>, attention: bool, color: Color) -> Rectan
         Color::TRANSPARENT
     };
     Rectangle::new()
-        .width(Size::Fixed(ICON + 6.0))
-        .height(Size::Fixed(ICON + 6.0))
+        .width(Size::Fixed(size + 6.0))
+        .height(Size::Fixed(size + 6.0))
         .radius(Radius::Full)
         .border(1.5, ring)
         .align_child(Center, Center)
