@@ -80,10 +80,28 @@ and `.build()` gives a `Column`. Every row knows its height, so a group sizes it
   (several sit side by side), `.value(text)` a grey value. `.detail(widget, height)` puts a block
   under the title, lined up with it (a radio group, a field and its button, tags).
   `.on_press(…)` makes the whole row a button with a chevron, to open what it names;
-  `.selected(true)` fills it as the one picked; `.disabled(true)` dims it. A title too long for
-  the room left is cut short with an ellipsis.
+  `.selected(true)` fills it as the one picked; `.disabled(true)` dims it. `.child()` sets it in
+  under the row before it (a setting that belongs to that one); `.loading()` puts a `Spinner` at
+  its trailing edge and greys its title while its value is read; `.highlight(true)`, or
+  `form::highlight_row(Some(id))` for whichever row has that id, lights it in the accent (the
+  row a search led to). A title too long for the room left is cut short with an ellipsis.
 - `SliderRow::new(title, |width| slider)`: the title and its `.value(…)` over a slider across the
   row, with a `.glyph(…)` or `.icon(…)` before them.
+
+A group with only a caption or note keeps them (`is_empty()` is false; `has_rows()` says whether
+it has rows), so a page whose rows are still loading isn't blank.
+
+Pieces that go in rows:
+
+- `spinner::Spinner::new(size)`: an indeterminate spinner of eight fading spokes, turning about
+  ten times a second while a window shows it (each build asks for the next step, so a window
+  that stops showing one rests); under reduced motion it breathes instead.
+  `spinner::ProgressBar::new(fraction, width)`: a thin accent track.
+- `macform::ThumbnailPicker::new(id, width, height)`: choices as small pictures (`.option(widget,
+  label)`), the `.chosen(…)` one ringed in the accent, wrapping to `.width(…)`; `.height()` for a
+  row's detail. Shell Settings draws its pictures with flat shapes, so they stay on quads.
+- `macform::ColorWells::new(id, colors, chosen)`: colors as dots, `None` for a multicolor
+  "System" one; `.shown_name()` is the hovered or chosen one's name, for the row's subtitle.
 
 ## Divider and Slider
 

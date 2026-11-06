@@ -75,22 +75,24 @@ A `config.kdl` with uncommitted edits is refused.
 
 | Section | Control | Saved as |
 |---|---|---|
-| Arrangement | the screens to drag ([`Arrangement`](../kit/components.md#arrangement)), with two or more; a dropdown picks the screen the page shows, the ones switched off too | `position x= y=`, at once |
-| Header | the name, the diagonal, the panel and connector, the mode, and the [tags](../kit/components.md#tag) | none |
+| Arrangement | the screens to drag ([`Arrangement`](../kit/components.md#arrangement)), with two or more; a dropdown picks the screen the page shows, the ones switched off too | `position x= y=`, tried first |
+| Header | the name, the diagonal, the panel, the connector (for a plugged-in display), the mode, and the [tags](../kit/components.md#tag) | none |
 | Brightness | slider, on a built-in panel, through amane's `Brightness` (logind); on a monitor, Brightness and Contrast over DDC/CI ([below](#a-monitors-own-brightness)) | none |
 | Resolution | dropdown, largest first, the preferred one marked "(Default)", with what it looks like after scaling | `mode`, tried first |
-| Refresh rate | segmented (a dropdown past five rates), the rates at this resolution; with a battery, **Lower the refresh rate on battery** ([below](#refresh-rate-on-battery)) | `mode`, tried first; the switch in `displays.json` |
-| Variable refresh rate | segmented: Off, On demand, Always; the range it follows; under On demand, the apps that turn it on (by app id, with **Add** and **Remove**) | `variable-refresh-rate [on-demand=true]` and the `window-rule`, at once |
+| Refresh rate | segmented (a dropdown past five rates), the rates at this resolution | `mode`, tried first |
+| This display | with two or more: Use this display (not the last one lit), Main display | `off` (tried first), `focus-at-startup` (one at most) |
+| Variable refresh rate | segmented: Off, On demand, Always; the range it follows; under On demand, the apps that turn it on (by app id with **Add**, or from a menu of the apps open; **Remove**) | `variable-refresh-rate [on-demand=true]` and the `window-rule`, at once |
 | Scale | dropdown, 100–300 % in quarters, each "looks like W × H", and any other scale already in use | `scale`, tried first |
 | Rotation | dropdown: Standard, 90°, 180°, 270°, flipped and flipped turned (counter-clockwise, as niri turns) | `transform`, tried first |
-| High dynamic range | **Use HDR**, tried first, with what the screen shows; while on, **HDR brightness**, 80–480 nits ([below](#hdr)) | `hdr`, `sdr-brightness` |
+| High dynamic range | **Use HDR**, tried first, with what the screen shows and an ⓘ naming the apps that show HDR; while on, **HDR brightness**, 80–480 nits ([below](#hdr)) | `hdr`, `sdr-brightness` |
+| Advanced › (sub-page) | Custom scale (0.5–4, or a percentage), Custom mode (`2560x1600@90`), Overview backdrop (`#rrggbb`), and the raw facts each source gave | `scale`, `mode custom=true`, `backdrop-color` |
+| All Displays | with a battery, **Slower on battery** ([below](#refresh-rate-on-battery)) | `displays.json` |
 | Night Light | a switch, how warm, and when: All day, Sunset to sunrise, Set hours | the shell's state ([below](#night-light)) |
 | OLED care | on an OLED panel: Dark appearance, hiding the dock, hiding the status bar, and **Screen Sleep Timing…** (Power & Lock) | `appearance.json`, `dock.json`, `status-bar.json` |
-| This display | with two or more: Use this display (not the last one lit), Main display | `off` (tried first), `focus-at-startup` (one at most) |
-| Advanced… | Custom scale (0.5–4, or a percentage), Custom mode (`2560x1600@90`), Overview backdrop (`#rrggbb`), and the raw facts each source gave | `scale`, `mode custom=true`, `backdrop-color` |
 
 **Trying a change.** A change that could leave a screen unreadable is tried first: resolution,
-refresh rate, scale, rotation, a custom mode, HDR, and turning a screen off. niri makes it, and
+refresh rate, scale, rotation, a custom mode, HDR, moving a screen in the arrangement, and
+turning a screen off. niri makes it, and
 "Keep these display settings?" asks with a 15-second countdown
 ([`Dialog::countdown`](../kit/components.md#dialog)). **Keep Changes** writes it. **Revert**,
 Escape, or nobody answering puts the old setting back over IPC, and nothing is written. Brightness,
@@ -151,8 +153,10 @@ stay in step with the Quick Settings tile. The schedules are:
 - **All day**: on at the chosen temperature until turned off.
 - **Sunset to sunrise**: `wlsunset -l <lat> -L <lon>`, at the chosen temperature by night and
   6500 K by day. The place starts at the time zone's own, from `zone.tab` (`Europe/Oslo` is
-  59.92, 10.75), and **Set** takes another.
-- **Set hours**: `wlsunset -s <from> -S <to>`, overnight when To is earlier.
+  59.92, 10.75), and **Set** (or Return) takes another, a latitude from -90 to 90 and a
+longitude from -180 to 180.
+- **Set hours**: `wlsunset -s <from> -S <to>`, overnight when To is earlier; times read as
+  HH:MM.
 
 While a schedule is set, the Quick Settings tile reads "Scheduled".
 

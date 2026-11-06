@@ -27,7 +27,8 @@ fn main_window() -> amane::Window {
 | `standard_shortcut(key)` | the shortcuts every window has: Ctrl+W closes it. Call it from your own `on_shortcut` and handle what it leaves (`false`) |
 | `text_field(id, placeholder)` | a one-line `TextInput` in the control font (13), its selection in the accent; its text is kept under `id` |
 | `field_box(id, input, width)` | the box a text field sits in, in the macform look: 24 px tall, radius 6, `fieldFill` in a 1 px `fieldBorder` that takes the accent while it has the keys |
-| `Page`, `sidebar(…)` | a settings-style sidebar ([below](#sidebar)) |
+| `Page`, `sidebar(…)`, `sidebar_with(…)` | a settings-style sidebar ([below](#sidebar)) |
+| `commit_on_blur(id, commit)` | runs `commit` with a field's text when it loses the keys (amane has no blur event; call it while drawing) |
 | `sidebar_panel(content)`, `sidebar_label()` | the sidebar's panel around anything else (Messages' inbox), and the colour for labels on it |
 | `Dialog` | the kit's alert, re-exported; `.open(parent)` shows it in a modal window over the app's ([components.md](components.md#dialog)) |
 
@@ -51,6 +52,10 @@ between `app_window` and the sidebar may then be a `Rectangle`. Where it doesn't
 an opaque panel (`sys.color.sidebar.bg.active`), paler with greyer labels
 (`sys.color.sidebar.bg.inactive`, `sys.color.sidebar.label.inactive`) while another window has the
 focus.
+
+`sidebar_with(id, &pages, selected, on_select, top, &shown)` puts `top` (a search field) over
+the pages and shows only those `shown` marks (all of them when it's empty), with a section's
+title while any of its pages shows.
 
 `sidebar_panel(content)` is that panel around any content, for a sidebar that isn't a list of
 pages, like Messages' inbox; draw its labels in `sidebar_label()`, which greys them the same way.

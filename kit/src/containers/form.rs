@@ -32,6 +32,21 @@ use crate::tokens::{Styled, TextStyle, sys};
 /// How wide a group is unless told: Shell Settings' page.
 pub const DEFAULT_WIDTH: f32 = 504.0;
 
+thread_local! {
+    /// The row lit as the one a search led to, by id.
+    static HIGHLIGHTED: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Lights the row with this id wherever it's built, as the one a search
+/// led to; `None` puts the light out. Set it before drawing the page.
+pub fn highlight_row(id: Option<String>) {
+    HIGHLIGHTED.with_borrow_mut(|lit| *lit = id);
+}
+
+fn highlighted(id: &str) -> bool {
+    HIGHLIGHTED.with_borrow(|lit| lit.as_deref() == Some(id))
+}
+
 /// How far a [`FormRow::child`] is set in.
 fn child_indent() -> f32 {
     px(24.0)
@@ -344,7 +359,7 @@ impl FormRow {
             ));
         }
 
-        let base_fill = if self.highlight {
+        let base_fill = if self.highlight || highlighted(&self.id) {
             crate::color::with_alpha(theme::tint(), 0.22)
         } else if self.selected {
             sys::color::state::selected()

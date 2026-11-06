@@ -181,84 +181,119 @@ pub fn sidebar(
     selected: usize,
     on_select: impl Fn(usize) + 'static,
 ) -> Rectangle {
+    sidebar_with(id, pages, selected, on_select, None, &[])
+}
+
+/// A [`sidebar`] with `top` over its pages (a search field), showing only
+/// the pages `shown` marks true (all of them when it's empty); a section's
+/// title shows while any of its pages does.
+pub fn sidebar_with(
+    id: &str,
+    pages: &[Page],
+    selected: usize,
+    on_select: impl Fn(usize) + 'static,
+    top: Option<Box<dyn Widget>>,
+    shown: &[bool],
+) -> Rectangle {
     let on_select = Rc::new(on_select);
+    let visible = |index: usize| shown.is_empty() || shown.get(index).copied().unwrap_or(false);
+    // a section shows while a page under it does
+    let section_shown = |index: usize| {
+        pages[index + 1..]
+            .iter()
+            .enumerate()
+            .take_while(|(_, page)| !page.section)
+            .any(|(offset, _)| visible(index + 1 + offset))
+    };
 
-    let rows: Vec<Box<dyn Widget>> = pages
-        .iter()
-        .enumerate()
-        .map(|(index, page)| {
-            let key = format!("{id}.{index}");
-
-            if page.section {
-                // a title over its pages, set off from the pages above it
-                let above = if index == 0 {
-                    sys::space::gap::xs()
+    let mut rows: Vec<Box<dyn Widget>> = Vec::new();
+    if let Some(top) = top {
+        rows.push(top);
+    }
+    rows.extend(
+        pages
+            .iter()
+            .enumerate()
+            .filter(|(index, page)| {
+                if page.section {
+                    section_shown(*index)
                 } else {
-                    sys::space::gap::m()
+                    visible(*index)
+                }
+            })
+            .map(|(index, page)| {
+                let key = format!("{id}.{index}");
+
+                if page.section {
+                    // a title over its pages, set off from the pages above it
+                    let above = if index == 0 {
+                        sys::space::gap::xs()
+                    } else {
+                        sys::space::gap::m()
+                    };
+
+                    let height = above + text_height(sys::r#type::caption());
+
+                    return boxed(
+                        Rectangle::new()
+                            .width(Size::Parent)
+                            .height(Size::Fixed(height))
+                            .fill(Color::TRANSPARENT)
+                            .padding(pad(sys::space::inset::s(), 0.0))
+                            .align_child(amane::Start, amane::End)
+                            .child(caption(page.name.clone())),
+                    );
+                }
+
+                let chosen = index == selected;
+
+                let fill = if chosen {
+                    sys::color::state::selected()
+                } else {
+                    Color::TRANSPARENT
                 };
 
-                let height = above + text_height(sys::r#type::caption());
+                let fg = sidebar_label();
 
-                return boxed(
-                    Rectangle::new()
-                        .width(Size::Parent)
-                        .height(Size::Fixed(height))
-                        .fill(Color::TRANSPARENT)
-                        .padding(pad(sys::space::inset::s(), 0.0))
-                        .align_child(amane::Start, amane::End)
-                        .child(caption(page.name.clone())),
-                );
-            }
-
-            let chosen = index == selected;
-
-            let fill = if chosen {
-                sys::color::state::selected()
-            } else {
-                Color::TRANSPARENT
-            };
-
-            let fg = sidebar_label();
-
-            let base = Rectangle::new()
-                .width(Size::Parent)
-                .height(Size::Fixed(sys::size::row::height()))
-                .radius(Radius::Fixed(sys::radius::raised()))
-                .fill(state_fill(&key, fill, false))
-                .padding(pad(sys::space::inset::s(), 0.0))
-                .align_child(amane::Start, Center)
-                .child(
-                    Row::new(vec![
-                        match page.accent {
-                            Some(accent) => boxed(
-                                MacLeadingIcon::new(page.glyph.unwrap_or(' '))
-                                    .accent(accent)
-                                    .build(),
+                let base = Rectangle::new()
+                    .width(Size::Parent)
+                    .height(Size::Fixed(sys::size::row::height()))
+                    .radius(Radius::Fixed(sys::radius::raised()))
+                    .fill(state_fill(&key, fill, false))
+                    .padding(pad(sys::space::inset::s(), 0.0))
+                    .align_child(amane::Start, Center)
+                    .child(
+                        Row::new(vec![
+                            match page.accent {
+                                Some(accent) => boxed(
+                                    MacLeadingIcon::new(page.glyph.unwrap_or(' '))
+                                        .accent(accent)
+                                        .build(),
+                                ),
+                                None => {
+                                    boxed(icon(page.glyph.unwrap_or(' '), sys::size::icon::s(), fg))
+                                }
+                            },
+                            boxed(
+                                Text::new(page.name.clone())
+                                    .style(sys::r#type::label())
+                                    .color(fg),
                             ),
-                            None => {
-                                boxed(icon(page.glyph.unwrap_or(' '), sys::size::icon::s(), fg))
-                            }
-                        },
-                        boxed(
-                            Text::new(page.name.clone())
-                                .style(sys::r#type::label())
-                                .color(fg),
-                        ),
-                    ])
-                    .gap(sys::space::gap::s())
-                    .align(Center),
-                );
+                        ])
+                        .gap(sys::space::gap::s())
+                        .align(Center),
+                    );
 
-            let select = on_select.clone();
+                let select = on_select.clone();
 
-            let actions = Actions {
-                press: Some(Rc::new(move || select(index))),
-                ..Actions::default()
-            };
+                let actions = Actions {
+                    press: Some(Rc::new(move || select(index))),
+                    ..Actions::default()
+                };
 
-            boxed(interactive(base, key, false, actions))
-        })
-        .collect();
+                boxed(interactive(base, key, false, actions))
+            }),
+    );
 
     sidebar_panel(
         Column::new(rows)

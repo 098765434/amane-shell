@@ -14,15 +14,38 @@ the launcher lists it as *Shell Settings*.
 
 ## The window
 
-An `app_window` titled "Shell Settings", 760 × 760 (at least 600 × 740), with a 200 px
-[`sidebar`](../kit/app.md#sidebar) in two sections, **Shell** (eight pages, the shell's own
-settings and the displays) and **System** (eight, the NixOS configuration), each page's glyph on
-a coloured tile, and the page's title over its settings. The settings are macOS-style grouped rows
+An `app_window` titled "Shell Settings", 760 × 760 (narrower down to where a 440 px page still
+fits), with a 200 px [`sidebar`](../kit/app.md#sidebar) in two sections, **Shell** (eight pages,
+the shell's own settings and the displays) and **System** (eight, the NixOS configuration), each
+page's glyph on a coloured tile, under a **Search** field. Beside it, a toolbar row holds the
+back and forward pill, the page's title, and a page's own button where it has one (Quick
+Settings' **Customize…**). The settings are macOS-style grouped rows
 ([`form`](../kit/components.md#form)): rounded cards of rows, each a title (and a grey subtitle)
-with its control at the trailing edge, a radio group under its title, a slider across its row,
-captions above the groups and notes below them. While the changes, the build log or a package's
-details stand in for the page, a back/forward pill sits before the title, and back returns to
-the page. Each page scrolls in an amane `ScrollArea` that keeps its own
+with its control at the trailing edge, small pictures to choose from
+([`ThumbnailPicker`](../kit/components.md#form)), a slider across its row, captions above the
+groups and notes below them. A setting that only means something while the one above is on is
+set in under it, and dimmed while it's off. The groups are as wide as the window allows, from
+440 to 680 px, centred beyond that.
+
+**Moving around.** Where the window is, is a history of places: a page and the views opened over
+it. A view is a page's sub-page (Status Bar's Clock, Weather and Items; Displays' Advanced;
+About This Computer's Configuration; About's Settings Files), the changes an Apply makes, the
+build log, or a package's details; a row with a chevron opens one. The pill (or Alt+Left and
+Alt+Right) goes back and forward through the places, and Escape leaves a view. `--page` takes
+a sub-page too, as `page/sub` (`status-bar/clock`).
+
+**Search.** Typing in the field (Ctrl+F puts the keys there) narrows the sidebar to the pages
+with something found and shows what's found in the page's place: each a title and where it is
+(*Status Bar › Clock*). Shell pages' settings are listed in `search.rs` with other words people
+use for them ("dark mode", "wifi", "burn in"); the System pages' settings are found by their
+labels as the configuration reads. A result (or Return, for the first) opens its place and lights
+its row for a moment; Escape clears the field.
+
+**While things load,** a row shows a small spinner in place of its value (the kit's
+[`Spinner`](../kit/components.md#form)), and a page whose rows haven't come in keeps its caption
+and note. Something that went wrong is said plainly on a row with a warning tile, with
+**Details…** for what the tool itself said. Fields keep what's typed on Return, or when the field
+is left with something new. Each page scrolls in an amane `ScrollArea` that keeps its own
 offset. Ctrl+W closes it (`standard_shortcut`), unless a system build is running: then it asks
 first ("Stop the build?"), as does the compositor's close.
 
@@ -48,14 +71,14 @@ Writes `appearance.json` (`apps/settings/src/appearance.rs`).
 
 | Setting | Control | Choices | Field |
 |---|---|---|---|
-| Appearance | radios | Follow the system, Light, Dark | `mode`: `null`, `"light"`, `"dark"` |
-| Accent colour | dropdown | System, Blue, Purple, Pink, Red, Orange, Yellow, Green, Graphite (macOS 27's colours) | `accent`: `null` or `#rrggbb` |
-| Density | radios | Comfortable, Compact | `density` |
+| Appearance | pictures | Light, Dark, Auto (follows the system) | `mode`: `"light"`, `"dark"`, `null` |
+| Accent color | dots, the hovered one named | System (multicolor), Blue, Purple, Pink, Red, Orange, Yellow, Green, Graphite (macOS 27's colors) | `accent`: `null` or `#rrggbb` |
+| Density | segmented | Comfortable, Compact | `density` |
 | Text size | dropdown | Smaller 0.9, Default 1, Larger 1.1, Large 1.25, Largest 1.5 (the nearest one shows for a hand-set value) | `text_scale` |
-| Glass | radios | Clear, Tinted, Solid | `glass` |
+| Glass | pictures | Clear, Tinted, Solid | `glass` |
 | Adaptive glass | switch, off under Solid glass | small glass turning light or dark with its backdrop (an experiment) | `adaptive_glass` |
 | Vibrant labels | switch, off under Solid glass | labels blending with the frosted backdrop, through niri's vibrancy (an experiment) | `vibrancy` |
-| Motion | radios | Follow the system, Reduce motion, Full motion | `reduce_motion`: `null`, `true`, `false` |
+| Motion | segmented | Automatic, Reduced, Full | `reduce_motion`: `null`, `true`, `false` |
 
 An accent saved before macOS 27's colours shows as its new counterpart; picking it again saves
 the new colour. What each setting does to the look is in
@@ -64,16 +87,20 @@ the new colour. What each setting does to the look is in
 ### Desktop
 
 Writes `desktop.json` (`desktop.rs`): **Show widgets on the desktop** (`show_widgets`, a switch)
-and **Widget style** (`widget_style`): Dim while windows are open (`automatic`, the default),
-Always full (`full`) or Always dimmed (`dim`). See [widgets.md](widgets.md).
+and, set in under it, **While windows are open** (`widget_style`, as pictures): Dim with windows
+(`automatic`, the default), Always full (`full`) or Always dimmed (`dim`); and **Edit Widgets…**,
+which asks the shell to edit them (`widgets edit`). See [widgets.md](widgets.md).
 
 ### Displays
 
 Each screen niri drives, with what it can do read from the screen itself (OLED, HDR, the
 variable refresh range, the gamut, the bit depth): resolution, refresh rate, variable refresh,
 scale, rotation and arrangement, written to niri's `displays.kdl`, plus brightness, Night Light's
-schedule and OLED care. Changes that could leave a screen unreadable are kept only when confirmed.
-See [displays.md](displays.md).
+schedule and OLED care. The selected display's settings come first, then **All Displays**
+(Slower on battery), Night Light and OLED care; **Advanced** (a custom scale or mode, the
+overview's backdrop, what the display reports) is a sub-page. Changes that could leave a screen
+unreadable, moving one in the arrangement too, are kept only when confirmed. On demand variable
+refresh can add an app that's open from a menu. See [displays.md](displays.md).
 
 ### Status Bar
 
@@ -83,14 +110,15 @@ Writes `status-bar.json` (`status_bar.rs`); see [status-bar.md](status-bar.md#se
 |---|---|---|
 | Position | segmented: Bottom, Top | `position` |
 | Hide automatically | dropdown: Never, Always, On the desktop only, In full screen only | `auto_hide` |
-| Material | radios: Clear (on the wallpaper), Frosted, Glass, Solid (black in dark mode, white in light) | `style` |
-| Clock | switches: 24-hour time, Show seconds, Analog, Show the day of the week, Flash the time separators; dropdown: Show the date (When space allows, Always, Never) | `clock_24h`, `clock_seconds`, `clock_style`, `show_weekday`, `flash_separators`, `show_date` |
-| Weather | switch: Show the weather; field: Place (Return keeps it) | `weather`, `weather_place` |
-| Date in the clock's tooltip | dropdown: Sunday 25 October, Sun 25 Oct, the locale's numbers | `date_format` |
-| Workspaces | switches: Show workspaces, Scroll over them to move between workspaces | `show_workspaces`, `scroll_workspaces` |
+| Material | pictures: Clear, Frosted, Glass, Solid (black in dark mode, white in light) | `style` |
+| Clock › (sub-page) | pictures: Digital, Analog; switches: 24-hour time, Show seconds, Flash the time separators (dimmed under Analog), Show the day of the week; dropdowns: Show the date (When space allows, Always, Never), Date in the tooltip | `clock_style`, `clock_24h`, `clock_seconds`, `flash_separators`, `show_weekday`, `show_date`, `date_format` |
+| Weather › (sub-page) | switch: Show the weather; field: Place (kept on Return or when left) | `weather`, `weather_place` |
+| Items › (sub-page) | every item in the bar's order, each with buttons to move it a place and, for the optional ones, a switch; Reset Order… (asks first); Allow in the Status Bar, a switch per app seen in the tray | `order`, `hidden`, `tray_denied` |
+| Workspaces | switches: Show workspaces, and under it Scroll to switch | `show_workspaces`, `scroll_workspaces` |
 | Now Playing | switch: Always show | `media_always` |
-| Allow in the Status Bar | a switch per app seen in the tray | `tray_denied` |
-| Items, Left to Right | every item in the bar's order, each with buttons to move it a place and, for the optional ones, a switch; Reset Order | `order`, `hidden` |
+
+The main page's Clock, Weather and Items rows sum up what's set ("24-hour · date when space
+allows", "Oslo", "13 shown").
 
 ### Dock
 
@@ -100,7 +128,7 @@ Writes `dock.json` (`dock.rs`); see [dock.md](dock.md).
 |---|---|---|
 | Icon size | slider, 32–64 pt | `icon_size` |
 | Magnification | segmented: Off, Small, Medium, Large | `magnification` |
-| Hiding | switches: hide until the pointer meets the edge, show with the overview | `auto_hide`, `rise_with_overview` |
+| Hiding | switches: hide until the pointer meets the edge, and under it show with the overview | `auto_hide`, `rise_with_overview` |
 | Icons | switches: dots under open apps, an app's name over its icon, animate | `running_dots`, `tooltips`, `animations` |
 
 ### Quick Settings
@@ -121,17 +149,18 @@ Writes `launcher.json` (`launcher.rs`); see [launcher.md](launcher.md).
 | Setting | Control | Field |
 |---|---|---|
 | Search | a switch per source: Applications, Actions, Files, Calculations and conversions, Web addresses, Web search | `excluded_providers`: the ids switched off (`apps`, `actions`, `files`, `answers`, `url`, `web`) |
-| Show applications as | radios: Grid, List | `apps_layout` |
+| Show applications as | pictures: Grid, List | `apps_layout` |
 | Clipboard history | Keep what's copied, for Clipboard; Keep copied images too; a caption with how many it keeps and the apps it leaves out | `clipboard.enabled`, `clipboard.images` (`max_items` and `exclude_apps` only by hand) |
-| Quick keys | each action's keys with **Remove**, and **Reset All Quick Keys** | `quick_keys` |
+| Quick keys | each action's keys with **Remove**, and **Remove All…** (asks first) | `quick_keys` |
 
 Quick keys are set in the launcher itself (Actions, Ctrl+K); this page only lists and removes
 them.
 
 ### About
 
-The app's version, where the settings files are, and a note that `AMANE_THEME`, `AMANE_DENSITY`
-and `AMANE_TEXT_SCALE` win over these settings when set.
+The app's card (its icon, name and version), and **Settings files ›**: a sub-page with each
+file's path (from `~`, shortened in the middle when long) and **Show in Folder**, and a note that
+`AMANE_THEME`, `AMANE_DENSITY` and `AMANE_TEXT_SCALE` win over these settings when set.
 
 ## System
 
@@ -142,13 +171,14 @@ The NixOS configuration in `~/nixos-config`, through the contract in
 
 ### About This Computer
 
-`system/about.rs`. A status row saying whether the running system is this configuration ("Up to
-date", or why not: settings changed, uncommitted files, commits not applied, a differing
-evaluation), with **Show Changes** and **Apply…**; then the NixOS version and nixpkgs commit,
-the kernel, the generation ("65 of 66"), the commit the running system was built from with its
-subject, the commit the repo is at, the repo path and host attribute (`nixos.json`, Enter to
-set), and **Refresh**. Under *Managed settings*, the registry's controls for this page: **Time
-zone** (a field with **Set**).
+`system/about.rs`. The computer's card (its name and the NixOS it runs), then a status row
+saying whether the running system is this configuration ("Up to date", or why not: settings
+changed, uncommitted files, commits not applied, a differing evaluation), with **Show Changes**
+and **Apply**; then the NixOS version and nixpkgs commit, the kernel, the generation running
+("79", or "79 (next boot: 80)" after a Try or an Apply at Restart), the commit the running system
+was built from with its subject, and the commit the folder is at. **Configuration folder ›**
+opens a sub-page with the folder and the flake's machine name (`nixos.json`, kept on Return or
+when a field is left) and **Refresh**. Then the registry's controls for this page: **Time zone**.
 
 A setting another file sets shows locked, with the file and line ("Set in configuration.nix:46")
 and **Move to Settings…** when the line is a plain `name = value;`: a dialog shows the line, and
@@ -157,8 +187,8 @@ and **Move to Settings…** when the line is a plain `name = value;`: a dialog s
 
 ### General
 
-`system/general.rs`. **Computer name** (a field with **Set**; lowercase letters, digits and
-dashes), **Language** (a dropdown of the registry's locales; needs a restart), **Keyboard
+`system/general.rs`. **Computer name** (a field, kept on Return or when left; lowercase letters,
+digits and dashes), **Language** (a dropdown of the registry's locales; needs a restart), **Keyboard
 layout** and **Keyboard variant** (fields checked against `localectl list-x11-keymap-layouts`
 / `-variants <layout>`; the console keymap follows the layout).
 
@@ -241,32 +271,41 @@ packages in `settings.json` and not in HEAD's copy) just before it commits.
 `system/services.rs`. A switch per service the registry puts on this page (SSH, Avahi,
 Syncthing, KDE Connect, Flatpak, the fingerprint reader, fwupd, Bluetooth, Tailscale,
 Sunshine), with the unit's state beside it ("Running · 79 MB", "Stopped") from
-`systemctl show -p Id,ActiveState,SubState,MemoryCurrent` every five seconds (`--user` for a
-user unit such as Sunshine's). A service that's installed but not started at boot has **Only
-when needed** under it (`amane.services.<unit>.onDemand`, which empties the unit's `wantedBy`).
-**Start** / **Stop** act now through `systemctl start|stop` (systemd asks through polkit) and
-don't survive a restart; the switches wait for Apply.
+`systemctl show -p Id,LoadState,ActiveState,SubState,MemoryCurrent` every five seconds
+(`--user` for a user unit such as Sunshine's), and a dot before its name: green running, yellow
+starting or stopping, red failed, grey off. A spinner shows until the first look. A service
+that's installed but not started at boot has **Start only when needed** set in under it
+(`amane.services.<unit>.onDemand`, which empties the unit's `wantedBy`). **Start** / **Stop**
+act now through `systemctl start|stop` (systemd asks through polkit) and don't survive a
+restart; they show only for a unit systemd has (not for one switched on and not yet applied).
+Stopping SSH, Tailscale or Sunshine asks first, since a remote session may ride on it. The
+switches wait for Apply.
 
 ### Power & Lock
 
 `system/power.rs`. **Dim the screen after**, **Lock the screen after** and **Turn the screen
 off after**: dropdowns over 1–30 minutes and *Never*, the `amane.idle.*` options that build
-hypridle's listeners (home-manager restarts hypridle on Apply). Whether hypridle is running is
-shown under them.
+hypridle's listeners (home-manager restarts hypridle on Apply). A note says when a step is set
+to come before the one it follows ("The screen locks before it dims."). **Idle service** shows
+whether hypridle is running.
 
 ### History
 
 `system/history.rs`. Every generation (`/nix/var/nix/profiles/system-N-link`), newest first:
 when it was made and the subject of the commit it came from (else its NixOS version), marked
-*current* and *booted*. Picking one shows its number, version and commit, with **Try** (activates
-it without recording it; a restart undoes it) and **Restore…** (a dialog, then a new generation
-made from it).
+*current* and *booted*. Picking one shows, under it, **Try…** (a dialog, then it runs without
+being recorded; a restart undoes it) and **Restore…** (a dialog, then a new generation made from
+it); picking it again puts them away.
 
 ### Storage
 
-`system/storage.rs`. How full `/nix` and `/boot` are (meters), **Check What a Clean-up Frees**
-(`nix-collect-garbage --dry-run`), and the registry's controls for this page: **Boot entries
-kept** (a stepper, 1–50). Whole-number settings from the registry are steppers.
+`system/storage.rs`. How full *System and apps* (`/nix`) and the *Startup partition* (`/boot`)
+are (progress bars). **Clean up**: **Check** counts what nothing uses
+(`nix-collect-garbage --dry-run`: "5,139 unused items can be removed"), then **Clean Up…** asks
+and runs `nix-store --gc` through the daemon, as the user: what only old, already removed
+versions used goes; the versions themselves stay for History ("Freed 3.2 GB"). The weekly
+clean-up removes versions older than 14 days. Then the registry's controls for this page:
+**Boot entries kept** (a stepper, 1–50). Whole-number settings from the registry are steppers.
 
 ### Software Update
 
@@ -278,9 +317,10 @@ compares it with the running system, through the Apply bar like any build; a row
 (the inputs' commits first, then the packages). The Apply bar's **Apply Now** / **Apply at
 Restart** / **Try** activate it; after a `switch` or `boot` the lock goes into the repo as
 `flake.lock` and is committed with `managed/settings.json` as `update: nixpkgs 26f4107 →
-1a2b3c4, …`. Nothing moved: "Already up to date". Below, the inputs from `flake.lock`, each
-with how long ago it was updated and its commit (the old and new commits while a check is
-around), and **Update** to check just that input.
+1a2b3c4, …`. Nothing moved: "Everything is up to date." Below, under *Components*, the inputs
+from `flake.lock` (by a plain name where there's one: nixpkgs is *NixOS packages*, niri the
+*Compositor*), each with how long ago it was updated and its commit (the old and new commits
+while a check is around, *not pinned* for none), and **Update** to check just that input.
 
 The scheduled check ([nixos.md](../integration/nixos.md#the-scheduled-check)) fills the same
 row between checks: "Checked 2 hours ago · updates for nixpkgs, amane-shell" with **Update
@@ -295,17 +335,17 @@ tile (Quick Settings, Add Controls → Utilities) names the inputs while somethi
 
 | State | Says | Buttons |
 |---|---|---|
-| Waiting | "2 changes waiting · Time zone → Europe/Oslo · Tailscale off" | **Discard** (a dialog), **Try** (builds, then activates in `test` mode), **Apply…** (builds) |
-| Building | a meter and "building amane-shell (3/7) · 1:12", "Evaluating…", or "checking for updates" | **Show Log**, **Cancel** |
+| Waiting | "2 changes waiting · Time zone → Europe/Oslo · Tailscale off" | **Discard** (a dialog), **Try** (builds, then activates in `test` mode), **Apply** (builds) |
+| Building | a progress bar (a spinner while evaluating) and "Building amane-shell (3/7) · 1:12", "Evaluating…", or "Checking for updates" | **Show Log**, **Cancel** (asks first) |
 | Built | "Ready: 12 packages change · needs a restart" ("Update ready: …" for a check) | **Show Changes**, **Cancel**, **Try**, **Apply at Restart** (when the kernel changes), **Apply Now** |
-| Up to date | "Already up to date: every input is at its newest." (a check that found nothing) | **Dismiss** |
+| Up to date | "Everything is up to date." (a check that found nothing) | **Dismiss** |
 | Applying | "Applying… authenticate when asked." | **Show Log** |
 | Done | "Applied · generation 67 · settings: …", "Tried · Apply to keep it", or "Applied, but not committed: …" | **Show Log**, **Dismiss** |
 | Failed | "Build failed: …" in the critical colour | **Show Log**, **Dismiss** |
 
 **Show Changes** and **Show Log** take the page's place (the settings waiting, then the
 packages that update, are added and removed; the build's last 300 lines, with **Copy Log**),
-with the back pill before the title.
+with back in the toolbar's pill.
 
 ## The files
 

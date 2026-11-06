@@ -10,11 +10,16 @@ mod dock;
 mod launcher;
 mod previews;
 mod quick_settings;
+mod search;
 mod status_bar;
 mod system;
 
-use amane::{Center, Column, Key, Rectangle, Row, ScrollArea, Service, Size, Text, Widget, Window};
-use amane_kit::app::{Dialog, Page, app, app_window, sidebar, standard_shortcut};
+use amane::{
+    Center, Column, Key, Rectangle, Row, ScrollArea, Service, Size, Text, TextInput, Widget, Window,
+};
+use amane_kit::app::{
+    Dialog, Page, app, app_window, field_box, sidebar_with, standard_shortcut, text_field,
+};
 use amane_kit::buttons::Switch;
 use amane_kit::color::Accent;
 use amane_kit::form::{FormRow, Group};
@@ -176,7 +181,7 @@ const SYS_UPDATE: usize = 17;
 
 /// The page `--page <name>` opens: the sidebar's names, lowercased, or a
 /// System page's short name.
-fn page_named(name: &str) -> Option<usize> {
+pub fn page_named(name: &str) -> Option<usize> {
     Some(match name.trim().to_lowercase().as_str() {
         "appearance" => 1,
         "desktop" => 2,
@@ -333,8 +338,17 @@ fn shortcut(key: Key) -> bool {
         forward();
         return true;
     }
-    // Escape leaves a view for the page under it
+    // Ctrl+F searches, as macOS's Command-F does
+    if held.ctrl && !held.alt && key == Key::Character('f') {
+        search::focus();
+        drop(Navigation::write());
+        return true;
+    }
+    // Escape clears a search, else leaves a view for the page under it
     if key == Key::Escape && !held.ctrl && !held.alt {
+        if search::clear() {
+            return true;
+        }
         let in_view = Navigation::read().here().view().is_some();
         if in_view {
             back();
@@ -487,11 +501,41 @@ fn main_window() -> Window {
     // its poll rests while another page shows
     displays::showing(page == DISPLAYS && view.is_none());
 
-    let nav = sidebar("settings.nav", &pages, page, |page| {
-        Navigation::write().set_page(page);
-    });
+    // a search shows what it finds in the page's place, and narrows the
+    // sidebar to the pages with something found
+    let query = TextInput::text(search::FIELD);
+    let found = search::find(&query, &search::system_entries());
+    let searching = !query.trim().is_empty();
+    let shown: Vec<bool> = if searching {
+        (0..pages.len())
+            .map(|index| {
+                found.iter().any(|found| {
+                    let page = found.place.split('/').next().unwrap_or_default();
+                    page_named(page) == Some(index)
+                })
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let nav = sidebar_with(
+        "settings.nav",
+        &pages,
+        page,
+        |page| {
+            TextInput::set_text(search::FIELD, "");
+            Navigation::write().set_page(page);
+        },
+        Some(search_field()),
+        &shown,
+    );
 
-    let (title, body) = content(page, view);
+    amane_kit::form::highlight_row(search::lit_row());
+    let (title, body) = if searching {
+        (String::from("Search"), results(&query, &found))
+    } else {
+        content(page, view)
+    };
 
     let mut column: Vec<Box<dyn Widget>> = vec![
         boxed(header(
@@ -532,6 +576,70 @@ fn main_window() -> Window {
         )
         .on_shortcut(shortcut)
         .on_close(may_close)
+}
+
+/// The field over the sidebar's pages.
+fn search_field() -> Box<dyn Widget> {
+    let mut input = text_field(search::FIELD, "Search")
+        .on_change(|_| drop(Navigation::write()))
+        .on_submit(|text| {
+            if let Some(first) = search::find(&text, &search::system_entries()).first() {
+                search::open(first);
+            }
+        });
+    if search::take_focus() {
+        input = input.focused();
+    }
+    boxed(
+        Rectangle::new()
+            .width(Size::Parent)
+            .height(Size::Fixed(mac::control_height() + sys::space::gap::s()))
+            .fill(amane::Color::TRANSPARENT)
+            .align_child(amane::Start, amane::Start)
+            .child(field_box(
+                search::FIELD,
+                input,
+                SIDEBAR - 2.0 * sys::space::inset::s(),
+            )),
+    )
+}
+
+/// What a search found, each a row that opens it; Return opens the first.
+fn results(query: &str, found: &[search::Found]) -> Box<dyn Widget> {
+    let rows: Vec<FormRow> = found
+        .iter()
+        .enumerate()
+        .map(|(index, found)| {
+            let opened = found.clone();
+            FormRow::new(
+                format!("settings.search.result.{index}"),
+                found.title.clone(),
+            )
+            .subtitle(found.path.clone())
+            .on_press(move || search::open(&opened))
+        })
+        .collect();
+    let list = if rows.is_empty() {
+        group().row(
+            FormRow::new(
+                "settings.search.none",
+                format!("Nothing found for “{}”", query.trim()),
+            )
+            .subtitle("Try another word, like dark mode, wifi or keyboard"),
+        )
+    } else {
+        group().rows(rows).footer("Return opens the first.")
+    };
+    boxed(
+        ScrollArea::new(
+            "settings.scroll.search",
+            Column::new(vec![boxed(groups(vec![list]))])
+                .width(Size::Parent)
+                .align(Center),
+        )
+        .width(Size::Parent)
+        .height(Size::Parent),
+    )
 }
 
 /// A page's own button in the toolbar, such as Quick Settings' Customize.
