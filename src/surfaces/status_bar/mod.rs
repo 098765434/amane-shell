@@ -32,7 +32,7 @@ use amane::{
     PowerProfile, Rectangle, Row, Scroll, ScrollSource, Service, Size, Start, Vertical, Widget,
     Workspace, Workspaces, Zone, window_size,
 };
-use amane_kit::settings::{BarPosition, BarStyle, status_bar};
+use amane_kit::settings::{AutoHide, BarPosition, BarStyle, ClockStyle, ShowDate, status_bar};
 use amane_kit::theme::{self, Mode};
 
 use crate::components::battery;
@@ -119,28 +119,20 @@ pub fn edge() -> Vertical {
 /// display. Registered with `App::window_per_monitor`.
 pub fn bar(monitor: &Monitor) -> LayerWindow {
     let output = monitor.name.clone();
-    let left: Box<dyn Widget> = if status_bar().show_workspaces {
-        boxed(workspaces(&output))
-    } else {
-        boxed(Row::new(Vec::new()))
-    };
-    // what the right has, clear of the left and the bar's insets
-    let room = window_size().0
-        - width_of(left.as_ref())
-        - 2.0 * sys::space::inset::m()
-        - sys::space::gap::l();
-    let sections = Row::new(vec![left, boxed(status(&output, room))])
-        .width(Parent)
-        .height(Parent)
-        .justify(Justify::SpaceBetween)
-        .align(Center);
-
     let style = status_bar().style;
+
+    // a clear bar's items are light or dark to suit the wallpaper under them
+    let sections = if style == BarStyle::Clear {
+        Material::Control.adapted(clear_id(&output), || sections(&output))
+    } else {
+        sections(&output)
+    };
+
     let height = sys::size::panel::height();
     let (width, _) = window_size();
 
     // how far it's slid past its edge: 0 in place, `height` gone
-    let hiding = status_bar().auto_hide;
+    let hiding = hides(&output);
     let (offset, input) = with_reveal(&output, |reveal| {
         reveal.set_top(edge() == Vertical::Top);
         reveal.keep_out(!hiding || is_open(Panel::QuickSettings) || is_open(Panel::Notifications));
@@ -195,6 +187,12 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
             Material::Control.shape(0.0, offset, width, height, 0.0, 1.0),
         ]),
         BarStyle::Solid => window.blur_shapes(Vec::new()),
+        // all but invisible, so niri still reads the wallpaper under it
+        BarStyle::Clear => window.blur_shapes(vec![
+            Material::Media
+                .shape(0.0, offset, width, height, 0.0, 0.02)
+                .id(clear_id(&output)),
+        ]),
     };
     let window = if hiding {
         window.input_region(input)
@@ -214,10 +212,60 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
         .child(panel)
 }
 
+/// The workspaces and the items, side by side.
+fn sections(output: &str) -> Row {
+    let left: Box<dyn Widget> = if status_bar().show_workspaces {
+        boxed(workspaces(output))
+    } else {
+        boxed(Row::new(Vec::new()))
+    };
+    // what the right has, clear of the left and the bar's insets
+    let room = window_size().0
+        - width_of(left.as_ref())
+        - 2.0 * sys::space::inset::m()
+        - sys::space::gap::l();
+    Row::new(vec![left, boxed(status(output, room))])
+        .width(Parent)
+        .height(Parent)
+        .justify(Justify::SpaceBetween)
+        .align(Center)
+}
+
+/// The id niri's readings of the wallpaper under monitor `output`'s clear
+/// bar come by.
+fn clear_id(output: &str) -> u32 {
+    crate::components::glass_region::shape_id(&format!("amane.status-bar.{output}"))
+}
+
+/// Whether the bar on monitor `output` hides now, as `auto_hide` says.
+fn hides(output: &str) -> bool {
+    match status_bar().auto_hide {
+        AutoHide::Never => false,
+        AutoHide::Always => true,
+        AutoHide::Desktop => shown_workspace(output).is_some_and(|(_, windows)| windows == 0),
+        AutoHide::Fullscreen => shown_workspace(output).is_some_and(|(id, _)| {
+            amane::Windows::read()
+                .list()
+                .iter()
+                .any(|window| window.workspace() == Some(id) && window.fullscreen())
+        }),
+    }
+}
+
+/// The workspace monitor `output` shows, and how many windows it has.
+fn shown_workspace(output: &str) -> Option<(i64, u32)> {
+    Workspaces::read()
+        .list()
+        .iter()
+        .find(|workspace| workspace.output() == Some(output) && workspace.active())
+        .map(|workspace| (workspace.id(), workspace.windows()))
+}
+
 /// What the strip is painted with: the bar's tint over niri's frost, the
-/// glass's own (none where niri draws it), or black or white.
+/// glass's own (none where niri draws it), black or white, or nothing.
 fn fill(style: BarStyle) -> Color {
     match style {
+        BarStyle::Clear => Color::TRANSPARENT,
         BarStyle::Frosted => Material::Bar.tint(),
         BarStyle::Glass => Material::Control.fill(),
         BarStyle::Solid => match theme::mode() {
@@ -372,24 +420,35 @@ fn status(output: &str, room: f32) -> amane::Stack {
     } else {
         Vec::new()
     };
-    let build_all = |hidden: usize| -> Vec<(Item, Vec<Box<dyn Widget>>)> {
+    let build_all = |hidden: usize, dated: bool| -> Vec<(Item, Vec<Box<dyn Widget>>)> {
         Item::ordered()
             .into_iter()
             .filter(|item| item.shown())
             .map(|item| match item {
                 Item::Tray => (item, tray::icons(&apps, hidden)),
+                Item::Clock => (item, vec![clock(dated)]),
                 _ => (item, build(item)),
             })
             .filter(|(_, widgets)| !widgets.is_empty())
             .collect()
     };
-    let mut built = build_all(0);
     let gap = sys::space::gap::_2xs();
-    let width: f32 = built
-        .iter()
-        .flat_map(|(_, widgets)| widgets.iter())
-        .map(|widget| width_of(widget.as_ref()) + gap)
-        .sum();
+    let width_of_all = |built: &[(Item, Vec<Box<dyn Widget>>)]| -> f32 {
+        built
+            .iter()
+            .flat_map(|(_, widgets)| widgets.iter())
+            .map(|widget| width_of(widget.as_ref()) + gap)
+            .sum()
+    };
+    let mut dated = true;
+    let mut built = build_all(0, dated);
+    let mut width = width_of_all(&built);
+    // a date shown "when space allows" goes first, before any app's icon
+    if width > room && status_bar().show_date == ShowDate::WhenSpace {
+        dated = false;
+        built = build_all(0, dated);
+        width = width_of_all(&built);
+    }
     if width > room && !apps.is_empty() {
         let over = width - room;
         // one for each icon's width, and room for the » button
@@ -397,7 +456,7 @@ fn status(output: &str, room: f32) -> amane::Stack {
         while hidden < apps.len() && tray::width_of(hidden - 1) < over {
             hidden += 1;
         }
-        built = build_all(hidden);
+        built = build_all(hidden, dated);
     }
 
     drag::cluster(output, built, sys::size::panel::height())
@@ -421,7 +480,9 @@ fn build(item: Item) -> Vec<Box<dyn Widget>> {
         Item::QuickSettings => vec![quick_settings_button()],
         Item::Notifications => notification_icon().into_iter().collect(),
         Item::Timer => timer().into_iter().collect(),
-        Item::Clock => vec![clock()],
+        Item::Clock => vec![clock(true)],
+        Item::Keyboard => keyboard().into_iter().collect(),
+        Item::Weather => weather().into_iter().collect(),
     }
 }
 
@@ -747,14 +808,33 @@ thread_local! {
 }
 
 /// The clock opens the notification center, like macOS's; its tooltip is
-/// the date.
-fn clock() -> Box<dyn Widget> {
+/// the date. `dated` says whether there's room for a date shown "when space
+/// allows".
+fn clock(dated: bool) -> Box<dyn Widget> {
     let clock = Clock::read();
-    let time = clock.text();
+    let time = clock.bar_text(dated);
     let date = clock.date();
+    let (hour, minute) = clock.hands();
+    let full_time = clock.text();
     drop(clock);
-    // as wide as the time, with room for the highlight either side
-    let width = text_width(&time, sys::r#type::numeric()) + sys::space::inset::s() * 2.0;
+
+    if status_bar().clock_style == ClockStyle::Analog {
+        return boxed(
+            item(DrawnButton::new("amane.bar.clock", move |color| {
+                analog(hour, minute, color)
+            }))
+            .width(bar::indicator::width())
+            .color(material::label(Level::Primary))
+            .active(is_open(Panel::Notifications))
+            .on_press(|| panel::toggle(Panel::Notifications))
+            .tooltip(BAR_NS, format!("{full_time} · {date}"))
+            .build(),
+        );
+    }
+
+    // as wide as the time with its colons, so flashing them never moves it
+    let widest = clock_width(&time);
+    let width = widest + sys::space::inset::s() * 2.0;
 
     boxed(
         item(PushButton::new("amane.bar.clock", time))
@@ -765,6 +845,126 @@ fn clock() -> Box<dyn Widget> {
             .tooltip(BAR_NS, date)
             .build(),
     )
+}
+
+/// How wide the clock's text is with its colons, whether or not they show.
+fn clock_width(time: &str) -> f32 {
+    text_width(&time.replace('\u{2008}', ":"), sys::r#type::numeric())
+}
+
+/// A small clock face with its two hands, as macOS's analog menu bar clock.
+fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
+    const FACE: f32 = 16.0;
+    let hand = |length: f32, thickness: f32, degrees: f32| -> Box<dyn Widget> {
+        // a hand from the middle up, in a frame the size of the face that turns
+        boxed(
+            Rectangle::new()
+                .width(Size::Fixed(FACE))
+                .height(Size::Fixed(FACE))
+                .fill(Color::TRANSPARENT)
+                .rotate(degrees)
+                .align_child(Center, Start)
+                .padding(amane::Padding {
+                    top: FACE / 2.0 - length,
+                    ..amane::Padding::default()
+                })
+                .child(
+                    Rectangle::new()
+                        .width(Size::Fixed(thickness))
+                        .height(Size::Fixed(length))
+                        .radius(thickness / 2.0)
+                        .fill(color),
+                ),
+        )
+    };
+    let minutes = minute as f32 * 6.0;
+    let hours = (hour % 12) as f32 * 30.0 + minute as f32 * 0.5;
+    Rectangle::new()
+        .width(Size::Fixed(bar::indicator::width()))
+        .height(Parent)
+        .fill(Color::TRANSPARENT)
+        .align_child(Center, Center)
+        .child(
+            Rectangle::new()
+                .width(Size::Fixed(FACE))
+                .height(Size::Fixed(FACE))
+                .radius(FACE / 2.0)
+                .border(1.5, color)
+                .child(amane::Stack::new(vec![
+                    hand(4.0, 1.5, hours),
+                    hand(6.0, 1.2, minutes),
+                ])),
+        )
+}
+
+/// The keyboard layout as macOS's input menu shows it, a short code, with
+/// two or more; a click lists them to switch.
+fn keyboard() -> Option<Box<dyn Widget>> {
+    use crate::services::desktop::keyboard_layout::{KeyboardLayout, short};
+    let layouts = KeyboardLayout::read();
+    if layouts.names().len() < 2 {
+        return None;
+    }
+    let name = layouts.name().unwrap_or_default().to_string();
+    drop(layouts);
+    let code = short(&name);
+    let width = text_width(&code, sys::r#type::caption()) + sys::space::inset::s() * 2.0;
+    Some(boxed(
+        item(PushButton::new("amane.bar.keyboard", code))
+            .text(sys::r#type::caption())
+            .width(width.max(bar::indicator::width()))
+            .on_press(|| {
+                let layouts = KeyboardLayout::read();
+                let current = layouts.current();
+                let mut menu = crate::surfaces::context_menu::ContextMenu::new();
+                for (index, name) in layouts.names().iter().enumerate() {
+                    let mut row = crate::surfaces::context_menu::MenuItem::label(name.clone())
+                        .on_select(move || KeyboardLayout::switch(index));
+                    if index == current {
+                        row = row.icon(crate::surfaces::context_menu::Icon::glyph("\u{2713}"));
+                    }
+                    menu = menu.item(row);
+                }
+                drop(layouts);
+                crate::surfaces::context_menu::show_under(
+                    "amane.bar.keyboard",
+                    menu,
+                    BAR_NS,
+                    (cursor().0 as i32, menu_edge()),
+                );
+            })
+            .tooltip(BAR_NS, name)
+            .build(),
+    ))
+}
+
+/// The weather where `weather_place` is, once it's been read: its glyph
+/// and temperature; the tooltip says the place, the day's high and low.
+fn weather() -> Option<Box<dyn Widget>> {
+    use crate::services::desktop::weather::{Weather, describe};
+    if !status_bar().weather {
+        return None;
+    }
+    let weather = Weather::read();
+    let now = weather.now()?.clone();
+    let place = weather.place().to_string();
+    drop(weather);
+    let (glyph, words) = describe(now.code, now.day);
+    let text = format!("{:.0}°", now.temperature);
+    let width = text_width(&text, sys::r#type::numeric())
+        + bar::indicator::width()
+        + sys::space::inset::s();
+    Some(boxed(
+        item(PushButton::new("amane.bar.weather", text))
+            .icon(glyph)
+            .text(sys::r#type::numeric())
+            .width(width)
+            .tooltip(
+                BAR_NS,
+                format!("{place} · {words} · H:{:.0}° L:{:.0}°", now.high, now.low),
+            )
+            .build(),
+    ))
 }
 
 /// The bar's edge facing the screen, for a menu to open from: its top

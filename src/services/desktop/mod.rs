@@ -3,7 +3,9 @@
 //! display.
 
 pub mod background_apps;
+pub mod keyboard_layout;
 pub mod lock_keys;
 pub mod privacy;
 pub mod system_stats;
 pub mod updates;
+pub mod weather;

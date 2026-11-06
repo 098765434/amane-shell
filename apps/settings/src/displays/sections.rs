@@ -944,7 +944,7 @@ pub fn oled_care(ctx: &Ctx) -> Option<Group> {
     }
     let dark = appearance().mode == Some(Scheme::Dark);
     let hidden = dock().auto_hide;
-    let bar_hidden = status_bar().auto_hide;
+    let bar_hidden = status_bar().auto_hide == amane_kit::settings::AutoHide::Always;
     Some(
         group()
             .header("OLED care")
@@ -964,7 +964,15 @@ pub fn oled_care(ctx: &Ctx) -> Option<Group> {
                 "settings.displays.oled.bar",
                 "Hide the status bar automatically",
                 bar_hidden,
-                |on| change_status_bar(|now| now.auto_hide = on),
+                |on| {
+                    change_status_bar(|now| {
+                        now.auto_hide = if on {
+                            amane_kit::settings::AutoHide::Always
+                        } else {
+                            amane_kit::settings::AutoHide::Never
+                        }
+                    })
+                },
             ))
             .row(
                 FormRow::new("settings.displays.oled.sleep", "Screen sleep timing")

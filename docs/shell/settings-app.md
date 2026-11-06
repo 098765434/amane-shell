@@ -82,9 +82,10 @@ Writes `status-bar.json` (`status_bar.rs`); see [status-bar.md](status-bar.md#se
 | Setting | Control | Field |
 |---|---|---|
 | Position | segmented: Bottom, Top | `position` |
-| Hiding | switch: Hide the status bar until the pointer meets the screen's edge | `auto_hide` |
-| Material | radios: Frosted, Glass, Solid (black in dark mode, white in light) | `style` |
-| Clock | switches: 24-hour time, Show seconds | `clock_24h`, `clock_seconds` |
+| Hide automatically | dropdown: Never, Always, On the desktop only, In full screen only | `auto_hide` |
+| Material | radios: Clear (on the wallpaper), Frosted, Glass, Solid (black in dark mode, white in light) | `style` |
+| Clock | switches: 24-hour time, Show seconds, Analog, Show the day of the week, Flash the time separators; dropdown: Show the date (When space allows, Always, Never) | `clock_24h`, `clock_seconds`, `clock_style`, `show_weekday`, `flash_separators`, `show_date` |
+| Weather | switch: Show the weather; field: Place (Return keeps it) | `weather`, `weather_place` |
 | Date in the clock's tooltip | dropdown: Sunday 25 October, Sun 25 Oct, the locale's numbers | `date_format` |
 | Workspaces | switches: Show workspaces, Scroll over them to move between workspaces | `show_workspaces`, `scroll_workspaces` |
 | Now Playing | switch: Always show | `media_always` |

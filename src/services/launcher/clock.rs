@@ -45,6 +45,26 @@ impl Clock {
         self.now.format(status_bar().time_pattern()).to_string()
     }
 
+    /// What the bar's clock shows: the day and date when they show (the
+    /// date only `dated` when it shows "when space allows"), then the
+    /// time, its colons gone every other second while they flash.
+    pub fn bar_text(&self, dated: bool) -> String {
+        let bar = status_bar();
+        let text = self.now.format(&bar.clock_pattern(dated)).to_string();
+        if bar.flash_separators && self.now.timestamp() % 2 == 1 {
+            // a figure space keeps the width a colon had, near enough
+            text.replace(':', "\u{2008}")
+        } else {
+            text
+        }
+    }
+
+    /// The hour and minute, for an analog clock's hands.
+    pub fn hands(&self) -> (u32, u32) {
+        use chrono::Timelike;
+        (self.now.hour(), self.now.minute())
+    }
+
     /// The day in the bar's format, such as "Sunday 25 October".
     pub fn date(&self) -> String {
         self.now
@@ -54,11 +74,13 @@ impl Clock {
 }
 
 // the clock as the bar shows it now, and its day, so a change of format or
-// of day redraws too
+// of day redraws too; each second while the separators flash
 fn shown(now: DateTime<Local>) -> String {
     let bar = status_bar();
+    let flash = if bar.flash_separators { " %S" } else { "" };
     now.format(&format!(
-        "{} {}",
+        "{} {} {}{flash}",
+        bar.clock_pattern(true),
         bar.time_pattern(),
         bar.date_format.pattern()
     ))

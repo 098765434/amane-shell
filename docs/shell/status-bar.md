@@ -144,15 +144,28 @@ Bar page), followed live:
 | Field | Does |
 |---|---|
 | `position` | `bottom` or `top`. Quick Settings (`panel::popover_margin`, its anchor and its rise), the dock's gap, the widgets' canvas and gallery, and Do Not Disturb's menu follow `status_bar::edge()`; the notification center and toasts already keep clear of the reserved zone |
-| `style` | `frosted`: the layer rule's frost and `Material::Bar`'s tint. `glass`: one blur shape in `Material::Control`'s glass over the strip. `solid`: no blur, black in dark mode and white in light, not vibrant |
+| `style` | `frosted`: the layer rule's frost and `Material::Bar`'s tint. `glass`: one blur shape in `Material::Control`'s glass over the strip. `solid`: no blur, black in dark mode and white in light, not vibrant. `clear`, as macOS 26's menu bar: no strip; one all but invisible clear-glass shape (2%) with an id, so niri reads the wallpaper under it, and the items built under `Material::Control.adapted`, so their labels are light or dark to suit it |
 | `clock_24h`, `clock_seconds` | the clock's format; `Clock` signals once a minute, or a second while seconds show |
+| `clock_style` | `digital`, or `analog`: a small drawn face whose two hands are frames the size of the face, turned (`Rectangle::rotate`); its tooltip has the time |
+| `show_date` | the date before the time: `never`, `always`, or `when-space`: dropped before any app's icon goes behind » |
+| `show_weekday` | the day of the week before the time (`StatusBar::clock_pattern`) |
+| `flash_separators` | the colons blink each second, as macOS's; a figure space stands in, and the clock keeps the width it has with colons. `Clock` signals each second while on |
+| `media_always` | Now Playing shows with nothing playing too |
+| `weather`, `weather_place` | the Weather item (`services/desktop/weather.rs`): Open-Meteo, the place found once by its geocoding, read every half hour and whenever the place changes; nothing is fetched while it's off. Its glyph and temperature, the tooltip the place, the conditions and the day's high and low; a moon on clear nights |
+| `order`, `tray_denied` | the items' order and the apps kept out (above) |
 | `date_format` | the clock tooltip's day: `long` ("Sunday 25 October"), `short` ("Sun 25 Oct"), `numeric` (the locale's `%x`) |
 | `show_workspaces`, `scroll_workspaces` | the pips, and whether scrolling over them moves between workspaces |
 | `hidden` | the status icons left out (above) |
-| `auto_hide` | slides the bar past its edge (an [`EdgeReveal`](../kit/components.md#edgereveal) at the top or bottom) and keeps no room from windows (`Zone::Ignore`). It comes back while the pointer is on a 2 px strip at the edge or on the bar, or while Quick Settings or the notification center is open, and goes again 400 ms after. Its frost becomes a blur shape that slides with it. At the bottom, a hiding dock (Overlay) takes the edge first |
+| `auto_hide` | `never`, `always`, `desktop` (while the bar's monitor shows a workspace with no windows) or `fullscreen` (while a window on that workspace is fullscreen: `WindowInfo::fullscreen`, which needs the niri fork's `is_fullscreen`), as macOS's four choices; the old `true`/`false` read as `always`/`never`. Hiding slides the bar past its edge (an [`EdgeReveal`](../kit/components.md#edgereveal) at the top or bottom) and keeps no room from windows (`Zone::Ignore`). It comes back while the pointer is on a 2 px strip at the edge or on the bar, or while Quick Settings or the notification center is open, and goes again 400 ms after. Its frost becomes a blur shape that slides with it. At the bottom, a hiding dock (Overlay) takes the edge first |
 
 Every style draws only rectangles and glyphs (the quad pipeline); the glass is niri's, not a
 shader.
+
+## Keyboard layout
+
+With two or more layouts, a short code for the one in use ("NO", "US"), from
+`services/desktop/keyboard_layout.rs`, which follows `niri msg --json event-stream`. A click lists
+the layouts with a tick on the current one; picking one runs `niri msg action switch-layout`.
 
 ## Shared pieces that live elsewhere
 

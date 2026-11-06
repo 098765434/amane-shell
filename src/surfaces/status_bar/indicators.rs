@@ -36,13 +36,18 @@ pub enum Indicator {
     StatusIcons,
     /// What's playing.
     Media,
+    Weather,
+    /// The keyboard layout, with two or more.
+    Keyboard,
     /// The bell for unseen notifications, or the moon for Do Not Disturb.
     Notifications,
 }
 
 impl Indicator {
-    pub const ALL: [Indicator; 12] = [
+    pub const ALL: [Indicator; 14] = [
         Self::Media,
+        Self::Weather,
+        Self::Keyboard,
         Self::Tray,
         Self::Volume,
         Self::Bluetooth,
@@ -69,6 +74,8 @@ impl Indicator {
             Self::Privacy => "privacy",
             Self::StatusIcons => "status-icons",
             Self::Media => "media",
+            Self::Weather => "weather",
+            Self::Keyboard => "keyboard",
             Self::Notifications => "notifications",
         }
     }
@@ -96,11 +103,13 @@ pub enum Item {
     Privacy,
     StatusIcons,
     Media,
+    Weather,
     Volume,
     Bluetooth,
     Network,
     Tailscale,
     KeepAwake,
+    Keyboard,
     Phone,
     Battery,
     QuickSettings,
@@ -111,16 +120,18 @@ pub enum Item {
 
 impl Item {
     /// The usual order, left to right.
-    pub const ALL: [Item; 15] = [
+    pub const ALL: [Item; 17] = [
         Self::Tray,
         Self::Privacy,
         Self::StatusIcons,
         Self::Media,
+        Self::Weather,
         Self::Volume,
         Self::Bluetooth,
         Self::Network,
         Self::Tailscale,
         Self::KeepAwake,
+        Self::Keyboard,
         Self::Phone,
         Self::Battery,
         Self::QuickSettings,
@@ -153,6 +164,8 @@ impl Item {
             Self::Privacy => Indicator::Privacy,
             Self::StatusIcons => Indicator::StatusIcons,
             Self::Media => Indicator::Media,
+            Self::Weather => Indicator::Weather,
+            Self::Keyboard => Indicator::Keyboard,
             Self::Volume => Indicator::Volume,
             Self::Bluetooth => Indicator::Bluetooth,
             Self::Network => Indicator::Network,

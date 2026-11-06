@@ -296,6 +296,74 @@ pub enum BarStyle {
     Glass,
     /// Opaque: black in dark mode, white in light.
     Solid,
+    /// No strip at all, as macOS 26's menu bar: the items sit on the
+    /// wallpaper, light or dark to suit it.
+    Clear,
+}
+
+/// When the status bar hides past its edge, as macOS's "Automatically hide
+/// and show the menu bar".
+#[derive(Serialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum AutoHide {
+    #[default]
+    Never,
+    Always,
+    /// While no window is on the bar's monitor's workspace.
+    Desktop,
+    /// While the focused window on its monitor is fullscreen.
+    Fullscreen,
+}
+
+impl AutoHide {
+    pub const ALL: [AutoHide; 4] = [Self::Never, Self::Always, Self::Desktop, Self::Fullscreen];
+}
+
+/// The setting was a switch once: `true` is Always, `false` Never.
+impl<'de> Deserialize<'de> for AutoHide {
+    fn deserialize<D: amane::serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(crate = "amane::serde", untagged)]
+        enum Either {
+            Switch(bool),
+            Mode(String),
+        }
+        Ok(match Either::deserialize(deserializer)? {
+            Either::Switch(true) => Self::Always,
+            Either::Switch(false) => Self::Never,
+            Either::Mode(mode) => match mode.as_str() {
+                "always" => Self::Always,
+                "desktop" => Self::Desktop,
+                "fullscreen" => Self::Fullscreen,
+                _ => Self::Never,
+            },
+        })
+    }
+}
+
+/// The clock's face.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum ClockStyle {
+    #[default]
+    Digital,
+    /// A small drawn clock face, its time in the tooltip.
+    Analog,
+}
+
+/// When the date shows before the time.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "kebab-case")]
+pub enum ShowDate {
+    /// Unless the bar is short of room.
+    WhenSpace,
+    Always,
+    #[default]
+    Never,
+}
+
+impl ShowDate {
+    pub const ALL: [ShowDate; 3] = [Self::WhenSpace, Self::Always, Self::Never];
 }
 
 /// How the clock's tooltip gives the day.
@@ -358,9 +426,21 @@ pub struct StatusBar {
     /// Show"; else only while something plays or was paused lately.
     pub media_always: bool,
 
-    /// Hidden past the screen's edge until the pointer meets it, as the
-    /// dock can be; it keeps no room from windows then.
-    pub auto_hide: bool,
+    /// When it hides past the screen's edge until the pointer meets it,
+    /// as the dock can; hidden, it keeps no room from windows.
+    pub auto_hide: AutoHide,
+
+    pub clock_style: ClockStyle,
+    pub show_date: ShowDate,
+    /// The day of the week before the time.
+    pub show_weekday: bool,
+    /// The colons blink each second, as macOS's "Flash the time separators".
+    pub flash_separators: bool,
+
+    /// Today's weather for `weather_place`, from Open-Meteo.
+    pub weather: bool,
+    /// A place name, found once with Open-Meteo's geocoding.
+    pub weather_place: String,
 }
 
 impl Default for StatusBar {
@@ -377,13 +457,37 @@ impl Default for StatusBar {
             order: Vec::new(),
             tray_denied: Vec::new(),
             media_always: false,
-            auto_hide: false,
+            auto_hide: AutoHide::Never,
+            clock_style: ClockStyle::Digital,
+            show_date: ShowDate::Never,
+            show_weekday: false,
+            flash_separators: false,
+            weather: false,
+            weather_place: String::new(),
         }
     }
 }
 
 impl StatusBar {
-    /// The `strftime` pattern for the clock.
+    /// The `strftime` pattern for what the clock shows: the day of the
+    /// week and the date when they show (`dated` says whether there's room
+    /// for a date shown "when space allows"), then the time.
+    pub fn clock_pattern(&self, dated: bool) -> String {
+        let date = match self.show_date {
+            ShowDate::Always => true,
+            ShowDate::WhenSpace => dated,
+            ShowDate::Never => false,
+        };
+        let day = match (date, self.show_weekday) {
+            (true, true) => "%a %-d %b  ",
+            (true, false) => "%-d %b  ",
+            (false, true) => "%a  ",
+            (false, false) => "",
+        };
+        format!("{day}{}", self.time_pattern())
+    }
+
+    /// The `strftime` pattern for the time.
     pub fn time_pattern(&self) -> &'static str {
         match (self.clock_24h, self.clock_seconds) {
             (true, false) => "%H:%M",
@@ -410,7 +514,7 @@ impl StatusBar {
 
 /// Every item on the status bar's right, by name, in its usual order,
 /// with what Shell Settings calls it and whether it can be hidden.
-pub const BAR_ITEMS: [(&str, &str, bool); 15] = [
+pub const BAR_ITEMS: [(&str, &str, bool); 17] = [
     ("tray", "Apps", true),
     ("privacy", "Camera, Microphone and Screen Sharing", true),
     (
@@ -419,11 +523,13 @@ pub const BAR_ITEMS: [(&str, &str, bool); 15] = [
         true,
     ),
     ("media", "Now Playing", true),
+    ("weather", "Weather", true),
     ("volume", "Volume", true),
     ("bluetooth", "Bluetooth", true),
     ("network", "Network", true),
     ("tailscale", "Tailscale, While Connected", true),
     ("keep-awake", "Keep Awake, While On", true),
+    ("keyboard", "Keyboard Layout, With Two or More", true),
     ("phone", "Phone Battery, While Connected", true),
     ("battery", "Battery", true),
     ("quick-settings", "Quick Settings", false),
@@ -789,7 +895,17 @@ mod bar_order_tests {
     fn items_left_out_follow_their_usual_neighbour() {
         let items = bar(&["clock", "volume", "nonsense", "battery"]).items();
         assert_eq!(items.len(), BAR_ITEMS.len());
-        assert_eq!(&items[..5], ["tray", "privacy", "status-icons", "media", "clock"]);
+        assert_eq!(
+            &items[..6],
+            [
+                "tray",
+                "privacy",
+                "status-icons",
+                "media",
+                "weather",
+                "clock"
+            ]
+        );
         let volume = items.iter().position(|item| *item == "volume").unwrap();
         assert_eq!(items[volume + 1], "bluetooth");
         let battery = items.iter().position(|item| *item == "battery").unwrap();
@@ -804,5 +920,35 @@ mod bar_order_tests {
         assert_eq!(now.items().len(), BAR_ITEMS.len());
         now.move_item("clock", 99);
         assert_eq!(now.items().last(), Some(&"clock"));
+    }
+}
+
+#[cfg(test)]
+mod bar_setting_tests {
+    use super::*;
+
+    #[test]
+    fn hiding_was_a_switch_once() {
+        let old: StatusBar = serde_json::from_str(r#"{ "auto_hide": true }"#).unwrap();
+        assert_eq!(old.auto_hide, AutoHide::Always);
+        let old: StatusBar = serde_json::from_str(r#"{ "auto_hide": false }"#).unwrap();
+        assert_eq!(old.auto_hide, AutoHide::Never);
+        let new: StatusBar = serde_json::from_str(r#"{ "auto_hide": "fullscreen" }"#).unwrap();
+        assert_eq!(new.auto_hide, AutoHide::Fullscreen);
+        let text = serde_json::to_string(&new).unwrap();
+        assert!(text.contains(r#""auto_hide":"fullscreen""#));
+    }
+
+    #[test]
+    fn the_clock_says_the_day_when_asked() {
+        let mut bar = StatusBar::default();
+        assert_eq!(bar.clock_pattern(true), "%H:%M");
+        bar.show_weekday = true;
+        assert_eq!(bar.clock_pattern(true), "%a  %H:%M");
+        bar.show_date = ShowDate::WhenSpace;
+        assert_eq!(bar.clock_pattern(true), "%a %-d %b  %H:%M");
+        assert_eq!(bar.clock_pattern(false), "%a  %H:%M");
+        bar.show_date = ShowDate::Always;
+        assert_eq!(bar.clock_pattern(false), "%a %-d %b  %H:%M");
     }
 }
