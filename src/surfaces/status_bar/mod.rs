@@ -19,6 +19,7 @@
 
 mod drag;
 mod indicators;
+mod tray;
 
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -123,7 +124,12 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
     } else {
         boxed(Row::new(Vec::new()))
     };
-    let sections = Row::new(vec![left, boxed(status(&output))])
+    // what the right has, clear of the left and the bar's insets
+    let room = window_size().0
+        - width_of(left.as_ref())
+        - 2.0 * sys::space::inset::m()
+        - sys::space::gap::l();
+    let sections = Row::new(vec![left, boxed(status(&output, room))])
         .width(Parent)
         .height(Parent)
         .justify(Justify::SpaceBetween)
@@ -359,13 +365,40 @@ fn stepped(current: Option<usize>, len: usize, step: i32) -> Option<usize> {
 
 /// The items on the right that have something to show, in their order,
 /// draggable into another.
-fn status(output: &str) -> amane::Stack {
-    let built: Vec<(Item, Vec<Box<dyn Widget>>)> = Item::ordered()
-        .into_iter()
-        .filter(|item| item.shown())
-        .map(|item| (item, build(item)))
-        .filter(|(_, widgets)| !widgets.is_empty())
-        .collect();
+/// Apps' items that don't fit in `room` go behind a » button.
+fn status(output: &str, room: f32) -> amane::Stack {
+    let apps = if Item::Tray.shown() {
+        tray::shown()
+    } else {
+        Vec::new()
+    };
+    let build_all = |hidden: usize| -> Vec<(Item, Vec<Box<dyn Widget>>)> {
+        Item::ordered()
+            .into_iter()
+            .filter(|item| item.shown())
+            .map(|item| match item {
+                Item::Tray => (item, tray::icons(&apps, hidden)),
+                _ => (item, build(item)),
+            })
+            .filter(|(_, widgets)| !widgets.is_empty())
+            .collect()
+    };
+    let mut built = build_all(0);
+    let gap = sys::space::gap::_2xs();
+    let width: f32 = built
+        .iter()
+        .flat_map(|(_, widgets)| widgets.iter())
+        .map(|widget| width_of(widget.as_ref()) + gap)
+        .sum();
+    if width > room && !apps.is_empty() {
+        let over = width - room;
+        // one for each icon's width, and room for the » button
+        let mut hidden = 1;
+        while hidden < apps.len() && tray::width_of(hidden - 1) < over {
+            hidden += 1;
+        }
+        built = build_all(hidden);
+    }
 
     drag::cluster(output, built, sys::size::panel::height())
 }
@@ -374,6 +407,7 @@ fn status(output: &str) -> amane::Stack {
 /// and "on" icons.
 fn build(item: Item) -> Vec<Box<dyn Widget>> {
     match item {
+        Item::Tray => Vec::new(),
         Item::Privacy => privacy_icons(),
         Item::StatusIcons => on_icons(),
         Item::Volume => volume().into_iter().collect(),
@@ -811,6 +845,14 @@ fn status_icon(
             }
         })
         .tooltip(BAR_NS, tip)
+}
+
+/// How wide a boxed widget is, when it says.
+fn width_of(widget: &dyn Widget) -> f32 {
+    match widget.width() {
+        Size::Fixed(width) => width,
+        Size::Parent => 0.0,
+    }
 }
 
 /// The accent while something is connected, else secondary.

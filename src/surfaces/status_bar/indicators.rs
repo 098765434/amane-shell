@@ -20,6 +20,8 @@ const OLD_FILE: &str = "taskbar";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Indicator {
+    /// Apps' own items: the system tray.
+    Tray,
     Volume,
     Bluetooth,
     Network,
@@ -37,7 +39,8 @@ pub enum Indicator {
 }
 
 impl Indicator {
-    pub const ALL: [Indicator; 10] = [
+    pub const ALL: [Indicator; 11] = [
+        Self::Tray,
         Self::Volume,
         Self::Bluetooth,
         Self::Network,
@@ -52,6 +55,7 @@ impl Indicator {
 
     pub fn name(self) -> &'static str {
         match self {
+            Self::Tray => "tray",
             Self::Volume => "volume",
             Self::Bluetooth => "bluetooth",
             Self::Network => "network",
@@ -84,6 +88,7 @@ impl Indicator {
 /// `StatusBar::order` says otherwise.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Item {
+    Tray,
     Privacy,
     StatusIcons,
     Volume,
@@ -101,7 +106,8 @@ pub enum Item {
 
 impl Item {
     /// The usual order, left to right.
-    pub const ALL: [Item; 13] = [
+    pub const ALL: [Item; 14] = [
+        Self::Tray,
         Self::Privacy,
         Self::StatusIcons,
         Self::Volume,
@@ -137,6 +143,7 @@ impl Item {
     /// clock do, and the timer shows while it runs.
     pub fn indicator(self) -> Option<Indicator> {
         Some(match self {
+            Self::Tray => Indicator::Tray,
             Self::Privacy => Indicator::Privacy,
             Self::StatusIcons => Indicator::StatusIcons,
             Self::Volume => Indicator::Volume,
@@ -158,7 +165,11 @@ impl Item {
 
     /// The items in the order the settings keep them.
     pub fn ordered() -> Vec<Item> {
-        status_bar().items().into_iter().filter_map(Item::named).collect()
+        status_bar()
+            .items()
+            .into_iter()
+            .filter_map(Item::named)
+            .collect()
     }
 }
 
@@ -220,6 +231,7 @@ pub fn ipc(args: &[String]) -> String {
             move_item(item, index);
             return String::from("ok");
         }
+        ["tray", rest @ ..] => return super::tray::ipc(rest),
         ["reset-order"] => {
             reset_order();
             return String::from("ok");

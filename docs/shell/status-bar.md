@@ -91,6 +91,30 @@ own press, so they don't shrink when pressed. The usual order, left to right:
 Hidden items take no space: each section yields `Option`s that are flattened, so the row's gaps
 stay even.
 
+## Apps (the tray)
+
+The first item, **Apps** (`tray.rs`), is macOS's menu bar extras: the system tray's icons from
+amane's `Tray` (StatusNotifierItem, see amane's `docs/fork/system/tray.md`), for Steam, Discord,
+nm-applet and the like, in the order they came. Each is the app's picture (16 px; a dot for one that
+sent none), ringed in the accent while the app wants attention. Apps whose item is `Passive` (KDE
+Connect's indicator with no phone, say) don't show.
+
+- **Left click**: the app's action (`Activate`), or its menu when it has only a menu.
+- **Right click**: its menu, read over dbusmenu as it opens and shown as the shell's own context
+  menu: ticks as a ✓ or • before the label, entry icons, submenus. An app without a dbusmenu is
+  asked to show its own (`ContextMenu`).
+- **Middle click**: its second action. **Scrolling** goes to it.
+
+**Allow in the Status Bar**, as macOS's: Shell Settings lists every app seen in the tray
+(`~/.cache/amane-shell/tray-seen.json`), each with a switch; one switched off stays out of the bar
+(`StatusBar::tray_denied`, by the item's id) and keeps running.
+
+**Overflow**, as macOS 27's: when the right-hand items would be wider than the bar leaves them (its
+width less the workspaces and insets), the last apps go behind a » button, which lists them in a
+menu, each doing what its click would.
+
+Over IPC: `status-bar tray list`, `status-bar tray activate <id>` and `status-bar tray menu <id>`.
+
 ## Status icons
 
 Volume, Bluetooth, network, Tailscale, Keep Awake, the phone and battery are optional, and so are three

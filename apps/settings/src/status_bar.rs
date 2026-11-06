@@ -8,7 +8,7 @@ use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
 use amane_kit::layout::{boxed, fixed_width};
 use amane_kit::settings::{
-    BAR_ITEMS, BarPosition, BarStyle, DateFormat, change_status_bar, status_bar,
+    BAR_ITEMS, BarPosition, BarStyle, DateFormat, change_status_bar, status_bar, tray_seen,
 };
 
 use crate::{group, groups, radios_height, switch_row};
@@ -141,6 +141,7 @@ pub fn page() -> Column {
                 )
                 .subtitle("Scroll over the workspaces to move between them"),
             ),
+        allowed_apps(&now),
         group()
             .header("Items, Left to Right")
             .rows(icons)
@@ -191,4 +192,41 @@ fn item_row(name: &'static str, index: usize, last: usize, shown: bool) -> FormR
         ));
     }
     FormRow::new(id, label).trailing(Row::new(trailing).gap(4.0).align(Center))
+}
+
+/// The apps the bar has had in its tray, each allowed in it or not, as
+/// macOS's "Allow in the Menu Bar".
+fn allowed_apps(now: &amane_kit::settings::StatusBar) -> amane_kit::form::Group {
+    let seen = tray_seen();
+    let rows: Vec<FormRow> = seen
+        .iter()
+        .map(|(id, title)| {
+            let name = if title.is_empty() {
+                id.clone()
+            } else {
+                title.clone()
+            };
+            let changed = id.clone();
+            let mut row = switch_row(
+                &format!("settings.bar.tray.{id}"),
+                &name,
+                now.allows(id),
+                move |on| change_status_bar(|now| now.set_allowed(&changed, on)),
+            );
+            if !title.is_empty() && title != id {
+                row = row.subtitle(id.clone());
+            }
+            row
+        })
+        .collect();
+    let group = group().header("Allow in the Status Bar");
+    if rows.is_empty() {
+        group.footer(
+            "Apps that put an icon in the tray, like Steam or Discord, show here once they have.",
+        )
+    } else {
+        group
+            .rows(rows)
+            .footer("An app left out keeps running; only its icon is gone from the bar.")
+    }
 }

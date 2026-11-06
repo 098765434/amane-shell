@@ -350,6 +350,10 @@ pub struct StatusBar {
     /// keep their usual place among the rest.
     pub order: Vec<String>,
 
+    /// The apps not allowed in the status bar, by their tray items' ids,
+    /// as macOS's "Allow in the Menu Bar" leaves them out.
+    pub tray_denied: Vec<String>,
+
     /// Hidden past the screen's edge until the pointer meets it, as the
     /// dock can be; it keeps no room from windows then.
     pub auto_hide: bool,
@@ -367,6 +371,7 @@ impl Default for StatusBar {
             scroll_workspaces: true,
             hidden: Vec::new(),
             order: Vec::new(),
+            tray_denied: Vec::new(),
             auto_hide: false,
         }
     }
@@ -400,7 +405,8 @@ impl StatusBar {
 
 /// Every item on the status bar's right, by name, in its usual order,
 /// with what Shell Settings calls it and whether it can be hidden.
-pub const BAR_ITEMS: [(&str, &str, bool); 13] = [
+pub const BAR_ITEMS: [(&str, &str, bool); 14] = [
+    ("tray", "Apps", true),
     ("privacy", "Camera, Microphone and Screen Sharing", true),
     (
         "status-icons",
@@ -461,6 +467,62 @@ impl StatusBar {
         let item = items.remove(from);
         items.insert(index.min(items.len()), item);
         self.order = items.into_iter().map(String::from).collect();
+    }
+}
+
+impl StatusBar {
+    /// Whether the app whose tray item has this id may show in the bar.
+    pub fn allows(&self, id: &str) -> bool {
+        !self.tray_denied.iter().any(|denied| denied == id)
+    }
+
+    pub fn set_allowed(&mut self, id: &str, allowed: bool) {
+        self.tray_denied.retain(|denied| denied != id);
+
+        if !allowed {
+            self.tray_denied.push(String::from(id));
+        }
+    }
+}
+
+/// Where the shell keeps the tray apps it has seen, so Shell Settings can
+/// list them when they aren't running.
+fn tray_seen_file() -> Option<PathBuf> {
+    let cache = std::env::var_os("XDG_CACHE_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))?;
+    Some(cache.join("amane-shell").join("tray-seen.json"))
+}
+
+/// Every tray app seen, as (id, title), by id.
+pub fn tray_seen() -> BTreeMap<String, String> {
+    tray_seen_file()
+        .and_then(|file| std::fs::read_to_string(file).ok())
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+/// Remembers a tray app, once; a title it had before is kept when it
+/// now has none.
+pub fn remember_tray(id: &str, title: &str) {
+    let mut seen = tray_seen();
+    let known = seen.get(id);
+    if known.is_some_and(|known| title.is_empty() || known == title) {
+        return;
+    }
+    seen.insert(String::from(id), String::from(title));
+    let Some(file) = tray_seen_file() else {
+        return;
+    };
+    let Ok(text) = serde_json::to_string_pretty(&seen) else {
+        return;
+    };
+    if let Some(folder) = file.parent() {
+        let _ = std::fs::create_dir_all(folder);
+    }
+    let partial = file.with_extension("part");
+    if std::fs::write(&partial, text).is_ok() {
+        let _ = std::fs::rename(partial, file);
     }
 }
 
@@ -721,7 +783,7 @@ mod bar_order_tests {
     fn items_left_out_follow_their_usual_neighbour() {
         let items = bar(&["clock", "volume", "nonsense", "battery"]).items();
         assert_eq!(items.len(), BAR_ITEMS.len());
-        assert_eq!(&items[..3], ["privacy", "status-icons", "clock"]);
+        assert_eq!(&items[..4], ["tray", "privacy", "status-icons", "clock"]);
         let volume = items.iter().position(|item| *item == "volume").unwrap();
         assert_eq!(items[volume + 1], "bluetooth");
         let battery = items.iter().position(|item| *item == "battery").unwrap();

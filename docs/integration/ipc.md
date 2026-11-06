@@ -118,6 +118,8 @@ shows or hides one of the optional status icons, `volume`, `bluetooth`, `network
 `battery`, `phone`, `keep-awake`, `privacy`, `status-icons` or `notifications`, in `status-bar.json`.
 `status-bar move <item> <index>` moves an item (any of those, or `quick-settings`, `timer`, `clock`)
 to `index` among the rest, and `status-bar reset-order` puts them back in the usual order.
+`status-bar tray list` lists the tray's apps (id, status, title); `status-bar tray activate <id>` and
+`status-bar tray menu <id>` do what a click and a right-click on one do.
 `taskbar` is the same command under the bar's old name.
 
 ### `night-light`
