@@ -170,34 +170,42 @@ fn forward() {
 }
 
 // the sidebar's rows: two sections, each over its pages
+const APPEARANCE: usize = 1;
+const DESKTOP: usize = 2;
 const DISPLAYS: usize = 3;
+const STATUS_BAR: usize = 4;
+const DOCK: usize = 5;
+const QUICK_SETTINGS: usize = 6;
+const SPOTLIGHT: usize = 7;
 const DROP: usize = 8;
 const ABOUT_SHELL: usize = 9;
 const SYS_ABOUT: usize = 11;
 const SYS_GENERAL: usize = 12;
 const SYS_APPS: usize = 13;
-const SYS_SERVICES: usize = 14;
-const SYS_POWER: usize = 15;
-const SYS_STORAGE: usize = 16;
-const SYS_HISTORY: usize = 17;
-const SYS_UPDATE: usize = 18;
+const SYS_DEFAULTS: usize = 14;
+const SYS_SERVICES: usize = 15;
+const SYS_POWER: usize = 16;
+const SYS_STORAGE: usize = 17;
+const SYS_HISTORY: usize = 18;
+const SYS_UPDATE: usize = 19;
 
 /// The page `--page <name>` opens: the sidebar's names, lowercased, or a
 /// System page's short name.
 pub fn page_named(name: &str) -> Option<usize> {
     Some(match name.trim().to_lowercase().as_str() {
-        "appearance" => 1,
-        "desktop" => 2,
+        "appearance" => APPEARANCE,
+        "desktop" => DESKTOP,
         "displays" | "display" | "monitors" => DISPLAYS,
-        "status-bar" | "bar" => 4,
-        "dock" => 5,
-        "quick-settings" => 6,
-        "spotlight" | "launcher" => 7,
+        "status-bar" | "bar" => STATUS_BAR,
+        "dock" => DOCK,
+        "quick-settings" => QUICK_SETTINGS,
+        "spotlight" | "launcher" => SPOTLIGHT,
         "drop" | "amane-drop" => DROP,
         "about-shell" => ABOUT_SHELL,
         "about" | "system" | "computer" => SYS_ABOUT,
         "general" => SYS_GENERAL,
         "apps" | "software" => SYS_APPS,
+        "default-apps" | "defaults" | "open-with" => SYS_DEFAULTS,
         "services" => SYS_SERVICES,
         "power" | "lock" => SYS_POWER,
         "storage" => SYS_STORAGE,
@@ -208,13 +216,14 @@ pub fn page_named(name: &str) -> Option<usize> {
 }
 
 /// The sub-pages a `--page` name can reach, as `page/sub`.
-const SUBS: [&str; 6] = [
+const SUBS: [&str; 7] = [
     "clock",
     "weather",
     "items",
     "activities",
     "files",
     "advanced",
+    "file-types",
 ];
 
 /// A place by name: a page's name, or `page/sub` for one of its sub-pages.
@@ -294,7 +303,7 @@ fn main() {
         .run();
 }
 
-fn pages() -> [Page; 19] {
+fn pages() -> [Page; 20] {
     [
         Page::section("Shell"),
         Page::new(ICON_DARK_MODE, "Appearance").accent(Accent::Blue),
@@ -310,6 +319,7 @@ fn pages() -> [Page; 19] {
         Page::new(ICON_INFO, "About This Computer").accent(Accent::Gray),
         Page::new(ICON_SETTINGS, "General").accent(Accent::Gray),
         Page::new(ICON_PACKAGE, "Apps").accent(Accent::Blue),
+        Page::new(amane_kit::icons::ICON_OPEN_IN_NEW, "Default Apps").accent(Accent::Purple),
         Page::new(ICON_DNS, "Services").accent(Accent::Green),
         Page::new(ICON_LOCK, "Power & Lock").accent(Accent::Orange),
         Page::new(ICON_STORAGE, "Storage").accent(Accent::Gray),
@@ -374,7 +384,8 @@ fn shortcut(key: Key) -> bool {
 /// have.
 fn sub_page(page: usize, name: &str) -> Option<(String, Box<dyn Widget>)> {
     match page {
-        4 => status_bar::sub(name),
+        STATUS_BAR => status_bar::sub(name),
+        SYS_DEFAULTS => system::defaults::sub(name),
         DISPLAYS => displays::sub(name),
         ABOUT_SHELL => about::sub(name),
         SYS_ABOUT => system::about::sub(name),
@@ -412,29 +423,29 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
         },
         None => {
             let (title, scroll, body): (&str, &'static str, Box<dyn Widget>) = match page {
-                1 => (
+                APPEARANCE => (
                     "Appearance",
                     "settings.scroll.appearance",
                     boxed(appearance::page()),
                 ),
-                2 => ("Desktop", "settings.scroll.desktop", boxed(desktop::page())),
+                DESKTOP => ("Desktop", "settings.scroll.desktop", boxed(desktop::page())),
                 DISPLAYS => (
                     "Displays",
                     "settings.scroll.displays",
                     boxed(displays::page()),
                 ),
-                4 => (
+                STATUS_BAR => (
                     "Status Bar",
                     "settings.scroll.status-bar",
                     boxed(status_bar::page()),
                 ),
-                5 => ("Dock", "settings.scroll.dock", boxed(dock::page())),
-                6 => (
+                DOCK => ("Dock", "settings.scroll.dock", boxed(dock::page())),
+                QUICK_SETTINGS => (
                     "Quick Settings",
                     "settings.scroll.quick-settings",
                     boxed(quick_settings::page()),
                 ),
-                7 => (
+                SPOTLIGHT => (
                     "Spotlight",
                     "settings.scroll.spotlight",
                     boxed(launcher::page()),
@@ -454,6 +465,11 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
                     "Apps",
                     "settings.scroll.system-apps",
                     boxed(system::apps::page()),
+                ),
+                SYS_DEFAULTS => (
+                    "Default Apps",
+                    "settings.scroll.system-defaults",
+                    boxed(system::defaults::page()),
                 ),
                 SYS_SERVICES => (
                     "Services",
@@ -661,7 +677,7 @@ fn toolbar_action(page: usize, view: Option<View>) -> Option<Box<dyn Widget>> {
         return None;
     }
     match page {
-        6 => quick_settings::toolbar(),
+        QUICK_SETTINGS => quick_settings::toolbar(),
         _ => None,
     }
 }
@@ -804,7 +820,7 @@ mod tests {
     fn back_and_forward_walk_the_places() {
         let mut nav = Navigation::new();
         assert!(!nav.can_back());
-        nav.set_page(4);
+        nav.set_page(STATUS_BAR);
         nav.open(View::Sub("clock"));
         assert_eq!(nav.here().view(), Some(View::Sub("clock")));
         nav.back();

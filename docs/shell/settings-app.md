@@ -286,6 +286,30 @@ name, a command-line tool with its `meta.mainProgram` when the check before **Ad
 When exactly one of them is an app, **Open Zed** opens it. The job takes the list (the
 packages in `settings.json` and not in HEAD's copy) just before it commits.
 
+### Default Apps
+
+Which app opens links, folders and each kind of file, through amane's `MimeApps`
+([apps-and-processes](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/apps-and-processes.md)),
+which reads every `mimeapps.list` as `xdg-open` does and writes only `~/.config/mimeapps.list`.
+
+- **Open With** has one dropdown per role, each with a tile:
+  - Web browser, Mail, Folders, Text editor, Images, Video, Music, PDF documents, Archives and
+    Calendar invitations.
+  - Each role is known by one kind (a browser by `https` links). Its dropdown lists the apps that
+    open that kind and shows the one that opens it now, falling back to `mimeinfo.cache` as
+    `xdg-open` does.
+  - Choosing an app sets the role's kinds. For links and mail that is a fixed set (`http`,
+    `https`, `text/html`, `application/xhtml+xml`). For images, video, music and text it is every
+    kind under that prefix the app lists, except that the text editor takes neither `text/html`
+    nor calendar or contact files.
+- **Terminal** shows while `xdg-terminal-exec` is installed. It lists the `TerminalEmulator`
+  apps and writes the chosen one first in `~/.config/xdg-terminals.list`. niri's Super+T and
+  Super+Return spawn `xdg-terminal-exec`.
+- **File Types** (sub-page `default-apps/file-types`): type an extension (`md`, `.md`,
+  `notes.md`) or a type (`text/markdown`) to pick its app. **Chosen by You** lists every default
+  set in the user's file, each with its app and **Reset**, which hands the kind back to the
+  system's choice.
+
 ### Services
 
 `system/services.rs`. A switch per service the registry puts on this page (SSH, Avahi,

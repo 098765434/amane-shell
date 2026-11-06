@@ -9,6 +9,7 @@ pub mod apply_bar;
 pub mod apps;
 pub mod catalog;
 pub mod controls;
+pub mod defaults;
 pub mod general;
 pub mod generations;
 pub mod history;
