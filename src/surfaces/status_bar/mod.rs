@@ -17,6 +17,7 @@
 //! or Quick Settings or the notification center is open, which spares an
 //! OLED panel a strip that never changes.
 
+mod chips;
 mod drag;
 mod indicators;
 mod tray;
@@ -41,16 +42,15 @@ use crate::components::buttons::{
 use crate::components::edge_reveal::EdgeReveal;
 use crate::components::icons::{
     Glyph, ICON_AIRPLANE, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE,
-    ICON_CAMERA, ICON_DND, ICON_KEEP_AWAKE, ICON_MIC, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS,
-    ICON_PHONE, ICON_SCREEN_SHARE, ICON_TIMER, ICON_TUNE, ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI,
-    ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph, battery_glyph, power_profile_glyph, wifi_glyph,
+    ICON_DND, ICON_KEEP_AWAKE, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS, ICON_PHONE, ICON_TIMER,
+    ICON_TUNE, ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
+    battery_glyph, power_profile_glyph, wifi_glyph,
 };
 use crate::components::layout::{boxed, cursor, fixed_width, pad, text_width, track_cursor};
 use crate::components::material::{self, Level, Material};
 use crate::components::motion;
 use crate::components::panel::{self, Panel, is_open};
 use crate::components::slider;
-use crate::services::desktop::privacy::Privacy;
 use crate::services::display::night_light::NightLight;
 use crate::services::launcher::clock::Clock;
 use crate::services::launcher::timer::Countdown;
@@ -408,7 +408,8 @@ fn status(output: &str, room: f32) -> amane::Stack {
 fn build(item: Item) -> Vec<Box<dyn Widget>> {
     match item {
         Item::Tray => Vec::new(),
-        Item::Privacy => privacy_icons(),
+        Item::Privacy => chips::privacy(),
+        Item::Media => chips::media().into_iter().collect(),
         Item::StatusIcons => on_icons(),
         Item::Volume => volume().into_iter().collect(),
         Item::Bluetooth => bluetooth().into_iter().collect(),
@@ -636,37 +637,6 @@ fn quick_settings_button() -> Box<dyn Widget> {
         .tooltip(BAR_NS, "Quick Settings")
         .build(),
     )
-}
-
-/// What's using the camera, the microphone or the screen, first in the
-/// row as GNOME has them.
-fn privacy_icons() -> Vec<Box<dyn Widget>> {
-    let privacy = Privacy::read();
-    let mut glyphs = Vec::new();
-    if privacy.screen() {
-        glyphs.push((
-            "amane.bar.privacy.screen",
-            ICON_SCREEN_SHARE,
-            String::from("Screen is being shared"),
-        ));
-    }
-    if privacy.camera() {
-        glyphs.push((
-            "amane.bar.privacy.camera",
-            ICON_CAMERA,
-            String::from("Camera in use"),
-        ));
-    }
-    if privacy.recording() {
-        glyphs.push((
-            "amane.bar.privacy.microphone",
-            ICON_MIC,
-            format!("Microphone in use by {}", privacy.microphone().join(", ")),
-        ));
-    }
-    drop(privacy);
-
-    grid_icons(glyphs, sys::color::status::critical::bg())
 }
 
 /// Settings GNOME shows in the bar only while they're on: night light, a

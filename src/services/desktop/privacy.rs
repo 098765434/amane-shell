@@ -25,9 +25,33 @@ const CASTS_EVERY: Duration = Duration::from_secs(2);
 
 #[derive(Default, PartialEq)]
 pub struct Privacy {
-    microphone: Vec<String>,
+    microphone: Vec<User>,
     camera: bool,
-    screen: bool,
+    camera_users: Vec<User>,
+    casts: Vec<Cast>,
+}
+
+/// An app using the microphone or the camera.
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct User {
+    pub name: String,
+    /// Its process, to find its window by.
+    pub pid: Option<u64>,
+}
+
+/// A screencast niri is making.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Cast {
+    /// What `niri msg action stop-cast --session-id` stops.
+    pub session: u64,
+    pub target: CastTarget,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CastTarget {
+    Output(String),
+    Window(u64),
+    Nothing,
 }
 
 impl Service for Privacy {
@@ -42,8 +66,8 @@ impl Service for Privacy {
 }
 
 impl Privacy {
-    /// The apps recording sound, by name.
-    pub fn microphone(&self) -> &[String] {
+    /// The apps recording sound.
+    pub fn microphone(&self) -> &[User] {
         &self.microphone
     }
 
@@ -55,9 +79,25 @@ impl Privacy {
         self.camera
     }
 
-    pub fn screen(&self) -> bool {
-        self.screen
+    /// The apps watching the camera, as far as PipeWire knows.
+    pub fn camera_users(&self) -> &[User] {
+        &self.camera_users
     }
+
+    pub fn screen(&self) -> bool {
+        !self.casts.is_empty()
+    }
+
+    /// The screencasts streaming now.
+    pub fn casts(&self) -> &[Cast] {
+        &self.casts
+    }
+}
+
+/// Stops the screencast `session`, as the bar's Stop Sharing does.
+pub fn stop_cast(session: u64) {
+    let session = session.to_string();
+    amane::spawn(&format!("niri msg action stop-cast --session-id {session}"));
 }
 
 fn watch_pipewire() {
@@ -89,14 +129,17 @@ fn watch_pipewire() {
 
         if let Ok(objects) = serde_json::from_str::<Value>(&batch) {
             apply(&mut nodes, &objects);
-            let (microphone, camera) = summary(&nodes, own);
+            let (microphone, camera, camera_users) = summary(&nodes, own);
             let privacy = Privacy::read();
-            let changed = privacy.microphone != microphone || privacy.camera != camera;
+            let changed = privacy.microphone != microphone
+                || privacy.camera != camera
+                || privacy.camera_users != camera_users;
             drop(privacy);
             if changed {
                 let mut privacy = Privacy::write();
                 privacy.microphone = microphone;
                 privacy.camera = camera;
+                privacy.camera_users = camera_users;
             }
         }
         batch.clear();
@@ -108,26 +151,43 @@ fn watch_pipewire() {
 fn watch_casts() {
     let args = ["msg".to_string(), "--json".into(), "casts".into()];
     loop {
-        let screen = run_now("niri", &args).is_some_and(|json| sharing(&json));
-        if Privacy::read().screen != screen {
-            Privacy::write().screen = screen;
+        let casts = run_now("niri", &args)
+            .map(|json| sharing(&json))
+            .unwrap_or_default();
+        if Privacy::read().casts != casts {
+            Privacy::write().casts = casts;
         }
         std::thread::sleep(CASTS_EVERY);
     }
 }
 
-/// Whether niri's cast list has one streaming frames.
-fn sharing(json: &str) -> bool {
-    serde_json::from_str::<Value>(json)
-        .ok()
-        .and_then(|casts| {
-            casts.as_array().map(|casts| {
-                casts
-                    .iter()
-                    .any(|cast| cast["is_active"].as_bool().unwrap_or(true))
-            })
-        })
-        .unwrap_or(false)
+/// The casts in niri's list that stream frames, one per session.
+fn sharing(json: &str) -> Vec<Cast> {
+    let Ok(casts) = serde_json::from_str::<Value>(json) else {
+        return Vec::new();
+    };
+    let mut found: Vec<Cast> = Vec::new();
+    for cast in casts.as_array().into_iter().flatten() {
+        if !cast["is_active"].as_bool().unwrap_or(true) {
+            continue;
+        }
+        let Some(session) = cast["session_id"].as_u64() else {
+            continue;
+        };
+        if found.iter().any(|known| known.session == session) {
+            continue;
+        }
+        let target = &cast["target"];
+        let target = if let Some(name) = target["Output"]["name"].as_str() {
+            CastTarget::Output(name.to_string())
+        } else if let Some(id) = target["Window"]["id"].as_u64() {
+            CastTarget::Window(id)
+        } else {
+            CastTarget::Nothing
+        };
+        found.push(Cast { session, target });
+    }
+    found
 }
 
 /// What the indicators need of one PipeWire node.
@@ -184,23 +244,34 @@ fn apply(nodes: &mut HashMap<u64, Node>, objects: &Value) {
     }
 }
 
-/// The apps recording sound (sorted, once each), and whether a camera runs.
-fn summary(nodes: &HashMap<u64, Node>, own_pid: u32) -> (Vec<String>, bool) {
-    let microphone: BTreeSet<String> = nodes
-        .values()
-        .filter(|node| {
-            node.class == "Stream/Input/Audio"
-                && !node.monitor
-                && node.pid != Some(u64::from(own_pid))
-        })
-        .map(|node| node.app.clone())
-        .collect();
+/// The apps recording sound (sorted, once each), whether a camera runs, and
+/// the apps reading video, which while it runs are the camera's.
+fn summary(nodes: &HashMap<u64, Node>, own_pid: u32) -> (Vec<User>, bool, Vec<User>) {
+    let users = |class: &str| -> Vec<User> {
+        let found: BTreeSet<User> = nodes
+            .values()
+            .filter(|node| {
+                node.class == class && !node.monitor && node.pid != Some(u64::from(own_pid))
+            })
+            .map(|node| User {
+                name: node.app.clone(),
+                pid: node.pid,
+            })
+            .collect();
+        found.into_iter().collect()
+    };
+    let microphone = users("Stream/Input/Audio");
     let camera = nodes.values().any(|node| {
         node.class == "Video/Source"
             && matches!(node.api.as_str(), "v4l2" | "libcamera")
             && node.state == "running"
     });
-    (microphone.into_iter().collect(), camera)
+    let camera_users = if camera {
+        users("Stream/Input/Video")
+    } else {
+        Vec::new()
+    };
+    (microphone, camera, camera_users)
 }
 
 #[cfg(test)]
@@ -231,25 +302,45 @@ mod tests {
 
         // the start: a microphone, a camera at rest, a visualiser
         apply(&mut nodes, &batches[0]);
-        assert_eq!(summary(&nodes, 1), (Vec::new(), false));
+        assert_eq!(summary(&nodes, 1), (Vec::new(), false, Vec::new()));
 
         // pw-record starts recording; the shell's own stream doesn't count
         apply(&mut nodes, &batches[1]);
-        assert_eq!(
-            summary(&nodes, 4242),
-            (vec!["pw-record".to_string()], false)
-        );
+        let (microphone, camera, _) = summary(&nodes, 4242);
+        let names: Vec<&str> = microphone.iter().map(|user| user.name.as_str()).collect();
+        assert_eq!((names, camera), (vec!["pw-record"], false));
 
         // the camera runs, and the recording ends
         apply(&mut nodes, &batches[2]);
-        assert_eq!(summary(&nodes, 4242), (Vec::new(), true));
+        let (microphone, camera, _) = summary(&nodes, 4242);
+        assert_eq!((microphone, camera), (Vec::new(), true));
     }
 
     #[test]
     fn a_paused_cast_isnt_sharing() {
-        assert!(!sharing("[]"));
-        assert!(sharing(r#"[{"stream_id": 1, "is_active": true}]"#));
-        assert!(!sharing(r#"[{"stream_id": 1, "is_active": false}]"#));
-        assert!(!sharing("not json"));
+        assert!(sharing("[]").is_empty());
+        assert!(sharing("not json").is_empty());
+        assert!(sharing(r#"[{"session_id": 3, "is_active": false}]"#).is_empty());
+        let casts = sharing(
+            r#"[{"stream_id": 1, "session_id": 3, "is_active": true,
+                 "target": {"Output": {"name": "eDP-1"}}},
+                {"stream_id": 2, "session_id": 3, "is_active": true,
+                 "target": {"Window": {"id": 9}}},
+                {"stream_id": 4, "session_id": 5, "is_active": true,
+                 "target": {"Window": {"id": 9}}}]"#,
+        );
+        assert_eq!(
+            casts,
+            [
+                Cast {
+                    session: 3,
+                    target: CastTarget::Output(String::from("eDP-1"))
+                },
+                Cast {
+                    session: 5,
+                    target: CastTarget::Window(9)
+                },
+            ]
+        );
     }
 }

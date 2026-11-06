@@ -34,12 +34,15 @@ pub enum Indicator {
     Privacy,
     /// Night Light, VPN, power mode and Airplane, while on.
     StatusIcons,
+    /// What's playing.
+    Media,
     /// The bell for unseen notifications, or the moon for Do Not Disturb.
     Notifications,
 }
 
 impl Indicator {
-    pub const ALL: [Indicator; 11] = [
+    pub const ALL: [Indicator; 12] = [
+        Self::Media,
         Self::Tray,
         Self::Volume,
         Self::Bluetooth,
@@ -65,6 +68,7 @@ impl Indicator {
             Self::KeepAwake => "keep-awake",
             Self::Privacy => "privacy",
             Self::StatusIcons => "status-icons",
+            Self::Media => "media",
             Self::Notifications => "notifications",
         }
     }
@@ -91,6 +95,7 @@ pub enum Item {
     Tray,
     Privacy,
     StatusIcons,
+    Media,
     Volume,
     Bluetooth,
     Network,
@@ -106,10 +111,11 @@ pub enum Item {
 
 impl Item {
     /// The usual order, left to right.
-    pub const ALL: [Item; 14] = [
+    pub const ALL: [Item; 15] = [
         Self::Tray,
         Self::Privacy,
         Self::StatusIcons,
+        Self::Media,
         Self::Volume,
         Self::Bluetooth,
         Self::Network,
@@ -146,6 +152,7 @@ impl Item {
             Self::Tray => Indicator::Tray,
             Self::Privacy => Indicator::Privacy,
             Self::StatusIcons => Indicator::StatusIcons,
+            Self::Media => Indicator::Media,
             Self::Volume => Indicator::Volume,
             Self::Bluetooth => Indicator::Bluetooth,
             Self::Network => Indicator::Network,

@@ -87,6 +87,7 @@ Writes `status-bar.json` (`status_bar.rs`); see [status-bar.md](status-bar.md#se
 | Clock | switches: 24-hour time, Show seconds | `clock_24h`, `clock_seconds` |
 | Date in the clock's tooltip | dropdown: Sunday 25 October, Sun 25 Oct, the locale's numbers | `date_format` |
 | Workspaces | switches: Show workspaces, Scroll over them to move between workspaces | `show_workspaces`, `scroll_workspaces` |
+| Now Playing | switch: Always show | `media_always` |
 | Allow in the Status Bar | a switch per app seen in the tray | `tray_denied` |
 | Items, Left to Right | every item in the bar's order, each with buttons to move it a place and, for the optional ones, a switch; Reset Order | `order`, `hidden` |
 

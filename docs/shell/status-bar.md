@@ -58,11 +58,21 @@ The drag is measured on one still layer over the whole cluster, never on the ite
 the click that ends a drop is swallowed (`buttons::swallow_click`). The layer takes the items'
 own press, so they don't shrink when pressed. The usual order, left to right:
 
-1. GNOME's **privacy** icons while the screen is shared, the camera runs or something records (red;
-   the microphone's tooltip names the app). Each opens Quick Settings.
-2. Glyphs for settings that are **on**: night light, a VPN, a power mode other than Balanced, and
+1. **Apps** (the tray, [below](#apps-the-tray)).
+2. **Privacy** (`chips.rs`), in macOS's colours: a purple **Sharing** chip while niri casts the
+   screen or a window, whose menu says what each cast shares, each with **Stop Sharing**
+   (`niri msg action stop-cast --session-id`); a green camera while a camera runs; an orange
+   microphone while an app records. Their tooltips name the apps, and the dots' menu lists them by
+   camera and microphone; picking one brings its window up (found by its process, or its parent's,
+   in niri's window list), and Sound Settings… opens Quick Settings' Sound page.
+3. Glyphs for settings that are **on**: night light, a VPN, a power mode other than Balanced, and
    airplane mode. Each opens Quick Settings.
-3. The optional **status icons** (see [below](#status-icons)), each opening its Quick Settings page:
+4. **Now Playing** (`chips.rs`): the art (or a note) and title of what plays, cut at 160 px, as
+   macOS's "Show When Active": while a player plays, or was paused in the last five minutes
+   (`media_always` shows it always, "Not Playing" when nothing does). A click opens a little player
+   menu (Play/Pause, Next, Previous, and Quick Settings, where the full module is); middle click
+   plays or pauses.
+5. The optional **status icons** (see [below](#status-icons)), each opening its Quick Settings page:
    - **Volume**: the glyph shows the default output (built-in speaker, speaker, headphones,
      headset, TV, car …) and the tooltip shows the level. Scroll to change it, middle-click to
      mute.
@@ -77,15 +87,15 @@ own press, so they don't shrink when pressed. The usual order, left to right:
      accent while charging, red when low; the tooltip shows its name and charge
      ([phone.md](phone.md)).
    - **Battery**: accent while charging, red when low; the tooltip shows the charge.
-4. The **Quick Settings** button (see [quick-settings.md](quick-settings.md)).
-5. The **notification** icon: a moon while Do Not Disturb is on, a bell while something arrived
+6. The **Quick Settings** button (see [quick-settings.md](quick-settings.md)).
+7. The **notification** icon: a moon while Do Not Disturb is on, a bell while something arrived
    unseen, nothing otherwise. Click it for the center, right-click for Do Not Disturb.
-6. The **timer** chip, only while the launcher's timer runs (`services/launcher/timer.rs`): a timer glyph
+8. The **timer** chip, only while the launcher's timer runs (`services/launcher/timer.rs`): a timer glyph
    and the time left in `sys.type.numeric`, counting down by the second. Its tooltip is the
    timer's label; a click opens the launcher in Actions, where it can be cancelled (see
    [launcher.md](launcher.md#actions)). amane has no timers, so the bar asks for a frame just
    after each second turns over (`motion::redraw_after`).
-7. The **clock**: click it for the notification center (see [notifications.md](notifications.md));
+9. The **clock**: click it for the notification center (see [notifications.md](notifications.md));
    its tooltip is the date (`Clock::date`).
 
 Hidden items take no space: each section yields `Option`s that are flattened, so the row's gaps

@@ -141,6 +141,15 @@ pub fn page() -> Column {
                 )
                 .subtitle("Scroll over the workspaces to move between them"),
             ),
+        group().header("Now Playing").row(
+            switch_row(
+                "settings.bar.media-always",
+                "Always show",
+                now.media_always,
+                |on| change_status_bar(|now| now.media_always = on),
+            )
+            .subtitle("Else only while something plays, or was paused in the last few minutes"),
+        ),
         allowed_apps(&now),
         group()
             .header("Items, Left to Right")

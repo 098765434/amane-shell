@@ -62,7 +62,7 @@ thread_local! {
 /// The file holding the art at `url`: the file itself for a `file://`
 /// URL, else a copy in the cache, fetched in the background the first
 /// time (the card redraws when it lands).
-fn art_path(url: &str) -> Option<String> {
+pub(crate) fn art_path(url: &str) -> Option<String> {
     if url.is_empty() {
         return None;
     }

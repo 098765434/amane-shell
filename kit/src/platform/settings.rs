@@ -354,6 +354,10 @@ pub struct StatusBar {
     /// as macOS's "Allow in the Menu Bar" leaves them out.
     pub tray_denied: Vec<String>,
 
+    /// Now Playing shows with nothing playing too, as macOS's "Always
+    /// Show"; else only while something plays or was paused lately.
+    pub media_always: bool,
+
     /// Hidden past the screen's edge until the pointer meets it, as the
     /// dock can be; it keeps no room from windows then.
     pub auto_hide: bool,
@@ -372,6 +376,7 @@ impl Default for StatusBar {
             hidden: Vec::new(),
             order: Vec::new(),
             tray_denied: Vec::new(),
+            media_always: false,
             auto_hide: false,
         }
     }
@@ -405,7 +410,7 @@ impl StatusBar {
 
 /// Every item on the status bar's right, by name, in its usual order,
 /// with what Shell Settings calls it and whether it can be hidden.
-pub const BAR_ITEMS: [(&str, &str, bool); 14] = [
+pub const BAR_ITEMS: [(&str, &str, bool); 15] = [
     ("tray", "Apps", true),
     ("privacy", "Camera, Microphone and Screen Sharing", true),
     (
@@ -413,6 +418,7 @@ pub const BAR_ITEMS: [(&str, &str, bool); 14] = [
         "Night Light, VPN, Power Mode, Airplane",
         true,
     ),
+    ("media", "Now Playing", true),
     ("volume", "Volume", true),
     ("bluetooth", "Bluetooth", true),
     ("network", "Network", true),
@@ -783,7 +789,7 @@ mod bar_order_tests {
     fn items_left_out_follow_their_usual_neighbour() {
         let items = bar(&["clock", "volume", "nonsense", "battery"]).items();
         assert_eq!(items.len(), BAR_ITEMS.len());
-        assert_eq!(&items[..4], ["tray", "privacy", "status-icons", "clock"]);
+        assert_eq!(&items[..5], ["tray", "privacy", "status-icons", "media", "clock"]);
         let volume = items.iter().position(|item| *item == "volume").unwrap();
         assert_eq!(items[volume + 1], "bluetooth");
         let battery = items.iter().position(|item| *item == "battery").unwrap();
