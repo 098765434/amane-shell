@@ -395,6 +395,16 @@ pub fn hovered(id: &str) -> bool {
     HOVERED.with_borrow(|hovered| hovered.iter().any(|h| h == id))
 }
 
+/// Whether the button `id` is held down now: pressed and not yet let go.
+/// A hold that hasn't reported for a few seconds counts as let go, since a
+/// release can go unseen.
+pub fn held(id: &str) -> bool {
+    HELD.with_borrow(|held| {
+        held.as_ref()
+            .is_some_and(|(was, at)| was == id && at.elapsed() < Duration::from_secs(3))
+    })
+}
+
 /// `fill` with the hover layer fading over it while `id` is hovered.
 pub fn state_fill(id: &str, fill: Color, disabled: bool) -> Color {
     let amount = fade(&format!("{id}.hover"), !disabled && hovered(id));

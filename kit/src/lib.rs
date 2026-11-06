@@ -77,9 +77,11 @@ pub mod tokens;
 
 pub use animation::{edge_reveal, kinetic, motion, pager};
 pub use containers::{
-    app_bar, arrangement, card, dialog, divider, flow, form, list, scroll_view, tooltip,
+    app_bar, arrangement, card, dialog, divider, flow, form, list, lists, scroll_view, tooltip,
 };
-pub use controls::{buttons, color_picker, control_size, dropdown, macform, slider, spinner, tag};
+pub use controls::{
+    avatar, buttons, color_picker, control_size, dropdown, macform, slider, spinner, tag,
+};
 pub use foundation::{color, icons, layout};
 pub use look::{glass, glass_region, lab, material};
 pub use platform::{app, app_icon, marker, settings};

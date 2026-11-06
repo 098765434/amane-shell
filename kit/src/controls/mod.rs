@@ -1,5 +1,6 @@
 //! Controls: what a person presses, drags or picks a value with.
 
+pub mod avatar;
 pub mod buttons;
 pub mod color_picker;
 pub mod control_size;

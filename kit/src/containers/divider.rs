@@ -32,6 +32,33 @@ impl Divider {
             )
     }
 
+    /// A hairline `width` wide with no room above or below it, `leading`
+    /// in from the start and `trailing` from the end, in `color`: M3's
+    /// inset and middle-inset dividers between list items.
+    pub fn inset(
+        width: impl Into<amane::Size>,
+        leading: f32,
+        trailing: f32,
+        color: Color,
+    ) -> Rectangle {
+        Rectangle::new()
+            .width(width)
+            .height(sys::border::hairline())
+            .fill(Color::TRANSPARENT)
+            .padding(amane::Padding {
+                top: 0.0,
+                right: trailing,
+                bottom: 0.0,
+                left: leading,
+            })
+            .child(
+                Rectangle::new()
+                    .width(Parent)
+                    .height(sys::border::hairline())
+                    .fill(color),
+            )
+    }
+
     /// How much width a vertical divider takes, its room included.
     pub fn width() -> f32 {
         Self::height()

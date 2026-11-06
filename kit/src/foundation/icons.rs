@@ -148,6 +148,13 @@ pub const ICON_LAYERS: char = '\u{e53b}';
 pub const ICON_CONTENT_PASTE: char = '\u{e14f}';
 pub const ICON_CONTENT_COPY: char = '\u{e14d}';
 pub const ICON_MORE_HORIZ: char = '\u{e5d3}';
+pub const ICON_MORE_VERT: char = '\u{e5d4}';
+/// The two bars a reorderable list item is dragged by (`drag_handle`).
+pub const ICON_DRAG_HANDLE: char = '\u{e25d}';
+pub const ICON_PERSON: char = '\u{e7fd}';
+pub const ICON_IMAGE: char = '\u{e3f4}';
+pub const ICON_STAR: char = '\u{e838}';
+pub const ICON_MAIL: char = '\u{e158}';
 pub const ICON_SWAP: char = '\u{e8d4}';
 pub const ICON_BOLT: char = '\u{ea0b}';
 pub const ICON_HISTORY: char = '\u{e889}';
