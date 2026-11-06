@@ -3,3 +3,4 @@
 /result
 /result-*
 /.cargo/
+__pycache__/
