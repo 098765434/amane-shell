@@ -346,6 +346,10 @@ pub struct StatusBar {
     /// The icons left out, by their names, like "volume".
     pub hidden: Vec<String>,
 
+    /// The order of the items on the right, by their names; ones missing
+    /// keep their usual place among the rest.
+    pub order: Vec<String>,
+
     /// Hidden past the screen's edge until the pointer meets it, as the
     /// dock can be; it keeps no room from windows then.
     pub auto_hide: bool,
@@ -362,6 +366,7 @@ impl Default for StatusBar {
             show_workspaces: true,
             scroll_workspaces: true,
             hidden: Vec::new(),
+            order: Vec::new(),
             auto_hide: false,
         }
     }

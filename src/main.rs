@@ -168,7 +168,6 @@ fn main() -> ExitCode {
     status_bar::migrate();
 
     let mut app = App::new()
-        .window(status_bar::bar)
         .window(quick_settings::surface)
         .window(notifications::side_sheet)
         .window(launcher::surface)
@@ -177,7 +176,8 @@ fn main() -> ExitCode {
         .window(context_menu::anchor)
         .window_per_monitor(widgets::surface)
         .window_per_monitor(widgets::edit_surface)
-        .window_per_monitor(dock::surface);
+        .window_per_monitor(dock::surface)
+        .window_per_monitor(status_bar::bar);
     for toast in notifications::TOASTS {
         app = app.window(toast);
     }

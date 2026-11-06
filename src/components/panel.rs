@@ -4,7 +4,7 @@
 //!
 //! Opening one closes the others; Escape or toggling again closes it.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 use amane::{Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Vertical, Zone, mark_all};
 
@@ -24,6 +24,23 @@ pub enum Panel {
 
 thread_local! {
     static OPEN: Cell<Option<Panel>> = const { Cell::new(None) };
+
+    // the monitor the open panel shows on: the one the pointer was over
+    static ON: RefCell<Option<String>> = const { RefCell::new(None) };
+}
+
+/// The monitor the panels show on, by name: the one the pointer was over as
+/// the last one opened, as macOS opens a menu bar's panels on its display.
+pub fn on_output() -> Option<String> {
+    ON.with_borrow(Clone::clone)
+}
+
+/// The open panel moves to the monitor the pointer is over now, as when
+/// another bar's icon changes what Quick Settings shows.
+pub fn follow_pointer() {
+    if let Some(here) = amane::pointer_monitor() {
+        ON.set(Some(here));
+    }
 }
 
 // ───── runtime ───────────────────────────────────────────────────────────────
@@ -42,6 +59,9 @@ pub fn is_open(panel: Panel) -> bool {
 }
 
 fn set(next: Option<Panel>) {
+    if next.is_some() {
+        follow_pointer();
+    }
     let previous = OPEN.with(|open| open.replace(next));
     if previous == next {
         return;
@@ -71,7 +91,8 @@ fn set(next: Option<Panel>) {
 
 /// An overlay-layer surface anchored to `vertical` and `horizontal` edges,
 /// clear of what other surfaces reserve, its labels vibrant where vibrancy
-/// is on (`material::vibrant`). Callers size it first.
+/// is on (`material::vibrant`). Callers size it first; panels put it on
+/// [`on_output`].
 pub(crate) fn overlay(
     base: LayerWindow,
     namespace: &'static str,

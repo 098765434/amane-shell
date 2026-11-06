@@ -116,6 +116,8 @@ Errors start with `error:` (`no room for it`, `no monitor`, `no widget <id>`).
 `status-bar (show | hide | toggle) <icon>` ([status-bar.md](../shell/status-bar.md#status-icons)):
 shows or hides one of the optional status icons, `volume`, `bluetooth`, `network`, `tailscale`,
 `battery`, `phone`, `keep-awake`, `privacy`, `status-icons` or `notifications`, in `status-bar.json`.
+`status-bar move <item> <index>` moves an item (any of those, or `quick-settings`, `timer`, `clock`)
+to `index` among the rest, and `status-bar reset-order` puts them back in the usual order.
 `taskbar` is the same command under the bar's old name.
 
 ### `night-light`

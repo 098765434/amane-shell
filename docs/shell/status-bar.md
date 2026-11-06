@@ -1,7 +1,11 @@
 # Status bar
 
 A layer-shell bar (`src/surfaces/status_bar/mod.rs`), full-width, anchored to the bottom (or the
-top, see [Settings](#settings)) on the `Top` layer with `Zone::Reserve`. Namespace `amane.status-bar`. The root is a rounded
+top, see [Settings](#settings)) on the `Top` layer with `Zone::Reserve`. There is one on every
+monitor, as macOS has a menu bar on every display (`App::window_per_monitor`): each shows the
+workspaces of its own monitor and hides on its own, and what it opens (Quick Settings, the
+notification center, menus and tooltips) opens on that monitor (`panel::on_output`, from
+`amane::pointer_monitor`). Namespace `amane.status-bar`. The root is a rounded
 `Rectangle` holding one `Row` justified `SpaceBetween`: workspaces on the left and the status
 cluster on the right. The bar is one uniform frosted strip, like macOS 27's toolbar: its layer
 rule frosts the whole surface in niri's `frost` material (no lens, square corners), and the bar
@@ -33,7 +37,7 @@ opening Quick Settings would light them all. The look comes from `ButtonBuilder:
 
 ### Left: workspaces (`workspaces`)
 
-One **pip** per `Workspaces::read().list()` entry, each a `DrawnButton`. A pip widens and
+One **pip** per workspace on the bar's monitor, each a `DrawnButton`. A pip widens and
 brightens when its workspace is active or focused, and turns red when it's urgent. Clicking a pip
 focuses its workspace, and its tooltip is the workspace's name or "Workspace N". Scrolling anywhere
 over the pips focuses the next or previous workspace: one per wheel notch, or one per
@@ -41,7 +45,10 @@ over the pips focuses the next or previous workspace: one per wheel notch, or on
 
 ### Right: the status cluster (`status`)
 
-From left to right:
+Every item has a name (`indicators.rs`, `Item`), and `StatusBar::order` keeps their order by those
+names. Items it leaves out (such as ones added later) go back after the item they usually follow,
+and names it doesn't know are skipped. Over IPC: `status-bar move <item> <index>` and
+`status-bar reset-order`. The usual order, left to right:
 
 1. GNOME's **privacy** icons while the screen is shared, the camera runs or something records (red;
    the microphone's tooltip names the app). Each opens Quick Settings.

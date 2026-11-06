@@ -20,13 +20,14 @@
 mod indicators;
 
 use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::time::Duration;
 
 use amane::{
     Animation, Audio, Battery, Bluetooth, BluetoothDevice, Center, Color, Easing, Full, InputArea,
-    Justify, KdeConnect, Keyboard, Layer, LayerWindow, Link, Network, Parent, PowerProfile,
-    Rectangle, Row, Scroll, ScrollSource, Service, Size, Start, Vertical, Widget, Workspace,
-    Workspaces, Zone, window_size,
+    Justify, KdeConnect, Keyboard, Layer, LayerWindow, Link, Monitor, Network, Parent,
+    PowerProfile, Rectangle, Row, Scroll, ScrollSource, Service, Size, Start, Vertical, Widget,
+    Workspace, Workspaces, Zone, window_size,
 };
 use amane_kit::settings::{BarPosition, BarStyle, status_bar};
 use amane_kit::theme::{self, Mode};
@@ -61,7 +62,7 @@ use crate::surfaces::quick_settings::{self, Page};
 
 use crate::tokens::{bar, sys};
 
-pub(crate) use indicators::Indicator;
+pub(crate) use indicators::{Indicator, Item};
 
 pub use indicators::{ipc, migrate};
 
@@ -80,8 +81,12 @@ thread_local! {
     // touchpad scroll over the workspaces not yet made into a step
     static SCROLLED: Cell<f32> = const { Cell::new(0.0) };
 
-    // where the hiding bar is, when it hides
-    static REVEAL: RefCell<EdgeReveal> = RefCell::new(EdgeReveal::new(
+    // where each monitor's hiding bar is, when it hides
+    static REVEALS: RefCell<HashMap<String, EdgeReveal>> = RefCell::new(HashMap::new());
+}
+
+fn new_reveal() -> EdgeReveal {
+    EdgeReveal::new(
         Animation::new(0.0)
             .duration(if theme::reduced_motion() {
                 Duration::ZERO
@@ -90,7 +95,13 @@ thread_local! {
             })
             .easing(Easing::Out),
         Duration::from_millis(400),
-    ));
+    )
+}
+
+/// Runs `f` on monitor `output`'s bar's reveal.
+fn with_reveal<R>(output: &str, f: impl FnOnce(&mut EdgeReveal) -> R) -> R {
+    REVEALS
+        .with_borrow_mut(|reveals| f(reveals.entry(output.to_string()).or_insert_with(new_reveal)))
 }
 
 /// The edge the bar runs along; the panels and cards that keep clear of
@@ -102,10 +113,12 @@ pub fn edge() -> Vertical {
     }
 }
 
-/// The status bar view. Registered with `App::window`.
-pub fn bar() -> LayerWindow {
+/// The status bar on `monitor`, one on each as macOS has one on each
+/// display. Registered with `App::window_per_monitor`.
+pub fn bar(monitor: &Monitor) -> LayerWindow {
+    let output = monitor.name.clone();
     let left: Box<dyn Widget> = if status_bar().show_workspaces {
-        boxed(workspaces())
+        boxed(workspaces(&output))
     } else {
         boxed(Row::new(Vec::new()))
     };
@@ -121,7 +134,7 @@ pub fn bar() -> LayerWindow {
 
     // how far it's slid past its edge: 0 in place, `height` gone
     let hiding = status_bar().auto_hide;
-    let (offset, input) = REVEAL.with_borrow_mut(|reveal| {
+    let (offset, input) = with_reveal(&output, |reveal| {
         reveal.set_top(edge() == Vertical::Top);
         reveal.keep_out(!hiding || is_open(Panel::QuickSettings) || is_open(Panel::Notifications));
         let progress = reveal.progress(0.0);
@@ -148,13 +161,14 @@ pub fn bar() -> LayerWindow {
         .padding(pad(sys::space::inset::m(), bar::panel::padding_y()))
         .translate(0.0, offset);
     let panel = track_cursor(panel).child(sections);
+    let (hovered, moved) = (output.clone(), output.clone());
     let panel = Rectangle::new()
         .width(Parent)
         .height(Parent)
         .fill(Color::TRANSPARENT)
-        .on_hover(|over| REVEAL.with_borrow_mut(|reveal| reveal.hover(over)))
+        .on_hover(move |over| with_reveal(&hovered, |reveal| reveal.hover(over)))
         // a pointer that arrived without an enter still counts
-        .on_move(|_| REVEAL.with_borrow_mut(|reveal| reveal.hover(true)))
+        .on_move(move |_| with_reveal(&moved, |reveal| reveal.hover(true)))
         .child(panel);
 
     let window = LayerWindow::new()
@@ -208,13 +222,16 @@ fn fill(style: BarStyle) -> Color {
 
 // ───── left: workspaces ──────────────────────────────────────────────────────
 
-/// One pip per workspace; scrolling over them moves between workspaces.
-fn workspaces() -> Rectangle {
+/// One pip per workspace on monitor `output`; scrolling over them moves
+/// between those.
+fn workspaces(output: &str) -> Rectangle {
     let pips: Vec<Box<dyn Widget>> = Workspaces::read()
         .list()
         .iter()
+        .filter(|workspace| on_output(workspace, output))
         .map(|workspace| boxed(workspace_pip(workspace)))
         .collect();
+    let scrolled_on = output.to_string();
     let pips = Row::new(pips).gap(sys::space::gap::_2xs()).align(Center);
 
     Rectangle::new()
@@ -222,9 +239,9 @@ fn workspaces() -> Rectangle {
         .height(Parent)
         .fill(Color::TRANSPARENT)
         .align_child(Start, Center)
-        .on_scroll(|scroll| {
+        .on_scroll(move |scroll| {
             if status_bar().scroll_workspaces {
-                scroll_workspaces(scroll);
+                scroll_workspaces(&scrolled_on, scroll);
             }
         })
         .child(pips)
@@ -272,7 +289,7 @@ fn workspace_pip(workspace: &Workspace) -> Rectangle {
 
 /// A wheel notch, or [`SCROLL_STEP`] lines of touchpad, focuses the next
 /// workspace down or the previous one up.
-fn scroll_workspaces(scroll: Scroll) {
+fn scroll_workspaces(output: &str, scroll: Scroll) {
     let delta = if scroll.y != 0.0 { scroll.y } else { scroll.x };
     let step = match scroll.source {
         ScrollSource::Wheel | ScrollSource::Tilt => direction(delta),
@@ -296,13 +313,27 @@ fn scroll_workspaces(scroll: Scroll) {
     }
 
     let workspaces = Workspaces::read();
-    let list = workspaces.list();
-    let focused = list.iter().position(Workspace::focused);
-    if let Some(next) = stepped(focused, list.len(), step) {
+    let list: Vec<&Workspace> = workspaces
+        .list()
+        .iter()
+        .filter(|workspace| on_output(workspace, output))
+        .collect();
+    // the one shown on this monitor, focused or not
+    let current = list
+        .iter()
+        .position(|workspace| workspace.focused())
+        .or_else(|| list.iter().position(|workspace| workspace.active()));
+    if let Some(next) = stepped(current, list.len(), step) {
         let id = list[next].id();
         drop(workspaces);
         Workspaces::focus(id);
     }
+}
+
+/// Whether `workspace` is on monitor `output`; one niri hasn't placed
+/// shows on every bar.
+fn on_output(workspace: &Workspace, output: &str) -> bool {
+    workspace.output().is_none_or(|on| on == output)
 }
 
 fn direction(delta: f32) -> i32 {
@@ -326,40 +357,33 @@ fn stepped(current: Option<usize>, len: usize, step: i32) -> Option<usize> {
 // ───── right: status cluster ─────────────────────────────────────────────────
 
 fn status() -> Row {
-    let mut items = Vec::new();
-    if Indicator::Privacy.shown() {
-        items.extend(privacy_icons());
-    }
-    if Indicator::StatusIcons.shown() {
-        items.extend(on_icons());
-    }
-    items.extend(
-        [
-            optional(Indicator::Volume, volume),
-            optional(Indicator::Bluetooth, bluetooth),
-            optional(Indicator::Network, network),
-            optional(Indicator::Tailscale, tailscale),
-            optional(Indicator::KeepAwake, keep_awake),
-            optional(Indicator::Phone, phone),
-            optional(Indicator::Battery, battery),
-            Some(quick_settings_button()),
-            optional(Indicator::Notifications, notification_icon),
-            timer(),
-            Some(clock()),
-        ]
+    let items: Vec<Box<dyn Widget>> = Item::ordered()
         .into_iter()
-        .flatten(),
-    );
+        .filter(|item| item.shown())
+        .flat_map(build)
+        .collect();
 
     Row::new(items).gap(sys::space::gap::_2xs()).align(Center)
 }
 
-/// `build`'s icon, unless its Quick Settings page hides it.
-fn optional(
-    indicator: Indicator,
-    build: fn() -> Option<Box<dyn Widget>>,
-) -> Option<Box<dyn Widget>> {
-    indicator.shown().then(build).flatten()
+/// What `item` shows now: nothing, one widget, or a few for the privacy
+/// and "on" icons.
+fn build(item: Item) -> Vec<Box<dyn Widget>> {
+    match item {
+        Item::Privacy => privacy_icons(),
+        Item::StatusIcons => on_icons(),
+        Item::Volume => volume().into_iter().collect(),
+        Item::Bluetooth => bluetooth().into_iter().collect(),
+        Item::Network => network().into_iter().collect(),
+        Item::Tailscale => tailscale().into_iter().collect(),
+        Item::KeepAwake => keep_awake().into_iter().collect(),
+        Item::Phone => phone().into_iter().collect(),
+        Item::Battery => battery().into_iter().collect(),
+        Item::QuickSettings => vec![quick_settings_button()],
+        Item::Notifications => notification_icon().into_iter().collect(),
+        Item::Timer => timer().into_iter().collect(),
+        Item::Clock => vec![clock()],
+    }
 }
 
 fn volume() -> Option<Box<dyn Widget>> {

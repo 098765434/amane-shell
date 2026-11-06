@@ -80,6 +80,148 @@ impl Indicator {
     }
 }
 
+/// Every item on the bar's right, in the order it has them unless
+/// `StatusBar::order` says otherwise.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Item {
+    Privacy,
+    StatusIcons,
+    Volume,
+    Bluetooth,
+    Network,
+    Tailscale,
+    KeepAwake,
+    Phone,
+    Battery,
+    QuickSettings,
+    Notifications,
+    Timer,
+    Clock,
+}
+
+impl Item {
+    /// The usual order, left to right.
+    pub const ALL: [Item; 13] = [
+        Self::Privacy,
+        Self::StatusIcons,
+        Self::Volume,
+        Self::Bluetooth,
+        Self::Network,
+        Self::Tailscale,
+        Self::KeepAwake,
+        Self::Phone,
+        Self::Battery,
+        Self::QuickSettings,
+        Self::Notifications,
+        Self::Timer,
+        Self::Clock,
+    ];
+
+    pub fn name(self) -> &'static str {
+        match self.indicator() {
+            Some(indicator) => indicator.name(),
+            None => match self {
+                Self::QuickSettings => "quick-settings",
+                Self::Timer => "timer",
+                _ => "clock",
+            },
+        }
+    }
+
+    /// What Shell Settings calls it.
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Privacy => "Camera, Microphone and Screen Sharing",
+            Self::StatusIcons => "Settings That Are On",
+            Self::Volume => "Sound",
+            Self::Bluetooth => "Bluetooth",
+            Self::Network => "Wi‑Fi",
+            Self::Tailscale => "Tailscale",
+            Self::KeepAwake => "Keep Awake",
+            Self::Phone => "Phone",
+            Self::Battery => "Battery",
+            Self::QuickSettings => "Quick Settings",
+            Self::Notifications => "Notifications",
+            Self::Timer => "Timer",
+            Self::Clock => "Clock",
+        }
+    }
+
+    pub fn named(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|item| item.name() == name)
+    }
+
+    /// The switch that hides it, for the ones that can be hidden; Quick
+    /// Settings and the clock always show, as macOS's Control Center and
+    /// clock do, and the timer shows while it runs.
+    pub fn indicator(self) -> Option<Indicator> {
+        Some(match self {
+            Self::Privacy => Indicator::Privacy,
+            Self::StatusIcons => Indicator::StatusIcons,
+            Self::Volume => Indicator::Volume,
+            Self::Bluetooth => Indicator::Bluetooth,
+            Self::Network => Indicator::Network,
+            Self::Tailscale => Indicator::Tailscale,
+            Self::KeepAwake => Indicator::KeepAwake,
+            Self::Phone => Indicator::Phone,
+            Self::Battery => Indicator::Battery,
+            Self::Notifications => Indicator::Notifications,
+            Self::QuickSettings | Self::Timer | Self::Clock => return None,
+        })
+    }
+
+    /// Whether it's switched on; whether it has anything to show is its own.
+    pub fn shown(self) -> bool {
+        self.indicator().is_none_or(Indicator::shown)
+    }
+
+    /// The items in the order the settings keep them.
+    pub fn ordered() -> Vec<Item> {
+        let names = status_bar().order.clone();
+        ordered(&names)
+    }
+}
+
+/// `order`'s items, ignoring names it doesn't know, with the ones it
+/// leaves out each put back after the item it usually follows.
+fn ordered(order: &[String]) -> Vec<Item> {
+    let mut items: Vec<Item> = Vec::new();
+    for name in order {
+        if let Some(item) = Item::named(name)
+            && !items.contains(&item)
+        {
+            items.push(item);
+        }
+    }
+    for (index, item) in Item::ALL.into_iter().enumerate() {
+        if items.contains(&item) {
+            continue;
+        }
+        let after = Item::ALL[..index]
+            .iter()
+            .rev()
+            .find_map(|before| items.iter().position(|placed| placed == before));
+        let at = after.map_or(0, |at| at + 1);
+        items.insert(at, item);
+    }
+    items
+}
+
+/// Moves `item` to `index` among the others and keeps the order.
+pub fn move_item(item: Item, index: usize) {
+    change_status_bar(|now| {
+        let mut items = ordered(&now.order);
+        items.retain(|other| *other != item);
+        items.insert(index.min(items.len()), item);
+        now.order = items.iter().map(|item| String::from(item.name())).collect();
+    });
+}
+
+/// Back to the usual order.
+pub fn reset_order() {
+    change_status_bar(|now| now.order.clear());
+}
+
 /// Brings the hidden icons over from the old state file, once: when there
 /// is no settings file yet. Called at start, before any window.
 pub fn migrate() {
@@ -109,15 +251,35 @@ fn parse(text: &str) -> Vec<String> {
         .collect()
 }
 
-/// `amane-shell` IPC: `status-bar (show | hide | toggle) <indicator>`, also
+/// `amane-shell` IPC: `status-bar (show | hide | toggle) <indicator>`,
+/// `status-bar move <item> <index>` and `status-bar reset-order`, also
 /// still answering to `taskbar`.
 pub fn ipc(args: &[String]) -> String {
     let names = Indicator::ALL.map(Indicator::name).join(" | ");
 
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     let (action, name) = match args.as_slice() {
+        ["move", name, index] => {
+            let Some(item) = Item::named(name) else {
+                let items = Item::ALL.map(Item::name).join(" | ");
+                return format!("unknown item {name}; one of {items}");
+            };
+            let Ok(index) = index.parse::<usize>() else {
+                return format!("not an index: {index}");
+            };
+            move_item(item, index);
+            return String::from("ok");
+        }
+        ["reset-order"] => {
+            reset_order();
+            return String::from("ok");
+        }
         [action @ ("show" | "hide" | "toggle"), name] => (*action, *name),
-        _ => return format!("usage: status-bar (show | hide | toggle) ({names})"),
+        _ => {
+            return format!(
+                "usage: status-bar (show | hide | toggle) ({names}) | move <item> <index> | reset-order"
+            );
+        }
     };
     let Some(indicator) = Indicator::named(name) else {
         return format!("unknown indicator {name}; one of {names}");
@@ -133,6 +295,32 @@ pub fn ipc(args: &[String]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn names(items: &[Item]) -> Vec<&'static str> {
+        items.iter().map(|item| item.name()).collect()
+    }
+
+    #[test]
+    fn no_order_is_the_usual_one() {
+        assert_eq!(ordered(&[]), Item::ALL);
+    }
+
+    #[test]
+    fn items_left_out_of_the_order_follow_their_usual_neighbour() {
+        let order = ["clock", "volume", "nonsense", "battery"].map(String::from);
+        let items = ordered(&order);
+        assert_eq!(items.len(), Item::ALL.len());
+        assert_eq!(&names(&items)[..2], ["privacy", "status-icons"]);
+        assert_eq!(items[2], Item::Clock);
+        // the rest of the volume's neighbours come after it, then the battery
+        let volume = items.iter().position(|item| *item == Item::Volume).unwrap();
+        assert_eq!(items[volume + 1], Item::Bluetooth);
+        let battery = items
+            .iter()
+            .position(|item| *item == Item::Battery)
+            .unwrap();
+        assert_eq!(items[battery + 1], Item::QuickSettings);
+    }
 
     #[test]
     fn the_state_file_is_read_ignoring_what_it_doesnt_know() {

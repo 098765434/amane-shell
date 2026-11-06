@@ -1521,6 +1521,7 @@ fn window() -> LayerWindow {
         .keyboard(Keyboard::Exclusive)
         .on_key(on_key);
     overlay(base, LAUNCHER_NS, Vertical::Middle, Horizontal::Middle)
+        .output(panel::on_output())
 }
 
 /// A click on `app`: a launch, or its menu at the pointer.

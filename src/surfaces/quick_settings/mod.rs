@@ -150,7 +150,9 @@ pub fn toggle_alone(page: Page) {
 }
 
 fn show(page: Page) {
-    if !is_open(Panel::QuickSettings) {
+    if is_open(Panel::QuickSettings) {
+        panel::follow_pointer();
+    } else {
         panel::toggle(Panel::QuickSettings);
     }
     go(page);
@@ -808,6 +810,7 @@ fn window(width: f32, height: f32) -> LayerWindow {
         .height(height)
         .margin(popover_margin());
     overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right)
+        .output(panel::on_output())
 }
 
 /// The surface over the whole output while the card shows (clear of what
@@ -818,6 +821,7 @@ fn full_window() -> LayerWindow {
         .width(WindowSize::Full)
         .height(WindowSize::Full);
     overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right)
+        .output(panel::on_output())
 }
 
 /// `base` taking the keyboard: the card is modal while open, so Escape

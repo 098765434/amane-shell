@@ -28,7 +28,7 @@ use crate::components::icons::ICON_DND;
 use crate::components::layout::{blank, boxed, cursor, split_row};
 use crate::components::material::{self, Level, Material};
 use crate::components::motion::{self, Arrive, Item, Pose};
-use crate::components::panel::{Panel, dismissable, is_open, overlay};
+use crate::components::panel::{self, Panel, dismissable, is_open, overlay};
 use crate::services::launcher::clock::Clock;
 use crate::tokens::{Styled, notification, sys};
 
@@ -161,7 +161,7 @@ pub fn side_sheet() -> LayerWindow {
         Keyboard::OnDemand
     };
     let base = dismissable(
-        overlay(base, CENTER_NS, Vertical::Top, Horizontal::Right),
+        overlay(base, CENTER_NS, Vertical::Top, Horizontal::Right).output(panel::on_output()),
         keyboard,
     );
 
