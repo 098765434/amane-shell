@@ -79,9 +79,9 @@ A `config.kdl` with uncommitted edits is refused.
 | Header | the name, the diagonal, the panel, the connector (for a plugged-in display), the mode, and the [tags](../kit/components.md#tag) | none |
 | Brightness | slider, on a built-in panel, through amane's `Brightness` (logind); on a monitor, Brightness and Contrast over DDC/CI ([below](#a-monitors-own-brightness)) | none |
 | Resolution | dropdown, largest first, the preferred one marked "(Default)", with what it looks like after scaling | `mode`, tried first |
-| Refresh rate | segmented (a dropdown past five rates), the rates at this resolution | `mode`, tried first |
+| Refresh rate | dropdown, the rates at this resolution | `mode`, tried first |
 | This display | with two or more: Use this display (not the last one lit), Main display | `off` (tried first), `focus-at-startup` (one at most) |
-| Variable refresh rate | segmented: Off, On demand, Always; the range it follows; under On demand, the apps that turn it on (by app id with **Add**, or from a menu of the apps open; **Remove**) | `variable-refresh-rate [on-demand=true]` and the `window-rule`, at once |
+| Variable refresh rate | dropdown: Off, On demand, Always; the range it follows; under On demand, the apps that turn it on (by app id with **Add**, or from a menu of the apps open; **Remove**) | `variable-refresh-rate [on-demand=true]` and the `window-rule`, at once |
 | Scale | dropdown, 100–300 % in quarters, each "looks like W × H", and any other scale already in use | `scale`, tried first |
 | Rotation | dropdown: Standard, 90°, 180°, 270°, flipped and flipped turned (counter-clockwise, as niri turns) | `transform`, tried first |
 | High dynamic range | **Use HDR**, tried first, with what the screen shows and an ⓘ naming the apps that show HDR; while on, **HDR brightness**, 80–480 nits ([below](#hdr)) | `hdr`, `sdr-brightness` |

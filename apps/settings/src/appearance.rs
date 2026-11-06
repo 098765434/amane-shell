@@ -4,7 +4,7 @@
 //! redraws in the new look while this window shows it too.
 
 use amane::{Color, Column};
-use amane_kit::buttons::{Segment, SegmentedButton, Switch};
+use amane_kit::buttons::Switch;
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
 use amane_kit::macform::theme as mac;
@@ -69,12 +69,13 @@ pub fn page() -> Column {
     }
     let mode_height = mode_picker.height();
 
-    let density_control = SegmentedButton::new(
+    let density_control = Dropdown::new(
         "settings.density",
-        vec![Segment::new("Comfortable"), Segment::new("Compact")],
-        Some(usize::from(density == Density::Compact)),
+        vec![String::from("Comfortable"), String::from("Compact")],
+        usize::from(density == Density::Compact),
     )
-    .on_select(|index, _| {
+    .width(180.0)
+    .on_select(|index| {
         change_appearance(|now| {
             now.density = if index == 0 {
                 Density::Comfortable
@@ -117,16 +118,16 @@ pub fn page() -> Column {
         .build();
 
     let motions = [None, Some(true), Some(false)];
-    let motion_control = SegmentedButton::new(
+    let motion_control = Dropdown::new(
         "settings.motion",
-        vec![
-            Segment::new("Automatic"),
-            Segment::new("Reduced"),
-            Segment::new("Full"),
-        ],
-        motions.iter().position(|choice| *choice == reduce_motion),
+        ["Automatic", "Reduced", "Full"].map(String::from).to_vec(),
+        motions
+            .iter()
+            .position(|choice| *choice == reduce_motion)
+            .unwrap_or(0),
     )
-    .on_select(move |index, _| change_appearance(|now| now.reduce_motion = motions[index]))
+    .width(180.0)
+    .on_select(move |index| change_appearance(|now| now.reduce_motion = motions[index]))
     .build();
 
     let saved = accent.as_deref().map(|hex| {

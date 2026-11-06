@@ -3,7 +3,7 @@
 //! `dock.json`, which the shell follows at once.
 
 use amane::Column;
-use amane_kit::buttons::{Segment, SegmentedButton};
+use amane_kit::dropdown::Dropdown;
 use amane_kit::form::{FormRow, SliderRow};
 use amane_kit::settings::{DOCK_ICON_SIZES, Dock, Magnify, change_dock, dock};
 use amane_kit::slider::Slider;
@@ -18,14 +18,16 @@ pub fn page() -> Column {
     let (least, most) = DOCK_ICON_SIZES;
     let span = f32::from(most - least);
     let at = ((f32::from(now.icon_size.clamp(least, most) - least) / span) * 100.0).round() as u8;
-    let magnify = SegmentedButton::new(
+    let magnify = Dropdown::new(
         "settings.dock.magnify",
-        MAGNIFY.into_iter().map(Segment::new).collect(),
+        MAGNIFY.map(String::from).to_vec(),
         Magnify::ALL
             .iter()
-            .position(|amount| *amount == now.magnification),
+            .position(|amount| *amount == now.magnification)
+            .unwrap_or(0),
     )
-    .on_select(|index, _| change_dock(|now| now.magnification = Magnify::ALL[index]))
+    .width(200.0)
+    .on_select(|index| change_dock(|now| now.magnification = Magnify::ALL[index]))
     .build();
 
     let switch = |id: &str, title: &str, on: bool, set: fn(&mut Dock, bool)| {

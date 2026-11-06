@@ -7,11 +7,11 @@ use std::thread;
 use std::time::Duration;
 
 use amane::{
-    Battery, Brightness, Center, Color, Rectangle, Row, Service, Size, Text, TextInput, Widget,
+    Battery, Brightness, Center, Color, Rectangle, Row, Service, Size, Text, TextInput,
 };
 use amane_kit::app::{Dialog, field_box, text_field};
 use amane_kit::arrangement::{Arrangement, Screen};
-use amane_kit::buttons::{IconButton, PushButton, Segment, SegmentedButton, Switch};
+use amane_kit::buttons::{IconButton, PushButton, Switch};
 use amane_kit::color::Accent;
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::{FormRow, Group, SliderRow};
@@ -563,7 +563,6 @@ pub fn refresh_rate(ctx: &Ctx) -> Vec<FormRow> {
         .iter()
         .position(|m| m.refresh_rate == now.refresh_rate);
     let labels: Vec<String> = rates.iter().map(|m| hz(m.hz())).collect();
-    let count = labels.len();
     let output = ctx.output.clone();
     let pick = move |index: usize| {
         if let Some(to) = rates.get(index).copied()
@@ -575,27 +574,10 @@ pub fn refresh_rate(ctx: &Ctx) -> Vec<FormRow> {
     let row = FormRow::new("settings.displays.refresh-row", "Refresh rate");
     let row = if !ctx.editable() {
         row.value(hz(now.hz()))
-    } else if labels.len() <= 5 {
-        let segmented = SegmentedButton::new(
-            "settings.displays.refresh",
-            labels.into_iter().map(Segment::new).collect(),
-            at,
-        )
-        .on_select(move |index, _| pick(index))
-        .build();
-        // two or three rates fit at the trailing edge; more go under the name
-        if count <= 3 {
-            row.trailing(segmented)
-        } else {
-            let height = match segmented.height() {
-                Size::Fixed(height) => height,
-                Size::Parent => mac::control_height(),
-            };
-            row.detail(segmented, height)
-        }
     } else {
         row.trailing(
             Dropdown::new("settings.displays.refresh", labels, at.unwrap_or(0))
+                .width(160.0)
                 .on_select(pick)
                 .build(),
         )
@@ -642,22 +624,14 @@ pub fn variable_refresh(ctx: &Ctx) -> Group {
     let now = ctx.vrr();
     let output = ctx.output.clone();
     let choices = [Vrr::Off, Vrr::OnDemand, Vrr::Always];
-    let control = SegmentedButton::new(
+    let control = Dropdown::new(
         "settings.displays.vrr",
-        ["Off", "On demand", "Always"]
-            .into_iter()
-            .map(|label| {
-                let segment = Segment::new(label);
-                if ctx.editable() {
-                    segment
-                } else {
-                    segment.disabled()
-                }
-            })
-            .collect(),
-        choices.iter().position(|c| *c == now),
+        ["Off", "On demand", "Always"].map(String::from).to_vec(),
+        choices.iter().position(|c| *c == now).unwrap_or(0),
     )
-    .on_select(move |index, _| {
+    .width(160.0)
+    .disabled(!ctx.editable())
+    .on_select(move |index| {
         let vrr = choices[index];
         let (name, change) = (
             output.name.clone(),

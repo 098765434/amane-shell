@@ -11,9 +11,10 @@ use std::fs;
 use std::path::PathBuf;
 use std::thread;
 
-use amane::{Center, Row, Service, TextInput, Widget, ipc_call, watch_file};
+use amane::{Center, Row, Service, TextInput, ipc_call, watch_file};
 use amane_kit::app::{field_box, text_field};
-use amane_kit::buttons::{PushButton, Segment, SegmentedButton};
+use amane_kit::buttons::PushButton;
+use amane_kit::dropdown::Dropdown;
 use amane_kit::form::{FormRow, Group, SliderRow};
 use amane_kit::layout::boxed;
 use amane_kit::macform::theme as mac;
@@ -258,15 +259,17 @@ pub fn section() -> Group {
         Schedule::Sun(..) => 1,
         Schedule::Hours(..) => 2,
     };
-    let schedule = SegmentedButton::new(
+    // choosing the schedule already in use keeps its place or hours
+    let schedule = Dropdown::new(
         "settings.displays.night.schedule",
         ["All day", "Sunset to sunrise", "Set hours"]
-            .into_iter()
-            .map(Segment::new)
-            .collect(),
-        Some(at),
+            .map(String::from)
+            .to_vec(),
+        at,
     )
-    .on_select(|index, _| match index {
+    .width(200.0)
+    .on_select(move |index| match index {
+        _ if index == at => {}
         0 => tell(words(&["schedule", "manual"])),
         1 => {
             let (lat, lon) = zone_place().unwrap_or((0.0, 0.0));
@@ -280,10 +283,6 @@ pub fn section() -> Group {
         _ => tell(words(&["schedule", "hours", "21:00", "07:00"])),
     })
     .build();
-    let schedule_h = match schedule.height() {
-        amane::Size::Fixed(height) => height,
-        amane::Size::Parent => mac::control_height(),
-    };
 
     let group = group()
         .header("Night Light")
@@ -295,8 +294,7 @@ pub fn section() -> Group {
         ))
         .slider(temperature)
         .row(
-            FormRow::new("settings.displays.night.schedule-row", "Schedule")
-                .detail(schedule, schedule_h),
+            FormRow::new("settings.displays.night.schedule-row", "Schedule").trailing(schedule),
         );
     let error = error.map(|why| format!("{why}\n")).unwrap_or_default();
     match &light.schedule {

@@ -12,11 +12,12 @@ use std::sync::{Mutex, Once, PoisonError};
 use std::thread;
 use std::time::SystemTime;
 
-use amane::{DesktopApp, Service, TextInput, Widget};
+use amane::{DesktopApp, Service, TextInput};
 use amane_kit::app::{Dialog, field_box, text_field};
-use amane_kit::buttons::{PushButton, Segment, SegmentedButton};
+use amane_kit::buttons::PushButton;
+use amane_kit::dropdown::Dropdown;
+use amane_kit::layout::boxed;
 use amane_kit::form::{FormRow, Group};
-use amane_kit::tokens::sys;
 
 use super::adopt;
 use super::apps::Found;
@@ -441,20 +442,20 @@ pub fn section(
         .into_iter()
         .filter(|show| *show != Show::Flatpaks || flatpaks.available)
         .collect();
-    let segments = shows
+    let labels = shows
         .iter()
         .map(|show| {
             let count = all
                 .iter()
                 .filter(|item| item.shown_by(*show) && item.matches(&filter))
                 .count();
-            Segment::new(format!("{} {count}", show.label()))
+            format!("{} ({count})", show.label())
         })
         .collect();
-    let picked = shows.iter().position(|s| *s == show);
-    let chips = SegmentedButton::new("settings.apps.installed.show", segments, picked)
-        .width(440.0)
-        .on_select(move |index, _| {
+    let picked = shows.iter().position(|s| *s == show).unwrap_or(0);
+    let chips = Dropdown::new("settings.apps.installed.show", labels, picked)
+        .width(170.0)
+        .on_select(move |index| {
             let shows: Vec<Show> = SHOWS
                 .into_iter()
                 .filter(|show| *show != Show::Flatpaks || Flatpaks::read().available)
@@ -462,8 +463,7 @@ pub fn section(
             if let Some(show) = shows.get(index) {
                 Filter::write().show = *show;
             }
-        })
-        .build();
+        });
     let field = text_field(FILTER, "Filter…");
 
     let rows: Vec<FormRow> = all
@@ -472,13 +472,11 @@ pub fn section(
         .map(|item| row(item, entry, managed, &removal))
         .collect();
 
-    let chips_height = match chips.height() {
-        amane::Size::Fixed(height) => height,
-        amane::Size::Parent => sys::size::control::height(),
-    };
-    let filters = FormRow::new("settings.apps.installed.filters", "Show")
-        .trailing(field_box(FILTER, field, 160.0))
-        .detail(chips, chips_height);
+    let filters = FormRow::new("settings.apps.installed.filters", "Show").trailing(
+        amane::Row::new(vec![boxed(chips.build()), boxed(field_box(FILTER, field, 160.0))])
+        .gap(8.0)
+        .align(amane::Center),
+    );
     let mut group = group().header("Installed").row(filters);
     if rows.is_empty() && snapshot.loading && all.is_empty() {
         group = group.row(

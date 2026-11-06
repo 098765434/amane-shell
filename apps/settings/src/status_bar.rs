@@ -5,7 +5,7 @@
 use amane::TextInput;
 use amane::{Center, Column, Rectangle, Row, Size, Widget};
 use amane_kit::app::{Dialog, commit_on_blur, field_box, text_field};
-use amane_kit::buttons::{IconButton, PushButton, Segment, SegmentedButton, Switch};
+use amane_kit::buttons::{IconButton, PushButton, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
 use amane_kit::layout::{boxed, fixed_width};
@@ -44,17 +44,16 @@ const STYLES: [(&str, BarStyle); 4] = [
 pub fn page() -> Column {
     let now = status_bar().clone();
 
-    let position = SegmentedButton::new(
+    let position = Dropdown::new(
         "settings.bar.position",
-        POSITIONS
-            .into_iter()
-            .map(|(label, _)| Segment::new(label))
-            .collect(),
+        POSITIONS.map(|(label, _)| String::from(label)).to_vec(),
         POSITIONS
             .iter()
-            .position(|(_, position)| *position == now.position),
+            .position(|(_, position)| *position == now.position)
+            .unwrap_or(0),
     )
-    .on_select(|index, _| change_status_bar(|now| now.position = POSITIONS[index].1))
+    .width(200.0)
+    .on_select(|index| change_status_bar(|now| now.position = POSITIONS[index].1))
     .build();
 
     let hiding = [
@@ -441,12 +440,15 @@ fn activities() -> Column {
     let now = status_bar().clone();
     let on = now.shows("activities");
 
-    let compact = SegmentedButton::new(
+    let compact = Dropdown::new(
         "settings.bar.activities-compact",
-        Vec::from(["1", "2", "3"].map(Segment::new)),
-        Some(now.compact_activities() - 1),
+        ["1 activity", "2 activities", "3 activities"]
+            .map(String::from)
+            .to_vec(),
+        now.compact_activities().clamp(1, 3) - 1,
     )
-    .on_select(|index, _| change_status_bar(|now| now.activities_compact = index as u8 + 1))
+    .width(200.0)
+    .on_select(|index| change_status_bar(|now| now.activities_compact = index as u8 + 1))
     .build();
 
     let mut apps: Vec<String> = BUILTIN_ACTIVITIES.map(String::from).to_vec();
