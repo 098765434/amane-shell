@@ -1,5 +1,6 @@
 //! A countdown the launcher's Start Timer action sets: one at a time, a
-//! notification when it runs out, and a chip in the bar while it runs.
+//! notification when it runs out, and a Live Activity in the bar while it
+//! runs.
 //! amane has no timers, so a thread sleeps it out.
 
 use std::sync::Mutex;
@@ -70,6 +71,15 @@ pub fn left() -> Option<(Duration, String)> {
         .duration_since(SystemTime::now())
         .unwrap_or_default();
     Some((left, running.label.clone()))
+}
+
+/// When the running timer runs out, and its name, for the bar's Live
+/// Activity, which counts down to it itself.
+pub fn ends() -> Option<(SystemTime, String)> {
+    Countdown::watch();
+    let timer = TIMER.lock().unwrap_or_else(|e| e.into_inner());
+    let running = timer.as_ref()?;
+    Some((running.ends, running.label.clone()))
 }
 
 /// `left` as a clock shows it: "4:59", or "1:04:59" past an hour.

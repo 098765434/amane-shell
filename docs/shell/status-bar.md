@@ -59,19 +59,14 @@ the click that ends a drop is swallowed (`buttons::swallow_click`). The layer ta
 own press, so they don't shrink when pressed. The usual order, left to right:
 
 1. **Apps** (the tray, [below](#apps-the-tray)).
-2. **Privacy** (`chips.rs`), in macOS's colours: a purple **Sharing** chip while niri casts the
-   screen or a window, whose menu says what each cast shares, each with **Stop Sharing**
-   (`niri msg action stop-cast --session-id`); a green camera while a camera runs; an orange
-   microphone while an app records. Their tooltips name the apps, and the dots' menu lists them by
+2. **Privacy** (`chips.rs`), in macOS's colours: a green camera while a camera runs; an orange
+   microphone while an app records. Screen sharing is a [Live Activity](#live-activities). Their tooltips name the apps, and the dots' menu lists them by
    camera and microphone; picking one brings its window up (found by its process, or its parent's,
    in niri's window list), and Sound Settings… opens Quick Settings' Sound page.
 3. Glyphs for settings that are **on**: night light, a VPN, a power mode other than Balanced, and
    airplane mode. Each opens Quick Settings.
-4. **Now Playing** (`chips.rs`): the art (or a note) and title of what plays, cut at 160 px, as
-   macOS's "Show When Active": while a player plays, or was paused in the last five minutes
-   (`media_always` shows it always, "Not Playing" when nothing does). A click opens a little player
-   menu (Play/Pause, Next, Previous, and Quick Settings, where the full module is); middle click
-   plays or pauses.
+4. **Live Activities** (`activities.rs`, [below](#live-activities)): Now Playing, the timer, screen
+   sharing and other programs' activities.
 5. The optional **status icons** (see [below](#status-icons)), each opening its Quick Settings page:
    - **Volume**: the glyph shows the default output (built-in speaker, speaker, headphones,
      headset, TV, car …) and the tooltip shows the level. Scroll to change it, middle-click to
@@ -90,12 +85,7 @@ own press, so they don't shrink when pressed. The usual order, left to right:
 6. The **Quick Settings** button (see [quick-settings.md](quick-settings.md)).
 7. The **notification** icon: a moon while Do Not Disturb is on, a bell while something arrived
    unseen, nothing otherwise. Click it for the center, right-click for Do Not Disturb.
-8. The **timer** chip, only while the launcher's timer runs (`services/launcher/timer.rs`): a timer glyph
-   and the time left in `sys.type.numeric`, counting down by the second. Its tooltip is the
-   timer's label; a click opens the launcher in Actions, where it can be cancelled (see
-   [launcher.md](launcher.md#actions)). amane has no timers, so the bar asks for a frame just
-   after each second turns over (`motion::redraw_after`).
-9. The **clock**: click it for the notification center (see [notifications.md](notifications.md));
+8. The **clock**: click it for the notification center (see [notifications.md](notifications.md));
    its tooltip is the date (`Clock::date`).
 
 Hidden items take no space: each section yields `Option`s that are flattened, so the row's gaps
@@ -125,11 +115,85 @@ menu, each doing what its click would.
 
 Over IPC: `status-bar tray list`, `status-bar tray activate <id>` and `status-bar tray menu <id>`.
 
+## Programs' items
+
+Other programs put their own items in the bar over its bus service, `org.amane.StatusBar1`. This
+is macOS's status items (`NSStatusItem`), as amane's `StatusItem` client or plain JSON over
+`busctl` ([status-apps.md](../integration/status-apps.md)). The server is
+`services/status_apps.rs` and the drawing is `apps.rs`.
+
+- **What shows.** Each item is its picture (one of the bar's symbols, a theme icon or a file),
+  then an optional title cut at 120 px and a badge. It shows in the accent while it wants
+  attention.
+- **Clicks.** A click and a middle click go back to the program, with the item's middle on its
+  monitor and the bar's edge, so it can open its own window under the item.
+- **Menus.** A right-click shows the item's menu as the shell's context menu, and a pick goes
+  back to the program. An item with no menu hears the right-click instead.
+- **Drops.** An item that accepts files or text takes them when they're let go on it
+  (`Rectangle::on_drop`). One that opens on drag hears as soon as files come over it, so the
+  program can open a window to drop them on.
+- **Order and hiding.** Items keep their place in `order` as `app:<id>`. A new item goes just
+  after the tray. Items drag and hide like the bar's own, and `hidden` keeps the hidden ones by
+  the same name.
+- **Allow in the Status Bar.** Shell Settings lists every program seen
+  (`~/.cache/amane-shell/status-apps-seen.json`).
+- **Ownership.** An item belongs to the program that registered it: no other program may use
+  its id. It goes when that program leaves the bus.
+
+## Live Activities
+
+What's going on now, as macOS 27.3 puts in the menu bar (`activities.rs`).
+
+**Sources**
+
+- The bar's own are read straight from their services:
+  - **Now Playing**: the art and title, while a player plays or was paused in the last five
+    minutes. `media_always` shows it always, as "Not Playing" when nothing plays. Its buttons
+    are previous, play/pause and next, plus the player in Quick Settings. A middle click plays
+    or pauses.
+  - **Timer**: the launcher's timer counting down, in orange, with Cancel and Open in Spotlight.
+  - **Screen Sharing**: purple, with what each niri cast shares and Stop Sharing for each.
+- Other programs' come over `org.amane.StatusBar1` and are kept in
+  `services/desktop/activities.rs`.
+
+**Presentation**
+
+- **Ranking.** Each activity has a relevance: Sharing 0.9, the timer 0.7, Now Playing 0.3, and
+  other programs say their own. The most relevant `activities_compact` (1–3, 2 by default) show
+  **compact**: the picture and the trailing text, countdown, count-up or progress ring.
+- **Minimal.** The rest show their picture alone. The bar's overflow takes the tray's apps
+  first.
+- **Ticking.** A countdown or count-up is ticked by the bar, a frame just after each second
+  turns over (`motion::redraw_after`). Its program sends nothing in between.
+- **Dimming.** An activity is dimmed once it is out of date (`stale_after` without an update),
+  and while it shows its last state after being ended.
+
+**The expanded view**
+
+- A click opens the expanded view under the bar, an xdg-popup of the bar
+  (`amane.status-bar.activity`, frosted by the bar's layer rule). It shows the title and
+  subtitle, the trailing part large, a progress bar, and up to three buttons, whose presses go
+  back to the program.
+- An update that alerts brings the view up for 4 s, without a grab, but not under Do Not
+  Disturb.
+
+**Limits**
+
+- An activity ends after 8 hours, or when its program leaves the bus.
+- Shell Settings' Status Bar › Live Activities has the switch, how many show compact, Now
+  Playing's "Always show", and which apps may show them (`activities_denied`, by the name they
+  give). The bar's own three are always listed; others are listed once seen
+  (`activities-seen.json`).
+
+Every piece is rectangles, glyphs and arcs (the quad pipeline): `AMANE_FRAMES=1` with
+`amane/vello-stats` shows `vello 0` on the bar and the view.
+
 ## Status icons
 
-Volume, Bluetooth, network, Tailscale, Keep Awake, the phone and battery are optional, and so are three
-groups: `privacy` (screen sharing, camera, microphone), `status-icons` (Night Light, VPN, power
-mode, Airplane Mode) and `notifications` (the bell or the moon). Each Quick Settings page that has
+Volume, Bluetooth, network, Tailscale, Keep Awake, the phone and battery are optional, and so are four
+groups: `activities` (the Live Activities), `privacy` (camera, microphone), `status-icons` (Night
+Light, VPN, power mode, Airplane Mode) and `notifications` (the bell or the moon). A `media`
+hidden before Now Playing became a Live Activity is kept out as one (`indicators::migrate`). Each Quick Settings page that has
 one ends in a **Show in Status Bar** switch; Shell Settings' Status Bar page has a switch for
 each, and the `status-bar` IPC command does the same ([ipc.md](../integration/ipc.md#status-bar)).
 The hidden ones' names are `hidden` in `status-bar.json` (`indicators.rs`), which the bar follows
@@ -151,8 +215,9 @@ Bar page), followed live:
 | `show_weekday` | the day of the week before the time (`StatusBar::clock_pattern`) |
 | `flash_separators` | the colons blink each second, as macOS's; a figure space stands in, and the clock keeps the width it has with colons. `Clock` signals each second while on |
 | `media_always` | Now Playing shows with nothing playing too |
+| `activities_compact`, `activities_denied` | how many Live Activities show with their text (1–3), and the apps whose activities stay out, by name |
 | `weather`, `weather_place` | the Weather item (`services/desktop/weather.rs`): Open-Meteo, the place found once by its geocoding, read every half hour and whenever the place changes; nothing is fetched while it's off. Its glyph and temperature, the tooltip the place, the conditions and the day's high and low; a moon on clear nights |
-| `order`, `tray_denied` | the items' order and the apps kept out (above) |
+| `order`, `tray_denied` | the items' order and the apps kept out (above); programs' items are in `order` as `app:<id>`. The older `media` and `timer` read as `activities` |
 | `date_format` | the clock tooltip's day: `long` ("Sunday 25 October"), `short` ("Sun 25 Oct"), `numeric` (the locale's `%x`) |
 | `show_workspaces`, `scroll_workspaces` | the pips, and whether scrolling over them moves between workspaces |
 | `hidden` | the status icons left out (above) |

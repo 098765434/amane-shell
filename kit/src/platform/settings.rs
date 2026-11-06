@@ -441,6 +441,13 @@ pub struct StatusBar {
     pub weather: bool,
     /// A place name, found once with Open-Meteo's geocoding.
     pub weather_place: String,
+
+    /// The apps whose Live Activities stay out of the bar, by the name
+    /// they give ("Now Playing", "Drop").
+    pub activities_denied: Vec<String>,
+    /// How many Live Activities show compact, with their text; the rest
+    /// show as their icon alone.
+    pub activities_compact: u8,
 }
 
 impl Default for StatusBar {
@@ -464,6 +471,8 @@ impl Default for StatusBar {
             flash_separators: false,
             weather: false,
             weather_place: String::new(),
+            activities_denied: Vec::new(),
+            activities_compact: 2,
         }
     }
 }
@@ -514,7 +523,7 @@ impl StatusBar {
 
 /// Every item on the status bar's right, by name, in its usual order,
 /// with what Shell Settings calls it and whether it can be hidden.
-pub const BAR_ITEMS: [(&str, &str, bool); 17] = [
+pub const BAR_ITEMS: [(&str, &str, bool); 16] = [
     ("tray", "Apps", true),
     ("privacy", "Camera, Microphone and Screen Sharing", true),
     (
@@ -522,7 +531,7 @@ pub const BAR_ITEMS: [(&str, &str, bool); 17] = [
         "Night Light, VPN, Power Mode, Airplane",
         true,
     ),
-    ("media", "Now Playing", true),
+    ("activities", "Live Activities", true),
     ("weather", "Weather", true),
     ("volume", "Volume", true),
     ("bluetooth", "Bluetooth", true),
@@ -534,7 +543,6 @@ pub const BAR_ITEMS: [(&str, &str, bool); 17] = [
     ("battery", "Battery", true),
     ("quick-settings", "Quick Settings", false),
     ("notifications", "Notifications and Do Not Disturb", true),
-    ("timer", "Timer, While It Runs", false),
     ("clock", "Clock", false),
 ];
 
@@ -544,6 +552,11 @@ impl StatusBar {
     /// usually follow.
     pub fn items(&self) -> Vec<&'static str> {
         let known = |name: &str| {
+            // Now Playing and the timer became Live Activities
+            let name = match name {
+                "media" | "timer" => "activities",
+                name => name,
+            };
             BAR_ITEMS
                 .iter()
                 .find(|item| item.0 == name)
@@ -568,6 +581,59 @@ impl StatusBar {
             items.insert(after.map_or(0, |at| at + 1), name);
         }
         items
+    }
+
+    /// The items' names with programs' own items among them (`app:<id>`,
+    /// those running now): each where it was kept, and a new one just
+    /// after the tray, as macOS adds a menu bar extra at the left.
+    pub fn items_with(&self, apps: &[String]) -> Vec<String> {
+        let mut items: Vec<String> = self.items().into_iter().map(String::from).collect();
+        let mut fresh = 0;
+        for app in apps {
+            if items.contains(app) {
+                continue;
+            }
+            let kept = self.order.iter().position(|name| name == app);
+            let at = match kept {
+                // after the nearest item kept before it that is here now
+                Some(kept) => self.order[..kept]
+                    .iter()
+                    .rev()
+                    .find_map(|before| items.iter().position(|placed| placed == before))
+                    .map_or(0, |at| at + 1),
+                None => {
+                    let tray = items.iter().position(|name| name == "tray");
+                    fresh += 1;
+                    tray.map_or(fresh - 1, |tray| tray + fresh)
+                }
+            };
+            items.insert(at.min(items.len()), app.clone());
+        }
+        items
+    }
+
+    /// Moves the item `name` to `index` among the others, programs' items
+    /// `apps` too; the order kept remembers where each program's went.
+    pub fn move_item_with(&mut self, name: &str, index: usize, apps: &[String]) {
+        let mut items = self.items_with(apps);
+        let Some(from) = items.iter().position(|item| item == name) else {
+            return;
+        };
+        let item = items.remove(from);
+        items.insert(index.min(items.len()), item);
+        // programs not running now keep their places too, after what they followed
+        for (kept, away) in self.order.iter().enumerate() {
+            if !away.starts_with("app:") || items.contains(away) {
+                continue;
+            }
+            let at = self.order[..kept]
+                .iter()
+                .rev()
+                .find_map(|before| items.iter().position(|placed| placed == before))
+                .map_or(0, |at| at + 1);
+            items.insert(at, away.clone());
+        }
+        self.order = items;
     }
 
     /// Moves the item `name` to `index` among the others.
@@ -597,13 +663,106 @@ impl StatusBar {
     }
 }
 
-/// Where the shell keeps the tray apps it has seen, so Shell Settings can
-/// list them when they aren't running.
-fn tray_seen_file() -> Option<PathBuf> {
+impl StatusBar {
+    /// Whether the app by this name may show Live Activities in the bar.
+    pub fn allows_activity(&self, app: &str) -> bool {
+        !self.activities_denied.iter().any(|denied| denied == app)
+    }
+
+    pub fn set_activity_allowed(&mut self, app: &str, allowed: bool) {
+        self.activities_denied.retain(|denied| denied != app);
+
+        if !allowed {
+            self.activities_denied.push(String::from(app));
+        }
+    }
+
+    /// How many activities show compact, 1 to 3.
+    pub fn compact_activities(&self) -> usize {
+        usize::from(self.activities_compact.clamp(1, 3))
+    }
+}
+
+/// The apps the bar's own Live Activities go under: what plays, the
+/// launcher's timer, and screen sharing.
+pub const BUILTIN_ACTIVITIES: [&str; 3] = ["Now Playing", "Timer", "Screen Sharing"];
+
+/// A file in the shell's cache folder.
+fn cache_file(name: &str) -> Option<PathBuf> {
     let cache = std::env::var_os("XDG_CACHE_HOME")
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))?;
-    Some(cache.join("amane-shell").join("tray-seen.json"))
+    Some(cache.join("amane-shell").join(name))
+}
+
+/// Writes `text` to `file` whole, through a part file.
+fn write_whole(file: &std::path::Path, text: &str) {
+    if let Some(folder) = file.parent() {
+        let _ = std::fs::create_dir_all(folder);
+    }
+    let partial = file.with_extension("part");
+    if std::fs::write(&partial, text).is_ok() {
+        let _ = std::fs::rename(partial, file);
+    }
+}
+
+/// Where the shell keeps the tray apps it has seen, so Shell Settings can
+/// list them when they aren't running.
+fn tray_seen_file() -> Option<PathBuf> {
+    cache_file("tray-seen.json")
+}
+
+/// Every program seen with its own item in the bar (`ItemSpec`), as (id,
+/// what it calls itself), by id.
+pub fn status_apps_seen() -> BTreeMap<String, String> {
+    cache_file("status-apps-seen.json")
+        .and_then(|file| std::fs::read_to_string(file).ok())
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+/// Remembers a program's item, once; a name it had before is kept when it
+/// now has none.
+pub fn remember_status_app(id: &str, name: &str) {
+    let mut seen = status_apps_seen();
+    if seen
+        .get(id)
+        .is_some_and(|known| name.is_empty() || known == name)
+    {
+        return;
+    }
+    seen.insert(String::from(id), String::from(name));
+    let (Some(file), Ok(text)) = (
+        cache_file("status-apps-seen.json"),
+        serde_json::to_string_pretty(&seen),
+    ) else {
+        return;
+    };
+    write_whole(&file, &text);
+}
+
+/// Every app seen showing a Live Activity, by name, so Shell Settings can
+/// list them when none is going on.
+pub fn activities_seen() -> std::collections::BTreeSet<String> {
+    cache_file("activities-seen.json")
+        .and_then(|file| std::fs::read_to_string(file).ok())
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+/// Remembers an app that showed a Live Activity, once.
+pub fn remember_activity(app: &str) {
+    let mut seen = activities_seen();
+    if app.is_empty() || !seen.insert(String::from(app)) {
+        return;
+    }
+    let (Some(file), Ok(text)) = (
+        cache_file("activities-seen.json"),
+        serde_json::to_string_pretty(&seen),
+    ) else {
+        return;
+    };
+    write_whole(&file, &text);
 }
 
 /// Every tray app seen, as (id, title), by id.
@@ -629,13 +788,7 @@ pub fn remember_tray(id: &str, title: &str) {
     let Ok(text) = serde_json::to_string_pretty(&seen) else {
         return;
     };
-    if let Some(folder) = file.parent() {
-        let _ = std::fs::create_dir_all(folder);
-    }
-    let partial = file.with_extension("part");
-    if std::fs::write(&partial, text).is_ok() {
-        let _ = std::fs::rename(partial, file);
-    }
+    write_whole(&file, &text);
 }
 
 impl Settings for StatusBar {
@@ -794,6 +947,274 @@ pub fn change_nixos(edit: impl FnOnce(&mut Nixos)) {
     Config::<Nixos>::change(edit);
 }
 
+// ───── Drop (amane-drop) ────────────────────────────────────────────────────
+
+/// What a folder tile does with what's let go on it.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum FolderMode {
+    #[default]
+    Copy,
+    Move,
+}
+
+/// A tile of a Drop grid: somewhere to let files go, or something to do
+/// with them, as Dropzone's actions.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "amane::serde", rename_all = "kebab-case", tag = "kind")]
+pub enum DropTile {
+    /// Copies (or moves) what's let go into the folder; a click opens it.
+    Folder {
+        path: PathBuf,
+        #[serde(default)]
+        mode: FolderMode,
+    },
+    /// Opens what's let go with the app, by its desktop file id.
+    App { id: String },
+    /// Copies into a folder chosen once.
+    CopyTo {
+        #[serde(default)]
+        folder: Option<PathBuf>,
+    },
+    /// Moves into a folder chosen once.
+    MoveTo {
+        #[serde(default)]
+        folder: Option<PathBuf>,
+    },
+    /// Asks for a name, then moves the file there.
+    RenameMove {
+        #[serde(default)]
+        folder: Option<PathBuf>,
+    },
+    /// Saves text let go as a file there.
+    SaveText {
+        #[serde(default)]
+        folder: Option<PathBuf>,
+    },
+    /// Sends what's let go to a phone over KDE Connect: the one paired, or
+    /// the one asked for when there are more.
+    Phone {
+        #[serde(default)]
+        device: Option<String>,
+    },
+    /// Uploads what's let go and copies its link.
+    Upload { to: UploadTo },
+}
+
+/// Where an upload tile sends files.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "kebab-case")]
+pub enum UploadTo {
+    /// 0x0.st, the null pointer: no account, kept a while, then gone.
+    #[serde(rename = "0x0")]
+    ZeroX0,
+    Imgur,
+    Sftp,
+    S3,
+}
+
+impl UploadTo {
+    pub const ALL: [Self; 4] = [Self::ZeroX0, Self::Imgur, Self::Sftp, Self::S3];
+
+    /// Its name on a tile and in Settings.
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::ZeroX0 => "0x0.st",
+            Self::Imgur => "Imgur",
+            Self::Sftp => "SFTP",
+            Self::S3 => "S3",
+        }
+    }
+}
+
+/// One grid of tiles; each has a Drop Bar of its own.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct DropGrid {
+    pub name: String,
+    pub tiles: Vec<DropTile>,
+}
+
+impl Default for DropGrid {
+    fn default() -> Self {
+        let home = std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .unwrap_or_default();
+        let mut tiles = Vec::new();
+        for folder in ["Downloads", "Desktop"] {
+            let path = home.join(folder);
+            if path.is_dir() {
+                tiles.push(DropTile::Folder {
+                    path,
+                    mode: FolderMode::Copy,
+                });
+            }
+        }
+        tiles.extend([
+            DropTile::CopyTo { folder: None },
+            DropTile::MoveTo { folder: None },
+            DropTile::RenameMove { folder: None },
+            DropTile::SaveText { folder: None },
+        ]);
+        Self {
+            name: String::from("Grid"),
+            tiles,
+        }
+    }
+}
+
+/// amane-drop's grids, `~/.config/amane-drop/grids.json`, followed live by
+/// the app and Shell Settings.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct DropGrids {
+    pub grids: Vec<DropGrid>,
+    /// Tiles a row.
+    pub columns: u8,
+}
+
+impl Default for DropGrids {
+    fn default() -> Self {
+        Self {
+            grids: vec![DropGrid::default()],
+            columns: 4,
+        }
+    }
+}
+
+impl Settings for DropGrids {
+    const APP: &'static str = "amane-drop";
+    const FILE: &'static str = "grids";
+}
+
+impl DropGrids {
+    /// Tiles a row, 3 to 6.
+    pub fn columns(&self) -> usize {
+        usize::from(self.columns.clamp(3, 6))
+    }
+}
+
+/// The grids as they are now; a view that reads them redraws when they change.
+pub fn drop_grids() -> RwLockReadGuard<'static, Config<DropGrids>> {
+    Config::<DropGrids>::read()
+}
+
+/// Changes the grids and saves them, for input handlers.
+pub fn change_drop_grids(edit: impl FnOnce(&mut DropGrids)) {
+    Config::<DropGrids>::change(edit);
+}
+
+/// The SFTP server Drop uploads to. A password, when there's no key, is
+/// kept in the keyring as "sftp".
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct SftpAccount {
+    pub host: String,
+    pub port: u16,
+    pub user: String,
+    /// The folder files go in, on the server.
+    pub folder: String,
+    /// Where they can be read on the web, which a file's name is put after
+    /// for its link; none, and an upload gives no link.
+    pub url: String,
+    /// A private key to log in with, else the password.
+    pub key: Option<PathBuf>,
+}
+
+impl Default for SftpAccount {
+    fn default() -> Self {
+        Self {
+            host: String::new(),
+            port: 22,
+            user: String::new(),
+            folder: String::new(),
+            url: String::new(),
+            key: None,
+        }
+    }
+}
+
+/// The S3 bucket Drop uploads to, at AWS or any S3-compatible store. The
+/// secret access key is kept in the keyring as "s3".
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
+#[serde(crate = "amane::serde", default)]
+pub struct S3Account {
+    /// Another store's address (`https://<id>.r2.cloudflarestorage.com`),
+    /// none for AWS.
+    pub endpoint: String,
+    /// `us-east-1` when none; R2's is `auto`.
+    pub region: String,
+    pub bucket: String,
+    /// Put before each file's name: a folder in the bucket.
+    pub prefix: String,
+    pub key_id: String,
+    /// Where the bucket can be read on the web, for links; none, and the
+    /// bucket's own address is given.
+    pub url: String,
+    /// Uploads readable by anyone (`public-read`).
+    pub public: bool,
+}
+
+/// amane-drop's accounts and what it does with a link,
+/// `~/.config/amane-drop/sharing.json`.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct DropSharing {
+    pub sftp: SftpAccount,
+    pub s3: S3Account,
+    /// Imgur's client id for an app registered there (anonymous uploads).
+    pub imgur_client_id: String,
+    /// An upload's link goes on the clipboard.
+    pub copy_link: bool,
+    /// A notification says it's done.
+    pub notify: bool,
+}
+
+impl Default for DropSharing {
+    fn default() -> Self {
+        Self {
+            sftp: SftpAccount::default(),
+            s3: S3Account::default(),
+            imgur_client_id: String::new(),
+            copy_link: true,
+            notify: true,
+        }
+    }
+}
+
+impl Settings for DropSharing {
+    const APP: &'static str = "amane-drop";
+    const FILE: &'static str = "sharing";
+}
+
+impl DropSharing {
+    /// What `to` still needs before it can upload, in a few words; none
+    /// when it's ready. Secrets are checked when it runs.
+    pub fn missing(&self, to: UploadTo) -> Option<&'static str> {
+        match to {
+            UploadTo::ZeroX0 => None,
+            UploadTo::Imgur if self.imgur_client_id.trim().is_empty() => Some("No client ID"),
+            UploadTo::Imgur => None,
+            UploadTo::Sftp if self.sftp.host.trim().is_empty() => Some("No server"),
+            UploadTo::Sftp if self.sftp.user.trim().is_empty() => Some("No user name"),
+            UploadTo::Sftp => None,
+            UploadTo::S3 if self.s3.bucket.trim().is_empty() => Some("No bucket"),
+            UploadTo::S3 if self.s3.key_id.trim().is_empty() => Some("No access key"),
+            UploadTo::S3 => None,
+        }
+    }
+}
+
+/// The accounts as they are now.
+pub fn drop_sharing() -> RwLockReadGuard<'static, Config<DropSharing>> {
+    Config::<DropSharing>::read()
+}
+
+/// Changes the accounts and saves them.
+pub fn change_drop_sharing(edit: impl FnOnce(&mut DropSharing)) {
+    Config::<DropSharing>::change(edit);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -901,7 +1322,7 @@ mod bar_order_tests {
                 "tray",
                 "privacy",
                 "status-icons",
-                "media",
+                "activities",
                 "weather",
                 "clock"
             ]
@@ -910,6 +1331,87 @@ mod bar_order_tests {
         assert_eq!(items[volume + 1], "bluetooth");
         let battery = items.iter().position(|item| *item == "battery").unwrap();
         assert_eq!(items[battery + 1], "quick-settings");
+    }
+
+    #[test]
+    fn now_playing_and_the_timer_became_live_activities() {
+        let items = bar(&["timer", "clock", "media"]).items();
+        assert_eq!(items.len(), BAR_ITEMS.len());
+        let at = |name| items.iter().position(|item| *item == name);
+        assert!(at("activities") < at("clock"));
+        assert!(at("media").is_none() && at("timer").is_none());
+    }
+
+    #[test]
+    fn drop_tiles_read_as_written() {
+        let grids = DropGrids::default();
+        let text = serde_json::to_string(&grids).unwrap();
+        assert_eq!(serde_json::from_str::<DropGrids>(&text).unwrap(), grids);
+        let tile: DropTile = serde_json::from_str(r#"{"kind":"folder","path":"/tmp"}"#).unwrap();
+        assert_eq!(
+            tile,
+            DropTile::Folder {
+                path: PathBuf::from("/tmp"),
+                mode: FolderMode::Copy
+            }
+        );
+        assert_eq!(grids.columns(), 4);
+        let upload: DropTile = serde_json::from_str(r#"{"kind":"upload","to":"0x0"}"#).unwrap();
+        assert_eq!(
+            upload,
+            DropTile::Upload {
+                to: UploadTo::ZeroX0
+            }
+        );
+        let phone: DropTile = serde_json::from_str(r#"{"kind":"phone"}"#).unwrap();
+        assert_eq!(phone, DropTile::Phone { device: None });
+    }
+
+    #[test]
+    fn an_account_says_what_it_lacks() {
+        let mut sharing = DropSharing::default();
+        assert_eq!(sharing.missing(UploadTo::ZeroX0), None);
+        assert_eq!(sharing.missing(UploadTo::Sftp), Some("No server"));
+        sharing.sftp.host = String::from("example.org");
+        sharing.sftp.user = String::from("me");
+        assert_eq!(sharing.missing(UploadTo::Sftp), None);
+        assert_eq!(sharing.sftp.port, 22);
+        assert!(sharing.copy_link);
+    }
+
+    #[test]
+    fn activities_are_allowed_until_denied() {
+        let mut now = StatusBar::default();
+        assert!(now.allows_activity("Drop"));
+        now.set_activity_allowed("Drop", false);
+        now.set_activity_allowed("Drop", false);
+        assert_eq!(now.activities_denied, ["Drop"]);
+        now.set_activity_allowed("Drop", true);
+        assert!(now.allows_activity("Drop"));
+        assert_eq!(now.compact_activities(), 2);
+        now.activities_compact = 9;
+        assert_eq!(now.compact_activities(), 3);
+    }
+
+    #[test]
+    fn a_new_program_goes_after_the_tray_and_keeps_its_place() {
+        let apps = [String::from("app:org.amane.drop")];
+        let mut now = bar(&[]);
+        let items = now.items_with(&apps);
+        assert_eq!(items.len(), BAR_ITEMS.len() + 1);
+        assert_eq!(&items[..2], ["tray", "app:org.amane.drop"]);
+
+        now.move_item_with("app:org.amane.drop", 5, &apps);
+        assert_eq!(now.items_with(&apps)[5], "app:org.amane.drop");
+
+        // gone a while, it still has its place when it's back
+        now.move_item_with("clock", 0, &[]);
+        assert!(now.order.contains(&apps[0]));
+        let items = now.items_with(&apps);
+        let at = |name: &str| items.iter().position(|item| item == name);
+        // one on, as the clock went before it
+        assert_eq!(at("app:org.amane.drop"), Some(6));
+        assert_eq!(now.items().len(), BAR_ITEMS.len());
     }
 
     #[test]

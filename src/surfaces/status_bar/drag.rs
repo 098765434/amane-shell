@@ -47,6 +47,9 @@ struct Held {
 struct Laid {
     spans: Vec<(Item, f32, f32)>,
     height: f32,
+    /// Where the cluster starts on the bar: it ends at the bar's right
+    /// inset.
+    start: f32,
 }
 
 thread_local! {
@@ -95,7 +98,7 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
             .align_child(Center, Center);
         if let Some(held) = held.filter(|held| held.item == item) {
             cell = cell.translate(held.at.x - held.grab - left, 0.0);
-            if off(held.at.y, height) && item.indicator().is_some() {
+            if off(held.at.y, height) && item.hideable() {
                 cell = cell.opacity(LEAVING);
             }
         }
@@ -104,7 +107,14 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
     }
     let total = (left - gap).max(0.0);
     LAID.with_borrow_mut(|laid| {
-        laid.insert(output.to_string(), Laid { spans, height });
+        laid.insert(
+            output.to_string(),
+            Laid {
+                spans,
+                height,
+                start: amane::window_size().0 - sys::space::inset::m() - total,
+            },
+        );
     });
 
     let row = Row::new(children).gap(gap).align(Center).height(Parent);
@@ -119,6 +129,25 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
     Stack::new(vec![boxed(row), boxed(layer)])
         .width(Size::Fixed(total))
         .height(Parent)
+}
+
+/// A monitor whose bar has `item`, for when no pointer says which (IPC).
+pub fn output_with(item: Item) -> Option<String> {
+    LAID.with_borrow(|laid| {
+        laid.iter()
+            .find(|(_, laid)| laid.spans.iter().any(|(laid, ..)| *laid == item))
+            .map(|(output, _)| output.clone())
+    })
+}
+
+/// Where the middle of `item` is on the bar on `output`, as last drawn,
+/// from the bar's left: where a program opens a window under its item.
+pub fn middle_of(output: &str, item: Item) -> Option<f32> {
+    LAID.with_borrow(|laid| {
+        let laid = laid.get(output)?;
+        let (_, left, width) = laid.spans.iter().find(|(laid, ..)| *laid == item)?;
+        Some(laid.start + left + width / 2.0)
+    })
 }
 
 /// The index among items `widths` wide whose place a middle at `middle`
@@ -188,11 +217,9 @@ fn release(output: &str, at: Point) {
     swallow_click();
 
     let laid = LAID.with_borrow(|laid| laid.get(output).cloned().unwrap_or_default());
-    if off(at.y, laid.height) {
-        if let Some(indicator) = held.item.indicator() {
-            indicator.set_shown(false);
-            return;
-        }
+    if off(at.y, laid.height) && held.item.hideable() {
+        held.item.hide();
+        return;
     }
 
     // the order the bar showed as it was let go, put among every item

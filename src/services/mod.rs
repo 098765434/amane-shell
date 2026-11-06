@@ -54,6 +54,7 @@ pub mod display;
 pub mod launcher;
 pub mod network;
 pub mod power;
+pub mod status_apps;
 
 mod process;
 mod state;

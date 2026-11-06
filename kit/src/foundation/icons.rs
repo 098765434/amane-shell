@@ -168,6 +168,62 @@ pub const ICON_PACKAGE: char = '\u{f720}';
 pub const ICON_TERMINAL: char = '\u{eb8e}';
 pub const ICON_TIMER: char = '\u{e425}';
 pub const ICON_DESCRIPTION: char = '\u{e873}';
+pub const ICON_UPLOAD: char = '\u{e2c6}';
+pub const ICON_DOWNLOAD: char = '\u{e2c4}';
+pub const ICON_CLOUD_UPLOAD: char = '\u{e2c3}';
+/// A tray with an arrow into it (`move_to_inbox`): somewhere to drop things.
+pub const ICON_TRAY: char = '\u{e168}';
+pub const ICON_SHARE: char = '\u{e80d}';
+pub const ICON_SEND: char = '\u{e163}';
+/// A filled dot (`fiber_manual_record`): recording, or a mark with no picture.
+pub const ICON_RECORD: char = '\u{e061}';
+pub const ICON_ERROR: char = '\u{e000}';
+pub const ICON_CHECK_CIRCLE: char = '\u{e86c}';
+
+/// The symbols other programs may ask for by name, for their status items
+/// and Live Activities (`ItemIcon::Glyph`): a short list, kebab-case.
+pub const NAMED: [(&str, char); 32] = [
+    ("dot", ICON_RECORD),
+    ("record", ICON_RECORD),
+    ("timer", ICON_TIMER),
+    ("music", ICON_MUSIC),
+    ("play", ICON_PLAY),
+    ("pause", ICON_PAUSE),
+    ("skip-next", ICON_SKIP_NEXT),
+    ("skip-previous", ICON_SKIP_PREVIOUS),
+    ("screen-share", ICON_SCREEN_SHARE),
+    ("camera", ICON_CAMERA),
+    ("mic", ICON_MIC),
+    ("upload", ICON_UPLOAD),
+    ("download", ICON_DOWNLOAD),
+    ("cloud-upload", ICON_CLOUD_UPLOAD),
+    ("tray", ICON_TRAY),
+    ("share", ICON_SHARE),
+    ("send", ICON_SEND),
+    ("phone", ICON_PHONE),
+    ("folder", ICON_FOLDER),
+    ("image", ICON_IMAGE),
+    ("mail", ICON_MAIL),
+    ("terminal", ICON_TERMINAL),
+    ("update", ICON_UPDATE),
+    ("history", ICON_HISTORY),
+    ("check", ICON_CHECK),
+    ("check-circle", ICON_CHECK_CIRCLE),
+    ("close", ICON_CLOSE),
+    ("warning", ICON_WARNING),
+    ("error", ICON_ERROR),
+    ("copy", ICON_CONTENT_COPY),
+    ("package", ICON_PACKAGE),
+    ("settings", ICON_SETTINGS),
+];
+
+/// The symbol by its name in [`NAMED`].
+pub fn named(name: &str) -> Option<char> {
+    NAMED
+        .iter()
+        .find(|(known, _)| *known == name)
+        .map(|(_, glyph)| *glyph)
+}
 
 /// The wedge for a signal strength (0–100): the nearest of its five steps,
 /// never fewer than one, since a network you can see has some signal.

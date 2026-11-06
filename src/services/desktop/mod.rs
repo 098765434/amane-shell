@@ -1,7 +1,8 @@
-//! The desktop: privacy indicators, background apps, NixOS updates,
+//! The desktop: Live Activities from other programs, privacy indicators, background apps, NixOS updates,
 //! system readings for the widgets, and the lock keys for the on-screen
 //! display.
 
+pub mod activities;
 pub mod background_apps;
 pub mod keyboard_layout;
 pub mod lock_keys;

@@ -12,8 +12,9 @@ use amane_kit::layout::{boxed, fixed_width};
 use amane_kit::macform::ThumbnailPicker;
 use amane_kit::macform::theme as mac;
 use amane_kit::settings::{
-    AutoHide, BAR_ITEMS, BarPosition, BarStyle, ClockStyle, DateFormat, ShowDate, StatusBar,
-    change_status_bar, status_bar, tray_seen,
+    AutoHide, BAR_ITEMS, BUILTIN_ACTIVITIES, BarPosition, BarStyle, ClockStyle, DateFormat,
+    ShowDate, StatusBar, activities_seen, change_status_bar, status_apps_seen, status_bar,
+    tray_seen,
 };
 
 use crate::{View, group, groups, previews, switch_row};
@@ -119,6 +120,11 @@ pub fn page() -> Column {
                 FormRow::new("settings.bar.items-link", "Items")
                     .value(format!("{shown} shown"))
                     .on_press(|| crate::open(View::Sub("items"))),
+            )
+            .row(
+                FormRow::new("settings.bar.activities-link", "Live Activities")
+                    .value(activities_summary(&now))
+                    .on_press(|| crate::open(View::Sub("activities"))),
             ),
         group()
             .header("Workspaces")
@@ -139,16 +145,19 @@ pub fn page() -> Column {
                 .child()
                 .disabled(!now.show_workspaces),
             ),
-        group().header("Now Playing").row(
-            switch_row(
-                "settings.bar.media-always",
-                "Always show",
-                now.media_always,
-                |on| change_status_bar(|now| now.media_always = on),
-            )
-            .subtitle("Else only while something plays, or was paused in the last few minutes"),
-        ),
     ])
+}
+
+/// Live Activities as their row sums them up: "Off", or how many show
+/// with their text.
+fn activities_summary(now: &StatusBar) -> String {
+    if !now.shows("activities") {
+        return String::from("Off");
+    }
+    match now.compact_activities() {
+        1 => String::from("1 with its text"),
+        many => format!("{many} with their text"),
+    }
 }
 
 /// The clock as its row sums it up: "Analog", or "24-hour · seconds · date".
@@ -183,6 +192,7 @@ pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
         "clock" => (String::from("Clock"), boxed(clock())),
         "weather" => (String::from("Weather"), boxed(weather())),
         "items" => (String::from("Items"), boxed(items())),
+        "activities" => (String::from("Live Activities"), boxed(activities())),
         _ => return None,
     })
 }
@@ -425,31 +435,119 @@ fn item_row(name: &'static str, index: usize, last: usize, shown: bool) -> FormR
     FormRow::new(id, label).trailing(Row::new(trailing).gap(4.0).align(Center))
 }
 
+/// Live Activities: whether they show, how many with their text, Now
+/// Playing's "Always show", and which apps may show them.
+fn activities() -> Column {
+    let now = status_bar().clone();
+    let on = now.shows("activities");
+
+    let compact = SegmentedButton::new(
+        "settings.bar.activities-compact",
+        Vec::from(["1", "2", "3"].map(Segment::new)),
+        Some(now.compact_activities() - 1),
+    )
+    .on_select(|index, _| change_status_bar(|now| now.activities_compact = index as u8 + 1))
+    .build();
+
+    let mut apps: Vec<String> = BUILTIN_ACTIVITIES.map(String::from).to_vec();
+    apps.extend(
+        activities_seen()
+            .into_iter()
+            .filter(|app| !BUILTIN_ACTIVITIES.contains(&app.as_str())),
+    );
+    let rows: Vec<FormRow> = apps
+        .into_iter()
+        .map(|app| {
+            let changed = app.clone();
+            switch_row(
+                &format!("settings.bar.activity.{app}"),
+                &app,
+                now.allows_activity(&app),
+                move |on| change_status_bar(|now| now.set_activity_allowed(&changed, on)),
+            )
+            .child()
+            .disabled(!on)
+        })
+        .collect();
+
+    groups(vec![
+        group()
+            .row(switch_row(
+                "settings.bar.activities",
+                "Show Live Activities",
+                on,
+                |on| change_status_bar(|now| now.set_shown("activities", on)),
+            ))
+            .row(
+                FormRow::new("settings.bar.activities-compact", "Show with their text")
+                    .subtitle("The most relevant; the rest show their icon alone")
+                    .trailing(compact)
+                    .child()
+                    .disabled(!on),
+            )
+            .footer(
+                "What's going on now, as macOS's menu bar has it: what plays, a timer, screen \
+                 sharing, an upload. Click one for its controls.",
+            ),
+        group().header("Now Playing").row(
+            switch_row(
+                "settings.bar.media-always",
+                "Always show",
+                now.media_always,
+                |on| change_status_bar(|now| now.media_always = on),
+            )
+            .subtitle("Else only while something plays, or was paused in the last few minutes"),
+        ),
+        group()
+            .header("Allow Live Activities")
+            .rows(rows)
+            .footer("Other apps show here once they have started one."),
+    ])
+}
+
 /// The apps the bar has had in its tray, each allowed in it or not, as
 /// macOS's "Allow in the Menu Bar".
 fn allowed_apps(now: &amane_kit::settings::StatusBar) -> amane_kit::form::Group {
     let seen = tray_seen();
-    let rows: Vec<FormRow> = seen
-        .iter()
-        .map(|(id, title)| {
-            let name = if title.is_empty() {
-                id.clone()
-            } else {
-                title.clone()
-            };
-            let changed = id.clone();
-            let mut row = switch_row(
-                &format!("settings.bar.tray.{id}"),
-                &name,
-                now.allows(id),
-                move |on| change_status_bar(|now| now.set_allowed(&changed, on)),
-            );
-            if !title.is_empty() && title != id {
-                row = row.subtitle(id.clone());
-            }
-            row
-        })
-        .collect();
+    // programs' own items (amane's status items), kept by `app:<id>`
+    let own = status_apps_seen().into_iter().map(|(id, title)| {
+        let name = format!("app:{id}");
+        let label = if title.is_empty() {
+            id.clone()
+        } else {
+            title.clone()
+        };
+        let changed = name.clone();
+        let mut row = switch_row(
+            &format!("settings.bar.app.{id}"),
+            &label,
+            now.shows(&name),
+            move |on| change_status_bar(|now| now.set_shown(&changed, on)),
+        );
+        if !title.is_empty() && title != id {
+            row = row.subtitle(id);
+        }
+        row
+    });
+    let tray = seen.iter().map(|(id, title)| {
+        let name = if title.is_empty() {
+            id.clone()
+        } else {
+            title.clone()
+        };
+        let changed = id.clone();
+        let mut row = switch_row(
+            &format!("settings.bar.tray.{id}"),
+            &name,
+            now.allows(id),
+            move |on| change_status_bar(|now| now.set_allowed(&changed, on)),
+        );
+        if !title.is_empty() && title != id {
+            row = row.subtitle(id.clone());
+        }
+        row
+    });
+    let rows: Vec<FormRow> = own.chain(tray).collect();
     let group = group().header("Allow in the Status Bar");
     if rows.is_empty() {
         group.footer(

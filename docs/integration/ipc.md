@@ -127,12 +127,22 @@ Errors start with `error:` (`no room for it`, `no monitor`, `no widget <id>`).
 ### `status-bar`
 
 `status-bar (show | hide | toggle) <icon>` ([status-bar.md](../shell/status-bar.md#status-icons)):
-shows or hides one of the optional status icons, `volume`, `bluetooth`, `network`, `tailscale`,
-`battery`, `phone`, `keep-awake`, `privacy`, `status-icons` or `notifications`, in `status-bar.json`.
-`status-bar move <item> <index>` moves an item (any of those, or `quick-settings`, `timer`, `clock`)
-to `index` among the rest, and `status-bar reset-order` puts them back in the usual order.
-`status-bar tray list` lists the tray's apps (id, status, title); `status-bar tray activate <id>` and
-`status-bar tray menu <id>` do what a click and a right-click on one do.
+shows or hides one of the optional status icons, `activities`, `volume`, `bluetooth`, `network`,
+`tailscale`, `battery`, `phone`, `keep-awake`, `privacy`, `status-icons` or `notifications`, in
+`status-bar.json`.
+
+- **Order.** `status-bar move <item> <index>` moves an item (any of those, or
+  `quick-settings`, `clock`, `app:<id>`) to `index` among the rest. `status-bar reset-order`
+  puts them back in the usual order.
+- **Tray.** `status-bar tray list` lists the tray's apps (id, status, title).
+  `status-bar tray activate <id>` and `status-bar tray menu <id>` do what a click and a
+  right-click on one do.
+- **Programs' items** ([status-apps.md](status-apps.md)). `status-bar apps list` lists them
+  (id, bus name, title, `shown` or `hidden`). `status-bar apps activate <id>` clicks one.
+- **Live Activities.** `status-bar activities list` lists those going on, most relevant first
+  (key, app, title). `status-bar activities end bus.<handle>` ends another program's activity as
+  the user would, and `status-bar activities press bus.<handle> <button>` presses one of its
+  buttons (`cancel` on a Drop upload).
 `taskbar` is the same command under the bar's old name.
 
 ### `night-light`

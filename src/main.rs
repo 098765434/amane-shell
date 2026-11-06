@@ -86,6 +86,8 @@ fn main() -> ExitCode {
     amane::Bluetooth::serve_agent();
     // and it is the session's polkit agent: the password prompt is its alert
     amane::Polkit::serve_agent();
+    // and the bar's own bus service: other programs' items and Live Activities
+    services::status_apps::serve();
     services::network::bt_battery::watch();
     // and lowers the displays' refresh rate on battery, when asked to
     services::power::power_refresh::watch();
@@ -185,6 +187,7 @@ fn main() -> ExitCode {
         app = app.popup(level);
     }
     app = app.popup(tooltip::popup);
+    app = app.popup(status_bar::activity_popup);
 
     app.ipc("arm", |args| {
         // Expand the anchor fullscreen so the next right-click captures a

@@ -17,6 +17,8 @@
 //! or Quick Settings or the notification center is open, which spares an
 //! OLED panel a strip that never changes.
 
+mod activities;
+mod apps;
 mod chips;
 mod drag;
 mod indicators;
@@ -42,23 +44,20 @@ use crate::components::buttons::{
 use crate::components::edge_reveal::EdgeReveal;
 use crate::components::icons::{
     Glyph, ICON_AIRPLANE, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE,
-    ICON_DND, ICON_KEEP_AWAKE, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS, ICON_PHONE, ICON_TIMER,
-    ICON_TUNE, ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
+    ICON_DND, ICON_KEEP_AWAKE, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS, ICON_PHONE, ICON_TUNE,
+    ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
     battery_glyph, power_profile_glyph, wifi_glyph,
 };
 use crate::components::layout::{boxed, cursor, fixed_width, pad, text_width, track_cursor};
 use crate::components::material::{self, Level, Material};
-use crate::components::motion;
 use crate::components::panel::{self, Panel, is_open};
 use crate::components::slider;
 use crate::services::display::night_light::NightLight;
 use crate::services::launcher::clock::Clock;
-use crate::services::launcher::timer::Countdown;
 use crate::services::network::connections::Connections;
 use crate::services::network::rfkill::Rfkill;
 use crate::services::network::tailscale::{State as TailscaleState, Tailscale};
 use crate::services::power::keep_awake::KeepAwake;
-use crate::surfaces::launcher;
 use crate::surfaces::notifications::{self, DoNotDisturb};
 use crate::surfaces::quick_settings::{self, Page};
 
@@ -66,6 +65,7 @@ use crate::tokens::{bar, sys};
 
 pub(crate) use indicators::{Indicator, Item};
 
+pub use activities::popup as activity_popup;
 pub use indicators::{ipc, migrate};
 
 /// The status bar's layer-surface namespace. The niri `layer-rule` matches
@@ -427,6 +427,7 @@ fn status(output: &str, room: f32) -> amane::Stack {
             .map(|item| match item {
                 Item::Tray => (item, tray::icons(&apps, hidden)),
                 Item::Clock => (item, vec![clock(dated)]),
+                Item::App(name) => (item, apps::widgets(name, output)),
                 _ => (item, build(item)),
             })
             .filter(|(_, widgets)| !widgets.is_empty())
@@ -466,9 +467,9 @@ fn status(output: &str, room: f32) -> amane::Stack {
 /// and "on" icons.
 fn build(item: Item) -> Vec<Box<dyn Widget>> {
     match item {
-        Item::Tray => Vec::new(),
+        Item::Tray | Item::App(_) => Vec::new(),
         Item::Privacy => chips::privacy(),
-        Item::Media => chips::media().into_iter().collect(),
+        Item::Activities => activities::widgets(),
         Item::StatusIcons => on_icons(),
         Item::Volume => volume().into_iter().collect(),
         Item::Bluetooth => bluetooth().into_iter().collect(),
@@ -479,7 +480,6 @@ fn build(item: Item) -> Vec<Box<dyn Widget>> {
         Item::Battery => battery().into_iter().collect(),
         Item::QuickSettings => vec![quick_settings_button()],
         Item::Notifications => notification_icon().into_iter().collect(),
-        Item::Timer => timer().into_iter().collect(),
         Item::Clock => vec![clock(true)],
         Item::Keyboard => keyboard().into_iter().collect(),
         Item::Weather => weather().into_iter().collect(),
@@ -768,43 +768,6 @@ fn notification_icon() -> Option<Box<dyn Widget>> {
             .tooltip(BAR_NS, tip)
             .build(),
     ))
-}
-
-/// The launcher's timer while it runs, counting down by the second; a
-/// click opens the launcher's actions, where it can be cancelled.
-fn timer() -> Option<Box<dyn Widget>> {
-    let (left, label) = crate::services::launcher::timer::left()?;
-    // amane has no timers: a frame comes as each second turns over, asked
-    // for once a second however often the bar redraws
-    let due = left.as_secs();
-    if TIMER_DUE.replace(Some(due)) != Some(due) {
-        motion::redraw_after::<Countdown>(
-            Duration::from_nanos(u64::from(left.subsec_nanos())) + TICK,
-        );
-    }
-    let text = crate::services::launcher::timer::format(left);
-    let width = text_width(&text, sys::r#type::numeric())
-        + bar::indicator::width()
-        + sys::space::inset::s() * 2.0;
-    Some(boxed(
-        item(PushButton::new("amane.bar.timer", text))
-            .icon(ICON_TIMER)
-            .text(sys::r#type::numeric())
-            .width(width)
-            .on_press(|| {
-                launcher::ipc(&[String::from("open"), String::from("actions")]);
-            })
-            .tooltip(BAR_NS, label)
-            .build(),
-    ))
-}
-
-/// A beat past each second turning over, so the frame finds it turned.
-const TICK: Duration = Duration::from_millis(20);
-
-thread_local! {
-    // the second the timer's next frame was asked for
-    static TIMER_DUE: Cell<Option<u64>> = const { Cell::new(None) };
 }
 
 /// The clock opens the notification center, like macOS's; its tooltip is

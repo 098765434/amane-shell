@@ -6,10 +6,13 @@
 //! `~/.config/amane-shell/status-bar.json` (`StatusBar::hidden`), which the
 //! bar follows live; they were once a state file, read in once.
 
+use std::sync::{Mutex, PoisonError};
+
 use amane::Config;
 use amane_kit::settings::{StatusBar, change_status_bar, status_bar};
 
 use crate::services::state_file;
+use crate::services::status_apps::{self, AppItem};
 
 /// Where they were kept before the settings file, read in once when there
 /// is no settings file yet.
@@ -34,8 +37,9 @@ pub enum Indicator {
     Privacy,
     /// Night Light, VPN, power mode and Airplane, while on.
     StatusIcons,
-    /// What's playing.
-    Media,
+    /// Live Activities: what's playing, the timer, screen sharing, and
+    /// other programs' (`activities.rs`).
+    Activities,
     Weather,
     /// The keyboard layout, with two or more.
     Keyboard,
@@ -45,7 +49,7 @@ pub enum Indicator {
 
 impl Indicator {
     pub const ALL: [Indicator; 14] = [
-        Self::Media,
+        Self::Activities,
         Self::Weather,
         Self::Keyboard,
         Self::Tray,
@@ -73,7 +77,7 @@ impl Indicator {
             Self::KeepAwake => "keep-awake",
             Self::Privacy => "privacy",
             Self::StatusIcons => "status-icons",
-            Self::Media => "media",
+            Self::Activities => "activities",
             Self::Weather => "weather",
             Self::Keyboard => "keyboard",
             Self::Notifications => "notifications",
@@ -102,7 +106,7 @@ pub enum Item {
     Tray,
     Privacy,
     StatusIcons,
-    Media,
+    Activities,
     Weather,
     Volume,
     Bluetooth,
@@ -114,17 +118,32 @@ pub enum Item {
     Battery,
     QuickSettings,
     Notifications,
-    Timer,
     Clock,
+    /// A program's own item, by its name in the order (`app:<id>`).
+    App(&'static str),
+}
+
+/// Program items' names, kept for as long as the shell runs so an `Item`
+/// stays `Copy`; there are as many as programs that ever put one up.
+static NAMES: Mutex<Vec<&'static str>> = Mutex::new(Vec::new());
+
+fn intern(name: &str) -> &'static str {
+    let mut names = NAMES.lock().unwrap_or_else(PoisonError::into_inner);
+    if let Some(known) = names.iter().find(|known| **known == name) {
+        return known;
+    }
+    let kept: &'static str = Box::leak(name.to_owned().into_boxed_str());
+    names.push(kept);
+    kept
 }
 
 impl Item {
     /// The usual order, left to right.
-    pub const ALL: [Item; 17] = [
+    pub const ALL: [Item; 16] = [
         Self::Tray,
         Self::Privacy,
         Self::StatusIcons,
-        Self::Media,
+        Self::Activities,
         Self::Weather,
         Self::Volume,
         Self::Bluetooth,
@@ -136,34 +155,62 @@ impl Item {
         Self::Battery,
         Self::QuickSettings,
         Self::Notifications,
-        Self::Timer,
         Self::Clock,
     ];
 
     pub fn name(self) -> &'static str {
+        if let Self::App(name) = self {
+            return name;
+        }
         match self.indicator() {
             Some(indicator) => indicator.name(),
             None => match self {
                 Self::QuickSettings => "quick-settings",
-                Self::Timer => "timer",
                 _ => "clock",
             },
         }
     }
 
     pub fn named(name: &str) -> Option<Self> {
+        if name.starts_with("app:") {
+            return Some(Self::App(intern(name)));
+        }
         Self::ALL.into_iter().find(|item| item.name() == name)
+    }
+
+    /// A program's item's id, for its own items.
+    pub fn app_id(self) -> Option<&'static str> {
+        match self {
+            Self::App(name) => name.strip_prefix("app:"),
+            _ => None,
+        }
+    }
+
+    /// Whether it can be hidden, by dragging it off the bar too.
+    pub fn hideable(self) -> bool {
+        self.app_id().is_some() || self.indicator().is_some()
+    }
+
+    /// Takes it out of the bar.
+    pub fn hide(self) {
+        match self.indicator() {
+            Some(indicator) => indicator.set_shown(false),
+            None if self.app_id().is_some() => {
+                change_status_bar(|now| now.set_shown(self.name(), false));
+            }
+            None => {}
+        }
     }
 
     /// The switch that hides it, for the ones that can be hidden; Quick
     /// Settings and the clock always show, as macOS's Control Center and
-    /// clock do, and the timer shows while it runs.
+    /// clock do.
     pub fn indicator(self) -> Option<Indicator> {
         Some(match self {
             Self::Tray => Indicator::Tray,
             Self::Privacy => Indicator::Privacy,
             Self::StatusIcons => Indicator::StatusIcons,
-            Self::Media => Indicator::Media,
+            Self::Activities => Indicator::Activities,
             Self::Weather => Indicator::Weather,
             Self::Keyboard => Indicator::Keyboard,
             Self::Volume => Indicator::Volume,
@@ -174,28 +221,38 @@ impl Item {
             Self::Phone => Indicator::Phone,
             Self::Battery => Indicator::Battery,
             Self::Notifications => Indicator::Notifications,
-            Self::QuickSettings | Self::Timer | Self::Clock => return None,
+            Self::QuickSettings | Self::Clock | Self::App(_) => return None,
         })
     }
 
     /// Whether it's switched on; whether it has anything to show is its own.
     pub fn shown(self) -> bool {
+        if self.app_id().is_some() {
+            return status_bar().shows(self.name());
+        }
         self.indicator().is_none_or(Indicator::shown)
     }
 
-    /// The items in the order the settings keep them.
+    /// The items in the order the settings keep them, programs' own among
+    /// them.
     pub fn ordered() -> Vec<Item> {
         status_bar()
-            .items()
-            .into_iter()
-            .filter_map(Item::named)
+            .items_with(&app_names())
+            .iter()
+            .filter_map(|name| Item::named(name))
             .collect()
     }
 }
 
+/// The names of the programs' items up now.
+fn app_names() -> Vec<String> {
+    status_apps::items().iter().map(AppItem::name).collect()
+}
+
 /// Moves `item` to `index` among the others and keeps the order.
 pub fn move_item(item: Item, index: usize) {
-    change_status_bar(|now| now.move_item(item.name(), index));
+    let apps = app_names();
+    change_status_bar(|now| now.move_item_with(item.name(), index, &apps));
 }
 
 /// Back to the usual order.
@@ -204,8 +261,16 @@ pub fn reset_order() {
 }
 
 /// Brings the hidden icons over from the old state file, once: when there
-/// is no settings file yet. Called at start, before any window.
+/// is no settings file yet. Called at start, before any window. Now
+/// Playing hidden before it became a Live Activity is kept out as one.
 pub fn migrate() {
+    if status_bar().hidden.iter().any(|name| name == "media") {
+        change_status_bar(|now| {
+            now.hidden.retain(|name| name != "media");
+            now.set_activity_allowed(super::activities::NOW_PLAYING, false);
+        });
+    }
+
     if Config::<StatusBar>::path().exists() {
         return;
     }
@@ -252,6 +317,8 @@ pub fn ipc(args: &[String]) -> String {
             return String::from("ok");
         }
         ["tray", rest @ ..] => return super::tray::ipc(rest),
+        ["apps", rest @ ..] => return super::apps::ipc(rest),
+        ["activities", rest @ ..] => return super::activities::ipc(rest),
         ["reset-order"] => {
             reset_order();
             return String::from("ok");
@@ -259,7 +326,7 @@ pub fn ipc(args: &[String]) -> String {
         [action @ ("show" | "hide" | "toggle"), name] => (*action, *name),
         _ => {
             return format!(
-                "usage: status-bar (show | hide | toggle) ({names}) | move <item> <index> | reset-order"
+                "usage: status-bar (show | hide | toggle) ({names}) | move <item> <index> | reset-order | tray … | apps … | activities …"
             );
         }
     };
