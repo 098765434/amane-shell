@@ -12,6 +12,9 @@
 #   remote.sh fetch NAME DIR             the tuned needle3.cact and log, into DIR
 #   remote.sh score NAME CASES           fetch, score it on CASES (the dev set) with
 #                                        the daemon's engine, and add that to the log
+#   remote.sh paraphrase BANKS OUT [FLAGS...]
+#                                        grow gen.py's phrase lists (gen.py --banks)
+#                                        with a local LLM on the GPU, into OUT
 #
 # FLAGS go to `cactus finetune` (--epochs, --lr, --lora-rank, --lora-alpha,
 # --seed, ...). NEEDLE_HOST picks the machine (default: debian); runs live in
@@ -23,6 +26,10 @@
 # (default: the repo's target/release), WHISTLE the whistle.cact to load
 # beside the tuned model (default: the installed one, else one fetched into
 # NEEDLE_WORK at the commit flake.nix pins).
+#
+# Paraphrasing runs vLLM in a venv of its own (~/needle-ft/para) on
+# PARAPHRASE_MODEL (default Qwen/Qwen3-8B-AWQ), downloaded once; it's a batch
+# job, no server and no port, offline once the weights are there.
 set -euo pipefail
 
 host=${NEEDLE_HOST:-debian}
@@ -55,7 +62,7 @@ start_watcher() {
         "${command[@]}" "$host" "$1" && echo "watching it in the bar (unit train-watch-$1)"
 }
 
-usage() { sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 name_ok() { [[ $1 =~ ^[a-z0-9][a-z0-9._-]*$ ]] || { echo "run names are lowercase letters, digits, . _ -" >&2; exit 2; }; }
 
 case ${1:-} in
@@ -86,7 +93,7 @@ run)
     remote mkdir -p "needle-ft/runs/$name"
     send "$data" "$host:needle-ft/runs/$name/data.jsonl"
     # the flags, quoted for the remote shell
-    flags=$(printf ' %q' "$@")
+    flags=$([ $# -eq 0 ] || printf ' %q' "$@")
     # ssh joins its arguments into one line for the remote shell: quote them for it
     remote "bash -s -- $(printf %q "$name") $(printf %q "$flags")" <<'EOF'
 set -euo pipefail
@@ -162,6 +169,39 @@ score)
     line=$(python3 -c 'import json, sys; print("{right}/{commands} right, {wrong} wrong ({destructive_wrong} destructive), negatives {clean}/{negatives}".format(**json.loads(sys.argv[1])))' "$score")
     echo "$name: $line"
     remote "echo \"\$(date +%H:%M:%S)   dev       $line\" >>needle-ft/runs/$name/train.log"
+    ;;
+paraphrase)
+    banks=${2:?usage: remote.sh paraphrase BANKS OUT [FLAGS...]}; out=${3:?usage: remote.sh paraphrase BANKS OUT [FLAGS...]}
+    shift 3
+    model=${PARAPHRASE_MODEL:-Qwen/Qwen3-8B-AWQ}
+    remote mkdir -p needle-ft/para needle-ft/models
+    send "$banks" "$host:needle-ft/para/banks.json"
+    send "$here/paraphrase.py" "$host:needle-ft/para/paraphrase.py"
+    flags=$([ $# -eq 0 ] || printf ' %q' "$@")
+    remote "bash -s -- $(printf %q "$model") $(printf %q "$flags")" <<'EOF'
+set -euo pipefail
+model=$1 flags=$2
+cd ~/needle-ft
+[ -x para/venv/bin/python ] || UV_PYTHON_INSTALL_DIR=~/needle-ft/python uv/bin/uv venv -q --seed -p 3.12 para/venv
+# vLLM builds a few kernels with ninja when it starts
+[ -x para/venv/bin/ninja ] || VIRTUAL_ENV=~/needle-ft/para/venv uv/bin/uv pip install -q vllm ninja
+dir=models/${model##*/}
+[ -s "$dir/config.json" ] || DO_NOT_TRACK=1 HF_HUB_DISABLE_TELEMETRY=1 para/venv/bin/hf download "$model" --local-dir "$dir" >/dev/null
+rm -f para/out.json para/done
+systemctl --user reset-failed needle-para 2>/dev/null || true
+# shellcheck disable=SC2086 # the flags are words
+systemd-run --user --quiet --collect --unit needle-para --working-directory="$HOME/needle-ft/para" \
+    --setenv=PATH="$HOME/needle-ft/para/venv/bin:$PATH" --setenv=HF_HUB_OFFLINE=1 --setenv=DO_NOT_TRACK=1 --setenv=VLLM_NO_USAGE_STATS=1 \
+    bash -c "venv/bin/python -I paraphrase.py ../$dir banks.json out.json $flags >log 2>&1; echo \$? >done"
+EOF
+    echo "paraphrasing on $host (unit needle-para, log ~/needle-ft/para/log)"
+    until status=$(remote "cat needle-ft/para/done 2>/dev/null") && [[ $status =~ ^[0-9]+$ ]]; do
+        sleep 30
+    done
+    remote "grep -v '^INFO\|^WARNING\|^(\|^\[' needle-ft/para/log | tail -n 5"
+    [ "$status" = 0 ] || { echo "paraphrasing failed ($status)" >&2; exit 1; }
+    send "$host:needle-ft/para/out.json" "$out"
+    echo "-> $out"
     ;;
 *) usage ;;
 esac

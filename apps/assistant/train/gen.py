@@ -20,6 +20,14 @@ what's trained on is exactly what runs. Nothing leaves the machine: Cactus's
 own generator (`cactus generate-data`) would send all this to OpenRouter.
 
     python3 -I gen.py AMANE_ASSISTANT_BIN OUT.jsonl [COUNT] [--seed N] [--dev DEV.jsonl]
+                      [--paraphrases paraphrases.json]
+    python3 -I gen.py --banks BANKS.json
+
+`--banks` writes the phrase lists, each with what it means, for
+paraphrase.py to grow on a GPU machine (remote.sh paraphrase); its output,
+`--paraphrases`, adds to training's phrasings only: the dev set stays the
+hand-written templates kept out, and nothing too close to an eval case is
+kept.
 
 About one template in seven is kept out of training for the dev set
 (`--dev`: eval cases on the eval's laptop), which picks between runs; the
@@ -27,6 +35,7 @@ eval set (../eval/cases.jsonl) is the test, scored once, and no query in it
 is trained on.
 """
 
+import difflib
 import json
 import os
 import random
@@ -431,8 +440,155 @@ NEGATED_PLAIN = ["don't change the volume", "leave the brightness as it is", "do
                  "i changed my mind", "wait, no", "don't turn it up"]
 
 
+# ---- paraphrases ---------------------------------------------------------
+
+# what each switch's on and off is, in words a paraphrase can keep to
+SWITCH_MEANS = {
+    ("night-light", "on"): "turn the night light on (warmer, less blue screen colors)",
+    ("night-light", "off"): "turn the night light off (back to normal screen colors)",
+    ("dark-style", "on"): "switch to the dark theme",
+    ("dark-style", "off"): "switch dark mode off, back to the light theme",
+    ("focus", "on"): "turn do not disturb on (silence notifications)",
+    ("focus", "off"): "turn do not disturb off (let notifications through)",
+    ("wifi", "on"): "turn wi-fi on", ("wifi", "off"): "turn wi-fi off",
+    ("bluetooth", "on"): "turn bluetooth on", ("bluetooth", "off"): "turn bluetooth off",
+    ("airplane", "on"): "turn airplane mode on", ("airplane", "off"): "turn airplane mode off",
+    ("keep-awake", "on"): "keep the computer from sleeping or the screen from turning off",
+    ("keep-awake", "off"): "let the computer sleep normally again",
+    ("vpn", "on"): "connect the vpn", ("vpn", "off"): "disconnect the vpn",
+    ("tailscale", "on"): "connect tailscale", ("tailscale", "off"): "disconnect tailscale",
+    ("wired", "on"): "connect the wired ethernet connection",
+    ("wired", "off"): "disconnect the wired ethernet connection",
+    ("screenshot", "toggle"): "take a screenshot",
+}
+LEVEL_MEANS = {
+    ("volume", "up"): "make the sound louder", ("volume", "down"): "make the sound quieter",
+    ("brightness", "up"): "make the screen brighter", ("brightness", "down"): "make the screen dimmer",
+}
+KIND_MEANS = {
+    "browser": "a web browser", "terminal": "a terminal", "files": "the file manager",
+    "email": "the email app", "calculator": "the calculator", "music": "the music player",
+    "texts": "the text messages app", "chat": "a chat app", "code": "the code editor",
+    "notes": "the notes app", "settings": "the system settings", "photos": "the photo viewer",
+    "calendar": "the calendar", "video": "the video player",
+}
+MEDIA_MEANS = {
+    "next": "skip to the next song or track", "previous": "go back to the previous song or track",
+    "pause": "pause the music or video that's playing", "play": "resume or start playing music",
+}
+SESSION_MEANS = {
+    "lock": "lock the screen", "log-out": "log out of the session",
+    "sleep": "put the computer to sleep", "restart": "restart the computer",
+    "power-off": "shut the computer down",
+}
+ANY_COMMAND = ("Is the person asking the computer itself to do something right now: change a "
+               "setting, open an app, control the music or video, or lock, sleep, restart or "
+               "shut it down?")
+
+
+def banks():
+    """Every phrase list a paraphrase can grow: (key, phrases, meaning,
+    check, want). The meaning is what all its phrases ask; the check a yes or
+    no question a new phrasing has to answer `want` to, with {x} as
+    bluetooth, {app} as Firefox and {n} as 40."""
+    out = []
+
+    def add(key, phrases, meaning, check, want="yes"):
+        out.append((key, phrases, meaning, check, want))
+
+    for control, says in SWITCH_SAY.items():
+        for state, phrases in says.items():
+            means = SWITCH_MEANS[(control, state)]
+            add(f"switch/{control}/{state}", phrases, f"asking the computer to {means}",
+                f"Is the person asking the computer to {means}?")
+    for state, templates in (("on", SWITCH_ON), ("off", SWITCH_OFF), ("toggle", SWITCH_TOGGLE)):
+        add(f"switch-named/{state}", templates,
+            f"asking the computer to {'toggle' if state == 'toggle' else 'turn ' + state} "
+            "the setting named {x}",
+            f"Is the person asking the computer to {'toggle' if state == 'toggle' else 'turn ' + state} bluetooth?")
+    for (what, change), phrases in LEVEL_SAY.items():
+        means = LEVEL_MEANS[(what, change)]
+        add(f"level/{what}/{change}", phrases, f"asking the computer to {means}",
+            f"Is the person asking the computer to {means}?")
+    for what, templates in LEVEL_SET.items():
+        add(f"level-set/{what}", templates, f"asking to set the {what} to {{n}} percent",
+            f"Is the person asking the computer to set the {what} to 40 percent?")
+    add("open", OPEN_SAY, "asking the computer to open the app {app}",
+        "Is the person asking the computer to open Firefox?")
+    for kind, phrases in KIND_SAY.items():
+        add(f"kind/{kind}", phrases, f"asking the computer to open {KIND_MEANS[kind]}",
+            f"Is the person asking the computer to open {KIND_MEANS[kind]}?")
+    for command, phrases in MEDIA_SAY.items():
+        add(f"media/{command}", phrases, f"asking the computer to {MEDIA_MEANS[command]}",
+            f"Is the person asking the computer to {MEDIA_MEANS[command]}?")
+    for power, phrases in SESSION_SAY.items():
+        add(f"session/{power}", phrases, f"asking the computer to {SESSION_MEANS[power]}",
+            f"Is the person asking the computer to {SESSION_MEANS[power]}?")
+
+    add("none/general", NEGATIVES,
+        "a search, question or remark that isn't a command to this computer, often in a "
+        "command's words used another way (\"volume of a sphere\", \"play store refund\", "
+        "\"lock and key emoji\", \"restart my life\")", ANY_COMMAND, "no")
+    add("none/question", QUESTION_ABOUT,
+        "a question or remark about the setting {x} that doesn't ask to change it",
+        "Is the person asking the computer to turn bluetooth on or off right now?", "no")
+    add("none/question-app", QUESTION_APP,
+        "a question or remark about the app {app} that doesn't ask to open it",
+        "Is the person asking the computer to open Firefox right now?", "no")
+    add("none/negated", NEGATED,
+        "asking for the setting {x} to be left as it is, or taking back a request about it",
+        "Is the person asking the computer to change bluetooth (turn it on, off, or toggle it)?", "no")
+    add("none/negated-app", NEGATED_APP, "asking the computer not to open the app {app}",
+        "Is the person asking the computer to open Firefox?", "no")
+    add("none/negated-plain", NEGATED_PLAIN,
+        "asking the computer not to change something (the volume, brightness, music, the "
+        "session), or taking back what was just asked", ANY_COMMAND, "no")
+    return out
+
+
+# phrasings that came from paraphrases: training's only, never the dev set's
+PARAPHRASED = set()
+
+
+def near(a, b):
+    return difflib.SequenceMatcher(None, a, b).ratio() >= 0.9
+
+
+def add_paraphrases(path, held):
+    """Grows the phrase lists from `path` (paraphrase.py's output). A
+    phrasing too close to an eval case or to a dev template is dropped, so
+    neither is trained on in other words."""
+    with open(path) as f:
+        grown = json.load(f)
+    lists = {key: phrases for key, phrases, *_ in banks()}
+    dev = [plain(p) for phrases in lists.values() for p in phrases if for_dev(p)]
+    added = dropped = 0
+    for key, phrases in grown.items():
+        target = lists.get(key)
+        if target is None:
+            continue
+        have = {plain(p) for p in target}
+        for phrase in phrases:
+            # its placeholders are the list's, and nothing else is in braces
+            if re.sub(r"\{(x|app|n)\}", "", phrase).count("{") or "}" in re.sub(r"\{(x|app|n)\}", "", phrase):
+                continue
+            words = plain(phrase)
+            if words in have:
+                continue
+            if any(near(words, h) for h in held) or any(near(words, d) for d in dev):
+                dropped += 1
+                continue
+            have.add(words)
+            target.append(phrase)
+            PARAPHRASED.add(phrase)
+            added += 1
+    return added, dropped
+
+
 def for_dev(template):
     """Whether a template is the dev set's: about one in seven, by its text."""
+    if template in PARAPHRASED:
+        return False
     return zlib.crc32(template.encode()) % 7 == 0
 
 
@@ -699,6 +855,16 @@ def main():
 
     seed = int(option("--seed", "0"))
     dev_path = option("--dev")
+    paraphrases = option("--paraphrases")
+    banks_path = option("--banks")
+    if banks_path:
+        # what paraphrase.py is asked to grow: the training phrasings only
+        with open(banks_path, "w") as f:
+            json.dump([{"key": key, "phrases": [p for p in phrases if not for_dev(p)],
+                        "meaning": meaning, "check": check, "want": want}
+                       for key, phrases, meaning, check, want in banks()], f, indent=1)
+        print(f"{len(banks())} phrase lists -> {banks_path}")
+        return
     binary, out_path = args[0], args[1]
     count = int(args[2]) if len(args) > 2 else 20000
     rng = random.Random(seed)
@@ -708,6 +874,9 @@ def main():
         for line in cases:
             if line.strip():
                 held.add(plain(json.loads(line)["text"]))
+    if paraphrases:
+        added, dropped = add_paraphrases(paraphrases, held)
+        print(f"{added} paraphrased phrasings ({dropped} too close to the eval or dev set)")
 
     with tempfile.TemporaryDirectory() as tmp:
         machines = []
