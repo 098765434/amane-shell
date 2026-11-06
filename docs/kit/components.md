@@ -296,7 +296,14 @@ measured against. It's all quads.
   windows that `watch()` it draw again when it's `changed()` ([performance.md](../development/performance.md)).
 - `settings.rs` holds the shell's settings files, `appearance.json`, `desktop.json` and
   `launcher.json` under `~/.config/amane-shell/`, which a settings app changes and the shell
-  follows live.
+  follows live. It also holds amane-drop's `DropGrids` and `DropSharing`, which Drop and Shell
+  Settings share ([drop.md](../shell/drop.md#settings)).
+- `secrets.rs` keeps an app's passwords and keys in the Secret Service through `secret-tool`
+  (`application <app> account <name>`), and in `~/.config/<app>/secrets.json` (0600) when no
+  keyring answers. `lookup`, `store` and `forget` wait on `secret-tool`, so they're for a thread
+  of their own. `known` is for drawing: it answers from what was last found and looks on a
+  thread when it doesn't know yet (`SecretsChanged`). `kept_in_file` says whether a page should
+  warn.
 - `theme.rs` holds the runtime inputs the tokens resolve with (mode, density, accent, text scale)
   and the ones the materials follow (glass level, higher contrast, reduced motion, adaptive glass,
   vibrancy), each from its `AMANE_*` override, else the settings file, else the system

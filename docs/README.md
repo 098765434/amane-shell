@@ -32,14 +32,15 @@ A module's folder says what kind of thing it is. A new one goes where its kind i
 |---|---|
 | `src/surfaces/` | a surface of its own: the status bar, dock, launcher, notifications, Quick Settings, widgets, context menu, alert and on-screen display, each with its doc in `shell/` |
 | `src/components/` | the shell's pieces that several surfaces share (`panel`, `battery`, `grid`, `search_field`, `text_edit`), and the kit's modules re-exported under their old paths |
-| `src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; helpers in `process.rs` and `state.rs` |
+| `src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; the status apps' bus server (`status_apps.rs`); helpers in `process.rs` and `state.rs` |
+| `apps/` | the programs beside the shell: Shell Settings, Messages, Phone Screen, Shader Lab, Drop, the assistant's daemon |
 | `src/tokens/` | what the shell generates from the tokens (niri's layer rules) |
 | `kit/src/controls/` | what's pressed, dragged or picked: buttons, slider, dropdown, colour picker, tag, control sizes |
 | `kit/src/containers/` | what content sits in: card, list, divider, app bar, dialog, tooltip, scroll view, flow, arrangement |
 | `kit/src/look/` | the look of glass: materials, the edge shader, glass regions, Shader Lab's looks |
 | `kit/src/animation/` | motion, kinetic, pager, edge reveal |
 | `kit/src/foundation/` | layout primitives, icons, colour arithmetic |
-| `kit/src/platform/` | an app's window, app icons, the settings file, markers |
+| `kit/src/platform/` | an app's window, app icons, the settings files, markers, secrets |
 | `kit/src/tokens/`, `theme.rs` | the design tokens and the theme they resolve with |
 
 The kit's folders don't show in its paths: every module is re-exported at the root, so it's
@@ -49,7 +50,8 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 
 | Surface | What it does | Doc |
 |---|---|---|
-| Status bar | the bottom bar: workspace pips, status icons, Quick Settings, notifications, the timer chip and the clock | [shell/status-bar.md](shell/status-bar.md) |
+| Status bar | the bar: workspace pips, status icons, programs' items, Live Activities, Quick Settings, notifications and the clock | [shell/status-bar.md](shell/status-bar.md) |
+| Drop | `amane-drop`, a Dropzone-style status app: a grid of folders, apps and actions, and a Drop Bar | [shell/drop.md](shell/drop.md) |
 | Dock | every workspace's windows and pins, rising from the bottom edge and with the overview | [shell/dock.md](shell/dock.md) |
 | Launcher | macOS Tahoe's Spotlight: search, Applications, Files, Actions, Clipboard | [shell/launcher.md](shell/launcher.md) |
 | Assistant | system commands typed or spoken in Spotlight, read on this machine by Cactus (Needle 3, Whistle) in the `amane-assistant` daemon | [shell/assistant.md](shell/assistant.md) |
@@ -88,6 +90,8 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | Topic | Doc | The forks' side |
 |---|---|---|
 | niri layer rules and surface namespaces, generated from the tokens | [integration/layer-rules.md](integration/layer-rules.md) | niri [materials](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md), [desktop layer](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md); amane [blur](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md) |
+| Other programs' items in the bar and their Live Activities, over `org.amane.StatusBar1` | [integration/status-apps.md](integration/status-apps.md) | amane [status items](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/status-items.md) |
+| Writing a status app: an item, a window under it, drags through it, Live Activities, running as a service | [integration/writing-a-status-app.md](integration/writing-a-status-app.md) | |
 | Every CLI and IPC command, and the socket they go over | [integration/ipc.md](integration/ipc.md) | niri [IPC events](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/events.md), [actions](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/actions.md) |
 | The shell's services and amane's, the settings files and the state files | [integration/services.md](integration/services.md) | amane [compositor services](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md), [system services](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/idle.md) (`system/`) |
 | The NixOS configuration from Shell Settings: the registry and `managed/settings.json`, the `amaneSettings` output, build → compare → activate through polkit, the commit, "up to date" | [integration/nixos.md](integration/nixos.md) | nixos-config `modules/managed.nix` |
@@ -100,6 +104,7 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | What makes a window draw, and the rules that keep an idle desktop still | [development/performance.md](development/performance.md) |
 | What the desktop holds in GPU memory, how to measure it, and what has been cut (the vello fork) | [development/memory.md](development/memory.md) |
 | Trying shader effects live, and porting Figma shaders | [development/shader-lab.md](development/shader-lab.md) |
+| Status apps, Live Activities and Drop: the pieces across amane, the shell and nixos-config, their threads, testing beside the desktop, shipping | [development/status-apps.md](development/status-apps.md) |
 
 ## Archive
 

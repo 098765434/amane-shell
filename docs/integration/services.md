@@ -30,6 +30,8 @@ widgets.
 | `timer` | the launcher's one countdown; a thread sleeps it out, then a notification says so | Start Timer / Cancel Timer |
 | `clipboard_history` | `wl-paste --watch` while it's on; the copies under `clipboard/` | `wl-copy`, then `wtype` Ctrl+V (Ctrl+Shift+V in a terminal) |
 | `file_search` | LocalSearch's index through `tinysparql`, else `fd` over the home folder, off the UI thread | — |
+| `status_apps` | `org.amane.StatusBar1` on the session bus: other programs' items and Live Activities, each kept with its owner's unique name, dropped when that name leaves ([status-apps.md](status-apps.md)) | the programs' own calls; clicks, picks and drops go back as unicast signals |
+| `desktop/activities` | the Live Activities from the bus, by handle: owner, content, when last updated, when it goes (a kit `marker!`) | `status-bar activities end` / `press`, a button in the expanded view, its program leaving, 8 hours |
 | `system_stats` | `/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, `/proc/net/route`, `/sys/class/hwmon`, `/proc/mounts` and `statvfs`, on one 2 s tick, only while a system widget shows | — |
 
 **Tailscale needs the operator grant to change anything.** Reads work for anyone, but `tailscaled`
@@ -115,3 +117,19 @@ file means the default:
 | `clipboard/` | the clipboard history: `index.json` and a file a copy | `services/launcher/clipboard_history.rs` |
 
 Keep Awake keeps nothing: its holds are inhibitors tied to the running shell.
+
+**Caches** in `$XDG_CACHE_HOME/amane-shell/`, so Shell Settings can list what isn't running:
+`tray-seen.json`, `status-apps-seen.json` (programs' items: id → name) and
+`activities-seen.json` (the names activities gave).
+
+### amane-drop's files
+
+[Drop](../shell/drop.md) keeps its own, followed live by Drop and Shell Settings alike:
+
+| File | Holds |
+|---|---|
+| `~/.config/amane-drop/grids.json` | the grids, their tiles, and tiles a row (`DropGrids`) |
+| `~/.config/amane-drop/sharing.json` | the SFTP and S3 accounts, Imgur's client ID, and what an upload's link does (`DropSharing`) |
+| `~/.config/amane-drop/secrets.json` | passwords and keys, mode 0600, only when no keyring answered `secret-tool` (`amane_kit::secrets`); otherwise they're in the keyring under `application amane-drop` |
+| `$XDG_STATE_HOME/amane-drop/dropbar.json` | each grid's Drop Bar: stacks of paths, by the grid's name |
+| `$XDG_STATE_HOME/amane-drop/shared.json` | Recently Shared: the last 10 links, with what they were and when |

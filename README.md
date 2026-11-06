@@ -16,8 +16,15 @@ the forks add is in their docs: [niri](https://github.com/098765434/niri/blob/oc
 
 ## Features
 
-- **Status bar**: workspace pips, the status icons, Quick Settings, notifications, the timer and
-  the clock, on one frosted strip ([docs/shell/status-bar.md](docs/shell/status-bar.md)).
+- **Status bar**: workspace pips, the status icons, Quick Settings, notifications and the clock,
+  on one frosted strip ([docs/shell/status-bar.md](docs/shell/status-bar.md)).
+- **Status apps and Live Activities**: other programs' items in the bar and what's going on now
+  (Now Playing, the timer, screen sharing, uploads), over `org.amane.StatusBar1`, as macOS 27.3
+  has them ([docs/integration/status-apps.md](docs/integration/status-apps.md), and
+  [writing one](docs/integration/writing-a-status-app.md)).
+- **Drop**: `amane-drop`, a Dropzone-style status app: drop files on folders, apps, your phone
+  or an upload (0x0.st, Imgur, SFTP, S3), with a Drop Bar to hold them
+  ([docs/shell/drop.md](docs/shell/drop.md)).
 - **Dock**: every workspace's windows and pinned apps, rising from the bottom edge and with the
   overview; drag to reorder or move, drop files to open them ([docs/shell/dock.md](docs/shell/dock.md)).
 - **Launcher**: macOS Tahoe's Spotlight, with Applications, Files, Actions and a clipboard
@@ -89,6 +96,10 @@ systemd.user.services.amane-shell = {
 
 Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery).
 
+Run status apps such as `amane-drop` as units of their own, not from the shell: a restart of the
+shell kills what's in its cgroup, and they put their items back by themselves once the bar is
+there ([docs/shell/drop.md](docs/shell/drop.md#installing)).
+
 ## Shell Settings
 
 `amane-settings` is a settings app for the shell, built on the [kit](kit/README.md): appearance
@@ -129,6 +140,7 @@ kit/                            amane-kit: the look as a library, for the shell 
   src/app.rs dropdown.rs        an app's window, fields, sidebar and dialog; the dropdown
   examples/gallery.rs           every control in one window
 apps/settings/                  Shell Settings (amane-settings)
+apps/drop/                      Drop (amane-drop), a Dropzone-style status app (docs/shell/drop.md)
 examples/liquid_glass.rs        a look test for the glass edge, not shell code
 design-tokens/tokens.json       Penpot export (normalized); edit in Penpot, not here
 tests/fixtures/                 service fixtures (the token ones are in kit/tests/fixtures/)

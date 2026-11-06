@@ -50,6 +50,7 @@ generated from (2), not hand-edited, so neither can drift.
 | `amane.notifications.center` | the notification center sidebar, frosting itself; `clear`, rounded `notification.center.radius`, with niri's shadow (its Do Not Disturb menu is a frosted xdg-popup of it) |
 | `amane.context-menu-anchor` | the context-menu anchor window |
 | `amane.context-menu.0` … `.7` | nested context-menu levels |
+| `amane.drop` | amane-drop's grid ([drop.md](../shell/drop.md)): a clear full-screen surface that frosts only its card through a blur shape; `xray false`, and its popups frosted. The activities' expanded view is a popup of the bar, frosted by `amane.status-bar`'s rule |
 
 ## Generating the rules
 
