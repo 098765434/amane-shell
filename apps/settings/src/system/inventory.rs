@@ -495,7 +495,9 @@ pub fn section(
     let mut notes: Vec<String> = Vec::new();
     if let Some(entry) = entry {
         let (summary, _) = controls::summary(entry, managed, feedback);
-        notes.push(format!("{summary}."));
+        if !summary.trim().is_empty() {
+            notes.push(format!("{}.", summary.trim_end_matches('.')));
+        }
     }
     if let Some(error) = removal.error.as_ref().or(flatpaks.error.as_ref()) {
         notes.push(error.clone());

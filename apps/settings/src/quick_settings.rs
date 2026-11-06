@@ -46,11 +46,17 @@ const NAMES: [(&str, &str); 21] = [
 /// running shell says; none while the shell doesn't answer.
 struct QuickControls {
     controls: Option<Vec<(String, bool)>>,
+    /// The shell has been asked once.
+    asked: bool,
 }
 
 impl Service for QuickControls {
+    // asked from listen(), so opening the page never waits on the shell
     fn new() -> Self {
-        Self { controls: ask() }
+        Self {
+            controls: None,
+            asked: false,
+        }
     }
 
     // the shell saves the layout on every change, from here or Customize
@@ -60,6 +66,13 @@ impl Service for QuickControls {
         // the folder is watched, so it has to be there
         if let Some(folder) = path.parent() {
             let _ = fs::create_dir_all(folder);
+        }
+
+        {
+            let controls = ask();
+            let mut now = Self::write();
+            now.controls = controls;
+            now.asked = true;
         }
 
         for _ in watch_file(&path.to_string_lossy()) {
@@ -106,8 +119,11 @@ fn ask() -> Option<Vec<(String, bool)>> {
 /// shows.
 fn tell(args: &[&str]) {
     let args: Vec<String> = args.iter().map(|arg| String::from(*arg)).collect();
-    let _ = ipc_call(SHELL, "quick-settings", &args);
-    QuickControls::write().controls = ask();
+    std::thread::spawn(move || {
+        let _ = ipc_call(SHELL, "quick-settings", &args);
+        let controls = ask();
+        QuickControls::write().controls = controls;
+    });
 }
 
 fn named(name: &str) -> &str {
@@ -118,14 +134,28 @@ fn named(name: &str) -> &str {
 }
 
 pub fn page() -> Column {
-    let Some(controls) = QuickControls::read().controls.clone() else {
+    let (controls, asked) = {
+        let now = QuickControls::read();
+        (now.controls.clone(), now.asked)
+    };
+    if !asked {
+        return groups(vec![
+            group().row(FormRow::new("settings.quick.asking", "Asking the shell…")),
+        ]);
+    }
+    let Some(controls) = controls else {
         return groups(vec![
             group().row(
                 FormRow::new("settings.quick.retry-row", "The shell isn't answering")
                     .subtitle("Its Quick Settings can't be changed from here until it does")
                     .trailing(
                         PushButton::new("settings.quick.retry", "Try Again")
-                            .on_press(|| QuickControls::write().controls = ask())
+                            .on_press(|| {
+                                std::thread::spawn(|| {
+                                    let controls = ask();
+                                    QuickControls::write().controls = controls;
+                                });
+                            })
                             .build(),
                     ),
             ),

@@ -516,8 +516,15 @@ impl Group {
         self
     }
 
+    /// Nothing to show: no rows, and no caption or note either (a group
+    /// whose rows are still loading keeps its words).
     pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
+        self.items.is_empty() && self.header.is_none() && self.footer.is_none()
+    }
+
+    /// Whether it has a row of any kind.
+    pub fn has_rows(&self) -> bool {
+        !self.items.is_empty()
     }
 
     /// The card's height: its rows and the hairlines between them.
@@ -614,7 +621,10 @@ impl Group {
                     ),
             ));
         }
-        parts.push(boxed(card));
+        // a group still loading its rows shows only its words
+        if count > 0 {
+            parts.push(boxed(card));
+        }
         if !footer.is_empty() {
             let footer_height = footer.len() as f32 * text_height(note_font());
             let lines = footer

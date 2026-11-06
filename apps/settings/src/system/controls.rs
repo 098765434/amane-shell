@@ -204,7 +204,9 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
             let e = entry.clone();
             let e2 = entry.clone();
             let field = text_field(id, &shown).on_submit(move |text| {
-                set(&e, Value::from(text.trim()));
+                if !locked {
+                    set(&e, Value::from(text.trim()));
+                }
             });
             row.trailing(field_box(id, field, 180.0)).trailing(
                 PushButton::new(format!("settings.system.set.{}", entry.id), "Set")

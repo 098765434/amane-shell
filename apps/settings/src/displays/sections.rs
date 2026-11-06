@@ -150,11 +150,32 @@ fn confirm_move() {
     .open("main");
 }
 
-pub fn error_line(error: String) -> Text {
-    Text::new(error)
-        .style(sys::r#type::caption())
-        .color(sys::color::status::critical::text())
-        .wrap()
+/// The last error, in red, with a button to put it away; it goes by itself
+/// after a few seconds.
+pub fn error_line(error: String) -> Row {
+    let width = crate::PAGE_WIDTH - sys::size::control::height() - 8.0;
+    Row::new(vec![
+        boxed(
+            amane::Column::new(vec![boxed(
+                Text::new(error)
+                    .style(sys::r#type::caption())
+                    .color(sys::color::status::critical::text())
+                    .wrap(),
+            )])
+            .width(Size::Fixed(width)),
+        ),
+        boxed(
+            amane_kit::buttons::IconButton::new(
+                "settings.displays.error.dismiss",
+                amane_kit::icons::ICON_CLOSE,
+            )
+            .size(sys::size::icon::s())
+            .on_press(Screens::dismiss)
+            .build(),
+        ),
+    ])
+    .gap(8.0)
+    .align(Center)
 }
 
 // ───── which screen ─────────────────────────────────────────────────────────
@@ -656,11 +677,14 @@ pub fn variable_refresh(ctx: &Ctx) -> Group {
     } else {
         "Some panels flicker at low frame rates while it's on."
     };
+    let on_demand = if now == Vrr::OnDemand {
+        "On demand turns it on only while one of the apps below shows. "
+    } else {
+        "On demand turns it on only while one of the apps you choose shows. "
+    };
     let mut group = group()
         .row(FormRow::new("settings.displays.vrr-row", "Variable refresh rate").trailing(control))
-        .footer(format!(
-            "{range}On demand turns it on only while one of the apps above shows. {flicker}"
-        ));
+        .footer(format!("{range}{on_demand}{flicker}"));
     if now == Vrr::OnDemand {
         group = vrr_apps(ctx, group);
     }
@@ -944,7 +968,7 @@ pub fn oled_care(ctx: &Ctx) -> Option<Group> {
     }
     let dark = appearance().mode == Some(Scheme::Dark);
     let hidden = dock().auto_hide;
-    let bar_hidden = status_bar().auto_hide == amane_kit::settings::AutoHide::Always;
+    let bar_hidden = status_bar().auto_hide != amane_kit::settings::AutoHide::Never;
     Some(
         group()
             .header("OLED care")
@@ -965,11 +989,13 @@ pub fn oled_care(ctx: &Ctx) -> Option<Group> {
                 "Hide the status bar automatically",
                 bar_hidden,
                 |on| {
+                    // turning it on keeps a mode already chosen
                     change_status_bar(|now| {
-                        now.auto_hide = if on {
-                            amane_kit::settings::AutoHide::Always
-                        } else {
-                            amane_kit::settings::AutoHide::Never
+                        use amane_kit::settings::AutoHide;
+                        if !on {
+                            now.auto_hide = AutoHide::Never;
+                        } else if now.auto_hide == AutoHide::Never {
+                            now.auto_hide = AutoHide::Always;
                         }
                     })
                 },
@@ -979,7 +1005,7 @@ pub fn oled_care(ctx: &Ctx) -> Option<Group> {
                     .on_press(|| crate::go("power")),
             )
             .footer(
-                "An OLED's pixels wear with what stays lit for hours. Dark colours, a dock that \
+                "An OLED's pixels wear with what stays lit for hours. Dark colors, a dock that \
                  hides and a screen that sleeps when idle all spare them.",
             ),
     )
@@ -1143,7 +1169,7 @@ pub fn advanced(ctx: &Ctx) -> Group {
     // behind the workspaces in the overview
     let backdrop_output = output.clone();
     let backdrop = FormRow::new("settings.displays.backdrop-row", "Overview backdrop")
-        .subtitle("A colour like #1e1e2e behind the workspaces")
+        .subtitle("A color like #1e1e2e behind the workspaces")
         .detail(
             field_row(BACKDROP, "#1e1e2e", editable, move |text| {
                 let color = text.trim().to_string();
@@ -1151,7 +1177,7 @@ pub fn advanced(ctx: &Ctx) -> Group {
                     && color.starts_with('#')
                     && color[1..].chars().all(|c| c.is_ascii_hexdigit());
                 if !valid && !color.is_empty() {
-                    Screens::fail(String::from("A colour reads like #1e1e2e."));
+                    Screens::fail(String::from("A color reads like #1e1e2e."));
                     return;
                 }
                 save(
@@ -1182,7 +1208,11 @@ fn field_row(
     set: impl Fn(&str) + Clone + 'static,
 ) -> Row {
     let submit = set.clone();
-    let field = text_field(id, placeholder).on_submit(move |text| submit(&text));
+    let field = text_field(id, placeholder).on_submit(move |text| {
+        if editable {
+            submit(&text);
+        }
+    });
     Row::new(vec![
         boxed(field_box(id, field, 200.0)),
         boxed(

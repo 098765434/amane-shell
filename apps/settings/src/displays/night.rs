@@ -46,11 +46,22 @@ struct Light {
 /// no `wlsunset`.
 struct NightLight {
     light: Option<Light>,
+    /// The shell has been asked once; until then the section says it's
+    /// asking, not that Night Light is missing.
+    asked: bool,
+    /// What the last change ran into: a value that doesn't read, or the
+    /// shell's refusal.
+    error: Option<String>,
 }
 
 impl Service for NightLight {
+    // asked from listen(), so opening the page never waits on the shell
     fn new() -> Self {
-        Self { light: ask() }
+        Self {
+            light: None,
+            asked: false,
+            error: None,
+        }
     }
 
     // the shell saves its state on every change, from here or the tile
@@ -58,6 +69,12 @@ impl Service for NightLight {
         let path = state_file();
         if let Some(folder) = path.parent() {
             let _ = fs::create_dir_all(folder);
+        }
+        {
+            let light = ask();
+            let mut now = Self::write();
+            now.light = light;
+            now.asked = true;
         }
         for _ in watch_file(&path.to_string_lossy()) {
             let light = ask();
@@ -110,9 +127,39 @@ fn parse(text: &str) -> Option<Light> {
 /// Asks the shell to run `args`, off the UI thread, then reads it again.
 fn tell(args: Vec<String>) {
     thread::spawn(move || {
-        let _ = ipc_call(SHELL, "night-light", &args);
-        NightLight::write().light = ask();
+        let error = ipc_call(SHELL, "night-light", &args)
+            .err()
+            .map(|why| format!("The shell didn't take it: {why}"));
+        let light = ask();
+        let mut now = NightLight::write();
+        now.light = light;
+        now.error = error;
     });
+}
+
+/// Puts what went wrong under the section, or clears it.
+fn refuse(error: Option<String>) {
+    let mut now = NightLight::write();
+    if now.error == error {
+        now.quiet();
+    } else {
+        now.error = error;
+    }
+}
+
+/// A latitude and longitude as typed, when they're a place on Earth.
+fn place(lat: &str, lon: &str) -> Option<(f32, f32)> {
+    let lat: f32 = lat.trim().parse().ok()?;
+    let lon: f32 = lon.trim().parse().ok()?;
+    ((-90.0..=90.0).contains(&lat) && (-180.0..=180.0).contains(&lon)).then_some((lat, lon))
+}
+
+/// A time of day as HH:MM, written back with two digits each.
+fn time(text: &str) -> Option<String> {
+    let (hours, minutes) = text.trim().split_once(':')?;
+    let hours: u8 = hours.parse().ok()?;
+    let minutes: u8 = minutes.parse().ok()?;
+    (hours < 24 && minutes < 60).then(|| format!("{hours:02}:{minutes:02}"))
 }
 
 fn words(args: &[&str]) -> Vec<String> {
@@ -162,7 +209,17 @@ const FROM: &str = "settings.displays.night.from";
 const TO: &str = "settings.displays.night.to";
 
 pub fn section() -> Group {
-    let Some(light) = NightLight::read().light.clone() else {
+    let (light, asked, error) = {
+        let now = NightLight::read();
+        (now.light.clone(), now.asked, now.error.clone())
+    };
+    if !asked {
+        return group().header("Night Light").row(FormRow::new(
+            "settings.displays.night.asking",
+            "Asking the shell…",
+        ));
+    }
+    let Some(light) = light else {
         return group().header("Night Light").row(
             FormRow::new(
                 "settings.displays.night.missing",
@@ -172,7 +229,10 @@ pub fn section() -> Group {
             .trailing(
                 PushButton::new("settings.displays.night.retry", "Try Again")
                     .on_press(|| {
-                        thread::spawn(|| NightLight::write().light = ask());
+                        thread::spawn(|| {
+                            let light = ask();
+                            NightLight::write().light = light;
+                        });
                     })
                     .build(),
             ),
@@ -181,7 +241,7 @@ pub fn section() -> Group {
 
     let warmth = (COOLEST - light.kelvin.clamp(WARMEST, COOLEST)) * 100 / (COOLEST - WARMEST);
     let on = light.on;
-    let temperature = SliderRow::new("Colour temperature", move |width| {
+    let temperature = SliderRow::new("Color temperature", move |width| {
         Slider::new(warmth as u8, width)
             .wheel(false)
             .dimmed(!on)
@@ -229,7 +289,7 @@ pub fn section() -> Group {
         .header("Night Light")
         .row(switch_row(
             "settings.displays.night.on",
-            "Warm the screen's colours",
+            "Warm the screen's colors",
             light.on,
             |on| tell(words(&[if on { "on" } else { "off" }])),
         ))
@@ -238,37 +298,55 @@ pub fn section() -> Group {
             FormRow::new("settings.displays.night.schedule-row", "Schedule")
                 .detail(schedule, schedule_h),
         );
+    let error = error.map(|why| format!("{why}\n")).unwrap_or_default();
     match &light.schedule {
-        Schedule::Manual => group.footer("Warm all day while it's on."),
+        Schedule::Manual => group.footer(format!("{error}Warm all day while it's on.")),
         Schedule::Sun(lat, lon) => group
             .row(
                 FormRow::new("settings.displays.night.place", "Place").detail(
                     pair(
                         (LATITUDE, "Latitude", &format!("{lat:.2}")),
                         (LONGITUDE, "Longitude", &format!("{lon:.2}")),
-                        |lat, lon| tell(words(&["schedule", "sun", lat, lon])),
+                        |lat, lon| match place(lat, lon) {
+                            Some((lat, lon)) => {
+                                refuse(None);
+                                tell(words(&["schedule", "sun", &lat.to_string(), &lon.to_string()]));
+                            }
+                            None => refuse(Some(String::from(
+                                "A latitude is between -90 and 90, a longitude between -180 and 180.",
+                            ))),
+                        },
                     ),
                     mac::control_height(),
                 ),
             )
-            .footer(
-                "Warm from sunset to sunrise here, the screen's own colours by day. The place \
-                 starts at your time zone's.",
-            ),
+            .footer(format!(
+                "{error}Warm from sunset to sunrise here, the screen's own colors by day. The \
+                 place starts at your time zone's."
+            )),
         Schedule::Hours(from, to) => group
             .row(
                 FormRow::new("settings.displays.night.hours", "Hours").detail(
                     pair((FROM, "From", from), (TO, "To", to), |from, to| {
-                        tell(words(&["schedule", "hours", from, to]))
+                        match (time(from), time(to)) {
+                            (Some(from), Some(to)) => {
+                                refuse(None);
+                                tell(words(&["schedule", "hours", &from, &to]));
+                            }
+                            _ => refuse(Some(String::from("Times read like 21:00 or 07:30."))),
+                        }
                     }),
                     mac::control_height(),
                 ),
             )
-            .footer("Warm between these times, as HH:MM, overnight when To is earlier."),
+            .footer(format!(
+                "{error}Warm between these times, overnight when To is earlier."
+            )),
     }
 }
 
-/// Two short fields and a Set button that sends both.
+/// Two short labelled fields and a Set button that sends both; Return in
+/// either sends them too.
 fn pair(
     first: (&'static str, &str, &str),
     second: (&'static str, &str, &str),
@@ -280,9 +358,26 @@ fn pair(
         }
     }
     let (a, b) = (first.0, second.0);
+    let label = |text: &str| {
+        boxed({
+            use amane_kit::tokens::Styled;
+            amane::Text::new(text)
+                .style(mac::control_font())
+                .color(mac::label_secondary())
+        })
+    };
+    let send = set.clone();
+    let submit = move |_: String| send(TextInput::text(a).trim(), TextInput::text(b).trim());
+    let submit2 = submit.clone();
     Row::new(vec![
-        boxed(field_box(a, text_field(a, first.1), 120.0)),
-        boxed(field_box(b, text_field(b, second.1), 120.0)),
+        label(first.1),
+        boxed(field_box(a, text_field(a, first.1).on_submit(submit), 90.0)),
+        label(second.1),
+        boxed(field_box(
+            b,
+            text_field(b, second.1).on_submit(submit2),
+            90.0,
+        )),
         boxed(
             PushButton::new("settings.displays.night.set", "Set")
                 .on_press(move || set(TextInput::text(a).trim(), TextInput::text(b).trim()))
@@ -309,6 +404,16 @@ mod tests {
         );
         assert_eq!(parse("off 4000").unwrap().schedule, Schedule::Manual);
         assert_eq!(parse("wlsunset isn't installed"), None);
+    }
+
+    #[test]
+    fn places_and_times_are_checked() {
+        assert_eq!(place("59.9", "10.75"), Some((59.9, 10.75)));
+        assert_eq!(place("91", "0"), None);
+        assert_eq!(place("north", "0"), None);
+        assert_eq!(time("7:5").as_deref(), Some("07:05"));
+        assert_eq!(time("24:00"), None);
+        assert_eq!(time("2100"), None);
     }
 
     #[test]

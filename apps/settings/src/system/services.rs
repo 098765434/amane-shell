@@ -25,6 +25,9 @@ pub struct UnitState {
     pub active: String,
     pub sub: String,
     pub memory: Option<u64>,
+    /// systemd knows the unit: a service switched on but not yet applied
+    /// has none to start.
+    pub loaded: bool,
 }
 
 /// The services' units, system and user, as of the last look.
@@ -59,7 +62,11 @@ fn show(user: bool, units: &[String]) -> BTreeMap<String, UnitState> {
     if user {
         args.push("--user");
     }
-    args.extend(["show", "-p", "Id,ActiveState,SubState,MemoryCurrent"]);
+    args.extend([
+        "show",
+        "-p",
+        "Id,LoadState,ActiveState,SubState,MemoryCurrent",
+    ]);
     args.extend(units.iter().map(String::as_str));
     run("systemctl", &args, None)
         .map(|text| parse_show(&text))
@@ -81,6 +88,7 @@ pub fn parse_show(text: &str) -> BTreeMap<String, UnitState> {
                     "Id" => id = Some(value.to_string()),
                     "ActiveState" => state.active = value.to_string(),
                     "SubState" => state.sub = value.to_string(),
+                    "LoadState" => state.loaded = value == "loaded",
                     "MemoryCurrent" => state.memory = value.parse().ok(),
                     _ => {}
                 }
@@ -132,6 +140,16 @@ impl Units {
     pub fn get(&self, unit: &str, user: bool) -> Option<&UnitState> {
         if user { &self.user } else { &self.system }.get(unit)
     }
+}
+
+/// A subtitle's parts, apart by " · ", leaving out the empty ones.
+pub fn join_parts(parts: &[String]) -> String {
+    parts
+        .iter()
+        .map(|part| part.trim())
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" · ")
 }
 
 /// "Running · 79 MB", "Stopped", "Failed"; "—" while unknown.
@@ -247,7 +265,9 @@ pub fn page() -> Column {
         if entry.unit.is_some() {
             lines.push(status_text(state));
         }
-        lines.push(summary);
+        if !summary.is_empty() {
+            lines.push(summary);
+        }
 
         let mut row = FormRow::new(
             format!("settings.services.row.{}", entry.id),
@@ -256,6 +276,7 @@ pub fn page() -> Column {
 
         if let Some(unit) = entry.unit.clone()
             && enabled
+            && state.is_some_and(|s| s.loaded)
         {
             let running =
                 state.is_some_and(|s| matches!(s.active.as_str(), "active" | "activating"));
@@ -283,7 +304,7 @@ pub fn page() -> Column {
             );
         }
         row = row
-            .subtitle(lines.join(" · "))
+            .subtitle(join_parts(&lines))
             .trailing(controls::switch(entry, &managed).build());
         if let Some(mover) = mover {
             row = row.detail(Row::new(vec![boxed(mover.build())]), mac::control_height());
@@ -338,5 +359,15 @@ mod tests {
         );
         assert_eq!(status_text(None), "—");
         assert!(parse_show("").is_empty());
+        assert!(!units["sshd.service"].loaded);
+        let loaded = parse_show("Id=sshd.service\nLoadState=loaded\nActiveState=inactive\n");
+        assert!(loaded["sshd.service"].loaded);
+    }
+
+    #[test]
+    fn a_subtitle_leaves_out_empty_parts() {
+        let parts = ["Running".to_string(), String::new(), " ".to_string()];
+        assert_eq!(join_parts(&parts), "Running");
+        assert_eq!(join_parts(&[]), "");
     }
 }

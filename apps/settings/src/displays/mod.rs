@@ -49,6 +49,9 @@ pub fn showing(shown: bool) {
     }
 }
 
+/// How long an error stays on the page.
+const ERROR_FOR: Duration = Duration::from_secs(10);
+
 /// The screens as niri has them, what each can do, and the saved file.
 pub struct Screens {
     /// Built-in first, then by connector; none while niri isn't answering.
@@ -57,20 +60,25 @@ pub struct Screens {
     setup: Setup,
     /// The connector the page shows.
     selected: Option<String>,
-    /// What last went wrong, shown until the next change.
-    error: Option<String>,
+    /// What last went wrong and when: shown for [`ERROR_FOR`], or until
+    /// dismissed.
+    error: Option<(String, std::time::Instant)>,
+    /// niri has been asked once; until then the page says it's reading.
+    looked: bool,
 }
 
 impl Service for Screens {
     fn new() -> Self {
-        let mut screens = Self {
+        let screens = Self {
             outputs: None,
             caps: Vec::new(),
             setup: Setup::Missing,
             selected: None,
             error: None,
+            looked: false,
         };
-        screens.update();
+        // the first look reads every screen's EDID: off the UI thread
+        thread::spawn(Screens::refresh);
         screens
     }
 
@@ -79,11 +87,18 @@ impl Service for Screens {
     }
 
     fn update(&mut self) -> bool {
+        let expired = self
+            .error
+            .as_ref()
+            .is_some_and(|(_, at)| at.elapsed() >= ERROR_FOR);
+        if expired {
+            self.error = None;
+        }
         if !SHOWN.load(Ordering::Relaxed) {
-            return false;
+            return expired;
         }
         let fresh = look(&self.caps);
-        self.take(fresh)
+        self.take(fresh) || expired
     }
 }
 
@@ -119,8 +134,11 @@ fn look(known: &[(String, Caps)]) -> Look {
 impl Screens {
     /// Takes in a look; true when anything shown changed.
     fn take(&mut self, fresh: Look) -> bool {
-        let changed =
-            fresh.outputs != self.outputs || fresh.caps != self.caps || fresh.setup != self.setup;
+        let changed = !self.looked
+            || fresh.outputs != self.outputs
+            || fresh.caps != self.caps
+            || fresh.setup != self.setup;
+        self.looked = true;
         self.outputs = fresh.outputs;
         self.caps = fresh.caps;
         self.setup = fresh.setup;
@@ -153,7 +171,12 @@ impl Screens {
     }
 
     pub fn fail(error: String) {
-        Self::write().error = Some(error);
+        Self::write().error = Some((error, std::time::Instant::now()));
+    }
+
+    /// Puts the last error away.
+    pub fn dismiss() {
+        Self::write().error = None;
     }
 
     fn selected_output(&self) -> Option<&Output> {
@@ -261,13 +284,20 @@ pub fn save_all(what: String, edit: impl FnOnce(&mut Saved) + Send + 'static) {
 
 /// `group` built onto `rows`, if there is one with anything in it.
 fn add(rows: &mut Vec<Box<dyn amane::Widget>>, group: Option<Group>) {
-    if let Some(group) = group.filter(|group| !group.is_empty()) {
+    if let Some(group) = group.filter(Group::has_rows) {
         rows.push(boxed(group.build()));
     }
 }
 
 pub fn page() -> Column {
     let screens = Screens::read();
+    if !screens.looked {
+        drop(screens);
+        return groups(vec![group().row(FormRow::new(
+            "settings.displays.reading",
+            "Reading the displays…",
+        ))]);
+    }
     let Some(outputs) = screens.outputs.clone() else {
         drop(screens);
         return groups(vec![
@@ -293,7 +323,7 @@ pub fn page() -> Column {
     };
     let caps = screens.caps_of(&output.name);
     let setup = screens.setup.clone();
-    let error = screens.error.clone();
+    let error = screens.error.as_ref().map(|(error, _)| error.clone());
     drop(screens);
 
     let saved = match &setup {

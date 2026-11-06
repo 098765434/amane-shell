@@ -73,6 +73,17 @@ fn refresh() {
     Generations::refresh();
 }
 
+/// The generation running, and the one the next boot starts when an Apply
+/// at Restart or a Try left them apart.
+fn generation_text(running: Option<u32>, profile: Option<u32>) -> Option<String> {
+    match (running, profile) {
+        (Some(n), Some(next)) if next != n => Some(format!("{n} (next boot: {next})")),
+        (Some(n), _) => Some(n.to_string()),
+        (None, Some(next)) => Some(format!("next boot: {next}")),
+        (None, None) => None,
+    }
+}
+
 pub fn page() -> Column {
     let running = Running::read();
     let repo = Repo::read();
@@ -80,10 +91,13 @@ pub fn page() -> Column {
     let snapshot = Snapshot::read();
     let settings = nixos();
 
-    let generation = match (generations.profile, generations.list.len()) {
-        (Some(n), total) if total > 0 => format!("{n} of {total}"),
-        _ => String::from("…"),
-    };
+    let running_number = generations
+        .list
+        .iter()
+        .find(|g| Some(&g.toplevel) == generations.current.as_ref())
+        .map(|g| g.number);
+    let generation =
+        generation_text(running_number, generations.profile).unwrap_or_else(|| String::from("…"));
     let revision = match &running.revision {
         Some(rev) => {
             let subject = generations
@@ -186,4 +200,19 @@ pub fn page() -> Column {
             ),
         group().rows(controls::rows("about")),
     ])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::generation_text;
+
+    #[test]
+    fn the_generation_is_the_one_running() {
+        assert_eq!(generation_text(Some(79), Some(79)).as_deref(), Some("79"));
+        assert_eq!(
+            generation_text(Some(79), Some(80)).as_deref(),
+            Some("79 (next boot: 80)")
+        );
+        assert_eq!(generation_text(None, None), None);
+    }
 }

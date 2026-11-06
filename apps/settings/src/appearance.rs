@@ -199,7 +199,7 @@ pub fn page() -> Column {
                     .detail(Column::new(mode_radios), radios_height(3)),
             )
             .row(
-                FormRow::new("settings.appearance.accent", "Accent colour")
+                FormRow::new("settings.appearance.accent", "Accent color")
                     .trailing(accents.build()),
             )
             .row(FormRow::new("settings.appearance.text", "Text size").trailing(sizes.build())),
