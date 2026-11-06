@@ -2,13 +2,17 @@
 //! are open over them. Each control changes `desktop.json`, which the
 //! shell follows at once.
 
-use amane::{Column, Widget};
-use amane_kit::buttons::Radio;
+use amane::{Column, ipc_call};
+use amane_kit::buttons::PushButton;
 use amane_kit::form::FormRow;
-use amane_kit::layout::boxed;
+use amane_kit::macform::ThumbnailPicker;
+use amane_kit::macform::theme as mac;
 use amane_kit::settings::{WidgetStyle, change_desktop, desktop};
 
-use crate::{group, groups, radios_height, switch_row};
+use crate::{group, groups, previews, switch_row};
+
+/// The shell's IPC name.
+const SHELL: &str = "amane";
 
 pub fn page() -> Column {
     let (show, style) = {
@@ -17,22 +21,33 @@ pub fn page() -> Column {
     };
 
     let styles = [
-        ("Dim while windows are open", WidgetStyle::Automatic),
+        ("Dim with windows", WidgetStyle::Automatic),
         ("Always full", WidgetStyle::Full),
         ("Always dimmed", WidgetStyle::Dim),
     ];
-    let style_radios: Vec<Box<dyn Widget>> = styles
-        .into_iter()
-        .enumerate()
-        .map(|(index, (label, choice))| {
-            boxed(
-                Radio::new(format!("settings.widget-style.{index}"), style == choice)
-                    .label(label)
-                    .on_select(move || change_desktop(|now| now.widget_style = choice))
-                    .build(),
-            )
+    let width = crate::page_width() - 2.0 * mac::row_pad_h();
+    let mut picker =
+        ThumbnailPicker::new("settings.widget-style", previews::WIDTH, previews::HEIGHT)
+            .width(width)
+            .disabled(!show)
+            .chosen(styles.iter().position(|(_, choice)| *choice == style))
+            .on_select(move |index| {
+                let choice = styles[index].1;
+                change_desktop(|now| now.widget_style = choice);
+            });
+    for (label, choice) in styles {
+        picker = picker.option(previews::widgets(choice), label);
+    }
+    let picker_height = picker.height();
+
+    let edit = PushButton::new("settings.widgets.edit", "Edit Widgets…")
+        .disabled(!show)
+        .on_press(|| {
+            std::thread::spawn(|| {
+                let _ = ipc_call(SHELL, "widgets", &[String::from("edit")]);
+            });
         })
-        .collect();
+        .build();
 
     groups(vec![
         group()
@@ -43,8 +58,15 @@ pub fn page() -> Column {
                 |on| change_desktop(|now| now.show_widgets = on),
             ))
             .row(
-                FormRow::new("settings.widget-style", "Widget style")
-                    .detail(Column::new(style_radios), radios_height(3))
+                FormRow::new("settings.widget-style", "While windows are open")
+                    .detail(picker.build(), picker_height)
+                    .child()
+                    .disabled(!show),
+            )
+            .row(
+                FormRow::new("settings.widgets.edit-row", "Add, move and remove widgets")
+                    .trailing(edit)
+                    .child()
                     .disabled(!show),
             ),
     ])

@@ -198,16 +198,37 @@ fn page_named(name: &str) -> Option<usize> {
     })
 }
 
-/// Shows the page `--page <name>` would, from a page's own button.
+/// The sub-pages a `--page` name can reach, as `page/sub`.
+const SUBS: [&str; 5] = ["clock", "weather", "items", "files", "advanced"];
+
+/// A place by name: a page's name, or `page/sub` for one of its sub-pages.
+fn place_named(name: &str) -> Option<Place> {
+    let (page, sub) = match name.split_once('/') {
+        Some((page, sub)) => (page, Some(sub)),
+        None => (name, None),
+    };
+    let mut place = Place::page(page_named(page)?);
+    if let Some(sub) = sub {
+        let sub = SUBS
+            .iter()
+            .copied()
+            .find(|known| known.eq_ignore_ascii_case(sub.trim()))?;
+        sub_page(place.page, sub)?;
+        place.views.push(View::Sub(sub));
+    }
+    Some(place)
+}
+
+/// Shows the place `--page <name>` would, from a page's own button.
 pub fn go(name: &str) {
-    if let Some(page) = page_named(name) {
-        Navigation::write().set_page(page);
+    if let Some(place) = place_named(name) {
+        Navigation::write().go_to(place);
     }
 }
 
-/// The page named after `--page` in `args`, if any.
-fn page_arg(args: &[String]) -> Option<usize> {
-    flag(args, "--page").and_then(|name| page_named(&name))
+/// The place named after `--page` in `args`, if any.
+fn page_arg(args: &[String]) -> Option<Place> {
+    flag(args, "--page").and_then(|name| place_named(&name))
 }
 
 /// `--name value` or `--name=value`.
@@ -237,9 +258,9 @@ fn package_arg(args: &[String]) {
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    if let Some(page) = page_arg(&args) {
+    if let Some(place) = page_arg(&args) {
         *Navigation::write() = Navigation {
-            history: vec![Place::page(page)],
+            history: vec![place],
             at: 0,
             selected_generation: None,
         };
@@ -249,8 +270,8 @@ fn main() {
         .normal_window("main", main_window)
         // launched again (Spotlight, a notification) while running: show that page
         .on_activate(|args| {
-            if let Some(page) = page_arg(args) {
-                Navigation::write().set_page(page);
+            if let Some(place) = page_arg(args) {
+                Navigation::write().go_to(place);
             }
             package_arg(args);
         })

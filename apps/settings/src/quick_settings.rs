@@ -147,6 +147,10 @@ pub fn page() -> Column {
         return groups(vec![
             group().row(
                 FormRow::new("settings.quick.retry-row", "The shell isn't answering")
+                    .icon(
+                        amane_kit::icons::ICON_WARNING,
+                        amane_kit::color::Accent::Orange,
+                    )
                     .subtitle("Its Quick Settings can't be changed from here until it does")
                     .trailing(
                         PushButton::new("settings.quick.retry", "Try Again")

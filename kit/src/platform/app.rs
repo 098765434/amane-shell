@@ -101,6 +101,29 @@ pub fn text_field(id: &'static str, placeholder: &str) -> TextInput {
         .selection_color(with_alpha(mac::tint(), 0.4))
 }
 
+/// Runs `commit` with the field's text when the field `id` has just lost
+/// the keys, as macOS keeps what was typed when you click away. Call it
+/// while drawing the view that shows the field; amane has no blur event,
+/// so this notices the change between one drawing and the next.
+pub fn commit_on_blur(id: &'static str, commit: impl FnOnce(String)) {
+    use std::cell::RefCell;
+    use std::collections::HashSet;
+    thread_local! {
+        static FOCUSED: RefCell<HashSet<&'static str>> = RefCell::new(HashSet::new());
+    }
+    let now = TextInput::has_focus(id);
+    let was = FOCUSED.with_borrow_mut(|focused| {
+        if now {
+            !focused.insert(id)
+        } else {
+            focused.remove(id)
+        }
+    });
+    if was && !now {
+        commit(TextInput::text(id));
+    }
+}
+
 /// The box a [`text_field`] sits in, drawn like macOS's (the macform
 /// look): radius 6, `fieldFill` in a hairline that takes the accent while
 /// the field has the keys.

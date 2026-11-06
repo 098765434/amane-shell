@@ -4,17 +4,19 @@
 
 use amane::TextInput;
 use amane::{Center, Column, Rectangle, Row, Size, Widget};
-use amane_kit::app::{field_box, text_field};
-use amane_kit::buttons::{IconButton, PushButton, Radio, Segment, SegmentedButton, Switch};
+use amane_kit::app::{Dialog, commit_on_blur, field_box, text_field};
+use amane_kit::buttons::{IconButton, PushButton, Segment, SegmentedButton, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
 use amane_kit::layout::{boxed, fixed_width};
+use amane_kit::macform::ThumbnailPicker;
+use amane_kit::macform::theme as mac;
 use amane_kit::settings::{
-    AutoHide, BAR_ITEMS, BarPosition, BarStyle, ClockStyle, DateFormat, ShowDate,
+    AutoHide, BAR_ITEMS, BarPosition, BarStyle, ClockStyle, DateFormat, ShowDate, StatusBar,
     change_status_bar, status_bar, tray_seen,
 };
 
-use crate::{group, groups, radios_height, switch_row};
+use crate::{View, group, groups, previews, switch_row};
 
 /// The weather place's field.
 const PLACE: &str = "settings.bar.weather-place.field";
@@ -32,13 +34,10 @@ const POSITIONS: [(&str, BarPosition); 2] =
     [("Bottom", BarPosition::Bottom), ("Top", BarPosition::Top)];
 
 const STYLES: [(&str, BarStyle); 4] = [
-    ("Clear, on the wallpaper", BarStyle::Clear),
+    ("Clear", BarStyle::Clear),
     ("Frosted", BarStyle::Frosted),
     ("Glass", BarStyle::Glass),
-    (
-        "Solid (black in dark mode, white in light)",
-        BarStyle::Solid,
-    ),
+    ("Solid", BarStyle::Solid),
 ];
 
 pub fn page() -> Column {
@@ -57,35 +56,6 @@ pub fn page() -> Column {
     .on_select(|index, _| change_status_bar(|now| now.position = POSITIONS[index].1))
     .build();
 
-    let styles: Vec<Box<dyn Widget>> = STYLES
-        .into_iter()
-        .enumerate()
-        .map(|(index, (label, style))| {
-            boxed(
-                Radio::new(format!("settings.bar.style.{index}"), now.style == style)
-                    .label(label)
-                    .on_select(move || change_status_bar(|now| now.style = style))
-                    .build(),
-            )
-        })
-        .collect();
-
-    let dates = [
-        "Sunday 25 October",
-        "Sun 25 Oct",
-        "Numbers, as the locale has them",
-    ];
-    let date_format = Dropdown::new(
-        "settings.bar.date",
-        dates.map(String::from).to_vec(),
-        DateFormat::ALL
-            .iter()
-            .position(|format| *format == now.date_format)
-            .unwrap_or(0),
-    )
-    .width(240.0)
-    .on_select(|index| change_status_bar(|now| now.date_format = DateFormat::ALL[index]));
-
     let hiding = [
         "Never",
         "Always",
@@ -103,43 +73,17 @@ pub fn page() -> Column {
     .width(200.0)
     .on_select(|index| change_status_bar(|now| now.auto_hide = AutoHide::ALL[index]));
 
-    let show_date = Dropdown::new(
-        "settings.bar.show-date",
-        ["When space allows", "Always", "Never"]
-            .map(String::from)
-            .to_vec(),
-        ShowDate::ALL
-            .iter()
-            .position(|when| *when == now.show_date)
-            .unwrap_or(2),
-    )
-    .width(200.0)
-    .on_select(|index| change_status_bar(|now| now.show_date = ShowDate::ALL[index]));
-
-    // the field shows the place kept until it's typed in
-    if !PLACE_SHOWN.replace(true) {
-        TextInput::set_text(PLACE, &now.weather_place);
+    let width = crate::page_width() - 2.0 * mac::row_pad_h();
+    let mut styles = ThumbnailPicker::new("settings.bar.style", previews::WIDTH, previews::HEIGHT)
+        .width(width)
+        .chosen(STYLES.iter().position(|(_, style)| *style == now.style))
+        .on_select(|index| change_status_bar(|now| now.style = STYLES[index].1));
+    for (label, style) in STYLES {
+        styles = styles.option(previews::bar(style), label);
     }
-    let place = field_box(
-        PLACE,
-        text_field(PLACE, "A town or city").on_submit(|text| {
-            let text = text.trim().to_string();
-            change_status_bar(|now| now.weather_place = text);
-        }),
-        200.0,
-    );
+    let styles_height = styles.height();
 
-    let order = now.items();
-    let last = order.len().saturating_sub(1);
-    let icons: Vec<FormRow> = order
-        .iter()
-        .enumerate()
-        .map(|(index, name)| item_row(name, index, last, now.shows(name)))
-        .collect();
-    let reset = PushButton::new("settings.bar.reset-order", "Reset Order")
-        .disabled(now.order.is_empty())
-        .on_press(|| change_status_bar(|now| now.order.clear()))
-        .build();
+    let shown = now.items().iter().filter(|name| now.shows(name)).count();
 
     groups(vec![
         group()
@@ -153,69 +97,28 @@ pub fn page() -> Column {
                 "Hidden, it keeps no room from windows, and comes back with Quick Settings or the \
                  notification center too. At the bottom, a hiding dock takes the edge first.",
             ),
-        group().row(
-            FormRow::new("settings.bar.material", "Material")
-                .detail(Column::new(styles), radios_height(STYLES.len())),
-        ),
         group()
-            .header("Clock")
-            .row(switch_row(
-                "settings.bar.clock-24h",
-                "24-hour time",
-                now.clock_24h,
-                |on| change_status_bar(|now| now.clock_24h = on),
-            ))
-            .row(switch_row(
-                "settings.bar.clock-seconds",
-                "Show seconds",
-                now.clock_seconds,
-                |on| change_status_bar(|now| now.clock_seconds = on),
-            ))
-            .row(switch_row(
-                "settings.bar.clock-analog",
-                "Analog",
-                now.clock_style == ClockStyle::Analog,
-                |on| {
-                    change_status_bar(|now| {
-                        now.clock_style = if on {
-                            ClockStyle::Analog
-                        } else {
-                            ClockStyle::Digital
-                        }
-                    })
-                },
-            ))
-            .row(switch_row(
-                "settings.bar.weekday",
-                "Show the day of the week",
-                now.show_weekday,
-                |on| change_status_bar(|now| now.show_weekday = on),
-            ))
+            .header("Material")
             .row(
-                FormRow::new("settings.bar.show-date", "Show the date").trailing(show_date.build()),
+                FormRow::new("settings.bar.material", "Look")
+                    .detail(styles.build(), styles_height),
             )
-            .row(switch_row(
-                "settings.bar.flash",
-                "Flash the time separators",
-                now.flash_separators,
-                |on| change_status_bar(|now| now.flash_separators = on),
-            ))
-            .row(
-                FormRow::new("settings.bar.date", "Date in the tooltip")
-                    .trailing(date_format.build()),
-            ),
+            .footer("Clear draws only the items, light or dark to suit the wallpaper. Solid is black in dark mode and white in light."),
         group()
-            .header("Weather")
-            .row(switch_row(
-                "settings.bar.weather",
-                "Show the weather",
-                now.weather,
-                |on| change_status_bar(|now| now.weather = on),
-            ))
-            .row(FormRow::new("settings.bar.weather-place", "Place").trailing(place))
-            .footer(
-                "Today's weather from Open-Meteo, read every half hour. Only the place's name and \
-                 coordinates are sent. Press Return to keep a new place.",
+            .row(
+                FormRow::new("settings.bar.clock-link", "Clock")
+                    .value(clock_summary(&now))
+                    .on_press(|| crate::open(View::Sub("clock"))),
+            )
+            .row(
+                FormRow::new("settings.bar.weather-link", "Weather")
+                    .value(weather_summary(&now))
+                    .on_press(|| crate::open(View::Sub("weather"))),
+            )
+            .row(
+                FormRow::new("settings.bar.items-link", "Items")
+                    .value(format!("{shown} shown"))
+                    .on_press(|| crate::open(View::Sub("items"))),
             ),
         group()
             .header("Workspaces")
@@ -232,7 +135,9 @@ pub fn page() -> Column {
                     now.scroll_workspaces,
                     |on| change_status_bar(|now| now.scroll_workspaces = on),
                 )
-                .subtitle("Scroll over the workspaces to move between them"),
+                .subtitle("Scroll over the workspaces to move between them")
+                .child()
+                .disabled(!now.show_workspaces),
             ),
         group().header("Now Playing").row(
             switch_row(
@@ -243,7 +148,230 @@ pub fn page() -> Column {
             )
             .subtitle("Else only while something plays, or was paused in the last few minutes"),
         ),
-        allowed_apps(&now),
+    ])
+}
+
+/// The clock as its row sums it up: "Analog", or "24-hour · seconds · date".
+fn clock_summary(now: &StatusBar) -> String {
+    if now.clock_style == ClockStyle::Analog {
+        return String::from("Analog");
+    }
+    let mut parts = vec![if now.clock_24h { "24-hour" } else { "12-hour" }];
+    if now.clock_seconds {
+        parts.push("seconds");
+    }
+    match now.show_date {
+        ShowDate::Always => parts.push("date"),
+        ShowDate::WhenSpace => parts.push("date when space allows"),
+        ShowDate::Never => {}
+    }
+    parts.join(" · ")
+}
+
+/// The weather as its row sums it up: the place, or why there's none.
+fn weather_summary(now: &StatusBar) -> String {
+    match (now.weather, now.weather_place.trim()) {
+        (false, _) => String::from("Off"),
+        (true, "") => String::from("No place set"),
+        (true, place) => place.to_string(),
+    }
+}
+
+/// The page's sub-pages: the clock, the weather, and the items in order.
+pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
+    Some(match name {
+        "clock" => (String::from("Clock"), boxed(clock())),
+        "weather" => (String::from("Weather"), boxed(weather())),
+        "items" => (String::from("Items"), boxed(items())),
+        _ => return None,
+    })
+}
+
+fn clock() -> Column {
+    let now = status_bar().clone();
+    let analog = now.clock_style == ClockStyle::Analog;
+
+    let width = crate::page_width() - 2.0 * mac::row_pad_h();
+    let styles = ThumbnailPicker::new(
+        "settings.bar.clock-style",
+        previews::WIDTH,
+        previews::HEIGHT,
+    )
+    .width(width)
+    .chosen(Some(usize::from(analog)))
+    .on_select(|index| {
+        change_status_bar(|now| {
+            now.clock_style = if index == 1 {
+                ClockStyle::Analog
+            } else {
+                ClockStyle::Digital
+            }
+        })
+    })
+    .option(previews::clock(false), "Digital")
+    .option(previews::clock(true), "Analog");
+    let styles_height = styles.height();
+
+    let show_date = Dropdown::new(
+        "settings.bar.show-date",
+        ["When space allows", "Always", "Never"]
+            .map(String::from)
+            .to_vec(),
+        ShowDate::ALL
+            .iter()
+            .position(|when| *when == now.show_date)
+            .unwrap_or(2),
+    )
+    .width(200.0)
+    .on_select(|index| change_status_bar(|now| now.show_date = ShowDate::ALL[index]));
+
+    let dates = [
+        "Sunday 25 October",
+        "Sun 25 Oct",
+        "Numbers, as the locale has them",
+    ];
+    let date_format = Dropdown::new(
+        "settings.bar.date",
+        dates.map(String::from).to_vec(),
+        DateFormat::ALL
+            .iter()
+            .position(|format| *format == now.date_format)
+            .unwrap_or(0),
+    )
+    .width(240.0)
+    .on_select(|index| change_status_bar(|now| now.date_format = DateFormat::ALL[index]));
+
+    groups(vec![
+        group().row(
+            FormRow::new("settings.bar.clock-style-row", "Style")
+                .detail(styles.build(), styles_height),
+        ),
+        group()
+            .header("Time")
+            .row(
+                switch_row(
+                    "settings.bar.clock-24h",
+                    "24-hour time",
+                    now.clock_24h,
+                    |on| change_status_bar(|now| now.clock_24h = on),
+                )
+                .disabled(analog),
+            )
+            .row(
+                switch_row(
+                    "settings.bar.clock-seconds",
+                    "Show seconds",
+                    now.clock_seconds,
+                    |on| change_status_bar(|now| now.clock_seconds = on),
+                )
+                .disabled(analog),
+            )
+            .row(
+                switch_row(
+                    "settings.bar.flash",
+                    "Flash the time separators",
+                    now.flash_separators,
+                    |on| change_status_bar(|now| now.flash_separators = on),
+                )
+                .disabled(analog),
+            )
+            .footer(if analog {
+                "The analog face shows the hours and minutes only."
+            } else {
+                ""
+            }),
+        group()
+            .header("Date")
+            .row(
+                FormRow::new("settings.bar.show-date", "Show the date").trailing(show_date.build()),
+            )
+            .row(switch_row(
+                "settings.bar.weekday",
+                "Show the day of the week",
+                now.show_weekday,
+                |on| change_status_bar(|now| now.show_weekday = on),
+            ))
+            .row(
+                FormRow::new("settings.bar.date", "Date in the tooltip")
+                    .trailing(date_format.build()),
+            ),
+    ])
+}
+
+fn weather() -> Column {
+    let now = status_bar().clone();
+
+    // the field shows the place kept until it's typed in
+    if !PLACE_SHOWN.replace(true) {
+        TextInput::set_text(PLACE, &now.weather_place);
+    }
+    let keep = |text: String| {
+        let text = text.trim().to_string();
+        if text != status_bar().weather_place {
+            change_status_bar(|now| now.weather_place = text);
+        }
+    };
+    commit_on_blur(PLACE, keep);
+    let place = field_box(
+        PLACE,
+        text_field(PLACE, "A town or city").on_submit(keep),
+        220.0,
+    );
+
+    let typed = TextInput::text(PLACE);
+    let state = if typed.trim() == now.weather_place.trim() {
+        if now.weather_place.trim().is_empty() {
+            String::from("Type a place to show its weather")
+        } else {
+            String::from("Kept")
+        }
+    } else {
+        String::from("Press Return or click away to keep it")
+    };
+
+    groups(vec![
+        group()
+            .row(switch_row(
+                "settings.bar.weather",
+                "Show the weather",
+                now.weather,
+                |on| change_status_bar(|now| now.weather = on),
+            ))
+            .row(
+                FormRow::new("settings.bar.weather-place", "Place")
+                    .subtitle(state)
+                    .trailing(place)
+                    .child()
+                    .disabled(!now.weather),
+            )
+            .footer(
+                "Today's weather from Open-Meteo, read every half hour. Only the place's name and \
+                 coordinates are sent.",
+            ),
+    ])
+}
+
+fn items() -> Column {
+    let now = status_bar().clone();
+    let order = now.items();
+    let last = order.len().saturating_sub(1);
+    let icons: Vec<FormRow> = order
+        .iter()
+        .enumerate()
+        .map(|(index, name)| item_row(name, index, last, now.shows(name)))
+        .collect();
+    let reset = PushButton::new("settings.bar.reset-order", "Reset Order…")
+        .disabled(now.order.is_empty())
+        .on_press(|| {
+            Dialog::new("settings.bar.reset-dialog", "Put the items back in order?")
+                .message("They go back to the bar's usual order. Which ones show stays as it is.")
+                .button("Cancel", || {})
+                .destructive("Reset", || change_status_bar(|now| now.order.clear()))
+                .open("main");
+        })
+        .build();
+
+    groups(vec![
         group()
             .header("Items, Left to Right")
             .rows(icons)
@@ -253,6 +381,7 @@ pub fn page() -> Column {
                  Settings and the clock always show, and each Quick Settings page can show or \
                  hide its icon too.",
             ),
+        allowed_apps(&now),
     ])
 }
 
@@ -331,9 +460,4 @@ fn allowed_apps(now: &amane_kit::settings::StatusBar) -> amane_kit::form::Group 
             .rows(rows)
             .footer("An app left out keeps running; only its icon is gone from the bar.")
     }
-}
-
-/// The page's sub-pages, by name: none yet.
-pub fn sub(_name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
-    None
 }

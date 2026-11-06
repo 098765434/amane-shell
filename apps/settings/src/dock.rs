@@ -34,6 +34,7 @@ pub fn page() -> Column {
 
     groups(vec![
         group()
+            .header("Size")
             .slider(
                 SliderRow::new("Icon size", move |width| {
                     Slider::new(at, width)
@@ -47,6 +48,7 @@ pub fn page() -> Column {
             )
             .row(FormRow::new("settings.dock.magnify", "Magnification").trailing(magnify)),
         group()
+            .header("Hiding")
             .row(
                 switch(
                     "settings.dock.auto-hide",
@@ -56,14 +58,19 @@ pub fn page() -> Column {
                 )
                 .subtitle("Until the pointer meets the screen's edge"),
             )
-            .row(switch(
-                "settings.dock.overview",
-                "Show the dock with the overview",
-                now.rise_with_overview,
-                |now, on| now.rise_with_overview = on,
-            ))
+            .row(
+                switch(
+                    "settings.dock.overview",
+                    "Show the dock with the overview",
+                    now.rise_with_overview,
+                    |now, on| now.rise_with_overview = on,
+                )
+                .child()
+                .disabled(!now.auto_hide),
+            )
             .footer("A dock that stays out keeps windows clear of it, above the status bar."),
         group()
+            .header("Icons")
             .row(switch(
                 "settings.dock.dots",
                 "Show dots under open apps",
