@@ -19,6 +19,8 @@ path = 'src/main.rs'
 # pinned in [workspace.dependencies], shared with the kit
 amane = { workspace = true }
 amane-kit = { path = "kit" }
+# the assistant's commands, rules and protocol; its daemon (Cactus) is apps/assistant
+amane-assistant = { path = "apps/assistant", default-features = false }
 serde_json = "1.0"
 # for the one bus call that hands back a file descriptor (logind's Inhibit),
 # which amane's Bus can't carry; the same zbus amane already pulls in
@@ -37,7 +39,7 @@ debug = false
 incremental = false
 
 [workspace]
-members = ["kit", "apps/settings", "apps/messages", "apps/mirror", "apps/shader-lab"]
+members = ["kit", "apps/settings", "apps/messages", "apps/mirror", "apps/shader-lab", "apps/assistant"]
 
 [workspace.dependencies]
 # amane is consumed as a pinned git-dependency on the maintained fork (not a

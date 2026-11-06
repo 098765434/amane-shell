@@ -36,7 +36,7 @@ use crate::components::panel::overlay;
 use crate::components::slider::Slider;
 use crate::tokens::{Styled, osd, sys};
 
-pub use keys::ipc;
+pub use keys::{ipc, set_brightness, set_volume};
 
 amane_kit::marker! {
     /// The display showed, changed or ran out: only its window draws again.

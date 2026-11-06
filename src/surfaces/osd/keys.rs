@@ -82,6 +82,18 @@ pub fn ipc(args: &[String]) -> String {
     String::from("ok")
 }
 
+/// Sets the volume to `level`, showing it, as the keys would get there.
+pub fn set_volume(level: u8) {
+    let now = latest(&VOLUME, Audio::read().volume());
+    volume(i16::from(level.min(100)) - i16::from(now));
+}
+
+/// Sets the screen's brightness to `level`, showing it.
+pub fn set_brightness(level: u8) {
+    let now = latest(&BRIGHTNESS, Brightness::read().percent());
+    brightness(i16::from(level.min(100)) - i16::from(now));
+}
+
 /// Moves the volume by `by`, unmuting as it goes up (as macOS does).
 fn volume(by: i16) {
     let audio = Audio::read();

@@ -214,6 +214,7 @@ fn main() -> ExitCode {
     .ipc("quick-settings", quick_settings::ipc)
     // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("launcher", launcher::ipc)
+    .ipc("assistant", launcher::assistant_ipc)
     // the media and brightness keys, each acting and showing the new level:
     // `printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
     .ipc("osd", osd::ipc)

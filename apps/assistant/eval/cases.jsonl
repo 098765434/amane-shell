@@ -1,0 +1,72 @@
+{"text": "turn on night light", "expect": {"do": "switch", "control": "night-light", "state": "on"}}
+{"text": "turn the screen warmer", "expect": {"do": "switch", "control": "night-light", "state": "on"}}
+{"text": "my eyes hurt, make the screen less blue", "expect": {"do": "switch", "control": "night-light", "state": "on"}}
+{"text": "night light off", "expect": {"do": "switch", "control": "night-light", "state": "off"}}
+{"text": "switch to dark mode", "expect": {"do": "switch", "control": "dark-style", "state": "on"}}
+{"text": "go back to the light theme", "expect": {"do": "switch", "control": "dark-style", "state": "off"}}
+{"text": "I don't want any notifications", "expect": {"do": "switch", "control": "focus", "state": "on"}}
+{"text": "silence my notifications", "expect": {"do": "switch", "control": "focus", "state": "on"}}
+{"text": "turn off bluetooth", "expect": {"do": "switch", "control": "bluetooth", "state": "off"}}
+{"text": "enable wifi", "expect": {"do": "switch", "control": "wifi", "state": "on"}}
+{"text": "disconnect from the internet", "expect": {"do": "switch", "control": "wifi", "state": "off"}}
+{"text": "airplane mode please", "expect": {"do": "switch", "control": "airplane", "state": "on"}}
+{"text": "I'm getting on a plane", "expect": {"do": "switch", "control": "airplane", "state": "on"}}
+{"text": "don't let the computer go to sleep", "expect": {"do": "switch", "control": "keep-awake", "state": "on"}}
+{"text": "keep the screen on", "expect": {"do": "switch", "control": "keep-awake", "state": "on"}}
+{"text": "take a screenshot", "expect": {"do": "switch", "control": "screenshot", "state": "toggle"}}
+{"text": "connect to tailscale", "expect": {"do": "switch", "control": "tailscale", "state": "on"}}
+{"text": "make it louder", "expect": {"do": "level", "level": "volume", "target": "up"}}
+{"text": "crank up the volume", "expect": {"do": "level", "level": "volume", "target": "up"}}
+{"text": "I can't hear anything", "expect": {"do": "level", "level": "volume", "target": "up"}}
+{"text": "volume to 40", "expect": {"do": "level", "level": "volume", "target": {"percent": 40}}}
+{"text": "set the sound to half", "expect": {"do": "level", "level": "volume", "target": {"percent": 50}}}
+{"text": "turn the sound down", "expect": {"do": "level", "level": "volume", "target": "down"}}
+{"text": "it's too loud", "expect": {"do": "level", "level": "volume", "target": "down"}}
+{"text": "mute", "expect": {"do": "mute", "state": "on"}}
+{"text": "set brightness to 70 percent", "expect": {"do": "level", "level": "brightness", "target": {"percent": 70}}}
+{"text": "the screen is too bright", "expect": {"do": "level", "level": "brightness", "target": "down"}}
+{"text": "brighter", "expect": {"do": "level", "level": "brightness", "target": "up"}}
+{"text": "I can't see the screen, it's too dark", "expect": {"do": "level", "level": "brightness", "target": "up"}}
+{"text": "dim the display", "expect": {"do": "level", "level": "brightness", "target": "down"}}
+{"text": "max brightness", "expect": {"do": "level", "level": "brightness", "target": {"percent": 100}}}
+{"text": "open firefox", "expect": {"do": "open", "app": "firefox"}}
+{"text": "launch the terminal", "expect": {"do": "open", "app": "com.mitchellh.ghostty"}}
+{"text": "start vs code", "expect": {"do": "open", "app": "code"}}
+{"text": "I want to browse my files", "expect": {"do": "open", "app": "org.gnome.Nautilus"}}
+{"text": "open shell settings", "expect": {"do": "open", "app": "amane-settings"}}
+{"text": "check my email", "expect": {"do": "open", "app": "thunderbird"}}
+{"text": "I need a calculator", "expect": {"do": "open", "app": "org.gnome.Calculator"}}
+{"text": "text someone", "expect": {"do": "open", "app": "amane-messages"}}
+{"text": "put on some music", "expect": {"do": "open", "app": "spotify"}}
+{"text": "open ghostty", "expect": {"do": "open", "app": "com.mitchellh.ghostty"}}
+{"text": "skip this song", "expect": {"do": "media", "media": "next"}}
+{"text": "pause the music", "expect": {"do": "media", "media": "pause"}}
+{"text": "play", "expect": {"do": "media", "media": "play"}}
+{"text": "go back to the previous track", "expect": {"do": "media", "media": "previous"}}
+{"text": "I don't like this song", "expect": {"do": "media", "media": "next"}}
+{"text": "stop the music", "expect": {"do": "media", "media": "pause"}}
+{"text": "resume playback", "expect": {"do": "media", "media": "play"}}
+{"text": "lock the screen", "expect": {"do": "power", "power": "lock"}}
+{"text": "I'm stepping away from my desk", "expect": {"do": "power", "power": "lock"}}
+{"text": "shut down", "expect": {"do": "power", "power": "power-off"}}
+{"text": "turn the computer off", "expect": {"do": "power", "power": "power-off"}}
+{"text": "restart the computer", "expect": {"do": "power", "power": "restart"}}
+{"text": "reboot", "expect": {"do": "power", "power": "restart"}}
+{"text": "put the laptop to sleep", "expect": {"do": "power", "power": "sleep"}}
+{"text": "sign out", "expect": {"do": "power", "power": "log-out"}}
+{"text": "timer 5 minutes", "expect": {"do": "timer", "seconds": 300}}
+{"text": "set a timer for 10 minutes", "expect": {"do": "timer", "seconds": 600}}
+{"text": "switch to power saver mode", "expect": {"do": "power-mode", "profile": "power-saver"}}
+{"text": "performance mode", "expect": {"do": "power-mode", "profile": "performance"}}
+{"text": "what's the weather in Lyon", "expect": null}
+{"text": "how tall is the eiffel tower", "expect": null}
+{"text": "tell me a joke", "expect": null}
+{"text": "12 * 7", "expect": null}
+{"text": "recipes for lasagna", "expect": null}
+{"text": "who won the world cup", "expect": null}
+{"text": "firefox", "expect": null}
+{"text": "night light", "expect": null}
+{"text": "rust borrow checker", "expect": null}
+{"text": "how do I turn on night light", "expect": null}
+{"text": "what is bluetooth", "expect": null}
+{"text": "restaurants near me", "expect": null}

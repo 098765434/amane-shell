@@ -50,6 +50,19 @@ commands of its own; launching it again brings the open window forward.
 
 The modes also answer to `applications` (for `apps`) and `home` or `search` (the pill).
 
+### `assistant`
+
+`assistant listen [start | stop | toggle | cancel]` and `assistant status`
+([assistant.md](../shell/assistant.md)).
+
+| Verb | What it does |
+|---|---|
+| `listen start` | opens Spotlight on a fresh search and listens for a command |
+| `listen stop` | stops; what was heard is typed into the field and searched |
+| `listen toggle` | starts, or stops while listening (for one key) |
+| `listen cancel` | stops, forgetting what was heard |
+| `status` | what the daemon runs (`cactus 4.0.0 (3)`), or `not connected` |
+
 ### `quick-settings`
 
 `quick-settings [toggle [<page>] | open [<page>] | close | edit | customize | reset-layout | controls | (show | hide) <control>]`
@@ -168,6 +181,9 @@ binds {
     }
     Mod+Ctrl+V hotkey-overlay-title="Clipboard" {
         spawn "sh" "-c" "printf 'launcher\\ntoggle\\nclipboard\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+    }
+    Mod+Shift+Space hotkey-overlay-title="Assistant: listen" {
+        spawn "sh" "-c" "printf 'assistant\\nlisten\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
     }
     Mod+S { spawn "sh" "-c" "printf 'quick-settings\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock"; }
     Mod+N { spawn "sh" "-c" "printf 'notifications\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock"; }

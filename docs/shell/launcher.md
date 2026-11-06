@@ -30,6 +30,8 @@ From the pill, a query lists ([`provider.rs`](../../src/surfaces/launcher/provid
    - A unit conversion (`answers.rs`): length, mass, volume, time, data and temperature, like
      `5 km in mi`, `70f to c` or `1.5 GiB to MB`.
      - Byte units keep their case (`Mb` isn't `MB`) unless typed all in lower case.
+   - A command ("turn the volume down", "open firefox"), read by the
+     [assistant](assistant.md). Return runs it; ending the session asks first.
 - **Chips**: up to four places to narrow the search to, from the best rows. For now that's an
   app with desktop actions. A click narrows to it, as Tab does on its row.
 - **The rows**, ranked (`rank.rs`):
@@ -278,7 +280,7 @@ fuller lines.
   followed live:
   - `apps_layout`: `grid` or `list`.
   - `excluded_providers`: the sources the search leaves out, by id: `answers`, `apps`,
-    `actions`, `files`, `clipboard`, `url`, `web`.
+    `actions`, `files`, `clipboard`, `assistant`, `url`, `web`.
   - `quick_keys`: each action's quick keys, with its key and name.
   - `clipboard`: whether the history is on, how many copies it keeps, whether images too,
     and the apps it leaves out.
@@ -327,6 +329,7 @@ never blocks anything.
 | `rank.rs` | the fuzzy match and the frecency score (pure, tested) |
 | `usage.rs` | what's remembered of use, and the searches run (tested) |
 | `answers.rs` | unit conversions (pure, tested) |
+| `assistant.rs` | the assistant's snapshot of what's here, and a command as its card ([assistant.md](assistant.md)) |
 | `entries.rs` | a row (`Entry`), what narrows a search (`Scope`), and what each row does |
 | `header.rs` | the search row, the round mode buttons, the ⋯ menu, and the pill bar with its sliding fill |
 | `grid.rs` | the category pages, each a grid with its highlight, the suggested row on the first |

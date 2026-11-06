@@ -52,6 +52,7 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | Status bar | the bottom bar: workspace pips, status icons, Quick Settings, notifications, the timer chip and the clock | [shell/status-bar.md](shell/status-bar.md) |
 | Dock | every workspace's windows and pins, rising from the bottom edge and with the overview | [shell/dock.md](shell/dock.md) |
 | Launcher | macOS Tahoe's Spotlight: search, Applications, Files, Actions, Clipboard | [shell/launcher.md](shell/launcher.md) |
+| Assistant | system commands typed or spoken in Spotlight, read on this machine by Cactus (Needle 3, Whistle) in the `amane-assistant` daemon | [shell/assistant.md](shell/assistant.md) |
 | Notifications | the notification daemon's toasts, the notification center and Do Not Disturb | [shell/notifications.md](shell/notifications.md) |
 | Quick Settings | GNOME's quick settings in the macOS Control Center look, with Edit Controls | [shell/quick-settings.md](shell/quick-settings.md) |
 | Desktop widgets | readings and a clock on the wallpaper, on Quick Settings' grid | [shell/widgets.md](shell/widgets.md) |

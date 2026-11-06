@@ -1,0 +1,162 @@
+{
+  "switches": [
+    {
+      "control": "wifi",
+      "title": "Wi‑Fi",
+      "on": true
+    },
+    {
+      "control": "bluetooth",
+      "title": "Bluetooth",
+      "on": true
+    },
+    {
+      "control": "focus",
+      "title": "Focus",
+      "on": false
+    },
+    {
+      "control": "dark-style",
+      "title": "Dark Style",
+      "on": false
+    },
+    {
+      "control": "night-light",
+      "title": "Night Light",
+      "on": false
+    },
+    {
+      "control": "airplane",
+      "title": "Airplane Mode",
+      "on": false
+    },
+    {
+      "control": "keep-awake",
+      "title": "Keep Awake",
+      "on": false
+    },
+    {
+      "control": "tailscale",
+      "title": "Tailscale",
+      "on": true
+    },
+    {
+      "control": "screenshot",
+      "title": "Screenshot",
+      "on": null
+    }
+  ],
+  "apps": [
+    {
+      "id": "firefox",
+      "name": "Firefox",
+      "kinds": [
+        "browser",
+        "web browser",
+        "internet"
+      ]
+    },
+    {
+      "id": "org.gnome.Nautilus",
+      "name": "Files",
+      "kinds": [
+        "file manager",
+        "files",
+        "file browser"
+      ]
+    },
+    {
+      "id": "com.mitchellh.ghostty",
+      "name": "Ghostty",
+      "kinds": [
+        "terminal",
+        "console",
+        "shell"
+      ]
+    },
+    {
+      "id": "code",
+      "name": "Visual Studio Code",
+      "kinds": [
+        "ide",
+        "code editor",
+        "text editor",
+        "editor",
+        "vscode"
+      ]
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "kinds": [
+        "music",
+        "music player"
+      ]
+    },
+    {
+      "id": "amane-settings",
+      "name": "Shell Settings",
+      "kinds": [
+        "settings"
+      ]
+    },
+    {
+      "id": "amane-messages",
+      "name": "Messages",
+      "kinds": [
+        "chat",
+        "messenger",
+        "sms",
+        "text messages"
+      ]
+    },
+    {
+      "id": "org.gnome.Calculator",
+      "name": "Calculator",
+      "kinds": [
+        "calculator"
+      ]
+    },
+    {
+      "id": "thunderbird",
+      "name": "Thunderbird",
+      "kinds": [
+        "email",
+        "mail",
+        "inbox"
+      ]
+    },
+    {
+      "id": "org.gnome.Loupe",
+      "name": "Image Viewer",
+      "kinds": [
+        "photos",
+        "pictures",
+        "image viewer"
+      ]
+    }
+  ],
+  "power_modes": [
+    [
+      "Power Saver",
+      "power-saver"
+    ],
+    [
+      "Balanced",
+      "balanced"
+    ],
+    [
+      "Performance",
+      "performance"
+    ]
+  ],
+  "powers": [
+    "lock",
+    "log-out",
+    "sleep",
+    "restart",
+    "power-off"
+  ],
+  "brightness": true,
+  "timer_running": false
+}

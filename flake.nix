@@ -68,6 +68,40 @@
         SCRCPY_VERSION = pkgs.scrcpy.version;
       };
 
+      # Cactus 4.0.0 for amane-assistant (Spotlight's assistant): the prebuilt
+      # static library (Apache-2.0) and its header from Cactus's release, and
+      # the Needle 3 (commands) and Whistle (speech) weights, every file pinned
+      # to a Hugging Face commit and its hash; nothing is fetched at run time.
+      # Only x86_64-linux here; elsewhere the daemon builds without an engine.
+      # The library is linked statically, with the LLVM libc++ it was built
+      # against, so the daemon needs nothing more. See docs/shell/assistant.md.
+      cactusFor =
+        pkgs:
+        let
+          hf = repo: rev: file: "https://huggingface.co/Cactus-Compute/${repo}/resolve/${rev}/${file}";
+          release = "a30ea9d3d8619ec5728c66fb7cde6c48ba681b55";
+          fetch = repo: rev: file: hash: pkgs.fetchurl { url = hf repo rev file; inherit hash; };
+        in
+        pkgs.runCommand "cactus-4.0.0" { } ''
+          install -Dm644 ${fetch "cactus" release "releases/4.0.0/linux-x86_64/libcactus.a" "sha256-nl56vhsL9mdbaaAKXF6HXoD95JbU55966G+urlyrj9Y="} $out/lib/libcactus.a
+          install -Dm644 ${fetch "cactus" release "releases/4.0.0/linux-x86_64/cactus.h" "sha256-+s78oXoNXnFb2SqLDqJywaw0ogp5gAOx5pHI+6Ws5uI="} $out/include/cactus.h
+          install -Dm644 ${fetch "cactus" release "releases/4.0.0/LICENSE" "sha256-z8d0m5b2O9McPEK1xHG/dWgUBT6EfBDz6wA0F7xSPTA="} $out/share/licenses/cactus/LICENSE
+          install -Dm644 ${fetch "needle3" "c95d25b4efa1e9601e785d92438e4ade0dbddbf8" "needle3.cact" "sha256-ydkV7KKC7ULRoJsUO1kq20zGdE/+LSlK31z8VUgXDDg="} $out/share/amane-assistant/models/needle3.cact
+          install -Dm644 ${fetch "whistle" "ad73f1468dd5203791e0cc81d31544c553563645" "whistle.cact" "sha256-tuAvBIVorF0BogQlVsZYBh5pmsvAqioUOfUvPUYd/+s="} $out/share/amane-assistant/models/whistle.cact
+        '';
+
+      hasCactus = pkgs: pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+
+      # What the build reads to link Cactus into amane-assistant, and where its
+      # models are; empty where there's no Cactus.
+      cactusEnvFor =
+        pkgs:
+        lib.optionalAttrs (hasCactus pkgs) {
+          CACTUS_LIB_DIR = "${cactusFor pkgs}/lib";
+          LIBCXX_DIR = "${pkgs.llvmPackages.libcxx}/lib";
+          AMANE_ASSISTANT_MODELS = "${cactusFor pkgs}/share/amane-assistant/models";
+        };
+
       # The system GPU driver dir goes first so wgpu's Vulkan loader finds the
       # system ICDs and the driver's own libwayland.
       ldLibraryPath = pkgs: "/run/opengl-driver/lib:${lib.makeLibraryPath (runtimeLibsFor pkgs)}";
@@ -168,6 +202,14 @@
                   --prefix LD_LIBRARY_PATH : "${ldLibraryPath pkgs}" \
                   --run ${lib.escapeShellArg vulkanIcdFallback}
               done
+              # the assistant's daemon: no GPU, its models from the store, and
+              # Cactus told not to report anything (it has no network code; this
+              # is belt and braces, with the unit's RestrictAddressFamilies)
+              wrapProgram $out/bin/amane-assistant \
+                --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [ pkgs.libpulseaudio ]}" \
+                ${lib.optionalString (hasCactus pkgs) "--set-default AMANE_ASSISTANT_MODELS ${cactusFor pkgs}/share/amane-assistant/models"} \
+                --set CACTUS_TELEMETRY 0 \
+                --set DO_NOT_TRACK 1
             '';
 
             meta = {
@@ -176,7 +218,7 @@
               license = lib.licenses.mit;
               platforms = lib.platforms.linux;
             };
-          } // scrcpyEnvFor pkgs);
+          } // scrcpyEnvFor pkgs // cactusEnvFor pkgs);
         in
         {
           default = amane-shell;
@@ -207,7 +249,7 @@
               export LD_LIBRARY_PATH="${ldLibraryPath pkgs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
               ${vulkanIcdFallback}
             '';
-          } // scrcpyEnvFor pkgs);
+          } // scrcpyEnvFor pkgs // cactusEnvFor pkgs);
         }
       );
 

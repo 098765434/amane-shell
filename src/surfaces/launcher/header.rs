@@ -17,7 +17,7 @@ use amane_kit::settings::{AppsLayout, change_launcher};
 use crate::components::color::with_alpha;
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::components::icons::{
-    ICON_CHECK, ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MORE_HORIZ, ICON_SEARCH,
+    ICON_CHECK, ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MIC, ICON_MORE_HORIZ, ICON_SEARCH,
 };
 use crate::components::kinetic::Axis;
 use crate::components::layout::{boxed, cursor, icon, pad, slot, text_width};
@@ -25,6 +25,7 @@ use crate::components::material::{self, FillLevel, Level, Material};
 use crate::components::motion;
 use crate::components::scroll_view::ScrollView;
 use crate::components::text_edit::Field;
+use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history;
 use crate::tokens::{Styled, TextStyle, sys};
 
@@ -86,7 +87,16 @@ pub(super) fn search_row(
     let field = &view.field;
     let typed = !field.text().is_empty();
 
-    let mut leading: Vec<Box<dyn Widget>> = vec![boxed(leading_glyph(view.mode, back_hover))];
+    // listening for a command: the microphone for the magnifier, and what's
+    // heard so far for the placeholder
+    let listening = assistant_service::listening();
+    let hearing = listening.on && view.mode == Mode::Home && !typed;
+    let lead = if hearing {
+        listening_glyph(listening.level)
+    } else {
+        leading_glyph(view.mode, back_hover)
+    };
+    let mut leading: Vec<Box<dyn Widget>> = vec![boxed(lead)];
     let mut used = LEADING + gap;
     if let Some(scope) = &view.scope {
         let token = token(scope.name());
@@ -95,12 +105,18 @@ pub(super) fn search_row(
     }
 
     let placeholder = match hover_mode {
-        Some(mode) if view.mode == Mode::Home && !typed => mode.title(),
+        _ if hearing && !listening.partial.is_empty() => listening.partial.clone(),
+        _ if hearing => String::from("Listening…"),
+        _ if !typed && view.mode == Mode::Home && listening.error.is_some() => {
+            listening.error.clone().unwrap_or_default()
+        }
+        Some(mode) if view.mode == Mode::Home && !typed => mode.title().to_string(),
         _ => view
             .scope
             .as_ref()
             .and_then(Scope::placeholder)
-            .unwrap_or(view.mode.title()),
+            .unwrap_or(view.mode.title())
+            .to_string(),
     };
     let trailing: Option<Box<dyn Widget>> = if typed {
         used += LEADING + gap;
@@ -136,7 +152,7 @@ pub(super) fn search_row(
     parts.push(boxed(search_field(
         field,
         focused,
-        placeholder,
+        &placeholder,
         (width - used).max(0.0),
     )));
     if let Some(trailing) = trailing {
@@ -149,6 +165,16 @@ pub(super) fn search_row(
         .padding(pad(ROW_INSET, 0.0))
         .align_child(Start, Center)
         .child(Row::new(parts).gap(gap).align(Center))
+}
+
+/// The microphone, while the assistant listens: in the accent, on a soft
+/// disc that swells with how loud it hears.
+fn listening_glyph(level: f32) -> Rectangle {
+    let accent = sys::color::accent::bg();
+    slot(LEADING)
+        .radius(LEADING / 2.0)
+        .fill(with_alpha(accent, 0.12 + 0.38 * level.clamp(0.0, 1.0)))
+        .child(icon(ICON_MIC, GLYPH, accent))
 }
 
 /// The mode's glyph, the magnifier on the pill. In a mode it's a back

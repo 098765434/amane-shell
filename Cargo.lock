@@ -49,6 +49,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "amane-assistant"
+version = "0.1.0"
+dependencies = [
+ "libpulse-binding",
+ "libpulse-simple-binding",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "amane-kit"
 version = "0.1.0"
 dependencies = [
@@ -106,6 +116,7 @@ name = "amane-shell"
 version = "0.1.0"
 dependencies = [
  "amane",
+ "amane-assistant",
  "amane-kit",
  "chrono",
  "libc",

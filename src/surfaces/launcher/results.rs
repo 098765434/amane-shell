@@ -342,21 +342,32 @@ fn row(
         .child(Row::new(parts).gap(gap).align(Center))
 }
 
-/// The answer to a sum or a conversion, in a card over the list, `width`
-/// wide; `selected` rings it as what Enter copies.
+/// The answer to a sum or a conversion, or the assistant's command, in a
+/// card over the list, `width` wide; `selected` rings it as what Enter
+/// copies or runs.
 pub(super) fn answer_card(answer: &Entry, width: f32, selected: bool, query: &str) -> Rectangle {
     let clicked = answer.clone();
     let query = query.to_string();
     let accent = sys::color::accent::bg();
     let on = sys::color::accent::fg();
+    let copies = matches!(answer.action, Action::Copy(_));
     let big = TextStyle {
         size: ANSWER_TEXT,
-        ..sys::r#type::numeric()
+        ..if copies {
+            sys::r#type::numeric()
+        } else {
+            sys::r#type::title()
+        }
     };
     let mut lines: Vec<Box<dyn Widget>> = Vec::new();
     if let Some(asked) = &answer.subtitle {
+        let asked = if copies {
+            format!("{asked} =")
+        } else {
+            asked.clone()
+        };
         lines.push(boxed(
-            Text::new(format!("{asked} ="))
+            Text::new(asked)
                 .style(sys::r#type::caption())
                 .color(with_alpha(on, 0.8)),
         ));
@@ -364,7 +375,13 @@ pub(super) fn answer_card(answer: &Entry, width: f32, selected: bool, query: &st
     lines.push(boxed(
         Text::new(answer.title.clone()).style(big).color(on).elide(),
     ));
-    let copy_hint = Text::new("Return to copy")
+    let hint = match &answer.action {
+        Action::Copy(_) => "Return to copy",
+        Action::Run(_) if answer.key == super::assistant::CONFIRMS => "Return to confirm",
+        Action::Run(_) => "Return to run",
+        _ => "",
+    };
+    let copy_hint = Text::new(hint)
         .style(sys::r#type::caption())
         .color(with_alpha(on, 0.8));
 
@@ -388,7 +405,7 @@ pub(super) fn answer_card(answer: &Entry, width: f32, selected: bool, query: &st
                         .width(
                             (width
                                 - inset * 2.0
-                                - text_width("Return to copy", sys::r#type::caption()))
+                                - text_width(hint, sys::r#type::caption()))
                             .max(0.0),
                         )
                         .height(ANSWER_H)
@@ -398,7 +415,7 @@ pub(super) fn answer_card(answer: &Entry, width: f32, selected: bool, query: &st
                 ),
                 boxed(
                     Rectangle::new()
-                        .width(text_width("Return to copy", sys::r#type::caption()))
+                        .width(text_width(hint, sys::r#type::caption()))
                         .height(ANSWER_H)
                         .fill(Color::TRANSPARENT)
                         .align_child(End, Center)

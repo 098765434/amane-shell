@@ -48,6 +48,7 @@
 //!
 //! [`Service`]: amane::Service
 
+pub mod assistant;
 pub mod desktop;
 pub mod display;
 pub mod launcher;

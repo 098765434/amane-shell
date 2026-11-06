@@ -31,6 +31,7 @@
 
 mod actions;
 mod answers;
+mod assistant;
 mod app_menu;
 mod entries;
 mod grid;
@@ -65,6 +66,7 @@ use crate::components::motion;
 use crate::components::pager::{Pager, PagerMotion};
 use crate::components::panel::{self, Panel, close, is_open, overlay};
 use crate::components::text_edit::{self, Field};
+use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history;
 use crate::services::launcher::file_search::{self, FileKind};
 use amane_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
@@ -630,6 +632,8 @@ pub(crate) fn closed() {}
 
 /// Gone from the screen: the next opening starts afresh, on the pill.
 fn hidden() {
+    // listening ends with the launcher
+    assistant_service::listen_cancel();
     with(|state| *state = State::new());
     FRESH.set(true);
     SCROLL.with_borrow_mut(|scroll| *scroll = Kinetic::new());
@@ -678,6 +682,71 @@ pub fn ipc(args: &[String]) -> String {
     }
     Launcher::changed();
     String::from("ok")
+}
+
+/// `amane-shell` IPC: `assistant listen [start | stop | toggle | cancel]`
+/// (niri binds a key to it: held, or pressed to start and again to stop)
+/// and `assistant status`.
+pub fn assistant_ipc(args: &[String]) -> String {
+    const USAGE: &str = "usage: assistant listen start|stop|toggle|cancel | assistant status";
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    match args.as_slice() {
+        ["listen", "start"] => listen(),
+        ["listen", "stop"] => assistant_service::listen_stop(),
+        ["listen", "toggle"] if assistant_service::listening().on => {
+            assistant_service::listen_stop();
+        }
+        ["listen", "toggle"] => listen(),
+        ["listen", "cancel"] => assistant_service::listen_cancel(),
+        ["status"] => {
+            return assistant_service::status().unwrap_or_else(|| String::from("not connected"));
+        }
+        _ => return String::from(USAGE),
+    }
+    Launcher::changed();
+    String::from("ok")
+}
+
+/// Opens Spotlight on a fresh search and starts listening, Whistle told
+/// the names of what's here.
+fn listen() {
+    switch_mode(Mode::Home);
+    if !is_open(Panel::Launcher) {
+        panel::toggle(Panel::Launcher);
+    }
+    let keywords = assistant::snapshot(Apps::read().list()).keywords();
+    assistant_service::listen_start(keywords);
+}
+
+/// What was heard, once listening stopped: typed into the field, so
+/// Spotlight searches it as if typed. What a rule reads that doesn't end
+/// the session runs at once, as its key would; anything less certain
+/// waits on the card for Return.
+fn heard() {
+    let Some(heard) = assistant_service::take_heard() else {
+        return;
+    };
+    let text = heard.trim().trim_end_matches(['.', '!', '?']).trim().to_string();
+    if !is_open(Panel::Launcher) || text.is_empty() {
+        return;
+    }
+    type_into(|field| {
+        *field = Field::new();
+        field.insert(&text);
+        true
+    });
+    let apps = Apps::read();
+    let reading = assistant_service::read(&text, || assistant::snapshot(apps.list()));
+    let sure = reading.filter(|reading| {
+        reading.source == amane_assistant::Source::Rules
+            && reading.command.risk() < amane_assistant::Risk::Destructive
+    });
+    let entry = sure.and_then(|reading| assistant::entry(&reading, apps.list()));
+    drop(apps);
+    if let Some(entry) = entry {
+        entries::run(&entry, &text);
+    }
+    Launcher::changed();
 }
 
 /// Switches to `mode`, from a fresh search; the one showing again goes
@@ -1199,6 +1268,7 @@ pub fn surface() -> LayerWindow {
     // the clipboard's history follows its setting, whether or not the
     // launcher is open
     clipboard_history::sync(&launcher().clipboard);
+    heard();
     let open = is_open(Panel::Launcher);
     let unfolded = unfold(open);
 

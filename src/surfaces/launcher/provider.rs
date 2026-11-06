@@ -15,6 +15,7 @@ use crate::components::icons::{
     ICON_CALCULATE, ICON_CONTENT_COPY, ICON_DESCRIPTION, ICON_FOLDER, ICON_OPEN_IN_NEW,
     ICON_SEARCH, ICON_SWAP,
 };
+use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history::{self, Clip, Kind as ClipKind};
 use crate::services::launcher::file_search::{self, FileKind, Hit, Request};
 
@@ -92,8 +93,9 @@ pub(super) struct Found {
     pub(super) rows: Vec<Entry>,
 }
 
-/// Every provider, in the order their fallbacks list.
-fn providers() -> [&'static dyn Provider; 8] {
+/// Every provider, in the order their fallbacks list. The assistant comes
+/// after what it might stand aside for.
+fn providers() -> [&'static dyn Provider; 9] {
     [
         &Answers,
         &Apps,
@@ -101,6 +103,7 @@ fn providers() -> [&'static dyn Provider; 8] {
         &Actions,
         &Files,
         &Clipboard,
+        &Assistant,
         &Url,
         &Web,
     ]
@@ -246,6 +249,46 @@ impl Provider for Answers {
                 )
                 .subtitle(converted.from),
                 matched: 1.0,
+                group: Group::Answer,
+            });
+        }
+    }
+}
+
+/// A command read from the query ("turn the volume down", "open firefox"),
+/// as the card over the list: by the assistant's rules at once, or by
+/// Needle 3 a moment later. A sum or a conversion keeps the card, and what
+/// Needle reads stands aside for a row that already matches outright.
+struct Assistant;
+
+impl Provider for Assistant {
+    fn id(&self) -> &'static str {
+        "assistant"
+    }
+
+    fn modes(&self) -> &'static [Mode] {
+        HOME
+    }
+
+    fn find(&self, query: &Query, out: &mut Vec<Candidate>) {
+        if query.needle.is_empty() || out.iter().any(|found| found.group == Group::Answer) {
+            return;
+        }
+        let Some(reading) = assistant_service::read(query.text, || {
+            super::assistant::snapshot(query.apps)
+        }) else {
+            return;
+        };
+        let outright = out
+            .iter()
+            .any(|found| found.group == Group::Ranked && found.matched >= 1.0);
+        if reading.source == amane_assistant::Source::Model && outright {
+            return;
+        }
+        if let Some(entry) = super::assistant::entry(&reading, query.apps) {
+            out.push(Candidate {
+                entry,
+                matched: reading.confidence,
                 group: Group::Answer,
             });
         }
