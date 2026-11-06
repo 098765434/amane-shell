@@ -398,6 +398,72 @@ impl StatusBar {
     }
 }
 
+/// Every item on the status bar's right, by name, in its usual order,
+/// with what Shell Settings calls it and whether it can be hidden.
+pub const BAR_ITEMS: [(&str, &str, bool); 13] = [
+    ("privacy", "Camera, Microphone and Screen Sharing", true),
+    (
+        "status-icons",
+        "Night Light, VPN, Power Mode, Airplane",
+        true,
+    ),
+    ("volume", "Volume", true),
+    ("bluetooth", "Bluetooth", true),
+    ("network", "Network", true),
+    ("tailscale", "Tailscale, While Connected", true),
+    ("keep-awake", "Keep Awake, While On", true),
+    ("phone", "Phone Battery, While Connected", true),
+    ("battery", "Battery", true),
+    ("quick-settings", "Quick Settings", false),
+    ("notifications", "Notifications and Do Not Disturb", true),
+    ("timer", "Timer, While It Runs", false),
+    ("clock", "Clock", false),
+];
+
+impl StatusBar {
+    /// The items' names in the order kept, ignoring names it doesn't
+    /// know; the ones it leaves out each go back after the item they
+    /// usually follow.
+    pub fn items(&self) -> Vec<&'static str> {
+        let known = |name: &str| {
+            BAR_ITEMS
+                .iter()
+                .find(|item| item.0 == name)
+                .map(|item| item.0)
+        };
+        let mut items: Vec<&'static str> = Vec::new();
+        for name in &self.order {
+            if let Some(name) = known(name)
+                && !items.contains(&name)
+            {
+                items.push(name);
+            }
+        }
+        for (index, (name, ..)) in BAR_ITEMS.into_iter().enumerate() {
+            if items.contains(&name) {
+                continue;
+            }
+            let after = BAR_ITEMS[..index]
+                .iter()
+                .rev()
+                .find_map(|before| items.iter().position(|placed| *placed == before.0));
+            items.insert(after.map_or(0, |at| at + 1), name);
+        }
+        items
+    }
+
+    /// Moves the item `name` to `index` among the others.
+    pub fn move_item(&mut self, name: &str, index: usize) {
+        let mut items = self.items();
+        let Some(from) = items.iter().position(|item| *item == name) else {
+            return;
+        };
+        let item = items.remove(from);
+        items.insert(index.min(items.len()), item);
+        self.order = items.into_iter().map(String::from).collect();
+    }
+}
+
 impl Settings for StatusBar {
     const APP: &'static str = "amane-shell";
     const FILE: &'static str = "status-bar";
@@ -632,5 +698,43 @@ mod tests {
         assert_eq!(dock.magnification, Magnify::Off);
         assert!(dock.auto_hide);
         assert_eq!(Dock::default().icon(), 44.0);
+    }
+}
+
+#[cfg(test)]
+mod bar_order_tests {
+    use super::*;
+
+    fn bar(order: &[&str]) -> StatusBar {
+        StatusBar {
+            order: order.iter().map(|name| String::from(*name)).collect(),
+            ..StatusBar::default()
+        }
+    }
+
+    #[test]
+    fn no_order_is_the_usual_one() {
+        assert_eq!(bar(&[]).items(), BAR_ITEMS.map(|item| item.0));
+    }
+
+    #[test]
+    fn items_left_out_follow_their_usual_neighbour() {
+        let items = bar(&["clock", "volume", "nonsense", "battery"]).items();
+        assert_eq!(items.len(), BAR_ITEMS.len());
+        assert_eq!(&items[..3], ["privacy", "status-icons", "clock"]);
+        let volume = items.iter().position(|item| *item == "volume").unwrap();
+        assert_eq!(items[volume + 1], "bluetooth");
+        let battery = items.iter().position(|item| *item == "battery").unwrap();
+        assert_eq!(items[battery + 1], "quick-settings");
+    }
+
+    #[test]
+    fn moving_keeps_every_item_once() {
+        let mut now = bar(&[]);
+        now.move_item("clock", 0);
+        assert_eq!(now.items()[0], "clock");
+        assert_eq!(now.items().len(), BAR_ITEMS.len());
+        now.move_item("clock", 99);
+        assert_eq!(now.items().last(), Some(&"clock"));
     }
 }

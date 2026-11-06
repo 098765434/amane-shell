@@ -458,6 +458,25 @@ fn pressed(id: &str) {
     request_frame();
 }
 
+thread_local! {
+    // when a drag was dropped, so the click that ends it does nothing
+    static SWALLOW: std::cell::Cell<Option<Instant>> = const { std::cell::Cell::new(None) };
+}
+
+/// The click that comes with this release does nothing: a drag that moved
+/// something, like a status bar item, ends where it was dropped. amane
+/// hands out the drop before the click.
+pub fn swallow_click() {
+    SWALLOW.set(Some(Instant::now()));
+}
+
+/// Whether the click now is the one a drop swallowed.
+fn swallowed() -> bool {
+    SWALLOW
+        .take()
+        .is_some_and(|at| at.elapsed() < Duration::from_millis(250))
+}
+
 /// What a click asks for: the left button presses, the right one is the
 /// secondary action (usually a menu), the middle one a shortcut. Scrolling
 /// is optional too.
@@ -497,6 +516,9 @@ pub fn interactive(base: Rectangle, id: String, disabled: bool, actions: Actions
             }
         })
         .on_click(move |button| {
+            if button == Button::Left && swallowed() {
+                return;
+            }
             let action = match button {
                 Button::Left => &press,
                 Button::Right => &secondary,

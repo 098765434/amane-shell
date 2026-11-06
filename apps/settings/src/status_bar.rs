@@ -2,28 +2,20 @@
 //! its workspaces and which icons it shows. Each control changes
 //! `status-bar.json`, which the shell follows at once.
 
-use amane::{Column, Widget};
-use amane_kit::buttons::{Radio, Segment, SegmentedButton};
+use amane::{Center, Column, Rectangle, Row, Size, Widget};
+use amane_kit::buttons::{IconButton, PushButton, Radio, Segment, SegmentedButton, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
-use amane_kit::layout::boxed;
-use amane_kit::settings::{BarPosition, BarStyle, DateFormat, change_status_bar, status_bar};
+use amane_kit::layout::{boxed, fixed_width};
+use amane_kit::settings::{
+    BAR_ITEMS, BarPosition, BarStyle, DateFormat, change_status_bar, status_bar,
+};
 
 use crate::{group, groups, radios_height, switch_row};
 
-/// The icons it can leave out, by the names the shell knows them by.
-const ICONS: [(&str, &str); 10] = [
-    ("volume", "Volume"),
-    ("bluetooth", "Bluetooth"),
-    ("network", "Network"),
-    ("battery", "Battery"),
-    ("phone", "Phone battery, while connected"),
-    ("tailscale", "Tailscale, while connected"),
-    ("keep-awake", "Keep Awake, while on"),
-    ("status-icons", "Night Light, VPN, power mode, Airplane"),
-    ("notifications", "Notifications and Do Not Disturb"),
-    ("privacy", "Camera, microphone, screen sharing"),
-];
+/// `expand_less` and `expand_more`, to move an item left or right.
+const ICON_EARLIER: char = '\u{e5ce}';
+const ICON_LATER: char = '\u{e5cf}';
 
 const POSITIONS: [(&str, BarPosition); 2] =
     [("Bottom", BarPosition::Bottom), ("Top", BarPosition::Top)];
@@ -82,14 +74,17 @@ pub fn page() -> Column {
     .width(240.0)
     .on_select(|index| change_status_bar(|now| now.date_format = DateFormat::ALL[index]));
 
-    let icons = ICONS.into_iter().map(|(name, label)| {
-        switch_row(
-            &format!("settings.bar.icon.{name}"),
-            label,
-            now.shows(name),
-            move |on| change_status_bar(|now| now.set_shown(name, on)),
-        )
-    });
+    let order = now.items();
+    let last = order.len().saturating_sub(1);
+    let icons: Vec<FormRow> = order
+        .iter()
+        .enumerate()
+        .map(|(index, name)| item_row(name, index, last, now.shows(name)))
+        .collect();
+    let reset = PushButton::new("settings.bar.reset-order", "Reset Order")
+        .disabled(now.order.is_empty())
+        .on_press(|| change_status_bar(|now| now.order.clear()))
+        .build();
 
     groups(vec![
         group()
@@ -146,9 +141,54 @@ pub fn page() -> Column {
                 )
                 .subtitle("Scroll over the workspaces to move between them"),
             ),
-        group().header("Show in the status bar").rows(icons).footer(
-            "Quick Settings and the clock always show. Each Quick Settings page can show or \
+        group()
+            .header("Items, Left to Right")
+            .rows(icons)
+            .row(FormRow::new("settings.bar.order", "Usual order").trailing(reset))
+            .footer(
+                "Drag an item along the bar to move it, or off the bar to hide it. Quick \
+                 Settings and the clock always show, and each Quick Settings page can show or \
                  hide its icon too.",
-        ),
+            ),
     ])
+}
+
+/// An item of the bar: its switch, when it can be hidden, and buttons that
+/// move it a place left or right.
+fn item_row(name: &'static str, index: usize, last: usize, shown: bool) -> FormRow {
+    let (_, label, hideable) = BAR_ITEMS
+        .iter()
+        .copied()
+        .find(|item| item.0 == name)
+        .unwrap_or((name, name, false));
+    let id = format!("settings.bar.item.{name}");
+
+    let mut trailing: Vec<Box<dyn Widget>> = vec![
+        boxed(
+            IconButton::new(format!("{id}.earlier"), ICON_EARLIER)
+                .disabled(index == 0)
+                .on_press(move || change_status_bar(|now| now.move_item(name, index - 1)))
+                .build(),
+        ),
+        boxed(
+            IconButton::new(format!("{id}.later"), ICON_LATER)
+                .disabled(index == last)
+                .on_press(move || change_status_bar(|now| now.move_item(name, index + 1)))
+                .build(),
+        ),
+    ];
+    let switch = Switch::new(format!("{id}.switch"), shown)
+        .on_toggle(move |on| change_status_bar(|now| now.set_shown(name, on)))
+        .build();
+    if hideable {
+        trailing.push(boxed(switch));
+    } else {
+        // the arrows line up with the rows that have a switch
+        trailing.push(boxed(
+            Rectangle::new()
+                .width(Size::Fixed(fixed_width(&switch)))
+                .height(Size::Fixed(1.0)),
+        ));
+    }
+    FormRow::new(id, label).trailing(Row::new(trailing).gap(4.0).align(Center))
 }

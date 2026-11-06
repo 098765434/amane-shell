@@ -128,25 +128,6 @@ impl Item {
         }
     }
 
-    /// What Shell Settings calls it.
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::Privacy => "Camera, Microphone and Screen Sharing",
-            Self::StatusIcons => "Settings That Are On",
-            Self::Volume => "Sound",
-            Self::Bluetooth => "Bluetooth",
-            Self::Network => "Wi‑Fi",
-            Self::Tailscale => "Tailscale",
-            Self::KeepAwake => "Keep Awake",
-            Self::Phone => "Phone",
-            Self::Battery => "Battery",
-            Self::QuickSettings => "Quick Settings",
-            Self::Notifications => "Notifications",
-            Self::Timer => "Timer",
-            Self::Clock => "Clock",
-        }
-    }
-
     pub fn named(name: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|item| item.name() == name)
     }
@@ -177,44 +158,13 @@ impl Item {
 
     /// The items in the order the settings keep them.
     pub fn ordered() -> Vec<Item> {
-        let names = status_bar().order.clone();
-        ordered(&names)
+        status_bar().items().into_iter().filter_map(Item::named).collect()
     }
-}
-
-/// `order`'s items, ignoring names it doesn't know, with the ones it
-/// leaves out each put back after the item it usually follows.
-fn ordered(order: &[String]) -> Vec<Item> {
-    let mut items: Vec<Item> = Vec::new();
-    for name in order {
-        if let Some(item) = Item::named(name)
-            && !items.contains(&item)
-        {
-            items.push(item);
-        }
-    }
-    for (index, item) in Item::ALL.into_iter().enumerate() {
-        if items.contains(&item) {
-            continue;
-        }
-        let after = Item::ALL[..index]
-            .iter()
-            .rev()
-            .find_map(|before| items.iter().position(|placed| placed == before));
-        let at = after.map_or(0, |at| at + 1);
-        items.insert(at, item);
-    }
-    items
 }
 
 /// Moves `item` to `index` among the others and keeps the order.
 pub fn move_item(item: Item, index: usize) {
-    change_status_bar(|now| {
-        let mut items = ordered(&now.order);
-        items.retain(|other| *other != item);
-        items.insert(index.min(items.len()), item);
-        now.order = items.iter().map(|item| String::from(item.name())).collect();
-    });
+    change_status_bar(|now| now.move_item(item.name(), index));
 }
 
 /// Back to the usual order.
@@ -295,32 +245,6 @@ pub fn ipc(args: &[String]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn names(items: &[Item]) -> Vec<&'static str> {
-        items.iter().map(|item| item.name()).collect()
-    }
-
-    #[test]
-    fn no_order_is_the_usual_one() {
-        assert_eq!(ordered(&[]), Item::ALL);
-    }
-
-    #[test]
-    fn items_left_out_of_the_order_follow_their_usual_neighbour() {
-        let order = ["clock", "volume", "nonsense", "battery"].map(String::from);
-        let items = ordered(&order);
-        assert_eq!(items.len(), Item::ALL.len());
-        assert_eq!(&names(&items)[..2], ["privacy", "status-icons"]);
-        assert_eq!(items[2], Item::Clock);
-        // the rest of the volume's neighbours come after it, then the battery
-        let volume = items.iter().position(|item| *item == Item::Volume).unwrap();
-        assert_eq!(items[volume + 1], Item::Bluetooth);
-        let battery = items
-            .iter()
-            .position(|item| *item == Item::Battery)
-            .unwrap();
-        assert_eq!(items[battery + 1], Item::QuickSettings);
-    }
 
     #[test]
     fn the_state_file_is_read_ignoring_what_it_doesnt_know() {

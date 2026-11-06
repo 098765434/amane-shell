@@ -17,6 +17,7 @@
 //! or Quick Settings or the notification center is open, which spares an
 //! OLED panel a strip that never changes.
 
+mod drag;
 mod indicators;
 
 use std::cell::{Cell, RefCell};
@@ -122,7 +123,7 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
     } else {
         boxed(Row::new(Vec::new()))
     };
-    let sections = Row::new(vec![left, boxed(status())])
+    let sections = Row::new(vec![left, boxed(status(&output))])
         .width(Parent)
         .height(Parent)
         .justify(Justify::SpaceBetween)
@@ -356,14 +357,17 @@ fn stepped(current: Option<usize>, len: usize, step: i32) -> Option<usize> {
 
 // ───── right: status cluster ─────────────────────────────────────────────────
 
-fn status() -> Row {
-    let items: Vec<Box<dyn Widget>> = Item::ordered()
+/// The items on the right that have something to show, in their order,
+/// draggable into another.
+fn status(output: &str) -> amane::Stack {
+    let built: Vec<(Item, Vec<Box<dyn Widget>>)> = Item::ordered()
         .into_iter()
         .filter(|item| item.shown())
-        .flat_map(build)
+        .map(|item| (item, build(item)))
+        .filter(|(_, widgets)| !widgets.is_empty())
         .collect();
 
-    Row::new(items).gap(sys::space::gap::_2xs()).align(Center)
+    drag::cluster(output, built, sys::size::panel::height())
 }
 
 /// What `item` shows now: nothing, one widget, or a few for the privacy

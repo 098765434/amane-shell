@@ -46,9 +46,17 @@ over the pips focuses the next or previous workspace: one per wheel notch, or on
 ### Right: the status cluster (`status`)
 
 Every item has a name (`indicators.rs`, `Item`), and `StatusBar::order` keeps their order by those
-names. Items it leaves out (such as ones added later) go back after the item they usually follow,
-and names it doesn't know are skipped. Over IPC: `status-bar move <item> <index>` and
-`status-bar reset-order`. The usual order, left to right:
+names (`BAR_ITEMS` and `StatusBar::items` in kit's settings, shared with Shell Settings). Items it
+leaves out (such as ones added later) go back after the item they usually follow, and names it
+doesn't know are skipped. Over IPC: `status-bar move <item> <index>` and `status-bar reset-order`.
+
+**Dragging** (`drag.rs`), as macOS moves menu bar items with ⌘-drag: the bar never has the
+keyboard, so it can't see a held key, and a press that moves more than 6 px picks the item up
+instead (a click stays a click). The others close up as it passes, letting go keeps the new order,
+and letting go more than 40 px off the bar hides an item that can be hidden (it dims on the way).
+The drag is measured on one still layer over the whole cluster, never on the item that moves, and
+the click that ends a drop is swallowed (`buttons::swallow_click`). The layer takes the items'
+own press, so they don't shrink when pressed. The usual order, left to right:
 
 1. GNOME's **privacy** icons while the screen is shared, the camera runs or something records (red;
    the microphone's tooltip names the app). Each opens Quick Settings.
