@@ -16,12 +16,12 @@ use amane_kit::icons::{ICON_CHECK, ICON_UPDATE};
 use chrono::{DateTime, Local, Utc};
 use serde_json::Value;
 
-use super::apply_bar::Overlay;
 use super::job::{BuildJob, Phase, Target};
 use super::nixos::repo;
 use super::repo::short;
 use super::{controls, state_dir};
-use crate::{Navigation, group, groups};
+use crate::View;
+use crate::{group, groups};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Input {
@@ -361,7 +361,7 @@ fn result_card(job: &BuildJob, check: &Check) -> Option<FormRow> {
             PushButton::new("settings.update.card", label)
                 .disabled(running && what == Button::UpdateAll)
                 .on_press(move || match what {
-                    Button::Changes => Navigation::write().overlay = Some(Overlay::Changes),
+                    Button::Changes => crate::open(View::Changes),
                     Button::UpdateAll => BuildJob::start_update(Vec::new()),
                 })
                 .build(),

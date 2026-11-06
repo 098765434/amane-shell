@@ -29,3 +29,8 @@ pub fn page() -> Column {
         ),
     ])
 }
+
+/// The page's sub-pages, by name: none yet.
+pub fn sub(_name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
+    None
+}

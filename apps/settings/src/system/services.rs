@@ -152,10 +152,11 @@ pub fn join_parts(parts: &[String]) -> String {
         .join(" · ")
 }
 
-/// "Running · 79 MB", "Stopped", "Failed"; "—" while unknown.
+/// "Running · 79 MB", "Stopped", "Failed"; "Off" for a unit systemd
+/// doesn't have (a service switched off).
 pub fn status_text(state: Option<&UnitState>) -> String {
-    let Some(state) = state else {
-        return String::from("—");
+    let Some(state) = state.filter(|state| state.loaded || !state.active.is_empty()) else {
+        return String::from("Off");
     };
     match state.active.as_str() {
         "active" => match state.memory {
@@ -233,18 +234,15 @@ pub fn page() -> Column {
     );
 
     if snapshot.loading && entries.is_empty() {
-        services = services.row(FormRow::new(
-            "settings.services.loading",
-            "Reading the configuration…",
-        ));
+        services = services
+            .row(FormRow::new("settings.services.loading", "Reading the configuration…").loading());
     } else if let Some(error) = &snapshot.error {
-        services = services.row(
-            FormRow::new(
-                "settings.services.error",
-                "The configuration didn't evaluate",
-            )
-            .subtitle(error.lines().last().unwrap_or("").to_string()),
-        );
+        services = services.row(crate::problem_row(
+            "settings.services.error",
+            "The configuration couldn't be read",
+            "Switches show the last configuration read; Refresh on About This Computer tries again.",
+            error,
+        ));
     }
 
     for entry in entries {
@@ -262,7 +260,7 @@ pub fn page() -> Column {
 
         let (summary, mover) = controls::summary(entry, &managed, &feedback);
         let mut lines: Vec<String> = Vec::new();
-        if entry.unit.is_some() {
+        if entry.unit.is_some() && units.looked {
             lines.push(status_text(state));
         }
         if !summary.is_empty() {
@@ -273,6 +271,10 @@ pub fn page() -> Column {
             format!("settings.services.row.{}", entry.id),
             entry.label.clone(),
         );
+        // its state is still being asked
+        if entry.unit.is_some() && !units.looked {
+            row = row.loading();
+        }
 
         if let Some(unit) = entry.unit.clone()
             && enabled
@@ -357,7 +359,7 @@ mod tests {
             status_text(units.get("tailscaled.service")),
             "Running · 82.7 MB"
         );
-        assert_eq!(status_text(None), "—");
+        assert_eq!(status_text(None), "Off");
         assert!(parse_show("").is_empty());
         assert!(!units["sshd.service"].loaded);
         let loaded = parse_show("Id=sshd.service\nLoadState=loaded\nActiveState=inactive\n");

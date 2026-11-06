@@ -16,9 +16,13 @@ pub fn page() -> Column {
             "hypridle dims the screen, locks it (swaylock) and turns it off after these idle \
              times. Locking before sleep and the lock shortcut stay as they are.",
         ),
-        group().row(
-            FormRow::new("settings.power.hypridle", "hypridle")
-                .value(status_text(units.get("hypridle.service", true))),
-        ),
+        group().row({
+            let row = FormRow::new("settings.power.hypridle", "hypridle");
+            if units.looked {
+                row.value(status_text(units.get("hypridle.service", true)))
+            } else {
+                row.loading()
+            }
+        }),
     ])
 }

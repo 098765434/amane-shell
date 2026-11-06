@@ -9,22 +9,13 @@ use amane_kit::card::Card;
 use amane_kit::layout::boxed;
 use amane_kit::list::{List, ListItem, trailing_text, with_row_width};
 use amane_kit::material::{self, Level};
-use amane_kit::slider::Slider;
+use amane_kit::spinner::{ProgressBar, Spinner};
 use amane_kit::tokens::{Styled, sys};
 
 use super::job::{BuildJob, Kind, Mode, Phase, Target};
 use super::nixos::{Managed, Snapshot};
 use super::repo::short;
-use crate::{Navigation, PAGE_WIDTH, note};
-
-/// A view that takes the page's place.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Overlay {
-    Changes,
-    Log,
-    /// A package's details, from the Apps page.
-    Package,
-}
+use crate::{View, note, page_width};
 
 fn button(id: &str, label: &str, style: Style, press: impl Fn() + 'static) -> Box<dyn Widget> {
     boxed(
@@ -35,8 +26,17 @@ fn button(id: &str, label: &str, style: Style, press: impl Fn() + 'static) -> Bo
     )
 }
 
-fn show(overlay: Overlay) -> impl Fn() + 'static {
-    move || Navigation::write().overlay = Some(overlay)
+fn show(view: View) -> impl Fn() + 'static {
+    move || crate::open(view)
+}
+
+/// `text` with its first letter capitalised, as a status line starts.
+fn sentence(text: &str) -> String {
+    let mut chars = text.chars();
+    match chars.next() {
+        Some(first) => first.to_uppercase().chain(chars).collect(),
+        None => String::new(),
+    }
 }
 
 fn line(text: impl Into<String>) -> Text {
@@ -84,7 +84,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
                 button("try", "Try", Style::Tonal, || {
                     BuildJob::start_build(Some(Mode::Test));
                 }),
-                button("apply", "Apply…", Style::Filled, || {
+                button("apply", "Apply", Style::Filled, || {
                     BuildJob::start_build(None)
                 }),
             ],
@@ -95,7 +95,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
             } else {
                 format!(
                     "{}{} · {}",
-                    progress.current.as_deref().unwrap_or("Building"),
+                    sentence(progress.current.as_deref().unwrap_or("Building")),
                     if progress.expected > 0 {
                         format!(" ({}/{})", progress.done, progress.expected)
                     } else {
@@ -107,15 +107,28 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
             (
                 boxed(
                     Row::new(vec![
-                        boxed(Slider::new(progress.percent(), 160.0).inert(true).build()),
+                        if progress.expected > 0 && !progress.evaluating {
+                            boxed(
+                                ProgressBar::new(f32::from(progress.percent()) / 100.0, 160.0)
+                                    .build(),
+                            )
+                        } else {
+                            boxed(Spinner::new(16.0).build())
+                        },
                         boxed(line(what)),
                     ])
                     .gap(sys::space::gap::m())
                     .align(Center),
                 ),
                 vec![
-                    button("log", "Show Log", Style::Plain, show(Overlay::Log)),
-                    button("cancel", "Cancel", Style::Destructive, BuildJob::cancel),
+                    button("log", "Show Log", Style::Plain, show(View::Log)),
+                    button("cancel", "Cancel", Style::Destructive, || {
+                        Dialog::new("settings.apply.cancel-dialog", "Stop the build?")
+                            .message("Nothing has been applied yet; what's built so far is kept for next time.")
+                            .button("Keep Building", || {})
+                            .destructive("Stop", BuildJob::cancel)
+                            .open("main");
+                    }),
                 ],
             )
         }
@@ -138,12 +151,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
                 text.push_str(" · needs a restart");
             }
             let mut buttons = vec![
-                button(
-                    "changes",
-                    "Show Changes",
-                    Style::Plain,
-                    show(Overlay::Changes),
-                ),
+                button("changes", "Show Changes", Style::Plain, show(View::Changes)),
                 button("drop", "Cancel", Style::Plain, BuildJob::dismiss),
             ];
             if job.target.is_ours() {
@@ -163,7 +171,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
         }
         Phase::Activating { .. } => (
             boxed(line("Applying… authenticate when asked.")),
-            vec![button("log", "Show Log", Style::Plain, show(Overlay::Log))],
+            vec![button("log", "Show Log", Style::Plain, show(View::Log))],
         ),
         Phase::Done {
             mode,
@@ -194,7 +202,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
                     generation.map_or(String::new(), |n| format!(" · generation {n}"))
                 ),
             };
-            let mut buttons = vec![button("log", "Show Log", Style::Plain, show(Overlay::Log))];
+            let mut buttons = vec![button("log", "Show Log", Style::Plain, show(View::Log))];
             if let Some(app) = app.filter(|_| *mode == Mode::Switch) {
                 let label = format!("Open {}", app.name());
                 buttons.push(button("open", &label, Style::Tonal, move || app.launch()));
@@ -217,7 +225,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
                 .color(sys::color::status::critical::text()),
             ),
             vec![
-                button("log", "Show Log", Style::Plain, show(Overlay::Log)),
+                button("log", "Show Log", Style::Plain, show(View::Log)),
                 button("dismiss", "Dismiss", Style::Tonal, BuildJob::dismiss),
             ],
         ),
@@ -252,7 +260,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
 
 /// The built system beside the running one.
 pub fn changes_view() -> Column {
-    with_row_width(PAGE_WIDTH, changes)
+    with_row_width(page_width(), changes)
 }
 
 fn changes() -> Column {

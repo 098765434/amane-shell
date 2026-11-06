@@ -11,16 +11,23 @@ use amane_kit::layout::boxed;
 use amane_kit::settings::{change_nixos, nixos};
 use amane_kit::tokens::sys;
 
-use super::apply_bar::Overlay;
 use super::generations::Generations;
 use super::job::BuildJob;
 use super::nixos::Snapshot;
 use super::repo::{Repo, Running, Toplevel, short};
 use super::{Status, controls, status};
-use crate::{Navigation, group, groups};
+use crate::View;
+use crate::{group, groups};
 
 /// Whether the running system is the configuration, with Apply when not.
 fn status_row() -> FormRow {
+    if matches!(status(), Status::Checking) {
+        return FormRow::new(
+            "settings.about.status",
+            "Comparing with the running system…",
+        )
+        .loading();
+    }
     let (glyph, accent, title, text, actions) = match status() {
         Status::Checking => (ICON_INFO, Accent::Gray, "Checking…", String::new(), false),
         Status::UpToDate => (
@@ -52,11 +59,11 @@ fn status_row() -> FormRow {
             .trailing(
                 PushButton::new("settings.about.changes", "Show Changes")
                     .style(Style::Plain)
-                    .on_press(|| Navigation::write().overlay = Some(Overlay::Changes))
+                    .on_press(|| crate::open(View::Changes))
                     .build(),
             )
             .trailing(
-                PushButton::new("settings.about.apply", "Apply…")
+                PushButton::new("settings.about.apply", "Apply")
                     .style(Style::Filled)
                     .on_press(|| BuildJob::start_build(None))
                     .build(),
@@ -96,8 +103,7 @@ pub fn page() -> Column {
         .iter()
         .find(|g| Some(&g.toplevel) == generations.current.as_ref())
         .map(|g| g.number);
-    let generation =
-        generation_text(running_number, generations.profile).unwrap_or_else(|| String::from("…"));
+    let generation = generation_text(running_number, generations.profile);
     let revision = match &running.revision {
         Some(rev) => {
             let subject = generations
@@ -115,7 +121,7 @@ pub fn page() -> Column {
     let head = match (&repo.head, &repo.subject) {
         (Some(head), Some(subject)) => format!("{} · {subject}", short(head)),
         (Some(head), None) => short(head),
-        (None, _) => repo.error.clone().unwrap_or_else(|| String::from("…")),
+        (None, _) => repo.error.clone().unwrap_or_default(),
     };
 
     let repo_path = settings.repo_path().to_string_lossy().into_owned();
@@ -129,16 +135,22 @@ pub fn page() -> Column {
         TextInput::set_text(HOST, &host);
     }
 
-    let nixos_version = format!(
-        "{}{}",
-        running.version.clone().unwrap_or_else(|| String::from("…")),
-        running
-            .nixpkgs
-            .as_deref()
-            .map_or(String::new(), |rev| format!(" · nixpkgs {}", short(rev)))
-    );
-    let info = |id: &str, title: &str, text: String| {
-        FormRow::new(format!("settings.about.{id}"), title).value(text)
+    let nixos_version = running.version.clone().map(|version| {
+        format!(
+            "{version}{}",
+            running
+                .nixpkgs
+                .as_deref()
+                .map_or(String::new(), |rev| format!(" · nixpkgs {}", short(rev)))
+        )
+    });
+    // a value, or a spinner while it's still being read
+    let info = |id: &str, title: &str, text: Option<String>| {
+        let row = FormRow::new(format!("settings.about.{id}"), title);
+        match text {
+            Some(text) => row.value(text),
+            None => row.loading(),
+        }
     };
 
     let fields = Row::new(vec![
@@ -175,14 +187,17 @@ pub fn page() -> Column {
         group().row(status_row()),
         group()
             .row(info("nixos", "NixOS", nixos_version))
-            .row(info(
-                "kernel",
-                "Kernel",
-                running.kernel.clone().unwrap_or_else(|| String::from("…")),
-            ))
+            .row(info("kernel", "Kernel", running.kernel.clone()))
             .row(info("generation", "Generation", generation))
             .row(FormRow::new("settings.about.built", "Built from").subtitle(revision))
-            .row(FormRow::new("settings.about.head", "Configuration at").subtitle(head)),
+            .row({
+                let row = FormRow::new("settings.about.head", "Configuration at");
+                if head.is_empty() {
+                    row.loading()
+                } else {
+                    row.subtitle(head)
+                }
+            }),
         group()
             .row(
                 FormRow::new("settings.about.repo", "Repository")
@@ -215,4 +230,9 @@ mod tests {
         );
         assert_eq!(generation_text(None, None), None);
     }
+}
+
+/// The page's sub-pages, by name: none yet.
+pub fn sub(_name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
+    None
 }

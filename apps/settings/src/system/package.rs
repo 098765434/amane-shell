@@ -20,12 +20,12 @@ use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
 use serde::Deserialize;
 
-use super::apply_bar::Overlay;
 use super::apps::{PACKAGES, Standing, change_packages, present, standing};
 use super::catalog::{Catalog, Named};
 use super::installed::Launchers;
 use super::nixos::{Managed, Snapshot, failure, host, repo};
-use crate::{Navigation, PAGE_WIDTH, group, note};
+use crate::View;
+use crate::{group, note, page_width};
 
 /// What `--apply` makes of the package: plain JSON whatever the meta's shape.
 const APPLY: &str = r#"p: let
@@ -228,7 +228,7 @@ impl Details {
             now.attr = attr.to_string();
             now.meta = None;
         }
-        Navigation::write().overlay = Some(Overlay::Package);
+        crate::open(View::Package);
         let attr = attr.to_string();
         thread::spawn(move || {
             let result = meta(&attr);
@@ -264,7 +264,7 @@ impl Details {
                         now.attr = attr;
                         now.meta = Some(result);
                     }
-                    Navigation::write().overlay = Some(Overlay::Package);
+                    crate::open(View::Package);
                 }
             }
         });
@@ -280,9 +280,9 @@ pub fn title() -> String {
 /// alone would take the rest of the column.
 fn paragraph(text: Text) -> Rectangle {
     let text = text.wrap();
-    let height = text.height_in(PAGE_WIDTH);
+    let height = text.height_in(page_width());
     Rectangle::new()
-        .width(Size::Fixed(PAGE_WIDTH))
+        .width(Size::Fixed(page_width()))
         .height(Size::Fixed(height))
         .fill(Color::TRANSPARENT)
         .child(text)

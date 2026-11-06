@@ -162,9 +162,6 @@ pub fn page() -> Column {
         ]);
     };
 
-    let customize = PushButton::new("settings.quick.customize", "Customize…")
-        .on_press(|| tell(&["customize"]))
-        .build();
     let reset = PushButton::new("settings.quick.reset", "Reset…")
         .on_press(|| {
             Dialog::new(
@@ -191,10 +188,8 @@ pub fn page() -> Column {
     groups(vec![
         group()
             .header("Layout")
-            .row(
-                FormRow::new("settings.quick.customize-row", "Customize")
-                    .subtitle("Opens Quick Settings to move and resize its controls")
-                    .trailing(customize),
+            .footer(
+                "Customize… in the toolbar opens Quick Settings to move and resize its controls.",
             )
             .row(
                 FormRow::new("settings.quick.reset-row", "Reset layout")
@@ -203,4 +198,14 @@ pub fn page() -> Column {
             ),
         group().header("Controls").rows(switches),
     ])
+}
+
+/// Customize…, in the toolbar while the shell answers.
+pub fn toolbar() -> Option<Box<dyn amane::Widget>> {
+    QuickControls::read().controls.as_ref()?;
+    Some(Box::new(
+        PushButton::new("settings.quick.customize", "Customize…")
+            .on_press(|| tell(&["customize"]))
+            .build(),
+    ))
 }

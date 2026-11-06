@@ -32,6 +32,11 @@ use crate::tokens::{Styled, TextStyle, sys};
 /// How wide a group is unless told: Shell Settings' page.
 pub const DEFAULT_WIDTH: f32 = 504.0;
 
+/// How far a [`FormRow::child`] is set in.
+fn child_indent() -> f32 {
+    px(24.0)
+}
+
 fn tile_side() -> f32 {
     px(20.0)
 }
@@ -69,6 +74,12 @@ pub struct FormRow {
     on_press: Option<Rc<dyn Fn()>>,
     disabled: bool,
     selected: bool,
+    /// Set in under the row above, as a setting that belongs to it.
+    child: bool,
+    /// Still finding its value: a spinner, and the title in grey.
+    loading: bool,
+    /// Lit in the accent a moment, as the row a search led to.
+    highlight: bool,
 }
 
 impl FormRow {
@@ -86,7 +97,33 @@ impl FormRow {
             on_press: None,
             disabled: false,
             selected: false,
+            child: false,
+            loading: false,
+            highlight: false,
         }
+    }
+
+    /// Set in under the row before it, as macOS sets a setting that only
+    /// means something while the one above is on. Dim it with
+    /// [`FormRow::disabled`] while that one is off.
+    pub fn child(mut self) -> Self {
+        self.child = true;
+        self
+    }
+
+    /// Still finding its value: a small spinner at the trailing edge, and
+    /// the title in grey.
+    pub fn loading(mut self) -> Self {
+        self.loading = true;
+        self.trailing
+            .insert(0, boxed(crate::spinner::Spinner::new(px(16.0)).build()));
+        self
+    }
+
+    /// Lit in the accent, as the row a search led to.
+    pub fn highlight(mut self, highlight: bool) -> Self {
+        self.highlight = highlight;
+        self
     }
 
     /// Filled as the one picked, in a list of rows to choose from.
@@ -153,6 +190,7 @@ impl FormRow {
     /// Where the title starts, from the row's leading edge.
     fn text_start(&self) -> f32 {
         pad_h()
+            + if self.child { child_indent() } else { 0.0 }
             + match (&self.leading, self.icon) {
                 (Some((_, side)), _) => side + tile_gap(),
                 (None, Some(_)) => tile_side() + tile_gap(),
@@ -219,7 +257,11 @@ impl FormRow {
         let room = (width - start - pad_h() - self.trailing_width() - px(12.0)).max(60.0);
         let title = Text::new(self.title.clone())
             .style(title_font())
-            .color(theme::label_primary());
+            .color(if self.loading {
+                theme::label_secondary()
+            } else {
+                theme::label_primary()
+            });
         let title: Box<dyn Widget> = if text_width(&self.title, title_font()) > room {
             boxed(
                 Rectangle::new()
@@ -249,6 +291,22 @@ impl FormRow {
         }
         leading.push(boxed(text));
         let leading = Row::new(leading).gap(tile_gap()).align(Center);
+        let leading: Box<dyn Widget> = if self.child {
+            boxed(
+                Row::new(vec![
+                    boxed(
+                        Rectangle::new()
+                            .width(Size::Fixed(child_indent()))
+                            .height(Size::Fixed(1.0))
+                            .fill(Color::TRANSPARENT),
+                    ),
+                    boxed(leading),
+                ])
+                .align(Center),
+            )
+        } else {
+            boxed(leading)
+        };
 
         let mut trailing = self.trailing;
         if self.on_press.is_some() {
@@ -265,7 +323,7 @@ impl FormRow {
             .height(Size::Fixed(head))
             .align_child(amane::Start, Center)
             .child(
-                Row::new(vec![boxed(leading), boxed(trailing)])
+                Row::new(vec![leading, boxed(trailing)])
                     .width(Size::Parent)
                     .justify(amane::SpaceBetween)
                     .align(Center),
@@ -286,7 +344,9 @@ impl FormRow {
             ));
         }
 
-        let base_fill = if self.selected {
+        let base_fill = if self.highlight {
+            crate::color::with_alpha(theme::tint(), 0.22)
+        } else if self.selected {
             sys::color::state::selected()
         } else {
             Color::TRANSPARENT

@@ -332,3 +332,8 @@ fn allowed_apps(now: &amane_kit::settings::StatusBar) -> amane_kit::form::Group 
             .footer("An app left out keeps running; only its icon is gone from the bar.")
     }
 }
+
+/// The page's sub-pages, by name: none yet.
+pub fn sub(_name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
+    None
+}

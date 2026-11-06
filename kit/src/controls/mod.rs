@@ -6,4 +6,5 @@ pub mod control_size;
 pub mod dropdown;
 pub mod macform;
 pub mod slider;
+pub mod spinner;
 pub mod tag;

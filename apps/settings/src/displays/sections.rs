@@ -35,7 +35,7 @@ use super::ddc::{self, Ddc, Feature, Monitor};
 use super::niri::{self, Change, Mode, Output, Transform};
 use super::trial::try_change;
 use super::{Screens, block_name, save, save_all, saved_block};
-use crate::{PAGE_WIDTH, group, switch_row};
+use crate::{group, page_width, switch_row};
 
 /// What every section reads.
 pub struct Ctx {
@@ -153,7 +153,7 @@ fn confirm_move() {
 /// The last error, in red, with a button to put it away; it goes by itself
 /// after a few seconds.
 pub fn error_line(error: String) -> Row {
-    let width = crate::PAGE_WIDTH - sys::size::control::height() - 8.0;
+    let width = page_width() - sys::size::control::height() - 8.0;
     Row::new(vec![
         boxed(
             amane::Column::new(vec![boxed(
@@ -216,7 +216,7 @@ pub fn arrangement(ctx: &Ctx) -> Option<Group> {
     let area = Arrangement::new(
         "settings.displays.arrangement",
         screens,
-        PAGE_WIDTH - inset * 2.0,
+        page_width() - inset * 2.0,
         area_height,
     )
     .selected(selected)
@@ -342,7 +342,7 @@ pub fn header(ctx: &Ctx) -> Group {
 
     // the tags line up under the title, past the tile
     let tile = 28.0 * sys::density::factor();
-    let inner = PAGE_WIDTH - mac::row_pad_h() * 2.0 - tile - 10.0;
+    let inner = page_width() - mac::row_pad_h() * 2.0 - tile - 10.0;
     let (facts, facts_h) = tags(inner, facts(output, &ctx.caps));
     let row = FormRow::new("settings.displays.header", ctx.name())
         .leading(

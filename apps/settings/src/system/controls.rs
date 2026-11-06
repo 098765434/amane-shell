@@ -230,9 +230,31 @@ pub fn rows(page: &str) -> Vec<FormRow> {
     let snapshot = Snapshot::read();
     let managed = Managed::read();
     let feedback = Feedback::read();
-    snapshot
+    let rows: Vec<FormRow> = snapshot
         .for_page(page)
         .into_iter()
         .filter_map(|entry| row(entry, &managed, &feedback))
-        .collect()
+        .collect();
+    if !rows.is_empty() {
+        return rows;
+    }
+    // none yet: say why, so the page isn't blank
+    if snapshot.loading {
+        return vec![
+            FormRow::new(
+                format!("settings.system.{page}.loading"),
+                "Reading the configuration…",
+            )
+            .loading(),
+        ];
+    }
+    match &snapshot.error {
+        Some(error) => vec![crate::problem_row(
+            &format!("settings.system.{page}.error"),
+            "The configuration couldn't be read",
+            "Its settings show here once it can be. Refresh on About This Computer tries again.",
+            error,
+        )],
+        None => rows,
+    }
 }

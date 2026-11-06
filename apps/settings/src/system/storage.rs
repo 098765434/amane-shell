@@ -7,7 +7,7 @@ use std::thread;
 use amane::{Column, Service};
 use amane_kit::buttons::PushButton;
 use amane_kit::form::FormRow;
-use amane_kit::slider::Slider;
+use amane_kit::spinner::ProgressBar;
 
 use super::controls;
 use super::nixos::run;
@@ -108,7 +108,7 @@ fn meter(id: &str, title: &str, path: &str) -> FormRow {
                 human(total),
                 human(total.saturating_sub(used))
             ))
-            .trailing(Slider::new(percent, 140.0).inert(true).build())
+            .trailing(ProgressBar::new(f32::from(percent) / 100.0, 140.0).build())
         }
         None => row.subtitle("Not mounted"),
     }
@@ -133,14 +133,16 @@ pub fn page() -> Column {
             .row(meter("boot", "Boot partition (/boot)", "/boot")),
         group()
             .row(
-                FormRow::new("settings.storage.clean", "Clean up")
-                    .subtitle(found)
-                    .trailing(
-                        PushButton::new("settings.storage.check", "Check…")
-                            .disabled(garbage.running)
-                            .on_press(Garbage::check)
-                            .build(),
-                    ),
+                {
+                    let row = FormRow::new("settings.storage.clean", "Clean up").subtitle(found);
+                    if garbage.running { row.loading() } else { row }
+                }
+                .trailing(
+                    PushButton::new("settings.storage.check", "Check…")
+                        .disabled(garbage.running)
+                        .on_press(Garbage::check)
+                        .build(),
+                ),
             )
             .footer(
                 "The weekly clean-up keeps the last 14 days; run `sudo nix-collect-garbage -d` \

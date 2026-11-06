@@ -480,7 +480,15 @@ pub fn section(
         .trailing(field_box(FILTER, field, 160.0))
         .detail(chips, chips_height);
     let mut group = group().header("Installed").row(filters);
-    if rows.is_empty() {
+    if rows.is_empty() && snapshot.loading && all.is_empty() {
+        group = group.row(
+            FormRow::new(
+                "settings.apps.installed.reading",
+                "Reading what's installed…",
+            )
+            .loading(),
+        );
+    } else if rows.is_empty() {
         group = group.row(FormRow::new(
             "settings.apps.installed.none",
             if filter.trim().is_empty() {

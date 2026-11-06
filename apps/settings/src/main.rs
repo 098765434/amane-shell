@@ -12,7 +12,7 @@ mod quick_settings;
 mod status_bar;
 mod system;
 
-use amane::{Center, Column, Key, Row, ScrollArea, Service, Size, Text, Widget, Window};
+use amane::{Center, Column, Key, Rectangle, Row, ScrollArea, Service, Size, Text, Widget, Window};
 use amane_kit::app::{Dialog, Page, app, app_window, sidebar, standard_shortcut};
 use amane_kit::buttons::Switch;
 use amane_kit::color::Accent;
@@ -28,14 +28,50 @@ use amane_kit::macform::theme as mac;
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
 
-use system::apply_bar::{self, Overlay};
+use system::apply_bar;
 use system::job::BuildJob;
 
-// which page shows, kept while the app runs
+/// A view that takes a page's place, reached from it; back returns.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum View {
+    /// What an Apply changes.
+    Changes,
+    /// The build's log.
+    Log,
+    /// A package's details, from the Apps page.
+    Package,
+    /// One of the page's own sub-pages, by name ("clock" on Status Bar).
+    Sub(&'static str),
+}
+
+/// Where the window is: a page, and the views opened over it, the last
+/// showing.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Place {
+    pub page: usize,
+    pub views: Vec<View>,
+}
+
+impl Place {
+    fn page(page: usize) -> Self {
+        Self {
+            page,
+            views: Vec::new(),
+        }
+    }
+
+    pub fn view(&self) -> Option<View> {
+        self.views.last().copied()
+    }
+}
+
+/// How many places back remembers.
+const HISTORY: usize = 50;
+
+// where the window is and has been, kept while the app runs
 pub struct Navigation {
-    page: usize,
-    /// A view in the page's place: the changes an Apply makes, or its log.
-    pub overlay: Option<Overlay>,
+    history: Vec<Place>,
+    at: usize,
     /// The generation picked in History.
     pub selected_generation: Option<u32>,
 }
@@ -43,14 +79,87 @@ pub struct Navigation {
 impl Service for Navigation {
     fn new() -> Self {
         Self {
-            page: 1,
-            overlay: None,
+            history: vec![Place::page(1)],
+            at: 0,
             selected_generation: None,
         }
     }
 
     // only clicks change it
     fn listen() {}
+}
+
+impl Navigation {
+    pub fn here(&self) -> &Place {
+        &self.history[self.at]
+    }
+
+    /// Goes to `place`, forgetting what was forward of here.
+    fn go_to(&mut self, place: Place) {
+        if *self.here() == place {
+            return;
+        }
+        self.history.truncate(self.at + 1);
+        self.history.push(place);
+        if self.history.len() > HISTORY {
+            self.history.remove(0);
+        }
+        self.at = self.history.len() - 1;
+    }
+
+    fn set_page(&mut self, page: usize) {
+        self.go_to(Place::page(page));
+    }
+
+    fn open(&mut self, view: View) {
+        let mut place = self.here().clone();
+        if place.view() != Some(view) {
+            place.views.push(view);
+        }
+        self.go_to(place);
+    }
+
+    pub fn can_back(&self) -> bool {
+        self.at > 0
+    }
+
+    pub fn can_forward(&self) -> bool {
+        self.at + 1 < self.history.len()
+    }
+
+    fn back(&mut self) {
+        self.at = self.at.saturating_sub(1);
+    }
+
+    fn forward(&mut self) {
+        if self.can_forward() {
+            self.at += 1;
+        }
+    }
+}
+
+/// Opens `view` over the page showing.
+pub fn open(view: View) {
+    Navigation::write().open(view);
+}
+
+/// Back to where the window was before.
+pub fn back() {
+    let mut nav = Navigation::write();
+    if nav.can_back() {
+        nav.back();
+    } else {
+        nav.quiet();
+    }
+}
+
+fn forward() {
+    let mut nav = Navigation::write();
+    if nav.can_forward() {
+        nav.forward();
+    } else {
+        nav.quiet();
+    }
 }
 
 // the sidebar's rows: two sections, each over its pages
@@ -91,9 +200,7 @@ fn page_named(name: &str) -> Option<usize> {
 /// Shows the page `--page <name>` would, from a page's own button.
 pub fn go(name: &str) {
     if let Some(page) = page_named(name) {
-        let mut nav = Navigation::write();
-        nav.page = page;
-        nav.overlay = None;
+        Navigation::write().set_page(page);
     }
 }
 
@@ -122,7 +229,7 @@ fn flag(args: &[String], name: &str) -> Option<String> {
 /// `--package <attr>`: the Apps page, with that nixpkgs package's details.
 fn package_arg(args: &[String]) {
     if let Some(attr) = flag(args, "--package") {
-        Navigation::write().page = SYS_APPS;
+        Navigation::write().set_page(SYS_APPS);
         system::package::Details::open(&attr);
     }
 }
@@ -130,7 +237,11 @@ fn package_arg(args: &[String]) {
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if let Some(page) = page_arg(&args) {
-        Navigation::write().page = page;
+        *Navigation::write() = Navigation {
+            history: vec![Place::page(page)],
+            at: 0,
+            selected_generation: None,
+        };
     }
     package_arg(&args);
     app("amane-settings")
@@ -138,9 +249,7 @@ fn main() {
         // launched again (Spotlight, a notification) while running: show that page
         .on_activate(|args| {
             if let Some(page) = page_arg(args) {
-                let mut nav = Navigation::write();
-                nav.page = page;
-                nav.overlay = None;
+                Navigation::write().set_page(page);
             }
             package_arg(args);
         })
@@ -188,146 +297,189 @@ fn may_close() -> bool {
 }
 
 fn shortcut(key: Key) -> bool {
+    let held = amane::modifiers();
     // Ctrl+W goes through the same question as the compositor's close
-    if key == Key::Character('w') && amane::modifiers().ctrl && !BuildJob::read().running() {
-        return standard_shortcut(key);
-    }
-    if key == Key::Character('w') && amane::modifiers().ctrl {
+    if key == Key::Character('w') && held.ctrl && BuildJob::read().running() {
         return !may_close();
+    }
+    // back and forward, as a browser's
+    if held.alt && !held.ctrl && key == Key::Left {
+        back();
+        return true;
+    }
+    if held.alt && !held.ctrl && key == Key::Right {
+        forward();
+        return true;
+    }
+    // Escape leaves a view for the page under it
+    if key == Key::Escape && !held.ctrl && !held.alt {
+        let in_view = Navigation::read().here().view().is_some();
+        if in_view {
+            back();
+            return true;
+        }
     }
     standard_shortcut(key)
 }
 
-fn main_window() -> Window {
-    let (page, overlay) = {
-        let nav = Navigation::read();
-        (nav.page, nav.overlay)
+/// A page's sub-page: its title and body, or None for a name it doesn't
+/// have.
+fn sub_page(page: usize, name: &str) -> Option<(String, Box<dyn Widget>)> {
+    match page {
+        4 => status_bar::sub(name),
+        DISPLAYS => displays::sub(name),
+        8 => about::sub(name),
+        SYS_ABOUT => system::about::sub(name),
+        _ => None,
+    }
+}
+
+/// What shows in the page's place: its title and body, scrolled under a
+/// name of its own.
+fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
+    let scrolled = |id: &'static str, body: Box<dyn Widget>| -> Box<dyn Widget> {
+        boxed(
+            ScrollArea::new(
+                id,
+                Column::new(vec![body]).width(Size::Parent).align(Center),
+            )
+            .width(Size::Parent)
+            .height(Size::Parent),
+        )
     };
+    match view {
+        Some(View::Changes) => (
+            String::from("Changes"),
+            scrolled("settings.scroll.changes", boxed(apply_bar::changes_view())),
+        ),
+        // the log scrolls itself
+        Some(View::Log) => (String::from("Build Log"), boxed(apply_bar::log_view())),
+        Some(View::Package) => (
+            system::package::title(),
+            scrolled("settings.scroll.package", boxed(system::package::view())),
+        ),
+        Some(View::Sub(name)) => match sub_page(page, name) {
+            Some((title, body)) => (title, scrolled(sub_scroll(page, name), body)),
+            None => content(page, None),
+        },
+        None => {
+            let (title, scroll, body): (&str, &'static str, Box<dyn Widget>) = match page {
+                1 => (
+                    "Appearance",
+                    "settings.scroll.appearance",
+                    boxed(appearance::page()),
+                ),
+                2 => ("Desktop", "settings.scroll.desktop", boxed(desktop::page())),
+                DISPLAYS => (
+                    "Displays",
+                    "settings.scroll.displays",
+                    boxed(displays::page()),
+                ),
+                4 => (
+                    "Status Bar",
+                    "settings.scroll.status-bar",
+                    boxed(status_bar::page()),
+                ),
+                5 => ("Dock", "settings.scroll.dock", boxed(dock::page())),
+                6 => (
+                    "Quick Settings",
+                    "settings.scroll.quick-settings",
+                    boxed(quick_settings::page()),
+                ),
+                7 => (
+                    "Spotlight",
+                    "settings.scroll.spotlight",
+                    boxed(launcher::page()),
+                ),
+                SYS_ABOUT => (
+                    "About This Computer",
+                    "settings.scroll.system-about",
+                    boxed(system::about::page()),
+                ),
+                SYS_GENERAL => (
+                    "General",
+                    "settings.scroll.system-general",
+                    boxed(system::general::page()),
+                ),
+                SYS_APPS => (
+                    "Apps",
+                    "settings.scroll.system-apps",
+                    boxed(system::apps::page()),
+                ),
+                SYS_SERVICES => (
+                    "Services",
+                    "settings.scroll.system-services",
+                    boxed(system::services::page()),
+                ),
+                SYS_POWER => (
+                    "Power & Lock",
+                    "settings.scroll.system-power",
+                    boxed(system::power::page()),
+                ),
+                SYS_HISTORY => (
+                    "History",
+                    "settings.scroll.system-history",
+                    boxed(system::history::page()),
+                ),
+                SYS_STORAGE => (
+                    "Storage",
+                    "settings.scroll.system-storage",
+                    boxed(system::storage::page()),
+                ),
+                SYS_UPDATE => (
+                    "Software Update",
+                    "settings.scroll.system-update",
+                    boxed(system::update::page()),
+                ),
+                _ => ("About", "settings.scroll.about", boxed(about::page())),
+            };
+            (String::from(title), scrolled(scroll, body))
+        }
+    }
+}
+
+/// The scroll id a sub-page keeps its offset under: one per page and name,
+/// made once.
+fn sub_scroll(page: usize, name: &str) -> &'static str {
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+    thread_local! {
+        static IDS: RefCell<HashMap<(usize, String), &'static str>> =
+            RefCell::new(HashMap::new());
+    }
+    IDS.with_borrow_mut(|ids| {
+        *ids.entry((page, name.to_string()))
+            .or_insert_with(|| Box::leak(format!("settings.scroll.{page}.{name}").into_boxed_str()))
+    })
+}
+
+fn main_window() -> Window {
+    let (place, can_back, can_forward) = {
+        let nav = Navigation::read();
+        (nav.here().clone(), nav.can_back(), nav.can_forward())
+    };
+    let page = place.page;
+    let view = place.view();
 
     let pages = pages();
     // its poll rests while another page shows
-    displays::showing(page == DISPLAYS && overlay.is_none());
+    displays::showing(page == DISPLAYS && view.is_none());
 
     let nav = sidebar("settings.nav", &pages, page, |page| {
-        let mut nav = Navigation::write();
-        nav.page = page;
-        nav.overlay = None;
+        Navigation::write().set_page(page);
     });
 
-    // each page keeps where it was scrolled to, under its own name
-    let (title, scroll, body): (&str, &'static str, Box<dyn Widget>) = match page {
-        1 => (
-            "Appearance",
-            "settings.scroll.appearance",
-            boxed(appearance::page()),
-        ),
-        2 => ("Desktop", "settings.scroll.desktop", boxed(desktop::page())),
-        DISPLAYS => (
-            "Displays",
-            "settings.scroll.displays",
-            boxed(displays::page()),
-        ),
-        4 => (
-            "Status Bar",
-            "settings.scroll.status-bar",
-            boxed(status_bar::page()),
-        ),
-        5 => ("Dock", "settings.scroll.dock", boxed(dock::page())),
-        6 => (
-            "Quick Settings",
-            "settings.scroll.quick-settings",
-            boxed(quick_settings::page()),
-        ),
-        7 => (
-            "Spotlight",
-            "settings.scroll.spotlight",
-            boxed(launcher::page()),
-        ),
-        SYS_ABOUT => (
-            "About This Computer",
-            "settings.scroll.system-about",
-            boxed(system::about::page()),
-        ),
-        SYS_GENERAL => (
-            "General",
-            "settings.scroll.system-general",
-            boxed(system::general::page()),
-        ),
-        SYS_APPS => (
-            "Apps",
-            "settings.scroll.system-apps",
-            boxed(system::apps::page()),
-        ),
-        SYS_SERVICES => (
-            "Services",
-            "settings.scroll.system-services",
-            boxed(system::services::page()),
-        ),
-        SYS_POWER => (
-            "Power & Lock",
-            "settings.scroll.system-power",
-            boxed(system::power::page()),
-        ),
-        SYS_HISTORY => (
-            "History",
-            "settings.scroll.system-history",
-            boxed(system::history::page()),
-        ),
-        SYS_STORAGE => (
-            "Storage",
-            "settings.scroll.system-storage",
-            boxed(system::storage::page()),
-        ),
-        SYS_UPDATE => (
-            "Software Update",
-            "settings.scroll.system-update",
-            boxed(system::update::page()),
-        ),
-        _ => ("About", "settings.scroll.about", boxed(about::page())),
-    };
+    let (title, body) = content(page, view);
 
-    // the changes, the log or a package take the page's place; the log
-    // scrolls itself
-    let package_title = if overlay == Some(Overlay::Package) {
-        system::package::title()
-    } else {
-        String::new()
-    };
-    let (title, body): (&str, Box<dyn Widget>) = match overlay {
-        Some(Overlay::Changes) => (
-            "Changes",
-            boxed(
-                ScrollArea::new(
-                    "settings.scroll.changes",
-                    Column::new(vec![boxed(apply_bar::changes_view())]),
-                )
-                .width(Size::Parent)
-                .height(Size::Parent),
-            ),
-        ),
-        Some(Overlay::Log) => ("Build Log", boxed(apply_bar::log_view())),
-        Some(Overlay::Package) => (
-            package_title.as_str(),
-            boxed(
-                ScrollArea::new(
-                    "settings.scroll.package",
-                    Column::new(vec![boxed(system::package::view())]),
-                )
-                .width(Size::Parent)
-                .height(Size::Parent),
-            ),
-        ),
-        None => (
-            title,
-            boxed(
-                ScrollArea::new(scroll, Column::new(vec![body]))
-                    .width(Size::Parent)
-                    .height(Size::Parent),
-            ),
-        ),
-    };
-
-    let mut column: Vec<Box<dyn Widget>> = vec![boxed(header(title, overlay.is_some())), body];
+    let mut column: Vec<Box<dyn Widget>> = vec![
+        boxed(header(
+            &title,
+            can_back,
+            can_forward,
+            toolbar_action(page, view),
+        )),
+        body,
+    ];
     if let Some(bar) = apply_bar::apply_bar() {
         column.push(bar);
     }
@@ -335,12 +487,12 @@ fn main_window() -> Window {
     let content = Row::new(vec![
         boxed(
             Column::new(vec![boxed(nav)])
-                .width(Size::Fixed(200.0))
+                .width(Size::Fixed(SIDEBAR))
                 .height(Size::Parent),
         ),
         boxed(
             Column::new(column)
-                .gap(sys::space::gap::l())
+                .gap(sys::space::gap::m())
                 .width(Size::Parent)
                 .height(Size::Parent),
         ),
@@ -352,36 +504,93 @@ fn main_window() -> Window {
     app_window(content)
         .title("Shell Settings")
         .size(760.0, 760.0)
-        .min_size(600.0, 740.0)
+        .min_size(
+            SIDEBAR + MIN_PAGE + sys::space::gap::xl() + 2.0 * sys::space::inset::l(),
+            600.0,
+        )
         .on_shortcut(shortcut)
         .on_close(may_close)
 }
 
-/// The page's title, after the back and forward pill while a view (the
-/// changes, the log, a package) stands in for the page: back returns to it.
-fn header(title: &str, inner: bool) -> Row {
-    let mut parts: Vec<Box<dyn Widget>> = Vec::new();
-    if inner {
-        parts.push(boxed(
-            MacSegmentedNav::new("settings.header.nav")
-                .back_enabled(true)
-                .forward_enabled(false)
-                .on_back(|| Navigation::write().overlay = None)
-                .build(),
-        ));
+/// A page's own button in the toolbar, such as Quick Settings' Customize.
+fn toolbar_action(page: usize, view: Option<View>) -> Option<Box<dyn Widget>> {
+    if view.is_some() {
+        return None;
     }
-    parts.push(boxed(
-        Text::new(title)
-            .style(mac::page_title_font())
-            .color(mac::label_primary())
-            .elide(),
-    ));
-    Row::new(parts).gap(10.0).align(Center)
+    match page {
+        6 => quick_settings::toolbar(),
+        _ => None,
+    }
 }
 
-/// How wide a list's rows are on a page: the window's default width less
-/// its insets, the sidebar and the gap between.
-pub const PAGE_WIDTH: f32 = 760.0 - 2.0 * 16.0 - 200.0 - 24.0;
+/// The toolbar over the page: back and forward, the page's title, and any
+/// button of the page's own at the trailing edge.
+fn header(
+    title: &str,
+    can_back: bool,
+    can_forward: bool,
+    action: Option<Box<dyn Widget>>,
+) -> Rectangle {
+    let lead = Row::new(vec![
+        boxed(
+            MacSegmentedNav::new("settings.header.nav")
+                .back_enabled(can_back)
+                .forward_enabled(can_forward)
+                .on_back(back)
+                .on_forward(forward)
+                .build(),
+        ),
+        boxed(
+            Text::new(title)
+                .style(mac::page_title_font())
+                .color(mac::label_primary())
+                .elide(),
+        ),
+    ])
+    .gap(12.0)
+    .align(Center);
+    let mut parts: Vec<Box<dyn Widget>> = vec![boxed(lead)];
+    if let Some(action) = action {
+        parts.push(action);
+    }
+    Rectangle::new()
+        .width(Size::Parent)
+        .height(Size::Fixed(TOOLBAR))
+        .fill(amane::Color::TRANSPARENT)
+        .align_child(amane::Start, Center)
+        .child(
+            Row::new(parts)
+                .width(Size::Parent)
+                .justify(amane::SpaceBetween)
+                .align(Center),
+        )
+}
+
+/// The toolbar's height.
+const TOOLBAR: f32 = 36.0;
+
+/// The sidebar's width.
+const SIDEBAR: f32 = 200.0;
+
+/// The narrowest and widest a page's groups get.
+const MIN_PAGE: f32 = 440.0;
+const MAX_PAGE: f32 = 680.0;
+
+/// How wide a page's groups are in a window `window` wide: what's left
+/// beside the sidebar, kept between [`MIN_PAGE`] and [`MAX_PAGE`]; a wider
+/// window centres them.
+fn page_width_in(window: f32) -> f32 {
+    if window <= 0.0 {
+        return amane_kit::form::DEFAULT_WIDTH;
+    }
+    let room = window - 2.0 * sys::space::inset::l() - SIDEBAR - sys::space::gap::xl();
+    room.clamp(MIN_PAGE, MAX_PAGE)
+}
+
+/// How wide a page's groups are in this window.
+pub fn page_width() -> f32 {
+    page_width_in(amane::window_size().0)
+}
 
 /// A line of explanation under a setting, in the caption's grey.
 pub fn note(text: impl Into<String>) -> Text {
@@ -392,7 +601,7 @@ pub fn note(text: impl Into<String>) -> Text {
 
 /// A group of settings rows as wide as a page.
 pub fn group() -> Group {
-    Group::new().width(PAGE_WIDTH)
+    Group::new().width(page_width())
 }
 
 /// A page: its groups, a little apart.
@@ -416,7 +625,69 @@ pub fn switch_row(id: &str, title: &str, on: bool, toggle: impl Fn(bool) + 'stat
     )
 }
 
+/// Something that went wrong, said plainly: a warning tile, what it means
+/// for the page, and Details for what the tool itself said.
+pub fn problem_row(id: &str, title: &str, meaning: &str, details: &str) -> FormRow {
+    let shown = details.trim().to_string();
+    let heading = title.to_string();
+    let mut row = FormRow::new(id, title)
+        .icon(amane_kit::icons::ICON_WARNING, Accent::Orange)
+        .subtitle(meaning);
+    if !shown.is_empty() {
+        row = row.trailing(
+            amane_kit::buttons::PushButton::new(format!("{id}.details"), "Details…")
+                .on_press(move || {
+                    Dialog::new("settings.problem-details", heading.clone())
+                        .message(shown.clone())
+                        .button("OK", || {})
+                        .open("main");
+                })
+                .build(),
+        );
+    }
+    row
+}
+
 /// How tall a column of `count` radios is, for a row's detail.
 pub fn radios_height(count: usize) -> f32 {
     count as f32 * mac::control_height()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn back_and_forward_walk_the_places() {
+        let mut nav = Navigation::new();
+        assert!(!nav.can_back());
+        nav.set_page(4);
+        nav.open(View::Sub("clock"));
+        assert_eq!(nav.here().view(), Some(View::Sub("clock")));
+        nav.back();
+        assert_eq!(nav.here(), &Place::page(4));
+        assert!(nav.can_forward());
+        nav.forward();
+        assert_eq!(nav.here().view(), Some(View::Sub("clock")));
+        nav.back();
+        nav.back();
+        assert_eq!(nav.here().page, 1);
+        // going somewhere new forgets what was forward
+        nav.set_page(5);
+        assert!(!nav.can_forward());
+        // the same place twice is one step
+        nav.set_page(5);
+        nav.back();
+        assert_eq!(nav.here().page, 1);
+    }
+
+    #[test]
+    fn a_page_fills_the_room_between_its_limits() {
+        assert_eq!(page_width_in(0.0), amane_kit::form::DEFAULT_WIDTH);
+        let room = 760.0 - 2.0 * sys::space::inset::l() - SIDEBAR - sys::space::gap::xl();
+        assert_eq!(page_width_in(760.0), room.clamp(MIN_PAGE, MAX_PAGE));
+        assert!(page_width_in(900.0) > page_width_in(760.0));
+        assert_eq!(page_width_in(600.0), MIN_PAGE);
+        assert_eq!(page_width_in(2000.0), MAX_PAGE);
+    }
 }

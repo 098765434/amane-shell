@@ -19,6 +19,8 @@ pub const ICON_LOCK: char = '\u{e897}';
 /// The gear (`settings`).
 pub const ICON_SETTINGS: char = '\u{e8b8}';
 pub const ICON_CHECK: char = '\u{e5ca}';
+/// A warning triangle (`warning`).
+pub const ICON_WARNING: char = '\u{e002}';
 pub const ICON_CLOSE: char = '\u{e5cd}';
 pub const ICON_REMOVE: char = '\u{e15b}';
 pub const ICON_ADD: char = '\u{e145}';
