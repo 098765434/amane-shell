@@ -8,6 +8,7 @@ mod desktop;
 mod displays;
 mod dock;
 mod launcher;
+mod previews;
 mod quick_settings;
 mod status_bar;
 mod system;

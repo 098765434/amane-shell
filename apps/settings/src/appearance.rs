@@ -3,15 +3,16 @@
 //! to its backdrop, and whether motion is reduced. Each control changes `appearance.json`, and the shell
 //! redraws in the new look while this window shows it too.
 
-use amane::{Column, Widget};
-use amane_kit::buttons::{Radio, Switch};
+use amane::{Color, Column};
+use amane_kit::buttons::{Segment, SegmentedButton, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
-use amane_kit::layout::boxed;
+use amane_kit::macform::theme as mac;
+use amane_kit::macform::{ColorWells, ThumbnailPicker};
 use amane_kit::settings::{ACCENTS, appearance, change_appearance};
 use amane_kit::theme::{Density, Glass, Mode};
 
-use crate::{group, groups, radios_height};
+use crate::{group, groups, previews};
 
 /// Accents saved before macOS 27's colours, and the entry that shows for
 /// each; picking it again saves the new colour.
@@ -49,61 +50,58 @@ pub fn page() -> Column {
         )
     };
 
+    let width = crate::page_width() - 2.0 * mac::row_pad_h();
+
     let modes = [
-        ("Follow the system", None),
         ("Light", Some(Mode::Light)),
         ("Dark", Some(Mode::Dark)),
+        ("Auto", None),
     ];
+    let mut mode_picker = ThumbnailPicker::new("settings.mode", previews::WIDTH, previews::HEIGHT)
+        .width(width)
+        .chosen(modes.iter().position(|(_, choice)| *choice == mode))
+        .on_select(move |index| {
+            let choice = modes[index].1;
+            change_appearance(|now| now.mode = choice);
+        });
+    for (label, choice) in modes {
+        mode_picker = mode_picker.option(previews::appearance(choice), label);
+    }
+    let mode_height = mode_picker.height();
 
-    let mode_radios: Vec<Box<dyn Widget>> = modes
-        .into_iter()
-        .enumerate()
-        .map(|(index, (label, choice))| {
-            boxed(
-                Radio::new(format!("settings.mode.{index}"), mode == choice)
-                    .label(label)
-                    .on_select(move || change_appearance(|now| now.mode = choice))
-                    .build(),
-            )
+    let density_control = SegmentedButton::new(
+        "settings.density",
+        vec![Segment::new("Comfortable"), Segment::new("Compact")],
+        Some(usize::from(density == Density::Compact)),
+    )
+    .on_select(|index, _| {
+        change_appearance(|now| {
+            now.density = if index == 0 {
+                Density::Comfortable
+            } else {
+                Density::Compact
+            }
         })
-        .collect();
-
-    let densities = [
-        ("Comfortable", Density::Comfortable),
-        ("Compact", Density::Compact),
-    ];
-
-    let density_radios: Vec<Box<dyn Widget>> = densities
-        .into_iter()
-        .enumerate()
-        .map(|(index, (label, choice))| {
-            boxed(
-                Radio::new(format!("settings.density.{index}"), density == choice)
-                    .label(label)
-                    .on_select(move || change_appearance(|now| now.density = choice))
-                    .build(),
-            )
-        })
-        .collect();
+    })
+    .build();
 
     let glasses = [
         ("Clear", Glass::Clear),
         ("Tinted", Glass::Tinted),
         ("Solid", Glass::Solid),
     ];
-
-    let glass_radios: Vec<Box<dyn Widget>> = glasses
-        .into_iter()
-        .enumerate()
-        .map(|(index, (label, choice))| {
-            boxed(
-                Radio::new(format!("settings.glass.{index}"), glass == choice)
-                    .label(label)
-                    .on_select(move || change_appearance(|now| now.glass = choice))
-                    .build(),
-            )
-        })
-        .collect();
+    let mut glass_picker =
+        ThumbnailPicker::new("settings.glass", previews::WIDTH, previews::HEIGHT)
+            .width(width)
+            .chosen(glasses.iter().position(|(_, choice)| *choice == glass))
+            .on_select(move |index| {
+                let choice = glasses[index].1;
+                change_appearance(|now| now.glass = choice);
+            });
+    for (label, choice) in glasses {
+        glass_picker = glass_picker.option(previews::glass(choice), label);
+    }
+    let glass_height = glass_picker.height();
 
     // small glass turning light or dark with what's behind it; solid glass
     // has no backdrop to follow
@@ -118,24 +116,18 @@ pub fn page() -> Column {
         .on_toggle(|on| change_appearance(|now| now.vibrancy = on))
         .build();
 
-    let motions = [
-        ("Follow the system", None),
-        ("Reduce motion", Some(true)),
-        ("Full motion", Some(false)),
-    ];
-
-    let motion_radios: Vec<Box<dyn Widget>> = motions
-        .into_iter()
-        .enumerate()
-        .map(|(index, (label, choice))| {
-            boxed(
-                Radio::new(format!("settings.motion.{index}"), reduce_motion == choice)
-                    .label(label)
-                    .on_select(move || change_appearance(|now| now.reduce_motion = choice))
-                    .build(),
-            )
-        })
-        .collect();
+    let motions = [None, Some(true), Some(false)];
+    let motion_control = SegmentedButton::new(
+        "settings.motion",
+        vec![
+            Segment::new("Automatic"),
+            Segment::new("Reduced"),
+            Segment::new("Full"),
+        ],
+        motions.iter().position(|choice| *choice == reduce_motion),
+    )
+    .on_select(move |index, _| change_appearance(|now| now.reduce_motion = motions[index]))
+    .build();
 
     let saved = accent.as_deref().map(|hex| {
         OLD_ACCENTS
@@ -148,20 +140,19 @@ pub fn page() -> Column {
         .position(|(_, hex)| *hex == saved)
         .unwrap_or(0);
 
-    let accents = Dropdown::new(
+    let wells = ColorWells::new(
         "settings.accent",
         ACCENTS
             .iter()
-            .map(|(name, _)| String::from(*name))
+            .map(|(name, hex)| (String::from(*name), hex.map(Color::from)))
             .collect(),
         chosen_accent,
     )
-    .width(180.0)
     .on_select(|index| {
         let hex = ACCENTS[index].1.map(String::from);
-
         change_appearance(|now| now.accent = hex);
     });
+    let accent_name = wells.shown_name();
 
     // the nearest size to what's set, so a hand-edited file still shows one
     let chosen_size = TEXT_SIZES
@@ -196,38 +187,44 @@ pub fn page() -> Column {
         group()
             .row(
                 FormRow::new("settings.appearance.mode", "Appearance")
-                    .detail(Column::new(mode_radios), radios_height(3)),
+                    .detail(mode_picker.build(), mode_height),
             )
             .row(
                 FormRow::new("settings.appearance.accent", "Accent color")
-                    .trailing(accents.build()),
+                    .subtitle(accent_name)
+                    .trailing(wells.build()),
             )
-            .row(FormRow::new("settings.appearance.text", "Text size").trailing(sizes.build())),
-        group().row(
-            FormRow::new("settings.appearance.density", "Density")
-                .detail(Column::new(density_radios), radios_height(2)),
-        ),
-        group()
+            .row(FormRow::new("settings.appearance.text", "Text size").trailing(sizes.build()))
             .row(
-                FormRow::new("settings.appearance.glass", "Glass")
-                    .detail(Column::new(glass_radios), radios_height(3)),
+                FormRow::new("settings.appearance.density", "Density")
+                    .subtitle("Compact fits more in the bar, panels and lists")
+                    .trailing(density_control),
+            ),
+        group()
+            .header("Glass")
+            .row(
+                FormRow::new("settings.appearance.glass", "Material")
+                    .detail(glass_picker.build(), glass_height),
             )
             .row(
                 FormRow::new("settings.appearance.adaptive", "Adaptive glass")
                     .subtitle("Small glass turns light or dark with what's behind it")
                     .trailing(adaptive)
+                    .child()
                     .disabled(solid),
             )
             .row(
                 FormRow::new("settings.appearance.vibrant", "Vibrant labels")
                     .subtitle("Labels blend with the frosted backdrop")
                     .trailing(vibrant)
+                    .child()
                     .disabled(solid),
             )
             .footer(glass_note),
         group().row(
             FormRow::new("settings.appearance.motion", "Motion")
-                .detail(Column::new(motion_radios), radios_height(3)),
+                .subtitle("Automatic follows the system's setting")
+                .trailing(motion_control),
         ),
     ])
 }

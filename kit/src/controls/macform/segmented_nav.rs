@@ -99,7 +99,11 @@ impl MacSegmentedNav {
             .width(Size::Fixed(side * 2.0 + 3.0 + px(8.0)))
             .height(Size::Fixed(px(36.0)))
             .radius(Radius::Full)
-            .fill(theme::control_fill())
+            // opaque, so the shadow under it doesn't show through and grey it
+            .fill(crate::color::over(
+                theme::control_fill(),
+                crate::tokens::sys::color::window::bg(),
+            ))
             .shadow(
                 Shadow::drop(theme::shadow_color())
                     .blur(3.09)

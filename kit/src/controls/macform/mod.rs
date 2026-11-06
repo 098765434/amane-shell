@@ -24,9 +24,12 @@ mod stepper;
 mod switch;
 pub(crate) mod text_field;
 
+pub mod color_wells;
 pub mod symbol;
 pub mod theme;
+pub mod thumbnail_picker;
 
+pub use color_wells::ColorWells;
 pub use combo_box::MacComboBox;
 pub use leading_icon::MacLeadingIcon;
 pub use menu::{MenuItem, context_menu};
@@ -38,6 +41,7 @@ pub use stepper::MacStepper;
 pub use switch::MacSwitch;
 pub use symbol::{Symbol, symbol};
 pub use text_field::MacTextField;
+pub use thumbnail_picker::ThumbnailPicker;
 
 use amane::{Animation, Blend, Center, Color, Rectangle, Row, Size, Text, Widget};
 
