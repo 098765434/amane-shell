@@ -127,7 +127,8 @@ watch)
     ;;
 status)
     name=${2:?usage: remote.sh status NAME}; name_ok "$name"
-    remote bash -c "cat ~/needle-ft/runs/$name/done 2>/dev/null && exit; systemctl --user is-active needle-ft-$name"
+    # one line, as ssh hands it to the remote shell
+    remote "cat needle-ft/runs/$name/done 2>/dev/null || systemctl --user is-active needle-ft-$name"
     ;;
 stop)
     name=${2:?usage: remote.sh stop NAME}; name_ok "$name"
@@ -158,7 +159,7 @@ score)
     score=$(AMANE_ASSISTANT_MODELS="$dir" XDG_CACHE_HOME="$dir/cache" CACTUS_TELEMETRY=0 DO_NOT_TRACK=1 \
         unshare -rn "$bin" eval --json "$cases" "$repo/apps/assistant/eval/laptop.json")
     echo "$score" >"$dir/score.json"
-    line=$(python3 -c 'import json,sys; s=json.loads(sys.argv[1]); print(f"{s[\"right\"]}/{s[\"commands\"]} right, {s[\"wrong\"]} wrong ({s[\"destructive_wrong\"]} destructive), negatives {s[\"clean\"]}/{s[\"negatives\"]}")' "$score")
+    line=$(python3 -c 'import json, sys; print("{right}/{commands} right, {wrong} wrong ({destructive_wrong} destructive), negatives {clean}/{negatives}".format(**json.loads(sys.argv[1])))' "$score")
     echo "$name: $line"
     remote "echo \"\$(date +%H:%M:%S)   dev       $line\" >>needle-ft/runs/$name/train.log"
     ;;
