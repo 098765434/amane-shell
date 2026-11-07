@@ -155,7 +155,7 @@
 
           amane-shell = rustPlatform.buildRustPackage ({
             pname = "amane-shell";
-            inherit ((lib.importTOML ./Cargo.toml).package) version;
+            inherit ((lib.importTOML ./Cargo.toml).workspace.package) version;
 
             # only what the build and its tests read, so a docs change
             # doesn't rebuild

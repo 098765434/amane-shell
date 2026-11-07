@@ -1,15 +1,18 @@
 [package]
 name = "amane-messages"
-version = "0.1.0"
-edition = "2024"
-rust-version = "1.89"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "The phone's text messages and remote input, through KDE Connect, in the shell's look."
-license = "MIT"
-repository = "https://github.com/098765434/amane-shell"
-authors = ["ocbk"]
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
 
 [dependencies]
 amane = { workspace = true }
-amane-kit = { path = "../../kit" }
-chrono = "0.4"
-serde_json = "1.0"
+amane-kit = { workspace = true }
+chrono = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

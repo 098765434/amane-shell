@@ -1,20 +1,23 @@
 [package]
 name = "amane-settings"
-version = "0.1.0"
-edition = "2024"
-rust-version = "1.89"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "Settings for amane-shell: how it looks, changed live while it runs."
-license = "MIT"
-repository = "https://github.com/098765434/amane-shell"
-authors = ["ocbk"]
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
 
 [dependencies]
 amane = { workspace = true }
-amane-kit = { path = "../../kit" }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-chrono = "0.4"
+amane-kit = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
 # statvfs, for how full /nix and /boot are
-libc = "0.2"
+libc = { workspace = true }
 # the display connector's properties (panel type, VRR, colour), read-only
 drm = "0.14"
+
+[lints]
+workspace = true

@@ -1,12 +1,12 @@
 [package]
 name = "amane-assistant"
-version = "0.1.0"
-edition = "2024"
-rust-version = "1.89"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "Spotlight's assistant: system commands, typed or spoken, read on this machine with Cactus (Needle 3, Whistle)."
-license = "MIT"
-repository = "https://github.com/098765434/amane-shell"
-authors = ["ocbk"]
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
 
 # The library is what the shell uses (the commands, the tools, the rules, the
 # protocol); the daemon links Cactus and listens to the microphone. The shell
@@ -25,7 +25,10 @@ default = ["daemon"]
 daemon = ["dep:libpulse-binding", "dep:libpulse-simple-binding"]
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-libpulse-binding = { version = "2", optional = true }
-libpulse-simple-binding = { version = "2", optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+libpulse-binding = { workspace = true, optional = true }
+libpulse-simple-binding = { workspace = true, optional = true }
+
+[lints]
+workspace = true

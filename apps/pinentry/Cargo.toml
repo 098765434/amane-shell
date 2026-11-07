@@ -1,12 +1,12 @@
 [package]
 name = "amane-pinentry"
-version = "0.1.0"
-edition = "2024"
-rust-version = "1.89"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "rbw's pinentry: asks for the master password in the shell's own dialog, over a private socket the shell checks."
-license = "MIT"
-repository = "https://github.com/098765434/amane-shell"
-authors = ["ocbk"]
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
 
 [lib]
 name = "amane_pinentry"
@@ -18,9 +18,12 @@ path = "src/main.rs"
 
 [dependencies]
 # SO_PEERCRED, SO_PEERPIDFD and pidfd_send_signal, which std doesn't have
-libc = "0.2"
+libc = { workspace = true }
 # the pin is wiped from every buffer it passes through
-zeroize = "1.9"
+zeroize = { workspace = true }
 
 [dev-dependencies]
 proptest = "1.11"
+
+[lints]
+workspace = true

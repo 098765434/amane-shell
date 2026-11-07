@@ -1,12 +1,12 @@
 [package]
 name = "amane-shell"
-version = "0.1.0"
-edition = "2024"
-rust-version = "1.89"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "A macOS-flavoured Wayland desktop bar for the niri compositor, built on the amane shell library."
-license = "MIT"
-repository = "https://github.com/098765434/amane-shell"
-authors = ["ocbk"]
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
 readme = "README.md"
 keywords = ["wayland", "niri", "bar", "status-bar", "desktop"]
 categories = ["gui"]
@@ -15,24 +15,27 @@ categories = ["gui"]
 name = "amane-shell"
 path = 'src/main.rs'
 
+[lints]
+workspace = true
+
 [dependencies]
 # pinned in [workspace.dependencies], shared with the kit
 amane = { workspace = true }
-amane-kit = { path = "kit" }
+amane-kit = { workspace = true }
 # the assistant's commands, rules and protocol; its daemon (Cactus) is apps/assistant
 amane-assistant = { path = "apps/assistant", default-features = false }
-serde_json = "1.0"
+serde_json = { workspace = true }
 # for the one bus call that hands back a file descriptor (logind's Inhibit),
 # which amane's Bus can't carry; the same zbus amane already pulls in
-zbus = "5.19.0"
-chrono = "0.4"
+zbus = { workspace = true }
+chrono = { workspace = true }
 # statvfs, for how full the disks are (already in the lock, through amane)
-libc = "0.2"
+libc = { workspace = true }
 qrcode = { version = "0.14", default-features = false }
 # passwords: wiped from every buffer they pass through
-zeroize = "1.9"
+zeroize = { workspace = true }
 # rbw's pinentry: the wire format and peer checks the shell shares with it
-amane-pinentry = { path = "apps/pinentry" }
+amane-pinentry = { workspace = true }
 
 [profile.dev]
 debug = "line-tables-only"
@@ -42,10 +45,40 @@ opt-level = 3
 debug = false
 incremental = false
 
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+unused_must_use = "deny"
+
+# `all` is clippy's default set; the others are the few extra this codebase
+# holds itself to. `unwrap_used` is allowed in tests (clippy.toml).
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+dbg_macro = "warn"
+todo = "warn"
+unwrap_used = "warn"
+
 [workspace]
 members = ["kit", "apps/pinentry", "apps/settings", "apps/messages", "apps/mirror", "apps/shader-lab", "apps/assistant", "apps/drop", "apps/train-watch"]
 
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+license = "MIT"
+repository = "https://github.com/098765434/amane-shell"
+authors = ["ocbk"]
+
 [workspace.dependencies]
+amane-kit = { path = "kit" }
+amane-pinentry = { path = "apps/pinentry" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = "0.4"
+libc = "0.2"
+zeroize = "1.9"
+zbus = "5.19.0"
+libpulse-binding = "2"
+libpulse-simple-binding = "2"
 # amane is consumed as a pinned git-dependency on the maintained fork (not a
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
