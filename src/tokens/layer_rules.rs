@@ -708,4 +708,115 @@ mod tests {
         );
         assert_eq!(anchored("a+b(c)"), r"^a\+b\(c\)$");
     }
+
+    /// Namespaces with no rule of their own, and why they need none.
+    const POPUPS: &[(&str, &str)] = &[
+        (
+            "amane.context-menu.",
+            "menu levels: popups under the anchor's rule (popups {})",
+        ),
+        (
+            "amane.status-bar.activity",
+            "a popup of the status bar, under its rule",
+        ),
+        (
+            "amane.tooltip",
+            "a popup of whichever surface shows it, under that one's rule",
+        ),
+        (
+            "amane.macform.menu",
+            "a popup of the window or surface that opens it",
+        ),
+        (
+            "amane.fill",
+            "an input-method popup over another app's window, not a layer surface",
+        ),
+    ];
+
+    /// Every `.rs` file under `dir`.
+    fn sources(dir: &std::path::Path, out: &mut Vec<(std::path::PathBuf, String)>) {
+        for entry in std::fs::read_dir(dir).expect("a source folder").flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                sources(&path, out);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                let text = std::fs::read_to_string(&path).expect("a source file");
+                out.push((path, text));
+            }
+        }
+    }
+
+    /// The `amane.…` namespaces the shell's surfaces and popups use: the
+    /// `…NS` constants (one, or an array of them), and literal
+    /// `Popup::new("…")` and `.namespace("…")` calls.
+    fn namespaces_in_code() -> std::collections::BTreeMap<String, String> {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut files = Vec::new();
+        for dir in ["src", "kit/src", "apps/drop/src"] {
+            sources(&root.join(dir), &mut files);
+        }
+        let mut found = std::collections::BTreeMap::new();
+        for (path, text) in &files {
+            let mut in_array = false;
+            for (n, line) in text.lines().enumerate() {
+                let decl = line
+                    .split_once("const ")
+                    .and_then(|(_, rest)| rest.split_once(':'))
+                    .filter(|(name, _)| name.trim().ends_with("NS"));
+                let take = match decl {
+                    Some((_, ty)) if ty.trim_start().starts_with('[') => {
+                        in_array = !line.contains("];");
+                        true
+                    }
+                    Some(_) => true,
+                    None if in_array => {
+                        in_array = !line.contains("];");
+                        true
+                    }
+                    None => line.contains("Popup::new(\"") || line.contains(".namespace(\""),
+                };
+                if !take {
+                    continue;
+                }
+                for literal in line.split('"').skip(1).step_by(2) {
+                    if literal.starts_with("amane.") {
+                        let at = format!("{}:{}", path.display(), n + 1);
+                        found.entry(literal.to_string()).or_insert(at);
+                    }
+                }
+            }
+        }
+        found
+    }
+
+    #[test]
+    fn every_namespace_has_a_rule_or_rides_on_one() {
+        let rules: Vec<&str> = rules().iter().map(|r| r.namespace).collect();
+        let covers =
+            |rule: &str, ns: &str| ns == rule || (rule.ends_with('.') && ns.starts_with(rule));
+        let found = namespaces_in_code();
+        assert!(found.len() > 10, "found too few namespaces: {found:?}");
+
+        let mut lost = Vec::new();
+        for (ns, at) in &found {
+            let ruled = rules.iter().any(|rule| covers(rule, ns));
+            let popup = POPUPS.iter().any(|(p, _)| covers(p, ns));
+            if !ruled && !popup {
+                lost.push(format!("{ns} ({at})"));
+            }
+        }
+        assert!(
+            lost.is_empty(),
+            "namespaces with no layer rule; add one to rules(), or to POPUPS with why:\n  {}",
+            lost.join("\n  ")
+        );
+
+        // and nothing listed that the code no longer uses
+        for rule in rules.iter().chain(POPUPS.iter().map(|(p, _)| p)) {
+            assert!(
+                found.keys().any(|ns| covers(rule, ns)),
+                "{rule} is in the rules but no surface uses it"
+            );
+        }
+    }
 }
