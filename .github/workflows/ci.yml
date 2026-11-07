@@ -42,6 +42,15 @@ jobs:
       - name: links
         run: nix develop -c cargo xtask links
 
+      # amane and niri agree at the pinned revisions: the same protocol XMLs, and
+      # every niri IPC name amane uses exists (docs/integration/contract.md)
+      - name: checkout amane and niri for the contract
+        run: |
+          git clone --filter=blob:none -q https://github.com/098765434/amane .contract/amane
+          git clone --filter=blob:none -q https://github.com/098765434/niri .contract/niri
+      - name: contract
+        run: nix develop -c cargo xtask contract --amane .contract/amane --niri .contract/niri
+
   # The Nix package: catches a stale amane `outputHashes` after a rev bump
   # (flake.nix), and runs the tests again in its check phase.
   nix-build:

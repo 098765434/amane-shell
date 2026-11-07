@@ -100,6 +100,7 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | Every CLI and IPC command, and the socket they go over | [integration/ipc.md](integration/ipc.md) | niri [IPC events](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/events.md), [actions](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/actions.md) |
 | The shell's services and amane's, the settings files and the state files | [integration/services.md](integration/services.md) | amane [compositor services](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md), [system services](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/idle.md) (`system/`) |
 | The NixOS configuration from Shell Settings: the registry and `managed/settings.json`, the `amaneSettings` output, build → compare → activate through polkit, the commit, "up to date" | [integration/nixos.md](integration/nixos.md) | nixos-config `modules/managed.nix` |
+| What the shell relies on from niri, amane and the kit, with the revisions that have it; `cargo xtask contract` | [integration/contract.md](integration/contract.md) | niri [Features](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/features.md), [what amane-shell relies on](https://github.com/098765434/niri/blob/ocbk/docs/fork/maintaining.md#what-amane-shell-relies-on) |
 
 ## Development
 

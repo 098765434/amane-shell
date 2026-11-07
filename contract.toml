@@ -1,0 +1,4 @@
+# The niri fork revision amane-shell is tested against: `cargo xtask contract` reads
+# niri-ipc and the protocol XMLs there. Keep it at the rev nixos-config builds
+# (docs/integration/contract.md).
+niri = "745e72d59403c479245e0bc39588c65a1fa4eacc"

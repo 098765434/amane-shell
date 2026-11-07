@@ -8,6 +8,9 @@
 //! - `lint-terms`: `scripts/lint-terms`, no other vendor's platform terms.
 //! - `links`: every relative link in the Markdown points at a file that
 //!   exists.
+//! - `contract`: amane and niri agree at the pinned revisions (contract.rs).
+
+mod contract;
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -39,9 +42,10 @@ fn main() -> ExitCode {
         }
         ["lint-terms", rest @ ..] => run(Command::new(root.join("scripts/lint-terms")).args(rest)),
         ["links"] => links(&root),
+        ["contract", rest @ ..] => contract::run(&root, rest),
         _ => {
             eprintln!(
-                "usage: cargo xtask layer-rules | tokens (normalize | check) <file> | lint-terms | links"
+                "usage: cargo xtask layer-rules | tokens (normalize | check) <file> | lint-terms | links | contract"
             );
             false
         }

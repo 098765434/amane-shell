@@ -37,6 +37,7 @@ assistant's library. `cargo xtask` runs the workspace's tasks:
 | `cargo xtask tokens check <file>` | runs the manual's rules on a token file |
 | `cargo xtask lint-terms` | `scripts/lint-terms` |
 | `cargo xtask links` | fails on a relative Markdown link to a file that isn't there |
+| `cargo xtask contract` | amane and niri agree at the pinned revisions ([contract.md](docs/integration/contract.md)); reads `../amane` and `../niri` |
 
 ### Bumping revs
 
@@ -52,6 +53,8 @@ first, then:
    `amane-0.1.2` and `vello-0.11.0`. Set the bumped one to `sha256-AAAA…=` (44 characters), run
    `nix build`, and copy the hash it prints after `got:`.
 4. `scripts/check-pins` is silent when the local checkouts match.
+5. After a niri bump in nixos-config, set `contract.toml` to the same revision; `cargo xtask
+   contract` says when they differ.
 
 `scripts/check-pins` tells you when that local build differs from the Nix build: `../amane` isn't
 at the pinned rev, has uncommitted changes, or pins a different vello rev than the shell does.

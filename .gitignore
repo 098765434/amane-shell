@@ -4,3 +4,4 @@
 /result-*
 /.cargo/local.toml
 __pycache__/
+/.contract/
