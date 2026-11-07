@@ -1,5 +1,5 @@
-//! The Customize window — macOS's Customize Control Center for Quick
-//! Settings: one frosted sheet in the middle of the screen with a sidebar
+//! The Customize window — where Quick Settings' controls are added from:
+//! one frosted sheet in the middle of the screen with a sidebar
 //! (a search field over the categories) and a pane listing every control
 //! at its real size on a plain tint, named under it, under section
 //! headers. A control is dragged from the pane onto the card, which stays

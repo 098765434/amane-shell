@@ -1,4 +1,4 @@
-//! Materials, as Apple's HIG has them: a piece of glass asks for the
+//! Materials: a piece of glass asks for the
 //! material of its role (`Material::Control`, `Material::Sheet` …), never
 //! for a colour, and the material decides the rest: which of niri's
 //! materials frosts it, how thick its tint is, whether it turns light or
@@ -6,7 +6,7 @@
 //! drawn on it. The glass setting and higher contrast change every
 //! material at once, here.
 //!
-//! Two families, after Liquid Glass and Apple's standard materials:
+//! Two families, glass and the standard materials:
 //!
 //! - **Glass** is the layer of controls and navigation floating over
 //!   content, lensed by niri's `glass` material. Its Clear variant
@@ -16,7 +16,7 @@
 //!
 //! The thicker a material, the more opaque its tint: small glass is thin,
 //! large glass that holds text is thick. The vibrant labels are one set for
-//! every material, as Apple's are; the contrast floors check each against
+//! every material; the contrast floors check each against
 //! each tint (`tokens::rules`). See `docs/design-system/materials.md`.
 
 #![allow(missing_docs)]
@@ -32,8 +32,7 @@ use crate::theme::{self, Mode};
 use crate::tokens::{Key, sys, with_key};
 
 /// What a piece of glass is for. Pick by role, not by how it looks: the
-/// look changes with the settings (Apple: "choose materials by semantic
-/// meaning").
+/// look changes with the settings.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Material {
     /// Small controls floating over content: Quick Settings modules, the
@@ -69,13 +68,13 @@ pub enum Material {
 /// The two families of material.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Family {
-    /// Liquid Glass: controls and navigation, lensed.
+    /// Glass: controls and navigation, lensed.
     Glass(Variant),
     /// Frost without a lens, inside the content layer.
     Standard,
 }
 
-/// Liquid Glass's variants.
+/// Glass's variants.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Variant {
     /// Blurs and evens out what's behind, for anything with text.
@@ -111,7 +110,7 @@ pub enum Blending {
 pub struct Spec {
     pub family: Family,
     pub thickness: Thickness,
-    /// Turns light or dark with its backdrop, as Apple's small glass does.
+    /// Turns light or dark with its backdrop, as small glass does.
     pub adaptive: bool,
     pub blending: Blending,
 }
@@ -157,17 +156,17 @@ impl Thickness {
 
 // TODO(token): `sys.material.inactive` once Penpot has it.
 /// How far an app window's materials go toward opaque while another window
-/// has the focus: calmer, as AppKit's inactive windows are.
+/// has the focus: calmer, so the focused one stands out.
 const INACTIVE: f32 = 0.5;
 
 // TODO(token): `sys.material.small-glass` once Penpot has it.
 /// Glass no bigger than this across its short side, a control-sized piece,
-/// frosts with the small glass material, as Apple's small glass frosts less.
+/// frosts with the small glass material, which frosts less.
 pub const SMALL_GLASS: f32 = 44.0;
 
 // TODO(token): `sys.material.clear-fade` once Penpot has it.
 /// How much of its tint Clear glass keeps over a backdrop that isn't
-/// bright. Over a bright one it keeps all of it: Apple's 35% dimming layer
+/// bright. Over a bright one it keeps all of it: a 35% dimming layer
 /// (the ultra-thin tint is darker still).
 const CLEAR_FADE: f32 = 0.7;
 
@@ -251,14 +250,14 @@ impl Material {
 
     /// The niri material asked for, by name, and its stand-ins: the one
     /// without the lens building up under reduced motion first, then
-    /// liquid glass, which every config with materials has.
+    /// `glass`, which every config with materials has.
     fn wanted(self, still: bool) -> &'static [&'static str] {
         let large = matches!(
             self.spec().thickness,
             Thickness::Thick | Thickness::UltraThick
         );
         match (self.spec().family, still) {
-            // thick glass frosts more, as Apple's sheets and sidebars do (30 pt)
+            // thick glass frosts more, as sheets and sidebars do (30 pt)
             (Family::Glass(Variant::Regular), false) if large => &["glass-large", "glass"],
             (Family::Glass(Variant::Regular), true) if large => {
                 &["glass-large-still", "glass-large", "glass-still", "glass"]
@@ -275,7 +274,7 @@ impl Material {
     }
 
     /// The niri material for a small piece of this one, which frosts its
-    /// backdrop less than large glass (the macOS 27 kit: 6 against 16), or
+    /// backdrop less than large glass (6 against 16), or
     /// none where this material has no small variant or niri doesn't offer it.
     fn niri_small(self) -> Option<&'static str> {
         if !see_through() {
@@ -325,7 +324,7 @@ impl Material {
             }
             Self::Window | Self::Sidebar | Self::Header => {
                 let tint = match self {
-                    // Apple's sidebar recipe, drawn by the window over niri's frost
+                    // the sidebar's recipe, drawn by the window over niri's frost
                     Self::Sidebar => glass_region::level(sys::color::material::sidebar()),
                     _ => untoned(self.spec().thickness.tint()),
                 };
@@ -523,7 +522,7 @@ fn on_content() -> bool {
     !see_through() || current() == Some(Material::Content)
 }
 
-/// A label, under higher contrast or not: Apple's increased contrast keeps
+/// A label, under higher contrast or not: increased contrast keeps
 /// each level well clear of the next.
 fn label_in(level: Level, high_contrast: bool, content: bool) -> Color {
     let color = match (level, content) {
@@ -718,7 +717,7 @@ mod tests {
     #[test]
     fn glass_labels_are_stronger_than_the_content_areas() {
         // the blend over a frosted backdrop costs contrast, so the vibrant
-        // set starts higher (the macOS 27 kit: 90 % against 85 % in light)
+        // set starts higher (90 % against 85 % in light)
         for mode in Mode::ALL {
             with_key(Key::new(mode, Density::Comfortable), || {
                 let glass = label_in(Level::Primary, false, false).alpha();

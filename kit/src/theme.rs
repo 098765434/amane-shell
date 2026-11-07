@@ -28,7 +28,7 @@ pub enum Density {
     Compact,
 }
 
-/// How see-through the glass is, as Apple's Liquid Glass setting has it.
+/// How see-through the glass is.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum Glass {

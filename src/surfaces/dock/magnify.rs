@@ -1,4 +1,4 @@
-//! The macOS magnification, as plain layout: how big each icon of a row is
+//! The dock's magnification, as plain layout: how big each icon of a row is
 //! with the pointer at some place along it, and where that puts them.
 //!
 //! The pointer is measured against the row at rest, never the swollen row

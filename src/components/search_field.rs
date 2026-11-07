@@ -4,7 +4,7 @@
 //! key reaches the surface's `on_key` and a [`Field`] does the editing
 //! (`Field::handle`). The caret shows while the keys go to the field.
 //!
-//! Drawn in the shell's macOS look: a `surface.raised` capsule a control
+//! Drawn in the shell's look: a `surface.raised` capsule a control
 //! tall, the query in `sys.type.label`, the placeholder secondary, the
 //! selection washed `state.selected`, the caret in the accent.
 

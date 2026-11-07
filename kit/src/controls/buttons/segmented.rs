@@ -6,7 +6,7 @@
 //! one: a `surface.raised` track with the caller's corner radius, and an
 //! inset accent thumb whose corners stay concentric with the track's.
 //!
-//! It moves like iOS's segmented control: in single-select one thumb springs
+//! It moves like a phone's segmented control: in single-select one thumb springs
 //! across to the new segment, each label brightening as the thumb passes
 //! under it, and in multi-select each segment's thumb fades in and out. A
 //! click moves the thumb at once; if the service doesn't follow within

@@ -2,7 +2,7 @@
 //! kind's glyph and name), a large figure, a ring, a sparkline and a bar.
 //! Each face is laid out by hand for its size, every piece placed at a
 //! point in the card's content box: a widget is a few readings in fixed
-//! places, as macOS's are.
+//! places.
 
 mod battery;
 mod clock;
@@ -22,7 +22,7 @@ pub use clock::settle as settle_clock;
 
 // TODO(token): `widget.card.pad`, `widget.type.figure` and
 // `widget.type.figure-large` once Penpot has them (manual §1.1).
-/// The room inside a card's edge, as macOS's widgets keep.
+/// The room inside a card's edge.
 pub const PAD: f32 = 16.0;
 const FIGURE: f32 = 28.0;
 const FIGURE_LARGE: f32 = 40.0;

@@ -18,8 +18,8 @@ pub const ICON_DISK: char = '\u{f80e}';
 pub const ICON_NETWORK: char = '\u{e8d5}';
 pub const ICON_SCHEDULE: char = '\u{e8b5}';
 
-/// macOS's widget sizes on the desktop's grid: a cell is Quick Settings'
-/// (74 px, 16 px between), so Small is 164 × 164, near macOS's 170 pt.
+/// The widget sizes on the desktop's grid: a cell is Quick Settings'
+/// (74 px, 16 px between), so Small is 164 × 164.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum WidgetSize {
     Small,

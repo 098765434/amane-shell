@@ -1,4 +1,4 @@
-//! A question answered with one of its buttons, in macOS 26's alert: a
+//! A question answered with one of its buttons, as an alert: a
 //! narrow card of thick glass with an optional icon, a bold title, a
 //! message, and its buttons side by side or stacked.
 //!
@@ -15,7 +15,7 @@
 //! layer surface of its own. Both draw [`Dialog::content`] on their glass.
 //!
 //! Its buttons sit side by side when there are at most two and their labels
-//! fit, and stack otherwise, as macOS's do; [`Dialog::stacked`] and
+//! fit, and stack otherwise; [`Dialog::stacked`] and
 //! [`Dialog::side_by_side`] choose for it. Return answers with the default
 //! button, Escape with the cancel button.
 //!

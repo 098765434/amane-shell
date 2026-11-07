@@ -590,7 +590,7 @@ mod tests {
         for (ty, v) in [
             (Color, json!("#ff453a2e")),
             (Spacing, json!("6")),
-            (FontFamilies, json!(["SF Pro Text", "Inter"])),
+            (FontFamilies, json!(["Atkinson Hyperlegible Next", "Inter"])),
             (FontWeights, json!("500")),
             (
                 Typography,

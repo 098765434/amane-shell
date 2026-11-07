@@ -1,4 +1,4 @@
-//! Notifications, macOS/iOS-style: toasts that slide in at the top-right,
+//! Notifications: toasts that slide in at the top-right,
 //! a notification center in a sidebar, and Do Not Disturb.
 //!
 //! amane is the notification daemon (its `Notifications` service holds the

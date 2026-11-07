@@ -4,8 +4,8 @@
 //! Every preview is worked out from the layout as it was when the drag
 //! began (the base), never from the last preview, so the same cell always
 //! gives the same arrangement and moving back restores the base. A cell
-//! where nothing fits keeps the last preview that did, as iOS stays where
-//! it last fit. The cell an item is in is kept until it's well past the
+//! where nothing fits keeps the last preview that did, staying where it
+//! last fit. The cell an item is in is kept until it's well past the
 //! boundary (`Metrics::settle`), so a hand resting on a boundary doesn't
 //! make the grid flap.
 //!

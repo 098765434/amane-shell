@@ -178,7 +178,7 @@ fn listening_glyph(level: f32) -> Rectangle {
 }
 
 /// The mode's glyph, the magnifier on the pill. In a mode it's a back
-/// button: a chevron on a soft square under the pointer, as Spotlight's.
+/// button: a chevron on a soft square under the pointer.
 fn leading_glyph(mode: Mode, hovered: bool) -> Rectangle {
     let label = material::label(Level::Secondary);
     if mode == Mode::Home {

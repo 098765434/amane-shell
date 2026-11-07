@@ -1,4 +1,4 @@
-//! Focus — GNOME's Do Not Disturb toggle as Control Center's Focus tile
+//! Focus — GNOME's Do Not Disturb toggle as a Focus tile
 //! (the tile says "Focus", its subtitle what's on), and a page with the
 //! notification center's timed choices: for an hour, until this evening,
 //! until tomorrow.

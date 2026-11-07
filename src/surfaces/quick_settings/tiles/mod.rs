@@ -1,7 +1,7 @@
 //! The controls and their pages, one file per setting. Each file has the
 //! toggle or cell for it (`None` when this machine hasn't got it) and the
 //! page it opens. [`grid`] draws them on the canvas where the layout puts
-//! them, in Control Center's order by default.
+//! them, in the default order unless moved.
 
 pub mod airplane;
 pub mod appearance;
@@ -189,7 +189,7 @@ pub(super) fn grid(look: Motion) -> Grid {
     // every module's glass edge, lit in one pass over the whole grid
     let mut rims: Vec<Rim> = Vec::new();
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
-    // in edit mode the places a control can go show through, as on iOS.
+    // in edit mode the places a control can go show through.
     // The layer every drag is measured on is the surface's own, under the
     // card and the Customize window alike (`customize::drag_layer`).
     if editing {

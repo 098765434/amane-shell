@@ -1,4 +1,4 @@
-//! The grid — iOS Control Center's canvas: `cols` columns by `rows` rows of
+//! The grid — Quick Settings' canvas: `cols` columns by `rows` rows of
 //! square cells with a gap between them, and controls that span whole
 //! cells (a round button one, a tile two across, Now Playing two by two, a
 //! slider three or four across). Every control has a place on the canvas,

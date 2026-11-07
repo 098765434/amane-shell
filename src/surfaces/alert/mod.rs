@@ -1,6 +1,6 @@
 //! The shell's alert: a [`Dialog`] in the middle of the screen, on a
-//! surface of its own in thick glass, as macOS asks before it ends the
-//! session. One shows at a time, and it holds the keyboard until answered:
+//! surface of its own in thick glass, as asked before the session ends.
+//! One shows at a time, and it holds the keyboard until answered:
 //! Return answers with its default button, Escape with its cancel button.
 //!
 //! The surface is only as big as the card, which frosts itself with one

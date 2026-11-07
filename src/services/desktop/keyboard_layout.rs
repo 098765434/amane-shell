@@ -1,5 +1,5 @@
 //! The keyboard layouts niri has and the one in use, for the bar's input
-//! menu, as macOS's. Followed from `niri msg --json event-stream`, which
+//! menu. Followed from `niri msg --json event-stream`, which
 //! says the layouts as it starts and each switch after.
 
 use std::io::{BufRead, BufReader};
@@ -90,7 +90,7 @@ fn apply(now: &KeyboardLayout, line: &str) -> Option<KeyboardLayout> {
     None
 }
 
-/// A short code for a layout's name, as macOS shows the input source: the
+/// A short code for a layout's name, as the bar shows the input source: the
 /// language's own two letters where the name says, else its first two.
 pub fn short(name: &str) -> String {
     const KNOWN: [(&str, &str); 14] = [

@@ -644,7 +644,7 @@ fn text(s: &Lab) -> Vec<Box<dyn Widget>> {
     ]
 }
 
-/// macOS Settings-style rows, from the kit's `form`.
+/// Settings rows in groups, from the kit's `form`.
 fn settings_rows(s: &Lab) -> Vec<Box<dyn Widget>> {
     let width = 500.0;
     let accents: Vec<MenuItem> = ACCENTS.iter().map(|a| MenuItem::from(*a)).collect();

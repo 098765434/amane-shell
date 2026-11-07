@@ -19,15 +19,15 @@ use crate::tokens::{Key, with_key};
 
 // TODO(token): `sys.glass.material` once Penpot has it (manual §1.1).
 /// The compositor's material glass falls back on where its own isn't
-/// configured: niri's liquid glass, which every config with materials has.
+/// configured: niri's `glass`, which every config with materials has.
 pub const MATERIAL: &str = "glass";
 
 /// How much clearer than its tint Clear glass is.
 const CLEAR: f32 = 0.8;
 
 /// Whether the glass is see-through at all: not where the settings ask for
-/// solid glass, nor where the system asks for higher contrast (Apple's
-/// Reduce Transparency and Increase Contrast).
+/// solid glass, nor where the system asks for higher contrast (Reduce
+/// Transparency and Increase Contrast).
 pub fn see_through() -> bool {
     theme::glass() != Glass::Solid && !theme::high_contrast()
 }
@@ -76,11 +76,11 @@ const PANEL_LABELS: Turns = Turns {
     to_dark: 0.45,
 };
 
-/// A panel of glass keeps the theme's tint (Apple: "bigger elements …
-/// adapt based on context, but they don't flip"), thinned where the
-/// backdrop is on the tint's side; what's on it flips with how bright
-/// the glass comes out, `tint` over the backdrop ("symbols and glyphs …
-/// flip from light to dark, mirroring the glass"), decided under `group`
+/// A panel of glass keeps the theme's tint (a big piece adapts to what's
+/// behind it but doesn't flip), thinned where the backdrop is on the
+/// tint's side; what's on it flips with how bright the glass comes out,
+/// `tint` over the backdrop (symbols and glyphs flip from light to dark,
+/// mirroring the glass), decided under `group`
 /// with hysteresis ([`PANEL_LABELS`]).
 fn panel_adaptation(group: u32, theme: Mode, tint: Color, luminance: Option<f32>) -> Panel {
     let none = Panel {
@@ -240,7 +240,7 @@ pub(crate) fn adapted<T>(id: u32, f: impl FnOnce() -> T) -> T {
 /// panel is: the theme's tint, thinned by the mean of the readings behind
 /// `members`, and labels flipped with how bright the glass comes out,
 /// decided under `group` ([`panel_adaptation`]). The pieces stay alike,
-/// as Apple's Control Center does; `members` includes the piece being
+/// as Quick Settings' do; `members` includes the piece being
 /// built.
 pub(crate) fn adapted_group<T>(
     group: u32,

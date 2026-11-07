@@ -99,7 +99,7 @@ impl Anim {
     }
 }
 
-/// The macOS magnification: the icon under the pointer and its neighbours
+/// The magnification: the icon under the pointer and its neighbours
 /// swell and rise, the dock spreading to make room.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Magnify {

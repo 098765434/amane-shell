@@ -92,8 +92,8 @@ pub fn rules() -> Vec<LayerRule> {
         LayerRule {
             namespace: BAR_NS,
             comment: String::from(
-                "Status bar: one uniform frosted strip along the bottom, macOS 27's toolbar:\n\
-                 frost, the standard material without a lens. It reserves its zone, so only\n\
+                "Status bar: one uniform frosted strip along its edge, in the standard\n\
+                 material without a lens (frost). It reserves its zone, so only\n\
                  the wallpaper is behind it and niri's xray blur is enough. Its xdg-popups\n\
                  (tooltips, Do Not Disturb's menu) are frosted cards.",
             ),

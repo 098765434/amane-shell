@@ -103,7 +103,7 @@ pub fn set_brightness(level: u8) {
     brightness(i16::from(level.min(100)) - i16::from(now));
 }
 
-/// Moves the volume by `by`, unmuting as it goes up (as macOS does).
+/// Moves the volume by `by`, unmuting as it goes up.
 fn volume(by: i16) {
     let audio = Audio::read();
     let (now, muted, kind) = (audio.volume(), audio.muted(), audio.output_kind());

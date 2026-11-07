@@ -1,6 +1,6 @@
 //! Pinned apps: an app kept in the dock on the workspace it was pinned on,
-//! there to open whether or not it's running, as macOS keeps its pinned
-//! apps (but one workspace's, not every one's).
+//! there to open whether or not it's running (on one workspace, not
+//! every one).
 //!
 //! A pin knows its workspace by name when the workspace has one, which
 //! niri keeps whatever its place, else by its place on the monitor (niri

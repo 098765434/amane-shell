@@ -570,7 +570,7 @@ fn files(query: &Query, kind: Option<FileKind>, folder: Option<PathBuf>, out: &m
 }
 
 /// The kinds a search can be narrowed to, named like `name`: "/" and a
-/// kind's name, as Spotlight's.
+/// kind's name.
 fn kinds(name: &str, out: &mut Vec<Candidate>) {
     for kind in FileKind::ALL {
         if rank::fuzzy(name, kind.label()).is_none() && !name.is_empty() {

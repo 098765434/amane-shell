@@ -1,6 +1,6 @@
 //! One notification as a card, shared by the toasts and the center.
 //!
-//! Laid out like an iOS/macOS banner, in three columns: the app icon,
+//! Laid out as a banner, in three columns: the app icon,
 //! centered in its frame on the left; the app name, the summary and up to
 //! [`BODY_LINES`] of body in the middle; the time on the right, with the
 //! sender's image under it as a thumbnail. The sender's actions run as a row
@@ -601,7 +601,7 @@ fn one_line(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// When it arrived, macOS-style: "now", "5m ago", "2h ago", then the day.
+/// When it arrived, briefly: "now", "5m ago", "2h ago", then the day.
 pub fn ago(received: SystemTime, now: SystemTime) -> String {
     let elapsed = now.duration_since(received).unwrap_or(Duration::ZERO);
     let minutes = elapsed.as_secs() / 60;

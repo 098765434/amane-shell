@@ -1,4 +1,4 @@
-//! SFSymbol: the handful of SF Symbols the macform controls draw, as
+//! SFSymbol: the handful of symbols the macform controls draw, as
 //! strokes with round caps and joins (no font has them on Linux).
 //!
 //! Each symbol is a few straight lines in a `size` square, which amane
@@ -11,7 +11,7 @@ use amane::{Canvas, Cap, Center, Color, Join, Path, Radius, Rectangle, Row, Shap
 
 use crate::layout::boxed;
 
-/// The symbols the controls use, named as in SF Symbols.
+/// The symbols the controls use, named as in the bar's symbol set.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Symbol {
     ChevronDown,

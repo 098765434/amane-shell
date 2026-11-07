@@ -405,7 +405,7 @@ fn row(index: usize, item: &MenuItem, level: usize, any_icon: bool) -> Rectangle
 }
 
 /// A row's fill, label colour and shortcut colour. A keyboard-focused row is
-/// selected (accent, like macOS); a pointer-focused one only hovered.
+/// selected (accent); a pointer-focused one only hovered.
 fn row_colors(item: &MenuItem, focused: bool, keyboard: bool) -> (Color, Color, Color) {
     let fill = if !focused {
         Color::TRANSPARENT

@@ -1,5 +1,5 @@
-//! Detail page — what a tile opens: GNOME's submenu, drawn as a macOS
-//! Control Center page that slides over the grid.
+//! Detail page — what a tile opens: GNOME's submenu, drawn as a page
+//! that slides over the grid.
 //!
 //! A back chevron (none on a page opened on its own, from its status
 //! icon) and the setting's name (and what it's doing), an optional

@@ -43,7 +43,7 @@ pub fn app(app_id: &str) -> App {
 }
 
 /// What an app window is drawn on: the opaque window background
-/// (`sys.color.window.bg`), as macOS draws a window's content. Only the
+/// (`sys.color.window.bg`). Only the
 /// [`sidebar`] shows the compositor's frost behind the window.
 pub fn window_bg() -> Color {
     sys::color::window::bg()
@@ -104,7 +104,7 @@ pub fn text_field(id: &'static str, placeholder: &str) -> TextInput {
 }
 
 /// Runs `commit` with the field's text when the field `id` has just lost
-/// the keys, as macOS keeps what was typed when you click away. Call it
+/// the keys, so what was typed is kept when you click away. Call it
 /// while drawing the view that shows the field; amane has no blur event,
 /// so this notices the change between one drawing and the next.
 pub fn commit_on_blur(id: &'static str, commit: impl FnOnce(String)) {
@@ -126,8 +126,8 @@ pub fn commit_on_blur(id: &'static str, commit: impl FnOnce(String)) {
     }
 }
 
-/// The box a [`text_field`] sits in, drawn like macOS's (the macform
-/// look): radius 6, `fieldFill` in a hairline that takes the accent while
+/// The box a [`text_field`] sits in, drawn in the macform look:
+/// radius 6, `fieldFill` in a hairline that takes the accent while
 /// the field has the keys.
 pub fn field_box(id: &'static str, input: TextInput, width: impl Into<Size>) -> Rectangle {
     text_field::frame(input, width, text_field::edge(id))
@@ -140,8 +140,8 @@ pub struct Page {
     pub name: String,
     /// A title over a run of pages, not a page: it can't be selected.
     pub section: bool,
-    /// The tile its glyph sits on, as macOS's System Settings draws its
-    /// sidebar; with none the glyph is drawn bare.
+    /// The tile its glyph sits on, as Shell Settings draws its sidebar;
+    /// with none the glyph is drawn bare.
     pub accent: Option<Accent>,
 }
 
@@ -161,7 +161,7 @@ impl Page {
         self
     }
 
-    /// A section's title, as macOS's sidebar groups its pages. It takes an
+    /// A section's title, grouping the sidebar's pages. It takes an
     /// index like a page, so one array still names every row.
     pub fn section(name: impl Into<String>) -> Self {
         Self {
@@ -342,7 +342,7 @@ pub fn sidebar_panel(content: impl Widget + 'static) -> Rectangle {
     }
 
     // a hole in the window's opaque surface, down to the frost behind the
-    // window, as a macOS sidebar is the one behind-window part
+    // window, the sidebar being the one behind-window part
     Rectangle::new()
         .width(Size::Parent)
         .height(Size::Parent)

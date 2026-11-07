@@ -1,7 +1,7 @@
 //! The layout — where each control sits on the canvas and how big it is,
 //! as edit mode leaves it. Kept in `$XDG_STATE_HOME/amane-shell/
 //! quick-settings` as JSON; absent, unreadable or from an older version,
-//! it's Control Center's order packed onto the canvas. A control the file
+//! it's the default order packed onto the canvas. A control the file
 //! doesn't know, or one whose hardware shows up later, waits in the Add
 //! list rather than tearing a hole in the canvas.
 //!
@@ -55,7 +55,7 @@ pub fn replace(layout: Layout) {
 }
 
 impl Layout {
-    /// Control Center's order packed onto `canvas`, each control at its
+    /// The default order packed onto `canvas`, each control at its
     /// size, skipping what isn't `present` and what hides by default.
     pub fn default_for(canvas: Canvas, present: &dyn Fn(ControlId) -> bool) -> Self {
         let mut layout = Self {

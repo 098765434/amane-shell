@@ -1,4 +1,4 @@
-//! Slider card — Control Center's Display and Sound modules: a glass card
+//! Slider card — Quick Settings' Display and Sound modules: a glass card
 //! with a title over the slider, a small glyph before the thin track and a
 //! large faint one after it, and a chevron beside a slider that has a page
 //! of devices to pick from. Three cells wide it leaves room for a round

@@ -1,5 +1,5 @@
-//! How big the kit's standard controls are: the five sizes of the macOS 27
-//! kit, Mini to XL. A switch, checkbox, radio or slider knob reads its size
+//! How big the kit's standard controls are: five sizes, Mini to XL. A
+//! switch, checkbox, radio or slider knob reads its size
 //! from the innermost [`scope`], Medium outside any. Each size's values are
 //! `sys.size.*.<size>` and `sys.radius.*.<size>` tokens, density-scaled
 //! like the rest of the sizes.
@@ -76,7 +76,7 @@ impl ControlSize {
         }
     }
 
-    /// A button's corners: capsules from Large up, as in macOS 26.
+    /// A button's corners: capsules from Large up.
     pub fn button_radius(self) -> Radius {
         match self {
             Self::Large | Self::Xl => Radius::Full,

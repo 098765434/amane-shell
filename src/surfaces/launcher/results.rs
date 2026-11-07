@@ -110,7 +110,7 @@ pub(super) fn list(
         .opacity(at.fade)
 }
 
-/// A section's name over its rows, a hairline under it, as Spotlight's.
+/// A section's name over its rows, a hairline under it.
 fn heading(name: &str, width: f32) -> Rectangle {
     let style = TextStyle {
         weight: HEADING_WEIGHT,
@@ -750,8 +750,8 @@ pub(super) fn ask_clipboard(width: f32, height: f32) -> Rectangle {
         .child(Column::new(lines).gap(sys::space::gap::s()).align(Center))
 }
 
-/// What Clipboard says before its history is turned on, as Spotlight does.
-const ASK_NOTE: &str = "Spotlight can keep what you copy, to paste it again from here. \
+/// What Clipboard says before its history is turned on.
+const ASK_NOTE: &str = "The launcher can keep what you copy, to paste it again from here. \
     Copies from password managers are left out, but sensitive information may still be kept.";
 /// How wide that note is at most.
 const ASK_W: f32 = 520.0;

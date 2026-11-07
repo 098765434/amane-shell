@@ -1,5 +1,5 @@
 //! Thumbnail picker — choices shown as small pictures of what each looks
-//! like, as macOS's Appearance setting offers Light, Dark and Auto: the
+//! like, as an Appearance setting offers Light, Dark and Auto: the
 //! chosen one ringed in the accent, its name under each. The pictures are
 //! anyone's widgets, drawn at the picker's size; they wrap to the width
 //! given.

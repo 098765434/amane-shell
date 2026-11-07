@@ -1,6 +1,6 @@
-//! The privacy dots in macOS's colours (orange microphone, green camera),
-//! whose menu says which apps and brings their windows up. Now Playing and
-//! screen sharing are Live Activities now (`activities.rs`).
+//! The privacy dots (orange microphone, green camera), whose menu says
+//! which apps and brings their windows up. Now Playing and screen sharing
+//! are activities now (`activities.rs`).
 
 use amane::{Center, Color, Rectangle, Service, Size, Widget};
 
@@ -13,7 +13,7 @@ use crate::surfaces::quick_settings::{self, Page};
 
 use super::{BAR_NS, item, menu_edge};
 
-/// macOS's privacy colours: the microphone and the camera.
+/// The privacy colours: the microphone and the camera.
 const ORANGE: Color = Color::rgb(0xff, 0x9f, 0x0a);
 const GREEN: Color = Color::rgb(0x30, 0xd1, 0x58);
 

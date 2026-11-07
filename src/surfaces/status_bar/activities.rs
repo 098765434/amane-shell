@@ -1,5 +1,5 @@
-//! Live Activities, as macOS 27.3 puts them in the menu bar: what's going
-//! on now. The bar's own come straight from their services: Now Playing,
+//! Activities in the bar: what's going on now. The bar's own come
+//! straight from their services: Now Playing,
 //! the launcher's timer and screen sharing. Other programs' come over the
 //! bar's bus service ([`activities`](crate::services::desktop::activities)).
 //!
@@ -245,7 +245,7 @@ fn timer() -> Option<Shown> {
             destructive: true,
             ..ActivityButton::new("cancel", "Cancel")
         },
-        ActivityButton::new("open", "Open in Spotlight"),
+        ActivityButton::new("open", "Open in the Launcher"),
     ];
 
     Some(Shown {
@@ -809,8 +809,8 @@ fn activity_button(activity: &Shown, button: &ActivityButton, width: f32) -> Rec
 }
 
 /// `status-bar activities list | end <key>`: each going on, most relevant
-/// first, as `key<TAB>app<TAB>title`; ending one is the user's, as macOS
-/// lets a Live Activity be dismissed.
+/// first, as `key<TAB>app<TAB>title`; ending one is the user's, as an
+/// activity can be dismissed.
 pub fn ipc(args: &[&str]) -> String {
     match args {
         ["list"] => gather()

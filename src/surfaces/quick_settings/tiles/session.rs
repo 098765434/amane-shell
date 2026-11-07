@@ -1,6 +1,6 @@
 //! The power menu — GNOME's Power Off submenu as a page: Suspend, then
 //! Restart…, Power Off… and Log Out…, each shown when logind allows it.
-//! The ones that end the session ask first in an [`alert`], as macOS does.
+//! The ones that end the session ask first in an [`alert`].
 //! (Switch User is left out: the display manager here has no user
 //! switching.)
 

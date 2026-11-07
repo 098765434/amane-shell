@@ -120,8 +120,8 @@ pub fn edge() -> Vertical {
     }
 }
 
-/// The status bar on `monitor`, one on each as macOS has one on each
-/// display. Registered with `App::window_per_monitor`.
+/// The status bar on `monitor`, one on each display. Registered with
+/// `App::window_per_monitor`.
 pub fn bar(monitor: &Monitor) -> LayerWindow {
     let output = monitor.name.clone();
     let style = status_bar().style;
@@ -211,7 +211,7 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
         .layer(Layer::Top)
         .space(if hiding { Zone::Ignore } else { Zone::Reserve })
         // None so bar clicks never steal keyboard focus from the active app
-        // (macOS menu-bar behavior); the panels take keys when clicked into.
+        // (a menu bar's behaviour); the panels take keys when clicked into.
         .keyboard(Keyboard::None)
         .namespace(BAR_NS)
         .visible(true)
@@ -647,7 +647,7 @@ fn phone() -> Option<Box<dyn Widget>> {
     ))
 }
 
-/// Quick Settings' button, the macOS Control Center's place in the bar.
+/// Quick Settings' button in the bar.
 fn quick_settings_button() -> Box<dyn Widget> {
     boxed(
         bar_icon(
@@ -739,7 +739,7 @@ fn notification_icon() -> Option<Box<dyn Widget>> {
     ))
 }
 
-/// The clock opens the notification center, like macOS's; its tooltip is
+/// The clock opens the notification center; its tooltip is
 /// the date. `dated` says whether there's room for a date shown "when space
 /// allows".
 fn clock(dated: bool) -> Box<dyn Widget> {
@@ -784,7 +784,7 @@ fn clock_width(time: &str) -> f32 {
     text_width(&time.replace('\u{2008}', ":"), metrics().numeric())
 }
 
-/// A small clock face with its two hands, as macOS's analog menu bar clock.
+/// A small clock face with its two hands, the bar's analog clock.
 fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
     let face = metrics().icon;
     let hand = |length: f32, thickness: f32, degrees: f32| -> Box<dyn Widget> {
@@ -830,7 +830,7 @@ fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
         )
 }
 
-/// The keyboard layout as macOS's input menu shows it, a short code, with
+/// The keyboard layout as an input menu shows it, a short code, with
 /// two or more; a click lists them to switch.
 fn keyboard() -> Option<Box<dyn Widget>> {
     use crate::services::desktop::keyboard_layout::{KeyboardLayout, short};

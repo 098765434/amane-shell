@@ -1,6 +1,6 @@
 //! Checkbox — a setting that's on or off, in a list of independent ones.
 //!
-//! Drawn like macOS's (the macform look): a 16 px box, radius 5.5,
+//! Drawn in the macform look: a 16 px box, radius 5.5,
 //! `fieldFill` in a hairline while off, filling with the accent around a
 //! drawn checkmark when on, with an optional label 3 px after it that takes
 //! the click too. Where a setting applies at once, a [`Switch`] reads

@@ -1,4 +1,4 @@
-//! Form — settings laid out as macOS's System Settings lays them out:
+//! Form — settings laid out in groups of rows:
 //! rounded [`Group`]s of [`FormRow`]s, each a coloured leading tile, a
 //! title (and a subtitle), and its control at the trailing edge, with
 //! hairlines between rows that start after the tile.
@@ -121,8 +121,8 @@ impl FormRow {
         }
     }
 
-    /// Set in under the row before it, as macOS sets a setting that only
-    /// means something while the one above is on. Dim it with
+    /// Set in under the row before it, for a setting that only means
+    /// something while the one above is on. Dim it with
     /// [`FormRow::disabled`] while that one is off.
     pub fn child(mut self) -> Self {
         self.child = true;
@@ -397,7 +397,7 @@ impl FormRow {
     }
 }
 
-/// A title and its value over a slider that spans the row, as macOS sets
+/// A title and its value over a slider that spans the row, for setting
 /// a level (volume, size).
 pub struct SliderRow {
     title: String,

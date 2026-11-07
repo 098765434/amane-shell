@@ -22,7 +22,7 @@ pub const STALE: Duration = Duration::from_millis(200);
 
 // TODO(token): `sys.motion.coast.*` once Penpot has them (manual §1.1).
 /// How quickly a fling's momentum dies out: it travels its speed times
-/// this before it stops, as iOS's "normal" deceleration does.
+/// this before it stops: a phone's "normal" deceleration.
 const DECAY: f32 = 0.325;
 /// How long a fling coasts for.
 const COAST: Duration = Duration::from_millis(850);

@@ -1,6 +1,6 @@
 //! The catalog the Customize window lists: every control under a category,
-//! the categories a sidebar names (macOS's Customize Control Center names
-//! them Battery, Connectivity, Display & Brightness, …), and what a
+//! the categories a sidebar names (Battery, Connectivity, Display &
+//! Brightness, …), and what a
 //! category, or a search, shows. Pure, so it's tested.
 
 use crate::components::icons::{
@@ -97,7 +97,7 @@ impl Category {
         }
     }
 
-    /// The controls under it, in Control Center's order.
+    /// The controls under it, in the default order.
     pub(crate) fn controls(self) -> Vec<ControlId> {
         ControlId::ALL
             .into_iter()
@@ -214,7 +214,7 @@ mod tests {
         let hidden = [ControlId::Vpn, ControlId::KeepAwake];
         let shown = sections(Category::AllControls, "", &hidden);
         assert_eq!(shown[0].title, "Suggestions");
-        // in Control Center's order, not the order given
+        // in the default order, not the order given
         assert_eq!(shown[0].ids, vec![ControlId::Vpn, ControlId::KeepAwake]);
         assert_eq!(shown[1].title, "Battery");
         assert_eq!(shown.len(), Category::ALL.len());

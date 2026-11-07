@@ -1,5 +1,5 @@
-//! Color wells — the accent colors as a row of dots, as macOS's
-//! Appearance setting offers them: the chosen one with a white dot in it,
+//! Color wells — the accent colors as a row of dots, as an Appearance
+//! setting offers them: the chosen one with a white dot in it,
 //! and a "multicolor" first dot for following the system. Hovering a dot
 //! names it, for the row's value.
 

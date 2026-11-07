@@ -1,4 +1,4 @@
-//! Spinner and progress bar — something under way, as macOS shows it: an
+//! Spinner and progress bar — something under way: an
 //! indeterminate spinner of fading spokes, and a thin determinate track.
 //!
 //! The spinner turns a step about ten times a second, and only while a

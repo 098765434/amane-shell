@@ -1,7 +1,7 @@
 //! Dragging a window's icon to another place in the dock: along its own
 //! workspace's section to move its column there, or into another
 //! workspace's section to move it to that workspace. The others make way
-//! while it's held, as on macOS. A pinned app's icon dragged up off the
+//! while it's held. A pinned app's icon dragged up off the
 //! dock comes out of it.
 //!
 //! Every preview is worked out from the row without the held icon (the

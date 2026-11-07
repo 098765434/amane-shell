@@ -102,8 +102,8 @@ mod tests {
 
     #[test]
     fn first_installed_wins() {
-        let s = stack(&["SF Pro Text", "Inter", "sans-serif"]);
+        let s = stack(&["Atkinson Hyperlegible Next", "Inter", "sans-serif"]);
         assert_eq!(pick(&s, |f| f == "Inter"), "Inter");
-        assert_eq!(pick(&s, |_| true), "SF Pro Text");
+        assert_eq!(pick(&s, |_| true), "Atkinson Hyperlegible Next");
     }
 }

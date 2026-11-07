@@ -2,7 +2,7 @@
 //!
 //! Modelled on Material 3's small top app bar: a title with an optional
 //! subtitle, and trailing action items. A page drilled into from another (Quick Settings' pages)
-//! leads with M3's back button too, a chevron as on macOS. Unlike M3's it's
+//! leads with M3's back button too, drawn as a chevron. Unlike M3's it's
 //! no taller than its content and has no fill of its own: it sits at the
 //! top of a [`Card`](crate::card::Card), in the vibrant labels of the
 //! material it's on.

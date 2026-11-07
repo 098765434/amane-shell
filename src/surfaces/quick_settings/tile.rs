@@ -1,16 +1,16 @@
 //! Quick toggle — a Quick Settings control: a setting's icon, name and
-//! state, in one of macOS Control Center's shapes ([`Style`]), each a
+//! state, in one of Quick Settings' shapes ([`Style`]), each a
 //! frosted glass module of its own on the clear card ([`module`]).
 //!
 //! GNOME's QuickToggle (and QuickMenuToggle, whose arrow opens a menu) in
-//! the Control Center look: the glyph on a round disc that turns accent when
+//! the Quick Settings look: the glyph on a round disc that turns accent when
 //! the setting is on, springing like the switch, with the title and a
 //! one-line subtitle beside it. A [`Style::Card`] is a glass capsule of its
 //! own, two to four cells wide; a [`Style::Round`] is a glass circle one
 //! cell big that is the disc itself, the glyph alone in it, named by a
 //! tooltip.
 //!
-//! As on macOS, the disc toggles and the rest of the tile opens the
+//! The disc toggles and the rest of the tile opens the
 //! setting's page (GNOME's arrow); a tile with no page toggles from
 //! anywhere. A right-click opens the page too. Like the other controls it
 //! shows a click at once, and goes back if the service doesn't follow
@@ -38,7 +38,7 @@ use crate::components::motion;
 use crate::components::tooltip;
 use crate::tokens::{Styled, TextStyle, quick, sys};
 
-/// Which of Control Center's shapes a toggle takes.
+/// Which of Quick Settings' shapes a toggle takes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Style {
     /// A glass capsule of its own, two to four cells wide.
@@ -128,7 +128,7 @@ pub(super) fn plain<R>(f: impl FnOnce() -> R) -> R {
 
 /// What `material` tinted `tint` is filled with: the tint, unless the
 /// compositor lays it on with the frost. A plain module on a sheet is a
-/// translucent fill on it instead, as Control Center's catalog shows its
+/// translucent fill on it instead, as the Customize window shows its
 /// controls: the sheet's colour comes through, not a milky tint over it.
 fn fill(material: Material, tint: Color) -> Color {
     if PLAIN.get() && material != Material::Prominent {
@@ -321,7 +321,7 @@ impl QuickToggle {
         let (shown, progress) = self.animate();
 
         // a control that is on goes white with its glyph in the accent
-        // (`sys.color.state.on`), as Control Center's do
+        // (`sys.color.state.on`)
         let (disc_fill, glyph_color) = if self.alert {
             (sys::color::status::critical::bg(), sys::color::accent::fg())
         } else {

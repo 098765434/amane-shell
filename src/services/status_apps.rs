@@ -1,5 +1,5 @@
 //! `org.amane.StatusBar1`: where other programs put their own items in the
-//! bar (macOS's status items) and their Live Activities. Each payload is
+//! bar (status items) and their activities. Each payload is
 //! one JSON string of amane's `status_item` types, so a script can call it
 //! with `busctl` too. Items are kept here; activities go to the bar's
 //! [`activities`](super::desktop::activities). What happens to an item

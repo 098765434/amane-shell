@@ -1,4 +1,4 @@
-//! Edit Widgets — macOS's widget gallery, on one monitor at a time. The
+//! Edit Widgets — the widget gallery, on one monitor at a time. The
 //! desktop's surface moves over the windows (the overlay layer) and takes
 //! the keyboard; each card gets a
 //! remove badge and, when it comes in more than one size, a resize handle;

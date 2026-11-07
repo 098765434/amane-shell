@@ -73,7 +73,7 @@ impl Accent {
         Self::Gray,
     ];
 
-    /// The colour, as Apple's dark-mode system colours.
+    /// The colour, in its dark-mode system form.
     pub fn color(self) -> Color {
         let hex: u32 = match self {
             Self::Red => 0xff383c,

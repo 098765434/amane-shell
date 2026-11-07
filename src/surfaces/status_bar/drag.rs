@@ -1,5 +1,5 @@
-//! Moving the bar's items by dragging them, as macOS moves menu bar items
-//! with ⌘-drag. The bar never has the keyboard, so it can't see a held
+//! Moving the bar's items by dragging them, without a held modifier key.
+//! The bar never has the keyboard, so it can't see a held
 //! key: a press that moves more than [`SLOP`] picks the item up instead,
 //! and a click stays a click. The others make room as it passes; letting
 //! go keeps the new order (`StatusBar::order`), and letting go well off

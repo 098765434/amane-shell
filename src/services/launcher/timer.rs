@@ -1,5 +1,5 @@
 //! A countdown the launcher's Start Timer action sets: one at a time, a
-//! notification when it runs out, and a Live Activity in the bar while it
+//! notification when it runs out, and an activity in the bar while it
 //! runs.
 //! amane has no timers, so a thread sleeps it out.
 

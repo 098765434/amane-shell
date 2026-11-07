@@ -1,4 +1,4 @@
-//! The widget gallery — macOS's: a frosted sheet at the bottom of the
+//! The widget gallery — a frosted sheet at the bottom of the
 //! screen while the desktop is edited, with a search field over the
 //! categories (All Widgets, System, Batteries) beside a pane of every kind
 //! of widget, drawn live and scaled to fit, named under it. A widget is

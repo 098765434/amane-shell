@@ -1,4 +1,4 @@
-//! Programs' own items, as macOS's status items: put up over the bar's bus
+//! Programs' own items, status items: put up over the bar's bus
 //! service ([`status_apps`]) and drawn here, the program's picture and
 //! title. A click, a middle click, a menu entry and files or text let go on
 //! one go back to the program; files held over an item that opens on drag

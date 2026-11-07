@@ -1,4 +1,4 @@
-//! Sound — Control Center's Sound card: GNOME's output slider (the glyph
+//! Sound — Quick Settings' Sound card: GNOME's output slider (the glyph
 //! mutes; the chevron opens the page) and its page: the output's and the
 //! microphone's levels, each with the devices to pick from, the default
 //! checked. Read from the fork's `Audio` service, which follows the sound

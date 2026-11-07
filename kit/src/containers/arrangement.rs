@@ -1,5 +1,5 @@
 //! Arrangement — screens laid out as they sit side by side, to drag into
-//! place: macOS's Arrange view in the Displays settings.
+//! place, as the Displays settings arrange them.
 //!
 //! Each [`Screen`] is a rounded rectangle at its place in the layout
 //! (logical pixels), scaled to fit the area, named in its middle, the

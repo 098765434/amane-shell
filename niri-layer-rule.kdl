@@ -17,8 +17,8 @@
 
 //<<<GENERATED-RULES-BELOW>>>  (gen-layer-rules.sh injects everything past this line)
 
-// Status bar: one uniform frosted strip along the bottom, macOS 27's toolbar:
-// frost, the standard material without a lens. It reserves its zone, so only
+// Status bar: one uniform frosted strip along its edge, in the standard
+// material without a lens (frost). It reserves its zone, so only
 // the wallpaper is behind it and niri's xray blur is enough. Its xdg-popups
 // (tooltips, Do Not Disturb's menu) are frosted cards.
 layer-rule {

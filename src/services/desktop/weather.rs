@@ -1,4 +1,4 @@
-//! Today's weather for a place, as macOS's menu bar Weather: from
+//! Today's weather for a place, for the bar's weather item: from
 //! Open-Meteo (no key), only while the bar's weather is switched on and a
 //! place is set. The place is found once with Open-Meteo's geocoding; the
 //! weather is read every half hour, and again when the place changes.

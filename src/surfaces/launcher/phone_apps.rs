@@ -1,4 +1,4 @@
-//! The phone's apps in Spotlight: found by name, each opens in a window of
+//! The phone's apps in the launcher: found by name, each opens in a window of
 //! its own (`amane-mirror --app`, a virtual display on the phone). The
 //! list comes from `~/.cache/amane-shell/phone-apps.json`, which
 //! `amane-mirror --list-apps` writes; it's asked for again when adb has

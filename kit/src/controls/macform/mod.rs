@@ -1,4 +1,4 @@
-//! macform — macOS-style form controls, ported from the Quickshell
+//! macform — form controls in the macform look, ported from the Quickshell
 //! `components/macform` set for a side-by-side look against the kit's own.
 //!
 //! Shell Settings, Messages and the password-fill popup use them. `cargo run

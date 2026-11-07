@@ -1,6 +1,6 @@
 //! Bluetooth — GNOME's toggle (hidden without an adapter; it names the
 //! connected device, or how many) as a tile, and its page, a whole
-//! Bluetooth manager like the macOS one: "My Devices" and "Other Devices",
+//! Bluetooth manager: "My Devices" and "Other Devices",
 //! searching for new ones and visible to them while shown. A click
 //! connects, disconnects or pairs; a row says what it's doing, or why it
 //! failed. A paired device's ⓘ (or right click) opens its own page:

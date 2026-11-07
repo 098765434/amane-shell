@@ -2,11 +2,11 @@
 //!
 //! Modelled on Material 3's slider: an active track filled up to the value
 //! over an inactive one, set by pressing or dragging anywhere along it, and
-//! discrete [`STEP`]s for the scroll wheel. Drawn in the macOS look:
+//! discrete [`STEP`]s for the scroll wheel. Drawn in the shell's look:
 //! a thin capsule track with no handle, the accent filling it; a hit area a
 //! full control tall, so the thin track is easy to grab.
 //!
-//! [`Slider::large`] is the macOS Control Center slider instead: a track a
+//! [`Slider::large`] is the Quick Settings slider instead: a track a
 //! full control tall with the glyph inside it, at the start of a fill that
 //! never gets narrower than the glyph's circle, so the glyph is the knob.
 //! The glyph can mute (`on_icon_press`).
@@ -100,7 +100,7 @@ impl Slider {
         self
     }
 
-    /// The Control Center look: a control-tall track with `glyph` as its knob.
+    /// The Quick Settings look: a control-tall track with `glyph` as its knob.
     pub fn large(mut self, glyph: char) -> Self {
         self.large = Some(glyph);
         self

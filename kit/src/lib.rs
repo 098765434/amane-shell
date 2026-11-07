@@ -30,13 +30,13 @@
 //! - [`scroll_view`] — a clipped viewport scrolled along one axis, with a
 //!   scrollbar.
 //! - [`flow`] — fixed-size items flowing into rows, wrapping at a width.
-//! - [`form`] — settings as macOS lays them out: rounded groups of rows,
+//! - [`form`] — settings laid out in rounded groups of rows,
 //!   each a coloured tile, a title and its control.
 //! - [`arrangement`] — screens dragged into place, as Displays arranges them.
 //!
 //! The look of glass (`look/`):
 //!
-//! - [`material`] — Apple's materials: glass by role, its thickness and
+//! - [`material`] — the materials: glass by role, its thickness and
 //!   the vibrant labels on it.
 //! - [`glass`] — the lit edge and glow every translucent surface wears.
 //! - [`glass_region`] — where the compositor frosts behind clear glass.

@@ -1,10 +1,10 @@
-//! Apps' own items, macOS's menu bar extras: the system tray's icons
+//! Apps' own items in the bar: the system tray's icons
 //! (amane's [`Tray`], StatusNotifierItem) for Steam, Discord, nm-applet
 //! and the like. Left click does the app's action, or shows its menu when
 //! it only has a menu; right click shows its menu; middle click is its
 //! second action and scrolling goes to it. An app can be kept out of the
 //! bar ("Allow in the Status Bar", `StatusBar::tray_denied`), and items
-//! that don't fit go behind a » button, as macOS 27 has them.
+//! that don't fit go behind a » button.
 
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;

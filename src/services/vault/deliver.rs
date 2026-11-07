@@ -42,7 +42,7 @@ pub fn fill_behind(entry: Entry, give: Give) {
 
     thread::spawn(move || {
         let Some(window) = window else {
-            return tell("Nothing was filled", "No window was behind Spotlight.");
+            return tell("Nothing was filled", "No window was behind the launcher.");
         };
 
         let Some(field) = wait_for_field(window) else {

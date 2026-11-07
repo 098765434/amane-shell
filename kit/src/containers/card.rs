@@ -2,7 +2,7 @@
 //!
 //! Modelled on Material 3's cards: filled and outlined variants on a
 //! [`Material`], content stacked inside an inset; what's on it takes the
-//! vibrant labels and fills ([`material::label`]). Drawn in the shell's macOS look: `sys.radius.popover` corners,
+//! vibrant labels and fills ([`material::label`]). Drawn in the shell's look: `sys.radius.popover` corners,
 //! and frosted when the compositor can blur what's below (a departure from
 //! M3, which has no translucent material), its edge lit like
 //! [`glass`](crate::glass) when asked. M3's elevated card is left out:

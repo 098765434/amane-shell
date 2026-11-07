@@ -4,7 +4,7 @@
 //! card, frosted and tinted like the bar's panels, shown after the pointer rests on its control for [`DELAY`]
 //! and hidden when it leaves or clicks. It's an xdg-popup without a grab, so
 //! it never takes input or focus, hung under the surface the control is on
-//! and centred above the pointer, as macOS's are.
+//! and centred above the pointer.
 //!
 //! Only one tooltip shows at a time, so there's one popup slot ([`popup`],
 //! registered with `App::popup`). A hovered control [`offer`]s its text every

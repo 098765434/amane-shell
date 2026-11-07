@@ -1,4 +1,4 @@
-//! Spotlight's assistant, the shell's end: reading a query as a command,
+//! The launcher's assistant, the shell's end: reading a query as a command,
 //! by the rules at once or by Needle 3 in `amane-assistant` a moment after
 //! the last key, and listening for one while the shell asks.
 //!
@@ -91,7 +91,7 @@ pub fn read(text: &str, snapshot: impl FnOnce() -> Snapshot) -> Option<Reading> 
             source: Source::Rules,
         });
     }
-    // a word alone, a bare name or a question isn't a command: Spotlight's
+    // a word alone, a bare name or a question isn't a command: the launcher's
     if !rules::worth_asking(text, &snapshot) {
         return None;
     }

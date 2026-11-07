@@ -1,5 +1,5 @@
-//! The system controls — GNOME's top row, at the bottom as Control Center
-//! has it: the battery tile (opening its page), then round buttons to take
+//! The system controls — GNOME's top row, here at the bottom: the
+//! battery tile (opening its page), then round buttons to take
 //! a screenshot, lock the screen and open the power menu.
 
 use amane::{Battery, BatteryState, Service, Windows};

@@ -1,4 +1,4 @@
-//! Launcher — macOS Tahoe's Spotlight: a glass search pill high on the
+//! Launcher — search for the whole desktop: a glass search pill high on the
 //! screen with four round buttons beside it, for its modes (Applications,
 //! Files, Actions and Clipboard, [`Mode`]). Typing grows the pill down into
 //! a panel listing what the search finds ([`provider`]): an answer in a
@@ -6,7 +6,7 @@
 //! by how well they match and how much they've been used ([`rank`],
 //! [`usage`]).
 //!
-//! Applications is the Launchpad grid it grew from: a row of category
+//! Applications is the app grid it grew from: a row of category
 //! pills over the apps five across, the ones used most in a suggested row
 //! on top. Two fingers move it as they would a page: up and down they
 //! scroll the grid, which coasts on after a flick ([`Kinetic`]); sideways
@@ -433,7 +433,7 @@ impl<'a> View<'a> {
             Kind::Results => {
                 let query = Query::new(field.text(), mode, all);
                 found = provider::search(&query, scope.as_ref(), &settings.excluded_providers);
-                // Files offers its kinds as chips, as Spotlight's filter bubbles
+                // Files offers its kinds as chips, to narrow the search to one
                 if mode == Mode::Files && scope.is_none() && !field.text().starts_with('/') {
                     found.scopes = FILE_CHIPS.into_iter().map(Scope::Kind).collect();
                 }
@@ -708,7 +708,7 @@ pub fn assistant_ipc(args: &[String]) -> String {
     String::from("ok")
 }
 
-/// Opens Spotlight on a fresh search and starts listening, Whistle told
+/// Opens the launcher on a fresh search and starts listening, Whistle told
 /// the names of what's here.
 fn listen() {
     switch_mode(Mode::Home);
@@ -720,7 +720,7 @@ fn listen() {
 }
 
 /// What was heard, once listening stopped: typed into the field, so
-/// Spotlight searches it as if typed. What a rule reads that doesn't end
+/// the launcher searches it as if typed. What a rule reads that doesn't end
 /// the session runs at once, as its key would; anything less certain
 /// waits on the card for Return.
 fn heard() {

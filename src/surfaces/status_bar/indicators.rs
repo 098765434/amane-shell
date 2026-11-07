@@ -37,7 +37,7 @@ pub enum Indicator {
     Privacy,
     /// Night Light, VPN, power mode and Airplane, while on.
     StatusIcons,
-    /// Live Activities: what's playing, the timer, screen sharing, and
+    /// Activities: what's playing, the timer, screen sharing, and
     /// other programs' (`activities.rs`).
     Activities,
     Weather,
@@ -203,8 +203,7 @@ impl Item {
     }
 
     /// The switch that hides it, for the ones that can be hidden; Quick
-    /// Settings and the clock always show, as macOS's Control Center and
-    /// clock do.
+    /// Settings and the clock always show.
     pub fn indicator(self) -> Option<Indicator> {
         Some(match self {
             Self::Tray => Indicator::Tray,
@@ -262,7 +261,7 @@ pub fn reset_order() {
 
 /// Brings the hidden icons over from the old state file, once: when there
 /// is no settings file yet. Called at start, before any window. Now
-/// Playing hidden before it became a Live Activity is kept out as one.
+/// Playing hidden before it became an activity is kept out as one.
 pub fn migrate() {
     if status_bar().hidden.iter().any(|name| name == "media") {
         change_status_bar(|now| {

@@ -1,7 +1,7 @@
 //! Now Playing — what the active media player is playing, with previous,
-//! play/pause and next, like macOS Control Center's module. (GNOME keeps
-//! its media controls in the notification list instead.) As on macOS the
-//! module is always there, saying "Not Playing" when nothing is. Two cells
+//! play/pause and next, as a module of its own. (GNOME keeps its media
+//! controls in the notification list instead.) The module is always
+//! there, saying "Not Playing" when nothing is. Two cells
 //! square it's the module beside the Wi‑Fi and Bluetooth tiles: art, two lines,
 //! the transport along the bottom; a whole row wide they sit side by side.
 

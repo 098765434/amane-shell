@@ -92,7 +92,7 @@ fn no_core_dumps() {
 fn sample_menu() -> ContextMenu {
     let share = ContextMenu::new()
         .item(
-            MenuItem::label("AirDrop")
+            MenuItem::label("Nearby Share")
                 .icon(Icon::glyph("\u{E2BD}"))
                 .on_select(|| eprintln!("airdrop")),
         )
@@ -177,7 +177,7 @@ fn main() -> ExitCode {
     amane::Bluetooth::serve_agent();
     // and it is the session's polkit agent: the password prompt is its alert
     amane::Polkit::serve_agent();
-    // and the bar's own bus service: other programs' items and Live Activities
+    // and the bar's own bus service: other programs' items and activities
     services::status_apps::serve();
     services::network::bt_battery::watch();
     // and lowers the displays' refresh rate on battery, when asked to

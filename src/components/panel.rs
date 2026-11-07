@@ -30,7 +30,7 @@ thread_local! {
 }
 
 /// The monitor the panels show on, by name: the one the pointer was over as
-/// the last one opened, as macOS opens a menu bar's panels on its display.
+/// the last one opened, so a bar's panels open on its own display.
 pub fn on_output() -> Option<String> {
     ON.with_borrow(Clone::clone)
 }

@@ -77,7 +77,7 @@
         SCRCPY_VERSION = pkgs.scrcpy.version;
       };
 
-      # Cactus 4.0.0 for amane-assistant (Spotlight's assistant): the prebuilt
+      # Cactus 4.0.0 for amane-assistant (the launcher's assistant): the prebuilt
       # static library (Apache-2.0) and its header from Cactus's release, and
       # the Needle 3 (commands) and Whistle (speech) weights, every file pinned
       # to a Hugging Face commit and its hash; nothing is fetched at run time.

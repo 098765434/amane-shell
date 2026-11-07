@@ -24,8 +24,8 @@ pub const SECONDARY_FLOOR: f64 = 2.0;
 /// The surfaces checked for contrast: (background, primary, secondary, the
 /// niri material whose `tone` the compositor lays under it, if any, and
 /// whether the labels on it flip with the backdrop, so either mode's set
-/// may carry the contrast: Apple's glyphs "flip from light to dark,
-/// mirroring the glass").
+/// may carry the contrast: glyphs flip from light to dark, mirroring
+/// the glass).
 const SURFACES: &[(&str, &str, &str, Option<&str>, bool)] = &[
     // every material's tint, under the vibrant labels the material hands out
     (

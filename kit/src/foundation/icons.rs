@@ -116,7 +116,7 @@ pub fn volume_glyph(muted: bool, volume: u8, kind: AudioKind) -> char {
 }
 
 /// Horizontal batteries (`battery_android_0` … `_6`, `_full`, `_bolt`), the
-/// macOS shape; the fill shows the charge.
+/// laptop shape; the fill shows the charge.
 const ICON_BATTERY_LEVELS: [char; 7] = [
     '\u{f30d}', '\u{f30c}', '\u{f30b}', '\u{f30a}', '\u{f309}', '\u{f308}', '\u{f307}',
 ];
@@ -187,7 +187,7 @@ pub const ICON_ERROR: char = '\u{e000}';
 pub const ICON_CHECK_CIRCLE: char = '\u{e86c}';
 
 /// The symbols other programs may ask for by name, for their status items
-/// and Live Activities (`ItemIcon::Glyph`): a short list, kebab-case.
+/// and activities (`ItemIcon::Glyph`): a short list, kebab-case.
 pub const NAMED: [(&str, char); 32] = [
     ("dot", ICON_RECORD),
     ("record", ICON_RECORD),

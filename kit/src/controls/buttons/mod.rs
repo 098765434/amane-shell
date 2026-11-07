@@ -1,10 +1,10 @@
 //! Reusable buttons, drawn from `sys.*` tokens only so any component can use
 //! them. Each follows its Material 3 counterpart in structure (variants,
-//! shapes, state layers) but is drawn in the shell's macOS-style look:
+//! shapes, state layers) but is drawn in the shell's own look:
 //!
 //! - [`PushButton`] — a label, optionally led by an icon (M3's buttons).
 //! - [`IconButton`] — a lone glyph, optionally a toggle (M3's icon buttons).
-//! - [`Switch`] — an iOS-style track and knob for an on/off setting (M3's
+//! - [`Switch`] — a capsule track and knob for an on/off setting (M3's
 //!   switch).
 //! - [`SegmentedButton`] — a row of 2–5 related options on one track, single-
 //!   or multi-select (M3's segmented buttons).
@@ -77,7 +77,7 @@ pub enum Style {
     /// No fill until hovered: bar items, and M3's "standard" icon buttons.
     Plain,
     /// A faint red fill under a red label: an action that destroys or
-    /// can't be undone ("Delete", "Log Out"), as in macOS's alerts.
+    /// can't be undone ("Delete", "Log Out"), as in the shell's alerts.
     Destructive,
 }
 

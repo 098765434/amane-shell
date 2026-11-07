@@ -1,4 +1,4 @@
-//! The screen — Control Center's Display card (GNOME's brightness slider,
+//! The screen — Quick Settings' Display card (GNOME's brightness slider,
 //! only with a backlight), and the Night Light (with its page: how warm)
 //! and Dark Style round buttons.
 

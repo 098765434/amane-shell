@@ -1,4 +1,4 @@
-//! Edit mode — iOS's "Edit Controls": the grid's controls go inert and can
+//! Edit mode — "Edit Controls": the grid's controls go inert and can
 //! be dragged to another cell, resized by their corner handle, removed by
 //! their badge and added back from a list. The layout they end up in is
 //! kept (`layout.rs`).
@@ -15,7 +15,7 @@
 //! position on the canvas, and the held control sits exactly where the
 //! pointer took it: the pointer's position less where it was grabbed.
 //!
-//! The others make way live, as on iOS, each preview worked out from the
+//! The others make way live, each preview worked out from the
 //! layout the drag began from (`components::grid::drag::Session`).
 //!
 //! amane finds the target being dragged by its position in the frame's hit
@@ -252,8 +252,7 @@ pub(super) fn drag_at(point: Point) {
 
 /// The button came up. A control let go off the canvas (by more than half
 /// a cell beyond its edge) doesn't land: one from the canvas is removed,
-/// as a module dragged out of Control Center is, and one from the
-/// Customize window goes back to it.
+/// and one from the Customize window goes back to it.
 pub(super) fn release() {
     match drag() {
         Some(Drag::Move {
@@ -330,7 +329,7 @@ pub(super) fn undo() {
     super::QuickSettings::changed();
 }
 
-/// Control Center's order again, for the controls this machine has.
+/// The default order again, for the controls this machine has.
 pub(super) fn reset() {
     UNDO.with_borrow_mut(|undo| *undo = None);
     layout::replace(Layout::default_for(Canvas::tokens(), &|id| {
@@ -439,8 +438,8 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
     )
 }
 
-/// The faint discs the free cells show in edit mode, as iOS draws the
-/// places a control can go. One disc per cell, the taken ones clear, so
+/// The faint discs the free cells show in edit mode, marking the places
+/// a control can go. One disc per cell, the taken ones clear, so
 /// the layer is the same shape every frame.
 pub(super) fn ghost_grid(
     px: &Metrics,

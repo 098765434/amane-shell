@@ -1,4 +1,4 @@
-//! The desktop: Live Activities from other programs, privacy indicators, background apps, NixOS updates,
+//! The desktop: activities from other programs, privacy indicators, background apps, NixOS updates,
 //! system readings for the widgets, and the lock keys for the on-screen
 //! display.
 

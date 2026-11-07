@@ -1,4 +1,4 @@
-//! Dock — the macOS Big Sur dock, for the windows open on every workspace.
+//! Dock — a row of app icons, for the windows open on every workspace.
 //!
 //! One frosted glass card over the bar, on every monitor, holding a section
 //! for each of the monitor's workspaces, side by side with a rule between
@@ -11,7 +11,7 @@
 //! It hides below the bottom edge ([`EdgeReveal`]) and comes up when the
 //! pointer touches the edge; it goes back down a moment after the pointer
 //! leaves. While niri's overview opens it rises in step with the zoom. The
-//! icons swell under the pointer as on macOS ([`magnify`]), with the name
+//! icons swell under the pointer ([`magnify`]), with the name
 //! over the one under it, and shrink to fit when there are too many for
 //! the monitor.
 //!

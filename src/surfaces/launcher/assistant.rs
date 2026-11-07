@@ -1,7 +1,7 @@
-//! The assistant in Spotlight: a command read from the query
+//! The assistant in the launcher: a command read from the query
 //! ([`crate::services::assistant`]) as the card over the results, "Turn On
 //! Night Light", run with Return like any answer. Running it is the shell's
-//! ordinary action: the Control Center switch, the volume key (with its
+//! ordinary action: the Quick Settings switch, the volume key (with its
 //! OSD), the app's launch, the session's actions. What ends the session is
 //! asked about first, every time.
 
@@ -36,7 +36,7 @@ pub(super) const CONFIRMS: &str = "assistant:confirm";
 /// suggestion.
 const SURE: f32 = 0.75;
 
-/// What the machine has now, for a command to name: Control Center's
+/// What the machine has now, for a command to name: Quick Settings'
 /// switches, the apps (the ones used most first), the power modes, what
 /// the session allows.
 pub(super) fn snapshot(apps: &[DesktopApp]) -> Snapshot {

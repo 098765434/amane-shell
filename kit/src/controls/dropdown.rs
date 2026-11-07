@@ -1,6 +1,6 @@
 //! Dropdown — one choice out of a list, behind a button that shows it.
 //!
-//! Drawn like macOS's pop-up button (the macform look): a control-fill
+//! Drawn as a pop-up button in the macform look: a control-fill
 //! button, radius 6, showing the chosen option (its glyph, if it has one,
 //! then its text) and a drawn chevron. A click opens the menu of options
 //! lined up under it, the chosen one filled with the accent; the pointer,

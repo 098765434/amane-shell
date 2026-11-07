@@ -1,4 +1,4 @@
-//! Desktop widgets — macOS's widgets on the wallpaper, for watching rather
+//! Desktop widgets — cards on the wallpaper, for watching rather
 //! than switching: the batteries, the processor, memory, temperature, the
 //! network and the disks. Quick Settings' tiles are the controls; these
 //! are the readings.
@@ -11,7 +11,7 @@
 //! and the same kind can sit on the desktop more than once, each with its
 //! own settings. Each monitor keeps its own layout (`store.rs`).
 //!
-//! As on macOS, a card is dragged to another place at any time, the others
+//! A card is dragged to another place at any time, the others
 //! making way as they do in Quick Settings; a click opens what it watches
 //! (the battery's page, a system monitor); a right click opens its menu
 //! (its sizes, what it shows, Edit Widgets…, Remove Widget), and one on the
@@ -74,7 +74,7 @@ const MARGIN: f32 = 24.0;
 /// no more. A surface costs four or five times its pixels on the GPU (its
 /// swapchain, canvas and vibrant layers), and the screen is mostly not grid.
 const PAD: f32 = 32.0;
-/// A card's corners: macOS's widgets'.
+/// A card's corners.
 const RADIUS: f32 = 22.0;
 /// How far a card fades back while windows are open.
 const DIM: f32 = 0.45;
@@ -297,7 +297,7 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
 }
 
 /// The monitor's desktop while it's edited: the cards and the gallery
-/// over the windows, as macOS clears the desktop to edit it; hidden the
+/// over the windows, the desktop cleared to edit it; hidden the
 /// rest of the time. A surface of its own on the overlay layer rather than
 /// the desktop's moved there: niri doesn't frost a surface moved off the
 /// background layer.

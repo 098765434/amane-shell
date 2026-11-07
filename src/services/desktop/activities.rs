@@ -1,5 +1,5 @@
-//! Live Activities other programs put in the bar, as macOS 27.3 has them in
-//! the menu bar: a timer, an upload, a recording. They arrive over the bar's
+//! Activities other programs put in the bar: a timer, an upload, a
+//! recording. They arrive over the bar's
 //! bus service (`org.amane.StatusBar1`) and are kept here, each by a handle;
 //! the bar draws them beside its own (Now Playing, the timer, screen
 //! sharing), which it reads straight from their services.
@@ -19,7 +19,7 @@ amane_kit::marker! {
     pub Activities
 }
 
-/// The longest an activity lasts, as on macOS.
+/// The longest an activity lasts.
 pub const MAX_AGE: Duration = Duration::from_secs(8 * 60 * 60);
 
 /// How long an alerting update keeps the expanded view up.

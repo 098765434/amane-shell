@@ -3,7 +3,7 @@
 //! session until it's dismissed.
 //!
 //! Notifications are grouped by app, newest group first. A group of
-//! several is an iOS stack: the newest card in front, up to
+//! several is a stack: the newest card in front, up to
 //! `notification.stack.max-peek` blank plates peeking below it, each
 //! smaller and fainter. Clicking the stack springs it open into a list
 //! under the app's name, with "Show Less" and a clear button; a single
@@ -154,7 +154,7 @@ pub fn side_sheet() -> LayerWindow {
         .visible(shown);
     // niri focuses an on-demand surface as it maps, which turns the focused
     // window inactive (its sidebar dims); the sheet takes keys once it's in
-    // place and clicked into, like macOS's Notification Center
+    // place and clicked into
     let keyboard = if open && progress < 0.999 {
         Keyboard::None
     } else {

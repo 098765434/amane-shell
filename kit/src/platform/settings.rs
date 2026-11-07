@@ -17,7 +17,7 @@ use crate::color::Accent;
 use crate::icons::{self, Glyph};
 use crate::theme::{Density, Glass, Mode};
 
-/// The accents to pick from, macOS 27's system colours in their dark
+/// The accents to pick from, the system colours in their dark
 /// form, and none for the system's.
 pub const ACCENTS: [(&str, Option<&str>); 9] = [
     ("System", None),
@@ -113,8 +113,7 @@ pub fn change_appearance(edit: impl FnOnce(&mut Appearance)) {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum WidgetStyle {
-    /// Faded back while a window is open on the monitor's workspace, as
-    /// macOS dims them.
+    /// Faded back while a window is open on the monitor's workspace.
     #[default]
     Automatic,
     /// Always as they are with nothing open.
@@ -445,13 +444,12 @@ pub enum BarStyle {
     Glass,
     /// Opaque: black in dark mode, white in light.
     Solid,
-    /// No strip at all, as macOS 26's menu bar: the items sit on the
+    /// No strip at all: the items sit on the
     /// wallpaper, light or dark to suit it.
     Clear,
 }
 
-/// When the status bar hides past its edge, as macOS's "Automatically hide
-/// and show the menu bar".
+/// When the status bar hides past its edge, and shows again.
 #[derive(Serialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum AutoHide {
@@ -604,12 +602,11 @@ pub struct StatusBar {
     /// keep their usual place among the rest.
     pub order: Vec<String>,
 
-    /// The apps not allowed in the status bar, by their tray items' ids,
-    /// as macOS's "Allow in the Menu Bar" leaves them out.
+    /// The apps not allowed in the status bar, by their tray items' ids.
     pub tray_denied: Vec<String>,
 
-    /// Now Playing shows with nothing playing too, as macOS's "Always
-    /// Show"; else only while something plays or was paused lately.
+    /// Now Playing shows with nothing playing too ("Always Show"); else
+    /// only while something plays or was paused lately.
     pub media_always: bool,
 
     /// When it hides past the screen's edge until the pointer meets it,
@@ -620,7 +617,7 @@ pub struct StatusBar {
     pub show_date: ShowDate,
     /// The day of the week before the time.
     pub show_weekday: bool,
-    /// The colons blink each second, as macOS's "Flash the time separators".
+    /// The colons blink each second ("Flash the time separators").
     pub flash_separators: bool,
 
     /// Today's weather for `weather_place`, from Open-Meteo.
@@ -628,10 +625,10 @@ pub struct StatusBar {
     /// A place name, found once with Open-Meteo's geocoding.
     pub weather_place: String,
 
-    /// The apps whose Live Activities stay out of the bar, by the name
+    /// The apps whose activities stay out of the bar, by the name
     /// they give ("Now Playing", "Drop").
     pub activities_denied: Vec<String>,
-    /// How many Live Activities show compact, with their text; the rest
+    /// How many activities show compact, with their text; the rest
     /// show as their icon alone.
     pub activities_compact: u8,
 }
@@ -718,7 +715,7 @@ pub const BAR_ITEMS: [(&str, &str, bool); 16] = [
         "Night Light, VPN, Power Mode, Airplane",
         true,
     ),
-    ("activities", "Live Activities", true),
+    ("activities", "Activities", true),
     ("weather", "Weather", true),
     ("volume", "Volume", true),
     ("bluetooth", "Bluetooth", true),
@@ -881,7 +878,7 @@ impl StatusBar {
     /// usually follow.
     pub fn items(&self) -> Vec<&'static str> {
         let known = |name: &str| {
-            // Now Playing and the timer became Live Activities
+            // Now Playing and the timer became activities
             let name = match name {
                 "media" | "timer" => "activities",
                 name => name,
@@ -914,7 +911,7 @@ impl StatusBar {
 
     /// The items' names with programs' own items among them (`app:<id>`,
     /// those running now): each where it was kept, and a new one just
-    /// after the tray, as macOS adds a menu bar extra at the left.
+    /// after the tray, at the left of the apps' items.
     pub fn items_with(&self, apps: &[String]) -> Vec<String> {
         let mut items: Vec<String> = self.items().into_iter().map(String::from).collect();
         let mut fresh = 0;
@@ -993,7 +990,7 @@ impl StatusBar {
 }
 
 impl StatusBar {
-    /// Whether the app by this name may show Live Activities in the bar.
+    /// Whether the app by this name may show activities in the bar.
     pub fn allows_activity(&self, app: &str) -> bool {
         !self.activities_denied.iter().any(|denied| denied == app)
     }
@@ -1012,7 +1009,7 @@ impl StatusBar {
     }
 }
 
-/// The apps the bar's own Live Activities go under: what plays, the
+/// The apps the bar's own activities go under: what plays, the
 /// launcher's timer, and screen sharing.
 pub const BUILTIN_ACTIVITIES: [&str; 3] = ["Now Playing", "Timer", "Screen Sharing"];
 
@@ -1075,7 +1072,7 @@ pub fn remember_status_app(id: &str, name: &str) {
     write_whole(&file, &text);
 }
 
-/// Every app seen showing a Live Activity, by name, so Shell Settings can
+/// Every app seen showing an activity, by name, so Shell Settings can
 /// list them when none is going on.
 pub fn activities_seen() -> std::collections::BTreeSet<String> {
     cache_file("activities-seen.json")
@@ -1084,7 +1081,7 @@ pub fn activities_seen() -> std::collections::BTreeSet<String> {
         .unwrap_or_default()
 }
 
-/// Remembers an app that showed a Live Activity, once.
+/// Remembers an app that showed an activity, once.
 pub fn remember_activity(app: &str) {
     let mut seen = activities_seen();
     if app.is_empty() || !seen.insert(String::from(app)) {
@@ -1293,7 +1290,7 @@ pub enum FolderMode {
 }
 
 /// A tile of a Drop grid: somewhere to let files go, or something to do
-/// with them, as Dropzone's actions.
+/// with them (an action).
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", rename_all = "kebab-case", tag = "kind")]
 pub enum DropTile {

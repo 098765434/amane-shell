@@ -36,7 +36,7 @@ impl Mode {
     /// What the search field says while it's empty.
     pub(super) fn title(self) -> &'static str {
         match self {
-            Self::Home => "Spotlight Search",
+            Self::Home => "Search",
             Self::Apps => "Applications",
             Self::Files => "Files",
             Self::Actions => "Actions",

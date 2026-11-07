@@ -1,4 +1,4 @@
-//! Batteries — macOS's widget: the machine's battery and each device's
+//! Batteries — the machine's battery and each device's
 //! charge in a ring with the device in the middle. Small shows one (the
 //! one its settings name, else the first), Medium up to four side by side,
 //! Large a list with the time the machine's battery has left.

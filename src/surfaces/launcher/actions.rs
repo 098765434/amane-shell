@@ -1,4 +1,4 @@
-//! The launcher's actions, Spotlight's Actions: things it does without
+//! The launcher's actions, its Actions mode: things it does without
 //! opening an app. Quick Settings' controls (turning Night Light on, taking
 //! a screenshot), the session (locking, restarting), the power mode, keeping
 //! the screen awake, a timer, and every app's desktop actions ("New Private
@@ -46,7 +46,7 @@ pub(super) enum Value {
 pub(super) struct Spec {
     pub(super) key: String,
     pub(super) title: String,
-    /// Where it's listed: "Control Center", "System", an app's name.
+    /// Where it's listed: "Quick Settings", "System", an app's name.
     pub(super) section: String,
     pub(super) icon: Icon,
     /// Other words it's found by, lowercased; the first few also start an
@@ -124,7 +124,7 @@ impl Spec {
     }
 }
 
-const CONTROL_CENTER: &str = "Control Center";
+const CONTROL_CENTER: &str = "Quick Settings";
 const SYSTEM: &str = "System";
 const CLOCK: &str = "Clock";
 

@@ -50,7 +50,7 @@ pub enum ControlId {
 }
 
 impl ControlId {
-    /// Control Center's order, then the ones added since (a control's
+    /// The default order, then the ones added since (a control's
     /// place here keys its motion).
     pub const ALL: [ControlId; 22] = [
         Self::Wifi,

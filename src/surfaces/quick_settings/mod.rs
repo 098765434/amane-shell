@@ -1,17 +1,17 @@
-//! Quick Settings — GNOME's quick settings menu in the macOS Control Center
-//! look: one frosted card above the bar holding Control Center's modules,
-//! each drilling into a page of its own.
+//! Quick Settings — GNOME's quick settings menu as a grid of glass
+//! modules: one frosted card above the bar holding the modules, each
+//! drilling into a page of its own.
 //!
-//! The card is iOS Control Center's canvas, four cells across and eight
-//! down (`grid`), laid out as iOS lays it out by default: Wi‑Fi and
-//! Bluetooth tiles beside Now Playing, the Focus tile and round buttons, a
+//! The card is a canvas four cells across and eight down (`grid`), laid
+//! out by default as Wi‑Fi and Bluetooth tiles beside Now Playing, the
+//! Focus tile and round buttons, a
 //! Display card and a Sound card with their sliders, then the battery and
 //! rows of round buttons; Edit Controls moves and resizes
 //! them (`edit`, `layout`). It keeps GNOME's rules: a control shows only
 //! when the machine has what it drives. A tile's page grows out of the tile
-//! to fill the card, as on iOS. Escape goes back to the grid, then closes.
+//! to fill the card. Escape goes back to the grid, then closes.
 //!
-//! As on macOS Tahoe, the card itself has no background: each module is a
+//! The card itself has no background: each module is a
 //! frosted glass piece of its own, and the surface tells the compositor
 //! where to frost (`glass_region`, over ext-background-effect) — the grid's
 //! modules, or the whole card while a page is on it.
@@ -26,7 +26,7 @@
 //! status icons (each optional, see the pages' "Show in Status Bar") open
 //! straight to their page. It shares the notification center's
 //! one-open-at-a-time state ([`Panel::QuickSettings`]), opened from the
-//! bar's Control Center button, a status icon, or over IPC:
+//! bar's Quick Settings button, a status icon, or over IPC:
 //! `quick-settings [toggle [<page>] | open [<page>] | close]`. See
 //! `docs/shell/quick-settings.md`.
 //!
@@ -37,8 +37,8 @@
 //! with the card at the bar's corner, so a click anywhere outside the card
 //! closes it, as the launcher does.
 //!
-//! Edit mode opens the Customize window (`customize`) beside the card, as
-//! macOS's Customize Control Center does. amane can't carry a drag from one
+//! Edit mode opens the Customize window (`customize`) beside the card.
+//! amane can't carry a drag from one
 //! surface to another, so the one surface holds both: the card where it
 //! always is, at the bottom-right, and the window in the middle, with one
 //! still layer under both that every drag is measured on. While editing,
@@ -553,8 +553,8 @@ pub fn surface() -> LayerWindow {
         // card's, the frost with it at full strength: it takes over from
         // the tile's own, so the card never shows through half-frosted
         // where motion is reduced it fades in at its size instead, its frost
-        // with it, rather than animating out of the tile's (Apple: no
-        // animating into and out of blurs)
+        // with it, rather than animating out of the tile's (no animating
+        // into and out of blurs)
         let reduced = crate::theme::reduced_motion();
         let from = if reduced { full } else { origin };
         let sheet = Sheet::blend(from, full, slide);

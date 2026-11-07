@@ -1,8 +1,8 @@
 //! The on-screen display: a small glass capsule above the bottom edge that
 //! shows a level or a switch as it changes (volume, the microphone muted,
 //! brightness, the keyboard light, a lock key, airplane mode, the power
-//! mode, the sound moving to another device), then fades out, as macOS and
-//! GNOME show the media keys.
+//! mode, the sound moving to another device), then fades out, as GNOME
+//! shows the media keys.
 //!
 //! The keys come to the shell over IPC ([`keys`]), which changes the level
 //! and shows it at once; changes made anywhere else (a script, a headset's

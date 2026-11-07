@@ -107,8 +107,8 @@ impl ListItem {
         self
     }
 
-    /// The leading glyph on a tile of one of the named accents, as macOS's
-    /// System Settings marks its rows.
+    /// The leading glyph on a tile of one of the named accents, as Shell
+    /// Settings marks its rows.
     pub fn leading_tile_accent(mut self, glyph: char, accent: Accent) -> Self {
         self.leading = Some(glyph);
         self.tile = true;

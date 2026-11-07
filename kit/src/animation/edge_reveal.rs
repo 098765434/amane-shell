@@ -1,5 +1,5 @@
 //! Edge reveal — a surface that hides at a screen edge and comes out when
-//! the pointer touches the edge, as the macOS dock does with hiding on.
+//! the pointer touches the edge, as the dock does with hiding on.
 //!
 //! While hidden, the surface takes the pointer only along a thin strip at
 //! its edge ([`EdgeReveal::input_region`]); the pointer on that strip, or on

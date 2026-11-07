@@ -28,7 +28,7 @@ use amane::{Animation, Blend, Easing, Service};
 
 use crate::theme;
 
-// iOS-like motion. TODO(token): these become `sys.motion.*` tokens once
+// Springy motion. TODO(token): these become `sys.motion.*` tokens once
 // Penpot has them (manual §1.1: no style literals in component code).
 /// How long a spring takes to settle: a knob, a thumb, a card moving.
 const SPRING: Duration = Duration::from_millis(450);

@@ -1,6 +1,6 @@
 //! Radio — one choice out of a few, all in sight.
 //!
-//! Drawn like macOS's (the macform look): a 16 px circle, `fieldFill` in a
+//! Drawn in the macform look: a 16 px circle, `fieldFill` in a
 //! hairline while not chosen, filling with the accent around a white dot
 //! when chosen, with an optional label 3 px after it that takes the click
 //! too. It is as wide as its mark and label. A group
