@@ -2,7 +2,7 @@
 
 > **Archived: implemented.** Kept as history and not kept up to date. The current reference is
 > [design-system/tokens.md](../design-system/tokens.md); the resolver now lives in amane-kit
-> (`kit/src/tokens`).
+> (`crates/kit/src/tokens`).
  
 Status: implemented, revision 5 (23 Oct 2026) · Target: `098765434/amane-shell` (`main`) · Scope:
 **Penpot is the source of truth for every design token, organised by the Design Token
@@ -16,7 +16,7 @@ uses amane's Appearance service (in amane since 317943e) and works without a por
 Decisions:
  
 - **Design happens in Penpot.** Names, values, types, sets and themes are edited there and
-  nowhere else. The repo holds Penpot's single-file export (`design-tokens/tokens.json`),
+  nowhere else. The repo holds Penpot's single-file export (`crates/kit/design-tokens/tokens.json`),
   normalized (§3.2), embedded with `include_str!`.
 - **amane resolves like Penpot**: same 20 types, value strings, references, math, set order
   and themes (§10). Where Penpot shows an error, CI fails; where Penpot shows a value, the
@@ -145,7 +145,7 @@ the committed file. Designer and developer steps are in manual §10.
  
 ### 3.2 The committed file
  
-`design-tokens/tokens.json` is Penpot's single-file export: top-level keys are set names,
+`crates/kit/design-tokens/tokens.json` is Penpot's single-file export: top-level keys are set names,
 plus `$themes` and `$metadata`; tokens are `{"$value", "$type", "$description"?}` with
 Penpot's type names and string values.
  
@@ -166,7 +166,7 @@ reads the two current JSON files and writes a Penpot-format `seed.json` laid out
 values meet in one `sys` role but differ (e.g. bar and menu secondary text). Each conflict
 is resolved before import by either keeping both as separate `sys` roles (pixel-identical,
 the default) or choosing one (a visible change, decided by a designer). The normalized seed
-was committed as the first `design-tokens/tokens.json`; a designer imports it into Penpot and
+was committed as the first `crates/kit/design-tokens/tokens.json`; a designer imports it into Penpot and
 checks it (§14), and from then on Penpot's exports replace it.
  
 ---
@@ -466,7 +466,7 @@ user's machine. The token value is the same; only the fallback differs (§12 on 
  
 ### 9.1 Generator
  
-`src/tokens/layer_rules.rs` builds `niri-layer-rule.kdl` from rules whose numbers come from
+`apps/shell/src/tokens/layer_rules.rs` builds `niri-layer-rule.kdl` from rules whose numbers come from
 tokens and whose namespaces come from the existing constants (`WIFI_NS`, `POWER_NS`, the menu
 anchor):
  
@@ -502,7 +502,7 @@ level.
 building Rust. A golden test compares it to `render(&rules())`:
  
 ```
-niri-layer-rule.kdl is out of date — run: cargo run -q -- layer-rules > niri-layer-rule.kdl
+niri-layer-rule.kdl is out of date — run: cargo xtask layer-rules > niri-layer-rule.kdl
 ```
  
 A designer changing `sys.radius.popover` in Penpot shows up in CI as this failure until the
@@ -516,7 +516,7 @@ startup. The KDL file and the script can then be removed.
  
 ---
  
-## 10. The resolver (`src/tokens/`)
+## 10. The resolver (`apps/shell/src/tokens/`)
  
 ```
 src/tokens/
@@ -744,9 +744,9 @@ All in `cargo test`. Tests 1–10 are the contract between Penpot, the manual an
  
 ## 13. Phasing (one PR each; CI passes fmt, clippy, test on each)
  
-1. **Resolver + seed.** `src/tokens/` (§10) with tests 12–14 against the fidelity fixture
+1. **Resolver + seed.** `apps/shell/src/tokens/` (§10) with tests 12–14 against the fidelity fixture
    (made in Penpot first), `tokens normalize` / `check`, the seed script and conflict report,
-   the `rgba({ref})` check, the Penpot file seeded and exported, `design-tokens/tokens.json`
+   the `rgba({ref})` check, the Penpot file seeded and exported, `crates/kit/design-tokens/tokens.json`
    committed. Components still read the old files. No visible change.
 2. **Switch components to Penpot tokens.** §5 mapping, §6 literals, old JSON files and seed
    script deleted. Tests 1–11. Pixel-identical at `density/comfortable`. (Revision 5 then
@@ -766,7 +766,7 @@ PRs 1–2 change no pixels; 3–7 each change one thing.
  
 ## 14. Verification
  
-1. **Seed (PR 1):** import `design-tokens/tokens.json` into the Penpot file: no error, no "unsupported types"
+1. **Seed (PR 1):** import `crates/kit/design-tokens/tokens.json` into the Penpot file: no error, no "unsupported types"
    toast; sets as in manual §9.1; groups `mode` and `density`. Bind a rectangle's fill to
    `sys.color.surface.popover.bg` and switch `mode`: the fill changes. Bind a board's padding
    to `sys.space.inset.m` and switch `density`: it shrinks in compact. No red pills in any

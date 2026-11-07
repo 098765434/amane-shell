@@ -9,7 +9,7 @@ This plan turns amane-shell and its forks (amane, niri, vello) into one delibera
 | niri (`niri/`) | ocbk | `16384e00` | 2 commits ahead of origin, not pushed |
 | vello (`vello/`) | ocbk | `46585523` | |
 
-After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`). After Phase 3, shell `main` pins amane `292d486`.
+After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`). After Phase 3, shell `main` pins amane `292d486`. After Phase 4, shell `main` pins amane `112da4d`, in the new layout (`apps/shell`, `crates/`, `xtask`).
 
 ## Ground rules
 
@@ -68,7 +68,7 @@ Details and file references are in the analysis that preceded this roadmap; each
 5. **Inconsistent patterns.** Errors are swallowed (`let _ =` ×60, `eprintln!` ×31, no logging). There are three process APIs, three state-file formats, and surfaces that reach into each other's internals. Some files are very large: launcher 1,683 lines, dock 1,317, widgets 1,224.
 6. **Fork drift.** amane conflicts in 6 files against upstream `main` today. niri is 263 commits behind upstream `main`, with hot spots in `input/mod.rs`, `niri.rs`, `backend/tty.rs` and `layout/*`, and Smithay's Dispatch2 refactor ahead. Both forks' `maintaining.md` understate conflicts. The cross-repo contract is unversioned: on stock niri the shell can't tell which fork features exist.
 7. **Docs out of sync.** README layout and features, `layer-rules.md`, `ipc.md`, `quick-settings.md` and CONTRIBUTING's CI claims are out of date. There's no architecture, contract, release or testing doc.
-8. **Apple platform terms.** 664 occurrences: shell 621; lines the forks added, amane 18 and niri 25; plus 16 file names and a few nixos-config comments. Every line is listed in [docs/development/macos-references.md](docs/development/macos-references.md).
+8. **Apple platform terms.** 664 occurrences: shell 621; lines the forks added, amane 18 and niri 25; plus 16 file names and a few nixos-config comments. Every line is listed in `docs/development/macos-references.md` (deleted in Phase 3).
 
 ### What to keep
 
@@ -341,7 +341,7 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 
 **Goal.** Remove every mention of macOS and other Apple platform terms from text that is free to change: comments, docs, descriptions, keywords, search aliases, user-facing strings. Done early because it's independent and touches many files that later phases move. Identifier renames wait for Phase 8, where `macform` is merged anyway.
 
-The list to work from is [docs/development/macos-references.md](docs/development/macos-references.md). Terms covered:
+The list to work from is `docs/development/macos-references.md` (deleted in Phase 3). Terms covered:
 - macOS and its version names, Mac;
 - iOS, iPad, iPhone, Apple;
 - Spotlight, Control Center, Launchpad, AirDrop, Finder;
@@ -440,6 +440,15 @@ The list to work from is [docs/development/macos-references.md](docs/development
 - `cargo package -p amane-kit --no-verify` lists no files outside the crate.
 
 **Risks.** Medium, all mechanical: Nix `src` filters missing a moved file, and a stale path in a doc. In-flight branches conflict on every file, so land any open work first.
+
+**Status (2026-11-07).** Done. Shell `main` pins amane `112da4d`. The moves are one commit of renames, so `git log --follow` works.
+- **The design tokens** moved into the kit (`crates/kit/design-tokens/`), so the kit packages with nothing from outside it.
+- **Shader Lab's data.** Shader Lab embeds its effects and saved looks in its own `build.rs`, and hands them to `amane_kit::lab::register`. That's a smaller change than passing the files to every lab function. Its tests and the `lab_look` example moved with the data.
+- **Token tests.** The two that read the shell's code (tokens read, and components reading only `sys`) moved into the shell (`apps/shell/src/tokens/contract.rs`).
+- **The assistant's daemon** is the package `amane-assistant-daemon`, and its binary is still `amane-assistant`. The library has no features and no libpulse.
+- **Workspace defaults.** `default-members = ["apps/shell"]`, so `cargo run` still means the shell.
+- **The cargo config.** `.cargo/config.toml` is tracked and holds only the `xtask` alias. A local amane override goes in the ignored `.cargo/local.toml`, used with `cargo --config .cargo/local.toml`; `check-pins` reads it there.
+- **The link check.** The "Phase 1 link checks" this phase leaned on didn't exist. `cargo xtask links` is new, runs in CI, and the move left no broken link.
 
 ---
 

@@ -1,6 +1,6 @@
 # Launcher
 
-The launcher (`src/surfaces/launcher/`): a glass search pill high on the screen,
+The launcher (`apps/shell/src/surfaces/launcher/`): a glass search pill high on the screen,
 with round buttons beside it for its modes, that grows down into a panel as you type. Its
 Applications mode is the app grid the launcher started as, after a KDE
 [launcher](https://github.com/EliverLara/TahoeLauncher). It's opened over IPC from a
@@ -23,7 +23,7 @@ glass, so a click anywhere but the glass closes it.
 
 ### Searching
 
-From the pill, a query lists ([`provider.rs`](../../src/surfaces/launcher/provider.rs)):
+From the pill, a query lists ([`provider.rs`](../../apps/shell/src/surfaces/launcher/provider.rs)):
 
 1. **An answer**, in an accent card over the list. Enter copies it.
    - A sum: `+ - * / ( )` over numbers.
@@ -254,7 +254,7 @@ Two fingers on the grid either scroll it or turn the category: the first few pix
   door slides the same way; one further away fades in instead.
 
 The compositor only reports the fingers moving and lifting, so the momentum is the launcher's
-(`amane_kit::kinetic`, `kit/src/animation/kinetic.rs`), not amane's.
+(`amane_kit::kinetic`, `crates/kit/src/animation/kinetic.rs`), not amane's.
 
 ## App menu
 

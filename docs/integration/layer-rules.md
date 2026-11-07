@@ -4,8 +4,8 @@ Each layer-shell surface the shell opens is given a **namespace** via amane's
 `LayerWindow::namespace(...)`. niri matches those namespaces in `layer-rule` blocks to apply
 backdrop blur and corner rounding. Two things must agree:
 
-1. the Rust source — `LayerWindow::namespace("…")` in `src/surfaces/**`;
-2. `niri-layer-rule.kdl` — the rules, **generated** by `src/tokens/layer_rules.rs` from those
+1. the Rust source — `LayerWindow::namespace("…")` in `apps/shell/src/surfaces/**`;
+2. `niri-layer-rule.kdl` — the rules, **generated** by `apps/shell/src/tokens/layer_rules.rs` from those
    namespace constants and the design tokens (corner radii are `sys.radius.popover`, or
    `notification.card.radius` for toasts: the radius the cards are drawn with).
 
@@ -33,7 +33,7 @@ and Clear one all but invisible shape of clear glass, so niri still reads the wa
 A Frosted bar that is hiding sends its shape too, so the frost slides away with it.
 
 Where niri has the `glass` material (`amane::material_available`), it draws the lit edge too, so
-the cards leave out the shader's (`kit/src/look/glass.rs`) and their hairlines. A niri config
+the cards leave out the shader's (`crates/kit/src/look/glass.rs`) and their hairlines. A niri config
 without the material, or without these rules installed, gets plain frost, and the shell lights
 the edges itself; install the rules after every change (below), or menus lose their edge.
 
@@ -84,7 +84,7 @@ First bring the KDL up to date with the tokens (needed whenever a radius or a ma
 Penpot; CI tells you):
 
 ```sh
-cargo run -q -- layer-rules > niri-layer-rule.kdl
+cargo xtask layer-rules > niri-layer-rule.kdl
 ```
 
 `gen-layer-rules.sh` reads everything below the `//<<<GENERATED-RULES-BELOW>>>` sentinel in
@@ -131,7 +131,7 @@ setup hint and makes no changes.)
 ## Adding or renaming a surface
 
 1. set its `.namespace("amane.…")` in the Rust source, as a `pub const`;
-2. add a `LayerRule` for it in `rules()` in `src/tokens/layer_rules.rs`, taking its radius from
+2. add a `LayerRule` for it in `rules()` in `apps/shell/src/tokens/layer_rules.rs`, taking its radius from
    a `sys.radius.*` token;
-3. `cargo run -q -- layer-rules > niri-layer-rule.kdl`, then `./gen-layer-rules.sh` and reload
+3. `cargo xtask layer-rules > niri-layer-rule.kdl`, then `./gen-layer-rules.sh` and reload
    niri.

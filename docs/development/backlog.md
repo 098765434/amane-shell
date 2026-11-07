@@ -16,7 +16,7 @@ Ordered by how often the gap is felt in daily use, not by effort.
 **Done**: [docs/shell/osd.md](../shell/osd.md).
 **Gap.** The media and brightness keys are bound in niri to `wpctl` / `brightnessctl` / `playerctl`
 (`nixos-config/niri/config.kdl` l. 571–582), so pressing one gives no feedback at all. The token
-vocabulary already reserves an `osd` component group (`kit/src/tokens/mod.rs:50`) with no tokens.
+vocabulary already reserves an `osd` component group (`crates/kit/src/tokens/mod.rs:50`) with no tokens.
 **Build.** A small glass capsule (Material::Control) near the bottom edge, above the bar/dock: glyph
 + level bar, fades after ~1.5 s. Drive it from amane's `Audio` and `Brightness` services changing
 (so it shows whoever changed the level), or add IPC (`osd volume up|down|mute`, `osd brightness …`)

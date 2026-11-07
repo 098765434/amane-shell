@@ -234,7 +234,7 @@ layout** and **Keyboard variant** (fields checked against `localectl list-x11-ke
 `system/apps.rs`, two sections: *Add App* and *Installed*. *Add App*: the field searches as you type (after a 150 ms pause, two
 characters or more; Enter or **Search** at once) in the nixpkgs catalog
 (`system/catalog.rs`): every package `nix search --json --inputs-from <repo> nixpkgs ^` finds in
-the configuration's own nixpkgs, less nixpkgs' `tests`, one tab-separated line each (attribute,
+the configuration's own nixpkgs, less nixpkgs' `apps/shell/tests`, one tab-separated line each (attribute,
 `pname`, version, description) in `$XDG_CACHE_HOME/amane-shell/nixpkgs/<rev>.tsv`, where `<rev>`
 is the nixpkgs revision `flake.lock` pins for the root's `nixpkgs` input. The page builds it
 when it opens and there's none for that revision (*Preparing the app catalog… m:ss*: seconds

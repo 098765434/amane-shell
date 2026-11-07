@@ -1,7 +1,7 @@
 # amane-shell docs
 
 amane-shell is a Wayland desktop shell for niri: a status bar, a dock, the launcher,
-notifications, Quick Settings and desktop widgets, plus **amane-kit** (`kit/`), the look as a
+notifications, Quick Settings and desktop widgets, plus **amane-kit** (`crates/kit/`), the look as a
 library that the shell and its apps (Shell Settings) share. It sits on two forks:
 
 ```
@@ -30,18 +30,21 @@ A module's folder says what kind of thing it is. A new one goes where its kind i
 
 | Folder | What goes there |
 |---|---|
-| `src/surfaces/` | a surface of its own: the status bar, dock, launcher, notifications, Quick Settings, widgets, context menu, alert, on-screen display and the password-fill popup (`fill.rs`), each with its doc in `shell/` |
-| `src/components/` | the shell's pieces that several surfaces share (`panel`, `battery`, `grid`, `search_field`, `text_edit`), and the kit's modules re-exported under their old paths |
-| `src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; `vault/` (rbw, for passwords); the assistant's client (`assistant.rs`); the status apps' bus server (`status_apps.rs`); helpers in `process.rs` and `state.rs` |
-| `apps/` | the programs beside the shell: Shell Settings, Messages, Phone Screen, Shader Lab, Drop, the assistant's daemon, rbw's pinentry (`pinentry`), and `train-watch`, which follows a training run from the status bar |
-| `src/tokens/` | what the shell generates from the tokens (niri's layer rules) |
-| `kit/src/controls/` | what's pressed, dragged or picked: buttons, slider, dropdown, colour picker, tag, control sizes |
-| `kit/src/containers/` | what content sits in: card, list, divider, app bar, dialog, tooltip, scroll view, flow, arrangement |
-| `kit/src/look/` | the look of glass: materials, the edge shader, glass regions, Shader Lab's looks |
-| `kit/src/animation/` | motion, kinetic, pager, edge reveal |
-| `kit/src/foundation/` | layout primitives, icons, colour arithmetic |
-| `kit/src/platform/` | an app's window, app icons, the settings files, markers, secrets |
-| `kit/src/tokens/`, `theme.rs` | the design tokens and the theme they resolve with |
+| `apps/shell/src/surfaces/` | a surface of its own: the status bar, dock, launcher, notifications, Quick Settings, widgets, context menu, alert, on-screen display and the password-fill popup (`fill.rs`), each with its doc in `shell/` |
+| `apps/shell/src/components/` | the shell's pieces that several surfaces share (`panel`, `battery`, `grid`, `search_field`, `text_edit`), and the kit's modules re-exported under their old paths |
+| `apps/shell/src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; `vault/` (rbw, for passwords); the assistant's client (`assistant.rs`); the status apps' bus server (`status_apps.rs`); helpers in `process.rs` and `state.rs` |
+| `apps/` | the programs beside the shell (`apps/shell`): Shell Settings, Messages, Phone Screen, Shader Lab (with its effects and saved looks), Drop, the assistant's daemon, and `train-watch`, which follows a training run from the status bar |
+| `crates/` | what they share: the kit (`crates/kit`, with the design tokens in `design-tokens/`), rbw's pinentry and the assistant's library |
+| `apps/shell/tests/fixtures/` | recorded output the shell's parsers are tested on |
+| `xtask/` | the workspace's tasks: `cargo xtask layer-rules`, `tokens`, `lint-terms`, `links` |
+| `apps/shell/src/tokens/` | what the shell generates from the tokens (niri's layer rules) |
+| `crates/kit/src/controls/` | what's pressed, dragged or picked: buttons, slider, dropdown, colour picker, tag, control sizes |
+| `crates/kit/src/containers/` | what content sits in: card, list, divider, app bar, dialog, tooltip, scroll view, flow, arrangement |
+| `crates/kit/src/look/` | the look of glass: materials, the edge shader, glass regions, Shader Lab's looks |
+| `crates/kit/src/animation/` | motion, kinetic, pager, edge reveal |
+| `crates/kit/src/foundation/` | layout primitives, icons, colour arithmetic |
+| `crates/kit/src/platform/` | an app's window, app icons, the settings files, markers, secrets |
+| `crates/kit/src/tokens/`, `theme.rs` | the design tokens and the theme they resolve with |
 
 The kit's folders don't show in its paths: every module is re-exported at the root, so it's
 `amane_kit::card`, not `amane_kit::containers::card`.

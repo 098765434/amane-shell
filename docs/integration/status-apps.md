@@ -2,7 +2,7 @@
 
 The bar serves `org.amane.StatusBar1` on the session bus. Through it, other programs put up
 their own items in the bar, and Activities: what's going on now, shown in the bar until it ends.
-The server is `src/services/status_apps.rs`. What the bar draws is in
+The server is `apps/shell/src/services/status_apps.rs`. What the bar draws is in
 [status-bar.md](../shell/status-bar.md#programs-items).
 
 The protocol and its JSON types belong to amane, so a program and the bar share one definition:

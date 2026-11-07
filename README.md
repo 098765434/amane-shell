@@ -39,7 +39,7 @@ the forks add is in their docs: [niri](https://github.com/098765434/niri/blob/oc
 - **Context menus**: nested menus on xdg-popups ([docs/shell/context-menu.md](docs/shell/context-menu.md)).
 - **Shell Settings**: a settings app the shell follows live ([docs/shell/settings-app.md](docs/shell/settings-app.md)).
 - **amane-kit**: the look as a library: controls, components and the design tokens from Penpot,
-  for the shell and apps like Shell Settings ([kit/README.md](kit/README.md)).
+  for the shell and apps like Shell Settings ([kit/README.md](crates/kit/README.md)).
 
 Every doc is listed in [docs/README.md](docs/README.md).
 
@@ -64,7 +64,7 @@ libraries it needs (so it runs standalone).
 
 The `amane` library is a **git dependency** pinned to a rev (`Cargo.toml`). To develop the shell and
 the library together, check `amane` out beside this repo and add a git-ignored
-`.cargo/config.toml` with `paths = ["../amane"]` — see [CONTRIBUTING.md](CONTRIBUTING.md).
+`.cargo/local.toml` with `paths = ["../amane"]` — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 > **Do not** build this shell with the upstream `amane` CLI (`amane dev`/`compile`): it compiles
 > against its own bundled library copy, **not** this fork (so it lacks `Gestures` and won't compile
@@ -76,7 +76,7 @@ The shell's glass is frosted by niri, through `layer-rule` blocks generated from
 tokens into `niri-layer-rule.kdl` and injected into your niri config by `./gen-layer-rules.sh`:
 
 ```sh
-cargo run -q -- layer-rules > niri-layer-rule.kdl
+cargo xtask layer-rules > niri-layer-rule.kdl
 ./gen-layer-rules.sh /path/to/your/niri/config.kdl   # e.g. ~/.config/niri/config.kdl
 ```
 
@@ -103,7 +103,7 @@ there ([docs/shell/drop.md](docs/shell/drop.md#installing)).
 
 ## Shell Settings
 
-`amane-settings` is a settings app for the shell, built on the [kit](kit/README.md): appearance
+`amane-settings` is a settings app for the shell, built on the [kit](crates/kit/README.md): appearance
 (light or dark, accent, density, text size, glass, adaptive glass, vibrant labels, motion), the
 desktop's widgets and the launcher. It writes `~/.config/amane-shell/*.json`, which the running shell
 follows at once. Its **System** pages manage the NixOS configuration the machine is built from
@@ -114,8 +114,8 @@ and the shell is the session's polkit agent, so the password prompt is its own. 
 
 ## Layout
 
-`src/` is the shell, `kit/` is amane-kit (the look as a library, for the shell and its apps),
-`apps/` the programs beside it, and `design-tokens/tokens.json` the Penpot export. Where each
+`apps/shell/src/` is the shell, `crates/kit/` is amane-kit (the look as a library, for the shell and its apps),
+`apps/` the programs beside it, and `crates/kit/design-tokens/tokens.json` the Penpot export. Where each
 part lives, folder by folder, is in the source-layout table of [docs/README.md](docs/README.md).
 
 ## License

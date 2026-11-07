@@ -131,7 +131,7 @@ A piece of glass is built with its material's methods:
   material that draws the tint, and again untoned and thickened by `UNTONED`, the tint the kit
   uses without niri's material.
 - `material.<name>.*` (component tokens) are niri's material settings (niri's
-  [`effects/materials.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md) says what each does). `amane-shell layer-rules`
+  [`effects/materials.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md) says what each does). `cargo xtask layer-rules`
   writes one niri material for each of them into `niri-layer-rule.kdl`, with a `-still` twin
   (`materialize false`) for reduced motion; see [layer-rules.md](../integration/layer-rules.md).
 
@@ -157,7 +157,7 @@ A piece of glass is built with its material's methods:
 
 ## Look test
 
-`examples/liquid_glass.rs` is a look test, not shell code: glass cards over a wallpaper it draws
-itself, lit by the kit's edge shader (`kit/src/look/glass.wgsl`) with stronger values, for judging the
+`apps/shell/examples/liquid_glass.rs` is a look test, not shell code: glass cards over a wallpaper it draws
+itself, lit by the kit's edge shader (`crates/kit/src/look/glass.wgsl`) with stronger values, for judging the
 glass edge before it goes into the shell. Its `//!` header lists the `GLASS_*` variables it
 takes.

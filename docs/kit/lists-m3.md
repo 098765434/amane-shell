@@ -2,7 +2,7 @@
 
 `amane_kit::lists` draws Material 3's list in three styles: `Shell` (the shell's look),
 `M3` (baseline) and `M3Expressive`. This page records where each M3 number comes from.
-Every value lives in `kit/src/containers/lists/style.rs`, and that file's unit tests check
+Every value lives in `crates/kit/src/containers/lists/style.rs`, and that file's unit tests check
 them. To compare them on screen, run the showcase:
 
 ```sh

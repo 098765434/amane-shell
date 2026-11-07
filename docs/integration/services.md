@@ -1,7 +1,7 @@
 # Services
 
 What the shell reads and changes on the system, and the files it keeps. What amane has no service
-for is a shell service in `src/services/`; the rest (battery, audio, networks, Bluetooth, niri's
+for is a shell service in `apps/shell/src/services/`; the rest (battery, audio, networks, Bluetooth, niri's
 workspaces and windows, notifications …) are amane's.
 
 ## The shell's services

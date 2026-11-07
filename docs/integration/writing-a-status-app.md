@@ -100,7 +100,7 @@ LayerWindow::new()
   bar: `sys::size::panel::height() + 6` from a top bar, or the same above a bottom one.
   `card_place` in `apps/drop/src/grid.rs` does this, with a test.
 - **Frost.** Use a blur shape the size of the card, and a niri `layer-rule` for your namespace.
-  For an app in this repo, add the namespace to `src/tokens/layer_rules.rs`, then regenerate the
+  For an app in this repo, add the namespace to `apps/shell/src/tokens/layer_rules.rs`, then regenerate the
   rules and splice them into niri's config ([layer-rules.md](layer-rules.md)). For one outside
   it, copy the `amane.drop` rule from `niri-layer-rule.kdl`.
 - **Only quads.** Draw with `Rectangle`, `Text`, glyphs and `Arc`, so nothing goes through vello

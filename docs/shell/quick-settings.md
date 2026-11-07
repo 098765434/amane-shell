@@ -1,7 +1,7 @@
 # Quick Settings
 
 GNOME's quick settings menu, drawn as a grid of glass modules
-(`src/surfaces/quick_settings/`). The card itself has no background: it's a
+(`apps/shell/src/surfaces/quick_settings/`). The card itself has no background: it's a
 clear surface above the bar's right end holding frosted glass modules — Wi‑Fi and
 Bluetooth tiles beside Now Playing, the Focus tile and round buttons, a
 Display card and a Sound card with their sliders, then the battery and more round buttons.
@@ -286,7 +286,7 @@ password field types without a click first. A click outside closes it.
 
 ## Components
 
-The parts are in `src/surfaces/quick_settings/`:
+The parts are in `apps/shell/src/surfaces/quick_settings/`:
 
 - **`tile.rs` (`QuickToggle`, `module`)**: GNOME's QuickToggle in the module shapes
   (`Style`): a `Card` (a glass capsule two, three or four cells wide) or a `Round` button (the disc
@@ -315,7 +315,7 @@ The parts are in `src/surfaces/quick_settings/`:
 - **`customize/`**: the Customize window: `mod.rs` the sheet, the sidebar, the pane (every
   control on a plain tint, named), the footer, the still drag layer and the control in hand;
   `catalog.rs` the categories, what each shows and the search (pure, tested).
-- **`glass_region`** (the kit's, `kit/src/look/glass_region.rs`): the frost behind a piece of glass as a blur shape, and its transforms.
+- **`glass_region`** (the kit's, `crates/kit/src/look/glass_region.rs`): the frost behind a piece of glass as a blur shape, and its transforms.
 - **`tiles/media.rs`**: the square Now Playing module.
 - **`slider_card.rs`**: the Display and Sound cards: a title over each thin slider, a small
   glyph before the track and a large faint one after it, and a right click (`Card::on_secondary`)
@@ -346,7 +346,7 @@ It reuses the shared components:
 
 ### SearchField and text_edit
 
-The shell's own (`src/components/search_field.rs`, `text_edit.rs`), not the kit's.
+The shell's own (`apps/shell/src/components/search_field.rs`, `text_edit.rs`), not the kit's.
 
 `SearchField::new(id, &field, focused)` is a `surface.raised` capsule a control tall: a magnifier,
 the query (or a `.placeholder(…)`, "Search" by default) in `sys.type.label` with its caret (accent,
@@ -370,7 +370,7 @@ and `quick.drag.scale` (see [penpot-backlog.md](../design-system/penpot-backlog.
 ## The alert
 
 The Power Off page's Restart…, Power Off… and Log Out… ask first in the shell's alert
-(`src/surfaces/alert/mod.rs`): an alert in the middle of the screen, a kit
+(`apps/shell/src/surfaces/alert/mod.rs`): an alert in the middle of the screen, a kit
 [`Dialog`](../kit/components.md#dialog) on thick glass. `alert::show(dialog)` puts it on the
 `amane.alert` surface, as big as its card, which frosts itself and holds the keyboard until
 answered; its layer rule rounds it (`dialog.radius`) and gives it niri's shadow (`0 18 48`). In
@@ -380,7 +380,7 @@ debug builds the `alert-test` IPC call shows a sample ([ipc.md](../integration/i
 
 What amane has no service for (logind's session actions, night light, dark style, airplane mode,
 the keyboard light, wired/VPN/hotspot, privacy, background apps, Keep Awake, Tailscale) is a shell
-service in `src/services/`; see [services.md](../integration/services.md), which also has the
+service in `apps/shell/src/services/`; see [services.md](../integration/services.md), which also has the
 Tailscale operator grant, why night light owns `wlsunset`, and how Keep Awake and locking behave.
 
 ## Related

@@ -1,6 +1,6 @@
 # Status bar
 
-A layer-shell bar (`src/surfaces/status_bar/mod.rs`), full-width, anchored to the bottom (or the
+A layer-shell bar (`apps/shell/src/surfaces/status_bar/mod.rs`), full-width, anchored to the bottom (or the
 top, see [Settings](#settings)) on the `Top` layer with `Zone::Reserve`. There is one on every
 monitor (`App::window_per_monitor`): each shows the
 workspaces of its own monitor and hides on its own, and what it opens (Quick Settings, the

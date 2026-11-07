@@ -119,7 +119,7 @@ them.
   functions already take `high_contrast`.
 - Replace the uses of `content.secondary` with `label(Level::Secondary)`. Find them with
   `grep -rn content::secondary`.
-- Contrast floors (`kit/src/tokens/rules.rs`): quaternary at 10% can't pass a text floor. It's
+- Contrast floors (`crates/kit/src/tokens/rules.rs`): quaternary at 10% can't pass a text floor. It's
   for decoration such as placeholders and disabled glyphs, so exempt it
   from the floors and assert in debug builds that it isn't used for body text. Primary,
   secondary and tertiary keep their floors.

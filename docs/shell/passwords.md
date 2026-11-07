@@ -138,11 +138,11 @@ Code:
 - amane: `src/wayland/input_method_v2.rs`, `src/wayland/secure_fill.rs`,
   `src/services/focused_field.rs` (amane's `docs/fork/input/input-method.md`);
 - niri: `src/protocols/secure_fill.rs` (niri's `docs/fork/input/secure-fill.md`);
-- shell: `src/surfaces/fill.rs`.
+- shell: `apps/shell/src/surfaces/fill.rs`.
 
 ### Who owns a field
 
-`src/services/vault/identity.rs`. niri reports two things about the field's owner:
+`apps/shell/src/services/vault/identity.rs`. niri reports two things about the field's owner:
 - the process on its socket (SO_PEERCRED) and what that process runs (`/proc/<pid>/exe`);
 - the app id its window claims.
 
@@ -170,7 +170,7 @@ are.
 
 ### Matching
 
-`src/services/vault/matching.rs`, for verified apps only, best first:
+`apps/shell/src/services/vault/matching.rs`, for verified apps only, best first:
 1. **Entries remembered for the app.** They're keyed by its desktop id *and* package, so
    another package claiming the same id gets none.
 2. **Entries naming the app.** That's `app://<desktop id>`, or `androidapp://<app id>` as
@@ -184,11 +184,11 @@ address at all, so remembering does most of the work over time.
 
 ### The master password
 
-rbw asks a `pinentry` program over the Assuan protocol. `amane-pinentry` (`apps/pinentry`) is
+rbw asks a `pinentry` program over the Assuan protocol. `amane-pinentry` (`crates/pinentry`) is
 that program.
 1. It connects to `$XDG_RUNTIME_DIR/amane-shell/pinentry.sock` (folder 0700, socket 0600) and
    checks the other end: the same user, running `amane-shell` from the Nix store.
-2. The shell (`src/services/vault/pinentry.rs`) answers a caller only if all of these hold:
+2. The shell (`apps/shell/src/services/vault/pinentry.rs`) answers a caller only if all of these hold:
    - the caller is `amane-pinentry` from the store;
    - its parent is `rbw-agent` from the store;
    - that agent has the shell's own `HOME`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`,
@@ -196,7 +196,7 @@ that program.
    - an rbw command the shell started, that can ask, is still running (for at most two
      minutes; the window closes as the command ends);
    - the caller's pidfd (SO_PEERPIDFD) still points at it once all that was read.
-3. The dialog (`src/surfaces/alert/vault_unlock.rs`) has a title the shell sets, with rbw's
+3. The dialog (`apps/shell/src/surfaces/alert/vault_unlock.rs`) has a title the shell sets, with rbw's
    words under it as plain text. Its field is taken out (`TextInput::take_secret`) and left
    empty. The answer goes back over the socket and is wiped.
 4. If the shell isn't there or says no, the pinentry runs pinentry-gnome3 in its place,
@@ -207,7 +207,7 @@ D-Bus isn't used, as any program of yours can watch the session bus.
 
 ### rbw
 
-`src/services/vault/rbw.rs`:
+`apps/shell/src/services/vault/rbw.rs`:
 - **Commands.** rbw runs by its store path (`AMANE_RBW`, set by the flake), with no secret in
   an argument, and an entry's id checked to be a UUID so it can't pass for an option.
 - **Errors.** What rbw prints on failure is matched to an error and dropped, never logged.

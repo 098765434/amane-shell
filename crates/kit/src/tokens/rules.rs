@@ -588,7 +588,7 @@ pub fn normalized(source: &str) -> Vec<String> {
     match super::check::normalize(source) {
         Ok(n) if n == source => Vec::new(),
         Ok(_) => vec![String::from(
-            "manual §10.3: the file isn't normalized — run `amane-shell tokens normalize`",
+            "manual §10.3: the file isn't normalized — run `cargo xtask tokens normalize`",
         )],
         Err(e) => vec![e],
     }

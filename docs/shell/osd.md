@@ -1,6 +1,6 @@
 # On-Screen Display
 
-The capsule that shows a level or a switch as it changes (`src/surfaces/osd/`), as
+The capsule that shows a level or a switch as it changes (`apps/shell/src/surfaces/osd/`), as
 GNOME answers the media keys: a glyph and a level, or a glyph and a few words, in small glass above
 the bottom edge, gone again after 1.5 s (2.2 s for a few words). Pressing again while it shows
 changes it in place.

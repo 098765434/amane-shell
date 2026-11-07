@@ -21,7 +21,7 @@ frost and glow, for glass), its shader or effect, and its inner shadows over it.
 `Look::style(rectangle)` does the same without the shadows. The size and radius you pass are the
 ones the effect is laid out for. Glass effects read what the window drew behind the rectangle,
 so draw the backdrop in the same window (and inside the same clip, if there's one).
-`kit/examples/lab_look.rs` shows a look over the wallpaper:
+`apps/shader-lab/examples/lab_look.rs` shows a look over the wallpaper:
 `cargo run -p amane-kit --example lab_look`.
 
 Shaders are written once to `$XDG_RUNTIME_DIR/amane-shell/lab/effects/`, as amane loads them from

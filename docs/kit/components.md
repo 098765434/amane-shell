@@ -1,11 +1,11 @@
 # Components
 
-amane-kit's building blocks (`kit/src/`, `amane_kit::*`), which Quick Settings, the notification
+amane-kit's building blocks (`crates/kit/src/`, `amane_kit::*`), which Quick Settings, the notification
 center, the context menu, the dock, the launcher and Shell Settings are made of. Like the
 [buttons](controls.md), each is named and structured after its Material 3 counterpart and drawn in
 the shell's glass look. They read `sys.*` tokens only, so any component can use them.
 
-| Component | `kit/src/` | M3 counterpart | Used for |
+| Component | `crates/kit/src/` | M3 counterpart | Used for |
 |---|---|---|---|
 | `Card` | `containers/card.rs` | [Cards](https://m3.material.io/components/cards/overview) | the notification center's sheet, context menus, tooltips |
 | `TopAppBar` | `containers/app_bar.rs` | [Top app bar](https://m3.material.io/components/app-bars/overview) (small) | the title row of each Quick Settings page and of the center |
@@ -308,7 +308,7 @@ measured against. It's all quads.
   and the ones the materials follow (glass level, higher contrast, reduced motion, adaptive glass,
   vibrancy), each from its `AMANE_*` override, else the settings file, else the system
   ([tokens.md](../design-system/tokens.md)).
-- `tokens/` holds the Penpot resolver, the manual's checks (`amane-shell tokens check`) and the
+- `tokens/` holds the Penpot resolver, the manual's checks (`cargo xtask tokens check`) and the
   functions `build.rs` generates, one per token.
 - `glass_region.rs` is what's under the materials: moving shapes with their layer
   (`transformed`, `faded`), and the glass level every tint goes through (`level`: `Clear` 0.8 of

@@ -143,7 +143,7 @@ dock's magnification). To remember where the pointer is for a later click or men
   - the dock's `anim`;
   - `theme::reduced_motion()` for anything custom (a flick's coast, a press pulse).
 - **Don't name `time` in a shader** unless it animates. A shader whose source mentions `time` (even
-  in a comment) redraws every frame. `kit/src/look/glass.rs` has a test guarding this.
+  in a comment) redraws every frame. `crates/kit/src/look/glass.rs` has a test guarding this.
 - **Pulse once.** `on_drag` reports the press and then every motion. Start a press effect on the
   first report only (kit's buttons, shell `c1bef96`).
 

@@ -2,8 +2,8 @@
  
 For designers working in Penpot and developers working in the amane-shell code. Version 1.1,
 23 Oct 2026. The implementation was specified in [spec-design-tokens-v2.md](../archive/spec-design-tokens-v2.md) (revision 5, archived) and
-lives in amane-kit's `tokens` module (`kit/src/tokens`, with the generated functions from
-`kit/build.rs`). Where this manual says "must", a check in CI enforces it (§13).
+lives in amane-kit's `tokens` module (`crates/kit/src/tokens`, with the generated functions from
+`crates/kit/build.rs`). Where this manual says "must", a check in CI enforces it (§13).
  
 ---
  
@@ -11,7 +11,7 @@ lives in amane-kit's `tokens` module (`kit/src/tokens`, with the generated funct
  
 1. **Penpot is the source of truth.** Every colour, size, gap, radius, font and timing the
    shell draws is a token in the Penpot file *amane-shell design system*. Nobody edits
-   `design-tokens/tokens.json` by hand.
+   `crates/kit/design-tokens/tokens.json` by hand.
 2. **Three tiers, one direction.** `ref.*` (raw values) ← `sys.*` (decisions) ← component
    tokens (`bar.*`, `menu.*`, `notification.*`, `quick.*`, `dialog.*`, `material.*`, `wifi.*`).
    References only
@@ -403,14 +403,14 @@ Avoid the `boolean` and `string` types: Penpot imports them but has no panel to 
 ### 10.3 Developer: bring an export in
  
 ```
-amane-shell tokens normalize ~/Downloads/tokens.json > design-tokens/tokens.json
-amane-shell tokens check design-tokens/tokens.json   # rules + diff against the tokens built in
+cargo xtask tokens normalize ~/Downloads/tokens.json > crates/kit/design-tokens/tokens.json
+cargo xtask tokens check crates/kit/design-tokens/tokens.json   # rules + diff against the tokens built in
 cargo test
 ```
  
 `check` prints changed, added and removed tokens. If `niri-layer-rule.kdl` is out of date
 (a radius changed), regenerate it in the same PR:
-`cargo run -q -- layer-rules > niri-layer-rule.kdl`.
+`cargo xtask layer-rules > niri-layer-rule.kdl`.
  
 ### 10.4 Developer: read a token
  

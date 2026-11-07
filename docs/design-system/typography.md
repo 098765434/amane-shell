@@ -36,7 +36,7 @@ Where a design sets its own type, the component has a typography of its own:
 
 amane takes one family name and fontconfig always answers with some font, so the kit picks the
 first family in a token's stack that is really installed (or a CSS generic name, which
-fontconfig maps), else the last entry (`kit/src/tokens/font.rs`). Each stack is looked up once.
+fontconfig maps), else the last entry (`crates/kit/src/tokens/font.rs`). Each stack is looked up once.
 `AMANE_DEBUG=1` prints which family each stack chose.
 
 ## Text scale

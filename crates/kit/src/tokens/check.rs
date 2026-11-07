@@ -1,4 +1,4 @@
-//! `amane-shell tokens normalize <file>` and `amane-shell tokens check <file>`
+//! `cargo xtask tokens normalize <file>` and `cargo xtask tokens check <file>`
 //! (manual §10.3).
 
 use std::collections::BTreeMap;

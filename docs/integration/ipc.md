@@ -1,17 +1,21 @@
 # IPC and CLI
 
 Every command the `amane-shell` binary takes, on its command line and over its IPC socket
-(`src/main.rs`). The surface docs link here rather than repeat it.
+(`apps/shell/src/main.rs`). The surface docs link here rather than repeat it.
 
 ## Command line
 
-`amane-shell` with no arguments runs the shell. These run a tool and exit instead:
+`amane-shell` with no arguments runs the shell. The token and layer-rule tools are workspace
+tasks now, run from the repository:
 
 | Command | Does |
 |---|---|
-| `amane-shell tokens normalize <file>` | prints a Penpot export normalized, for `design-tokens/tokens.json` |
-| `amane-shell tokens check <file>` | runs the manual's rules on a token file and prints how it differs from the committed tokens; fails when a rule does ([tokens.md](../design-system/tokens.md#103-developer-bring-an-export-in)) |
-| `amane-shell layer-rules` | prints the niri layer rules generated from the tokens ([layer-rules.md](layer-rules.md)) |
+| `cargo xtask tokens normalize <file>` | prints a Penpot export normalized, for `crates/kit/design-tokens/tokens.json` |
+| `cargo xtask tokens check <file>` | runs the manual's rules on a token file and prints how it differs from the committed tokens; fails when a rule does ([tokens.md](../design-system/tokens.md#103-developer-bring-an-export-in)) |
+| `cargo xtask layer-rules` | prints the niri layer rules generated from the tokens ([layer-rules.md](layer-rules.md)) |
+
+`amane-shell tokens …` and `amane-shell layer-rules` still work for now, and say to use `cargo
+xtask` instead.
 
 `tokens` with anything else prints its usage and fails. Any other arguments run the shell.
 

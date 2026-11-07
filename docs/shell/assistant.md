@@ -21,7 +21,7 @@ Questions and anything else go to the launcher's usual rows and the web search.
 
 ## How a query is read
 
-1. **Rules** ([`rules.rs`](../../apps/assistant/src/rules.rs)) read the common ways of
+1. **Rules** ([`rules.rs`](../../crates/assistant/src/rules.rs)) read the common ways of
    saying the common things, at once and with no model: "louder", "volume 40", "next
    song", "turn on night light", "open firefox", "timer 5 minutes".
    - A rule matches the whole query or nothing.
@@ -37,7 +37,7 @@ Questions and anything else go to the launcher's usual rows and the web search.
 
    Asked any of these, it more often makes a confident wrong call than a right one.
    - It's offered five tools (`set_switch`, `set_level`, `open_app`, `media`, `session`,
-     [`tools.rs`](../../apps/assistant/src/tools.rs)).
+     [`tools.rs`](../../crates/assistant/src/tools.rs)).
    - Their arguments are `enum`s of what this machine has: its switches by name, its apps
      with the most used first.
    - A call is read back only when every argument names something real. Calls Needle
@@ -51,10 +51,10 @@ Questions and anything else go to the launcher's usual rows and the web search.
    - a sum or a conversion (they keep the card);
    - a row that already matches outright, when the reading is Needle's.
 
-What's here is a [`Snapshot`](../../apps/assistant/src/snapshot.rs): the switches and
+What's here is a [`Snapshot`](../../crates/assistant/src/snapshot.rs): the switches and
 whether they're on, the apps with their kinds ("terminal", "browser", from their desktop
 categories and keywords), the power modes, and what logind allows. The launcher builds
-it ([`launcher/assistant.rs`](../../src/surfaces/launcher/assistant.rs)).
+it ([`launcher/assistant.rs`](../../apps/shell/src/surfaces/launcher/assistant.rs)).
 
 ## Running a command
 
@@ -67,7 +67,7 @@ A command runs through the shell's own path:
 - `timer::start`;
 - `PowerProfile::set`.
 
-Each command carries a [`Risk`](../../apps/assistant/src/command.rs):
+Each command carries a [`Risk`](../../crates/assistant/src/command.rs):
 
 | Risk | Commands | Typed | Spoken |
 |---|---|---|---|
@@ -122,7 +122,7 @@ the shell:
   models, and a crash in Cactus can't take the shell down.
 - The shell works without it: rules still read what they can, and nothing waits.
 
-The protocol ([`protocol.rs`](../../apps/assistant/src/protocol.rs)) is JSON lines. The
+The protocol ([`protocol.rs`](../../crates/assistant/src/protocol.rs)) is JSON lines. The
 shell sends requests with an id, and the daemon answers with the id. While listening it
 also sends `level` and `partial`.
 
@@ -259,11 +259,11 @@ meaning. Paraphrased training data is the next step.
 
 | File | What's in it |
 |---|---|
-| `apps/assistant/src/command.rs` | commands and their risk (tested) |
-| `apps/assistant/src/rules.rs` | the phrasings read without a model (tested) |
-| `apps/assistant/src/snapshot.rs` | what's here, and finding things in it by name (tested) |
-| `apps/assistant/src/tools.rs` | Needle's tools, and reading its answer (tested) |
-| `apps/assistant/src/protocol.rs`, `client.rs` | the socket's messages, the shell's end |
+| `crates/assistant/src/command.rs` | commands and their risk (tested) |
+| `crates/assistant/src/rules.rs` | the phrasings read without a model (tested) |
+| `crates/assistant/src/snapshot.rs` | what's here, and finding things in it by name (tested) |
+| `crates/assistant/src/tools.rs` | Needle's tools, and reading its answer (tested) |
+| `crates/assistant/src/protocol.rs`, `client.rs` | the socket's messages, the shell's end |
 | `apps/assistant/src/engine.rs` | Cactus, through its C API |
 | `apps/assistant/src/server.rs`, `audio.rs` | the socket, the engine's thread, the microphone |
 | `apps/assistant/src/eval.rs` | scoring |
@@ -272,5 +272,5 @@ meaning. Paraphrased training data is the next step.
 | `apps/assistant/train/remote.sh`, `sweep.sh` | training on a GPU machine, and picking a run |
 | `apps/assistant/train/finetune.sh` | training on this machine's CPU (slow) |
 | `apps/train-watch/` | a run, followed in the bar |
-| `src/services/assistant.rs` | the shell's client: rules, then Needle a moment later; listening |
-| `src/surfaces/launcher/assistant.rs` | the snapshot, and a reading as its card and action |
+| `apps/shell/src/services/assistant.rs` | the shell's client: rules, then Needle a moment later; listening |
+| `apps/shell/src/surfaces/launcher/assistant.rs` | the snapshot, and a reading as its card and action |

@@ -13,13 +13,30 @@ cargo run              # run the bar (needs a running niri session)
 
 `amane` is a **git dependency** pinned to a rev (see `Cargo.toml`). To hack on the shell and the
 library together, check `amane` out as a sibling directory and create a git-ignored
-`.cargo/config.toml`:
+`.cargo/local.toml`:
 
 ```toml
 paths = ["../amane"]
 ```
 
-Cargo then builds against your local `../amane` checkout instead of the pinned rev.
+and build with it: `cargo --config .cargo/local.toml run` (an alias in your shell profile saves
+typing it). Cargo then builds against your local `../amane` checkout instead of the pinned rev.
+`.cargo/config.toml` is tracked and holds only the `xtask` alias.
+
+### The workspace
+
+`apps/shell` is the shell, and `cargo run` with no `-p` runs it. The programs beside it are in
+`apps/` (the assistant's daemon is the package `amane-assistant-daemon`), the crates they share in
+`crates/`: the kit (with the design tokens, `crates/kit/design-tokens/`), rbw's pinentry and the
+assistant's library. `cargo xtask` runs the workspace's tasks:
+
+| Task | Does |
+|---|---|
+| `cargo xtask layer-rules` | prints the niri layer rules from the tokens (`> niri-layer-rule.kdl`) |
+| `cargo xtask tokens normalize <file>` | prints a Penpot export sorted as it's committed |
+| `cargo xtask tokens check <file>` | runs the manual's rules on a token file |
+| `cargo xtask lint-terms` | `scripts/lint-terms` |
+| `cargo xtask links` | fails on a relative Markdown link to a file that isn't there |
 
 ### Bumping revs
 
@@ -61,7 +78,7 @@ tests (`clippy.toml`). In the kit, a file that starts with `#![allow(missing_doc
 undocumented items: document them and remove the line. Some tests check the code against the
 docs and the compositor: every IPC verb is in `docs/integration/ipc.md`, every layer namespace
 has a niri rule, every material setting is in niri's range, and the service parsers read the
-recorded output in `tests/fixtures/`. When one fails, the message says which side to fix.
+recorded output in `apps/shell/tests/fixtures/`. When one fails, the message says which side to fix.
 
 `scripts/lint-terms` (also in CI) fails on terms borrowed from another vendor's platform: name a feature for
 what it is ("the launcher", "Quick Settings", "glass"). Names kept on purpose are in
@@ -79,8 +96,8 @@ is listed in [docs/README.md](docs/README.md).
   [niri](https://github.com/098765434/niri). Each fork documents what it adds
   ([amane](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md), [niri](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md)).
 - Design values (sizing/colour/type) are Penpot tokens. Change them in Penpot, export, then
-  `cargo run -q -- tokens normalize export.json > design-tokens/tokens.json` and
-  `cargo run -q -- tokens check design-tokens/tokens.json`; never hand-edit the file or hardcode a
+  `cargo xtask tokens normalize export.json > design-tokens/tokens.json` and
+  `cargo xtask tokens check design-tokens/tokens.json`; never hand-edit the file or hardcode a
   value. Code reads tokens through functions generated from the file
   (`sys::color::surface::popover::bg()`), so a renamed token is a compile error. Rules and
   workflow: [docs/design-system/tokens.md](docs/design-system/tokens.md).
