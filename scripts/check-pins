@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Warns when a local cargo build differs from the Nix build.
+#
+# The Nix build (and CI) use the amane and vello revs pinned in Cargo.toml.
+# A git-ignored .cargo/config.toml with `paths = ["../amane"]` makes cargo
+# build against ../amane's working tree instead. This says when that tree
+# isn't the pinned rev, or has changes not yet committed, and when the shell
+# and ../amane pin different vello revs.
+#
+# Usage: scripts/check-pins [--strict]   (--strict: exit 1 on any warning)
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+strict=false
+if [[ ${1:-} == --strict ]]; then
+    strict=true
+fi
+
+warnings=0
+warn() {
+    echo "check-pins: $*" >&2
+    warnings=$((warnings + 1))
+}
+
+# the 40-hex rev on the first line of $2 that names the git URL $1
+pinned_rev() {
+    grep -m1 -F "$1" "$2" | grep -oE 'rev = "[0-9a-f]{40}"' | grep -oE '[0-9a-f]{40}' || true
+}
+
+amane_pin=$(pinned_rev 'github.com/098765434/amane"' Cargo.toml)
+vello_pin=$(pinned_rev 'github.com/098765434/vello"' Cargo.toml)
+
+if [[ -z $amane_pin ]]; then
+    warn "no amane rev found in Cargo.toml"
+fi
+
+# only an active override makes ../amane's tree matter
+if [[ -f .cargo/config.toml ]] && grep -q '"../amane"' .cargo/config.toml; then
+    if [[ ! -d ../amane/.git ]]; then
+        warn ".cargo/config.toml overrides amane with ../amane, which isn't a git checkout"
+    else
+        head=$(git -C ../amane rev-parse HEAD)
+        if [[ -n $amane_pin && $head != "$amane_pin" ]]; then
+            warn "../amane is at ${head:0:8}, Cargo.toml pins ${amane_pin:0:8}: the Nix build differs from this one"
+        fi
+        if [[ -n $(git -C ../amane status --porcelain --untracked-files=no) ]]; then
+            warn "../amane has uncommitted changes: the Nix build won't have them"
+        fi
+    fi
+fi
+
+# a patch only applies from the root manifest, so the shell repeats amane's
+# vello pin; the two should name the same rev
+if [[ -n $vello_pin && -f ../amane/Cargo.toml ]]; then
+    amane_vello=$(pinned_rev 'github.com/098765434/vello"' ../amane/Cargo.toml)
+    if [[ -n $amane_vello && $amane_vello != "$vello_pin" ]]; then
+        warn "vello: Cargo.toml pins ${vello_pin:0:8}, ../amane pins ${amane_vello:0:8}"
+    fi
+fi
+
+if $strict && ((warnings > 0)); then
+    exit 1
+fi

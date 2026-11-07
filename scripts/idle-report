@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+# What the running shell costs while nothing happens, as a Markdown report.
+#
+# Usage: scripts/idle-report [seconds]          (default 60)
+#        sudo scripts/idle-report [seconds]     (exact count of programs started)
+#
+# Leave the desktop alone while it runs: no pointer, no keys, no notifications
+# you can help. It measures the amane-shell.service process:
+#
+#   - context switches per second over all its threads: each is the shell
+#     going to sleep and being woken again, so this is its wakeup rate;
+#   - CPU time, its own and its children's (the children's counts only once
+#     they have exited and been waited for);
+#   - PSS at the end, from smaps_rollup (as root; otherwise RSS, as the
+#     kernel won't show the shell's memory maps to a non-root reader);
+#   - programs it started. As root, strace follows every execve, so the count
+#     is exact. Otherwise (ptrace_scope 1 forbids attaching) the service's
+#     cgroup is polled every 20 ms, and a program that comes and goes between
+#     two polls is missed: the count is a lower bound.
+
+set -euo pipefail
+
+seconds=${1:-60}
+if ! [[ $seconds =~ ^[1-9][0-9]*$ ]]; then
+    echo "usage: $0 [seconds]" >&2
+    exit 2
+fi
+
+cd "$(dirname "$0")/.."
+
+# as root, ask the user's own service manager, not root's
+user_systemctl=(systemctl --user)
+if ((EUID == 0)); then
+    if [[ -z ${SUDO_USER:-} ]]; then
+        echo "idle-report: run it with sudo from your session, not as root directly" >&2
+        exit 1
+    fi
+    user_systemctl=(systemctl --user -M "$SUDO_USER@")
+fi
+
+pid=$("${user_systemctl[@]}" show amane-shell.service -p MainPID --value)
+cgroup=$("${user_systemctl[@]}" show amane-shell.service -p ControlGroup --value)
+if [[ -z $pid || $pid == 0 ]]; then
+    echo "idle-report: amane-shell.service isn't running" >&2
+    exit 1
+fi
+procs_file=/sys/fs/cgroup$cgroup/cgroup.procs
+
+ticks=$(getconf CLK_TCK)
+
+# voluntary + nonvoluntary context switches, summed over the threads alive now
+switches() {
+    local total=0 status key value
+    for status in /proc/"$pid"/task/*/status; do
+        while read -r key value; do
+            case $key in
+                voluntary_ctxt_switches: | nonvoluntary_ctxt_switches:)
+                    total=$((total + value))
+                    ;;
+            esac
+        done 2>/dev/null <"$status" || true
+    done
+    echo "$total"
+}
+
+# "own children" CPU ticks: utime+stime, then cutime+cstime
+cpu() {
+    local stat fields
+    stat=$(<"/proc/$pid/stat")
+    # the name in parentheses may hold spaces; the fields after it don't
+    read -r -a fields <<<"${stat##*) }"
+    # fields[0] is the state (field 3), so utime (14) is fields[11]
+    echo "$((fields[11] + fields[12])) $((fields[13] + fields[14]))"
+}
+
+# "PSS <kib>", or "RSS <kib>" when the kernel won't let smaps_rollup be read
+# without root (its ptrace access check, which the file mode doesn't show)
+memory_kib() {
+    local line
+    if line=$(grep -m1 '^Pss:' "/proc/$pid/smaps_rollup" 2>/dev/null); then
+        read -r _ line _ <<<"$line"
+        echo "PSS $line"
+    else
+        line=$(grep -m1 '^VmRSS:' "/proc/$pid/status")
+        read -r _ line _ <<<"$line"
+        echo "RSS $line"
+    fi
+}
+
+trace=$(mktemp)
+trap 'rm -f "$trace"' EXIT
+
+echo "idle-report: measuring amane-shell (pid $pid) for ${seconds}s; leave the desktop alone" >&2
+
+switches_before=$(switches)
+read -r own_before children_before < <(cpu)
+
+declare -A started=()
+exact=false
+
+if ((EUID == 0)); then
+    exact=true
+    strace -f -qq -e trace=execve -e signal=none -o "$trace" -p "$pid" &
+    tracer=$!
+    sleep "$seconds"
+    kill -INT "$tracer"
+    wait "$tracer" 2>/dev/null || true
+
+    # an execve that succeeded, by program; with -f a call can be split into
+    # "<unfinished ...>" and "<... execve resumed>" lines, so keep each
+    # pid's last program until its result comes
+    while IFS=$'\t' read -r name; do
+        started[$name]=$((${started[$name]:-0} + 1))
+    done < <(awk '
+        /execve\("/ {
+            match($0, /execve\("[^"]*"/)
+            path = substr($0, RSTART + 8, RLENGTH - 9)
+            n = split(path, parts, "/")
+            pending[$1] = parts[n]
+        }
+        / = 0$/ && ($1 in pending) { print pending[$1]; delete pending[$1] }
+        / = -1 / { delete pending[$1] }
+    ' "$trace")
+else
+    # a never-written pipe to wait on: read -t sleeps without forking sleep(1)
+    exec {nap}<> <(:)
+
+    declare -A seen=()
+    mapfile -t procs <"$procs_file"
+    for p in "${procs[@]}"; do
+        seen[$p]=1
+    done
+    # argv[0] from cmdline, which anyone may read (exe and the like are
+    # refused for a fork of the shell before it execs)
+    argv0() {
+        local arg=
+        IFS= read -r -d '' arg 2>/dev/null <"/proc/$1/cmdline" || true
+        echo "${arg##*/}"
+    }
+    shell_argv0=$(argv0 "$pid")
+
+    # pids seen but not yet past exec (still a copy of the shell)
+    declare -A waiting=()
+    end=$((SECONDS + seconds))
+    while ((SECONDS < end)); do
+        mapfile -t procs <"$procs_file" 2>/dev/null || procs=()
+        for p in "${procs[@]}"; do
+            if [[ -z ${seen[$p]:-} ]]; then
+                seen[$p]=1
+                waiting[$p]=0
+            fi
+        done
+        for p in "${!waiting[@]}"; do
+            name=$(argv0 "$p")
+            if [[ -n $name && $name != "$shell_argv0" ]]; then
+                started[$name]=$((${started[$name]:-0} + 1))
+                unset "waiting[$p]"
+            elif [[ ! -e /proc/$p ]] || ((waiting[$p] >= 25)); then
+                # gone before it could be read, or never ran another program
+                unset "waiting[$p]"
+            else
+                waiting[$p]=$((waiting[$p] + 1))
+            fi
+        done
+        read -r -t 0.02 -u "$nap" || true
+    done
+    exec {nap}<&-
+fi
+
+switches_after=$(switches)
+read -r own_after children_after < <(cpu)
+read -r memory_kind memory < <(memory_kib)
+
+total_started=0
+for name in "${!started[@]}"; do
+    total_started=$((total_started + started[$name]))
+done
+
+# the build that's running, which may not be this checkout's HEAD
+running=
+IFS= read -r -d '' running 2>/dev/null <"/proc/$pid/cmdline" || true
+running=${running%/bin/*}
+
+cpu_ms() {
+    echo $(((($2 - $1) * 1000) / ticks))
+}
+per_second() {
+    awk -v a="$1" -v b="$2" -v s="$seconds" 'BEGIN { printf "%.1f", (b - a) / s }'
+}
+
+if $exact; then
+    how="exact, from strace"
+    at_least=""
+else
+    how="lower bound, from polling the cgroup every 20 ms"
+    at_least="at least "
+fi
+
+cat <<EOF
+# Idle report
+
+- Date: $(date --iso-8601=minutes)
+- Shell: \`${running:-unknown}\`, pid $pid
+- Window: ${seconds}s, the desktop left alone
+
+| Measure | Value |
+|---|---|
+| Wakeups (context switches, all threads) | $(per_second "$switches_before" "$switches_after") per second |
+| CPU time, the shell | $(cpu_ms "$own_before" "$own_after") ms |
+| CPU time, its exited children | $(cpu_ms "$children_before" "$children_after") ms |
+| $memory_kind at the end | $((memory / 1024)) MiB |
+| Programs started | ${at_least}${total_started} ($(per_second 0 "$total_started") per second; $how) |
+EOF
+
+if ((total_started > 0)); then
+    printf '\n| Program | Times |\n|---|---|\n'
+    for name in "${!started[@]}"; do
+        printf '| %s | %s |\n' "$name" "${started[$name]}"
+    done | sort -t'|' -k3 -rn
+fi

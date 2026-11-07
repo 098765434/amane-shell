@@ -23,15 +23,24 @@ Cargo then builds against your local `../amane` checkout instead of the pinned r
 `rev` (and the `outputHashes` in `flake.nix`) when you want the published build to pick up library
 changes.
 
+`scripts/check-pins` tells you when that local build differs from the Nix build: `../amane` isn't
+at the pinned rev, has uncommitted changes, or pins a different vello rev than the shell does.
+`--strict` makes it exit 1, for a git hook.
+
+`scripts/idle-report [seconds]` measures what the running shell costs while nothing happens:
+wakeups, CPU time, memory and the programs it starts. Run it with `sudo` for an exact count of
+programs and PSS instead of RSS. [docs/development/idle-baseline.md](docs/development/idle-baseline.md)
+holds the numbers to compare against.
+
 ## Before a PR
 
 ```sh
 cargo fmt --all
-cargo clippy --all-targets -- -D warnings
-cargo test
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
 ```
 
-CI runs these three inside the devShell.
+CI runs these three inside the devShell, then shellcheck on the scripts and `nix build`.
 
 Before adding a component, read [docs/development/performance.md](docs/development/performance.md):
 what makes a window draw, and the rules that keep an idle desktop from drawing at all. Every doc
