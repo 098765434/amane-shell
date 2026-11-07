@@ -16,14 +16,20 @@ use crate::{MANAGED_MODULE, xkb};
 /// How a setting is changed, from the registry's `control`.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Control {
+    /// On or off.
     Switch,
+    /// A whole number in a range.
     Int {
+        /// The smallest it takes.
         min: i64,
+        /// The largest it takes.
         max: i64,
     },
     /// One of a few named values, in a dropdown.
     Choice(Vec<Choice>),
+    /// A zone name under `/etc/zoneinfo`, such as `Europe/Oslo`.
     TimeZone,
+    /// Free text, checked by the entry's [`Check`] when it has one.
     Text,
     /// A list of nixpkgs attribute paths; the Apps page draws it.
     Packages,
@@ -32,7 +38,9 @@ pub enum Control {
 /// One option of a [`Control::Choice`].
 #[derive(Clone, Debug, PartialEq)]
 pub struct Choice {
+    /// What the dropdown shows.
     pub label: String,
+    /// What it writes.
     pub value: Value,
 }
 
@@ -73,11 +81,14 @@ pub fn is_attr_path(name: &str) -> bool {
 /// When a change takes effect, from the registry's `tier`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Tier {
+    /// Once the system is applied.
     Rebuild,
+    /// Only after the computer restarts.
     Restart,
 }
 
 impl Tier {
+    /// The note under the setting that says when it takes effect.
     pub fn note(self) -> &'static str {
         match self {
             Self::Rebuild => "Takes effect after Apply",
@@ -89,15 +100,23 @@ impl Tier {
 /// One setting from the registry, with what the configuration makes of it.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Entry {
+    /// Its key in `settings.json`.
     pub id: String,
     /// The option's path, like `services.openssh.enable`.
     pub path: Vec<String>,
+    /// The Settings page it's on, such as `services`.
     pub page: String,
+    /// Its name on the page.
     pub label: String,
+    /// How it's changed.
     pub control: Control,
+    /// When a change takes effect.
     pub tier: Tier,
+    /// The value the configuration gives it now.
     pub value: Value,
+    /// The option's default.
     pub default: Value,
+    /// The text under it.
     pub description: String,
     /// The repo files that define the option; ours is `modules/managed.nix`.
     pub set_in: Vec<String>,
@@ -226,6 +245,7 @@ pub fn show_as(control: &Control, value: &Value) -> String {
     show(value)
 }
 
+/// The strings in a JSON array, skipping anything else; none when it isn't one.
 pub fn strings(value: Option<&Value>) -> Vec<String> {
     value
         .and_then(Value::as_array)
@@ -334,7 +354,9 @@ fn entry(value: &Value) -> Option<Entry> {
 /// A package a repo file installs system-wide.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SystemPackage {
+    /// The package's name.
     pub name: String,
+    /// Its version, empty when nix didn't give one.
     pub version: String,
     /// The repo file that lists it.
     pub file: String,
@@ -352,13 +374,21 @@ fn system_package(value: &Value) -> Option<SystemPackage> {
 /// What `nix eval --json .#amaneSettings` gave.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Parsed {
+    /// Every setting in the registry.
     pub entries: Vec<Entry>,
+    /// The commit the repo was at, `-dirty` when it had changes.
     pub revision: Option<String>,
+    /// The `nixosConfigurations` attribute it was evaluated as.
     pub host: Option<String>,
+    /// What the repo's files install system-wide.
     pub system_packages: Vec<SystemPackage>,
+    /// The packages added in Settings this nixpkgs doesn't have: the build
+    /// leaves them out, with a warning.
     pub missing_packages: Vec<String>,
 }
 
+/// Reads `nix eval --json .#amaneSettings`; settings that don't parse are
+/// left out, and it fails only when the JSON or its `entries` list is bad.
 pub fn parse_snapshot(json: &str) -> Result<Parsed, String> {
     let value: Value =
         serde_json::from_str(json).map_err(|error| format!("amaneSettings: {error}"))?;
@@ -404,11 +434,16 @@ pub fn entry_in<'a>(entries: &'a [Entry], id: &str) -> Option<&'a Entry> {
 /// would make permanent.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Change {
+    /// The setting's id.
     pub id: String,
+    /// Its value at HEAD; none when HEAD doesn't set it.
     pub from: Option<Value>,
+    /// Its value in the working tree; none when it's been removed.
     pub to: Option<Value>,
 }
 
+/// Reads `settings.json` as id to value; `null` is an empty map, anything
+/// but an object an error.
 pub fn parse_map(json: &str) -> Result<BTreeMap<String, Value>, String> {
     let value: Value = serde_json::from_str(json).map_err(|error| error.to_string())?;
     match value {

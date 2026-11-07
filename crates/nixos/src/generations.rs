@@ -15,10 +15,14 @@ use crate::repo::version_of;
 /// (a script each); the older ones show their version alone.
 const WITH_REVISION: usize = 20;
 
+/// One generation of the `system` profile.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Generation {
+    /// The number in its `system-<n>-link`.
     pub number: u32,
+    /// The store path the link leads to.
     pub toplevel: PathBuf,
+    /// When the link was made.
     pub date: DateTime<Local>,
     /// `<link>/nixos-version`: "26.05.20261015.26f4107".
     pub version: String,
@@ -26,6 +30,7 @@ pub struct Generation {
     pub revision: Option<String>,
     /// That commit's subject, when the repo has it.
     pub subject: Option<String>,
+    /// Where its `kernel` link leads, when it has one.
     pub kernel: Option<PathBuf>,
 }
 

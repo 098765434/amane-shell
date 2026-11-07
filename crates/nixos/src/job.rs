@@ -28,12 +28,16 @@ const FAILED_LINES: usize = 15;
 /// generation, `test` doesn't, so a restart undoes it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
+    /// Activate now and boot into it from now on.
     Switch,
+    /// Boot into it from the next start, leaving the running system alone.
     Boot,
+    /// Activate now without making it the boot default.
     Test,
 }
 
 impl Mode {
+    /// The helper's argument for it: "switch", "boot" or "test".
     pub fn arg(self) -> &'static str {
         match self {
             Self::Switch => "switch",
@@ -48,16 +52,23 @@ impl Mode {
     }
 }
 
+/// A stage of the pipeline: where a step is, or where it failed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Stage {
+    /// Writing a fresh `flake.lock` (Check for Updates).
     Lock,
+    /// nix evaluating the configuration, before anything builds.
     Eval,
+    /// Building or downloading the system.
     Build,
+    /// Comparing the built system with the running one.
     Compare,
+    /// Activating it as root.
     Activate,
 }
 
 impl Stage {
+    /// Its name as the page shows it, such as "Checking for updates".
     pub fn name(self) -> &'static str {
         match self {
             Self::Lock => "Checking for updates",
@@ -72,9 +83,13 @@ impl Stage {
 /// How far a build is, from nix's `builds` activity.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Progress {
+    /// Builds and downloads finished.
     pub done: u64,
+    /// Builds and downloads nix expects in all.
     pub expected: u64,
+    /// Builds and downloads under way.
     pub running: u64,
+    /// Builds and downloads that failed.
     pub failed: u64,
     /// What nix is on: "building amane-shell", "fetching linux-7.2.10".
     pub current: Option<String>,
@@ -95,20 +110,29 @@ impl Progress {
 /// One line of `nix store diff-closures`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DiffLine {
+    /// The package's name.
     pub name: String,
+    /// Its version(s) in the running system, "∅" when it's new.
     pub from: String,
+    /// Its version(s) in the built system, "∅" when it's gone.
     pub to: String,
+    /// How its size changes, such as "+12.3 KiB", when nix says.
     pub size: Option<String>,
 }
 
+/// What a [`DiffLine`] does to a package.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
+    /// Only the built system has it.
     Added,
+    /// Only the running system has it.
     Removed,
+    /// Both have it, at different versions or sizes.
     Changed,
 }
 
 impl DiffLine {
+    /// Whether the package was added, removed or changed, from the "∅" sides.
     pub fn kind(&self) -> Kind {
         match (self.from.as_str(), self.to.as_str()) {
             ("∅", _) => Kind::Added,
@@ -121,7 +145,9 @@ impl DiffLine {
 /// A system that's built and compared, waiting to be activated.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Built {
+    /// The built system's store path.
     pub out: PathBuf,
+    /// The diff-closures lines that parsed.
     pub diff: Vec<DiffLine>,
     /// What diff-closures said, for the log when the lines didn't parse.
     pub raw_diff: String,

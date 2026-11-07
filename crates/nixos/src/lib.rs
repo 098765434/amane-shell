@@ -16,6 +16,8 @@
 //! holds the state and runs these off its UI thread. Every command goes
 //! through [`Config`], so tests run the pipeline against fake programs.
 
+#![deny(missing_docs)]
+
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 

@@ -27,9 +27,13 @@ pub const RESULTS: usize = 50;
 /// A package `nix search` found.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Found {
+    /// The attribute path under `legacyPackages.<system>`, such as `python3Packages.numpy`.
     pub attr: String,
+    /// The package's name.
     pub pname: String,
+    /// Its version.
     pub version: String,
+    /// The first line of its description.
     pub description: String,
 }
 

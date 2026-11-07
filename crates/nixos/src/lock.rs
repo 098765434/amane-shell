@@ -9,9 +9,13 @@ use crate::repo::short;
 /// One of the root's inputs, as the lock pins it.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Input {
+    /// Its name in the flake's `inputs`.
     pub name: String,
+    /// The commit it's locked at, when the lock records one.
     pub rev: Option<String>,
+    /// Where it comes from: "owner/repo", else its URL or type.
     pub source: Option<String>,
+    /// The lock's `lastModified` for it.
     pub modified: Option<DateTime<Utc>>,
 }
 
@@ -88,8 +92,11 @@ pub fn parse_lock(json: &str) -> Result<Vec<Input>, String> {
 /// An input a fresh lock moves.
 #[derive(Clone, Debug, PartialEq)]
 pub struct InputChange {
+    /// The input's name.
     pub name: String,
+    /// Its commit in the old lock; none when it's new or unpinned.
     pub from: Option<String>,
+    /// Its commit in the fresh lock.
     pub to: Option<String>,
 }
 
