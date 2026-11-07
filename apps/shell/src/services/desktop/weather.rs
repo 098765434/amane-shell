@@ -4,7 +4,6 @@
 //! weather is read every half hour, and again when the place changes.
 //! Nothing but the place name and its coordinates leave the machine.
 
-use amane_kit::service::ServiceExt as _;
 use std::process::Command;
 use std::time::{Duration, Instant, SystemTime};
 
@@ -13,6 +12,7 @@ use amane_kit::settings::{StatusBar, status_bar};
 use serde_json::Value;
 
 use crate::services::Wake;
+use amane_kit::service::ServiceExt as _;
 
 /// How often the weather is read again.
 const EVERY: Duration = Duration::from_secs(30 * 60);

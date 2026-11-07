@@ -5,7 +5,6 @@
 //! tell it at once, so it can open a window to drop them on. They're kept
 //! in the bar's order, dragged and hidden like its own.
 
-use amane_kit::shell_ipc::Listed;
 use std::cell::RefCell;
 use std::collections::HashSet;
 
@@ -23,6 +22,7 @@ use amane_kit::menu::{ContextMenu, MenuItem};
 use super::activities::picture;
 use super::indicators::Item;
 use super::{BAR_NS, drag, edge, item, menu_edge};
+use amane_kit::shell_ipc::Listed;
 
 /// How wide an item's title may be.
 const TITLE: f32 = 120.0;

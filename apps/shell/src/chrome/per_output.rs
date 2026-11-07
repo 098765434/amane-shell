@@ -3,7 +3,6 @@
 //! unplugged: [`follow_outputs`] (once, at startup) follows amane's
 //! `Outputs`, and each map lets go of what's gone the next time it's used.
 
-use amane_kit::sync::Locked as _;
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -12,6 +11,7 @@ use std::sync::{Mutex, Once};
 use amane::{Outputs, Service};
 
 // the connected outputs' names, and a count that moves on when they change
+use amane_kit::sync::Locked as _;
 static NAMES: Mutex<Option<Vec<String>>> = Mutex::new(None);
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 

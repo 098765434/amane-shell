@@ -5,7 +5,6 @@
 //! `modules/managed.nix` turns that file into option definitions, so the
 //! hand-written modules are never touched.
 
-use amane_kit::service::ServiceExt as _;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -18,6 +17,7 @@ use amane_kit::settings::nixos;
 
 use serde_json::Value;
 
+use amane_kit::service::ServiceExt as _;
 pub use amane_nixos::{MANAGED_MODULE, SETTINGS_FILE, run};
 
 /// The flake repo, from `nixos.json`.

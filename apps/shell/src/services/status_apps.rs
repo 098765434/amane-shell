@@ -8,7 +8,6 @@
 //!
 //! Everything a program put up goes when it leaves the bus.
 
-use amane_kit::sync::Locked as _;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -20,6 +19,7 @@ use amane_status::{
 };
 
 use super::desktop::activities;
+use amane_kit::sync::Locked as _;
 
 amane_kit::marker! {
     /// A program's item came, changed or went: the bar draws again.

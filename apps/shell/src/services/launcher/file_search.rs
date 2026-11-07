@@ -4,7 +4,6 @@
 //! thread a moment after the last key, the newest replacing any before
 //! it, and what it found is kept for the view to read.
 
-use amane_kit::sync::Locked as _;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
@@ -12,6 +11,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, UNIX_EPOCH};
 
 use crate::services::run_now;
+use amane_kit::sync::Locked as _;
 
 amane_kit::marker! {
     /// A search finished: what asked for its hits draws again.

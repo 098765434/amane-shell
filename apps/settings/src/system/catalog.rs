@@ -7,7 +7,6 @@
 //! thousand lines in tens of milliseconds) rather than the app keeping the
 //! packages in memory.
 
-use amane_kit::sync::Locked as _;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -19,6 +18,7 @@ use amane::Service;
 
 use super::apps::{Found, Search};
 use super::nixos::repo;
+use amane_kit::sync::Locked as _;
 
 /// How often the page looks at `flake.lock` again for a new nixpkgs.
 const RECHECK: Duration = Duration::from_secs(10);

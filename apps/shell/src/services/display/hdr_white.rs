@@ -7,7 +7,6 @@
 //! config read. Shell Settings alone writes `displays.kdl`. A level idle
 //! dimmed to ([`dimmed`]) is never kept.
 
-use amane_kit::sync::Locked as _;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, Once};
@@ -21,6 +20,7 @@ use crate::services::Wake;
 use crate::services::state::{self, State};
 
 // how long a level stays put before it counts as rested
+use amane_kit::sync::Locked as _;
 const REST: Duration = Duration::from_secs(1);
 
 static DIMMED: AtomicBool = AtomicBool::new(false);

@@ -2,9 +2,10 @@
 //! with no wakeups in between. For a service whose only clock is its own next deadline (a
 //! toast's lifetime, a timed Do Not Disturb), in place of polling every so often.
 
-use amane_kit::sync::Locked as _;
 use std::sync::{Condvar, Mutex, PoisonError};
 use std::time::SystemTime;
+
+use amane_kit::sync::Locked as _;
 
 /// One listener's wake-up call.
 pub struct Wake {

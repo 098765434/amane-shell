@@ -3,8 +3,9 @@
 //! `controlFill` capsule with a soft shadow. A disabled side greys its
 //! chevron and takes no click.
 
-use crate::buttons::Actions;
 use std::rc::Rc;
+
+use crate::buttons::Actions;
 
 use amane::{Center, Color, Radius, Rectangle, Row, Shadow, Size};
 

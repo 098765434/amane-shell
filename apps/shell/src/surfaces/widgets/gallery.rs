@@ -8,7 +8,6 @@
 //! It's drawn on the desktop's own surface (see `edit.rs`), which records
 //! where each widget in the pane is for a press to find what's under it.
 
-use amane_kit::reveal::Swell;
 use std::cell::{Cell, RefCell};
 
 use amane::{
@@ -31,6 +30,7 @@ use amane_kit::text_edit::Field;
 
 // TODO(token): `widget.gallery.{width,height,sidebar,inset,preview}` once
 // Penpot has them (manual §1.1).
+use amane_kit::reveal::Swell;
 const WIDTH: f32 = 900.0;
 const HEIGHT: f32 = 420.0;
 const SIDEBAR: f32 = 240.0;

@@ -11,9 +11,10 @@
 //! The shape is one closed straight-sided `Path`, so it draws as a single
 //! quad outline and never reaches vello.
 
-use crate::chrome::per_output::PerOutput;
 use std::f32::consts::{PI, TAU};
 use std::time::Duration;
+
+use crate::chrome::per_output::PerOutput;
 
 use amane::{
     Animation, Canvas, Center, Color, Easing, Path, Rectangle, Service, Shape as _, Size,

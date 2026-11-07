@@ -6,7 +6,6 @@
 //! bar ("Allow in the Status Bar", `StatusBar::tray_denied`), and items
 //! that don't fit go behind a » button.
 
-use amane_kit::shell_ipc::Listed;
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 
@@ -24,6 +23,7 @@ use amane_kit::menu::layer as context_menu;
 use amane_kit::menu::{Check, ContextMenu, Icon, MenuItem};
 
 use super::{BAR_NS, bar_icon, item, menu_edge};
+use amane_kit::shell_ipc::Listed;
 
 /// `keyboard_double_arrow_right`: the items that didn't fit.
 const ICON_MORE: char = '\u{eac9}';

@@ -33,10 +33,11 @@ pub mod lint;
 pub mod resolve;
 pub mod values;
 
-use crate::sync::Locked as _;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
+
+use crate::sync::Locked as _;
 
 use amane::{Case, Decoration, Text};
 

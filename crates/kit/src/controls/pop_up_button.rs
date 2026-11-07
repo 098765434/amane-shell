@@ -2,8 +2,9 @@
 //! chevrons. The original only reported the click; given items, this one
 //! opens the [menu](super::menu) under itself.
 
-use crate::buttons::Actions;
 use std::rc::Rc;
+
+use crate::buttons::Actions;
 
 use amane::{Center, Radius, Rectangle};
 

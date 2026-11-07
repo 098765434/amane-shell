@@ -3,7 +3,6 @@
 //! Cancel. A name
 //! taken where files go asks first: keep both, replace, or stop.
 
-use amane_kit::sync::Locked as _;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -20,6 +19,7 @@ use amane_status::{
 
 use crate::state::{self, Outcome, Prompt};
 use crate::{files, share, shared};
+use amane_kit::sync::Locked as _;
 
 /// How often progress is told, at most.
 const TELL_EVERY: Duration = Duration::from_millis(150);

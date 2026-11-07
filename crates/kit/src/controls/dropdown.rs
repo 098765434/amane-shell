@@ -11,8 +11,9 @@
 //! window's (found by itself, from `current_window`), or a layer window's
 //! namespace given with [`Dropdown::layer`].
 
-use crate::buttons::Actions;
 use std::rc::Rc;
+
+use crate::buttons::Actions;
 
 use amane::{Center, Padding, Rectangle, Row, Size, Text, Widget};
 

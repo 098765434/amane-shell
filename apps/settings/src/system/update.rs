@@ -3,7 +3,6 @@
 //! system from a fresh lock and shows what changes before anything is
 //! written. Applying it puts the lock in the repo and commits it.
 
-use amane_kit::service::ServiceExt as _;
 use std::fs;
 use std::path::PathBuf;
 use std::thread;
@@ -24,6 +23,7 @@ use super::{controls, state_dir};
 use crate::View;
 use crate::{group, groups};
 
+use amane_kit::service::ServiceExt as _;
 pub use amane_nixos::lock::{Input, InputChange, message, parse_lock};
 
 pub struct Lock {

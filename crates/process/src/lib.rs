@@ -22,7 +22,6 @@
 
 #![warn(missing_docs)]
 
-use amane_base::sync::Locked as _;
 use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::io::{self, BufRead, BufReader, Read};
@@ -30,6 +29,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStderr, ChildStdout, Command, ExitStatus, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
+
+use amane_base::sync::Locked as _;
 
 /// How many of a failed command's last lines its [`Failure`] keeps: the
 /// error is what most programs say last.

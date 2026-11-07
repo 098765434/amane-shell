@@ -16,7 +16,6 @@
 mod keys;
 mod watch;
 
-use amane_kit::reveal::{self, Swell};
 use std::cell::{Cell, RefCell};
 use std::time::{Duration, Instant};
 
@@ -37,6 +36,7 @@ use amane_kit::material::{self, FillLevel, Level, Material};
 use amane_kit::motion;
 use amane_kit::slider::Slider;
 
+use amane_kit::reveal::{self, Swell};
 pub use keys::{run, set_brightness, set_volume, step_brightness, step_volume, toggle_mute};
 
 amane_kit::marker! {

@@ -8,12 +8,13 @@
 //! of their own. [`known`] is for drawing: it answers from what was last
 //! found, and looks again on a thread when it doesn't know yet.
 
-use crate::sync::Locked as _;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::{LazyLock, Mutex};
+
+use crate::sync::Locked as _;
 
 crate::marker! {
     /// A secret was found, kept or forgotten: what shows whether one is

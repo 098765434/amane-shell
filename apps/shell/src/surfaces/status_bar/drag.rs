@@ -8,8 +8,9 @@
 //! The drag is measured on one still layer over the whole cluster, never
 //! on the item that moves (amane measures a drag against the last frame).
 
-use crate::chrome::per_output::PerOutput;
 use std::cell::RefCell;
+
+use crate::chrome::per_output::PerOutput;
 
 use amane::{Center, Parent, Point, Rectangle, Row, Stack, Widget};
 

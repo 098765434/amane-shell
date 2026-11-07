@@ -8,7 +8,6 @@
 //! name), and wakes the alert surface's view only when it comes or goes; the
 //! view syncs from that.
 
-use amane_kit::sync::Locked as _;
 use std::cell::Cell;
 use std::sync::{Mutex, Once};
 
@@ -17,6 +16,7 @@ use amane::{Bluetooth, PairingAnswer, PairingKind, PairingRequest, Service};
 use crate::surfaces::alert;
 use crate::surfaces::quick_settings::{self, Page};
 use amane_kit::dialog::Dialog;
+use amane_kit::sync::Locked as _;
 
 /// The alert's name, so only this alert is closed when BlueZ stops asking.
 const NAME: &str = "amane.alert.bluetooth.pair";

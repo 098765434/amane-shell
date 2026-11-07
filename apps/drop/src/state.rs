@@ -2,7 +2,6 @@
 //! clicks and drags), the tasks' threads and the window; and the Drop Bar,
 //! kept on disk so held files outlast a restart.
 
-use amane_kit::sync::Locked as _;
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex, MutexGuard};
@@ -11,6 +10,7 @@ use std::time::{Duration, Instant};
 use amane_status::BarEdge;
 
 use crate::tasks::Job;
+use amane_kit::sync::Locked as _;
 
 amane_kit::marker! {
     /// Anything the grid shows changed: it draws again.

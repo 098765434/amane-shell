@@ -1,4 +1,3 @@
-use amane_base::sync::Locked as _;
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, Mutex, MutexGuard, Once};
 use std::thread;
@@ -8,6 +7,7 @@ use amane::{Argument, Bus, BusError, run_in_order};
 use crate::protocol::{
     ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH, encode,
 };
+use amane_base::sync::Locked as _;
 
 type Handler<T> = Arc<dyn Fn(T) + Send + Sync>;
 

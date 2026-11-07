@@ -5,8 +5,6 @@
 //! reads what the shell says, never a secret. The fill settings are
 //! `~/.config/amane-shell/passwords.json`, readable only by you.
 
-use amane_kit::service::ServiceExt as _;
-use amane_kit::shell_ipc::{Passwords as Ask, ShellCommand};
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
@@ -21,6 +19,8 @@ use amane_kit::layout::boxed;
 use amane_kit::settings::{change_passwords, passwords};
 
 use crate::{group, groups, problem_row, switch_row};
+use amane_kit::service::ServiceExt as _;
+use amane_kit::shell_ipc::{Passwords as Ask, ShellCommand};
 
 const SERVER: &str = "settings.passwords.server";
 const EMAIL: &str = "settings.passwords.email";

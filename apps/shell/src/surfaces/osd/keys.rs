@@ -8,7 +8,6 @@
 //! printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
 //! ```
 
-use amane_kit::shell_ipc::{self, Osd};
 use std::cell::Cell;
 use std::time::{Duration, Instant};
 
@@ -20,6 +19,7 @@ use crate::services::network::rfkill::{self, Rfkill};
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::surfaces::launcher::profile_name;
 use amane_kit::icons::{ICON_AIRPLANE, power_profile_glyph};
+use amane_kit::shell_ipc::{self, Osd};
 use amane_kit::slider::STEP;
 
 /// How long a level a key set outranks what its service still says, and

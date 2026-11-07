@@ -3,13 +3,13 @@
 //! link goes on the clipboard and a notification says so, as Settings has
 //! it.
 
-use amane_kit::sync::Locked as _;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
 
 use amane::serde::{Deserialize, Serialize};
 use amane::{Clipboard, Notify};
+use amane_kit::sync::Locked as _;
 
 /// How many links are kept.
 pub const KEPT: usize = 10;

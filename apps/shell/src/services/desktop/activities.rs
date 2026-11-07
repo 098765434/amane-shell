@@ -8,11 +8,11 @@
 //! its program leaves the bus. Ending it "after" a few seconds keeps its
 //! last state up that long. Timers on amane's event loop wait those out.
 
-use amane_kit::sync::Locked as _;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
 use amane_kit::settings::remember_activity;
+use amane_kit::sync::Locked as _;
 use amane_status::{ActivityContent, ActivityEvent, Dismiss};
 
 amane_kit::marker! {

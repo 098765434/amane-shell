@@ -2,7 +2,6 @@
 //! files, what `nixos-version` says the running system was built from, the
 //! record of the last Apply, and the system the working tree evaluates to.
 
-use amane_kit::service::ServiceExt as _;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -14,6 +13,7 @@ use serde_json::Value;
 
 use super::nixos::{SETTINGS_FILE, git, host, nix, repo};
 use super::state_dir;
+use amane_kit::service::ServiceExt as _;
 
 /// Git, as of the last look: polled every few seconds, since any editor
 /// may change it.

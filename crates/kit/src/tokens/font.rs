@@ -2,10 +2,11 @@
 //! fontconfig always answers with *some* font, so the shell picks the first
 //! family in a token's stack that is really installed.
 
-use crate::sync::Locked as _;
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::{Mutex, OnceLock};
+
+use crate::sync::Locked as _;
 
 use fontconfig::{Fontconfig, Pattern};
 

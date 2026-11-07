@@ -5,7 +5,6 @@
 //! package with an entry in the launcher. Each row has the one thing that can
 //! be done to it here: Remove (or Undo), Move to Settings, or Uninstall.
 
-use amane_kit::sync::Locked as _;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -30,6 +29,7 @@ use super::controls::{self, Feedback};
 use super::nixos::{Entry, MANAGED_MODULE, Managed, Snapshot, repo, strings};
 use super::package::Details;
 use crate::group;
+use amane_kit::sync::Locked as _;
 
 /// The filter field, which keeps its text under this id.
 const FILTER: &str = "settings.system.apps.filter";

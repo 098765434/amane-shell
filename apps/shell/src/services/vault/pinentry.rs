@@ -13,7 +13,6 @@
 //!
 //! So no other program can put up the shell's trusted dialog to collect the master password.
 
-use amane_kit::sync::Locked as _;
 use std::fs;
 use std::io;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
@@ -30,6 +29,7 @@ use amane_pinentry::wire::{self, Answer};
 use zeroize::Zeroizing;
 
 // how long after the shell runs an rbw command that can ask the dialog may come up
+use amane_kit::sync::Locked as _;
 const ASKING_TIME: Duration = Duration::from_secs(120);
 
 // how long one question waits for the user

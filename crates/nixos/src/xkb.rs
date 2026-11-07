@@ -2,9 +2,10 @@
 //! from xkeyboard-config, for checking what's typed on the General page.
 //! The layout list is read once; variants once per layout.
 
-use amane_base::sync::Locked as _;
 use std::collections::BTreeMap;
 use std::sync::{Mutex, OnceLock};
+
+use amane_base::sync::Locked as _;
 
 static LAYOUTS: OnceLock<Vec<String>> = OnceLock::new();
 static VARIANTS: Mutex<BTreeMap<String, Vec<String>>> = Mutex::new(BTreeMap::new());

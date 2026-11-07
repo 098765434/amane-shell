@@ -1,11 +1,11 @@
 //! The system generations, from `/nix/var/nix/profiles/system-N-link`: what
 //! History lists and Restore goes back to.
 
-use amane_kit::service::ServiceExt as _;
 use std::path::PathBuf;
 use std::thread;
 
 use amane::{Service, watch_file};
+use amane_kit::service::ServiceExt as _;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Generations {

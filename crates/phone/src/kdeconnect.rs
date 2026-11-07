@@ -18,7 +18,6 @@ mod files;
 mod input;
 mod sms;
 
-use amane_base::sync::Locked as _;
 use std::collections::BTreeMap;
 use std::sync::{Mutex, Once};
 use std::thread;
@@ -26,6 +25,7 @@ use std::time::Duration;
 
 use amane::{Argument, Bus, Service, ServiceError};
 
+use amane_base::sync::Locked as _;
 pub use config::RunCommand;
 pub use device::{PairState, PhoneBattery, PhoneDevice, PhoneNotification};
 pub use input::{PhoneClick, PhoneKey, PhoneModifiers};

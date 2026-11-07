@@ -4,8 +4,9 @@
 //! anyone's widgets, drawn at the picker's size; they wrap to the width
 //! given.
 
-use crate::buttons::Actions;
 use std::rc::Rc;
+
+use crate::buttons::Actions;
 
 use amane::{Center, Color, Column, Rectangle, Row, Text, Widget};
 

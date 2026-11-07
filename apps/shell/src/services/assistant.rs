@@ -7,7 +7,6 @@
 //! it. Its answers come back on a thread of their own and are kept for
 //! the view to read, as file search's are; [`Assistant`] marks a change.
 
-use amane_kit::sync::Locked as _;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
@@ -15,6 +14,7 @@ use std::time::{Duration, Instant};
 use amane_assistant::client::{self, Receiver, Sender};
 use amane_assistant::protocol::{Message, Request};
 use amane_assistant::{Reading, Snapshot, Source, rules, tools};
+use amane_kit::sync::Locked as _;
 
 amane_kit::marker! {
     /// An answer came, or what's being heard changed.

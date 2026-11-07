@@ -3,11 +3,11 @@
 //! runs.
 //! It runs out on a timer on amane's event loop, cancelled when replaced or stopped.
 
-use amane_kit::sync::Locked as _;
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 
 use amane::{Notify, Timer, TimerHandle};
+use amane_kit::sync::Locked as _;
 
 amane_kit::marker! {
     /// The timer started, ran out or was stopped: what asked how long

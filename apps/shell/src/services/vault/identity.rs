@@ -14,7 +14,6 @@
 //! runtime like electron, a sandbox) is unverified, and gets no suggestions of its own. A browser
 //! (Categories=WebBrowser, or http links) is verified as one, and fill stays out of it.
 
-use amane_kit::sync::Locked as _;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -22,6 +21,7 @@ use std::process::Command;
 use std::sync::Mutex;
 
 use amane::FieldOwner;
+use amane_kit::sync::Locked as _;
 
 const NIX_STORE: &str = "/run/current-system/sw/bin/nix-store";
 

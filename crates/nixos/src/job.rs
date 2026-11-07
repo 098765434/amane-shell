@@ -9,7 +9,6 @@
 //! stops it from another. What a step says comes back as it goes: the log
 //! lines, and the build's [`Progress`].
 
-use amane_base::sync::Locked as _;
 use std::collections::VecDeque;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -21,6 +20,7 @@ use serde_json::Value;
 
 use crate::Config;
 use crate::lock::{InputChange, diff_locks};
+use amane_base::sync::Locked as _;
 
 /// How many of the last lines nix said a failed build's message keeps.
 const FAILED_LINES: usize = 15;

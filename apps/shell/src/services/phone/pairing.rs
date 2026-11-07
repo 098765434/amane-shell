@@ -2,10 +2,10 @@
 //! latest request, so what shows it (the shell's alert, or Quick Settings'
 //! Phone page) draws again only when one comes or goes.
 
-use amane_kit::sync::Locked as _;
 use std::sync::{Mutex, Once};
 
 use amane::Service;
+use amane_kit::sync::Locked as _;
 use amane_phone::KdeConnect;
 
 amane_kit::marker! {

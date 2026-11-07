@@ -7,13 +7,13 @@
 //! every page has some. The System pages' settings come from the
 //! configuration as it's read, so they're found by their labels too.
 
-use amane_kit::fuzzy::fuzzy;
 use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
 use amane::{Service, TextInput};
 
 use crate::system::nixos::Snapshot;
+use amane_kit::fuzzy::fuzzy;
 
 /// The search field's id.
 pub const FIELD: &str = "settings.search";

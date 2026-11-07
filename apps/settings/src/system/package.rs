@@ -5,7 +5,6 @@
 //! counts: an unfree package is available when the configuration allows
 //! unfree ones. The same read checks a package before **Add** writes it.
 
-use amane_kit::sync::Locked as _;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::thread;
@@ -27,6 +26,7 @@ use super::nixos::{Managed, Snapshot, host, repo};
 use crate::View;
 use crate::{group, page_width};
 use amane_kit::layout::caption;
+use amane_kit::sync::Locked as _;
 use amane_process::Cmd;
 
 /// What `--apply` makes of the package: plain JSON whatever the meta's shape.

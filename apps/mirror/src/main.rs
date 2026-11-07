@@ -23,8 +23,6 @@ mod protocol;
 mod server;
 mod session;
 
-use amane_kit::args::flag;
-use amane_kit::sync::Locked as _;
 use std::collections::HashSet;
 use std::net::IpAddr;
 use std::sync::Mutex;
@@ -39,6 +37,8 @@ use amane_kit::tokens::{Styled, sys};
 use amane_phone::{Adb, KdeConnect};
 
 use crate::session::{Mirror, Phase};
+use amane_kit::args::flag;
+use amane_kit::sync::Locked as _;
 
 /// The bar under the screen.
 const BAR_HEIGHT: f32 = 44.0;

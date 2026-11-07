@@ -3,8 +3,9 @@
 //! and a "multicolor" first dot for following the system. Hovering a dot
 //! names it, for the row's value.
 
-use crate::buttons::Actions;
 use std::rc::Rc;
+
+use crate::buttons::Actions;
 
 use amane::{Center, Color, Rectangle, Row, Widget};
 

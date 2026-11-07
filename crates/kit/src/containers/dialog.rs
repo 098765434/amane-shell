@@ -23,13 +23,14 @@
 //! the seconds down, and at zero the dialog closes and runs its action, as
 //! a display change that's kept only when confirmed.
 
-use crate::sync::Locked as _;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
+
+use crate::sync::Locked as _;
 
 use amane::{
     Center, Color, Column, Image, Key, Padding, Rectangle, Row, Service, Size, Start, Text, Widget,

@@ -4,7 +4,6 @@
 //! answers asked for while it was busy, only the newest is worked out (the
 //! others were for what's since been typed over).
 
-use amane_base::sync::Locked as _;
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::{UnixListener, UnixStream};
@@ -16,6 +15,7 @@ use amane_assistant::protocol::{Envelope, Message, Request};
 
 use crate::audio::{self, Recording};
 use crate::engine::{ENGINE, Engine};
+use amane_base::sync::Locked as _;
 
 /// How much is heard before Whistle hears it: half a second.
 const PASS: usize = audio::RATE as usize / 2;

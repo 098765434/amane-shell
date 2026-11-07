@@ -18,8 +18,9 @@
 //! Sizes are the form controls' ([`style`](crate::style)): rows 42 tall (52 with a
 //! subtitle), 12 px in, cards radius 12 in `groupFill`.
 
-use crate::buttons::Actions;
 use std::rc::Rc;
+
+use crate::buttons::Actions;
 
 use amane::{Center, Color, Column, Padding, Rectangle, Row, Size, Text, Widget};
 

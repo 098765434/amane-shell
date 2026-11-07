@@ -4,11 +4,11 @@
 //! session, a light's brightness) are here, so no other module names
 //! logind's bus paths.
 
-use amane_kit::sync::Locked as _;
 use std::os::fd::OwnedFd;
 use std::sync::Mutex;
 
 use amane::{Argument, Bus, Logind, Service};
+use amane_kit::sync::Locked as _;
 
 const LOGIND: &str = "org.freedesktop.login1";
 const MANAGER_PATH: &str = "/org/freedesktop/login1";

@@ -11,11 +11,12 @@
 //!
 //! Screen sharing is niri's to know: amane's `Casts` follows niri's cast events.
 
-use amane::{Casts, Service, niri};
-use serde_json::Value;
 use std::collections::{BTreeSet, HashMap};
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
+
+use amane::{Casts, Service, niri};
+use serde_json::Value;
 
 #[derive(Default, PartialEq)]
 pub struct Privacy {

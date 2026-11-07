@@ -5,9 +5,6 @@
 //! installed, from Settings, the repo's `.nix` files and Flatpak, is one
 //! list ([`super::inventory`]).
 
-use super::busy::Busy;
-use amane_kit::service::ServiceExt as _;
-use amane_kit::sync::Locked as _;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
@@ -25,6 +22,7 @@ use amane_kit::tokens::sys;
 use amane_process::{Cmd, Stopper};
 use serde_json::Value;
 
+use super::busy::Busy;
 use super::catalog::{self, Catalog, Named};
 use super::controls::{self, Feedback};
 use super::installed::Launchers;
@@ -32,6 +30,8 @@ use super::inventory::{self, FileAttrs};
 use super::nixos::{Entry, Managed, Snapshot, repo, run, strings};
 use super::package::Details;
 use crate::{group, groups};
+use amane_kit::service::ServiceExt as _;
+use amane_kit::sync::Locked as _;
 
 /// The registry id of the list of added packages.
 pub const PACKAGES: &str = "packages";

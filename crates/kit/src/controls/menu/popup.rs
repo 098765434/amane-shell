@@ -14,11 +14,12 @@
 //! reports the pointer on the control and on the window, and the
 //! difference is the control's corner.
 
-use crate::buttons::Actions;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Instant;
+
+use crate::buttons::Actions;
 
 use amane::{
     Center, Column, ConstraintAdjustment, Gravity, Key, Point, Popup, PopupAnchor, Rectangle,

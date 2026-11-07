@@ -17,7 +17,6 @@ pub mod pinentry;
 pub mod rbw;
 pub mod secret;
 
-use amane_kit::sync::Locked as _;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
@@ -30,6 +29,7 @@ pub use identity::Identity;
 pub use rbw::{Entry, Error, Status};
 
 // how soon after the last look a view's look_soon() looks again
+use amane_kit::sync::Locked as _;
 const LOOK_AGAIN: Duration = Duration::from_secs(5);
 
 // past the agent's lock timeout, so the vault has locked by itself when it's looked at

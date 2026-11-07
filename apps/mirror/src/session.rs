@@ -3,7 +3,6 @@
 //! Service, so the window redraws as the session starts, changes size or
 //! ends.
 
-use amane_kit::sync::Locked as _;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -17,6 +16,7 @@ use crate::audio::{self, Sound};
 use crate::decode;
 use crate::protocol::{self, Control, DeviceMessage};
 use crate::server::{self, Options};
+use amane_kit::sync::Locked as _;
 
 /// Where a session stands.
 #[derive(Debug, Clone, PartialEq, Eq)]

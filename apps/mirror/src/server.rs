@@ -3,7 +3,6 @@
 //! tunnel, run it with `app_process`, accept video, audio and control in
 //! that order.
 
-use amane_kit::sync::Locked as _;
 use std::io::{BufRead, BufReader, Read};
 use std::net::{Ipv4Addr, TcpListener, TcpStream};
 use std::process::{Child, Command, Stdio};
@@ -12,6 +11,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::protocol::{self, App};
+use amane_kit::sync::Locked as _;
 
 /// Where the jar goes on the phone; `/data/local/tmp` is the shell user's.
 const ON_PHONE: &str = "/data/local/tmp/scrcpy-server.jar";

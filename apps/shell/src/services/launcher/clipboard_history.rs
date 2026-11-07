@@ -12,7 +12,6 @@
 //! window it's for has the keyboard again, types Ctrl+V into it (`wtype`;
 //! Ctrl+Shift+V in a terminal).
 
-use amane_kit::sync::Locked as _;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
@@ -27,6 +26,7 @@ use amane_kit::settings::ClipboardHistory as Settings;
 
 use crate::services::run_now;
 use crate::services::state::{self, State, state_file};
+use amane_kit::sync::Locked as _;
 
 amane_kit::marker! {
     /// The history changed: what read the clips draws again.
