@@ -591,6 +591,22 @@ mod tests {
     use std::sync::Arc;
     use std::time::Duration;
 
+    /// The one fake program, written once for every test: linked in as
+    /// `nix`, `git` or `pkexec`, it logs how it was called beside the link
+    /// and runs that name's body.
+    fn stub() -> &'static Path {
+        static STUB: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+        STUB.get_or_init(|| {
+            let path =
+                std::env::temp_dir().join(format!("amane-nixos-stub-{}", std::process::id()));
+            let script = "#!/bin/sh\nhere=$(dirname \"$0\"); name=$(basename \"$0\")\n\
+                          echo \"$name $*\" >> \"$here/calls\"\n. \"$here/$name.body\"\n";
+            fs::write(&path, script).unwrap();
+            fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+            path
+        })
+    }
+
     /// A folder of fake programs and a repo, gone with the test.
     struct Fakes {
         dir: PathBuf,
@@ -611,26 +627,19 @@ mod tests {
             config.helper = dir.join("helper");
             fs::write(&config.helper, "").unwrap();
             let fakes = Self { dir, config };
-            // every fake logs how it was called, one line a call
             for name in ["nix", "git", "pkexec"] {
+                std::os::unix::fs::symlink(stub(), fakes.dir.join(name)).unwrap();
                 fakes.program(name, "exit 0");
             }
             fakes
         }
 
-        /// A fake `name` that logs its arguments, then runs `body`.
+        /// Makes the fake `name` log its arguments, then run `body`. Only the
+        /// body is written, a file the stub reads: a program written while
+        /// another test's thread forks can't be run until that child execs
+        /// ("text file busy"), so no test writes one.
         fn program(&self, name: &str, body: &str) {
-            let path = self.dir.join(name);
-            let calls = self.dir.join("calls");
-            fs::write(
-                &path,
-                format!(
-                    "#!/bin/sh\necho \"{name} $*\" >> '{}'\n{body}\n",
-                    calls.display()
-                ),
-            )
-            .unwrap();
-            fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+            amane_base::fs::write_whole(&self.dir.join(format!("{name}.body")), body).unwrap();
         }
 
         fn config(&self) -> Config {
