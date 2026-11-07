@@ -11,7 +11,7 @@
 //! `GLASS_THEME=dark` shows the dark version, over a dimmed wallpaper, and
 //! `GLASS_THEME=dark-black` the same with black highlights.
 //! The edge is lit by the shell's own shader, now amane-kit's
-//! `kit/src/glass.wgsl`, with this test's stronger values; `GLASS_RIM=flat`
+//! `kit/src/look/glass.wgsl`, with this test's stronger values; `GLASS_RIM=flat`
 //! swaps it for the pen's plain 1px line, to compare. Run it from the repo
 //! root, the shader path is relative to it.
 //!
@@ -245,7 +245,7 @@ fn rim(look: &Look, shape: Shape) -> Rectangle {
     let color = look.highlight;
 
     // one rectangle, the whole card; no glow, the card's inner shadow has it
-    rim.shader("kit/src/glass.wgsl").shader_values(vec![
+    rim.shader("kit/src/look/glass.wgsl").shader_values(vec![
         [1.0, 1.5, look.rim, look.bloom],
         [14.0, look.rim_far, 0.0, 0.0],
         [

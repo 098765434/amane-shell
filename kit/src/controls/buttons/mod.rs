@@ -20,9 +20,6 @@
 //! therefore be unique and stable, like a `ScrollArea`'s.
 
 #![allow(missing_docs)]
-// The public API (styles, shapes, disabled, …) is broader than the bar uses
-// yet, so dead_code is allowed module-wide; unused_imports is not.
-#![allow(dead_code)]
 
 mod checkbox;
 mod drawn_button;
