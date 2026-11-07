@@ -58,6 +58,7 @@ enough to follow.
 | Interface | Used for | Checked at |
 |---|---|---|
 | `amane::niri` (`features()`, `outputs()`, `windows()`, `focused_window()`, the actions `focus_window`, `switch_keyboard_layout`, `power_off_monitors`, `quit`, `set_output_mode`, `stop_cast`), `Timer`, `Service::subscribe`, `Launch` | the shell's niri calls, timers and services following each other ([services.md](services.md#while-idle)) | `808b695` |
+| `amane::niri::set_output` with `OutputChange`, `Transform`, `Output`'s serial, size and VRR, `follow_config_loads` | Shell Settings' Displays page, and the shell keeping the HDR white across a config read | `9d5fb6f` |
 | `Rfkill`, `Logind`, `ClipboardWatcher`, `LockKeys`, `Casts`, `Outputs`, `Network::profiles` / `wired` / `activate` / `deactivate` / `set_device` | airplane mode, the clock and Keep Awake waking from sleep, clipboard history, the OSD, privacy, the refresh rate on battery, the wired, VPN and hotspot tiles | `e7bf47a` |
 | `protocols/niri-*.xml` | the client side of the three niri protocols above, kept identical to niri's | all three as niri has them since `292d486` |
 | `Service` and its services: `Battery`, `Apps`, `Bluetooth`, `Windows`, `Workspaces`, `Brightness`, `PowerProfile`, `Notifications`, `Audio`, `Network`, `Media`, `Lock`, `Idle`, `Tray`, `WorkspaceSwitch`, `FocusedField`, `Desktop`, `Appearance`, `Polkit` (the `polkit-agent` feature), `Overview`, `MimeApps`, `Memory`, `Cpu`, `Backdrop` | everything the bar, Quick Settings and the apps show ([services.md](services.md)) | `e7bf47a` |
@@ -66,7 +67,7 @@ enough to follow.
 | `spawn`, `spawn_activated` | launching apps with an activation token | `808b695` |
 | popups, `open_popup`, `close_window`, windows, the quad and vello renderers, `material_available`, `blur_fades` | every surface | `808b695` |
 
-Apart from `amane::niri`, amane's services, not the shell, talk to niri's socket. The shell runs
+Apart from `amane::niri`, amane's services, not the shell or Shell Settings, talk to niri's socket. The shell runs
 no `niri msg` of its own; niri `Spawn` (`Windows::spawn`) still starts the dock's and launcher's
 apps.
 

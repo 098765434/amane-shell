@@ -11,7 +11,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use super::niri::Transform;
+use super::outputs::{Transform, TransformExt};
 use crate::system::nixos::run;
 
 pub const FILE: &str = "displays.kdl";

@@ -18,7 +18,7 @@ mod ddc;
 mod drm;
 mod edid;
 mod night;
-mod niri;
+mod outputs;
 mod sections;
 mod trial;
 
@@ -35,7 +35,7 @@ use amane_kit::tokens::sys;
 use crate::{group, groups};
 use caps::Caps;
 use config::{Displays as Saved, OutputConfig, Setup};
-use niri::Output;
+use outputs::{Output, OutputExt};
 
 // whether the page shows, so the poll can rest while it doesn't
 static SHOWN: AtomicBool = AtomicBool::new(false);
@@ -110,7 +110,7 @@ struct Look {
 }
 
 fn look(known: &[(String, Caps)]) -> Look {
-    let outputs = niri::outputs().map(|outputs| {
+    let outputs = outputs::all().map(|outputs| {
         let mut outputs: Vec<Output> = outputs.into_values().collect();
         outputs.sort_by_key(|output| (!output.built_in(), output.name.clone()));
         outputs
@@ -228,7 +228,7 @@ fn saved_block<'a>(saved: &'a Saved, output: &Output) -> Option<&'a OutputConfig
 fn current_block(saved: &Saved, output: &Output) -> OutputConfig {
     let mut block = saved_block(saved, output).cloned().unwrap_or_default();
     block.name = block_name(output);
-    if let Some(mode) = output.mode() {
+    if let Some(mode) = output.mode().copied() {
         block.mode = Some((mode.width, mode.height, mode.hz()));
         block.custom = output.is_custom_mode;
     }

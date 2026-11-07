@@ -77,14 +77,14 @@ impl Caps {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::displays::niri;
+    use crate::displays::outputs;
 
     /// Reads this machine's screens through niri, sysfs and DRM:
     /// `cargo test -p amane-settings -- --ignored --nocapture live`.
     #[test]
     #[ignore = "needs niri and a screen"]
     fn live_screens() {
-        for (name, output) in niri::outputs().expect("niri answers") {
+        for (name, output) in outputs::all().expect("niri answers") {
             let caps = Caps::read(&name, None);
             println!("{name}: {output:?}\n{caps:#?}");
             assert!(caps.edid.is_some(), "{name} has an EDID");

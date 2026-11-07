@@ -27,7 +27,7 @@ use amane_kit::tokens::{Styled, sys};
 use super::caps::Caps;
 use super::config::{self, Displays as Saved, Setup, Vrr};
 use super::ddc::{self, Ddc, Feature, Monitor};
-use super::niri::{self, Change, Mode, Output, Transform};
+use super::outputs::{self, Change, Mode, Output, OutputExt, Transform, TransformExt};
 use super::trial::try_change;
 use super::{Screens, block_name, save, save_all, saved_block};
 use crate::{group, page_width, switch_row};
@@ -233,8 +233,11 @@ pub fn arrangement(ctx: &Ctx) -> Option<Group> {
         let (from_x, from_y) = output.logical.map_or((0, 0), |l| (l.x, l.y));
         try_change(
             &output,
-            Change::Position(x, y),
-            Change::Position(from_x, from_y),
+            Change::Position { x, y },
+            Change::Position {
+                x: from_x,
+                y: from_y,
+            },
             format!("{name} at {x}, {y}"),
             move |block| block.position = Some((x, y)),
         );
@@ -329,7 +332,7 @@ pub fn header(ctx: &Ctx) -> Group {
     if !output.built_in() {
         details.push(output.name.clone());
     }
-    match output.mode() {
+    match output.mode().copied() {
         Some(mode) => details.push(format!(
             "{} × {} at {}",
             mode.width,
@@ -472,7 +475,7 @@ fn rates(output: &Output, size: (u16, u16)) -> Vec<Mode> {
 }
 
 fn mode_change(output: &Output, to: Mode) {
-    let Some(from) = output.mode() else {
+    let Some(from) = output.mode().copied() else {
         return;
     };
     let name = output.name.clone();
@@ -506,7 +509,7 @@ pub fn resolution(ctx: &Ctx) -> FormRow {
             }
         })
         .collect();
-    let current = output.mode().map(|m| (m.width, m.height));
+    let current = output.mode().copied().map(|m| (m.width, m.height));
     let at = sizes.iter().position(|s| Some(*s) == current).unwrap_or(0);
 
     let looks = output
@@ -520,7 +523,7 @@ pub fn resolution(ctx: &Ctx) -> FormRow {
             let Some(&size) = sizes.get(index) else {
                 return;
             };
-            let Some(now) = ctx_output.mode() else {
+            let Some(now) = ctx_output.mode().copied() else {
                 return;
             };
             // the same refresh rate there if it has it, else the fastest
@@ -545,7 +548,7 @@ pub fn resolution(ctx: &Ctx) -> FormRow {
 }
 
 pub fn refresh_rate(ctx: &Ctx) -> Vec<FormRow> {
-    let Some(now) = ctx.output.mode() else {
+    let Some(now) = ctx.output.mode().copied() else {
         return Vec::new();
     };
     let rates = rates(&ctx.output, (now.width, now.height));
@@ -590,6 +593,7 @@ pub fn all_displays(ctx: &Ctx) -> Option<Group> {
     let slowest = ctx
         .output
         .mode()
+        .copied()
         .map(|now| rates(&ctx.output, (now.width, now.height)))
         .and_then(|rates| rates.first().map(|mode| hz(mode.hz())));
     let here = slowest.map_or(String::new(), |rate| format!(" ({rate} here)"));
@@ -637,7 +641,7 @@ pub fn variable_refresh(ctx: &Ctx) -> Group {
             },
         );
         thread::spawn(move || {
-            if let Err(error) = niri::apply(&name, &change) {
+            if let Err(error) = outputs::apply(&name, &change) {
                 Screens::fail(error);
             }
         });
@@ -757,7 +761,7 @@ fn open_app_ids() -> Vec<String> {
         .is_none_or(|at| at.elapsed() > std::time::Duration::from_secs(5));
     if stale && !LOOKING.swap(true, std::sync::atomic::Ordering::AcqRel) {
         thread::spawn(|| {
-            let ids = niri::window_app_ids();
+            let ids = outputs::window_app_ids();
             if let Ok(mut open) = OPEN.lock() {
                 *open = (Some(Instant::now()), ids);
             }
@@ -795,7 +799,7 @@ pub fn scale(ctx: &Ctx) -> FormRow {
     let Some(logical) = output.logical else {
         return FormRow::new("settings.displays.scale-row", "Scale").value("Off");
     };
-    let mode = output.mode();
+    let mode = output.mode().copied();
     // the physical size a scale divides, turned as shown
     let (pw, ph) = match mode {
         Some(m) if logical.transform.sideways() => (f64::from(m.height), f64::from(m.width)),
@@ -1139,12 +1143,12 @@ pub fn advanced(ctx: &Ctx) -> Group {
                     Screens::fail(String::from("A mode reads like 2560x1600@90."));
                     return;
                 };
-                let Some(from) = mode_output.mode() else {
+                let Some(from) = mode_output.mode().copied() else {
                     return;
                 };
                 try_change(
                     &mode_output,
-                    Change::CustomMode(w, h, rate),
+                    Change::CustomMode { width: w, height: h, hz: rate },
                     Change::Mode(from),
                     format!("{} custom mode {w}x{h}@{rate}", mode_output.name),
                     move |block| {

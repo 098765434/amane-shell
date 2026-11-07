@@ -8,7 +8,7 @@ use std::thread;
 use amane_kit::app::Dialog;
 
 use super::config::OutputConfig;
-use super::niri::{self, Change, Output};
+use super::outputs::{self, Change, Output};
 use super::{Screens, save};
 
 /// How long the dialog waits before going back.
@@ -27,9 +27,9 @@ pub fn try_change(
     let revert = {
         let name = name.clone();
         move || {
-            let (name, undo) = (name.clone(), undo.clone());
+            let (name, undo) = (name.clone(), undo);
             thread::spawn(move || {
-                if let Err(error) = niri::apply(&name, &undo) {
+                if let Err(error) = outputs::apply(&name, &undo) {
                     Screens::fail(format!("Couldn't go back: {error}"));
                 }
                 Screens::refresh();
@@ -49,7 +49,7 @@ pub fn try_change(
         .open("main");
 
     thread::spawn(move || {
-        if let Err(error) = niri::apply(&name, &change) {
+        if let Err(error) = outputs::apply(&name, &change) {
             Screens::fail(error);
         }
         Screens::refresh();
