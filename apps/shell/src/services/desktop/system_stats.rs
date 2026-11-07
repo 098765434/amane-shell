@@ -6,7 +6,8 @@
 //! One service on one tick (every 2 s), so a desktop of widgets redraws
 //! once a tick rather than once per reading. It starts the first time a
 //! widget reads it, and reads nothing while no system widget shows
-//! ([`SystemStats::watch`]). Everything comes from the kernel
+//! ([`SystemStats::watch`]); the temperature sensors, some of which sit on
+//! slow buses, only while a temperature widget shows. Everything comes from the kernel
 //! (`/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, `/proc/net/route`,
 //! `/sys/class/hwmon`, `/proc/mounts` and `statvfs`); the parsers are plain
 //! functions over the files' text. The files are read with no lock held, so
@@ -40,6 +41,9 @@ const STALLED_SKIP: u32 = 10;
 
 /// Whether a system widget shows anywhere; while none does, nothing is read.
 static WATCHED: AtomicBool = AtomicBool::new(false);
+/// Whether a temperature shows: some sensors sit on slow buses (a drive's
+/// is a command to it), so they're read only then.
+static TEMPERATURES: AtomicBool = AtomicBool::new(false);
 
 // a widget showing again wakes the paused listener
 static WAKE: Wake = Wake::new();
@@ -203,8 +207,10 @@ impl Service for SystemStats {
 }
 
 impl SystemStats {
-    /// Says whether a system widget shows, so the readings go on or pause.
-    pub fn watch(watched: bool) {
+    /// Says whether a system widget shows, so the readings go on or pause,
+    /// and whether one shows a temperature, so the sensors are read too.
+    pub fn watch(watched: bool, temperatures: bool) {
+        TEMPERATURES.store(temperatures, Ordering::Relaxed);
         if !WATCHED.swap(watched, Ordering::Relaxed) && watched {
             WAKE.nudge();
         }
@@ -249,7 +255,16 @@ impl SystemStats {
         self.read_at = Some(reading.at);
         self.default_route = reading.default_route;
 
-        self.sensors = reading.sensors;
+        if let Some(sensors) = reading.sensors {
+            self.apply_sensors(sensors);
+        }
+        if let Some(disks) = reading.disks {
+            self.disks = disks;
+        }
+    }
+
+    fn apply_sensors(&mut self, sensors: Vec<Sensor>) {
+        self.sensors = sensors;
         let sensors = &self.sensors;
         self.temperature
             .retain(|label, _| sensors.iter().any(|s| &s.label == label));
@@ -263,10 +278,6 @@ impl SystemStats {
                 }
             }
         }
-
-        if let Some(disks) = reading.disks {
-            self.disks = disks;
-        }
     }
 }
 
@@ -277,7 +288,8 @@ struct Reading {
     memory: Option<MemoryUse>,
     traffic: Vec<(String, (u64, u64))>,
     default_route: Option<String>,
-    sensors: Vec<Sensor>,
+    /// Only while a temperature shows.
+    sensors: Option<Vec<Sensor>>,
     /// Only on the ticks the disks are read.
     disks: Option<Vec<DiskUse>>,
 }
@@ -311,18 +323,7 @@ impl Probe {
         read_into("/proc/net/route", &mut self.text);
         let default_route = parse_route(&self.text);
 
-        if !self.scanned || self.tick.is_multiple_of(SCAN_EVERY) {
-            self.inputs = scan(Path::new("/sys/class/hwmon"));
-            self.scanned = true;
-        }
-        let sensors = match read_sensors(&self.inputs, &mut self.text) {
-            Some(sensors) => sensors,
-            None => {
-                // one went away: look again
-                self.inputs = scan(Path::new("/sys/class/hwmon"));
-                read_sensors(&self.inputs, &mut self.text).unwrap_or_default()
-            }
-        };
+        let sensors = TEMPERATURES.load(Ordering::Relaxed).then(|| self.sensors());
 
         let disks = self.tick.is_multiple_of(DISK_EVERY).then(|| {
             read_into("/proc/mounts", &mut self.text);
@@ -339,6 +340,23 @@ impl Probe {
             default_route,
             sensors,
             disks,
+        }
+    }
+}
+
+impl Probe {
+    fn sensors(&mut self) -> Vec<Sensor> {
+        if !self.scanned || self.tick.is_multiple_of(SCAN_EVERY) {
+            self.inputs = scan(Path::new("/sys/class/hwmon"));
+            self.scanned = true;
+        }
+        match read_sensors(&self.inputs, &mut self.text) {
+            Some(sensors) => sensors,
+            None => {
+                // one went away: look again
+                self.inputs = scan(Path::new("/sys/class/hwmon"));
+                read_sensors(&self.inputs, &mut self.text).unwrap_or_default()
+            }
         }
     }
 }

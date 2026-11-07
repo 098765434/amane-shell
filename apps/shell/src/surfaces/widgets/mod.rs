@@ -208,6 +208,8 @@ thread_local! {
     static NAMES: RefCell<HashMap<String, &'static str>> = RefCell::new(HashMap::new());
     /// The windows that show a system card, live, now.
     static WATCHING: RefCell<HashSet<&'static str>> = RefCell::new(HashSet::new());
+    /// The windows that show a temperature, live, now.
+    static HEAT: RefCell<HashSet<&'static str>> = RefCell::new(HashSet::new());
 }
 
 /// Read by every widget window and written whenever the widgets change,
@@ -224,18 +226,21 @@ impl Service for Desktops {
     fn listen() {}
 }
 
-/// Whether the window `name` shows a system card: the readings go on
-/// while any window does, and pause once none does.
-fn watching(name: &'static str, shows: bool) {
-    let any = WATCHING.with_borrow_mut(|watching| {
-        if shows {
-            watching.insert(name);
+/// Whether the window `name` shows a system card, and a temperature: the
+/// readings go on while any window does, and pause once none does.
+fn watching(name: &'static str, shows: bool, heat: bool) {
+    let note = |set: &RefCell<HashSet<&'static str>>, on: bool| {
+        let mut set = set.borrow_mut();
+        if on {
+            set.insert(name);
         } else {
-            watching.remove(name);
+            set.remove(name);
         }
-        !watching.is_empty()
-    });
-    SystemStats::watch(any);
+        !set.is_empty()
+    };
+    let any = WATCHING.with(|set| note(set, shows));
+    let any_heat = HEAT.with(|set| note(set, heat));
+    SystemStats::watch(any, any_heat);
 }
 
 /// The widgets changed: every monitor's desktop draws again.
@@ -326,7 +331,7 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
     }
     let editing = edit::editing(&output);
     if !showing || (edit_window && !editing) {
-        watching(name, false);
+        watching(name, false, false);
         // hidden, taking nothing
         return LayerWindow::new()
             .width(Full)
@@ -386,7 +391,7 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
         .namespace(name)
         .visible(true);
     if editing && !edit_window {
-        watching(name, false);
+        watching(name, false, false);
         // the edit surface has the cards for now
         return window
             .keyboard(Keyboard::None)
@@ -401,7 +406,11 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
     let system = layout
         .placed()
         .any(|(key, _)| key.kind.category() == Category::System);
-    watching(name, editing || system);
+    let heat = layout
+        .placed()
+        .any(|(key, _)| key.kind == WidgetKind::Temperature);
+    // the gallery and the settings' sensor list read every sensor
+    watching(name, editing || system, editing || heat);
 
     /*
      * nothing under the windows shows (niri's overview fully open, or windows
