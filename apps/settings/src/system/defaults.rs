@@ -384,12 +384,7 @@ fn terminal_exec() -> bool {
 }
 
 fn terminals_file() -> PathBuf {
-    std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .filter(|path| path.is_absolute())
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
-        .unwrap_or_default()
-        .join("xdg-terminals.list")
+    amane_kit::paths::config().join("xdg-terminals.list")
 }
 
 /// The ids `xdg-terminals.list` lists, most wanted first.

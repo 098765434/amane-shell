@@ -53,6 +53,7 @@
 //! - [`motion`] — the shared springs and fades, and keyed list motion.
 //! - [`kinetic`] — following fingers, and the momentum a flick leaves.
 //! - [`pager`] — turning pages with the fingers, a flick or a wheel.
+//! - [`reveal`] — a surface opening on a spring and closing quicker.
 //! - [`edge_reveal`] — a surface hiding at a screen edge until the pointer
 //!   touches it.
 //!
@@ -62,6 +63,7 @@
 //! - [`icons`] — the Material Symbols glyphs and their pickers.
 //! - [`color`] — colour arithmetic (`over`, `faded`, `with_alpha`).
 //! - [`symbol`] — the few drawn symbols the controls use (chevrons, checks).
+//! - [`paths`] — the XDG base folders: config, state, cache, data, runtime.
 //!
 //! The system around an app (`platform/`):
 //!
@@ -85,14 +87,14 @@ mod platform;
 pub mod theme;
 pub mod tokens;
 
-pub use animation::{edge_reveal, kinetic, motion, pager};
+pub use animation::{edge_reveal, kinetic, motion, pager, reveal};
 pub use containers::{
-    app_bar, arrangement, card, dialog, divider, flow, form, list, scroll_view, tooltip,
+    app_bar, arrangement, card, dialog, divider, flow, form, grid, list, scroll_view, tooltip,
 };
 pub use controls::{
     avatar, buttons, color_picker, control_size, dropdown, leading_icon, menu, nav_buttons,
-    pop_up_button, slider, spinner, stepper, tag, thumbnail_picker,
+    pop_up_button, search_field, slider, spinner, stepper, tag, text_edit, thumbnail_picker,
 };
-pub use foundation::{color, icons, layout, symbol};
+pub use foundation::{color, icons, layout, paths, symbol};
 pub use look::{glass, glass_region, lab, material, style};
-pub use platform::{app, app_icon, marker, secrets, settings};
+pub use platform::{app, app_icon, marker, process, secrets, settings};

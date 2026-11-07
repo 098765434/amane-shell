@@ -90,12 +90,7 @@ impl Service for NightLight {
 }
 
 fn state_file() -> PathBuf {
-    std::env::var_os("XDG_STATE_HOME")
-        .map(PathBuf::from)
-        .filter(|path| path.is_absolute())
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/state")))
-        .unwrap_or_default()
-        .join("amane-shell/night-light")
+    amane_kit::paths::state().join("amane-shell/night-light")
 }
 
 fn ask() -> Option<Light> {

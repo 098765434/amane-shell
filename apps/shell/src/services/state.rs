@@ -5,10 +5,7 @@ use std::path::PathBuf;
 /// The file `name` under the shell's state directory
 /// (`$XDG_STATE_HOME/amane-shell`), where the few settings it keeps live.
 pub fn state_file(name: &str) -> PathBuf {
-    let state = std::env::var_os("XDG_STATE_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/state")))
-        .unwrap_or_else(std::env::temp_dir);
+    let state = amane_kit::paths::state();
     state.join("amane-shell").join(name)
 }
 

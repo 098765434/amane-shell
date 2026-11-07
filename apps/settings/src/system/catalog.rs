@@ -51,11 +51,7 @@ impl Service for Catalog {
 
 /// `$XDG_CACHE_HOME/amane-shell/nixpkgs`.
 fn cache_dir() -> PathBuf {
-    let cache = std::env::var_os("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .filter(|path| path.is_absolute())
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))
-        .unwrap_or_default();
+    let cache = amane_kit::paths::cache();
 
     cache.join("amane-shell").join("nixpkgs")
 }

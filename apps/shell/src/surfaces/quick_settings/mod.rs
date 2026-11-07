@@ -70,6 +70,9 @@ use crate::components::layout::{blank, boxed, pad, track_cursor};
 use crate::components::material::Material;
 use crate::components::motion;
 use crate::components::panel::{self, Panel, close, is_open, overlay, popover_margin};
+use crate::components::reveal::Reveal;
+use crate::surfaces::quick_settings::grid::FromTokens as _;
+use crate::surfaces::quick_settings::layout::Stored as _;
 use crate::surfaces::status_bar;
 use crate::tokens::quick;
 
@@ -99,10 +102,9 @@ thread_local! {
     static ALONE: Cell<bool> = const { Cell::new(false) };
 
     // 0 closed … 1 open: the card fades, swells and rises in over the bar
-    static OPEN: RefCell<Animation> = RefCell::new(motion::pop(0.0));
+    static OPEN: RefCell<Reveal> = RefCell::new(Reveal::new());
 
     // whether OPEN is heading for 1
-    static OPENING: Cell<bool> = const { Cell::new(false) };
 
     // when the card began opening from nothing onto the grid: its modules
     // arrive in a wave from then
@@ -354,23 +356,20 @@ fn load_layout() {
 /// little past 1 on the spring. Closing is quicker than opening, and a
 /// change of mind turns it around at the speed it had.
 fn unfold(open: bool) -> f32 {
-    OPEN.with_borrow_mut(|anim| {
-        if OPENING.replace(open) != open {
+    OPEN.with_borrow_mut(|reveal| {
+        reveal.step_then(open, |was| {
             // opening from nothing onto the grid, the modules arrive in a
             // wave; frost that can only show or hide would pop in module by
             // module, and an edit or a page has better things to show
             let cascade = open
-                && anim.value() < 0.05
+                && was < 0.05
                 && PAGE.get() == Page::Grid
                 && !edit::editing()
                 && amane::blur_fades();
             if cascade {
                 OPENED_AT.set(Some(Instant::now()));
             }
-            anim.retime(if open { motion::POP } else { motion::CLOSE });
-            anim.to(if open { 1.0 } else { 0.0 });
-        }
-        anim.value()
+        })
     })
 }
 

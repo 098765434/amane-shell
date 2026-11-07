@@ -4,7 +4,7 @@
 //! comes from curl's progress bar; a cancel kills curl.
 
 use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
@@ -307,10 +307,7 @@ pub fn upload_text(
     cancel: &AtomicBool,
     tell: &mut dyn FnMut(f32),
 ) -> io::Result<Option<String>> {
-    let folder = std::env::var_os("XDG_RUNTIME_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(std::env::temp_dir)
-        .join("amane-drop");
+    let folder = amane_kit::paths::runtime().join("amane-drop");
     std::fs::create_dir_all(&folder)?;
     let file = folder.join(format!("Text {}.txt", std::process::id()));
     std::fs::write(&file, text)?;

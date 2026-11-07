@@ -11,11 +11,14 @@
 
 #![allow(missing_docs)]
 
-use amane::{Center, Color, Padding, Rectangle, Scroll, Stack, Start, Widget};
+use std::time::{Duration, Instant};
+
+use amane::{Animation, Center, Color, Padding, Rectangle, Scroll, Service, Stack, Start, Widget};
 
 use crate::kinetic::Axis;
 use crate::layout::boxed;
 use crate::material::{self, Level};
+use crate::motion;
 
 // TODO(token): `sys.scrollbar.*` once Penpot has them (manual §1.1).
 /// How wide the scrollbar is, and how short its thumb gets.
@@ -145,5 +148,63 @@ impl ScrollView {
             .fill(Color::TRANSPARENT)
             .align_child(Start, Start)
             .child(Stack::new(vec![boxed(viewport), boxed(thumb)]))
+    }
+}
+
+/// How much a scrollbar shows: fully while its content moves and for a moment after, then
+/// fading out. Keep one per scrolled view (a `thread_local!` `RefCell` beside its other
+/// state), tell it when the content [`moved`](Self::moved), and draw the bar at
+/// [`opacity`](Self::opacity).
+pub struct ScrollbarFade {
+    scrolled: Option<Instant>,
+    due: Option<Instant>,
+    shown: Animation,
+}
+
+impl ScrollbarFade {
+    /// How long the bar stays after the content stops.
+    pub const IDLE: Duration = Duration::from_millis(800);
+
+    /// Hidden, with nothing scrolled yet.
+    pub fn new() -> Self {
+        Self {
+            scrolled: None,
+            due: None,
+            shown: motion::fade(0.0, motion::FADE),
+        }
+    }
+
+    /// The content moved just now.
+    pub fn moved(&mut self) {
+        self.scrolled = Some(Instant::now());
+    }
+
+    /// Hidden again at once, as when the view closes.
+    pub fn reset(&mut self) {
+        *self = Self::new();
+    }
+
+    /// How much the bar shows this frame, 0 to 1. While it shows, a timer asks the windows
+    /// that read `M` for the frame that starts its fade.
+    pub fn opacity<M: Service>(&mut self) -> f32 {
+        let now = Instant::now();
+        let showing = self
+            .scrolled
+            .is_some_and(|at| now.duration_since(at) < Self::IDLE);
+        if let Some(at) = self.scrolled.filter(|_| showing)
+            && self.due.is_none_or(|due| now >= due)
+        {
+            let due = at + Self::IDLE;
+            self.due = Some(due);
+            motion::redraw_after::<M>(due.saturating_duration_since(now));
+        }
+        self.shown.to(if showing { 1.0 } else { 0.0 });
+        self.shown.value().clamp(0.0, 1.0)
+    }
+}
+
+impl Default for ScrollbarFade {
+    fn default() -> Self {
+        Self::new()
     }
 }

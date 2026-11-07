@@ -7,8 +7,9 @@
 
 use amane::{Key, Modifiers};
 
+/// One line of text being typed, with its caret and selection.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct Field {
+pub struct Field {
     text: String,
     // where the caret is, in characters
     caret: usize,
@@ -17,7 +18,8 @@ pub(crate) struct Field {
 }
 
 impl Field {
-    pub(crate) const fn new() -> Self {
+    /// An empty field.
+    pub const fn new() -> Self {
         Self {
             text: String::new(),
             caret: 0,
@@ -25,20 +27,28 @@ impl Field {
         }
     }
 
-    pub(crate) fn text(&self) -> &str {
+    /// The text.
+    pub fn text(&self) -> &str {
         &self.text
     }
 
-    pub(crate) fn caret(&self) -> usize {
+    /// Where the caret is, in characters.
+    pub fn caret(&self) -> usize {
         self.caret
     }
 
-    pub(crate) fn len(&self) -> usize {
+    /// Whether there's no text.
+    pub fn is_empty(&self) -> bool {
+        self.text.is_empty()
+    }
+
+    /// How many characters there are.
+    pub fn len(&self) -> usize {
         self.text.chars().count()
     }
 
     /// The selection as an ordered range, empty at the caret without one.
-    pub(crate) fn selection(&self) -> (usize, usize) {
+    pub fn selection(&self) -> (usize, usize) {
         match self.anchor {
             Some(anchor) => (anchor.min(self.caret), anchor.max(self.caret)),
             None => (self.caret, self.caret),
@@ -46,16 +56,18 @@ impl Field {
     }
 
     /// Characters `from` up to `to`.
-    pub(crate) fn slice(&self, from: usize, to: usize) -> String {
+    pub fn slice(&self, from: usize, to: usize) -> String {
         self.text.chars().skip(from).take(to - from).collect()
     }
 
-    pub(crate) fn selected(&self) -> String {
+    /// The selected text, empty without a selection.
+    pub fn selected(&self) -> String {
         let (from, to) = self.selection();
         self.slice(from, to)
     }
 
-    pub(crate) fn select_all(&mut self) {
+    /// Selects everything, the caret at the end.
+    pub fn select_all(&mut self) {
         self.anchor = Some(0);
         self.caret = self.len();
         self.settle();
@@ -63,7 +75,7 @@ impl Field {
 
     /// Moves the caret to `to`, extending the selection with Shift held,
     /// else dropping it.
-    pub(crate) fn move_to(&mut self, to: usize, extend: bool) {
+    pub fn move_to(&mut self, to: usize, extend: bool) {
         if extend {
             self.anchor.get_or_insert(self.caret);
         } else {
@@ -74,7 +86,7 @@ impl Field {
     }
 
     /// Left: a step back, or without Shift to the selection's start.
-    pub(crate) fn left(&mut self, extend: bool) {
+    pub fn left(&mut self, extend: bool) {
         match (extend, self.anchor) {
             (false, Some(_)) => self.move_to(self.selection().0, false),
             _ => self.move_to(self.caret.saturating_sub(1), extend),
@@ -82,7 +94,7 @@ impl Field {
     }
 
     /// Right: a step on, or without Shift to the selection's end.
-    pub(crate) fn right(&mut self, extend: bool) {
+    pub fn right(&mut self, extend: bool) {
         match (extend, self.anchor) {
             (false, Some(_)) => self.move_to(self.selection().1, false),
             _ => self.move_to(self.caret + 1, extend),
@@ -91,7 +103,7 @@ impl Field {
 
     /// Types `text` at the caret, over the selection. Line breaks and other
     /// control characters are left out: the field is one line.
-    pub(crate) fn insert(&mut self, text: &str) {
+    pub fn insert(&mut self, text: &str) {
         let clean: String = text.chars().filter(|c| !c.is_control()).collect();
         if clean.is_empty() {
             return;
@@ -103,7 +115,7 @@ impl Field {
     }
 
     /// Removes the selection, if there is one; whether it did.
-    pub(crate) fn delete_selection(&mut self) -> bool {
+    pub fn delete_selection(&mut self) -> bool {
         let (from, to) = self.selection();
         self.anchor = None;
         if from == to {
@@ -117,7 +129,7 @@ impl Field {
 
     /// Backspace: the selection, else the character before the caret;
     /// whether anything went.
-    pub(crate) fn backspace(&mut self) -> bool {
+    pub fn backspace(&mut self) -> bool {
         if self.delete_selection() {
             return true;
         }
@@ -139,7 +151,7 @@ impl Field {
     /// A paste arrives later, once the program that copied has answered:
     /// `pasted` gets the text then, on the event loop, to insert into the field
     /// where its owner keeps it.
-    pub(crate) fn handle(&mut self, key: Key, held: Modifiers, pasted: fn(String)) -> bool {
+    pub fn handle(&mut self, key: Key, held: Modifiers, pasted: fn(String)) -> bool {
         if held.ctrl
             && let Key::Character(letter) = key
         {
@@ -191,7 +203,7 @@ impl Field {
 
 /// Puts `text` on the clipboard, from an input handler (the compositor wants a key or a click
 /// behind a copy).
-pub(crate) fn copy(text: &str) {
+pub fn copy(text: &str) {
     if !text.is_empty() {
         amane::Clipboard::copy(text);
     }
@@ -200,7 +212,7 @@ pub(crate) fn copy(text: &str) {
 /// Calls `then` with the clipboard's text on the event loop, once the program that copied has
 /// answered; never when there's no text. The UI thread never waits: when the shell itself owns
 /// the clipboard (a password the vault copied), it's the one that answers.
-pub(crate) fn paste(then: impl FnOnce(String) + Send + 'static) {
+pub fn paste(then: impl FnOnce(String) + Send + 'static) {
     amane::Clipboard::paste(then);
 }
 

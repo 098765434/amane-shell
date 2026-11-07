@@ -14,6 +14,7 @@ use crate::components::layout::boxed;
 use crate::components::slider::Slider;
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::surfaces::quick_settings::detail::DetailPage;
+use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::surfaces::quick_settings::tile::QuickToggle;
 
 thread_local! {

@@ -31,27 +31,35 @@ pub trait GridKey: Copy + Eq + Hash + Debug {
     }
 }
 
+/// One control in a layout.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Entry<K> {
+    /// The control.
     pub id: K,
+    /// Its size.
     pub span: Span,
     /// Its cell, or `None` when it's hidden.
     pub at: Option<Place>,
 }
 
 impl<K> Entry<K> {
+    /// The cells it covers, or `None` while it's hidden.
     pub fn rect(&self) -> Option<Rect> {
         self.at.map(|at| Rect::new(at, self.span))
     }
 }
 
+/// Controls on a canvas, each placed or hidden, in the order they were added.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Layout<K> {
+    /// The canvas they're placed on.
     pub canvas: Canvas,
+    /// Every control, placed or hidden.
     pub entries: Vec<Entry<K>>,
 }
 
 impl<K: GridKey> Layout<K> {
+    /// An empty layout on `canvas`.
     pub fn new(canvas: Canvas) -> Self {
         Self {
             canvas,
@@ -74,6 +82,7 @@ impl<K: GridKey> Layout<K> {
             .map(|entry| entry.id)
     }
 
+    /// The cells `id` covers, unless it's hidden or not in the layout.
     pub fn rect_of(&self, id: K) -> Option<Rect> {
         self.entries
             .iter()
@@ -89,12 +98,12 @@ impl<K: GridKey> Layout<K> {
             .map(|entry| entry.span)
     }
 
+    /// Which control each cell holds.
     pub fn occupancy(&self) -> Occupancy<K> {
         Occupancy::of(self.canvas, self.placed())
     }
 
     /// How many rows the canvas needs to show everything placed.
-    #[cfg(test)]
     pub fn rows_used(&self) -> u8 {
         self.occupancy().rows_used()
     }
@@ -115,6 +124,7 @@ impl<K: GridKey> Layout<K> {
         self.entries.retain(|entry| entry.id != id);
     }
 
+    /// Takes `id` off the canvas, keeping its size.
     pub fn hide(&mut self, id: K) {
         if let Some(entry) = self.entry(id) {
             entry.at = None;
@@ -178,7 +188,6 @@ impl<K: GridKey> Layout<K> {
     /// This layout with `id` moved so its top-left is `at`, the items in
     /// its way swapped or pushed aside; `None` when that can't be done.
     /// Only the tests move an item without resizing it.
-    #[cfg(test)]
     pub fn moved(&self, id: K, at: Place) -> Option<Self> {
         let rect = self.rect_of(id)?;
         self.settled(id, Rect::new(at, rect.span), Some(rect))

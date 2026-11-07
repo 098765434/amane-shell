@@ -65,6 +65,8 @@ use crate::components::material::Material;
 use crate::components::motion;
 use crate::components::pager::{Pager, PagerMotion};
 use crate::components::panel::{self, Panel, close, is_open, overlay};
+use crate::components::reveal::Reveal;
+use crate::components::scroll_view::ScrollbarFade;
 use crate::components::text_edit::{self, Field};
 use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history;
@@ -137,7 +139,6 @@ const PAGING: PagerMotion = PagerMotion {
     rubber_band: Some(0.3),
 };
 /// How long the scrollbar stays after the body last moved.
-const SCROLLBAR_IDLE: Duration = Duration::from_millis(800);
 /// How strongly the highlight shows while the focus is elsewhere.
 const UNFOCUSED: f32 = 0.45;
 
@@ -206,8 +207,6 @@ struct State {
     // a finger gesture over the body, scrolling or turning the page
     gesture: AxisLock,
     // when the body last moved, and when the scrollbar is next due to fade
-    scrolled: Option<Instant>,
-    fade_due: Option<Instant>,
 }
 
 impl State {
@@ -227,8 +226,6 @@ impl State {
             pages: 0,
             pills_for: None,
             gesture: AxisLock::DEFAULT,
-            scrolled: None,
-            fade_due: None,
         }
     }
 }
@@ -247,10 +244,9 @@ thread_local! {
     static STATE: RefCell<State> = const { RefCell::new(State::new()) };
 
     // 0 closed … 1 open: the glass fades and swells in
-    static OPEN: RefCell<Animation> = RefCell::new(motion::pop(0.0));
+    static OPEN: RefCell<Reveal> = RefCell::new(Reveal::new());
 
     // whether OPEN is heading for 1
-    static OPENING: Cell<bool> = const { Cell::new(false) };
 
     // the glass, between the pill and the panel; it starts where it
     // belongs each time the launcher opens (`FRESH`)
@@ -274,7 +270,7 @@ thread_local! {
     static SWITCH: RefCell<Animation> = RefCell::new(motion::fade(1.0, motion::FADE));
 
     // 0 … 1: the scrollbar, showing while the body moves
-    static SCROLLBAR: RefCell<Animation> = RefCell::new(motion::fade(0.0, motion::FADE));
+    static SCROLLBAR: RefCell<ScrollbarFade> = RefCell::new(ScrollbarFade::new());
 }
 
 fn with<R>(change: impl FnOnce(&mut State) -> R) -> R {
@@ -641,7 +637,7 @@ fn hidden() {
     PILL_SCROLL.with_borrow_mut(|scroll| *scroll = Kinetic::new());
     PAGER.with_borrow_mut(|pager| pager.jump(0, &PAGING));
     SWITCH.with_borrow_mut(|switch| *switch = motion::fade(1.0, motion::FADE));
-    SCROLLBAR.with_borrow_mut(|bar| *bar = motion::fade(0.0, motion::FADE));
+    SCROLLBAR.with_borrow_mut(ScrollbarFade::reset);
 }
 
 /// `amane-shell` IPC: `launcher [toggle | open | close] [mode]`.
@@ -890,7 +886,7 @@ fn capture_key(key: Key) {
 
 /// The body moved: the scrollbar shows for a while.
 fn moved() {
-    with(|state| state.scrolled = Some(Instant::now()));
+    SCROLLBAR.with_borrow_mut(ScrollbarFade::moved);
 }
 
 /// A scroll over the body: a wheel scrolls it, a sideways tilt turns the
@@ -1248,13 +1244,7 @@ fn on_key(key: Key) {
 /// Steps the glass's opening towards `open` and gives how far it is, a
 /// little past 1 on the spring. Closing is quicker than opening.
 fn unfold(open: bool) -> f32 {
-    OPEN.with_borrow_mut(|anim| {
-        if OPENING.replace(open) != open {
-            anim.retime(if open { motion::POP } else { motion::CLOSE });
-            anim.to(if open { 1.0 } else { 0.0 });
-        }
-        anim.value()
-    })
+    OPEN.with_borrow_mut(|reveal| reveal.step(open))
 }
 
 /// Steps `anim` towards `to` and gives where it is.
@@ -1572,18 +1562,7 @@ fn panel(view: &View) -> Column {
 
 /// How much the scrollbar shows: while the body moves, and a little after.
 fn scrollbar() -> f32 {
-    let now = Instant::now();
-    let (scrolled, due) = with(|state| (state.scrolled, state.fade_due));
-    let showing = scrolled.is_some_and(|at| now.duration_since(at) < SCROLLBAR_IDLE);
-    // a timer asks for the frame when the scrollbar is due to fade
-    if let Some(at) = scrolled.filter(|_| showing)
-        && due.is_none_or(|due| now >= due)
-    {
-        let due = at + SCROLLBAR_IDLE;
-        with(|state| state.fade_due = Some(due));
-        motion::redraw_after::<Launcher>(due.saturating_duration_since(now));
-    }
-    ease(&SCROLLBAR, if showing { 1.0 } else { 0.0 })
+    SCROLLBAR.with_borrow_mut(|bar| bar.opacity::<Launcher>())
 }
 
 /// The surface over the output, keeping clear of what the bar reserves.

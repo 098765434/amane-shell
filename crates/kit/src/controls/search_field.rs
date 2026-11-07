@@ -10,11 +10,11 @@
 
 use amane::{Center, Color, Radius, Rectangle, Row, Size, Start, Text, Widget};
 
-use crate::components::buttons::{Actions, interactive};
-use crate::components::icons::{ICON_CLOSE, ICON_SEARCH};
-use crate::components::layout::{boxed, icon, pad, slot, text_width};
-use crate::components::material::{self, FillLevel, Level};
-use crate::components::text_edit::Field;
+use crate::buttons::{Actions, interactive};
+use crate::icons::{ICON_CLOSE, ICON_SEARCH};
+use crate::layout::{boxed, icon, pad, slot, text_width};
+use crate::material::{self, FillLevel, Level};
+use crate::text_edit::Field;
 use crate::tokens::{Styled, TextStyle, sys};
 
 // TODO(token): `sys.caret.width` once Penpot has it (manual §1.1).
@@ -34,6 +34,7 @@ pub struct SearchField<'a> {
 }
 
 impl<'a> SearchField<'a> {
+    /// A field showing `field`'s text, its caret drawn while `focused`.
     pub fn new(id: impl Into<String>, field: &'a Field, focused: bool) -> Self {
         Self {
             id: id.into(),
@@ -52,6 +53,7 @@ impl<'a> SearchField<'a> {
         self
     }
 
+    /// How wide the capsule is; a popover's width unless set.
     pub fn width(mut self, width: f32) -> Self {
         self.width = width;
         self
@@ -68,6 +70,7 @@ impl<'a> SearchField<'a> {
         sys::size::control::height()
     }
 
+    /// The capsule: a search glyph, the text or placeholder, and the clear button.
     pub fn build(self) -> Rectangle {
         let height = Self::height();
         let inset = sys::space::inset::m();

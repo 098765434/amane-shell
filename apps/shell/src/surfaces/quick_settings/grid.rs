@@ -13,21 +13,30 @@ pub use crate::components::grid::geometry::*;
 
 use crate::tokens::quick;
 
-impl Span {
+/// The sizes Quick Settings' controls come in, as `Span::S` and so on.
+pub trait Sizes {
     /// A round button.
-    pub const S: Span = Span::new(1, 1);
+    const S: Span = Span::new(1, 1);
     /// A tile: its disc and two lines beside it.
-    pub const M: Span = Span::new(2, 1);
+    const M: Span = Span::new(2, 1);
     /// A square module: Now Playing.
-    pub const L: Span = Span::new(2, 2);
+    const L: Span = Span::new(2, 2);
     /// A slider beside a round button.
-    pub const W3: Span = Span::new(3, 1);
+    const W3: Span = Span::new(3, 1);
     /// A whole row.
-    pub const FULL: Span = Span::new(4, 1);
+    const FULL: Span = Span::new(4, 1);
 }
 
-impl Canvas {
-    pub fn tokens() -> Self {
+impl Sizes for Span {}
+
+/// The canvas and its cells as Quick Settings' tokens give them.
+pub trait FromTokens {
+    /// From `quick.grid.*`.
+    fn tokens() -> Self;
+}
+
+impl FromTokens for Canvas {
+    fn tokens() -> Self {
         Self {
             cols: quick::grid::cols().round().max(1.0) as u8,
             rows: quick::grid::rows().round().max(1.0) as u8,
@@ -35,8 +44,8 @@ impl Canvas {
     }
 }
 
-impl Metrics {
-    pub fn tokens() -> Self {
+impl FromTokens for Metrics {
+    fn tokens() -> Self {
         Self::new(quick::grid::cell(), quick::grid::gap())
     }
 }

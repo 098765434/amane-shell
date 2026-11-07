@@ -4,5 +4,6 @@
 pub mod app;
 pub mod app_icon;
 pub mod marker;
+pub mod process;
 pub mod secrets;
 pub mod settings;

@@ -155,10 +155,7 @@ fn shader() -> Option<&'static Path> {
     static PATH: OnceLock<Option<PathBuf>> = OnceLock::new();
 
     PATH.get_or_init(|| {
-        let dir = std::env::var_os("XDG_RUNTIME_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(std::env::temp_dir)
-            .join("amane-shell");
+        let dir = crate::paths::runtime().join("amane-shell");
         // named for its text, so the shell and Shell Settings of different builds don't
         // overwrite each other's, and written to a part file first, so neither ever loads
         // half of one

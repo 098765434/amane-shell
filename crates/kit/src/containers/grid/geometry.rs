@@ -10,15 +10,19 @@
 /// How many cells a control covers, across and down.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Span {
+    /// Cells across.
     pub cols: u8,
+    /// Cells down.
     pub rows: u8,
 }
 
 impl Span {
+    /// `cols` across by `rows` down.
     pub const fn new(cols: u8, rows: u8) -> Self {
         Self { cols, rows }
     }
 
+    /// How many cells it covers.
     pub fn cells(self) -> u16 {
         u16::from(self.cols) * u16::from(self.rows)
     }
@@ -27,11 +31,14 @@ impl Span {
 /// A cell on the canvas, from the top-left.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Place {
+    /// The column, from the left.
     pub col: u8,
+    /// The row, from the top.
     pub row: u8,
 }
 
 impl Place {
+    /// The cell at `col`, `row`.
     pub const fn new(col: u8, row: u8) -> Self {
         Self { col, row }
     }
@@ -40,11 +47,14 @@ impl Place {
 /// The cells a control covers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rect {
+    /// Its top-left cell.
     pub at: Place,
+    /// How many cells it covers.
     pub span: Span,
 }
 
 impl Rect {
+    /// `span` cells from `at`.
     pub const fn new(at: Place, span: Span) -> Self {
         Self { at, span }
     }
@@ -67,7 +77,9 @@ impl Rect {
 /// The canvas: how many cells across and down.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Canvas {
+    /// Cells across.
     pub cols: u8,
+    /// Cells down.
     pub rows: u8,
 }
 
@@ -81,6 +93,7 @@ impl Canvas {
         }
     }
 
+    /// Whether `rect` lies on the canvas.
     pub fn fits(&self, rect: &Rect) -> bool {
         rect.right() <= self.cols && rect.bottom() <= self.rows
     }
@@ -95,6 +108,7 @@ impl Canvas {
         }
     }
 
+    /// Every cell, row by row.
     pub fn cells(&self) -> impl Iterator<Item = Place> + '_ {
         (0..self.rows).flat_map(move |row| (0..self.cols).map(move |col| Place { col, row }))
     }
@@ -103,20 +117,27 @@ impl Canvas {
 /// The canvas in pixels: a cell's side and the gap between cells.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Metrics {
+    /// A cell's side.
     pub cell: f32,
+    /// The gap between cells.
     pub gap: f32,
 }
 
 /// Where a control is drawn, in the canvas's pixels.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Slot {
+    /// Its left edge.
     pub x: f32,
+    /// Its top edge.
     pub y: f32,
+    /// Its width.
     pub width: f32,
+    /// Its height.
     pub height: f32,
 }
 
 impl Metrics {
+    /// Cells `cell` pixels on a side, `gap` apart.
     pub const fn new(cell: f32, gap: f32) -> Self {
         Self { cell, gap }
     }
@@ -134,10 +155,12 @@ impl Metrics {
         self.cell + self.gap
     }
 
+    /// How wide `span` is drawn.
     pub fn width(&self, span: Span) -> f32 {
         self.extent(span.cols)
     }
 
+    /// How tall `span` is drawn.
     pub fn height(&self, span: Span) -> f32 {
         self.extent(span.rows)
     }
@@ -151,6 +174,7 @@ impl Metrics {
         )
     }
 
+    /// Where `rect` is drawn, from the canvas's top-left.
     pub fn slot(&self, rect: Rect) -> Slot {
         Slot {
             x: f32::from(rect.at.col) * self.pitch(),
@@ -210,6 +234,7 @@ pub struct Occupancy<T> {
 }
 
 impl<T: Copy + PartialEq> Occupancy<T> {
+    /// An empty `canvas`.
     pub fn new(canvas: Canvas) -> Self {
         Self {
             canvas,
@@ -217,6 +242,7 @@ impl<T: Copy + PartialEq> Occupancy<T> {
         }
     }
 
+    /// `canvas` with each control's cells taken.
     pub fn of(canvas: Canvas, placed: impl IntoIterator<Item = (T, Rect)>) -> Self {
         let mut out = Self::new(canvas);
         for (id, rect) in placed {
@@ -231,6 +257,7 @@ impl<T: Copy + PartialEq> Occupancy<T> {
         })
     }
 
+    /// Takes `rect`'s cells for `id`.
     pub fn put(&mut self, id: T, rect: Rect) {
         for place in rect.cells() {
             if let Some(i) = self.index(place) {
@@ -239,6 +266,7 @@ impl<T: Copy + PartialEq> Occupancy<T> {
         }
     }
 
+    /// The control in the cell at `place`, if any.
     pub fn at(&self, place: Place) -> Option<T> {
         self.index(place).and_then(|i| self.cells[i])
     }

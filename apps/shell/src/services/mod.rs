@@ -61,10 +61,9 @@ pub mod power;
 pub mod status_apps;
 pub mod vault;
 
-mod process;
 mod state;
 mod wake;
 
-pub use process::{Latest, installed, run, run_now};
+pub use amane_kit::process::{Latest, installed, run, run_now};
 pub use state::{save_state, state_file};
 pub use wake::Wake;

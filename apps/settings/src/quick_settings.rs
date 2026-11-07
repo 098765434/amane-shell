@@ -71,11 +71,7 @@ impl Service for QuickControls {
 /// Where the shell keeps the layout: `$XDG_STATE_HOME/amane-shell/
 /// quick-settings`.
 fn layout_file() -> PathBuf {
-    let state = std::env::var_os("XDG_STATE_HOME")
-        .map(PathBuf::from)
-        .filter(|path| path.is_absolute())
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/state")))
-        .unwrap_or_default();
+    let state = amane_kit::paths::state();
 
     state.join("amane-shell").join("quick-settings")
 }

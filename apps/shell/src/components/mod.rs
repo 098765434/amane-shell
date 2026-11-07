@@ -7,13 +7,10 @@
 //! `docs/kit/components.md` and `docs/kit/controls.md`.
 
 pub mod battery;
-pub mod grid;
 pub mod panel;
-pub mod search_field;
-pub mod text_edit;
 
 pub use amane_kit::{
     app_bar, app_icon, buttons, card, color, control_size, dialog, divider, edge_reveal, flow,
-    glass, glass_region, icons, kinetic, layout, list, material, motion, pager, scroll_view,
-    slider, tooltip,
+    glass, glass_region, grid, icons, kinetic, layout, list, material, motion, pager, reveal,
+    scroll_view, search_field, slider, text_edit, tooltip,
 };

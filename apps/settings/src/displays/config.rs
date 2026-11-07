@@ -277,14 +277,7 @@ fn regex_unescape(text: &str) -> String {
 /// niri's own config, where its symlink leads (into the nixos-config repo
 /// here), so `displays.kdl` lands beside the real file.
 pub fn niri_config() -> PathBuf {
-    let home = std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_default();
-    let link = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .filter(|path| path.is_absolute())
-        .unwrap_or_else(|| home.join(".config"))
-        .join("niri/config.kdl");
+    let link = amane_kit::paths::config().join("niri/config.kdl");
     fs::canonicalize(&link).unwrap_or(link)
 }
 

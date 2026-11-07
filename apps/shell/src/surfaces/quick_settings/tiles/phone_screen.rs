@@ -68,9 +68,7 @@ struct Remembered {
 }
 
 fn file() -> Option<PathBuf> {
-    let config = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))?;
+    let config = amane_kit::paths::config();
     Some(config.join("amane-shell").join("phone-screen.json"))
 }
 

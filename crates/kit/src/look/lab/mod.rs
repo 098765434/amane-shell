@@ -211,11 +211,7 @@ fn written() -> Option<&'static Path> {
     static ROOT: OnceLock<Option<PathBuf>> = OnceLock::new();
 
     ROOT.get_or_init(|| {
-        let root = std::env::var_os("XDG_RUNTIME_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(std::env::temp_dir)
-            .join("amane-shell")
-            .join("lab");
+        let root = crate::paths::runtime().join("amane-shell").join("lab");
 
         write_effects(&root)
             .map_err(|error| eprintln!("amane-kit: {}: {error}", root.display()))

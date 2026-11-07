@@ -12,15 +12,11 @@ const MESSAGING: [&str; 2] = [
 ];
 
 fn config_dir() -> Option<PathBuf> {
-    std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
+    Some(amane_kit::paths::config())
 }
 
 fn cache_dir() -> Option<PathBuf> {
-    std::env::var_os("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))
+    Some(amane_kit::paths::cache())
 }
 
 /// The phone's screen can be shown: adb has the phone at an address KDE

@@ -1015,9 +1015,7 @@ pub const BUILTIN_ACTIVITIES: [&str; 3] = ["Now Playing", "Timer", "Screen Shari
 
 /// A file in the shell's cache folder.
 fn cache_file(name: &str) -> Option<PathBuf> {
-    let cache = std::env::var_os("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))?;
+    let cache = crate::paths::cache();
     Some(cache.join("amane-shell").join(name))
 }
 

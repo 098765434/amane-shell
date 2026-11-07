@@ -39,6 +39,8 @@ use crate::components::icons::{ICON_REMOVE, ICON_RESIZE};
 use crate::components::layout::{boxed, icon};
 use crate::components::material::{self, FillLevel, Level};
 use crate::components::motion::{self, Pose};
+use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
+use crate::surfaces::quick_settings::layout::Stored as _;
 use crate::tokens::{quick, sys};
 
 // TODO(token): `quick.drag.band` once Penpot has it (manual §1.1).

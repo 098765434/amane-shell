@@ -18,6 +18,7 @@ use super::controls::ControlId;
 use super::grid::{Canvas, Place, Span};
 use crate::components::grid::{self, GridKey};
 use crate::services::{save_state, state_file};
+use crate::surfaces::quick_settings::grid::FromTokens as _;
 
 const FILE: &str = "quick-settings";
 const VERSION: u64 = 2;
@@ -54,10 +55,28 @@ pub fn replace(layout: Layout) {
     LAYOUT.with_borrow_mut(|slot| *slot = Some(layout));
 }
 
-impl Layout {
+/// What Quick Settings keeps of its layout: the default, the file, and that every control has
+/// an entry.
+pub trait Stored: Sized {
+    /// The default order packed onto `canvas`, each control at its size, skipping what isn't
+    /// `present` and what hides by default.
+    fn default_for(canvas: Canvas, present: &dyn Fn(ControlId) -> bool) -> Self;
+    /// The layout file, or the default when there's none.
+    fn load(canvas: Canvas, present: &dyn Fn(ControlId) -> bool) -> Self;
+    /// Writes the layout file.
+    fn save(&self);
+    /// `None` for anything but a current layout file.
+    fn parse(canvas: Canvas, text: &str) -> Option<Self>;
+    /// Makes the entries a layout: every control placed where it fits, or hidden.
+    fn reconcile(&mut self);
+    /// The layout file's text.
+    fn to_json(&self) -> String;
+}
+
+impl Stored for Layout {
     /// The default order packed onto `canvas`, each control at its
     /// size, skipping what isn't `present` and what hides by default.
-    pub fn default_for(canvas: Canvas, present: &dyn Fn(ControlId) -> bool) -> Self {
+    fn default_for(canvas: Canvas, present: &dyn Fn(ControlId) -> bool) -> Self {
         let mut layout = Self {
             canvas,
             entries: ControlId::ALL
@@ -77,21 +96,21 @@ impl Layout {
         layout
     }
 
-    pub fn load(canvas: Canvas, present: &dyn Fn(ControlId) -> bool) -> Self {
+    fn load(canvas: Canvas, present: &dyn Fn(ControlId) -> bool) -> Self {
         std::fs::read_to_string(state_file(FILE))
             .ok()
             .and_then(|text| Self::parse(canvas, &text))
             .unwrap_or_else(|| Self::default_for(canvas, present))
     }
 
-    pub fn save(&self) {
+    fn save(&self) {
         save_state(FILE, &self.to_json());
     }
 
     /// `None` for anything but a current layout file. What it places is
     /// kept where it fits, unknown names are dropped, and every other
     /// control is hidden.
-    pub fn parse(canvas: Canvas, text: &str) -> Option<Self> {
+    fn parse(canvas: Canvas, text: &str) -> Option<Self> {
         let value: Value = serde_json::from_str(text).ok()?;
         if value.get("version").and_then(Value::as_u64) != Some(VERSION) {
             return None;
@@ -146,7 +165,7 @@ impl Layout {
         }
     }
 
-    pub fn to_json(&self) -> String {
+    fn to_json(&self) -> String {
         let controls: Vec<Value> = self
             .entries
             .iter()
@@ -171,7 +190,7 @@ impl Layout {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::surfaces::quick_settings::grid::Rect;
+    use crate::surfaces::quick_settings::grid::{Rect, Sizes as _};
 
     const CANVAS: Canvas = Canvas { cols: 4, rows: 8 };
 

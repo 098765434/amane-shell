@@ -7,6 +7,7 @@ pub mod dialog;
 pub mod divider;
 pub mod flow;
 pub mod form;
+pub mod grid;
 pub mod list;
 pub mod scroll_view;
 pub mod tooltip;

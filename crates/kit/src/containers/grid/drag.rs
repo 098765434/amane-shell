@@ -36,21 +36,32 @@ pub enum Drag<K> {
     /// pixels, the cell the preview has it in, where it came from, and
     /// where the pointer last was (the grid's pixels too).
     Move {
+        /// The control.
         id: K,
+        /// Where on it the pointer took hold, from its top-left.
         grab: Point,
+        /// Where its top-left is now, in the grid's pixels.
         at: (f32, f32),
+        /// The cell the preview has it in, if one fits.
         place: Option<Place>,
+        /// Where it came from.
         origin: Origin,
+        /// Where the pointer last was, in the grid's pixels.
         pointer: Point,
     },
     /// A control's corner handle: where the pointer took hold, the control
     /// as it was then, how big the pull has made it, and the size the
     /// preview gives it.
     Resize {
+        /// The control.
         id: K,
+        /// Where the pointer took hold.
         grab: Point,
+        /// The control as it was when the pull began.
         base: Slot,
+        /// How far the pull has moved its corner.
         pulled: (f32, f32),
+        /// The size the preview gives it, if one fits.
         span: Option<Span>,
     },
 }
@@ -58,7 +69,9 @@ pub enum Drag<K> {
 /// What a press on the canvas lands on.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Hit<K> {
+    /// A control itself, where it's drawn.
     Body(K, Slot),
+    /// A control's resize handle.
     Handle(K, Slot),
 }
 
@@ -66,12 +79,16 @@ pub enum Hit<K> {
 /// until a place fits), and what the pointer holds.
 #[derive(Clone, Debug)]
 pub struct Session<K> {
+    /// The layout the drag began from.
     pub base: Layout<K>,
+    /// The layout it would leave, once a place fits.
     pub preview: Option<Layout<K>>,
+    /// What the pointer holds.
     pub drag: Drag<K>,
 }
 
 impl<K: GridKey> Session<K> {
+    /// A drag starting over `base`, with no preview yet.
     pub fn new(base: Layout<K>, drag: Drag<K>) -> Self {
         Self {
             base,

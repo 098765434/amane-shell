@@ -77,10 +77,7 @@ pub fn folder() -> &'static Path {
             return parent.join("configs");
         }
 
-        let config = std::env::var_os("XDG_CONFIG_HOME")
-            .map(PathBuf::from)
-            .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
-            .unwrap_or_else(std::env::temp_dir);
+        let config = amane_kit::paths::config();
 
         config.join("amane-shader-lab").join("configs")
     })

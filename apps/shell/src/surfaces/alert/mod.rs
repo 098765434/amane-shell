@@ -15,7 +15,7 @@ pub mod vault_unlock;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use amane::{Animation, Blend, Horizontal, Keyboard, LayerWindow, Rectangle, Vertical};
+use amane::{Blend, Horizontal, Keyboard, LayerWindow, Rectangle, Vertical};
 
 use crate::components::dialog::Dialog;
 use crate::components::glass_region;
@@ -23,6 +23,7 @@ use crate::components::layout::blank;
 use crate::components::material::Material;
 use crate::components::motion;
 use crate::components::panel::overlay;
+use crate::components::reveal::Reveal;
 use crate::tokens::dialog;
 
 amane_kit::marker! {
@@ -49,8 +50,7 @@ thread_local! {
 
     // whether it's open, and how far it has swelled in
     static OPEN: Cell<bool> = const { Cell::new(false) };
-    static UNFOLD: RefCell<Animation> = RefCell::new(motion::pop(0.0));
-    static OPENING: Cell<bool> = const { Cell::new(false) };
+    static UNFOLD: RefCell<Reveal> = RefCell::new(Reveal::new());
 }
 
 /// Shows `alert`, in place of any alert already showing.
@@ -74,13 +74,7 @@ pub fn close() {
 /// Steps the card's opening towards `open` and gives how far it is, a
 /// little past 1 on the spring. Closing is quicker than opening.
 fn unfold(open: bool) -> f32 {
-    UNFOLD.with_borrow_mut(|anim| {
-        if OPENING.replace(open) != open {
-            anim.retime(if open { motion::POP } else { motion::CLOSE });
-            anim.to(if open { 1.0 } else { 0.0 });
-        }
-        anim.value()
-    })
+    UNFOLD.with_borrow_mut(|reveal| reveal.step(open))
 }
 
 /// The surface: hidden while no alert shows, else the card, swelling in.

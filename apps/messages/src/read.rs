@@ -16,9 +16,7 @@ thread_local! {
 }
 
 fn path() -> Option<PathBuf> {
-    let cache = std::env::var_os("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))?;
+    let cache = amane_kit::paths::cache();
     Some(cache.join("amane-shell/messages/read.json"))
 }
 

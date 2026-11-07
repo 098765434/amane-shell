@@ -91,12 +91,7 @@ pub fn watch() {
 
 /// `displays.kdl`, beside the file `~/.config/niri/config.kdl` leads to.
 fn displays_file() -> PathBuf {
-    let config = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .filter(|path| path.is_absolute())
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
-        .unwrap_or_default()
-        .join("niri/config.kdl");
+    let config = amane_kit::paths::config().join("niri/config.kdl");
     fs::canonicalize(&config)
         .unwrap_or(config)
         .with_file_name("displays.kdl")

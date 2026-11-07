@@ -5,3 +5,4 @@ pub mod edge_reveal;
 pub mod kinetic;
 pub mod motion;
 pub mod pager;
+pub mod reveal;

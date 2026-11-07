@@ -23,7 +23,6 @@
 mod catalog;
 
 use std::cell::{Cell, RefCell};
-use std::time::{Duration, Instant};
 
 use amane::{
     Animation, Blend, BlurShape, Center, Color, Cursor, Key, Parent, Point, Rectangle, Row, Scroll,
@@ -42,9 +41,10 @@ use crate::components::layout::{boxed, caption, pad, split_row, text_height, wra
 use crate::components::list::{self, List, ListItem};
 use crate::components::material::{self, Level, Material};
 use crate::components::motion;
-use crate::components::scroll_view::ScrollView;
+use crate::components::scroll_view::{ScrollView, ScrollbarFade};
 use crate::components::search_field::SearchField;
 use crate::components::text_edit::Field;
+use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{Styled, quick, sys};
 
 pub(super) use catalog::Category;
@@ -63,8 +63,6 @@ const INSET: f32 = 24.0;
 const OPEN_SCALE: f32 = 0.96;
 /// How far one wheel notch scrolls the pane.
 const WHEEL_STEP: f32 = 60.0;
-/// How long the scrollbar stays after the pane last moved.
-const SCROLLBAR_IDLE: Duration = Duration::from_millis(800);
 
 /// A rectangle in the surface's pixels.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -102,8 +100,6 @@ struct State {
     // surface (clipped to the pane), for a press to find what's under it
     tiles: Vec<(ControlId, Area)>,
     // when the pane last moved, and when the scrollbar is next due to fade
-    scrolled: Option<Instant>,
-    fade_due: Option<Instant>,
 }
 
 impl State {
@@ -112,8 +108,6 @@ impl State {
             field: Field::new(),
             category: Category::AllControls,
             tiles: Vec::new(),
-            scrolled: None,
-            fade_due: None,
         }
     }
 }
@@ -128,7 +122,7 @@ thread_local! {
     static SCROLL: RefCell<Kinetic> = RefCell::new(Kinetic::new());
     static SIDE_SCROLL: RefCell<Kinetic> = RefCell::new(Kinetic::new());
     // 0 … 1: the scrollbar, showing while the pane moves
-    static SCROLLBAR: RefCell<Animation> = RefCell::new(motion::fade(0.0, motion::FADE));
+    static SCROLLBAR: RefCell<ScrollbarFade> = RefCell::new(ScrollbarFade::new());
     // where the canvas's top-left is on the surface this frame: a press on
     // the surface is measured from it
     static CANVAS_ORIGIN: Cell<(f32, f32)> = const { Cell::new((0.0, 0.0)) };
@@ -174,7 +168,7 @@ pub(super) fn hidden() {
     with(|state| *state = State::new());
     SCROLL.with_borrow_mut(|scroll| *scroll = Kinetic::new());
     SIDE_SCROLL.with_borrow_mut(|scroll| *scroll = Kinetic::new());
-    SCROLLBAR.with_borrow_mut(|bar| *bar = motion::fade(0.0, motion::FADE));
+    SCROLLBAR.with_borrow_mut(ScrollbarFade::reset);
     OPENING.set(false);
     OPEN.with_borrow_mut(|open| *open = motion::pop(0.0));
 }
@@ -235,7 +229,7 @@ fn on_canvas(p: Point) -> Point {
 
 /// The pane moved: the scrollbar shows for a while.
 fn moved() {
-    with(|state| state.scrolled = Some(Instant::now()));
+    SCROLLBAR.with_borrow_mut(ScrollbarFade::moved);
 }
 
 fn on_pane_scroll(scroll: Scroll) {
@@ -750,21 +744,7 @@ fn footer(width: f32, height: f32) -> Rectangle {
 
 /// How much the scrollbar shows: while the pane moves, and a little after.
 fn scrollbar() -> f32 {
-    let now = Instant::now();
-    let (scrolled, due) = with(|state| (state.scrolled, state.fade_due));
-    let showing = scrolled.is_some_and(|at| now.duration_since(at) < SCROLLBAR_IDLE);
-    // a timer asks for the frame when the scrollbar is due to fade
-    if let Some(at) = scrolled.filter(|_| showing)
-        && due.is_none_or(|due| now >= due)
-    {
-        let due = at + SCROLLBAR_IDLE;
-        with(|state| state.fade_due = Some(due));
-        motion::redraw_after::<super::QuickSettings>(due.saturating_duration_since(now));
-    }
-    SCROLLBAR.with_borrow_mut(|bar| {
-        bar.to(if showing { 1.0 } else { 0.0 });
-        bar.value().clamp(0.0, 1.0)
-    })
+    SCROLLBAR.with_borrow_mut(|bar| bar.opacity::<super::QuickSettings>())
 }
 
 #[cfg(test)]

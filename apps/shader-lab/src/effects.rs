@@ -96,10 +96,7 @@ pub fn folder() -> &'static Path {
             return PathBuf::from(dir);
         }
 
-        let root = std::env::var_os("XDG_RUNTIME_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(std::env::temp_dir)
-            .join("amane-shader-lab");
+        let root = amane_kit::paths::runtime().join("amane-shader-lab");
 
         if let Err(error) = amane_kit::lab::write_effects(&root) {
             eprintln!("amane-shader-lab: {}: {error}", root.display());

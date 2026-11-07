@@ -22,6 +22,7 @@ use crate::services::network::rfkill::Rfkill;
 use crate::services::network::tailscale::Tailscale;
 use crate::services::power::keep_awake::KeepAwake;
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
+use crate::surfaces::quick_settings::grid::Sizes as _;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ControlId {

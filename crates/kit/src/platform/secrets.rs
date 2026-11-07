@@ -141,9 +141,7 @@ pub fn kept_in_file(app: &str) -> bool {
 }
 
 fn secrets_file(app: &str) -> Option<PathBuf> {
-    let config = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))?;
+    let config = crate::paths::config();
     Some(config.join(app).join("secrets.json"))
 }
 

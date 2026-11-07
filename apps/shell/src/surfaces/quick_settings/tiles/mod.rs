@@ -40,6 +40,7 @@ use crate::components::material::{self, Level, Material};
 use crate::components::motion::{self, Arrive, Item, Pose};
 use crate::components::panel::close;
 use crate::services::installed;
+use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{Styled, quick, sys};
 
 /// Every control's motion is kept under this scope.

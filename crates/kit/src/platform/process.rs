@@ -27,11 +27,11 @@ pub fn run_now(program: &str, args: &[String]) -> Option<String> {
         Ok(out) if out.status.success() => Some(String::from_utf8_lossy(&out.stdout).into_owned()),
         Ok(out) => {
             let err = String::from_utf8_lossy(&out.stderr);
-            eprintln!("amane-shell: {program}: {}", err.trim());
+            eprintln!("{program}: {}", err.trim());
             None
         }
         Err(e) => {
-            eprintln!("amane-shell: {program}: {e}");
+            eprintln!("{program}: {e}");
             None
         }
     }
@@ -62,7 +62,14 @@ pub struct Latest<T> {
     busy: AtomicBool,
 }
 
+impl<T: Send + 'static> Default for Latest<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Send + 'static> Latest<T> {
+    /// Nothing waiting yet; a `static` holds one.
     pub const fn new() -> Self {
         Self {
             next: Mutex::new(None),
@@ -70,6 +77,8 @@ impl<T: Send + 'static> Latest<T> {
         }
     }
 
+    /// Applies `value` with `apply` on a worker thread, unless a newer value comes before the
+    /// worker gets to it.
     pub fn send(&'static self, value: T, apply: fn(T)) {
         *self.next.lock().unwrap_or_else(|e| e.into_inner()) = Some(value);
         if self.busy.swap(true, Ordering::AcqRel) {

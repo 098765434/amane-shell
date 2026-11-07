@@ -24,6 +24,7 @@ use crate::components::icons::{
 use crate::components::layout::{boxed, icon, pad};
 use crate::components::material::{self, FillLevel, Level};
 use crate::surfaces::quick_settings::QuickSettings;
+use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{quick, sys};
 
 /// What the card shows.
@@ -119,10 +120,7 @@ pub(crate) fn art_path(url: &str) -> Option<String> {
 fn art_cache(url: &str) -> PathBuf {
     let mut hasher = DefaultHasher::new();
     url.hash(&mut hasher);
-    let base = std::env::var_os("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))
-        .unwrap_or_else(std::env::temp_dir);
+    let base = amane_kit::paths::cache();
     base.join("amane-shell")
         .join("art")
         .join(format!("{:016x}", hasher.finish()))

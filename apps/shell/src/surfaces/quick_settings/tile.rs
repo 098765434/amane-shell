@@ -36,6 +36,7 @@ use crate::components::layout::{boxed, icon, pad, text_height, text_width};
 use crate::components::material::{self, FillLevel, Level, Material};
 use crate::components::motion;
 use crate::components::tooltip;
+use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::tokens::{Styled, TextStyle, quick, sys};
 
 /// Which of Quick Settings' shapes a toggle takes.
