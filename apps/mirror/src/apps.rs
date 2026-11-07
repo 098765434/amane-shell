@@ -5,38 +5,9 @@
 //! the list is missing or a day old.
 
 use amane_kit::args::flag;
-use std::path::PathBuf;
-
-use amane::serde::{Deserialize, Serialize};
+use amane_phone::shared::apps::{self, App, List};
 
 use crate::server;
-
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "amane::serde")]
-pub struct App {
-    pub name: String,
-    pub package: String,
-    pub system: bool,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "amane::serde")]
-pub struct List {
-    /// KDE Connect's id for the phone.
-    pub device: String,
-    /// When it was listed, in seconds since 1970.
-    pub updated: u64,
-    pub apps: Vec<App>,
-}
-
-pub fn file() -> Option<PathBuf> {
-    let cache = amane_kit::paths::cache();
-    Some(
-        cache
-            .join(amane_kit::app_ids::SHELL)
-            .join("phone-apps.json"),
-    )
-}
 
 pub fn write(args: &[String]) -> Result<(), String> {
     let serial = flag(args, "--serial").ok_or("--list-apps needs --serial")?;
@@ -57,7 +28,6 @@ pub fn write(args: &[String]) -> Result<(), String> {
         apps,
     };
 
-    let path = file().ok_or("no cache directory")?;
     // whole, so the shell never reads half of it
-    amane_kit::fs::save_json(&path, &list).map_err(|error| error.to_string())
+    apps::write(&list).map_err(|error| error.to_string())
 }

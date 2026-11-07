@@ -23,28 +23,16 @@ pub fn screen_available(device: &PhoneDevice) -> bool {
     }
     drop(adb);
 
-    std::fs::read_to_string(amane_kit::paths::config().join("amane-shell/phone-screen.json"))
-        .is_ok_and(|text| text.contains(&format!("\"{}\"", device.id())))
+    amane_phone::shared::screen::set_up(device.id())
 }
 
 /// The phone's messaging app, its package and name, from the list of its
 /// apps `amane-mirror --list-apps` keeps.
 pub fn messaging_app(device: &PhoneDevice) -> Option<(String, String)> {
-    let text =
-        std::fs::read_to_string(amane_kit::paths::cache().join("amane-shell/phone-apps.json"))
-            .ok()?;
-    let list: serde_json::Value = serde_json::from_str(&text).ok()?;
-    if list.get("device").and_then(|id| id.as_str()) != Some(device.id()) {
-        return None;
-    }
-    let apps = list.get("apps")?.as_array()?;
+    let list = amane_phone::shared::apps::read().filter(|list| list.device == device.id())?;
     MESSAGING.iter().find_map(|wanted| {
-        apps.iter().find_map(|app| {
-            (app.get("package")?.as_str()? == *wanted).then(|| {
-                let name = app.get("name").and_then(|name| name.as_str());
-                (wanted.to_string(), name.unwrap_or("Messages").to_string())
-            })
-        })
+        let app = list.apps.iter().find(|app| app.package == *wanted)?;
+        Some((app.package.clone(), app.name.clone()))
     })
 }
 

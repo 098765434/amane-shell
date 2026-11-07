@@ -10,6 +10,7 @@
 
 mod adb;
 mod kdeconnect;
+pub mod shared;
 
 pub use adb::run as adb;
 pub use adb::{Adb, AdbAction, AdbDevice, AdbOperation, AdbState, WirelessKind, WirelessService};
