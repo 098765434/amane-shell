@@ -6,7 +6,6 @@
 //! unfree ones. The same read checks a package before **Add** writes it.
 
 use std::collections::HashMap;
-use std::process::{Command, Stdio};
 use std::sync::{Mutex, PoisonError};
 use std::thread;
 
@@ -23,9 +22,10 @@ use serde::Deserialize;
 use super::apps::{PACKAGES, Standing, change_packages, present, standing};
 use super::catalog::{Catalog, Named};
 use super::installed::Launchers;
-use super::nixos::{Managed, Snapshot, failure, host, repo};
+use super::nixos::{Managed, Snapshot, host, repo};
 use crate::View;
 use crate::{group, note, page_width};
+use amane_process::Cmd;
 
 /// What `--apply` makes of the package: plain JSON whatever the meta's shape.
 const APPLY: &str = r#"p: let
@@ -169,7 +169,7 @@ pub fn meta(attr: &str) -> Result<Meta, String> {
         attr_path(&host()),
         attr_path(attr)
     );
-    let output = Command::new("nix")
+    let output = Cmd::new("nix")
         .args([
             "eval",
             "--json",
@@ -178,23 +178,16 @@ pub fn meta(attr: &str) -> Result<Meta, String> {
             "--apply",
             APPLY,
         ])
-        .current_dir(repo())
-        .env("NO_COLOR", "1")
-        .stdin(Stdio::null())
+        .dir(repo())
         .output()
-        .map_err(|error| format!("nix: {error}"))?;
-    if !output.status.success() {
-        let text = String::from_utf8_lossy(&output.stderr);
-        if text.contains("does not provide attribute") {
-            return Err(format!("{attr} isn't in this nixpkgs."));
-        }
-        return Err(failure(
-            &output.stderr,
-            &output.stdout,
-            output.status.code(),
-        ));
-    }
-    let meta: Meta = serde_json::from_slice(&output.stdout).map_err(|error| error.to_string())?;
+        .map_err(|failure| {
+            if failure.output.stderr.contains("does not provide attribute") {
+                format!("{attr} isn't in this nixpkgs.")
+            } else {
+                failure.message
+            }
+        })?;
+    let meta: Meta = serde_json::from_str(&output.stdout).map_err(|error| error.to_string())?;
     KNOWN
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
@@ -411,12 +404,9 @@ pub fn view() -> Column {
                 .trailing(
                     PushButton::new("settings.package.homepage.open", "Open")
                         .on_press(move || {
-                            let _ = Command::new("xdg-open")
-                                .arg(&url)
-                                .stdin(Stdio::null())
-                                .stdout(Stdio::null())
-                                .stderr(Stdio::null())
-                                .spawn();
+                            if let Err(error) = Cmd::new("xdg-open").arg(&url).detach() {
+                                log::warn!("couldn't open {url}: {error}");
+                            }
                         })
                         .build(),
                 )

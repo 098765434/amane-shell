@@ -1,9 +1,11 @@
 //! Running programs off the UI thread, and the newest of a run of values
-//! applied on a worker.
+//! applied on a worker. The runner itself is [`amane_process`], whose
+//! [`Cmd`] is here too.
+
+pub use amane_process::{Cmd, Failure, Output, Running, Stopper};
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -19,20 +21,10 @@ pub fn run(program: &'static str, args: Vec<String>) {
 /// Runs `program` with `args` to the end and gives its stdout, or `None`
 /// when it couldn't start or failed. Blocks, so never call it from a view.
 pub fn run_now(program: &str, args: &[String]) -> Option<String> {
-    let output = Command::new(program)
-        .args(args)
-        .stdin(Stdio::null())
-        .stderr(Stdio::piped())
-        .output();
-    match output {
-        Ok(out) if out.status.success() => Some(String::from_utf8_lossy(&out.stdout).into_owned()),
-        Ok(out) => {
-            let err = String::from_utf8_lossy(&out.stderr);
-            log::warn!("{program}: {}", err.trim());
-            None
-        }
-        Err(e) => {
-            log::warn!("{program}: {e}");
+    match Cmd::new(program).args(args).stdout() {
+        Ok(out) => Some(out),
+        Err(message) => {
+            log::warn!("{program}: {message}");
             None
         }
     }

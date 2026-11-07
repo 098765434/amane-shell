@@ -11,7 +11,6 @@ use amane_kit::form::FormRow;
 use amane_kit::spinner::ProgressBar;
 
 use super::controls;
-use super::nixos::run;
 use crate::{group, groups};
 
 /// Used and total bytes of the file system at `path`.
@@ -107,17 +106,15 @@ fn grouped(n: usize) -> String {
 
 /// Runs `args` through nix, which reports on stderr.
 fn nix_said(program: &str, args: &[&str]) -> Result<String, String> {
-    let output = std::process::Command::new(program)
-        .args(args)
-        .stdin(std::process::Stdio::null())
-        .output()
-        .map_err(|error| error.to_string())?;
-    let text = String::from_utf8_lossy(&output.stderr).into_owned()
-        + &String::from_utf8_lossy(&output.stdout);
-    if output.status.success() {
-        Ok(text)
-    } else {
-        Err(text.lines().last().unwrap_or("").trim().to_string())
+    match amane_process::Cmd::new(program).args(args).output() {
+        Ok(output) => Ok(output.stderr + &output.stdout),
+        Err(failure) => {
+            let text = failure.output.stderr + &failure.output.stdout;
+            match text.lines().last() {
+                Some(line) => Err(line.trim().to_string()),
+                None => Err(failure.message),
+            }
+        }
     }
 }
 
@@ -190,7 +187,6 @@ fn meter(id: &str, title: &str, path: &str) -> FormRow {
 
 pub fn page() -> Column {
     let garbage = Garbage::read();
-    let _ = run; // the dry run goes through Command for its stderr
 
     let found = if garbage.running {
         String::from("Looking…")

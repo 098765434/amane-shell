@@ -130,7 +130,11 @@ pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
                     .on_press(move || {
                         let folder = folder.clone();
                         std::thread::spawn(move || {
-                            let _ = std::process::Command::new("xdg-open").arg(&folder).status();
+                            if let Err(failure) =
+                                amane_process::Cmd::new("xdg-open").arg(&folder).status()
+                            {
+                                log::warn!("couldn't show {}: {failure}", folder.display());
+                            }
                         });
                     })
                     .build(),

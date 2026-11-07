@@ -79,6 +79,7 @@ dependencies = [
  "amane-kit",
  "amane-log",
  "amane-phone",
+ "amane-process",
  "amane-status",
  "log",
  "serde_json",
@@ -89,6 +90,7 @@ name = "amane-kit"
 version = "0.1.0"
 dependencies = [
  "amane",
+ "amane-process",
  "fontconfig",
  "log",
  "serde_json",
@@ -151,12 +153,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "amane-process"
+version = "0.1.0"
+
+[[package]]
 name = "amane-settings"
 version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
  "amane-log",
+ "amane-process",
  "chrono",
  "drm",
  "libc",
@@ -212,6 +219,7 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-log",
+ "amane-process",
  "amane-status",
  "log",
 ]

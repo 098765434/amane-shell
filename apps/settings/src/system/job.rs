@@ -7,19 +7,18 @@
 
 use std::collections::VecDeque;
 use std::fs;
-use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant};
 
 use amane::{Notify, Service};
+use amane_process::{Cmd, Failure, Stopper};
 use serde_json::Value;
 
 use super::generations::Generations;
-use super::nixos::{Managed, Snapshot, failure, git, host, repo};
+use super::nixos::{Managed, Snapshot, git, host, repo};
 use super::repo::{Applied, Repo, Running, Toplevel};
 use super::state_dir;
 use super::update::{self, InputChange};
@@ -196,7 +195,8 @@ pub struct BuildJob {
     then: Option<Mode>,
 }
 
-static CHILD: Mutex<Option<Child>> = Mutex::new(None);
+// what stops the command the job is running
+static CHILD: Mutex<Option<Stopper>> = Mutex::new(None);
 static CANCELLED: AtomicBool = AtomicBool::new(false);
 
 impl Service for BuildJob {
@@ -350,9 +350,9 @@ impl BuildJob {
         if let Some(child) = CHILD
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .as_mut()
+            .as_ref()
         {
-            let _ = child.kill();
+            child.stop();
         }
     }
 
@@ -409,32 +409,28 @@ fn relock(lock: &Path, inputs: &[String]) -> Result<Vec<InputChange>, Option<(St
     if let Some(folder) = lock.parent() {
         fs::create_dir_all(folder).map_err(|e| Some((Stage::Lock, e.to_string())))?;
     }
-    let mut command = Command::new("nix");
-    command.args(["flake", "update"]).args(inputs).args([
-        "--flake",
-        &repo.to_string_lossy(),
-        "--output-lock-file",
-        &lock.to_string_lossy(),
-        "--no-warn-dirty",
-    ]);
-    let child = command
-        .current_dir(&repo)
-        .env("NO_COLOR", "1")
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+    let running = Cmd::new("nix")
+        .args(["flake", "update"])
+        .args(inputs)
+        .arg("--flake")
+        .arg(&repo)
+        .arg("--output-lock-file")
+        .arg(lock)
+        .arg("--no-warn-dirty")
+        .dir(&repo)
         .spawn()
         .map_err(|error| Some((Stage::Lock, format!("nix: {error}"))))?;
-    *CHILD.lock().unwrap_or_else(PoisonError::into_inner) = Some(child);
-    let child = CHILD.lock().unwrap_or_else(PoisonError::into_inner).take();
-    let output = child
-        .map(Child::wait_with_output)
-        .ok_or(None)?
-        .map_err(|error| Some((Stage::Lock, error.to_string())))?;
+    *CHILD.lock().unwrap_or_else(PoisonError::into_inner) = Some(running.stopper());
+    let result = running.finish();
+    CHILD.lock().unwrap_or_else(PoisonError::into_inner).take();
 
     {
+        let stderr = match &result {
+            Ok(output) => &output.stderr,
+            Err(failure) => &failure.output.stderr,
+        };
         let mut job = BuildJob::write();
-        for line in String::from_utf8_lossy(&output.stderr).lines() {
+        for line in stderr.lines() {
             let line = strip_ansi(line);
             if !line.trim().is_empty() {
                 job.note(line);
@@ -444,12 +440,7 @@ fn relock(lock: &Path, inputs: &[String]) -> Result<Vec<InputChange>, Option<(St
     if CANCELLED.load(Ordering::SeqCst) {
         return Err(None);
     }
-    if !output.status.success() {
-        return Err(Some((
-            Stage::Lock,
-            failure(&output.stderr, &output.stdout, output.status.code()),
-        )));
-    }
+    result.map_err(|failure| Some((Stage::Lock, failure.message)))?;
 
     let old = fs::read_to_string(repo.join("flake.lock")).unwrap_or_default();
     let new = fs::read_to_string(lock).map_err(|e| Some((Stage::Lock, e.to_string())))?;
@@ -464,8 +455,7 @@ fn build(reference_lock: Option<&Path>) -> Result<PathBuf, Option<(Stage, String
         repo().display(),
         host()
     );
-    let mut command = Command::new("nix");
-    command.args([
+    let mut command = Cmd::new("nix").args([
         "build",
         "--no-link",
         "--print-out-paths",
@@ -474,44 +464,29 @@ fn build(reference_lock: Option<&Path>) -> Result<PathBuf, Option<(Stage, String
         "--no-warn-dirty",
     ]);
     if let Some(lock) = reference_lock {
-        command.arg("--reference-lock-file").arg(lock);
+        command = command.arg("--reference-lock-file").arg(lock);
     }
-    let mut child = command
+    let mut running = command
         .arg(&flake)
-        .current_dir(repo())
-        .env("NO_COLOR", "1")
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .dir(repo())
         .spawn()
         .map_err(|error| Some((Stage::Build, format!("nix: {error}"))))?;
+    *CHILD.lock().unwrap_or_else(PoisonError::into_inner) = Some(running.stopper());
 
-    let stderr = child.stderr.take();
-    let stdout = child.stdout.take();
-    *CHILD.lock().unwrap_or_else(PoisonError::into_inner) = Some(child);
-
-    // the log, until nix is done with it
+    // the log, until nix is done with it; what it said is in the job's log
     let mut follow = Follow::default();
-    if let Some(stderr) = stderr {
-        for line in BufReader::new(stderr).lines().map_while(Result::ok) {
-            follow.line(&line);
-        }
-    }
+    running.each_stderr_line(|line| follow.line(line));
     follow.flush(true);
 
-    let mut out = String::new();
-    if let Some(mut stdout) = stdout {
-        let _ = stdout.read_to_string(&mut out);
-    }
-    let child = CHILD.lock().unwrap_or_else(PoisonError::into_inner).take();
-    let status = child.and_then(|mut child| child.wait().ok());
+    let result = running.finish();
+    CHILD.lock().unwrap_or_else(PoisonError::into_inner).take();
 
     if CANCELLED.load(Ordering::SeqCst) {
         return Err(None);
     }
-    match status {
-        Some(status) if status.success() => {
-            let path = out.lines().last().unwrap_or("").trim();
+    match result {
+        Ok(output) => {
+            let path = output.stdout.lines().last().unwrap_or("").trim();
             if path.starts_with("/nix/store/") {
                 Ok(PathBuf::from(path))
             } else {
@@ -521,7 +496,7 @@ fn build(reference_lock: Option<&Path>) -> Result<PathBuf, Option<(Stage, String
                 )))
             }
         }
-        _ => {
+        Err(_) => {
             let stage = if follow.saw_builds {
                 Stage::Build
             } else {
@@ -736,20 +711,12 @@ fn compare_then(out: PathBuf) {
 }
 
 fn compare(out: &Path) -> Result<Built, String> {
-    let raw = Command::new("nix")
+    // a failed comparison shows its error in place of the changes
+    let raw = Cmd::new("nix")
         .args(["store", "diff-closures", "/run/current-system"])
         .arg(out)
-        .env("NO_COLOR", "1")
-        .stdin(Stdio::null())
-        .output()
-        .map(|output| {
-            if output.status.success() {
-                String::from_utf8_lossy(&output.stdout).into_owned()
-            } else {
-                failure(&output.stderr, &output.stdout, output.status.code())
-            }
-        })
-        .unwrap_or_else(|error| error.to_string());
+        .stdout()
+        .unwrap_or_else(|message| message);
 
     let needs_restart = ["kernel", "initrd", "kernel-modules"].iter().any(|part| {
         fs::read_link(out.join(part)).ok()
@@ -799,19 +766,20 @@ fn switch(out: &Path, mode: Mode) -> Result<(), String> {
              (sudo nixos-rebuild switch) to a configuration with modules/managed.nix",
         )
     })?;
-    let output = Command::new("pkexec")
+    match Cmd::new("pkexec")
         .arg(helper)
         .arg(mode.arg())
         .arg(out)
-        .stdin(Stdio::null())
         .output()
-        .map_err(|error| format!("pkexec: {error}"))?;
-
-    match output.status.code() {
-        Some(0) => Ok(()),
-        Some(126) => Err(String::from("Cancelled")),
-        Some(127) => Err(String::from("Not authorised")),
-        code => Err(failure(&output.stderr, &output.stdout, code)),
+    {
+        Ok(_) => Ok(()),
+        Err(Failure {
+            code: Some(126), ..
+        }) => Err(String::from("Cancelled")),
+        Err(Failure {
+            code: Some(127), ..
+        }) => Err(String::from("Not authorised")),
+        Err(failure) => Err(failure.message),
     }
 }
 

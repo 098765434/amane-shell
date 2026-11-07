@@ -8,13 +8,13 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 
 use amane::{Service, watch_file};
 use amane_kit::settings::nixos;
+use amane_process::Cmd;
 
 use super::xkb;
 use serde_json::Value;
@@ -38,45 +38,11 @@ pub fn host() -> String {
 /// Runs a program to its end (so off the UI thread): what it printed on
 /// success, else the last lines of what it said.
 pub fn run(program: &str, args: &[&str], cwd: Option<&Path>) -> Result<String, String> {
-    let mut command = Command::new(program);
-    command.args(args).stdin(Stdio::null()).env("NO_COLOR", "1");
+    let mut command = Cmd::new(program).args(args);
     if let Some(cwd) = cwd {
-        command.current_dir(cwd);
+        command = command.dir(cwd);
     }
-    let output = command
-        .output()
-        .map_err(|error| format!("{program}: {error}"))?;
-
-    if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
-    } else {
-        Err(failure(
-            &output.stderr,
-            &output.stdout,
-            output.status.code(),
-        ))
-    }
-}
-
-/// The last lines a failed command said: nix puts the error itself last.
-pub fn failure(stderr: &[u8], stdout: &[u8], code: Option<i32>) -> String {
-    let stderr = String::from_utf8_lossy(stderr);
-    let stdout = String::from_utf8_lossy(stdout);
-    let said: Vec<&str> = stderr
-        .lines()
-        .chain(stdout.lines())
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with("warning: Git tree"))
-        .collect();
-
-    if said.is_empty() {
-        return match code {
-            Some(code) => format!("exited with {code}"),
-            None => String::from("stopped by a signal"),
-        };
-    }
-
-    said[said.len().saturating_sub(12)..].join("\n")
+    command.stdout()
 }
 
 /// Runs git in the repo, syncing what it writes: git leaves loose objects

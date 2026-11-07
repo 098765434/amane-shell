@@ -12,7 +12,7 @@ use std::time::Duration;
 use amane::Service;
 
 use super::drm;
-use crate::system::nixos::run;
+use amane_process::Cmd;
 
 /// The VCP features the page sets.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -128,18 +128,13 @@ impl Ddc {
                 return;
             }
             let (bus, value) = target;
-            let _ = run(
-                "ddcutil",
-                &[
-                    "--bus",
-                    &bus.to_string(),
-                    "--noverify",
-                    "setvcp",
-                    feature.code(),
-                    &value.to_string(),
-                ],
-                None,
-            );
+            let set = Cmd::new("ddcutil")
+                .args(["--bus", &bus.to_string(), "--noverify", "setvcp"])
+                .args([feature.code(), &value.to_string()])
+                .stdout();
+            if let Err(message) = set {
+                log::warn!("ddcutil setvcp {}: {message}", feature.code());
+            }
         });
     }
 }
@@ -159,19 +154,17 @@ fn ask(connector: &str) -> Monitor {
         return Monitor::Silent;
     };
     let get = |feature: Feature| {
-        run(
-            "ddcutil",
-            &[
+        Cmd::new("ddcutil")
+            .args([
                 "--bus",
                 &bus.to_string(),
                 "--brief",
                 "getvcp",
                 feature.code(),
-            ],
-            None,
-        )
-        .ok()
-        .and_then(|out| parse_brief(&out))
+            ])
+            .stdout()
+            .ok()
+            .and_then(|out| parse_brief(&out))
     };
     let brightness = get(Feature::Brightness);
     if brightness.is_none() {

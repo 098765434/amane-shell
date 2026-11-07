@@ -3,20 +3,16 @@
 //! The layout list is read once; variants once per layout.
 
 use std::collections::BTreeMap;
-use std::process::Command;
 use std::sync::{Mutex, OnceLock, PoisonError};
 
 static LAYOUTS: OnceLock<Vec<String>> = OnceLock::new();
 static VARIANTS: Mutex<BTreeMap<String, Vec<String>>> = Mutex::new(BTreeMap::new());
 
 fn localectl(args: &[&str]) -> String {
-    Command::new("localectl")
+    // no list is nothing to check against: what's typed is let through
+    amane_process::Cmd::new("localectl")
         .args(args)
-        .env("NO_COLOR", "1")
-        .output()
-        .ok()
-        .filter(|out| out.status.success())
-        .map(|out| String::from_utf8_lossy(&out.stdout).into_owned())
+        .stdout()
         .unwrap_or_default()
 }
 

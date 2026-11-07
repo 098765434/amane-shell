@@ -5,7 +5,6 @@
 //! installed, from Settings, the repo's `.nix` files and Flatpak, is one
 //! list ([`super::inventory`]).
 
-use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, PoisonError};
 use std::thread;
@@ -20,13 +19,14 @@ use amane_kit::icons::ICON_PACKAGE;
 use amane_kit::layout::icon;
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::sys;
+use amane_process::{Cmd, Stopper};
 use serde_json::Value;
 
 use super::catalog::{self, Catalog, Named};
 use super::controls::{self, Feedback};
 use super::installed::Launchers;
 use super::inventory::{self, FileAttrs};
-use super::nixos::{Entry, Managed, Snapshot, failure, repo, run, strings};
+use super::nixos::{Entry, Managed, Snapshot, repo, run, strings};
 use super::package::Details;
 use crate::{group, groups};
 
@@ -70,7 +70,9 @@ pub struct Search {
     pub queued: Option<String>,
 }
 
-static SEARCH_CHILD: Mutex<Option<Child>> = Mutex::new(None);
+// what stops the search running, and which search is the latest
+static SEARCH_CHILD: Mutex<Option<Stopper>> = Mutex::new(None);
+static SEARCHES: AtomicU64 = AtomicU64::new(0);
 
 // the latest keystroke, so a pause that's been typed over doesn't search
 static TYPED: AtomicU64 = AtomicU64::new(0);
@@ -276,57 +278,39 @@ impl Search {
             now.queued = None;
         }
         // a search still running is for an older query
-        if let Some(mut old) = SEARCH_CHILD
+        let this = SEARCHES.fetch_add(1, Ordering::SeqCst) + 1;
+        if let Some(old) = SEARCH_CHILD
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .take()
         {
-            let _ = old.kill();
+            old.stop();
         }
 
         thread::spawn(move || {
             let repo = repo();
-            let child = Command::new("nix")
-                .args([
-                    "search",
-                    "--json",
-                    "--no-warn-dirty",
-                    "--inputs-from",
-                    &repo.to_string_lossy(),
-                    "nixpkgs",
-                    &query,
-                ])
-                .current_dir(&repo)
-                .env("NO_COLOR", "1")
-                .stdin(Stdio::null())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
+            let child = Cmd::new("nix")
+                .args(["search", "--json", "--no-warn-dirty", "--inputs-from"])
+                .arg(&repo)
+                .args(["nixpkgs", &query])
+                .dir(&repo)
                 .spawn();
             let result = match child {
-                Ok(child) => {
-                    *SEARCH_CHILD.lock().unwrap_or_else(PoisonError::into_inner) = Some(child);
-                    let child = SEARCH_CHILD
-                        .lock()
-                        .unwrap_or_else(PoisonError::into_inner)
-                        .take();
-                    match child.map(Child::wait_with_output) {
-                        Some(Ok(output)) if output.status.success() => {
-                            parse_search(&String::from_utf8_lossy(&output.stdout), &query)
-                        }
+                Ok(running) => {
+                    *SEARCH_CHILD.lock().unwrap_or_else(PoisonError::into_inner) =
+                        Some(running.stopper());
+                    let finished = running.finish();
+                    // stopped for a newer search
+                    if SEARCHES.load(Ordering::SeqCst) != this {
+                        return;
+                    }
+                    match finished {
+                        Ok(output) => parse_search(&output.stdout, &query),
                         // nix says "no results" by exiting 1
-                        Some(Ok(output))
-                            if String::from_utf8_lossy(&output.stderr).contains("no results") =>
-                        {
+                        Err(failure) if failure.output.stderr.contains("no results") => {
                             Ok(Vec::new())
                         }
-                        Some(Ok(output)) => Err(failure(
-                            &output.stderr,
-                            &output.stdout,
-                            output.status.code(),
-                        )),
-                        Some(Err(error)) => Err(error.to_string()),
-                        // taken by a newer search
-                        None => return,
+                        Err(failure) => Err(failure.message),
                     }
                 }
                 Err(error) => Err(format!("nix: {error}")),

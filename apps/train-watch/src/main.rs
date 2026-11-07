@@ -14,8 +14,9 @@ mod log;
 
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
+
+use amane_process::Cmd;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::time::{Duration, Instant};
 
@@ -172,7 +173,9 @@ impl Watch {
                         return self.end(&run);
                     }
                     "log" => {
-                        let _ = Command::new("xdg-open").arg(&self.copy).spawn();
+                        if let Err(error) = Cmd::new("xdg-open").arg(&self.copy).detach() {
+                            ::log::warn!("couldn't open the log: {error}");
+                        }
                     }
                     "dismissed" => {
                         // the activity's gone from the bar: nothing left to show it in
@@ -198,59 +201,48 @@ impl Watch {
     /// Reads the log over SSH on a thread of its own, from its first line.
     fn follow(&self, tx: Sender<Message>) {
         let path = format!("needle-ft/runs/{}/train.log", self.name);
-        let child = Command::new("tailscale")
+        let child = Cmd::new("tailscale")
             .args(["ssh", &self.host, "--", "tail", "-n", "+1", "-F", &path])
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
             .spawn();
         std::thread::spawn(move || {
-            if let Ok(mut child) = child {
-                if let Some(out) = child.stdout.take() {
-                    for line in BufReader::new(out).lines().map_while(Result::ok) {
-                        if tx.send(Message::Line(line)).is_err() {
-                            let _ = child.kill();
-                            return;
+            match child {
+                Ok(mut running) => {
+                    if let Some(out) = running.take_stdout() {
+                        for line in BufReader::new(out).lines().map_while(Result::ok) {
+                            if tx.send(Message::Line(line)).is_err() {
+                                // nobody reads the log any more
+                                running.stopper().stop();
+                                break;
+                            }
                         }
                     }
+                    // tail -F only ends when ssh does; how is in the run's state
+                    let _ = running.finish();
                 }
-                let _ = child.wait();
+                Err(error) => ::log::warn!("couldn't follow the log: {error}"),
             }
+            // the watcher may have gone already
             let _ = tx.send(Message::Gone);
         });
     }
 
     /// Whether the run's unit is still going on the host.
     fn going(&self) -> bool {
-        Command::new("tailscale")
-            .args([
-                "ssh",
-                &self.host,
-                "--",
-                "systemctl",
-                "--user",
-                "is-active",
-                "--quiet",
-            ])
+        Cmd::new("tailscale")
+            .args(["ssh", &self.host, "--", "systemctl", "--user", "is-active"])
+            .arg("--quiet")
             .arg(format!("needle-ft-{}", self.name))
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
             .status()
-            .is_ok_and(|status| status.success())
+            .is_ok()
     }
 
     fn stop(&self) -> Result<(), String> {
-        let status = Command::new("tailscale")
+        Cmd::new("tailscale")
             .args(["ssh", &self.host, "--", "systemctl", "--user", "stop"])
             .arg(format!("needle-ft-{}", self.name))
-            .stdin(Stdio::null())
-            .status()
-            .map_err(|error| error.to_string())?;
-        status
-            .success()
-            .then_some(())
-            .ok_or_else(|| status.to_string())
+            .output()
+            .map(|_| ())
+            .map_err(|failure| failure.message)
     }
 
     fn show(&mut self, run: &Run, alert: bool) {

@@ -147,9 +147,7 @@ pub fn delivered(title: &str, links: &[String]) -> bool {
 
 /// Opens `link` in the browser.
 pub fn open(link: &str) {
-    let _ = Command::new("xdg-open")
-        .arg(link)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn();
+    if let Err(error) = amane_process::Cmd::new("xdg-open").arg(link).detach() {
+        log::warn!("couldn't open {link}: {error}");
+    }
 }

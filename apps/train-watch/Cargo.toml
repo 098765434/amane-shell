@@ -11,6 +11,7 @@ authors.workspace = true
 [dependencies]
 log = { workspace = true }
 amane-log = { workspace = true }
+amane-process = { workspace = true }
 amane = { workspace = true }
 amane-status = { workspace = true }
 

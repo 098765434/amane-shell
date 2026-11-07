@@ -12,7 +12,6 @@ use std::fmt;
 use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 use std::sync::{Mutex, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -23,7 +22,8 @@ use serde::de::{self, Deserializer as _, MapAccess, Visitor};
 use serde_json::Value;
 
 use super::apps::{Found, RESULTS, Search, attr_of, rank};
-use super::nixos::{failure, repo};
+use super::nixos::repo;
+use amane_process::Cmd;
 
 /// How often the page looks at `flake.lock` again for a new nixpkgs.
 const RECHECK: Duration = Duration::from_secs(10);
@@ -265,50 +265,30 @@ fn write_catalog(path: &Path) -> Result<usize, String> {
     fs::create_dir_all(folder).map_err(|error| error.to_string())?;
     let new = path.with_extension("tsv.new");
 
-    let mut child = Command::new("nix")
-        .args([
-            "search",
-            "--json",
-            "--no-warn-dirty",
-            "--inputs-from",
-            &repo.to_string_lossy(),
-            "nixpkgs",
-            "^",
-        ])
-        .current_dir(&repo)
-        .env("NO_COLOR", "1")
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+    let mut running = Cmd::new("nix")
+        .args(["search", "--json", "--no-warn-dirty", "--inputs-from"])
+        .arg(&repo)
+        .args(["nixpkgs", "^"])
+        .dir(&repo)
         .spawn()
         .map_err(|error| format!("nix: {error}"))?;
 
-    // read alongside, so a full stderr pipe never stalls nix
-    let mut stderr = child.stderr.take();
-    let errors = thread::spawn(move || {
-        let mut text = Vec::new();
-        if let Some(stderr) = stderr.as_mut() {
-            let _ = stderr.read_to_end(&mut text);
-        }
-        text
-    });
-
-    let stdout = child.stdout.take().ok_or("nix: no output")?;
+    // converted as it comes; finish reads stderr alongside, so a full pipe
+    // never stalls nix
+    let stdout = running.take_stdout().ok_or("nix: no output")?;
     let written = File::create(&new)
         .map_err(|error| error.to_string())
         .and_then(|file| convert(stdout, BufWriter::new(file)));
-    let status = child.wait().map_err(|error| error.to_string())?;
-    let errors = errors.join().unwrap_or_default();
+    let finished = running.finish();
 
     // nix's own error first: a failed search also cuts the JSON short
-    let result = if status.success() {
-        written.and_then(|count| {
+    let result = match finished {
+        Ok(_) => written.and_then(|count| {
             fs::rename(&new, path)
                 .map(|()| count)
                 .map_err(|error| error.to_string())
-        })
-    } else {
-        Err(failure(&errors, &[], status.code()))
+        }),
+        Err(failure) => Err(failure.message),
     };
     if result.is_err() {
         let _ = fs::remove_file(&new);
