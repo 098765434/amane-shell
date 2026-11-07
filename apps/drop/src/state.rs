@@ -212,12 +212,16 @@ fn save(shelves: &Shelves) {
     let (Some(file), Ok(text)) = (shelf_file(), serde_json::to_string_pretty(shelves)) else {
         return;
     };
-    if let Some(folder) = file.parent() {
-        let _ = std::fs::create_dir_all(folder);
-    }
-    let part = file.with_extension("part");
-    if std::fs::write(&part, text).is_ok() {
-        let _ = std::fs::rename(part, file);
+    let write = || {
+        if let Some(folder) = file.parent() {
+            std::fs::create_dir_all(folder)?;
+        }
+        let part = file.with_extension("part");
+        std::fs::write(&part, text)?;
+        std::fs::rename(part, &file)
+    };
+    if let Err(e) = write() {
+        eprintln!("amane-drop: couldn't save {}: {e}", file.display());
     }
 }
 

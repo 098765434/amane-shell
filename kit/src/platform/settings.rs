@@ -4,6 +4,8 @@
 //! through amane's `Config`. [`theme`](crate::theme) reads the appearance,
 //! between the `AMANE_*` overrides and what the system says.
 
+#![allow(missing_docs)]
+
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::RwLockReadGuard;
@@ -1022,14 +1024,19 @@ fn cache_file(name: &str) -> Option<PathBuf> {
     Some(cache.join("amane-shell").join(name))
 }
 
-/// Writes `text` to `file` whole, through a part file.
+/// Writes `text` to `file` whole, through a part file. A failure is
+/// reported, since the change it carried is lost.
 fn write_whole(file: &std::path::Path, text: &str) {
-    if let Some(folder) = file.parent() {
-        let _ = std::fs::create_dir_all(folder);
-    }
-    let partial = file.with_extension("part");
-    if std::fs::write(&partial, text).is_ok() {
-        let _ = std::fs::rename(partial, file);
+    let write = || {
+        if let Some(folder) = file.parent() {
+            std::fs::create_dir_all(folder)?;
+        }
+        let partial = file.with_extension("part");
+        std::fs::write(&partial, text)?;
+        std::fs::rename(partial, file)
+    };
+    if let Err(e) = write() {
+        eprintln!("amane-kit: couldn't save {}: {e}", file.display());
     }
 }
 

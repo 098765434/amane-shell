@@ -1,6 +1,8 @@
 //! The Design Token Manual's rules (manual §13), as checks over a Penpot
 //! export. `tokens check` prints them; the tests below fail on them.
 
+#![allow(missing_docs)]
+
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 use serde_json::Value as Json;
@@ -509,14 +511,11 @@ pub fn contrast(resolved: &[(Key, Resolved)]) -> Vec<String> {
                 out.push(format!("manual §6.1: {bg} is missing or not a colour"));
                 continue;
             };
-            let tone = match tone.map(|name| r.tokens.get(name).map(|t| &t.value)) {
+            let tone = match tone.map(|name| (name, r.tokens.get(name).map(|t| &t.value))) {
                 None => 1.0,
-                Some(Some(Value::Number(n))) => n.value,
-                Some(_) => {
-                    out.push(format!(
-                        "manual §6.1: {} is missing or not a number",
-                        tone.unwrap()
-                    ));
+                Some((_, Some(Value::Number(n)))) => n.value,
+                Some((name, _)) => {
+                    out.push(format!("manual §6.1: {name} is missing or not a number"));
                     continue;
                 }
             };

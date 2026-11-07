@@ -570,9 +570,9 @@ fn step_focus(level: usize, delta: isize) {
             .enumerate()
             .filter_map(|(i, e)| matches!(e, Entry::Item(it) if it.enabled).then_some(i))
             .collect();
-        if selectable.is_empty() {
+        let (Some(&first), Some(&last)) = (selectable.first(), selectable.last()) else {
             return;
-        }
+        };
 
         let next = match l
             .focus
@@ -582,8 +582,8 @@ fn step_focus(level: usize, delta: isize) {
                 let n = selectable.len() as isize;
                 selectable[(((pos as isize + delta) % n + n) % n) as usize]
             }
-            None if delta >= 0 => selectable[0],
-            None => *selectable.last().unwrap(),
+            None if delta >= 0 => first,
+            None => last,
         };
 
         l.focus = Some(next);

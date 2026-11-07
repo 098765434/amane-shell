@@ -248,14 +248,19 @@ impl Applied {
 
     pub fn save(&self) {
         let path = applied_path();
-        if let Some(folder) = path.parent() {
-            let _ = fs::create_dir_all(folder);
-        }
         let json = serde_json::json!({
             "head": self.head,
             "toplevel": self.toplevel.to_string_lossy(),
         });
-        let _ = fs::write(path, json.to_string());
+        let write = || {
+            if let Some(folder) = path.parent() {
+                fs::create_dir_all(folder)?;
+            }
+            fs::write(&path, json.to_string())
+        };
+        if let Err(e) = write() {
+            eprintln!("amane-settings: couldn't save {}: {e}", path.display());
+        }
     }
 }
 

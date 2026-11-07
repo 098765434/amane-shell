@@ -8,6 +8,8 @@
 //! of their own. [`known`] is for drawing: it answers from what was last
 //! found, and looks again on a thread when it doesn't know yet.
 
+#![allow(missing_docs)]
+
 use std::collections::{BTreeMap, HashMap};
 use std::io::Write;
 use std::path::PathBuf;
@@ -161,21 +163,25 @@ fn write_file_secrets(app: &str, secrets: &BTreeMap<String, String>) {
         let _ = std::fs::remove_file(file);
         return;
     }
-    if let Some(folder) = file.parent() {
-        let _ = std::fs::create_dir_all(folder);
-    }
     let Ok(text) = serde_json::to_string_pretty(secrets) else {
         return;
     };
-    let partial = file.with_extension("part");
-    let _ = std::fs::remove_file(&partial);
-    let written = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(&partial)
-        .and_then(|mut out| out.write_all(text.as_bytes()));
-    if written.is_ok() {
-        let _ = std::fs::rename(partial, file);
+    let write = || {
+        if let Some(folder) = file.parent() {
+            std::fs::create_dir_all(folder)?;
+        }
+        let partial = file.with_extension("part");
+        // a part file left by a failed save; create_new below needs it gone
+        let _ = std::fs::remove_file(&partial);
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(&partial)
+            .and_then(|mut out| out.write_all(text.as_bytes()))?;
+        std::fs::rename(partial, &file)
+    };
+    if let Err(e) = write() {
+        eprintln!("amane-kit: couldn't save {}: {e}", file.display());
     }
 }
