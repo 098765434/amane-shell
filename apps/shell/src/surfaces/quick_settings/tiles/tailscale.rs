@@ -14,8 +14,8 @@ use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::sys;
 use amane_kit::buttons::Switch;
-use amane_kit::icons::{Glyph, ICON_CHEVRON_RIGHT, ICON_COMPUTER, os_glyph};
-use amane_kit::layout::{boxed, caption, icon};
+use amane_kit::icons::{Glyph, ICON_COMPUTER, os_glyph};
+use amane_kit::layout::{boxed, caption};
 use amane_kit::list::{self, List, ListItem};
 use amane_kit::material::{self, Level};
 
@@ -131,11 +131,7 @@ fn notices(tailscale: &Tailscale) -> Vec<Box<dyn Widget>> {
         notes.push(boxed(
             List::new(vec![
                 ListItem::new("amane.qs.tailscale.login", label)
-                    .trailing(icon(
-                        ICON_CHEVRON_RIGHT,
-                        sys::size::icon::m(),
-                        material::label(Level::Secondary),
-                    ))
+                    .trailing(list::chevron())
                     .on_press(Tailscale::login),
             ])
             .build(),

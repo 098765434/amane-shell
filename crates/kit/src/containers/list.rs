@@ -240,6 +240,15 @@ pub fn check() -> Text {
     icon(ICON_CHECK, sys::size::icon::m(), sys::color::accent::bg())
 }
 
+/// The chevron a row ends with when it opens something further.
+pub fn chevron() -> Text {
+    icon(
+        crate::icons::ICON_CHEVRON_RIGHT,
+        sys::size::icon::m(),
+        material::label(Level::Secondary),
+    )
+}
+
 /// Trailing supporting text: a percentage, or "Connecting…".
 pub fn trailing_text(text: impl Into<String>, color: Color) -> Text {
     Text::new(text.into())

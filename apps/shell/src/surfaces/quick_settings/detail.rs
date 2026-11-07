@@ -28,10 +28,8 @@ use amane_kit::app_bar::TopAppBar;
 use amane_kit::buttons::Switch;
 use amane_kit::control_size;
 use amane_kit::divider::Divider;
-use amane_kit::icons::ICON_CHEVRON_RIGHT;
-use amane_kit::layout::{boxed, icon};
+use amane_kit::layout::boxed;
 use amane_kit::list::{self, ListItem};
-use amane_kit::material::{self, Level};
 
 /// How wide a page's content is: the grid's width less the sheet's padding
 /// either side.
@@ -220,11 +218,7 @@ impl DetailPage {
         if let Some((label, open)) = self.footer {
             rows.push(boxed(revealed(
                 ListItem::new(format!("{}.footer", self.id), label)
-                    .trailing(icon(
-                        ICON_CHEVRON_RIGHT,
-                        sys::size::icon::m(),
-                        material::label(Level::Secondary),
-                    ))
+                    .trailing(list::chevron())
                     .on_press(move || open())
                     .build(),
                 pinned_shown,

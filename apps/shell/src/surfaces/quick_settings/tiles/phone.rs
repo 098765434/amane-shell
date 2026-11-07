@@ -33,10 +33,9 @@ use amane_kit::buttons::{IconButton, PushButton, Style, Switch};
 use amane_kit::control_size::ControlSize;
 use amane_kit::dialog::Dialog;
 use amane_kit::icons::{
-    ICON_CHEVRON_RIGHT, ICON_COMPUTER, ICON_CONTENT_PASTE, ICON_DEVICE_OTHER, ICON_INFO,
-    ICON_KEYBOARD, ICON_PHONE,
+    ICON_COMPUTER, ICON_CONTENT_PASTE, ICON_DEVICE_OTHER, ICON_INFO, ICON_KEYBOARD, ICON_PHONE,
 };
-use amane_kit::layout::{boxed, caption, fixed_width, icon, text_height};
+use amane_kit::layout::{boxed, caption, fixed_width, text_height};
 use amane_kit::list::{self, List, ListItem};
 use amane_kit::material::{self, Level};
 
@@ -346,15 +345,6 @@ fn pairing_sheet(device: &PhoneDevice) -> Box<dyn Widget> {
     )
 }
 
-/// The mark for a row that opens a window.
-fn chevron() -> Text {
-    icon(
-        ICON_CHEVRON_RIGHT,
-        sys::size::icon::s(),
-        material::label(Level::Tertiary),
-    )
-}
-
 // ───── one phone ─────────────────────────────────────────────────────────────
 
 fn device_page(device: PhoneDevice) -> DetailPage {
@@ -502,7 +492,7 @@ fn action_rows(device: &PhoneDevice) -> Vec<ListItem> {
             rows.push(
                 row("messages", "Messages")
                     .leading(ICON_CHAT)
-                    .trailing(chevron())
+                    .trailing(list::chevron())
                     .on_press(move || open_app(&messaged, "messages")),
             );
         }
@@ -511,12 +501,12 @@ fn action_rows(device: &PhoneDevice) -> Vec<ListItem> {
             rows.push(
                 row("input", "Phone Input")
                     .leading(ICON_KEYBOARD)
-                    .trailing(chevron())
+                    .trailing(list::chevron())
                     .on_press(move || open_app(&typed, "input")),
             );
         }
     }
-    rows.extend(super::phone_screen::row(device, chevron));
+    rows.extend(super::phone_screen::row(device, list::chevron));
     rows
 }
 
