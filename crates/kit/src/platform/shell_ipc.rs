@@ -12,6 +12,45 @@ use std::io;
 /// The program name the shell's socket is known by.
 pub const SHELL: &str = "amane";
 
+/// Gives a keyword enum the one spelling both ways: `word()` writes a
+/// variant, `from_word()` reads one.
+macro_rules! words {
+    ($ty:ident { $($variant:ident = $word:literal),+ $(,)? }) => {
+        impl $ty {
+            /// The word it's written as.
+            pub fn word(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $word,)+
+                }
+            }
+
+            /// It, from the word it's written as.
+            pub fn from_word(word: &str) -> Option<Self> {
+                match word {
+                    $($word => Some(Self::$variant),)+
+                    _ => None,
+                }
+            }
+        }
+    };
+}
+
+words!(Switch { On = "on", Off = "off", Toggle = "toggle" });
+words!(LauncherAction { Toggle = "toggle", Open = "open", Close = "close" });
+words!(Listen { Start = "start", Stop = "stop", Toggle = "toggle", Cancel = "cancel" });
+words!(Light { Up = "up", Down = "down", Cycle = "cycle" });
+
+impl Switch {
+    /// As a status-bar indicator says it: `show`, `hide`, `toggle`.
+    fn shown_word(self) -> &'static str {
+        match self {
+            Self::On => "show",
+            Self::Off => "hide",
+            Self::Toggle => "toggle",
+        }
+    }
+}
+
 /// One thing to ask the shell.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ShellCommand {
@@ -315,6 +354,9 @@ pub enum Passwords {
     LockTimeout(u64),
 }
 
+const NOTIFICATIONS_USAGE: &str = "[toggle | clear | dnd [on|off|toggle]]";
+const ASSISTANT_USAGE: &str = "listen start|stop|toggle|cancel | status";
+
 /// The verbs the shell answers, as their names.
 pub const VERBS: [&str; 13] = [
     "arm",
@@ -350,10 +392,12 @@ impl ShellCommand {
             "notifications" => Self::Notifications(match args.as_slice() {
                 [] | ["toggle"] => Notifications::Toggle,
                 ["clear"] => Notifications::Clear,
-                ["dnd"] | ["dnd", "toggle"] => Notifications::DoNotDisturb(Switch::Toggle),
-                ["dnd", "on"] => Notifications::DoNotDisturb(Switch::On),
-                ["dnd", "off"] => Notifications::DoNotDisturb(Switch::Off),
-                _ => return usage("[toggle | clear | dnd [on|off|toggle]]"),
+                ["dnd"] => Notifications::DoNotDisturb(Switch::Toggle),
+                ["dnd", on] => match Switch::from_word(on) {
+                    Some(on) => Notifications::DoNotDisturb(on),
+                    None => return usage(NOTIFICATIONS_USAGE),
+                },
+                _ => return usage(NOTIFICATIONS_USAGE),
             }),
             "quick-settings" => Self::QuickSettings(match args.as_slice() {
                 [] | ["toggle"] => QuickSettings::Toggle,
@@ -382,21 +426,20 @@ impl ShellCommand {
                     [action, mode] => (*action, Some(mode.to_string())),
                     _ => return usage(USAGE),
                 };
-                let action = match action {
-                    "toggle" => LauncherAction::Toggle,
-                    "open" => LauncherAction::Open,
-                    "close" if mode.is_none() => LauncherAction::Close,
-                    _ => return usage(USAGE),
+                let action = match LauncherAction::from_word(action) {
+                    Some(LauncherAction::Close) if mode.is_some() => return usage(USAGE),
+                    Some(action) => action,
+                    None => return usage(USAGE),
                 };
                 Self::Launcher(Launcher { action, mode })
             }
             "assistant" => Self::Assistant(match args.as_slice() {
-                ["listen", "start"] => Assistant::Listen(Listen::Start),
-                ["listen", "stop"] => Assistant::Listen(Listen::Stop),
-                ["listen", "toggle"] => Assistant::Listen(Listen::Toggle),
-                ["listen", "cancel"] => Assistant::Listen(Listen::Cancel),
+                ["listen", how] => match Listen::from_word(how) {
+                    Some(how) => Assistant::Listen(how),
+                    None => return usage(ASSISTANT_USAGE),
+                },
                 ["status"] => Assistant::Status,
-                _ => return usage("listen start|stop|toggle|cancel | status"),
+                _ => return usage(ASSISTANT_USAGE),
             }),
             "osd" => {
                 let fine = args.last() == Some(&"fine");
@@ -412,9 +455,10 @@ impl ShellCommand {
                         Err(_) => return usage(OSD_USAGE),
                     },
                     ["brightness", "restore"] => Osd::Restore,
-                    ["kbd-light", "up"] => Osd::KeyboardLight(Light::Up),
-                    ["kbd-light", "down"] => Osd::KeyboardLight(Light::Down),
-                    ["kbd-light", "cycle"] => Osd::KeyboardLight(Light::Cycle),
+                    ["kbd-light", how] => match Light::from_word(how) {
+                        Some(how) => Osd::KeyboardLight(how),
+                        None => return usage(OSD_USAGE),
+                    },
                     ["airplane", "toggle"] => Osd::Airplane,
                     ["profile", "cycle"] => Osd::Profile,
                     ["show", what] => Osd::Show(owned(what)),
@@ -530,11 +574,6 @@ impl ShellCommand {
     /// The verb and its arguments, a line each, as the shell reads them.
     pub fn to_lines(&self) -> (&'static str, Vec<String>) {
         let words = |words: &[&str]| words.iter().map(|w| w.to_string()).collect::<Vec<_>>();
-        let switch = |on: Switch| match on {
-            Switch::On => "on",
-            Switch::Off => "off",
-            Switch::Toggle => "toggle",
-        };
         match self {
             Self::Arm(name) => ("arm", vec![name.clone()]),
             Self::OpenMenu { name, x, y } => {
@@ -546,7 +585,7 @@ impl ShellCommand {
                 match n {
                     Notifications::Toggle => words(&["toggle"]),
                     Notifications::Clear => words(&["clear"]),
-                    Notifications::DoNotDisturb(on) => words(&["dnd", switch(*on)]),
+                    Notifications::DoNotDisturb(on) => words(&["dnd", on.word()]),
                 },
             ),
             Self::QuickSettings(q) => (
@@ -566,26 +605,14 @@ impl ShellCommand {
                 },
             ),
             Self::Launcher(Launcher { action, mode }) => {
-                let mut lines = words(&[match action {
-                    LauncherAction::Toggle => "toggle",
-                    LauncherAction::Open => "open",
-                    LauncherAction::Close => "close",
-                }]);
+                let mut lines = words(&[action.word()]);
                 lines.extend(mode.clone());
                 ("launcher", lines)
             }
             Self::Assistant(a) => (
                 "assistant",
                 match a {
-                    Assistant::Listen(listen) => words(&[
-                        "listen",
-                        match listen {
-                            Listen::Start => "start",
-                            Listen::Stop => "stop",
-                            Listen::Toggle => "toggle",
-                            Listen::Cancel => "cancel",
-                        },
-                    ]),
+                    Assistant::Listen(listen) => words(&["listen", listen.word()]),
                     Assistant::Status => words(&["status"]),
                 },
             ),
@@ -608,14 +635,7 @@ impl ShellCommand {
                         }
                         Osd::Dim(percent) => words(&["brightness", "dim", &percent.to_string()]),
                         Osd::Restore => words(&["brightness", "restore"]),
-                        Osd::KeyboardLight(light) => words(&[
-                            "kbd-light",
-                            match light {
-                                Light::Up => "up",
-                                Light::Down => "down",
-                                Light::Cycle => "cycle",
-                            },
-                        ]),
+                        Osd::KeyboardLight(light) => words(&["kbd-light", light.word()]),
                         Osd::Airplane => words(&["airplane", "toggle"]),
                         Osd::Profile => words(&["profile", "cycle"]),
                         Osd::Show(what) => words(&["show", what]),
@@ -654,14 +674,9 @@ impl ShellCommand {
                 (
                     "status-bar",
                     match s {
-                        StatusBar::Indicator { indicator, shown } => words(&[
-                            match shown {
-                                Switch::On => "show",
-                                Switch::Off => "hide",
-                                Switch::Toggle => "toggle",
-                            },
-                            indicator,
-                        ]),
+                        StatusBar::Indicator { indicator, shown } => {
+                            words(&[shown.shown_word(), indicator])
+                        }
                         StatusBar::Move { item, index } => {
                             words(&["move", item, &index.to_string()])
                         }

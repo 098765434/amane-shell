@@ -15,35 +15,42 @@ use crate::surfaces::{
 /// What answers a verb's lines.
 type Handler = fn(&[String]) -> String;
 
+/// `(verb, handler)` for each verb, the handler reading the verb's lines.
+macro_rules! handlers {
+    ($($verb:literal),+ $(,)?) => {
+        [$(($verb, (|args| answer($verb, args)) as Handler)),+]
+    };
+}
+
 /// Every verb and its handler, which reads the lines and runs them.
-const HANDLERS: [(&str, Handler); 13] = [
+const HANDLERS: [(&str, Handler); 13] = handlers![
     // the next right-click opens a menu with a working grab:
     // `printf 'arm\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    ("arm", |args| answer("arm", args)),
-    ("open", |args| answer("open", args)),
-    ("close", |args| answer("close", args)),
+    "arm",
+    "open",
+    "close",
     // Do Not Disturb from a keybind:
     // `printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    ("notifications", |args| answer("notifications", args)),
+    "notifications",
     // `printf 'quick-settings\nopen\nwifi\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    ("quick-settings", |args| answer("quick-settings", args)),
+    "quick-settings",
     // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    ("launcher", |args| answer("launcher", args)),
-    ("assistant", |args| answer("assistant", args)),
+    "launcher",
+    "assistant",
     // the media and brightness keys, each acting and showing the new level:
     // `printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    ("osd", |args| answer("osd", args)),
+    "osd",
     // `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    ("widgets", |args| answer("widgets", args)),
+    "widgets",
     // `printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    ("status-bar", |args| answer("status-bar", args)),
+    "status-bar",
     // Shell Settings' Displays page:
     // `printf 'night-light\nschedule\nhours\n21:00\n07:00\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    ("night-light", |args| answer("night-light", args)),
+    "night-light",
     // a niri keybind: `printf 'passwords\nsuggest\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    ("passwords", |args| answer("passwords", args)),
+    "passwords",
     // a sample alert, in debug builds: `printf 'alert-test\nstacked\n' | nc -U -N …`
-    ("alert-test", |args| answer("alert-test", args)),
+    "alert-test",
 ];
 
 /// Answers every verb on `app`'s socket; `alert-test` only in debug builds.
