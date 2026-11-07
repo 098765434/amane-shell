@@ -185,7 +185,7 @@ fn in_home(path: &Path) -> bool {
         .any(|home| path.starts_with(home))
 }
 
-/// The store path a file is in: /nix/store/<hash>-<name>.
+/// The store path a file is in: `/nix/store/<hash>-<name>`.
 pub fn store_path(file: &Path) -> Option<PathBuf> {
     let rest = file.strip_prefix("/nix/store/").ok()?;
     let top = rest.components().next()?;
@@ -202,7 +202,7 @@ pub fn store_path(file: &Path) -> Option<PathBuf> {
 }
 
 /// A store path's package name without its version: "telegram-desktop" from
-/// /nix/store/<hash>-telegram-desktop-5.6.3.
+/// `/nix/store/<hash>-telegram-desktop-5.6.3`.
 pub fn package_name(store: &Path) -> String {
     let name = store
         .file_name()

@@ -31,6 +31,12 @@ jobs:
       - name: test
         run: nix develop -c cargo test --workspace --locked
 
+      # rustdoc's warnings (broken links, docs naming private items) fail the build
+      - name: doc
+        run: nix develop -c cargo doc --workspace --no-deps --locked
+        env:
+          RUSTDOCFLAGS: -D warnings
+
       - name: shellcheck
         run: nix run nixpkgs#shellcheck -- gen-layer-rules.sh scripts/check-pins scripts/idle-report scripts/lint-terms
 

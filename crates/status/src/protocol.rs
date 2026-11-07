@@ -87,7 +87,7 @@ pub struct MenuEntry {
     #[serde(default)]
     pub checked: Option<bool>,
 
-    /// Drawn in red, for something that deletes or can't be undone.
+    /// Drawn in the critical status color, for something that deletes or can't be undone.
     #[serde(default)]
     pub destructive: bool,
 
@@ -315,7 +315,7 @@ pub struct ActivityButton {
     #[serde(default)]
     pub icon: Option<ItemIcon>,
 
-    /// Drawn in red, for something like stop or cancel.
+    /// Drawn in the critical status color, for something like stop or cancel.
     #[serde(default)]
     pub destructive: bool,
 }

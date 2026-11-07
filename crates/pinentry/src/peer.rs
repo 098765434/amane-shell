@@ -141,9 +141,10 @@ pub fn environment(pid: u32, name: &str) -> Option<Option<String>> {
     Some(found)
 }
 
-/// Whether an executable is one of `names`, where only root can put files: the Nix store, or
-/// the system profile it's linked from. A debug build also takes its own target directory, so
-/// the shell and pinentry can be tried from a checkout.
+/// Whether an executable is one of `names`, where only root can put files: the Nix store. A
+/// program run from the system profile counts, since `exe` is the resolved path, which is in the
+/// store. A debug build also takes its own target directory, so the shell and pinentry can be
+/// tried from a checkout.
 pub fn is_program(exe: &Path, names: &[&str]) -> bool {
     let Some(name) = exe.file_name().and_then(|name| name.to_str()) else {
         return false;

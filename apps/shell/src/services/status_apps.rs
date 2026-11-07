@@ -2,7 +2,7 @@
 //! bar (status items) and their activities. Each payload is
 //! one JSON string of amane's `status_item` types, so a script can call it
 //! with `busctl` too. Items are kept here; activities go to the bar's
-//! [`activities`](super::desktop::activities). What happens to an item
+//! [`desktop::activities`](crate::services::desktop::activities). What happens to an item
 //! (a click, a menu entry, files let go on it) goes back to the program that
 //! registered it, as a signal to it alone.
 //!

@@ -1,4 +1,4 @@
-//! What one screen can do, put together from its EDID ([`edid`]) and its
+//! What one screen can do, put together from its EDID ([`edid`](super::edid)) and its
 //! connector's properties ([`drm`]). Read again only when the EDID
 //! changes, as when another monitor goes into the same port.
 

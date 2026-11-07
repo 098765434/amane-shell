@@ -2,9 +2,9 @@
 //! the screen itself (its EDID and the kernel's connector), and its
 //! resolution, refresh rate, variable refresh, scale, rotation and place.
 //!
-//! niri makes a change at once over IPC ([`niri`]) and keeps it only until
+//! niri makes a change at once over IPC ([`amane::niri`]) and keeps it only until
 //! its config is read again, so a lasting change is written to
-//! `displays.kdl` ([`config`]), which `config.kdl` includes. A change that
+//! `displays.kdl` ([`kdl`]), which `config.kdl` includes. A change that
 //! could leave a screen unreadable (resolution, refresh rate, scale,
 //! rotation, turning one off) is tried first: it is written only when
 //! kept, and undone when the countdown runs out ([`trial`]).

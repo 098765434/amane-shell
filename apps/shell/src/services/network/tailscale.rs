@@ -1,7 +1,7 @@
 //! Tailscale — the tailnet as `tailscaled` has it.
 //!
 //! Nothing polls, and nothing runs while idle: reads go to the daemon's
-//! LocalAPI over its socket ([`tailscale_local`](super::tailscale_local)),
+//! LocalAPI over its socket ([`tailscale_local`]),
 //! the same JSON `tailscale status --json` and `debug prefs` print. Its
 //! change stream (`watch-ipn-bus`, without the engine's counters) sends a
 //! notice whenever the state, prefs or netmap change; each is taken only as
@@ -192,7 +192,7 @@ impl Tailscale {
         self.error.as_deref()
     }
 
-    /// One line for what it's doing: "via <exit node>", the address, …
+    /// One line for what it's doing: "via `<exit node>`", the address, …
     pub fn describe(&self) -> String {
         match self.status.state {
             State::Running => match (self.exit_node(), self.ip()) {

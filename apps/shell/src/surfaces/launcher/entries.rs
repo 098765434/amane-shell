@@ -1,7 +1,7 @@
 //! What a search finds and what each find does. An [`Entry`] is one row:
 //! its icon, its title, a line under it (and the fuller one Super shows),
 //! and its [`Action`] on Enter or a click. Running one counts it in the
-//! launcher's [`usage`](super::usage), so what's used rises.
+//! launcher's [`usage`], so what's used rises.
 
 use std::path::PathBuf;
 use std::rc::Rc;
