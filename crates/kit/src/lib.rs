@@ -63,6 +63,7 @@
 //! - [`icons`] — the Material Symbols glyphs and their pickers.
 //! - [`color`] — colour arithmetic (`over`, `faded`, `with_alpha`).
 //! - [`symbol`] — the few drawn symbols the controls use (chevrons, checks).
+//! - [`fuzzy`] — how well typed letters match a name, for searches.
 //! - [`paths`] — the XDG base folders: config, state, cache, data, runtime.
 //!
 //! The system around an app (`platform/`):
@@ -95,6 +96,6 @@ pub use controls::{
     avatar, buttons, color_picker, control_size, dropdown, leading_icon, menu, nav_buttons,
     pop_up_button, search_field, slider, spinner, stepper, tag, text_edit, thumbnail_picker,
 };
-pub use foundation::{color, icons, layout, paths, symbol};
+pub use foundation::{color, fuzzy, icons, layout, paths, symbol};
 pub use look::{glass, glass_region, lab, material, style};
 pub use platform::{app, app_icon, files, marker, process, secrets, settings, shell_ipc};

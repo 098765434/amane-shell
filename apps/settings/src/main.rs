@@ -218,30 +218,61 @@ pub fn page_named(name: &str) -> Option<usize> {
     })
 }
 
-/// The sub-pages a `--page` name can reach, as `page/sub`.
-const SUBS: [&str; 7] = [
-    "clock",
-    "weather",
-    "items",
-    "activities",
-    "files",
-    "advanced",
-    "file-types",
+/// Each page's `--page` name, in the sidebar's order: the one the search
+/// index and `page_named` go by.
+pub const PAGE_NAMES: [(&str, usize); 19] = [
+    ("appearance", APPEARANCE),
+    ("desktop", DESKTOP),
+    ("displays", DISPLAYS),
+    ("status-bar", STATUS_BAR),
+    ("dock", DOCK),
+    ("quick-settings", QUICK_SETTINGS),
+    ("spotlight", SPOTLIGHT), // lint-terms: allow (an old name, for keybinds)
+    ("drop", DROP),
+    ("passwords", PASSWORDS),
+    ("about-shell", ABOUT_SHELL),
+    ("about", SYS_ABOUT),
+    ("general", SYS_GENERAL),
+    ("apps", SYS_APPS),
+    ("default-apps", SYS_DEFAULTS),
+    ("services", SYS_SERVICES),
+    ("power", SYS_POWER),
+    ("storage", SYS_STORAGE),
+    ("history", SYS_HISTORY),
+    ("update", SYS_UPDATE),
+];
+
+/// A page's title in the sidebar.
+pub fn page_title(page: usize) -> String {
+    pages()
+        .get(page)
+        .map_or_else(String::new, |page| page.name.clone())
+}
+
+/// The sub-pages a `--page` name can reach as `page/sub`, by page.
+pub const SUBS: [(usize, &str); 8] = [
+    (STATUS_BAR, "clock"),
+    (STATUS_BAR, "weather"),
+    (STATUS_BAR, "items"),
+    (STATUS_BAR, "activities"),
+    (DISPLAYS, "advanced"),
+    (ABOUT_SHELL, "files"),
+    (SYS_ABOUT, "advanced"),
+    (SYS_DEFAULTS, "file-types"),
 ];
 
 /// A place by name: a page's name, or `page/sub` for one of its sub-pages.
-fn place_named(name: &str) -> Option<Place> {
+pub fn place_named(name: &str) -> Option<Place> {
     let (page, sub) = match name.split_once('/') {
         Some((page, sub)) => (page, Some(sub)),
         None => (name, None),
     };
     let mut place = Place::page(page_named(page)?);
     if let Some(sub) = sub {
-        let sub = SUBS
+        let (_, sub) = SUBS
             .iter()
             .copied()
-            .find(|known| known.eq_ignore_ascii_case(sub.trim()))?;
-        sub_page(place.page, sub)?;
+            .find(|(on, known)| *on == place.page && known.eq_ignore_ascii_case(sub.trim()))?;
         place.views.push(View::Sub(sub));
     }
     Some(place)

@@ -7,6 +7,7 @@
 //! every page has some. The System pages' settings come from the
 //! configuration as it's read, so they're found by their labels too.
 
+use amane_kit::fuzzy::fuzzy;
 use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
@@ -557,36 +558,11 @@ pub const INDEX: &[Entry] = &[
 
 /// The page and sub-page a place is on, for a result's second line.
 fn where_is(place: &str) -> String {
-    let names = [
-        ("appearance", "Appearance"),
-        ("desktop", "Desktop"),
-        ("displays", "Displays"),
-        ("status-bar", "Status Bar"),
-        ("dock", "Dock"),
-        ("quick-settings", "Quick Settings"),
-        ("spotlight", "Launcher"),
-        ("drop", "Drop"),
-        ("passwords", "Passwords"),
-        ("about-shell", "About"),
-        ("about", "About This Computer"),
-        ("general", "General"),
-        ("apps", "Apps"),
-        ("default-apps", "Default Apps"),
-        ("services", "Services"),
-        ("power", "Power & Lock"),
-        ("storage", "Storage"),
-        ("history", "History"),
-        ("update", "Software Update"),
-    ];
     let (page, sub) = match place.split_once('/') {
         Some((page, sub)) => (page, Some(sub)),
         None => (place, None),
     };
-    let page = names
-        .iter()
-        .find(|(name, _)| *name == page)
-        .map_or(page, |(_, title)| title)
-        .to_string();
+    let page = crate::page_named(page).map_or_else(|| page.to_string(), crate::page_title);
     match sub {
         Some(sub) => {
             let mut sub = sub.to_string();
@@ -606,23 +582,25 @@ pub struct Found {
     pub title: String,
     pub row: Option<String>,
     pub path: String,
-    score: u8,
+    score: f32,
 }
 
-/// How well `text` matches `query`: a title starting with it beats one
-/// containing it, which beats another word for it.
-fn score(query: &str, title: &str, words: &[&str]) -> Option<u8> {
-    let title = title.to_lowercase();
-    if title.starts_with(query) {
-        return Some(0);
+/// How well a title matches `query` (lowercased), 0 … 1, or `None`: the
+/// launcher's fuzzy match on the title, and on another word for it at
+/// half the weight, so a title always beats a synonym.
+fn score(query: &str, title: &str, words: &[&str]) -> Option<f32> {
+    let by_title = fuzzy(query, title);
+    let by_word = words
+        .iter()
+        .filter_map(|word| fuzzy(query, word))
+        .fold(None, |best: Option<f32>, score| {
+            Some(best.map_or(score, |b| b.max(score)))
+        })
+        .map(|score| score * 0.5);
+    match (by_title, by_word) {
+        (Some(title), Some(word)) => Some(title.max(word)),
+        (title, word) => title.or(word),
     }
-    if title.split_whitespace().any(|word| word.starts_with(query)) {
-        return Some(1);
-    }
-    if title.contains(query) {
-        return Some(2);
-    }
-    words.iter().any(|word| word.contains(query)).then_some(3)
 }
 
 /// What `query` finds, best first; nothing for an empty query.
@@ -655,7 +633,7 @@ pub fn find(query: &str, system: &[(String, String, String)]) -> Vec<Found> {
             });
         }
     }
-    found.sort_by_key(|found| found.score);
+    found.sort_by(|a, b| b.score.total_cmp(&a.score));
     found.dedup_by(|a, b| a.title == b.title && a.place == b.place);
     found.truncate(30);
     found
@@ -724,42 +702,71 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_page_can_be_found() {
-        for name in [
-            "appearance",
-            "desktop",
-            "displays",
-            "status-bar",
-            "dock",
-            "quick-settings",
-            "spotlight",
-            "drop",
-            "passwords",
-            "about-shell",
-            "about",
-            "general",
-            "apps",
-            "default-apps",
-            "services",
-            "power",
-            "storage",
-            "history",
-            "update",
-        ] {
+    fn every_page_and_sub_page_can_be_found() {
+        for (name, page) in crate::PAGE_NAMES {
             assert!(
                 INDEX.iter().any(|entry| entry.place == name),
                 "{name} has nothing to find"
             );
-            assert!(crate::page_named(name).is_some(), "{name} isn't a page");
+            assert_eq!(crate::page_named(name), Some(page), "{name} isn't its page");
+            for (on, sub) in crate::SUBS {
+                let place = format!("{name}/{sub}");
+                if on == page {
+                    assert!(
+                        INDEX.iter().any(|entry| entry.place == place),
+                        "{place} has nothing to find"
+                    );
+                }
+            }
         }
         for entry in INDEX {
-            let page = entry.place.split('/').next().unwrap();
             assert!(
-                crate::page_named(page).is_some(),
-                "{} isn't a page",
+                crate::place_named(entry.place).is_some(),
+                "{} isn't a page or sub-page",
                 entry.place
             );
         }
+    }
+
+    #[test]
+    fn every_row_found_is_a_row_on_its_page() {
+        // the row ids written in the pages' source, whatever builds them
+        let mut source = String::new();
+        let mut folders = vec![std::path::PathBuf::from(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/src"
+        ))];
+        while let Some(folder) = folders.pop() {
+            for entry in std::fs::read_dir(folder).unwrap().flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    folders.push(path);
+                } else if path.extension().is_some_and(|ext| ext == "rs")
+                    && path.file_name().is_some_and(|name| name != "search.rs")
+                {
+                    source.push_str(&std::fs::read_to_string(path).unwrap());
+                }
+            }
+        }
+        for entry in INDEX {
+            if let Some(row) = entry.row {
+                // a field's row is its id and `.row`
+                let field = row.strip_suffix(".row").unwrap_or(row);
+                assert!(
+                    source.contains(&format!("\"{row}\""))
+                        || source.contains(&format!("\"{field}\"")),
+                    "{row} ({}) is no row in the pages",
+                    entry.title
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_few_letters_find_a_page() {
+        // initials and letters in order, as in the launcher
+        assert_eq!(find("qs", &[])[0].place, "quick-settings");
+        assert!(find("dsplys", &[]).iter().any(|f| f.place == "displays"));
     }
 
     #[test]

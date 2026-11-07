@@ -38,8 +38,12 @@ a sub-page too, as `page/sub` (`status-bar/clock`).
 with something found and shows what's found in the page's place: each a title and where it is
 (*Status Bar › Clock*). Shell pages' settings are listed in `search.rs` with other words people
 use for them ("dark mode", "wifi", "burn in"); the System pages' settings are found by their
-labels as the configuration reads. A result (or Return, for the first) opens its place and lights
-its row for a moment; Escape clears the field.
+labels as the configuration reads. Matching is the launcher's (the kit's `fuzzy`): a title's
+start, a word's start, its initials ("qs"), anywhere in it, or its letters in order; another word
+for a setting counts half as much, so a title comes first. A result (or Return, for the first)
+opens its place and lights its row for a moment; Escape clears the field. Tests hold the index to
+the pages: every page and sub-page has an entry, every entry's place opens, and every row it
+lights is a row on a page.
 
 **While things load,** a row shows a small spinner in place of its value (the kit's
 [`Spinner`](../kit/components.md#form)), and a page whose rows haven't come in keeps its caption
