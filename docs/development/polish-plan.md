@@ -347,6 +347,13 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 - Remaining literal gaps and colours become tokens (`activities/expanded.rs:146`, `chips.rs:18`, `widgets/view.rs:73`, …).
 - Duplicate local `const f32`s fold into one (e.g. `PAD`/`MARGIN` = 16).
 
+**Status (2026-11-07).** The leftovers are done (shell `0976444` … `cf943b9`):
+- the stale `unreachable_patterns`, `dead_code`, `too_many_arguments` and `type_complexity` allows (`Reading`, `shape_tinted(Area, …)`, `Proposal`);
+- the dangling comments, and the Phone page's mid-file `use`s;
+- the import groups the earlier scripted moves had disturbed.
+
+**Not done: splitting the long functions.** The list above stands, and wants doing one function at a time, each looked at live: they draw (`surface()`, `grid()`, `panel()`, `card()`, `apply_bar()`), so a mechanical cut would trade a long function for several that pass a dozen values between them. The fill popup's move onto `sys::` tokens and the kit's menu rows is the same kind of change, and also waits.
+
 ## Phase 8: Guardrails and docs (S)
 
 **Lints:**
@@ -363,6 +370,11 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 - Update `docs/development/shell-structure.md` (the primitives a surface uses, the tables) and the kit docs (`docs/kit/`).
 - Add `amane-base` to `docs/architecture.md` with the mermaid graph above.
 - Archive this plan with a status per phase.
+
+**Status (2026-11-07).** Done, but for the lint on long functions:
+- **The hygiene test:** `xtask/src/hygiene.rs` covers poison-tolerant locks, leaked strings, raw XDG lookups, the shell's id typed out, a log named by hand, and transparent fills. It found three more fills and the vault's own XDG lookup.
+- **Docs:** `architecture.md` has `amane-base`, and `shell-structure.md` has "What a surface builds with" and "Tables".
+- **Not done: `too_many_lines`.** With CI's `-D warnings` it would fail on the long functions Phase 7 leaves, so it waits for them.
 
 ## Phase 9: Where things live (research, S)
 
