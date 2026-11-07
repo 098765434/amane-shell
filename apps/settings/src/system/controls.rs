@@ -3,7 +3,7 @@
 //! or a field with Set. A change goes to `managed/settings.json` and waits
 //! for Apply; a setting another file sets is shown locked, with where.
 
-use amane::{Row, Service, TextInput};
+use amane::{Row, Service};
 use amane_kit::app::{commit_on_blur, field_box, text_field};
 use amane_kit::buttons::{PushButton, Switch};
 use amane_kit::dropdown::Dropdown;
@@ -186,8 +186,8 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
         Control::TimeZone | Control::Text => {
             let id = field_id(&entry.id);
             let shown = show(&value);
-            if TextInput::text(id).is_empty() && !shown.is_empty() {
-                TextInput::set_text(id, &shown);
+            if !shown.is_empty() {
+                amane_kit::app::fill_once(id, || shown.clone());
             }
             // kept on Return, or when the field is left with something new
             let e = entry.clone();

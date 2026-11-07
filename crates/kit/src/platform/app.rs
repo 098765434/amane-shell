@@ -102,6 +102,20 @@ pub fn text_field(id: &'static str, placeholder: &str) -> TextInput {
         .selection_color(with_alpha(style::tint(), 0.4))
 }
 
+/// Puts `text` in the field `id` the first time it's built this run: the
+/// field shows its setting, then what's typed, so emptying it leaves it
+/// empty rather than filling it again.
+pub fn fill_once(id: &'static str, text: impl FnOnce() -> String) {
+    use std::cell::RefCell;
+    use std::collections::HashSet;
+    thread_local! {
+        static FILLED: RefCell<HashSet<&'static str>> = RefCell::new(HashSet::new());
+    }
+    if FILLED.with_borrow_mut(|filled| filled.insert(id)) {
+        TextInput::set_text(id, &text());
+    }
+}
+
 /// Runs `commit` with the field's text when the field `id` has just lost
 /// the keys, so what was typed is kept when you click away. Call it
 /// while drawing the view that shows the field; amane has no blur event,

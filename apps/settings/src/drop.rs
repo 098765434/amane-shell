@@ -4,9 +4,6 @@
 //! and keys go in the keyring (`amane_kit::secrets`), never in a file
 //! unless no keyring answers.
 
-use std::cell::RefCell;
-use std::collections::HashSet;
-
 use amane::{Center, Column, FileDialog, Row, TextInput, Widget};
 use amane_kit::app::{Dialog, commit_on_blur, field_box, text_field};
 use amane_kit::buttons::{IconButton, PushButton, Style};
@@ -32,11 +29,6 @@ const ICON_LATER: char = '\u{e5cf}';
 const RENAME: &str = "settings.drop.rename.field";
 
 const FIELD_WIDTH: f32 = 240.0;
-
-thread_local! {
-    // the fields given what's kept, once each
-    static FILLED: RefCell<HashSet<&'static str>> = RefCell::new(HashSet::new());
-}
 
 pub fn page() -> Column {
     let sharing = drop_sharing().clone();
@@ -369,9 +361,7 @@ fn field(
     get: fn(&DropSharing) -> String,
     set: fn(&mut DropSharing, String),
 ) -> FormRow {
-    if FILLED.with_borrow_mut(|filled| filled.insert(id)) {
-        TextInput::set_text(id, &get(&drop_sharing()));
-    }
+    amane_kit::app::fill_once(id, || get(&drop_sharing()));
     let keep = move |text: String| {
         let text = text.trim().to_string();
         if text != get(&drop_sharing()) {

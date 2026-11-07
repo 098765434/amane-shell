@@ -346,9 +346,7 @@ fn pair(
     set: impl Fn(&str, &str) + Clone + 'static,
 ) -> Row {
     for (id, _, value) in [first, second] {
-        if TextInput::text(id).is_empty() {
-            TextInput::set_text(id, value);
-        }
+        amane_kit::app::fill_once(id, || value.to_string());
     }
     let (a, b) = (first.0, second.0);
     let label = |text: &str| {

@@ -22,11 +22,6 @@ use crate::{View, group, groups, previews, switch_row};
 /// The weather place's field.
 const PLACE: &str = "settings.bar.weather-place.field";
 
-thread_local! {
-    // whether the place's field has been given the place kept
-    static PLACE_SHOWN: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-}
-
 /// `expand_less` and `expand_more`, to move an item left or right.
 const ICON_EARLIER: char = '\u{e5ce}';
 const ICON_LATER: char = '\u{e5cf}';
@@ -317,9 +312,7 @@ fn weather() -> Column {
     let now = status_bar().clone();
 
     // the field shows the place kept until it's typed in
-    if !PLACE_SHOWN.replace(true) {
-        TextInput::set_text(PLACE, &now.weather_place);
-    }
+    amane_kit::app::fill_once(PLACE, || now.weather_place.clone());
     let keep = |text: String| {
         let text = text.trim().to_string();
         if text != status_bar().weather_place {

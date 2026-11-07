@@ -7,7 +7,6 @@
 
 use amane_kit::service::ServiceExt as _;
 use amane_kit::shell_ipc::{Passwords as Ask, ShellCommand};
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
@@ -88,11 +87,6 @@ fn run(ask: Ask) {
     thread::spawn(move || {
         shell(ask);
     });
-}
-
-thread_local! {
-    // the fields given what's set, once each
-    static FILLED: RefCell<bool> = const { RefCell::new(false) };
 }
 
 pub fn page() -> Column {
@@ -215,10 +209,9 @@ fn synced(status: &VaultStatus) -> String {
 }
 
 fn account(status: &VaultStatus) -> amane_kit::form::Group {
-    if !FILLED.with_borrow(|filled| *filled) && status.reached {
-        TextInput::set_text(SERVER, status.get("server"));
-        TextInput::set_text(EMAIL, status.get("email"));
-        FILLED.with_borrow_mut(|filled| *filled = true);
+    if status.reached {
+        amane_kit::app::fill_once(SERVER, || status.get("server").to_string());
+        amane_kit::app::fill_once(EMAIL, || status.get("email").to_string());
     }
 
     let had_account = !status.get("email").is_empty();

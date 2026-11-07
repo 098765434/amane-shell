@@ -1,7 +1,7 @@
 //! About This Computer: the running system, whether it's the configuration,
 //! the repo, and the settings the registry puts here.
 
-use amane::{Column, Service, TextInput};
+use amane::{Column, Service};
 use amane_kit::app::{commit_on_blur, field_box, text_field};
 use amane_kit::buttons::{PushButton, Style};
 use amane_kit::color::Accent;
@@ -213,12 +213,8 @@ fn advanced() -> Column {
     let host = settings.host_attr();
     const REPO: &str = "settings.system.repo";
     const HOST: &str = "settings.system.host";
-    if TextInput::text(REPO).is_empty() {
-        TextInput::set_text(REPO, &repo_path);
-    }
-    if TextInput::text(HOST).is_empty() {
-        TextInput::set_text(HOST, &host);
-    }
+    amane_kit::app::fill_once(REPO, || repo_path.clone());
+    amane_kit::app::fill_once(HOST, || host.clone());
     let keep_repo = |text: String| {
         let text = text.trim().to_string();
         let now = nixos().repo_path().to_string_lossy().into_owned();
