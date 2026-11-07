@@ -81,16 +81,6 @@ pub struct Launcher {
     pub clipboard: ClipboardHistory,
 }
 
-impl Launcher {
-    /// The quick keys that run `action`, if any do.
-    pub fn keys_for(&self, action: &str) -> Option<&str> {
-        self.quick_keys
-            .iter()
-            .find(|(_, key)| key.action == action)
-            .map(|(keys, _)| keys.as_str())
-    }
-}
-
 impl Settings for Launcher {
     const APP: &'static str = crate::app_ids::SHELL;
     const FILE: &'static str = "launcher";

@@ -415,12 +415,12 @@ pub fn hovered(id: &str) -> bool {
 }
 
 /// Whether the button `id` is held down now: pressed and not yet let go.
-/// A hold that hasn't reported for a few seconds counts as let go, since a
+/// A hold that hasn't reported for [`HOLD_LAPSE`] counts as let go, since a
 /// release can go unseen.
 pub fn held(id: &str) -> bool {
     HELD.with_borrow(|held| {
         held.as_ref()
-            .is_some_and(|(was, at)| was == id && at.elapsed() < Duration::from_secs(3))
+            .is_some_and(|(was, at)| was == id && at.elapsed() < HOLD_LAPSE)
     })
 }
 
@@ -474,11 +474,11 @@ pub fn press_scale(id: &str, scale: f32) -> f32 {
 /// Control `id` was pressed: its pulse starts over, once a press, and not
 /// at all where motion is reduced.
 fn pressed(id: &str) {
-    // a release can go unseen (the window closed under it), so the hold
-    // also ends after a second without a report
+    // a release can go unseen (the window closed under it), so a press
+    // that comes a second after the last report is a new one
     let again = HELD.with_borrow_mut(|held| {
         let before = held.replace((id.to_string(), Instant::now()));
-        before.is_some_and(|(was, at)| was == id && at.elapsed() < Duration::from_secs(1))
+        before.is_some_and(|(was, at)| was == id && at.elapsed() < REPRESS)
     });
     if again || crate::theme::reduced_motion() {
         return;
@@ -497,6 +497,17 @@ fn pressed(id: &str) {
     request_frame();
 }
 
+/// How long a hold lasts without a report from the pointer before it
+/// counts as let go: a release can go unseen.
+const HOLD_LAPSE: Duration = Duration::from_secs(3);
+
+/// How long after the last report of a hold a press counts as a new one,
+/// and pulses again.
+const REPRESS: Duration = Duration::from_secs(1);
+
+/// How soon after a drop its click comes, at most.
+const SWALLOW_WINDOW: Duration = Duration::from_millis(250);
+
 thread_local! {
     // when a drag was dropped, so the click that ends it does nothing
     static SWALLOW: std::cell::Cell<Option<Instant>> = const { std::cell::Cell::new(None) };
@@ -513,7 +524,7 @@ pub fn swallow_click() {
 fn swallowed() -> bool {
     SWALLOW
         .take()
-        .is_some_and(|at| at.elapsed() < Duration::from_millis(250))
+        .is_some_and(|at| at.elapsed() < SWALLOW_WINDOW)
 }
 
 /// What a click asks for: the left button presses, the right one is the

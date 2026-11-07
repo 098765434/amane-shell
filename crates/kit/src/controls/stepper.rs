@@ -76,9 +76,9 @@ pub struct Stepper {
 
 impl Stepper {
     /// A stepper showing `value`; `id` keys its field and its hold.
-    pub fn new(id: &'static str, value: f64) -> Self {
+    pub fn new(id: impl AsRef<str>, value: f64) -> Self {
         Self {
-            id,
+            id: crate::intern::intern(id.as_ref()),
             value,
             from: 0.0,
             to: 99.0,

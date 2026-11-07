@@ -36,12 +36,6 @@ pub fn glyph_on_tint() -> Color {
     sys::color::accent::fg()
 }
 
-/// `knob`: a switch's or slider's knob, white in both modes.
-// TODO(token): sys.color.knob
-pub fn knob() -> Color {
-    Color::WHITE
-}
-
 /// `fieldFill`: white @ 0.08, the kit's secondary fill.
 pub fn field_fill() -> Color {
     material::fill_role(FillLevel::Secondary)
@@ -106,12 +100,6 @@ pub fn label_secondary() -> Color {
 /// `labelTertiary`: text that says least, like a placeholder.
 pub fn label_tertiary() -> Color {
     material::label(Level::Tertiary)
-}
-
-/// The red edge of a field that failed its check.
-// TODO(token): sys.color.error
-pub fn error() -> Color {
-    Color::rgb(0xff, 0x69, 0x61)
 }
 
 /// The hover layer: 8% of whatever colour the content is drawn in.

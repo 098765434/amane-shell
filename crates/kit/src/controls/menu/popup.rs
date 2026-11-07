@@ -18,7 +18,7 @@ use crate::buttons::Actions;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use amane::{
     Center, Column, ConstraintAdjustment, Gravity, Key, Point, Popup, PopupAnchor, Rectangle,
@@ -70,7 +70,6 @@ thread_local! {
 const MARGIN: f32 = 10.0;
 /// The gap between the control and the panel.
 const GAP: f32 = 4.0;
-const FADE: Duration = Duration::from_millis(200);
 
 /// Records `id`'s items and handler for a menu that's open or may open,
 /// keeping its open state and position. Call on every build.
@@ -307,7 +306,7 @@ fn popup(id: &str) -> Popup {
         .collect();
 
     // fading in, with a short slide down from the control
-    let t = (opened.elapsed().as_secs_f32() / FADE.as_secs_f32()).clamp(0.0, 1.0);
+    let t = (opened.elapsed().as_secs_f32() / crate::motion::FADE.as_secs_f32()).clamp(0.0, 1.0);
     if t < 1.0 {
         request_frame();
     }

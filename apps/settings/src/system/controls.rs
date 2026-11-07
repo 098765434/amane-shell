@@ -71,11 +71,6 @@ pub fn switch(entry: &Entry, managed: &Managed) -> Switch {
         .on_toggle(move |on| set(&e, Value::Bool(on)))
 }
 
-/// A `'static` id for a stepper's field, made once per setting.
-fn stepper_id(id: &str) -> &'static str {
-    amane_kit::intern::intern(&format!("settings.system.stepper.{id}"))
-}
-
 /// What a row says under a setting's name: what Set refused, where else
 /// it is set (locked), or what it was while a change waits; and the Move to
 /// Settings… button when the setting is set by hand somewhere it can be
@@ -160,7 +155,7 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
             let now = value.as_i64().unwrap_or(min).clamp(min, max);
             let e = entry.clone();
             row.trailing(
-                Stepper::new(stepper_id(&entry.id), now as f64)
+                Stepper::new(format!("settings.system.stepper.{}", entry.id), now as f64)
                     .range(min as f64, max as f64)
                     .width(80.0)
                     .disabled(locked)

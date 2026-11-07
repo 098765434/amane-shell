@@ -149,7 +149,7 @@ pub(super) fn header(shown: &Shown, generation: u64) -> Rectangle {
     };
 
     let color = if warn {
-        theme::error()
+        amane_kit::tokens::sys::color::status::critical::text()
     } else {
         theme::label_secondary()
     };
@@ -309,7 +309,7 @@ pub(super) fn note_row(note: &str) -> Rectangle {
         .child(
             Text::new(note.to_string())
                 .style(theme::subtitle_font())
-                .color(theme::error())
+                .color(amane_kit::tokens::sys::color::status::critical::text())
                 .elide(),
         )
 }

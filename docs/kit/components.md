@@ -48,7 +48,7 @@ primary and secondary vibrant labels. It has no fill and is no taller than its c
 `ListItem::new(id, headline)` is a one-line list item, or two-line with `.supporting(text)`
 (a caption under the headline, elided too; the row is `sys.size.row.two-line-height`). It has a `.leading(glyph)` (or
 `.leading_tile(glyph)`, the glyph on a `LeadingIcon` tile of the accent, as a sidebar names its
-sections, or `.leading_tile_accent(glyph, Accent)` on a tile of one of the system accents, or
+sections, or
 `.leading_widget(…)`, any widget in its place, such as an app's `app_icon::entry_tile` at
 `list::leading_side()`), the
 headline (elided), and `.trailing(…)` items such as `list::check()`, a lock glyph, or
