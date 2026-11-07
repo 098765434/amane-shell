@@ -179,7 +179,6 @@ pub const SIDEBAR: [Entry; 21] = [
         ),
         quick_settings::toolbar,
     ),
-    // lint-terms: allow (the old name, for keybinds)
     aliased(
         found_by(
             page(
@@ -191,7 +190,7 @@ pub const SIDEBAR: [Entry; 21] = [
             ),
             &["search", "app launcher", "run", "apps"],
         ),
-        &["spotlight"],
+        &["spotlight"], // lint-terms: allow (the old name, for keybinds)
     ),
     aliased(
         found_by(
