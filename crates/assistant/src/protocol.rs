@@ -19,14 +19,18 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+/// A [`Request`] with the id its answer carries back: the line the shell sends.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Envelope {
+    /// The request's id, counting up from 1 on each connection.
     pub id: u64,
+    /// The request, its fields beside the id.
     #[serde(flatten)]
     pub request: Request,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+/// What the shell asks the daemon, tagged by `op`.
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Request {
     /// What the daemon runs, and has loaded.
@@ -34,14 +38,19 @@ pub enum Request {
     /// Needle's answer for `text`, offered `tools` (a JSON array) with
     /// `system`'s facts.
     Complete {
+        /// The system prompt: the facts the model is given.
         system: String,
+        /// The tools offered, as a JSON array.
         tools: String,
+        /// What was typed or said.
         text: String,
     },
     /// Starts listening to the microphone, Whistle told to favor `keywords`.
     ListenStart {
+        /// The language spoken, such as "en"; none leaves it to Whistle.
         #[serde(default)]
         language: Option<String>,
+        /// Words to favor: the names of switches and apps.
         #[serde(default)]
         keywords: Vec<String>,
     },
@@ -52,25 +61,52 @@ pub enum Request {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+/// What the daemon sends, tagged by `kind`.
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Message {
+    /// The answer to [`Request::Hello`].
     Hello {
+        /// The request's id.
         id: u64,
+        /// The engine and its version: "cactus 4.0.0".
         engine: String,
         /// Cactus's loaded kinds: 1 text, 2 speech, 4 vision.
         models: i32,
     },
     /// Needle's answer, as Cactus gives it.
-    Answer { id: u64, answer: Value, ms: u64 },
+    Answer {
+        /// The request's id.
+        id: u64,
+        /// The answer's JSON: `function_calls`, `confidence` and the rest.
+        answer: Value,
+        /// How long it took, in milliseconds.
+        ms: u64,
+    },
     /// How loud the microphone is now, 0 … 1, a few times a second.
-    Level { rms: f32 },
+    Level {
+        /// The loudness, as a root mean square, 0 … 1.
+        rms: f32,
+    },
     /// What's been heard so far, while listening.
-    Partial { text: String },
+    Partial {
+        /// The words so far.
+        text: String,
+    },
     /// All that was heard, once listening stopped.
-    Heard { id: u64, text: String, ms: u64 },
+    Heard {
+        /// The [`Request::ListenStop`]'s id.
+        id: u64,
+        /// The words; empty when nothing but the room was heard.
+        text: String,
+        /// How long finishing took after the stop, in milliseconds.
+        ms: u64,
+    },
+    /// A request failed, or listening did.
     Error {
+        /// The failed request's id; none when nothing asked.
         #[serde(default)]
         id: Option<u64>,
+        /// What went wrong.
         error: String,
     },
 }

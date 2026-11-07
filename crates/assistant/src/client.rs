@@ -46,6 +46,8 @@ impl Sender {
         Ok(id)
     }
 
+    /// Closes the connection both ways, which also ends the [`Receiver`]'s
+    /// wait.
     pub fn shutdown(&self) {
         // already closed is closed
         let _ = self.stream.shutdown(std::net::Shutdown::Both);

@@ -5,84 +5,121 @@
 
 use serde::{Deserialize, Serialize};
 
+/// One thing the shell can be asked to do, as JSON tagged by `do`
+/// (`{"do":"mute","state":"on"}`).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "do", rename_all = "kebab-case")]
 pub enum Command {
     /// One of Quick Settings' switches, by its control's name
     /// ("night-light", "wifi").
     Switch {
+        /// The control's name.
         control: String,
+        /// What to turn it to.
         state: State,
     },
     /// The volume or the screen's brightness.
     Level {
+        /// Which level.
         level: Level,
+        /// What to set it to.
         target: Target,
     },
     /// The speakers' mute.
     Mute {
+        /// On mutes, off unmutes.
         state: State,
     },
     /// An app, by its desktop id.
     Open {
+        /// The app's desktop id ("firefox").
         app: String,
     },
+    /// What's playing.
     Media {
+        /// What to do to it.
         media: Media,
     },
+    /// The session or the computer: lock, log out, sleep, restart, power off.
     Power {
+        /// Which of them.
         power: Power,
     },
     /// A timer for this many seconds.
     Timer {
+        /// How long, in seconds.
         seconds: u64,
     },
+    /// Stops the running timer.
     CancelTimer,
     /// A power profile, by the daemon's name for it ("power-saver").
     PowerMode {
+        /// The profile's name, as the power profiles daemon knows it.
         profile: String,
     },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+/// What to turn a switch or the mute to.
 pub enum State {
+    /// On.
     On,
+    /// Off.
     Off,
+    /// The other way from how it is.
     Toggle,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+/// A level a [`Command::Level`] sets.
 pub enum Level {
+    /// The speakers' volume.
     Volume,
+    /// The screen's brightness.
     Brightness,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+/// Where a [`Command::Level`] takes its level.
 pub enum Target {
+    /// To this percent, 0 … 100.
     Percent(u8),
+    /// A step up.
     Up,
+    /// A step down.
     Down,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+/// What to do to what's playing.
 pub enum Media {
+    /// Play it, when it's paused.
     Play,
+    /// Pause it, when it's playing.
     Pause,
+    /// Skip to the next track.
     Next,
+    /// Go back to the previous track.
     Previous,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+/// What a [`Command::Power`] does to the session or the computer.
 pub enum Power {
+    /// Locks the screen.
     Lock,
+    /// Ends the session.
     LogOut,
+    /// Suspends the computer.
     Sleep,
+    /// Restarts the computer.
     Restart,
+    /// Shuts the computer down.
     PowerOff,
 }
 
@@ -98,6 +135,8 @@ pub enum Risk {
 }
 
 impl Command {
+    /// How much care running it needs: ending the session is destructive,
+    /// opening an app or locking the screen notable, the rest safe.
     pub fn risk(&self) -> Risk {
         match self {
             Self::Switch { .. }
@@ -114,6 +153,7 @@ impl Command {
 }
 
 impl Power {
+    /// Every one, in the order the tool offers them.
     pub const ALL: [Power; 5] = [
         Self::Lock,
         Self::LogOut,
@@ -133,14 +173,17 @@ impl Power {
         }
     }
 
+    /// The one with this [`name`](Self::name), as the tool gives it back.
     pub fn named(name: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|power| power.name() == name)
     }
 }
 
 impl Media {
+    /// Every one, in the order the tool offers them.
     pub const ALL: [Media; 4] = [Self::Play, Self::Pause, Self::Next, Self::Previous];
 
+    /// Its name, as the tool offers it: "play", "next".
     pub fn name(self) -> &'static str {
         match self {
             Self::Play => "play",
@@ -150,12 +193,14 @@ impl Media {
         }
     }
 
+    /// The one with this [`name`](Self::name), as the tool gives it back.
     pub fn named(name: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|media| media.name() == name)
     }
 }
 
 impl State {
+    /// The one called "on", "off" or "toggle".
     pub fn named(name: &str) -> Option<Self> {
         match name {
             "on" => Some(Self::On),

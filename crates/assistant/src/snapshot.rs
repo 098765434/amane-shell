@@ -8,15 +8,20 @@ use serde::{Deserialize, Serialize};
 use crate::command::Power;
 use crate::text;
 
+/// What the machine has now for a command to name.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Snapshot {
+    /// Quick Settings' switches.
     pub switches: Vec<Switch>,
+    /// The apps that can be opened.
     pub apps: Vec<App>,
     /// The power profiles, as (what they're called, the daemon's name).
     pub power_modes: Vec<(String, String)>,
     /// What the session allows.
     pub powers: Vec<Power>,
+    /// Whether there's a screen brightness to set.
     pub brightness: bool,
+    /// Whether a timer is running, so there's one to cancel.
     pub timer_running: bool,
 }
 
@@ -31,10 +36,12 @@ pub struct Switch {
     pub on: Option<bool>,
 }
 
+/// An app that can be opened.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct App {
     /// Its desktop id: "firefox".
     pub id: String,
+    /// Its name, as the launcher shows it.
     pub name: String,
     /// What kind of app it is, as people say it: "terminal", "browser",
     /// from its desktop categories and keywords ([`kinds`]).
@@ -72,6 +79,7 @@ pub fn kinds(categories: &[String], keywords: &[String]) -> Vec<String> {
 }
 
 impl Switch {
+    /// A switch from its control's name, its title and whether it's on.
     pub fn new(control: &str, title: &str, on: Option<bool>) -> Self {
         Self {
             control: control.to_string(),
