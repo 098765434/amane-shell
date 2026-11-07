@@ -270,3 +270,60 @@ fn main() -> ExitCode {
 
     ExitCode::SUCCESS
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeSet;
+
+    /// The verbs `main` registers, from its `.ipc("…"` calls.
+    fn registered() -> BTreeSet<String> {
+        include_str!("main.rs")
+            .split(".ipc(\"")
+            .skip(1)
+            .filter_map(|rest| rest.split('"').next())
+            // a verb's shape, so this module's own mentions don't count
+            .filter(|verb| {
+                !verb.is_empty() && verb.chars().all(|c| c.is_ascii_lowercase() || c == '-')
+            })
+            .map(String::from)
+            .collect()
+    }
+
+    /// The verbs `docs/integration/ipc.md` documents: its `` ### `verb` ``
+    /// headings under Commands, and the calls in the Context menus table.
+    fn documented() -> BTreeSet<String> {
+        let doc = include_str!("../docs/integration/ipc.md");
+        let commands = doc
+            .split_once("\n## Commands\n")
+            .map(|(_, rest)| rest.split("\n## ").next().unwrap_or(rest))
+            .expect("ipc.md has a Commands section");
+        let mut verbs = BTreeSet::new();
+        let mut in_menus = false;
+        for line in commands.lines() {
+            if let Some(heading) = line.strip_prefix("### ") {
+                in_menus = heading == "Context menus";
+                if let Some(verb) = heading.strip_prefix('`').and_then(|h| h.strip_suffix('`')) {
+                    verbs.insert(verb.to_string());
+                }
+            } else if in_menus
+                && let Some(cell) = line.strip_prefix("| `")
+                && let Some(verb) = cell.split([' ', '`']).next()
+            {
+                verbs.insert(verb.to_string());
+            }
+        }
+        verbs
+    }
+
+    #[test]
+    fn every_ipc_verb_is_documented_and_every_documented_verb_exists() {
+        let (code, doc) = (registered(), documented());
+        assert!(code.len() > 10, "found too few .ipc calls: {code:?}");
+        let undocumented: Vec<_> = code.difference(&doc).collect();
+        let missing: Vec<_> = doc.difference(&code).collect();
+        assert!(
+            undocumented.is_empty() && missing.is_empty(),
+            "not in docs/integration/ipc.md: {undocumented:?}; documented but not registered: {missing:?}"
+        );
+    }
+}

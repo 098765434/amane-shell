@@ -170,6 +170,8 @@
                 ./apps
                 ./design-tokens
                 ./tests
+                # the IPC test checks the verbs against it
+                ./docs/integration/ipc.md
                 ./niri-layer-rule.kdl
                 ./gen-layer-rules.sh
               ];

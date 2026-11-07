@@ -143,7 +143,10 @@ shows or hides one of the optional status icons, `activities`, `volume`, `blueto
   (key, app, title). `status-bar activities end bus.<handle>` ends another program's activity as
   the user would, and `status-bar activities press bus.<handle> <button>` presses one of its
   buttons (`cancel` on a Drop upload).
-`taskbar` is the same command under the bar's old name.
+
+### `taskbar`
+
+The same command as `status-bar`, under the bar's old name.
 
 ### `night-light`
 
@@ -161,6 +164,19 @@ No arguments is `state`.
 | `schedule hours <HH:MM> <HH:MM>` | from the first time to the second, overnight when the second is earlier |
 
 Without `wlsunset` it answers `wlsunset isn't installed`.
+
+### `passwords`
+
+`passwords …` ([passwords.md](../shell/passwords.md)), for keybinds and Shell Settings' Passwords
+page. Every call but `status` answers `ok`.
+
+| Call | Does |
+|---|---|
+| `suggest` | opens the fill popup for the field that has the keyboard, even a username or terminal field |
+| `status` | the vault's state, one `key=value` a line, never a secret |
+| `unlock`, `sign-in`, `register`, `sync`, `lock` | the same as rbw's commands, through the shell's own dialog |
+| `configure <server> <email> [forget]` | sets the server (`https://`, or `http://localhost`) and the account; with `forget`, a change also removes the old server's copy of the vault |
+| `lock-timeout <seconds>` | how long the vault stays unlocked |
 
 ### Context menus
 
