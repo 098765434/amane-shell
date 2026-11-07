@@ -50,7 +50,7 @@ members = ["kit", "apps/pinentry", "apps/settings", "apps/messages", "apps/mirro
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
 # sibling checkout during local co-development. See README.
-amane = { git = "https://github.com/098765434/amane", rev = "711ed5fdbc5227b123bfe609437b420c699ac57d" }
+amane = { git = "https://github.com/098765434/amane", rev = "14eb0dd40bafffccf105dd3eafe2e69fff83ef22" }
 
 # amane's vello fork: scratch buffers sized for a shell (about 29 MB a set
 # instead of 165, vello_encoding) that are let go when idle (vello). A patch
@@ -58,5 +58,5 @@ amane = { git = "https://github.com/098765434/amane", rev = "711ed5fdbc5227b123b
 # this build; these must match them. The nix build needs the fork's hash in
 # flake.nix outputHashes, once per crate. See docs/development/memory.md.
 [patch.crates-io]
-vello = { git = "https://github.com/098765434/vello", branch = "ocbk" }
-vello_encoding = { git = "https://github.com/098765434/vello", branch = "ocbk" }
+vello = { git = "https://github.com/098765434/vello", rev = "46585523afff9ff403164902fd81f63794bd48d3" }
+vello_encoding = { git = "https://github.com/098765434/vello", rev = "46585523afff9ff403164902fd81f63794bd48d3" }
