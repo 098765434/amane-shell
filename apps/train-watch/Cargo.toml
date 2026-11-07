@@ -10,6 +10,7 @@ authors.workspace = true
 
 [dependencies]
 amane = { workspace = true }
+amane-status = { workspace = true }
 
 [lints]
 workspace = true

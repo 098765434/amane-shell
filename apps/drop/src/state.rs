@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
-use amane::status_item::BarEdge;
+use amane_status::BarEdge;
 
 use crate::tasks::Job;
 

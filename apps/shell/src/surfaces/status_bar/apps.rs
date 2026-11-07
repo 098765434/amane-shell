@@ -8,8 +8,8 @@
 use std::cell::RefCell;
 use std::collections::HashSet;
 
-use amane::status_item::{BarEdge, ItemButton, ItemEvent, ItemSpec, MenuEntry};
 use amane::{Center, Color, Parent, Rectangle, Row, Size, Text, Vertical, Widget};
+use amane_status::{BarEdge, ItemButton, ItemEvent, ItemSpec, MenuEntry};
 
 use crate::services::status_apps;
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};

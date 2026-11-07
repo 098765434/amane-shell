@@ -11,8 +11,8 @@
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant, SystemTime};
 
-use amane::status_item::{ActivityContent, ActivityEvent, Dismiss};
 use amane_kit::settings::remember_activity;
+use amane_status::{ActivityContent, ActivityEvent, Dismiss};
 
 amane_kit::marker! {
     /// An activity started, changed or ended: the bar draws again.
@@ -250,7 +250,7 @@ fn after(wait: Duration, then: impl FnOnce() + Send + 'static) {
 mod tests {
     use std::sync::atomic::{AtomicU32, Ordering};
 
-    use amane::status_item::ItemIcon;
+    use amane_status::ItemIcon;
 
     use super::*;
 

@@ -1,0 +1,18 @@
+[package]
+name = "amane-status"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Status apps: a program's own item in amane-shell's status bar and its activities, over org.amane.StatusBar1."
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+# the session bus, and the one ordered thread for calls
+amane = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

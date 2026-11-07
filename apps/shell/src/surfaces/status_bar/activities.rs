@@ -15,7 +15,6 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::{Duration, Instant, SystemTime};
 
-use amane::status_item::{ActivityButton, ActivityContent, ItemIcon, Tint, Trailing};
 use amane::{
     Apps, Arc, Canvas, Cap, Center, Color, ConstraintAdjustment, Gravity, Image, Media, Parent,
     Popup, Rectangle, Row, Service, Shape, Size, Start, Text, Widget, window_size,
@@ -26,6 +25,7 @@ use amane_kit::icons::{
     ICON_SKIP_PREVIOUS, ICON_TIMER, named,
 };
 use amane_kit::settings::{BUILTIN_ACTIVITIES, status_bar};
+use amane_status::{ActivityButton, ActivityContent, ItemIcon, Tint, Trailing};
 
 use crate::services::desktop::activities::{self as registry, Live, now_ms};
 use crate::services::desktop::privacy::{CastTarget, Privacy, stop_cast};

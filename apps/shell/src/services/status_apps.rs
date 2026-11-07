@@ -12,11 +12,11 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
 
-use amane::status_item::{
-    ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH, encode,
-};
 use amane::{Argument, Bus, Method};
 use amane_kit::settings::remember_status_app;
+use amane_status::{
+    ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH, encode,
+};
 
 use super::desktop::activities;
 

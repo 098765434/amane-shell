@@ -26,7 +26,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amane"
 version = "0.1.2"
-source = "git+https://github.com/098765434/amane?rev=86b73ad2d8d5f2f2ccadd20f96cf366a4cf8fca6#86b73ad2d8d5f2f2ccadd20f96cf366a4cf8fca6"
+source = "git+https://github.com/098765434/amane?rev=8e5c11072b1d69f970673747e59435728a89981a#8e5c11072b1d69f970673747e59435728a89981a"
 dependencies = [
  "bitflags",
  "inotify",
@@ -76,6 +76,7 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
+ "amane-status",
  "serde_json",
 ]
 
@@ -149,6 +150,7 @@ dependencies = [
  "amane-assistant",
  "amane-kit",
  "amane-pinentry",
+ "amane-status",
  "chrono",
  "libc",
  "qrcode",
@@ -158,10 +160,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "amane-status"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "amane-train-watch"
 version = "0.1.0"
 dependencies = [
  "amane",
+ "amane-status",
 ]
 
 [[package]]
@@ -707,7 +719,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2203,7 +2215,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2516,7 +2528,7 @@ dependencies = [
  "getrandom",
  "once_cell",
  "rustix 1.1.5",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3188,7 +3200,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

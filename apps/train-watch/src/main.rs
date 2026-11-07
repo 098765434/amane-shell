@@ -19,7 +19,7 @@ use std::process::{Command, Stdio};
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::time::{Duration, Instant};
 
-use amane::status_item::{
+use amane_status::{
     ActivityButton, ActivityContent, ActivityEvent, Dismiss, ItemIcon, LiveActivity, Tint, Trailing,
 };
 

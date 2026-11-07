@@ -18,9 +18,10 @@ mod tasks;
 use std::os::unix::net::UnixStream;
 use std::sync::OnceLock;
 
-use amane::status_item::{Accepts, ItemButton, ItemEvent, ItemIcon, ItemSpec, MenuEntry};
-use amane::{App, StatusItem};
+use amane::App;
 use amane_kit::settings::drop_grids;
+use amane_status::StatusItem;
+use amane_status::{Accepts, ItemButton, ItemEvent, ItemIcon, ItemSpec, MenuEntry};
 
 const APP_ID: &str = "amane-drop";
 const ITEM_ID: &str = "org.amane.drop";

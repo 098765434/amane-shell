@@ -21,6 +21,7 @@ workspace = true
 [dependencies]
 # pinned in [workspace.dependencies], shared with the kit
 amane = { workspace = true }
+amane-status = { workspace = true }
 amane-kit = { workspace = true }
 # the assistant's commands, rules and protocol; its daemon (Cactus) is apps/assistant
 amane-assistant = { workspace = true }

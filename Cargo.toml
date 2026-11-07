@@ -35,6 +35,7 @@ members = [
     "apps/train-watch",
     "crates/kit",
     "crates/pinentry",
+    "crates/status",
     "crates/assistant",
     "xtask",
 ]
@@ -52,6 +53,7 @@ authors = ["ocbk"]
 [workspace.dependencies]
 amane-kit = { path = "crates/kit" }
 amane-pinentry = { path = "crates/pinentry" }
+amane-status = { path = "crates/status" }
 amane-assistant = { path = "crates/assistant" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -65,7 +67,7 @@ libpulse-simple-binding = "2"
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/local.toml` with `paths = ["../amane"]` overrides it with a sibling
 # checkout during local co-development. See CONTRIBUTING.
-amane = { git = "https://github.com/098765434/amane", rev = "86b73ad2d8d5f2f2ccadd20f96cf366a4cf8fca6" }
+amane = { git = "https://github.com/098765434/amane", rev = "8e5c11072b1d69f970673747e59435728a89981a", features = ["polkit-agent"] }
 
 # amane's vello fork: scratch buffers sized for a shell (about 29 MB a set
 # instead of 165, vello_encoding) that are let go when idle (vello). A patch

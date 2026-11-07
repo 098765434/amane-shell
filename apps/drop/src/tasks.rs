@@ -10,11 +10,12 @@ use std::time::{Duration, Instant};
 
 use std::sync::Mutex;
 
-use amane::status_item::{
+use amane::KdeConnect;
+use amane_kit::settings::UploadTo;
+use amane_status::LiveActivity;
+use amane_status::{
     ActivityButton, ActivityContent, ActivityEvent, Dismiss, ItemIcon, Tint, Trailing,
 };
-use amane::{KdeConnect, LiveActivity};
-use amane_kit::settings::UploadTo;
 
 use crate::state::{self, Outcome, Prompt};
 use crate::{files, share, shared};

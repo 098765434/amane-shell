@@ -11,7 +11,6 @@
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use amane::status_item::BarEdge;
 use amane::{
     Apps, Arc, Button, Canvas, Cap, Center, Color, Column, DragData, FileDialog, Image, InputArea,
     KdeConnect, Key, Keyboard, Layer, LayerWindow, Padding, Parent, Rectangle, Row, Service, Shape,
@@ -30,6 +29,7 @@ use amane_kit::settings::{
     DropTile, FolderMode, UploadTo, change_drop_grids, drop_grids, drop_sharing, status_bar,
 };
 use amane_kit::tokens::{Styled, sys};
+use amane_status::BarEdge;
 
 use crate::state::{self, Changed, Outcome, Prompt, Target};
 use crate::tasks::{self, Job, Payload, name};
