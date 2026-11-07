@@ -24,173 +24,340 @@ use crate::surfaces::quick_settings::grid::Sizes as _;
 use amane_kit::grid::GridKey;
 use amane_kit::layout::boxed;
 
+/// A control, by its place in [`SPECS`]: the default order, then the ones
+/// added since (a control's place keys its motion, so new ones go last).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ControlId {
     Wifi,
-    Bluetooth,
     NowPlaying,
-    Vpn,
-    Wired,
+    Bluetooth,
     Focus,
     DarkStyle,
     NightLight,
     Display,
     Sound,
     Battery,
+    Airplane,
     PowerMode,
     Keyboard,
-    Airplane,
     BackgroundApps,
     Screenshot,
     Lock,
     PowerOff,
+    Vpn,
+    Wired,
     Tailscale,
     KeepAwake,
     SoftwareUpdate,
     Phone,
 }
 
+/// How a control is drawn: a toggle the grid sizes, or a cell of its own.
+#[derive(Clone, Copy)]
+pub enum Kind {
+    /// A toggle; none when this machine hasn't got what it drives.
+    Toggle(fn() -> Option<QuickToggle>),
+    /// A cell drawn at a span, inert or not; none when this machine hasn't
+    /// got what it drives.
+    Cell(fn(Span, bool) -> Option<Box<dyn Widget>>),
+}
+
+/// What a control is, written once.
+pub struct Spec {
+    /// Which control.
+    pub id: ControlId,
+    /// The name kept in the layout file, and the IPC's.
+    pub name: &'static str,
+    /// What the Add Controls list calls it.
+    pub title: &'static str,
+    /// The sizes it comes in, smallest first.
+    pub sizes: &'static [Span],
+    /// The size it's added at.
+    pub default: Span,
+    /// Waits in the Add list until asked for.
+    pub hidden: bool,
+    /// How it's drawn.
+    pub kind: Kind,
+    /// Whether this machine has what it drives, read straight from the
+    /// services (cheaper than building it to see).
+    pub available: fn() -> bool,
+}
+
+// the sizes controls come in
+const SMALL: &[Span] = &[Span::S, Span::M];
+const TOGGLE: &[Span] = &[Span::M, Span::W3, Span::FULL];
+const WIDE: &[Span] = &[Span::W3, Span::FULL];
+const LARGE: &[Span] = &[Span::L, Span::FULL];
+
+const fn always() -> bool {
+    true
+}
+
+const fn spec(
+    id: ControlId,
+    name: &'static str,
+    title: &'static str,
+    sizes: &'static [Span],
+    kind: Kind,
+    available: fn() -> bool,
+) -> Spec {
+    Spec {
+        id,
+        name,
+        title,
+        sizes,
+        default: sizes[0],
+        hidden: false,
+        kind,
+        available,
+    }
+}
+
+/// Added only when asked for.
+const fn hidden(spec: Spec) -> Spec {
+    Spec {
+        hidden: true,
+        ..spec
+    }
+}
+
+/// Every control, in [`ControlId`]'s order.
+pub const SPECS: [Spec; 22] = {
+    use ControlId as C;
+    use Kind::{Cell, Toggle};
+    [
+        spec(
+            C::Wifi,
+            "wifi",
+            "Wi‑Fi",
+            TOGGLE,
+            Toggle(network::wifi_toggle),
+            network::wifi_available,
+        ),
+        spec(
+            C::NowPlaying,
+            "now-playing",
+            "Now Playing",
+            LARGE,
+            Cell(|span, inert| Some(media::cell(span, inert))),
+            always,
+        ),
+        spec(
+            C::Bluetooth,
+            "bluetooth",
+            "Bluetooth",
+            TOGGLE,
+            Toggle(bluetooth::toggle),
+            || Bluetooth::read().available(),
+        ),
+        spec(
+            C::Focus,
+            "focus",
+            "Focus",
+            TOGGLE,
+            Toggle(|| Some(notifications::toggle())),
+            always,
+        ),
+        spec(
+            C::DarkStyle,
+            "dark-style",
+            "Dark Style",
+            SMALL,
+            Toggle(appearance::dark_style_toggle),
+            dark_style::present,
+        ),
+        spec(
+            C::NightLight,
+            "night-light",
+            "Night Light",
+            SMALL,
+            Toggle(appearance::night_light_toggle),
+            || NightLight::read().present(),
+        ),
+        Spec {
+            default: Span::FULL,
+            ..spec(
+                C::Display,
+                "display",
+                "Display",
+                WIDE,
+                Cell(appearance::brightness_cell),
+                || Brightness::read().present(),
+            )
+        },
+        Spec {
+            default: Span::FULL,
+            ..spec(C::Sound, "sound", "Sound", WIDE, Cell(sound::cell), || {
+                !Audio::read().outputs().is_empty()
+            })
+        },
+        spec(
+            C::Battery,
+            "battery",
+            "Battery",
+            TOGGLE,
+            Toggle(system_row::battery_toggle),
+            || Battery::read().present(),
+        ),
+        spec(
+            C::Airplane,
+            "airplane",
+            "Airplane Mode",
+            SMALL,
+            Toggle(airplane::toggle),
+            || Rfkill::read().present(),
+        ),
+        spec(
+            C::PowerMode,
+            "power-mode",
+            "Power Mode",
+            SMALL,
+            Toggle(power::mode_toggle),
+            || PowerProfile::read().present(),
+        ),
+        spec(
+            C::Keyboard,
+            "keyboard",
+            "Keyboard Brightness",
+            SMALL,
+            Toggle(keyboard::toggle),
+            || KeyboardBacklight::read().present(),
+        ),
+        spec(
+            C::BackgroundApps,
+            "background-apps",
+            "Background Apps",
+            SMALL,
+            Toggle(background::toggle),
+            || !BackgroundApps::read().apps().is_empty(),
+        ),
+        spec(
+            C::Screenshot,
+            "screenshot",
+            "Screenshot",
+            SMALL,
+            Toggle(|| Some(system_row::screenshot_toggle())),
+            always,
+        ),
+        spec(
+            C::Lock,
+            "lock",
+            "Lock Screen",
+            SMALL,
+            Toggle(|| Some(system_row::lock_toggle())),
+            always,
+        ),
+        spec(
+            C::PowerOff,
+            "power-off",
+            "Power Off",
+            SMALL,
+            Toggle(|| Some(system_row::power_off_toggle())),
+            always,
+        ),
+        hidden(spec(
+            C::Vpn,
+            "vpn",
+            "VPN",
+            TOGGLE,
+            Toggle(network::vpn_toggle),
+            network::vpn_available,
+        )),
+        hidden(spec(
+            C::Wired,
+            "wired",
+            "Wired",
+            TOGGLE,
+            Toggle(network::wired_toggle),
+            || Connections::read().wired().is_some(),
+        )),
+        hidden(spec(
+            C::Tailscale,
+            "tailscale",
+            "Tailscale",
+            TOGGLE,
+            Toggle(tailscale::toggle),
+            || Tailscale::read().present(),
+        )),
+        hidden(spec(
+            C::KeepAwake,
+            "keep-awake",
+            "Keep Awake",
+            TOGGLE,
+            Toggle(keep_awake::toggle),
+            || KeepAwake::read().present(),
+        )),
+        // addable with Shell Settings around; its cells stay empty until an update waits
+        hidden(spec(
+            C::SoftwareUpdate,
+            "software-update",
+            "Software Update",
+            TOGGLE,
+            Toggle(software_update::toggle),
+            software_update::available,
+        )),
+        hidden(spec(
+            C::Phone,
+            "phone",
+            "Phone",
+            TOGGLE,
+            Toggle(phone::toggle),
+            phone::available,
+        )),
+    ]
+};
+
 impl ControlId {
-    /// The default order, then the ones added since (a control's
-    /// place here keys its motion).
-    pub const ALL: [ControlId; 22] = [
-        Self::Wifi,
-        Self::NowPlaying,
-        Self::Bluetooth,
-        Self::Focus,
-        Self::DarkStyle,
-        Self::NightLight,
-        Self::Display,
-        Self::Sound,
-        Self::Battery,
-        Self::Airplane,
-        Self::PowerMode,
-        Self::Keyboard,
-        Self::BackgroundApps,
-        Self::Screenshot,
-        Self::Lock,
-        Self::PowerOff,
-        Self::Vpn,
-        Self::Wired,
-        Self::Tailscale,
-        Self::KeepAwake,
-        Self::SoftwareUpdate,
-        Self::Phone,
-    ];
+    /// Every control, in their order.
+    pub const ALL: [ControlId; 22] = {
+        let mut all = [ControlId::Wifi; 22];
+        let mut at = 0;
+        while at < all.len() {
+            all[at] = SPECS[at].id;
+            at += 1;
+        }
+        all
+    };
+
+    /// What the control is.
+    pub fn spec(self) -> &'static Spec {
+        &SPECS[self as usize]
+    }
 
     /// The name kept in the layout file.
     pub fn name(self) -> &'static str {
-        match self {
-            Self::Wifi => "wifi",
-            Self::Bluetooth => "bluetooth",
-            Self::NowPlaying => "now-playing",
-            Self::Vpn => "vpn",
-            Self::Wired => "wired",
-            Self::Focus => "focus",
-            Self::DarkStyle => "dark-style",
-            Self::NightLight => "night-light",
-            Self::Display => "display",
-            Self::Sound => "sound",
-            Self::Battery => "battery",
-            Self::PowerMode => "power-mode",
-            Self::Keyboard => "keyboard",
-            Self::Airplane => "airplane",
-            Self::BackgroundApps => "background-apps",
-            Self::Screenshot => "screenshot",
-            Self::Lock => "lock",
-            Self::PowerOff => "power-off",
-            Self::Tailscale => "tailscale",
-            Self::KeepAwake => "keep-awake",
-            Self::SoftwareUpdate => "software-update",
-            Self::Phone => "phone",
-        }
+        self.spec().name
     }
 
     pub fn named(name: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|id| id.name() == name)
+        SPECS
+            .iter()
+            .find(|spec| spec.name == name)
+            .map(|spec| spec.id)
     }
 
     /// What the Add Controls list calls it.
     pub fn title(self) -> &'static str {
-        match self {
-            Self::Wifi => "Wi‑Fi",
-            Self::Bluetooth => "Bluetooth",
-            Self::NowPlaying => "Now Playing",
-            Self::Vpn => "VPN",
-            Self::Wired => "Wired",
-            Self::Focus => "Focus",
-            Self::DarkStyle => "Dark Style",
-            Self::NightLight => "Night Light",
-            Self::Display => "Display",
-            Self::Sound => "Sound",
-            Self::Battery => "Battery",
-            Self::PowerMode => "Power Mode",
-            Self::Keyboard => "Keyboard Brightness",
-            Self::Airplane => "Airplane Mode",
-            Self::BackgroundApps => "Background Apps",
-            Self::Screenshot => "Screenshot",
-            Self::Lock => "Lock Screen",
-            Self::PowerOff => "Power Off",
-            Self::Tailscale => "Tailscale",
-            Self::KeepAwake => "Keep Awake",
-            Self::SoftwareUpdate => "Software Update",
-            Self::Phone => "Phone",
-        }
+        self.spec().title
     }
 
     /// The sizes it comes in, smallest first.
     pub fn supported(self) -> &'static [Span] {
-        match self {
-            Self::NowPlaying => &[Span::L, Span::FULL],
-            Self::Display | Self::Sound => &[Span::W3, Span::FULL],
-            Self::Wifi
-            | Self::Bluetooth
-            | Self::Vpn
-            | Self::Wired
-            | Self::Tailscale
-            | Self::KeepAwake
-            | Self::SoftwareUpdate
-            | Self::Phone
-            | Self::Focus
-            | Self::Battery => &[Span::M, Span::W3, Span::FULL],
-            _ => &[Span::S, Span::M],
-        }
+        self.spec().sizes
     }
 
     pub fn default_span(self) -> Span {
-        match self {
-            Self::NowPlaying => Span::L,
-            Self::Display | Self::Sound => Span::FULL,
-            Self::Wifi
-            | Self::Bluetooth
-            | Self::Vpn
-            | Self::Wired
-            | Self::Tailscale
-            | Self::KeepAwake
-            | Self::SoftwareUpdate
-            | Self::Phone
-            | Self::Focus
-            | Self::Battery => Span::M,
-            _ => Span::S,
-        }
+        self.spec().default
     }
 
     /// Waits in the Add list until asked for.
     pub fn hidden_by_default(self) -> bool {
-        matches!(
-            self,
-            Self::Vpn
-                | Self::Wired
-                | Self::Tailscale
-                | Self::KeepAwake
-                | Self::SoftwareUpdate
-                | Self::Phone
-        )
+        self.spec().hidden
     }
 
     /// The key its motion is kept under.
     pub fn key(self) -> u64 {
-        Self::ALL.iter().position(|id| *id == self).unwrap_or(0) as u64
+        self as u64
     }
 }
 
@@ -215,58 +382,18 @@ impl Ctx {
 /// Builds `id` at `span`, or nothing when this machine hasn't got it.
 pub fn build(id: ControlId, span: Span, ctx: &Ctx) -> Option<Box<dyn Widget>> {
     let span = id.clamp(span);
-    let inert = ctx.inert;
-    let toggle = |t: Option<QuickToggle>| t.map(|t| sized(t, span, inert));
-    match id {
-        ControlId::Wifi => toggle(network::wifi_toggle()),
-        ControlId::Bluetooth => toggle(bluetooth::toggle()),
-        ControlId::NowPlaying => Some(media::cell(span, inert)),
-        ControlId::Vpn => toggle(network::vpn_toggle()),
-        ControlId::Wired => toggle(network::wired_toggle()),
-        ControlId::Airplane => toggle(airplane::toggle()),
-        ControlId::Focus => toggle(Some(notifications::toggle())),
-        ControlId::DarkStyle => toggle(appearance::dark_style_toggle()),
-        ControlId::NightLight => toggle(appearance::night_light_toggle()),
-        ControlId::Display => appearance::brightness_cell(span, inert),
-        ControlId::Sound => sound::cell(span, inert),
-        ControlId::Battery => toggle(system_row::battery_toggle()),
-        ControlId::PowerMode => toggle(power::mode_toggle()),
-        ControlId::Keyboard => toggle(keyboard::toggle()),
-        ControlId::BackgroundApps => toggle(background::toggle()),
-        ControlId::Screenshot => toggle(Some(system_row::screenshot_toggle())),
-        ControlId::Lock => toggle(Some(system_row::lock_toggle())),
-        ControlId::PowerOff => toggle(Some(system_row::power_off_toggle())),
-        ControlId::Tailscale => toggle(tailscale::toggle()),
-        ControlId::KeepAwake => toggle(keep_awake::toggle()),
-        ControlId::SoftwareUpdate => toggle(software_update::toggle()),
-        ControlId::Phone => toggle(phone::toggle()),
+    match id.spec().kind {
+        Kind::Toggle(toggle) => toggle().map(|t| sized(t, span, ctx.inert)),
+        Kind::Cell(cell) => cell(span, ctx.inert),
     }
 }
 
 /// `id` as a toggle, for the controls that are one, or `None` for the
 /// cells (Now Playing, Display, Sound) and what this machine hasn't got.
 pub fn quick_toggle(id: ControlId) -> Option<QuickToggle> {
-    match id {
-        ControlId::Wifi => network::wifi_toggle(),
-        ControlId::Bluetooth => bluetooth::toggle(),
-        ControlId::Vpn => network::vpn_toggle(),
-        ControlId::Wired => network::wired_toggle(),
-        ControlId::Airplane => airplane::toggle(),
-        ControlId::Focus => Some(notifications::toggle()),
-        ControlId::DarkStyle => appearance::dark_style_toggle(),
-        ControlId::NightLight => appearance::night_light_toggle(),
-        ControlId::Battery => system_row::battery_toggle(),
-        ControlId::PowerMode => power::mode_toggle(),
-        ControlId::Keyboard => keyboard::toggle(),
-        ControlId::BackgroundApps => background::toggle(),
-        ControlId::Screenshot => Some(system_row::screenshot_toggle()),
-        ControlId::Lock => Some(system_row::lock_toggle()),
-        ControlId::PowerOff => Some(system_row::power_off_toggle()),
-        ControlId::Tailscale => tailscale::toggle(),
-        ControlId::KeepAwake => keep_awake::toggle(),
-        ControlId::SoftwareUpdate => software_update::toggle(),
-        ControlId::Phone => phone::toggle(),
-        ControlId::NowPlaying | ControlId::Display | ControlId::Sound => None,
+    match id.spec().kind {
+        Kind::Toggle(toggle) => toggle(),
+        Kind::Cell(_) => None,
     }
 }
 
@@ -275,34 +402,9 @@ pub fn present(id: ControlId, _ctx: &Ctx) -> bool {
     available(id)
 }
 
-/// Whether this machine has what `id` drives, read straight from the
-/// services (cheaper than building the control to see).
+/// Whether this machine has what `id` drives.
 pub fn available(id: ControlId) -> bool {
-    match id {
-        ControlId::Wifi => network::wifi_available(),
-        ControlId::Bluetooth => Bluetooth::read().available(),
-        ControlId::NowPlaying
-        | ControlId::Focus
-        | ControlId::Screenshot
-        | ControlId::Lock
-        | ControlId::PowerOff => true,
-        ControlId::Vpn => network::vpn_available(),
-        ControlId::Wired => Connections::read().wired().is_some(),
-        ControlId::Airplane => Rfkill::read().present(),
-        ControlId::DarkStyle => dark_style::present(),
-        ControlId::NightLight => NightLight::read().present(),
-        ControlId::Display => Brightness::read().present(),
-        ControlId::Sound => !Audio::read().outputs().is_empty(),
-        ControlId::Battery => Battery::read().present(),
-        ControlId::PowerMode => PowerProfile::read().present(),
-        ControlId::Keyboard => KeyboardBacklight::read().present(),
-        ControlId::BackgroundApps => !BackgroundApps::read().apps().is_empty(),
-        ControlId::Tailscale => Tailscale::read().present(),
-        ControlId::KeepAwake => KeepAwake::read().present(),
-        // addable with Shell Settings around; its cells stay empty until an update waits
-        ControlId::SoftwareUpdate => software_update::available(),
-        ControlId::Phone => phone::available(),
-    }
+    (id.spec().available)()
 }
 
 /// `toggle` in the shape `span` asks for.
@@ -318,6 +420,13 @@ fn sized(toggle: QuickToggle, span: Span, inert: bool) -> Box<dyn Widget> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_control_is_at_its_own_place() {
+        for (at, spec) in SPECS.iter().enumerate() {
+            assert_eq!(spec.id as usize, at, "{} is out of place", spec.name);
+        }
+    }
 
     #[test]
     fn every_control_has_a_unique_name_and_key() {

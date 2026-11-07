@@ -110,28 +110,30 @@ pub(super) fn page(page: Page) -> DetailPage {
     }
 }
 
-/// Whether `page` has what it shows: the setting's hardware or daemon is
-/// there. A page whose setting goes away while it's open gives way to the
-/// grid, and IPC won't open one.
-pub(super) fn available(page: Page) -> bool {
-    use amane::{Audio, Battery, Bluetooth, PowerProfile, Service};
+/// The control `page` is opened from, if it belongs to one.
+fn control(page: Page) -> Option<ControlId> {
+    Some(match page {
+        Page::Grid | Page::Session | Page::BackgroundApps => return None,
+        Page::Sound => ControlId::Sound,
+        Page::Wifi => ControlId::Wifi,
+        Page::Vpn => ControlId::Vpn,
+        Page::Bluetooth => ControlId::Bluetooth,
+        Page::PowerMode => ControlId::PowerMode,
+        Page::Power => ControlId::Battery,
+        Page::NightLight => ControlId::NightLight,
+        Page::DoNotDisturb => ControlId::Focus,
+        Page::Keyboard => ControlId::Keyboard,
+        Page::Tailscale => ControlId::Tailscale,
+        Page::KeepAwake => ControlId::KeepAwake,
+        Page::Phone => ControlId::Phone,
+    })
+}
 
-    match page {
-        Page::Grid | Page::DoNotDisturb | Page::Session | Page::BackgroundApps => true,
-        Page::Sound => !Audio::read().outputs().is_empty(),
-        Page::Wifi => network::wifi_available(),
-        Page::Vpn => network::vpn_available(),
-        Page::Bluetooth => Bluetooth::read().available(),
-        Page::PowerMode => PowerProfile::read().present(),
-        Page::Power => Battery::read().present(),
-        Page::NightLight => crate::services::display::night_light::NightLight::read().present(),
-        Page::Keyboard => {
-            crate::services::power::keyboard_backlight::KeyboardBacklight::read().present()
-        }
-        Page::Tailscale => crate::services::network::tailscale::Tailscale::read().present(),
-        Page::KeepAwake => crate::services::power::keep_awake::KeepAwake::read().present(),
-        Page::Phone => phone::available(),
-    }
+/// Whether `page` has what it shows: its control's hardware or daemon is
+/// there. A page whose setting goes away while it's open gives way to the
+/// grid, and IPC won't open one. Background Apps' page shows even with none.
+pub(super) fn available(page: Page) -> bool {
+    control(page).is_none_or(super::controls::available)
 }
 
 /// `page` was left: forget what it was in the middle of.
