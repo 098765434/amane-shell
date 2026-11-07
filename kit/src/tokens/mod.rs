@@ -16,8 +16,12 @@
 //! scale. There is no `ref` module: code never reads primitives. The rules
 //! live in `docs/design-system/tokens.md`.
 
+#![allow(missing_docs)]
+
 pub mod accent;
 pub mod check;
+#[cfg(test)]
+mod codegen;
 pub mod color;
 pub mod envelope;
 pub mod error;
