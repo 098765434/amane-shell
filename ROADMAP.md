@@ -9,7 +9,7 @@ This plan turns amane-shell and its forks (amane, niri, vello) into one delibera
 | niri (`niri/`) | ocbk | `16384e00` | 2 commits ahead of origin, not pushed |
 | vello (`vello/`) | ocbk | `46585523` | |
 
-After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`). After Phase 3, shell `main` pins amane `292d486`. After Phase 4, shell `main` pins amane `112da4d`, in the new layout (`apps/shell`, `crates/`, `xtask`). After Phase 5, niri `ocbk` is `745e72d5` (history tidied; the old branch is `ocbk-pre-tidy`). After Phase 6a, shell `main` pins amane `af52270`.
+After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`). After Phase 3, shell `main` pins amane `292d486`. After Phase 4, shell `main` pins amane `112da4d`, in the new layout (`apps/shell`, `crates/`, `xtask`). After Phase 5, niri `ocbk` is `745e72d5` (history tidied; the old branch is `ocbk-pre-tidy`). After Phase 6a, shell `main` pins amane `af52270`. After Phase 11, shell `main` pins amane `9d5fb6f`.
 
 ## Ground rules
 
@@ -779,6 +779,16 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 - `amane-nixos` has its own tests in CI.
 
 **Risks.** Medium: `displays.kdl` ownership is a format and behaviour change on the niri side; the existing file must be read without loss.
+
+**Status (2026-11-07).** Done in seven steps, each pushed with CI green (shell `6bb385a` the process runner, `5eb04ef` Settings on amane's niri client, `a3a21a1` one writer of `displays.kdl`, `f57dfbd` `amane-nixos`, `bb0379d` search, `fe4926d` app ids, `e40ebcc` the apps' logging). amane `9d5fb6f` (the niri client's output changes and config reads); no niri change.
+- **Process runner.** A new crate, `amane-process` (std only), rather than the kit's `platform::process`: `amane-nixos` and train-watch don't use the kit. The kit re-exports it beside `run`, `run_now`, `installed` and `Latest`. Programs fed on stdin (`wl-copy`, Drop's `curl`) and long-running children (the mirror's `adb`) keep their own code.
+- **niri client.** amane's `niri::set_output(output, OutputChange)` covers every output change, `Output` has the serial, size, VRR and `Transform`, and `follow_config_loads` hears niri's `ConfigLoaded`. Settings' `displays/niri.rs` is gone; what only the page asks of an output is `displays/outputs.rs`.
+- **`displays.kdl`.** Settings' `displays/kdl.rs` is the one writer (a test fails if any other file names the file), and keeps every line it doesn't know, in a block or between blocks. The shell's HDR white goes to its own `hdr-white.json` and is set in niri again at start and after each config read, instead of an edit of the file.
+- **`amane-nixos`.** The model, the jobs (`Steps`: build, compare, activate, update, place the lock; stoppable), the lock, generations, the catalog and the keyboard layouts, about 2.5k lines, every command through a `Config`. Settings keeps its `Service` types and pages, which call the crate. New tests run the pipeline against fake `nix`, `git` and `pkexec`. `installed.rs` stays: it's amane's `Apps`. The crate has no `missing_docs` lint yet: Phase 13. The About pages share one card and one path helper.
+- **Search.** `fuzzy` is the kit's (`amane_kit::fuzzy`); Settings scores titles with it, other words at half. `PAGE_NAMES` and `SUBS` (by page) are the one list of places, and tests check every page and sub-page has an entry, every entry opens and every row it lights exists.
+- **train-watch** reads no Tailscale state: `tailscale ssh` is only its transport, so that task fell away; its commands go through `amane-process`.
+- **App ids.** `amane_kit::app_ids` names every app; the layer rules' test covers each app under `apps/` that opens a window. Shader Lab has no rule, on purpose (a developer tool), and Drop's grid has a layer rule.
+- **Logging.** The apps' and crates' `eprintln!` and `let _ =` are done as Phase 10 did the shell's; CLI output (train-watch's usage) stays on stderr, and tests' cleanup is left as it is.
 
 ---
 
