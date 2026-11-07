@@ -42,7 +42,7 @@ done
 [ -f "$work/needle3.safetensors" ] || curl -sfL -o "$work/needle3.safetensors" "$needle/checkpoints/needle3.safetensors"
 [ -f "$work/whistle.cact" ] || curl -sfL -o "$work/whistle.cact" "$whistle/whistle.cact"
 
-cargo build --release -p amane-assistant
+cargo build --release -p amane-assistant-daemon
 daemon="$repo/target/release/amane-assistant"
 python3 -I "$repo/apps/assistant/train/gen.py" "$daemon" "$work/data.jsonl" "$examples"
 

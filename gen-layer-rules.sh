@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Splice the amane layer-rules into the niri config from niri-layer-rule.kdl,
-# which `cargo run -q -- layer-rules` generates from the design tokens (see
-# src/tokens/layer_rules.rs). Replaces only the region between the markers
+# which `cargo xtask layer-rules` generates from the design tokens (see
+# apps/shell/src/tokens/layer_rules.rs). Replaces only the region between the markers
 #
 #     // >>> amane layer-rules (generated from shell/niri-layer-rule.kdl ...)
 #     // <<< amane layer-rules
@@ -23,7 +23,7 @@ TARGET="${1:-$HOME/.config/niri/config.kdl}"
 # write through a symlink (home-manager links config.kdl into a repo), so the
 # link stays a link
 TARGET="$(readlink -f "$TARGET")"
-# the same sentinel as src/tokens/layer_rules.rs (a test checks it)
+# the same sentinel as apps/shell/src/tokens/layer_rules.rs (a test checks it)
 SENTINEL="//<<<GENERATED-RULES-BELOW>>>"
 BEGIN="// >>> amane layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)"
 END="// <<< amane layer-rules"

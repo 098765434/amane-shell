@@ -538,17 +538,17 @@ mod tests {
 
     #[test]
     fn committed_kdl_matches_the_tokens() {
-        let committed = include_str!("../../niri-layer-rule.kdl");
+        let committed = include_str!("../../../../niri-layer-rule.kdl");
         assert!(
             committed == render(&rules()),
             "niri-layer-rule.kdl is out of date — run: \
-             cargo run -q -- layer-rules > niri-layer-rule.kdl"
+             cargo xtask layer-rules > niri-layer-rule.kdl"
         );
     }
 
     #[test]
     fn the_script_splices_after_the_same_sentinel() {
-        let script = include_str!("../../gen-layer-rules.sh");
+        let script = include_str!("../../../../gen-layer-rules.sh");
         assert!(script.contains(&format!("SENTINEL=\"{SENTINEL}\"")));
     }
 
@@ -684,9 +684,9 @@ mod tests {
     #[test]
     fn every_amane_app_has_a_window_rule() {
         let apps = [
-            include_str!("../../apps/settings/src/main.rs"),
-            include_str!("../../apps/messages/src/main.rs"),
-            include_str!("../../apps/mirror/src/main.rs"),
+            include_str!("../../../settings/src/main.rs"),
+            include_str!("../../../messages/src/main.rs"),
+            include_str!("../../../mirror/src/main.rs"),
         ];
         for app_id in APP_IDS {
             assert!(
@@ -752,7 +752,7 @@ mod tests {
     fn namespaces_in_code() -> std::collections::BTreeMap<String, String> {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let mut files = Vec::new();
-        for dir in ["src", "kit/src", "apps/drop/src"] {
+        for dir in ["src", "../../crates/kit/src", "../drop/src"] {
             sources(&root.join(dir), &mut files);
         }
         let mut found = std::collections::BTreeMap::new();

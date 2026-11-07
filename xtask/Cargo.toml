@@ -1,0 +1,16 @@
+[package]
+name = "xtask"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "The workspace's own tasks: cargo xtask layer-rules | tokens | lint-terms | links."
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+amane-kit = { workspace = true }
+
+[lints]
+workspace = true

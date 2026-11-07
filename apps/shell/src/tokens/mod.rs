@@ -4,4 +4,6 @@
 
 pub use amane_kit::tokens::*;
 
+#[cfg(test)]
+mod contract;
 pub mod layer_rules;

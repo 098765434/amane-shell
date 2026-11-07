@@ -1,0 +1,5 @@
+# Tracked: the workspace's alias. A local override of the amane dependency
+# goes in .cargo/local.toml (git-ignored), used with
+# `cargo --config .cargo/local.toml …`; see CONTRIBUTING.
+[alias]
+xtask = "run -q -p xtask --"

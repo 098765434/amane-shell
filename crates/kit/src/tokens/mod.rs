@@ -43,7 +43,7 @@ pub use error::TokenError;
 pub use values::{Shadow, TextCase, TextDecoration, Value};
 
 /// The committed Penpot export.
-pub const SOURCE: &str = include_str!("../../../design-tokens/tokens.json");
+pub const SOURCE: &str = include_str!("../../design-tokens/tokens.json");
 
 /// The prefixes component tokens may use (manual §3).
 pub const COMPONENTS: &[&str] = &[

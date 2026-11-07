@@ -1,0 +1,17 @@
+[package]
+name = "amane-assistant"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "The launcher's assistant, the part the shell and the daemon share: its commands, tools, rules and protocol."
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+# The daemon that listens and runs the model (Cactus) is apps/assistant.
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

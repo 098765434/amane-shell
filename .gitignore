@@ -2,5 +2,5 @@
 .claude/
 /result
 /result-*
-/.cargo/
+/.cargo/local.toml
 __pycache__/

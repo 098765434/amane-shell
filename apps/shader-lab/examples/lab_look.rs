@@ -2,7 +2,7 @@
 //! `dock-glass` config (apps/shader-lab/configs/dock-glass.json), over the
 //! wallpaper so the glass has something to bend.
 //!
-//! `cargo run -p amane-kit --example lab_look`
+//! `cargo run -p amane-shader-lab --example lab_look`
 
 use std::path::PathBuf;
 
@@ -14,7 +14,13 @@ use amane_kit::layout::boxed;
 const WIDTH: f32 = 330.0;
 const HEIGHT: f32 = 105.0;
 
+/// The lab's effects and saved configs, as the lab embeds them.
+mod files {
+    include!(concat!(env!("OUT_DIR"), "/lab_files.rs"));
+}
+
 fn main() {
+    lab::register(files::FILES);
     app("amane-kit-lab-look")
         .normal_window("main", window)
         .run();

@@ -23,6 +23,16 @@ fn cli(args: &[String]) -> Option<ExitCode> {
     };
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
 
+    // the workspace's tasks moved to `cargo xtask`; these stay for a while
+    if matches!(args.first(), Some(&("tokens" | "layer-rules")))
+        && std::env::var_os("AMANE_FROM_XTASK").is_none()
+    {
+        eprintln!(
+            "amane-shell: run it as `cargo xtask {}` from the repository",
+            args.join(" ")
+        );
+    }
+
     let ok = match args.as_slice() {
         ["tokens", "normalize", path] => read(path).and_then(|json| {
             tokens::check::normalize(&json)
@@ -307,7 +317,7 @@ mod tests {
     /// The verbs `docs/integration/ipc.md` documents: its `` ### `verb` ``
     /// headings under Commands, and the calls in the Context menus table.
     fn documented() -> BTreeSet<String> {
-        let doc = include_str!("../docs/integration/ipc.md");
+        let doc = include_str!("../../../docs/integration/ipc.md");
         let commands = doc
             .split_once("\n## Commands\n")
             .map(|(_, rest)| rest.split("\n## ").next().unwrap_or(rest))

@@ -2,8 +2,9 @@
 # Warns when a local cargo build differs from the Nix build.
 #
 # The Nix build (and CI) use the amane and vello revs pinned in Cargo.toml.
-# A git-ignored .cargo/config.toml with `paths = ["../amane"]` makes cargo
-# build against ../amane's working tree instead. This says when that tree
+# A git-ignored .cargo/local.toml with `paths = ["../amane"]` (used as
+# `cargo --config .cargo/local.toml …`) makes cargo build against ../amane's
+# working tree instead. This says when that tree
 # isn't the pinned rev, or has changes not yet committed, and when the shell
 # and ../amane pin different vello revs.
 #
@@ -37,9 +38,9 @@ if [[ -z $amane_pin ]]; then
 fi
 
 # only an active override makes ../amane's tree matter
-if [[ -f .cargo/config.toml ]] && grep -q '"../amane"' .cargo/config.toml; then
+if [[ -f .cargo/local.toml ]] && grep -q '"../amane"' .cargo/local.toml; then
     if [[ ! -d ../amane/.git ]]; then
-        warn ".cargo/config.toml overrides amane with ../amane, which isn't a git checkout"
+        warn ".cargo/local.toml overrides amane with ../amane, which isn't a git checkout"
     else
         head=$(git -C ../amane rev-parse HEAD)
         if [[ -n $amane_pin && $head != "$amane_pin" ]]; then

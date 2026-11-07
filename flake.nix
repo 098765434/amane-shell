@@ -165,11 +165,9 @@
                 ./Cargo.toml
                 ./Cargo.lock
                 ./rustfmt.toml
-                ./src
-                ./kit
                 ./apps
-                ./design-tokens
-                ./tests
+                ./crates
+                ./xtask
                 # the IPC test checks the verbs against it
                 ./docs/integration/ipc.md
                 ./niri-layer-rule.kdl
@@ -191,9 +189,9 @@
             };
 
             # the shell, and the apps beside it (Shell Settings, Messages, Phone Screen,
-            # Shader Lab, Drop)
-            cargoBuildFlags = [ "--workspace" ];
-            cargoTestFlags = [ "--workspace" ];
+            # Shader Lab, Drop); not xtask, the workspace's own tasks
+            cargoBuildFlags = [ "--workspace" "--exclude" "xtask" ];
+            cargoTestFlags = [ "--workspace" "--exclude" "xtask" ];
 
             nativeBuildInputs = [
               pkgs.pkg-config

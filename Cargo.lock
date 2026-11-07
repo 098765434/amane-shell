@@ -54,6 +54,15 @@ dependencies = [
 name = "amane-assistant"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "amane-assistant-daemon"
+version = "0.1.0"
+dependencies = [
+ "amane-assistant",
  "libpulse-binding",
  "libpulse-simple-binding",
  "serde",
@@ -3431,6 +3440,13 @@ name = "xml-rs"
 version = "0.8.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+
+[[package]]
+name = "xtask"
+version = "0.1.0"
+dependencies = [
+ "amane-kit",
+]
 
 [[package]]
 name = "yazi"

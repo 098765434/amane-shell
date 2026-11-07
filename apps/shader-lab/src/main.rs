@@ -287,7 +287,13 @@ fn suggest(state: &mut Config, manifest: &Manifest) {
     }
 }
 
+/// The effects and saved configs, embedded by build.rs.
+mod files {
+    include!(concat!(env!("OUT_DIR"), "/lab_files.rs"));
+}
+
 fn main() {
+    amane_kit::lab::register(files::FILES);
     app("amane-shader-lab")
         .normal_window("main", main_window)
         .run();
@@ -371,3 +377,6 @@ fn default_image() -> String {
         String::new()
     }
 }
+
+#[cfg(test)]
+mod lab_tests;

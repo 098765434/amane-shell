@@ -1,5 +1,5 @@
 [package]
-name = "amane-assistant"
+name = "amane-assistant-daemon"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,27 +8,18 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
-# The library is what the shell uses (the commands, the tools, the rules, the
-# protocol); the daemon links Cactus and listens to the microphone. The shell
-# takes the library alone: `default-features = false`.
-[lib]
-name = "amane_assistant"
-path = "src/lib.rs"
-
+# The daemon links Cactus (build.rs) and listens to the microphone; the
+# commands, rules and protocol it shares with the shell are crates/assistant.
 [[bin]]
 name = "amane-assistant"
 path = "src/main.rs"
-required-features = ["daemon"]
-
-[features]
-default = ["daemon"]
-daemon = ["dep:libpulse-binding", "dep:libpulse-simple-binding"]
 
 [dependencies]
+amane-assistant = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-libpulse-binding = { workspace = true, optional = true }
-libpulse-simple-binding = { workspace = true, optional = true }
+libpulse-binding = { workspace = true }
+libpulse-simple-binding = { workspace = true }
 
 [lints]
 workspace = true

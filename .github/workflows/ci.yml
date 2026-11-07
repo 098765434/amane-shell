@@ -38,6 +38,10 @@ jobs:
       - name: lint-terms
         run: scripts/lint-terms
 
+      # every relative link in the Markdown names a file that exists
+      - name: links
+        run: nix develop -c cargo xtask links
+
   # The Nix package: catches a stale amane `outputHashes` after a rev bump
   # (flake.nix), and runs the tests again in its check phase.
   nix-build:

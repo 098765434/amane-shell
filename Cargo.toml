@@ -1,41 +1,6 @@
-[package]
-name = "amane-shell"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-description = "A Wayland desktop shell for the niri compositor: a status bar, dock, launcher, Quick Settings and glass, built on the amane shell library."
-license.workspace = true
-repository.workspace = true
-authors.workspace = true
-readme = "README.md"
-keywords = ["wayland", "niri", "bar", "status-bar", "desktop"]
-categories = ["gui"]
-
-[[bin]]
-name = "amane-shell"
-path = 'src/main.rs'
-
-[lints]
-workspace = true
-
-[dependencies]
-# pinned in [workspace.dependencies], shared with the kit
-amane = { workspace = true }
-amane-kit = { workspace = true }
-# the assistant's commands, rules and protocol; its daemon (Cactus) is apps/assistant
-amane-assistant = { path = "apps/assistant", default-features = false }
-serde_json = { workspace = true }
-# for the one bus call that hands back a file descriptor (logind's Inhibit),
-# which amane's Bus can't carry; the same zbus amane already pulls in
-zbus = { workspace = true }
-chrono = { workspace = true }
-# statvfs, for how full the disks are (already in the lock, through amane)
-libc = { workspace = true }
-qrcode = { version = "0.14", default-features = false }
-# passwords: wiped from every buffer they pass through
-zeroize = { workspace = true }
-# rbw's pinentry: the wire format and peer checks the shell shares with it
-amane-pinentry = { workspace = true }
+# The workspace: the shell (apps/shell), the programs beside it (apps/), and
+# the crates they share (crates/). Each crate's manifest takes its package
+# fields, shared dependencies and lints from here.
 
 [profile.dev]
 debug = "line-tables-only"
@@ -58,7 +23,23 @@ todo = "warn"
 unwrap_used = "warn"
 
 [workspace]
-members = ["kit", "apps/pinentry", "apps/settings", "apps/messages", "apps/mirror", "apps/shader-lab", "apps/assistant", "apps/drop", "apps/train-watch"]
+resolver = "3"
+members = [
+    "apps/shell",
+    "apps/settings",
+    "apps/messages",
+    "apps/mirror",
+    "apps/shader-lab",
+    "apps/assistant",
+    "apps/drop",
+    "apps/train-watch",
+    "crates/kit",
+    "crates/pinentry",
+    "crates/assistant",
+    "xtask",
+]
+# `cargo run` and `cargo build` with no -p mean the shell
+default-members = ["apps/shell"]
 
 [workspace.package]
 version = "0.1.0"
@@ -69,8 +50,9 @@ repository = "https://github.com/098765434/amane-shell"
 authors = ["ocbk"]
 
 [workspace.dependencies]
-amane-kit = { path = "kit" }
-amane-pinentry = { path = "apps/pinentry" }
+amane-kit = { path = "crates/kit" }
+amane-pinentry = { path = "crates/pinentry" }
+amane-assistant = { path = "crates/assistant" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = "0.4"
@@ -81,8 +63,8 @@ libpulse-binding = "2"
 libpulse-simple-binding = "2"
 # amane is consumed as a pinned git-dependency on the maintained fork (not a
 # submodule / path dep): reproducible for published builds, while a git-ignored
-# `.cargo/config.toml` with `paths = ["../amane"]` overrides it with a
-# sibling checkout during local co-development. See README.
+# `.cargo/local.toml` with `paths = ["../amane"]` overrides it with a sibling
+# checkout during local co-development. See CONTRIBUTING.
 amane = { git = "https://github.com/098765434/amane", rev = "292d4861c187c6b0fc520e08b5ea7c7bfde4c053" }
 
 # amane's vello fork: scratch buffers sized for a shell (about 29 MB a set

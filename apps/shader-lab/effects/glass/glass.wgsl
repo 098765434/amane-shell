@@ -1,1 +1,1 @@
-../../../../kit/src/look/glass.wgsl
+../../../../crates/kit/src/look/glass.wgsl
