@@ -4,8 +4,9 @@
 //! session, a light's brightness) are here, so no other module names
 //! logind's bus paths.
 
+use amane_kit::sync::Locked as _;
 use std::os::fd::OwnedFd;
-use std::sync::{Mutex, PoisonError};
+use std::sync::Mutex;
 
 use amane::{Argument, Bus, Logind, Service};
 
@@ -111,7 +112,7 @@ pub fn follow(
     };
     Logind::subscribe(move |logind| {
         let now = (logind.lock_requests(), logind.preparing_for_sleep());
-        let mut seen = seen.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut seen = seen.locked();
         let before = seen.replace(now);
         let Some((locks, sleeping)) = before else {
             return;

@@ -19,7 +19,7 @@ pub(super) fn headings(rows: &[Entry]) -> Vec<usize> {
 /// The apps used most, filled out to a row with the first of the rest:
 /// none until any has been used from the launcher.
 pub(super) fn suggestions(all: &[DesktopApp]) -> Vec<&DesktopApp> {
-    let top = usage::read(|usage| usage.top("app:", COLS, usage::now()));
+    let top = usage::read(|usage| usage.top("app:", COLS, amane_kit::time::unix_s()));
     let mut picked: Vec<&DesktopApp> = top
         .iter()
         .filter_map(|key| all.iter().find(|app| entries::app_key(app) == *key))

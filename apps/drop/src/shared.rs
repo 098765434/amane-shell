@@ -3,9 +3,10 @@
 //! link goes on the clipboard and a notification says so, as Settings has
 //! it.
 
+use amane_kit::sync::Locked as _;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::sync::{Mutex, PoisonError};
+use std::sync::Mutex;
 
 use amane::serde::{Deserialize, Serialize};
 use amane::{Clipboard, Notify};
@@ -31,7 +32,7 @@ fn file() -> Option<PathBuf> {
 }
 
 fn with_list<R>(f: impl FnOnce(&mut Vec<Shared>) -> R) -> R {
-    let mut list = LIST.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut list = LIST.locked();
     let list = list.get_or_insert_with(|| {
         file()
             .and_then(|file| std::fs::read_to_string(file).ok())

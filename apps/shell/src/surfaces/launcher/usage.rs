@@ -5,7 +5,6 @@
 
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use amane::serde::{Deserialize, Serialize};
 
@@ -126,13 +125,6 @@ fn prefix(query: &str) -> String {
         .collect()
 }
 
-/// Seconds since the epoch.
-pub(super) fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |since| since.as_secs())
-}
-
 thread_local! {
     static USAGE: RefCell<Option<Usage>> = const { RefCell::new(None) };
 }
@@ -146,7 +138,7 @@ pub(super) fn read<R>(f: impl FnOnce(&Usage) -> R) -> R {
 pub(super) fn record(key: &str, query: &str) {
     USAGE.with_borrow_mut(|usage| {
         let usage = usage.get_or_insert_with(load);
-        usage.record(key, query, now());
+        usage.record(key, query, amane_kit::time::unix_s());
         state::save(usage);
     });
 }

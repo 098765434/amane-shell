@@ -29,7 +29,7 @@ pub fn path(url: &str) -> Option<String> {
         return None;
     }
     if let Some(path) = url.strip_prefix("file://") {
-        return Some(percent_decode(path));
+        return Some(amane_kit::percent::decode(path));
     }
     if !(url.starts_with("http://") || url.starts_with("https://")) {
         return None;
@@ -87,36 +87,9 @@ fn cached(url: &str) -> PathBuf {
         .join(format!("{:016x}", hasher.finish()))
 }
 
-/// `%20` and the like in a file URL's path.
-fn percent_decode(path: &str) -> String {
-    let bytes = path.as_bytes();
-    let mut out = Vec::with_capacity(bytes.len());
-    let mut i = 0;
-    while i < bytes.len() {
-        if bytes[i] == b'%'
-            && i + 2 < bytes.len()
-            && let Ok(byte) = u8::from_str_radix(&path[i + 1..i + 3], 16)
-        {
-            out.push(byte);
-            i += 3;
-        } else {
-            out.push(bytes[i]);
-            i += 1;
-        }
-    }
-    String::from_utf8(out).unwrap_or_else(|_| path.to_string())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn a_file_url_path_is_decoded() {
-        assert_eq!(percent_decode("/a/b%20c/d%C3%A9.png"), "/a/b c/dé.png");
-        assert_eq!(percent_decode("/plain.png"), "/plain.png");
-        assert_eq!(percent_decode("/bad%2"), "/bad%2");
-    }
 
     #[test]
     fn web_art_is_cached_by_its_url() {

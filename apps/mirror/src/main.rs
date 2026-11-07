@@ -23,9 +23,11 @@ mod protocol;
 mod server;
 mod session;
 
+use amane_kit::args::flag;
+use amane_kit::sync::Locked as _;
 use std::collections::HashSet;
 use std::net::IpAddr;
-use std::sync::{Mutex, PoisonError};
+use std::sync::Mutex;
 
 use amane::{Center, Column, Key, Rectangle, Row, Service, Size, Text, Video, Widget, Window};
 use amane_kit::app::{app, standard_shortcut};
@@ -76,31 +78,14 @@ thread_local! {
 }
 
 fn app_target() -> Option<(String, Option<String>)> {
-    TARGET
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .app
-        .clone()
+    TARGET.locked().app.clone()
 }
 
 // the addresses already handed to adb to stay connected to
 static WANTED: Mutex<Option<HashSet<IpAddr>>> = Mutex::new(None);
 
-fn flag(args: &[String], name: &str) -> Option<String> {
-    let mut args = args.iter();
-    while let Some(arg) = args.next() {
-        if let Some(value) = arg.strip_prefix(&format!("{name}=")) {
-            return Some(value.to_string());
-        }
-        if arg == name {
-            return args.next().cloned();
-        }
-    }
-    None
-}
-
 fn follow(args: &[String]) {
-    let mut target = TARGET.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut target = TARGET.locked();
     if let Some(device) = flag(args, "--device") {
         target.device = Some(device);
     }
@@ -120,11 +105,7 @@ struct Phone {
 }
 
 fn phone() -> Option<Phone> {
-    let asked = TARGET
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .device
-        .clone();
+    let asked = TARGET.locked().device.clone();
     let kdeconnect = KdeConnect::read();
     let device = match asked {
         Some(id) => kdeconnect.device(&id),
@@ -139,12 +120,7 @@ fn phone() -> Option<Phone> {
 /// The adb device to mirror: the one named, else KDE Connect's phone by
 /// its address, else the only phone on USB.
 fn serial(phone: Option<&Phone>) -> Option<String> {
-    if let Some(serial) = TARGET
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .serial
-        .clone()
-    {
+    if let Some(serial) = TARGET.locked().serial.clone() {
         return Some(serial);
     }
 
@@ -167,7 +143,7 @@ fn serial(phone: Option<&Phone>) -> Option<String> {
 
 // asks adb to stay connected to the phone's addresses, once each
 fn want(phone: &Phone) {
-    let mut wanted = WANTED.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut wanted = WANTED.locked();
     let wanted = wanted.get_or_insert_with(HashSet::new);
     for address in &phone.addresses {
         if wanted.insert(*address) {

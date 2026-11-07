@@ -8,8 +8,9 @@
 //! its program leaves the bus. Ending it "after" a few seconds keeps its
 //! last state up that long. Timers on amane's event loop wait those out.
 
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
-use std::time::{Duration, Instant, SystemTime};
+use amane_kit::sync::Locked as _;
+use std::sync::{Arc, Mutex, MutexGuard};
+use std::time::{Duration, Instant};
 
 use amane_kit::settings::remember_activity;
 use amane_status::{ActivityContent, ActivityEvent, Dismiss};
@@ -66,7 +67,7 @@ static REGISTRY: Mutex<Registry> = Mutex::new(Registry {
 });
 
 fn registry() -> MutexGuard<'static, Registry> {
-    REGISTRY.lock().unwrap_or_else(PoisonError::into_inner)
+    REGISTRY.locked()
 }
 
 /// Starts an activity for `owner`, telling `sink` of its buttons; its
@@ -222,13 +223,6 @@ pub fn act(handle: u32, button: &str) {
         // on a thread, so a slow bus never holds up the click
         std::thread::spawn(move || sink(ActivityEvent::Action(button)));
     }
-}
-
-/// Milliseconds since 1970 now, as a countdown's end is given.
-pub fn now_ms() -> i64 {
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .map_or(0, |since| since.as_millis() as i64)
 }
 
 /// The bar draws again once an activity could have gone stale.

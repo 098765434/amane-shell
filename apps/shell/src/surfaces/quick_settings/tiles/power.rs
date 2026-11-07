@@ -7,7 +7,6 @@
 //! Balanced, or back to the mode last picked.
 
 use std::cell::RefCell;
-use std::time::Duration;
 
 use amane::{
     Battery, BatteryState, Column, Parent, PowerDevice, PowerProfile, ScrollArea, Service, Size,
@@ -146,24 +145,15 @@ pub(crate) fn battery_detail(battery: &Battery) -> String {
     match battery.state() {
         BatteryState::Discharging => battery
             .time_to_empty()
-            .map(|left| format!("{} left", duration(left)))
+            .map(|left| format!("{} left", amane_kit::format::span(left)))
             .unwrap_or_else(|| String::from("on battery")),
         BatteryState::Charging => battery
             .time_to_full()
-            .map(|left| format!("full in {}", duration(left)))
+            .map(|left| format!("full in {}", amane_kit::format::span(left)))
             .unwrap_or_else(|| String::from("charging")),
         BatteryState::Full => String::from("full"),
         _ if battery.on_ac() => String::from("on AC"),
         _ => String::new(),
-    }
-}
-
-fn duration(duration: Duration) -> String {
-    let minutes = duration.as_secs() / 60;
-    match (minutes / 60, minutes % 60) {
-        (0, m) => format!("{m} min"),
-        (h, 0) => format!("{h} h"),
-        (h, m) => format!("{h} h {m} min"),
     }
 }
 

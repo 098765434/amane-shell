@@ -18,6 +18,7 @@
 //! Settings changes them over IPC ([`run`]).
 
 use amane::serde::{Deserialize, Serialize};
+use amane_kit::sync::Locked as _;
 
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
@@ -256,7 +257,7 @@ pub fn run(command: Ask) -> String {
 /// Stops the running `wlsunset` and starts what's asked for, with the
 /// service unlocked meanwhile so the view can show the new state.
 fn apply(on: Option<bool>, kelvin: Option<u32>, schedule: Option<Schedule>) {
-    let _one = APPLYING.lock().unwrap_or_else(|e| e.into_inner());
+    let _one = APPLYING.locked();
 
     let (old, on, kelvin, schedule) = {
         let mut light = NightLight::write();

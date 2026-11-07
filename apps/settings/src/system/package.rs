@@ -5,8 +5,9 @@
 //! counts: an unfree package is available when the configuration allows
 //! unfree ones. The same read checks a package before **Add** writes it.
 
+use amane_kit::sync::Locked as _;
 use std::collections::HashMap;
-use std::sync::{Mutex, PoisonError};
+use std::sync::Mutex;
 use std::thread;
 
 use amane::{Apps, Color, Column, Rectangle, Service, Size, Text, Widget};
@@ -114,8 +115,7 @@ static KNOWN: Mutex<Option<HashMap<(String, String), Meta>>> = Mutex::new(None);
 pub fn known(attr: &str) -> Option<Meta> {
     let rev = Catalog::read().rev.clone().unwrap_or_default();
     KNOWN
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
+        .locked()
         .as_ref()?
         .get(&(rev, attr.to_string()))
         .cloned()
@@ -155,12 +155,7 @@ pub fn arrived(attrs: &[String]) -> (String, Option<amane::DesktopApp>) {
 pub fn meta(attr: &str) -> Result<Meta, String> {
     let rev = Catalog::read().rev.clone().unwrap_or_default();
     let key = (rev, attr.to_string());
-    if let Some(meta) = KNOWN
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .get_or_insert_default()
-        .get(&key)
-    {
+    if let Some(meta) = KNOWN.locked().get_or_insert_default().get(&key) {
         return Ok(meta.clone());
     }
 
@@ -189,8 +184,7 @@ pub fn meta(attr: &str) -> Result<Meta, String> {
         })?;
     let meta: Meta = serde_json::from_str(&output.stdout).map_err(|error| error.to_string())?;
     KNOWN
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
+        .locked()
         .get_or_insert_default()
         .insert(key, meta.clone());
     Ok(meta)

@@ -9,7 +9,7 @@ use amane_kit::shell_ipc::{Passwords as Ask, ShellCommand};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use amane::{Center, Column, Row, Service, TextInput, Widget};
 use amane_kit::app::{Dialog, field_box, text_field};
@@ -211,15 +211,11 @@ fn synced(status: &VaultStatus) -> String {
         return String::new();
     };
 
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |now| now.as_secs());
-
-    match now.saturating_sub(at) / 60 {
-        0 => String::from(" · read just now"),
-        1 => String::from(" · read a minute ago"),
-        minutes if minutes < 120 => format!(" · read {minutes} minutes ago"),
-        _ => String::new(),
+    let elapsed = amane_kit::time::since_unix_s(at);
+    if elapsed < Duration::from_secs(2 * 60 * 60) {
+        format!(" · read {}", amane_kit::format::ago(elapsed))
+    } else {
+        String::new()
     }
 }
 

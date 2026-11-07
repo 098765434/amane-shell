@@ -14,11 +14,12 @@
 //! runtime like electron, a sandbox) is unverified, and gets no suggestions of its own. A browser
 //! (Categories=WebBrowser, or http links) is verified as one, and fill stays out of it.
 
+use amane_kit::sync::Locked as _;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::{Mutex, PoisonError};
+use std::sync::Mutex;
 
 use amane::FieldOwner;
 
@@ -225,7 +226,7 @@ pub fn package_name(store: &Path) -> String {
 
 // whether the package refers to the program's store path directly, asked of nix-store
 fn needs(package: &Path, program: &Path) -> bool {
-    let mut closures = CLOSURES.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut closures = CLOSURES.locked();
     let closures = closures.get_or_insert_with(HashMap::new);
 
     if !closures.contains_key(package) {

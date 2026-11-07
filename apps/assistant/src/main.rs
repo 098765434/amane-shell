@@ -22,7 +22,7 @@ mod server;
 use std::path::PathBuf;
 
 fn main() {
-    amane_log::init("amane-assistant");
+    amane_log::init(amane_base::app_ids::ASSISTANT);
     let args: Vec<String> = std::env::args().skip(1).collect();
     let engine = engine::Engine::new(models_dir(), cache_dir());
     let result = match args
@@ -53,22 +53,17 @@ fn main() {
     }
 }
 
-fn dir(var: &str, home_default: &str) -> PathBuf {
-    std::env::var_os(var)
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(home_default)))
-        .unwrap_or_else(std::env::temp_dir)
-}
-
 fn models_dir() -> PathBuf {
     if let Some(dir) = std::env::var_os("AMANE_ASSISTANT_MODELS") {
         return PathBuf::from(dir);
     }
-    dir("XDG_DATA_HOME", ".local/share").join("amane-assistant/models")
+    amane_base::paths::data()
+        .join(amane_base::app_ids::ASSISTANT)
+        .join("models")
 }
 
 fn cache_dir() -> PathBuf {
-    let dir = dir("XDG_CACHE_HOME", ".cache").join("amane-assistant");
+    let dir = amane_base::paths::cache().join(amane_base::app_ids::ASSISTANT);
     // binding the socket below says so if the folder couldn't be made
     let _ = std::fs::create_dir_all(&dir);
     dir

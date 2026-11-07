@@ -142,7 +142,7 @@ pub(super) fn search(query: &Query, scope: Option<&Scope>, excluded: &[String]) 
             }
         }
     }
-    usage::read(|usage| arrange(found, query.text, usage, usage::now()))
+    usage::read(|usage| arrange(found, query.text, usage, amane_kit::time::unix_s()))
 }
 
 /// Ranks `found` for `query` by match and use.
@@ -426,7 +426,11 @@ impl Provider for Web {
         if query.text.is_empty() {
             return;
         }
-        let url = format!("{}{}", model::SEARCH_URL, model::percent_encode(query.text));
+        let url = format!(
+            "{}{}",
+            model::SEARCH_URL,
+            amane_kit::percent::encode(query.text)
+        );
         out.push(Candidate {
             entry: Entry::new(
                 "web",

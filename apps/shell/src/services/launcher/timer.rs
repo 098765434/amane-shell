@@ -3,6 +3,7 @@
 //! runs.
 //! It runs out on a timer on amane's event loop, cancelled when replaced or stopped.
 
+use amane_kit::sync::Locked as _;
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 
@@ -25,14 +26,11 @@ static TIMER: Mutex<Option<Running>> = Mutex::new(None);
 /// Starts a timer for `length`, replacing any running, called `label`.
 pub fn start(length: Duration, label: String) {
     let due = Timer::after(length, ran_out);
-    let replaced = TIMER
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .replace(Running {
-            ends: SystemTime::now() + length,
-            label,
-            due,
-        });
+    let replaced = TIMER.locked().replace(Running {
+        ends: SystemTime::now() + length,
+        label,
+        due,
+    });
     if let Some(replaced) = replaced {
         replaced.due.cancel();
     }
@@ -41,7 +39,7 @@ pub fn start(length: Duration, label: String) {
 
 // on the event loop, when the running timer's time is up
 fn ran_out() {
-    let Some(done) = TIMER.lock().unwrap_or_else(|e| e.into_inner()).take() else {
+    let Some(done) = TIMER.locked().take() else {
         return;
     };
     Countdown::changed();
@@ -55,7 +53,7 @@ fn ran_out() {
 
 /// Stops the timer running, if one is.
 pub fn cancel() {
-    if let Some(running) = TIMER.lock().unwrap_or_else(|e| e.into_inner()).take() {
+    if let Some(running) = TIMER.locked().take() {
         running.due.cancel();
     }
     Countdown::changed();
@@ -64,7 +62,7 @@ pub fn cancel() {
 /// How long the running timer has left, and its name.
 pub fn left() -> Option<(Duration, String)> {
     Countdown::watch();
-    let timer = TIMER.lock().unwrap_or_else(|e| e.into_inner());
+    let timer = TIMER.locked();
     let running = timer.as_ref()?;
     let left = running
         .ends
@@ -77,7 +75,7 @@ pub fn left() -> Option<(Duration, String)> {
 /// Activity, which counts down to it itself.
 pub fn ends() -> Option<(SystemTime, String)> {
     Countdown::watch();
-    let timer = TIMER.lock().unwrap_or_else(|e| e.into_inner());
+    let timer = TIMER.locked();
     let running = timer.as_ref()?;
     Some((running.ends, running.label.clone()))
 }

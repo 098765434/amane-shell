@@ -16,26 +16,15 @@ use amane_kit::icons::{ICON_KEEP_AWAKE, ICON_SCREEN_OFF};
 use amane_kit::layout::boxed;
 use amane_kit::list::{List, ListItem};
 
-/// "1 h 24 min", "2 h" or "15 min", to the minute rounded up, so a hold
-/// never reads as over while it's still on.
-fn duration(left: Duration) -> String {
-    let minutes = left.as_secs().div_ceil(60);
-    match (minutes / 60, minutes % 60) {
-        (0, m) => format!("{m} min"),
-        (h, 0) => format!("{h} h"),
-        (h, m) => format!("{h} h {m} min"),
-    }
-}
-
 /// What's held and for how long: "Off", "No limit", "1 h 24 min", "Lid
 /// ignored" or "Lid · 1 h 24 min".
 fn describe(screen: bool, lid: bool, left: Option<Duration>) -> String {
     match (screen, lid, left) {
         (false, false, _) => String::from("Off"),
         (_, true, None) => String::from("Lid ignored"),
-        (_, true, Some(left)) => format!("Lid · {}", duration(left)),
+        (_, true, Some(left)) => format!("Lid · {}", amane_kit::format::span(left)),
         (true, false, None) => String::from("No limit"),
-        (true, false, Some(left)) => duration(left),
+        (true, false, Some(left)) => amane_kit::format::span(left),
     }
 }
 
@@ -123,17 +112,6 @@ fn switch_row(name: &str, label: &str, on: bool, set: fn(bool)) -> ListItem {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn time_left_rounds_up_to_the_minute() {
-        assert_eq!(duration(Duration::from_secs(15 * 60)), "15 min");
-        assert_eq!(duration(Duration::from_secs(1)), "1 min");
-        assert_eq!(duration(Duration::from_secs(2 * 3600)), "2 h");
-        assert_eq!(
-            duration(Duration::from_secs(3600 + 23 * 60 + 5)),
-            "1 h 24 min"
-        );
-    }
 
     #[test]
     fn says_whats_held() {

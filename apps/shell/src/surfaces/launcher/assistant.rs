@@ -26,7 +26,7 @@ use amane_kit::icons::{
 
 use super::actions::profile_name;
 use super::entries::{Action, Entry, Icon, app_key};
-use super::model::{self, SessionAction};
+use super::model::SessionAction;
 use super::usage;
 
 /// The key of a card whose command is asked about before it runs.
@@ -55,7 +55,7 @@ pub(super) fn snapshot(apps: &[DesktopApp]) -> Snapshot {
         switches.push(Switch::new(id.name(), id.title(), on));
     }
 
-    let now = usage::now();
+    let now = amane_kit::time::unix_s();
     let mut ranked: Vec<(f64, &DesktopApp)> = usage::read(|usage| {
         apps.iter()
             .map(|app| (usage.frecency(&app_key(app), now), app))
@@ -281,7 +281,7 @@ fn proposal(
         }
         Command::Timer { seconds } => {
             let length = Duration::from_secs(*seconds);
-            let named = model::format_duration(length);
+            let named = amane_kit::format::span_exact(length);
             (
                 format!("Start Timer · {named}"),
                 Icon::Glyph(ICON_TIMER),

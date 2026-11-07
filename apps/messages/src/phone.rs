@@ -1,8 +1,6 @@
 //! The phone's screen (`amane-mirror`) from Messages: whether it can be
 //! shown, and the phone's own messaging app to show in a window.
 
-use std::path::PathBuf;
-
 use amane::Service;
 use amane_phone::{Adb, PhoneDevice};
 
@@ -11,14 +9,6 @@ const MESSAGING: [&str; 2] = [
     "com.samsung.android.messaging",
     "com.google.android.apps.messaging",
 ];
-
-fn config_dir() -> Option<PathBuf> {
-    Some(amane_kit::paths::config())
-}
-
-fn cache_dir() -> Option<PathBuf> {
-    Some(amane_kit::paths::cache())
-}
 
 /// The phone's screen can be shown: adb has the phone at an address KDE
 /// Connect knows, or its screen was set up on the Phone page before.
@@ -33,15 +23,16 @@ pub fn screen_available(device: &PhoneDevice) -> bool {
     }
     drop(adb);
 
-    config_dir()
-        .and_then(|dir| std::fs::read_to_string(dir.join("amane-shell/phone-screen.json")).ok())
-        .is_some_and(|text| text.contains(&format!("\"{}\"", device.id())))
+    std::fs::read_to_string(amane_kit::paths::config().join("amane-shell/phone-screen.json"))
+        .is_ok_and(|text| text.contains(&format!("\"{}\"", device.id())))
 }
 
 /// The phone's messaging app, its package and name, from the list of its
 /// apps `amane-mirror --list-apps` keeps.
 pub fn messaging_app(device: &PhoneDevice) -> Option<(String, String)> {
-    let text = std::fs::read_to_string(cache_dir()?.join("amane-shell/phone-apps.json")).ok()?;
+    let text =
+        std::fs::read_to_string(amane_kit::paths::cache().join("amane-shell/phone-apps.json"))
+            .ok()?;
     let list: serde_json::Value = serde_json::from_str(&text).ok()?;
     if list.get("device").and_then(|id| id.as_str()) != Some(device.id()) {
         return None;

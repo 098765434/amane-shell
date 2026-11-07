@@ -28,22 +28,6 @@ fn disk(path: &str) -> Option<(u64, u64)> {
     (total > 0).then(|| (total.saturating_sub(free), total))
 }
 
-/// "12.3 GB".
-pub fn human(bytes: u64) -> String {
-    let units = ["B", "kB", "MB", "GB", "TB"];
-    let mut size = bytes as f64;
-    let mut unit = 0;
-    while size >= 1000.0 && unit < units.len() - 1 {
-        size /= 1000.0;
-        unit += 1;
-    }
-    if unit == 0 {
-        format!("{bytes} B")
-    } else {
-        format!("{size:.1} {}", units[unit])
-    }
-}
-
 /// What a clean-up would remove, and what the last one freed.
 pub struct Garbage {
     /// Store items nothing uses, from the last check.
@@ -88,7 +72,7 @@ fn freed(text: &str) -> Option<String> {
             "GiB" => 1024.0 * 1024.0 * 1024.0,
             _ => 1.0,
         };
-    Some(human(bytes as u64))
+    Some(amane_kit::format::bytes(bytes as u64))
 }
 
 /// `n` with thousands apart: 5,139.
@@ -175,9 +159,9 @@ fn meter(id: &str, title: &str, path: &str) -> FormRow {
             let percent = (used * 100 / total.max(1)) as u8;
             row.subtitle(format!(
                 "{} of {} used · {} free",
-                human(used),
-                human(total),
-                human(total.saturating_sub(used))
+                amane_kit::format::bytes(used),
+                amane_kit::format::bytes(total),
+                amane_kit::format::bytes(total.saturating_sub(used))
             ))
             .trailing(ProgressBar::new(f32::from(percent) / 100.0, 140.0).build())
         }
@@ -259,12 +243,5 @@ mod tests {
         assert_eq!(grouped(5139), "5,139");
         assert_eq!(grouped(12), "12");
         assert_eq!(grouped(1234567), "1,234,567");
-    }
-
-    #[test]
-    fn sizes_read_in_round_units() {
-        assert_eq!(human(999), "999 B");
-        assert_eq!(human(12_345), "12.3 kB");
-        assert_eq!(human(123_456_789_012), "123.5 GB");
     }
 }

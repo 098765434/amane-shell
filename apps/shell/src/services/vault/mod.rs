@@ -17,6 +17,7 @@ pub mod pinentry;
 pub mod rbw;
 pub mod secret;
 
+use amane_kit::sync::Locked as _;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
@@ -76,7 +77,7 @@ impl Service for Vault {
 
         loop {
             look();
-            *LOOKED.lock().unwrap_or_else(PoisonError::into_inner) = Some(Instant::now());
+            *LOOKED.locked() = Some(Instant::now());
 
             let timeout = {
                 let vault = Vault::read();
@@ -87,7 +88,7 @@ impl Service for Vault {
             };
 
             let (asked, nudge) = &LOOK;
-            let asked = asked.lock().unwrap_or_else(PoisonError::into_inner);
+            let asked = asked.locked();
             let mut asked = match timeout {
                 Some(timeout) => {
                     nudge
@@ -135,10 +136,7 @@ impl Vault {
     /// Looks at the vault again unless it was looked at a moment ago, for a view about to show
     /// its entries, like the launcher's passwords.
     pub fn look_soon() {
-        let recent = LOOKED
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .is_some_and(|at| at.elapsed() < LOOK_AGAIN);
+        let recent = LOOKED.locked().is_some_and(|at| at.elapsed() < LOOK_AGAIN);
         if !recent {
             Self::look_now();
         }
@@ -147,7 +145,7 @@ impl Vault {
     /// Looks at the vault again now, as after the popup opens.
     pub fn look_now() {
         let (asked, nudge) = &LOOK;
-        *asked.lock().unwrap_or_else(PoisonError::into_inner) = true;
+        *asked.locked() = true;
         nudge.notify_one();
     }
 

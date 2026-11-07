@@ -6,6 +6,7 @@
 //! one. Without NetworkManager there's nothing, and the tiles stay hidden.
 
 use amane::{Network, NetworkProfile, Service};
+use amane_kit::sync::Locked as _;
 
 use crate::services::state::{self, State};
 
@@ -212,17 +213,13 @@ impl State for LastVpn {
 static LAST_VPN: std::sync::Mutex<Option<Option<String>>> = std::sync::Mutex::new(None);
 
 fn last_vpn() -> Option<String> {
-    let mut last = LAST_VPN
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut last = LAST_VPN.locked();
     last.get_or_insert_with(|| state::load::<LastVpn>().map(|vpn| vpn.uuid))
         .clone()
 }
 
 fn remember_vpn(uuid: &str) {
-    *LAST_VPN
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(Some(uuid.to_string()));
+    *LAST_VPN.locked() = Some(Some(uuid.to_string()));
     state::save(&LastVpn {
         uuid: uuid.to_string(),
     });

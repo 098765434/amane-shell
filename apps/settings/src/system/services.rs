@@ -17,7 +17,6 @@ use amane_kit::style;
 use super::controls::{self, Feedback};
 use super::job::BuildJob;
 use super::nixos::{Managed, Snapshot, run};
-use super::storage::human;
 use crate::{group, groups};
 
 /// A unit as systemd reports it.
@@ -194,7 +193,7 @@ pub fn status_text(state: Option<&UnitState>) -> String {
     };
     match state.active.as_str() {
         "active" => match state.memory {
-            Some(bytes) => format!("Running · {}", human(bytes)),
+            Some(bytes) => format!("Running · {}", amane_kit::format::bytes(bytes)),
             None => String::from("Running"),
         },
         "activating" => String::from("Starting…"),
@@ -419,7 +418,7 @@ mod tests {
         assert_eq!(status_text(units.get("sshd.service")), "Stopped");
         assert_eq!(
             status_text(units.get("tailscaled.service")),
-            "Running · 82.7 MB"
+            "Running · 83 MB"
         );
         assert_eq!(status_text(None), "Off");
         assert!(parse_show("").is_empty());

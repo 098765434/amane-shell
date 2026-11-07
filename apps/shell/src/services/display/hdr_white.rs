@@ -7,9 +7,10 @@
 //! config read. Shell Settings alone writes `displays.kdl`. A level idle
 //! dimmed to ([`dimmed`]) is never kept.
 
+use amane_kit::sync::Locked as _;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Mutex, Once, PoisonError};
+use std::sync::{Mutex, Once};
 use std::time::{Duration, SystemTime};
 
 use amane::niri::{self, OutputChange};
@@ -46,7 +47,7 @@ pub fn watch() {
     WATCH.call_once(|| {
         Brightness::subscribe(|brightness| {
             let now = hdr_white(brightness);
-            let mut latest = LATEST.lock().unwrap_or_else(PoisonError::into_inner);
+            let mut latest = LATEST.locked();
             if latest.as_ref().is_some_and(|(seen, _)| *seen == now) {
                 return;
             }
@@ -70,10 +71,7 @@ pub fn watch() {
             // the level as it is now is the one kept
             let mut kept = hdr_white(&Brightness::read());
             loop {
-                let latest = LATEST
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .clone();
+                let latest = LATEST.locked().clone();
                 let Some((now, at)) = latest else {
                     WAKE.wait(None);
                     continue;
@@ -112,7 +110,7 @@ impl State for Kept {
 static KEPT: Mutex<Option<Kept>> = Mutex::new(None);
 
 fn with_kept<R>(f: impl FnOnce(&mut Kept) -> R) -> R {
-    let mut kept = KEPT.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut kept = KEPT.locked();
     f(kept.get_or_insert_with(|| state::load().unwrap_or_default()))
 }
 

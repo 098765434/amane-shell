@@ -21,6 +21,7 @@ mod ipc;
 mod view;
 
 use actions::*;
+use amane_kit::sync::Locked as _;
 pub use ipc::run;
 #[cfg(test)]
 use ipc::{valid_email, valid_server};
@@ -96,7 +97,7 @@ amane_kit::marker! {
 }
 
 fn with<T>(edit: impl FnOnce(&mut State) -> T) -> T {
-    let mut state = STATE.lock().unwrap_or_else(|error| error.into_inner());
+    let mut state = STATE.locked();
     let value = edit(&mut state);
     drop(state);
 

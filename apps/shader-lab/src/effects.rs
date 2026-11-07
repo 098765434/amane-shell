@@ -75,15 +75,8 @@ impl Service for Effects {
 
 /// The value after `name` on the command line.
 pub fn flag(name: &str) -> Option<String> {
-    let mut args = std::env::args().skip(1);
-
-    while let Some(arg) = args.next() {
-        if arg == name {
-            return args.next();
-        }
-    }
-
-    None
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    amane_kit::args::flag(&args, name)
 }
 
 /// Where the effect folders are: `--effects <dir>`, so edits to a source

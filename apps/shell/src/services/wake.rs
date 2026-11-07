@@ -2,6 +2,7 @@
 //! with no wakeups in between. For a service whose only clock is its own next deadline (a
 //! toast's lifetime, a timed Do Not Disturb), in place of polling every so often.
 
+use amane_kit::sync::Locked as _;
 use std::sync::{Condvar, Mutex, PoisonError};
 use std::time::SystemTime;
 
@@ -21,14 +22,14 @@ impl Wake {
 
     /// Wakes the listener: something it works its deadline out from changed.
     pub fn nudge(&self) {
-        *self.nudged.lock().unwrap_or_else(PoisonError::into_inner) = true;
+        *self.nudged.locked() = true;
         self.ready.notify_all();
     }
 
     /// Waits until `deadline` passes or [`nudge`](Self::nudge) is called; forever for `None`.
     /// A nudge made before the wait ends it at once.
     pub fn wait(&self, deadline: Option<SystemTime>) {
-        let mut nudged = self.nudged.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut nudged = self.nudged.locked();
         while !*nudged {
             match deadline {
                 None => {

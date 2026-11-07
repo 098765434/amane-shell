@@ -4,6 +4,7 @@
 //! Phone Apps search reads. The shell runs it when adb has the phone and
 //! the list is missing or a day old.
 
+use amane_kit::args::flag;
 use std::path::PathBuf;
 
 use amane::serde::{Deserialize, Serialize};
@@ -31,11 +32,6 @@ pub struct List {
 pub fn file() -> Option<PathBuf> {
     let cache = amane_kit::paths::cache();
     Some(cache.join("amane-shell").join("phone-apps.json"))
-}
-
-fn flag(args: &[String], name: &str) -> Option<String> {
-    let at = args.iter().position(|arg| arg == name)?;
-    args.get(at + 1).cloned()
 }
 
 pub fn write(args: &[String]) -> Result<(), String> {

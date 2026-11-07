@@ -2,8 +2,6 @@
 //! the effect's presets, gradient, params and colours, the shadows, and
 //! what went wrong, if anything did.
 
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::fmt::Write;
 
 use amane::{Clipboard, Color, Column, Rectangle, Row, Service, Size, Text, TextInput, Widget};
@@ -642,7 +640,7 @@ fn color_row(manifest: &Manifest, param: &ColorParam, lab: &Lab) -> (Column, f32
     let id = format!("color.{}", param.key);
     let open = lab.picking.as_deref() == Some(id.as_str());
 
-    let field_id = static_id(format!("lab.{}.{}", manifest.name, param.key));
+    let field_id = amane_kit::intern::intern(&format!("lab.{}.{}", manifest.name, param.key));
 
     show(field_id, &to_hex(color));
 
@@ -762,7 +760,7 @@ pub fn number_row(number: Number, set: impl Fn(f32) + Clone + 'static) -> Row {
     let span = (max - min).max(f32::EPSILON);
     let position = ((value - min) / span * 100.0).round().clamp(0.0, 100.0) as u8;
 
-    let field_id = static_id(id);
+    let field_id = amane_kit::intern::intern(&id);
 
     show(field_id, &format_value(value, step, &unit));
 
@@ -1025,18 +1023,6 @@ fn format_value(value: f32, step: f32, unit: &str) -> String {
     };
 
     format!("{value:.decimals$}{unit}")
-}
-
-/// A text field's id has to be `'static`; there's one per control, made once.
-fn static_id(id: String) -> &'static str {
-    thread_local! {
-        static IDS: RefCell<HashMap<String, &'static str>> = RefCell::new(HashMap::new());
-    }
-
-    IDS.with_borrow_mut(|ids| {
-        *ids.entry(id.clone())
-            .or_insert_with(|| Box::leak(id.into_boxed_str()))
-    })
 }
 
 #[cfg(test)]

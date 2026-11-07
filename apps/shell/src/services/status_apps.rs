@@ -8,8 +8,9 @@
 //!
 //! Everything a program put up goes when it leaves the bus.
 
+use amane_kit::sync::Locked as _;
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
 use amane::{Argument, Bus, Method};
@@ -79,7 +80,7 @@ impl AppItem {
 static ITEMS: Mutex<Vec<AppItem>> = Mutex::new(Vec::new());
 
 fn items_now() -> MutexGuard<'static, Vec<AppItem>> {
-    ITEMS.lock().unwrap_or_else(PoisonError::into_inner)
+    ITEMS.locked()
 }
 
 /// Every program's item, in the order they came; the bar redraws when they

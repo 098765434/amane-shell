@@ -28,6 +28,7 @@ mod time;
 
 use amane::{Column, Key, Row, Service, Size, Text, TextInput, Widget, Window};
 use amane_kit::app::{app, app_window, sidebar_panel, standard_shortcut};
+use amane_kit::args::flag;
 use amane_kit::layout::{boxed, caption};
 use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
@@ -176,19 +177,6 @@ pub fn device() -> Option<PhoneDevice> {
                 .find(|device| device.connected() && device.can_message())
                 .cloned()
         })
-}
-
-fn flag(args: &[String], name: &str) -> Option<String> {
-    let mut args = args.iter();
-    while let Some(arg) = args.next() {
-        if let Some(value) = arg.strip_prefix(&format!("{name}=")) {
-            return Some(value.to_string());
-        }
-        if arg == name {
-            return args.next().cloned();
-        }
-    }
-    None
 }
 
 /// Takes `--device` and `--view` from a launch.

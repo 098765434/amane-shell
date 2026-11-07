@@ -18,25 +18,9 @@ const HOT: f32 = 85.0;
 /// A processor this busy, or memory this full, reads in the critical colour.
 const BUSY: f32 = 0.9;
 
-/// "9.8 GB", in powers of 1000 as the file managers count.
-pub fn bytes(n: u64) -> String {
-    const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
-    let mut value = n as f64;
-    let mut unit = 0;
-    while value >= 1000.0 && unit < UNITS.len() - 1 {
-        value /= 1000.0;
-        unit += 1;
-    }
-    if unit == 0 || value >= 100.0 {
-        format!("{value:.0} {}", UNITS[unit])
-    } else {
-        format!("{value:.1} {}", UNITS[unit])
-    }
-}
-
 /// "1.2 MB/s".
 pub fn rate(per_second: f32) -> String {
-    format!("{}/s", bytes(per_second.max(0.0) as u64))
+    format!("{}/s", amane_kit::format::bytes(per_second.max(0.0) as u64))
 }
 
 fn recent(series: &Series) -> Vec<f32> {
@@ -155,7 +139,11 @@ pub(super) fn cpu(face: &Face) -> Vec<Box<dyn Widget>> {
 pub(super) fn memory(face: &Face) -> Vec<Box<dyn Widget>> {
     let stats = SystemStats::read();
     let memory = stats.memory;
-    let caption = format!("{} of {}", bytes(memory.used), bytes(memory.total));
+    let caption = format!(
+        "{} of {}",
+        amane_kit::format::bytes(memory.used),
+        amane_kit::format::bytes(memory.total)
+    );
     let mut out = reading(
         face,
         WidgetKind::Memory,
@@ -172,8 +160,8 @@ pub(super) fn memory(face: &Face) -> Vec<Box<dyn Widget>> {
         out.push(line(
             format!(
                 "Swap {} of {}",
-                bytes(memory.swap_used),
-                bytes(memory.swap_total)
+                amane_kit::format::bytes(memory.swap_used),
+                amane_kit::format::bytes(memory.swap_total)
             ),
             caption,
             secondary(),
@@ -355,7 +343,7 @@ pub(super) fn disk(face: &Face) -> Vec<Box<dyn Widget>> {
                 false,
             ));
             out.push(line(
-                format!("{} free", bytes(disk.total - disk.used)),
+                format!("{} free", amane_kit::format::bytes(disk.total - disk.used)),
                 caption,
                 secondary(),
                 (0.0, y),
@@ -417,7 +405,11 @@ pub(super) fn disk(face: &Face) -> Vec<Box<dyn Widget>> {
         false,
     ));
     out.push(line(
-        format!("{} · {} free", disk.mount, bytes(disk.total - disk.used)),
+        format!(
+            "{} · {} free",
+            disk.mount,
+            amane_kit::format::bytes(disk.total - disk.used)
+        ),
         caption,
         secondary(),
         (0.0, face.height - text_height(caption)),
@@ -457,8 +449,8 @@ pub(super) fn overview(face: &Face) -> Vec<Box<dyn Widget>> {
             memory,
             format!(
                 "{} of {}",
-                bytes(stats.memory.used),
-                bytes(stats.memory.total)
+                amane_kit::format::bytes(stats.memory.used),
+                amane_kit::format::bytes(stats.memory.total)
             ),
             Some(recent(&stats.memory_history)),
         ),
@@ -466,9 +458,9 @@ pub(super) fn overview(face: &Face) -> Vec<Box<dyn Widget>> {
             WidgetKind::Disk,
             "Disk",
             disk,
-            stats
-                .disk(None)
-                .map_or_else(String::new, |d| format!("{} free", bytes(d.total - d.used))),
+            stats.disk(None).map_or_else(String::new, |d| {
+                format!("{} free", amane_kit::format::bytes(d.total - d.used))
+            }),
             None,
         ),
         (
@@ -551,12 +543,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sizes_read_as_the_file_managers_count() {
-        assert_eq!(bytes(0), "0 B");
-        assert_eq!(bytes(999), "999 B");
-        assert_eq!(bytes(1_500), "1.5 KB");
-        assert_eq!(bytes(9_800_000_000), "9.8 GB");
-        assert_eq!(bytes(512_000_000_000), "512 GB");
+    fn rates_read_per_second() {
         assert_eq!(rate(1_234_567.0), "1.2 MB/s");
         assert_eq!(rate(-3.0), "0 B/s");
     }

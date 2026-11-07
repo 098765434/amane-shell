@@ -5,7 +5,6 @@
 
 use std::io::Read;
 use std::os::unix::process::CommandExt;
-use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 use serde_json::Value;
@@ -122,15 +121,8 @@ fn folder_name() -> String {
     }
 }
 
-fn home_folder(variable: &str, fallback: &str) -> Option<PathBuf> {
-    match std::env::var_os(variable) {
-        Some(folder) if !folder.is_empty() => Some(PathBuf::from(folder)),
-        _ => std::env::var_os("HOME").map(|home| PathBuf::from(home).join(fallback)),
-    }
-}
-
 pub fn config() -> Option<Config> {
-    let path = home_folder("XDG_CONFIG_HOME", ".config")?
+    let path = amane_kit::paths::config()
         .join(folder_name())
         .join("config.json");
 
@@ -161,9 +153,7 @@ pub fn config() -> Option<Config> {
  * email, in the cache folder only this user can enter
  */
 fn has_database(config: &Config) -> bool {
-    let Some(folder) = home_folder("XDG_CACHE_HOME", ".cache") else {
-        return false;
-    };
+    let folder = amane_kit::paths::cache();
 
     let server = if config.base_url.is_empty() {
         String::from("https://api.bitwarden.com")
@@ -171,24 +161,13 @@ fn has_database(config: &Config) -> bool {
         config.base_url.clone()
     };
 
-    let name = format!("{}:{}.json", percent_encode(&server), config.email);
+    let name = format!(
+        "{}:{}.json",
+        amane_kit::percent::encode(&server),
+        config.email
+    );
 
     folder.join(folder_name()).join(name).is_file()
-}
-
-// as rbw names its database, every byte but letters, digits and -._~ escaped
-fn percent_encode(text: &str) -> String {
-    let mut out = String::with_capacity(text.len() * 3);
-
-    for byte in text.bytes() {
-        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~') {
-            out.push(byte as char);
-        } else {
-            out.push_str(&format!("%{byte:02X}"));
-        }
-    }
-
-    out
 }
 
 pub fn status() -> Status {
@@ -406,7 +385,7 @@ mod tests {
     #[test]
     fn database_names_match_rbws() {
         assert_eq!(
-            percent_encode("https://vault.tail8c36e9.ts.net"),
+            amane_kit::percent::encode("https://vault.tail8c36e9.ts.net"),
             "https%3A%2F%2Fvault.tail8c36e9.ts.net"
         );
     }

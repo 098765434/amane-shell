@@ -3,10 +3,11 @@
 //! unplugged: [`follow_outputs`] (once, at startup) follows amane's
 //! `Outputs`, and each map lets go of what's gone the next time it's used.
 
+use amane_kit::sync::Locked as _;
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Mutex, Once, PoisonError};
+use std::sync::{Mutex, Once};
 
 use amane::{Outputs, Service};
 
@@ -22,7 +23,7 @@ pub fn follow_outputs() {
         drop(Outputs::peek());
         Outputs::subscribe(|outputs| {
             let names: Vec<String> = outputs.all().iter().map(|o| o.name.clone()).collect();
-            let mut known = NAMES.lock().unwrap_or_else(PoisonError::into_inner);
+            let mut known = NAMES.locked();
             // none known yet (not niri, or not listed yet) keeps everything
             if !names.is_empty() && known.as_ref() != Some(&names) {
                 *known = Some(names);
@@ -97,7 +98,7 @@ impl<T> PerOutput<T> {
         if self.seen.replace(now) == now {
             return;
         }
-        let names = NAMES.lock().unwrap_or_else(PoisonError::into_inner).clone();
+        let names = NAMES.locked().clone();
         if let Some(names) = names {
             self.retain(&names);
         }

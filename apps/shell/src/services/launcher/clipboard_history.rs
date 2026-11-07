@@ -12,13 +12,14 @@
 //! window it's for has the keyboard again, types Ctrl+V into it (`wtype`;
 //! Ctrl+Shift+V in a terminal).
 
+use amane_kit::sync::Locked as _;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::sync::mpsc::{self, Sender};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use amane::serde::{Deserialize, Serialize};
 use amane::{ClipboardWatcher, Service, Subscription, Windows};
@@ -95,7 +96,7 @@ struct History {
 static HISTORY: Mutex<Option<History>> = Mutex::new(None);
 
 fn with<R>(f: impl FnOnce(&mut History) -> R) -> R {
-    let mut history = HISTORY.lock().unwrap_or_else(|e| e.into_inner());
+    let mut history = HISTORY.locked();
     f(history.get_or_insert_with(|| History {
         clips: load(),
         watch: None,
@@ -158,8 +159,7 @@ fn watch(settings: Settings) -> Subscription {
     type Copy = (Settings, Vec<String>);
     static READER: Mutex<Option<Sender<Copy>>> = Mutex::new(None);
     let reader = READER
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
+        .locked()
         .get_or_insert_with(|| {
             let (sender, copies) = mpsc::channel::<Copy>();
             std::thread::spawn(move || {
@@ -224,7 +224,7 @@ fn take(settings: &Settings, types: &[String]) {
         mime,
         preview,
         bytes: bytes.len(),
-        at: now(),
+        at: amane_kit::time::unix_s(),
         app,
     };
     let path = clip.path();
@@ -416,12 +416,6 @@ fn hash(bytes: &[u8]) -> u64 {
     let mut hasher = DefaultHasher::new();
     bytes.hash(&mut hasher);
     hasher.finish()
-}
-
-fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |since| since.as_secs())
 }
 
 /// The app_id in niri's `focused-window` JSON; none with no window focused

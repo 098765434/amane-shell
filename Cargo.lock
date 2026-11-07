@@ -64,6 +64,7 @@ name = "amane-assistant-daemon"
 version = "0.1.0"
 dependencies = [
  "amane-assistant",
+ "amane-base",
  "amane-log",
  "libpulse-binding",
  "libpulse-simple-binding",
@@ -247,6 +248,7 @@ name = "amane-train-watch"
 version = "0.1.0"
 dependencies = [
  "amane",
+ "amane-base",
  "amane-log",
  "amane-process",
  "amane-status",

@@ -7,7 +7,6 @@
 //! bar follows live.
 
 use amane_kit::shell_ipc::{StatusBar as Command, Switch};
-use std::sync::{Mutex, PoisonError};
 
 use amane_kit::settings::{change_status_bar, status_bar};
 
@@ -115,20 +114,6 @@ pub enum Item {
     App(&'static str),
 }
 
-/// Program items' names, kept for as long as the shell runs so an `Item`
-/// stays `Copy`; there are as many as programs that ever put one up.
-static NAMES: Mutex<Vec<&'static str>> = Mutex::new(Vec::new());
-
-fn intern(name: &str) -> &'static str {
-    let mut names = NAMES.lock().unwrap_or_else(PoisonError::into_inner);
-    if let Some(known) = names.iter().find(|known| **known == name) {
-        return known;
-    }
-    let kept: &'static str = Box::leak(name.to_owned().into_boxed_str());
-    names.push(kept);
-    kept
-}
-
 impl Item {
     /// The usual order, left to right.
     pub const ALL: [Item; 16] = [
@@ -165,7 +150,7 @@ impl Item {
 
     pub fn named(name: &str) -> Option<Self> {
         if name.starts_with("app:") {
-            return Some(Self::App(intern(name)));
+            return Some(Self::App(amane_kit::intern::intern(name)));
         }
         Self::ALL.into_iter().find(|item| item.name() == name)
     }

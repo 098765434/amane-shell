@@ -104,12 +104,16 @@ pub(super) fn trailing_text(
             Some((clip(text, style, if long { TITLE } else { TEXT }), style))
         }
         Trailing::Countdown(until) => {
-            let left = Duration::from_millis(until.saturating_sub(now_ms()).max(0) as u64);
+            let left = Duration::from_millis(
+                until.saturating_sub(amane_kit::time::unix_ms()).max(0) as u64,
+            );
             tick_in(Duration::from_nanos(u64::from(left.subsec_nanos())));
             Some((timer::format(left), super::super::metrics().numeric()))
         }
         Trailing::CountUp(since) => {
-            let gone = Duration::from_millis(now_ms().saturating_sub(*since).max(0) as u64);
+            let gone = Duration::from_millis(
+                amane_kit::time::unix_ms().saturating_sub(*since).max(0) as u64,
+            );
             tick_in(Duration::from_secs(1) - Duration::from_nanos(u64::from(gone.subsec_nanos())));
             // whole seconds, as a recording's length shows
             Some((

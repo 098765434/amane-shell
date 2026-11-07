@@ -9,6 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+amane-base = { workspace = true }
 log = { workspace = true }
 amane-log = { workspace = true }
 amane-process = { workspace = true }

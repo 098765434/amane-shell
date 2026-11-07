@@ -5,8 +5,9 @@
 //! installed, from Settings, the repo's `.nix` files and Flatpak, is one
 //! list ([`super::inventory`]).
 
+use amane_kit::sync::Locked as _;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Mutex, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -209,11 +210,7 @@ impl Search {
         }
         // a search still running is for an older query
         let this = SEARCHES.fetch_add(1, Ordering::SeqCst) + 1;
-        if let Some(old) = SEARCH_CHILD
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .take()
-        {
+        if let Some(old) = SEARCH_CHILD.locked().take() {
             old.stop();
         }
 
@@ -227,8 +224,7 @@ impl Search {
                 .spawn();
             let result = match child {
                 Ok(running) => {
-                    *SEARCH_CHILD.lock().unwrap_or_else(PoisonError::into_inner) =
-                        Some(running.stopper());
+                    *SEARCH_CHILD.locked() = Some(running.stopper());
                     let finished = running.finish();
                     // stopped for a newer search
                     if SEARCHES.load(Ordering::SeqCst) != this {

@@ -110,7 +110,11 @@ impl Spec {
         match value {
             Value::None => self.title.clone(),
             Value::Duration(length) => {
-                format!("{} · {}", self.title, model::format_duration(*length))
+                format!(
+                    "{} · {}",
+                    self.title,
+                    amane_kit::format::span_exact(*length)
+                )
             }
             Value::Choice(choice) => {
                 let name = self
@@ -365,7 +369,10 @@ fn clock(specs: &mut Vec<Spec>) {
         .asks(Param::Duration, "For how long? 5m, 1h30m, 1:30")
         .run(|value| {
             if let Value::Duration(length) = value {
-                timer::start(length, format!("{} timer", model::format_duration(length)));
+                timer::start(
+                    length,
+                    format!("{} timer", amane_kit::format::span_exact(length)),
+                );
             }
         }),
     );

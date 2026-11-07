@@ -2,9 +2,10 @@
 //! clicks and drags), the tasks' threads and the window; and the Drop Bar,
 //! kept on disk so held files outlast a restart.
 
+use amane_kit::sync::Locked as _;
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
-use std::sync::{LazyLock, Mutex, MutexGuard, PoisonError};
+use std::sync::{LazyLock, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
 use amane_status::BarEdge;
@@ -92,7 +93,7 @@ static UI: LazyLock<Mutex<Ui>> = LazyLock::new(|| {
 });
 
 pub fn ui() -> MutexGuard<'static, Ui> {
-    UI.lock().unwrap_or_else(PoisonError::into_inner)
+    UI.locked()
 }
 
 /// Changes the state and draws again.
@@ -194,7 +195,7 @@ fn shelf_file() -> Option<PathBuf> {
 }
 
 fn with_shelves<R>(f: impl FnOnce(&mut Shelves) -> R) -> R {
-    let mut shelves = SHELVES.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut shelves = SHELVES.locked();
     let shelves = shelves.get_or_insert_with(|| {
         shelf_file()
             .and_then(|file| std::fs::read_to_string(file).ok())

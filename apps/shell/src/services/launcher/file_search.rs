@@ -4,11 +4,12 @@
 //! thread a moment after the last key, the newest replacing any before
 //! it, and what it found is kept for the view to read.
 
+use amane_kit::sync::Locked as _;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, UNIX_EPOCH};
 
 use crate::services::run_now;
 
@@ -186,7 +187,7 @@ static GENERATION: AtomicU64 = AtomicU64::new(0);
 /// if it hasn't.
 pub fn find(request: &Request) -> (Vec<Hit>, bool) {
     Found::watch();
-    let mut state = STATE.lock().unwrap_or_else(|e| e.into_inner());
+    let mut state = STATE.locked();
     if let Some((done, hits)) = &state.done
         && done == request
     {
@@ -223,15 +224,14 @@ fn run(request: Request, generation: u64) {
     if GENERATION.load(Ordering::SeqCst) != generation {
         return;
     }
-    STATE.lock().unwrap_or_else(|e| e.into_inner()).done = Some((request, hits));
+    STATE.locked().done = Some((request, hits));
     Found::changed();
 }
 
 /// Whether LocalSearch answers, asked every few minutes.
 fn index_runs() -> bool {
     let known = STATE
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
+        .locked()
         .indexed
         .filter(|(_, at)| at.elapsed() < RECHECK);
     if let Some((on, _)) = known {
@@ -244,7 +244,7 @@ fn index_runs() -> bool {
         .stderr(Stdio::null())
         .status()
         .is_ok_and(|status| status.success());
-    STATE.lock().unwrap_or_else(|e| e.into_inner()).indexed = Some((on, Instant::now()));
+    STATE.locked().indexed = Some((on, Instant::now()));
     on
 }
 
@@ -326,7 +326,7 @@ pub fn parse_rows(out: &str) -> Vec<PathBuf> {
     out.lines()
         .filter_map(|line| line.strip_prefix("  "))
         .filter_map(|url| url.trim().strip_prefix("file://"))
-        .map(|path| PathBuf::from(percent_decode(path)))
+        .map(|path| PathBuf::from(amane_kit::percent::decode(path)))
         .collect()
 }
 
@@ -420,26 +420,6 @@ fn file_url(path: &Path) -> String {
     url
 }
 
-fn percent_decode(text: &str) -> String {
-    let bytes = text.as_bytes();
-    let mut out = Vec::with_capacity(bytes.len());
-    let mut at = 0;
-    while at < bytes.len() {
-        if bytes[at] == b'%'
-            && let Some(byte) = text
-                .get(at + 1..at + 3)
-                .and_then(|hex| u8::from_str_radix(hex, 16).ok())
-        {
-            out.push(byte);
-            at += 3;
-        } else {
-            out.push(bytes[at]);
-            at += 1;
-        }
-    }
-    String::from_utf8_lossy(&out).into_owned()
-}
-
 /// Opens `path` in the app it opens with.
 pub fn open(path: &Path) {
     let path = path.to_string_lossy().into_owned();
@@ -465,13 +445,6 @@ pub fn reveal(path: &Path) {
             ],
         );
     });
-}
-
-/// Seconds since the epoch.
-pub fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |since| since.as_secs())
 }
 
 #[cfg(test)]

@@ -41,7 +41,7 @@ use menu::*;
 use view::*;
 
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use amane::{
     Animation, BlurShape, Button, Color, Cursor, Desktop, Full, Horizontal, InputArea, Keyboard,
@@ -219,7 +219,6 @@ impl Desk {
 
 thread_local! {
     static DESKS: PerOutput<Desk> = const { PerOutput::new() };
-    static NAMES: RefCell<HashMap<String, &'static str>> = RefCell::new(HashMap::new());
     /// The windows that show a system card, live, now.
     static WATCHING: RefCell<HashSet<&'static str>> = RefCell::new(HashSet::new());
     /// The windows that show a temperature, live, now.
@@ -267,14 +266,10 @@ fn with_desk<R>(output: &str, f: impl FnOnce(&mut Desk) -> R) -> R {
 }
 
 /// The namespace `amane.widgets.<name>`: a monitor's desktop surface (its
-/// name) or its edit surface (`edit.<name>`). Leaked once per monitor ever
-/// seen (a handful), as amane takes a `&'static str`.
+/// name) or its edit surface (`edit.<name>`), kept for the run, as amane
+/// takes a `&'static str`.
 fn namespace(output: &str) -> &'static str {
-    NAMES.with_borrow_mut(|names| {
-        *names
-            .entry(output.to_string())
-            .or_insert_with(|| Box::leak(format!("{WIDGETS_NS}{output}").into_boxed_str()))
-    })
+    amane_kit::intern::intern(&format!("{WIDGETS_NS}{output}"))
 }
 
 fn glass_id(output: &str, key: WidgetKey) -> u32 {

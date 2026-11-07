@@ -7,6 +7,7 @@
 //! it. Its answers come back on a thread of their own and are kept for
 //! the view to read, as file search's are; [`Assistant`] marks a change.
 
+use amane_kit::sync::Locked as _;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
@@ -72,7 +73,7 @@ static SENDER: Mutex<Option<Sender>> = Mutex::new(None);
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 fn state() -> std::sync::MutexGuard<'static, State> {
-    STATE.lock().unwrap_or_else(|e| e.into_inner())
+    STATE.locked()
 }
 
 /// What `text` asks, as far as it's known now: a rule's reading at once,
@@ -153,7 +154,7 @@ fn send_now(request: Request) -> Option<u64> {
 /// Sends `request`, and hands `sent` its id before its answer can be read.
 /// Locks: the sender, then the state, never the other way round.
 fn send_then(request: Request, sent: impl FnOnce(u64)) -> Option<u64> {
-    let mut sender = SENDER.lock().unwrap_or_else(|e| e.into_inner());
+    let mut sender = SENDER.locked();
     if sender.is_none() {
         let mut state = state();
         if state.retry_at.is_some_and(|at| Instant::now() < at) {
@@ -222,7 +223,7 @@ fn listen(mut receiver: Receiver) {
         drop(state);
         Assistant::changed();
     }
-    *SENDER.lock().unwrap_or_else(|e| e.into_inner()) = None;
+    *SENDER.locked() = None;
     let mut state = state();
     state.waiting = None;
     state.listening = Listening::default();

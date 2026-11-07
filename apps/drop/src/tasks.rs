@@ -3,6 +3,7 @@
 //! Cancel. A name
 //! taken where files go asks first: keep both, replace, or stop.
 
+use amane_kit::sync::Locked as _;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -190,7 +191,7 @@ pub fn run(job: Job, keep_both: bool) {
             stop.store(true, Ordering::Relaxed);
         }
         ActivityEvent::Action(action) if action == "open" => {
-            if let Some(link) = link.lock().unwrap_or_else(|e| e.into_inner()).clone() {
+            if let Some(link) = link.locked().clone() {
                 shared::open(&link);
             }
         }
@@ -230,7 +231,7 @@ pub fn run(job: Job, keep_both: bool) {
                     last.trailing =
                         Trailing::Text(String::from(if copied { "Link copied" } else { "Done" }));
                     last.buttons = vec![ActivityButton::new("open", "Open")];
-                    *opened.lock().unwrap_or_else(|e| e.into_inner()) = Some(first.clone());
+                    *opened.locked() = Some(first.clone());
                     lasts = 8;
                 }
                 Outcome::Done

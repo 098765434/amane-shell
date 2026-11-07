@@ -7,10 +7,11 @@
 //! thousand lines in tens of milliseconds) rather than the app keeping the
 //! packages in memory.
 
+use amane_kit::sync::Locked as _;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::{Mutex, PoisonError};
+use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -62,7 +63,7 @@ impl Catalog {
     /// building it when there isn't; looks at most every [`RECHECK`].
     pub fn ensure() {
         {
-            let mut checked = CHECKED.lock().unwrap_or_else(PoisonError::into_inner);
+            let mut checked = CHECKED.locked();
             if checked.is_some_and(|at| at.elapsed() < RECHECK) {
                 return;
             }
@@ -193,7 +194,7 @@ impl Named {
     pub fn ensure(file: PathBuf, attrs: Vec<String>) {
         let key = (file, attrs);
         {
-            let mut naming = NAMING.lock().unwrap_or_else(PoisonError::into_inner);
+            let mut naming = NAMING.locked();
             if naming.as_ref() == Some(&key) {
                 return;
             }

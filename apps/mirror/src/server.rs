@@ -3,10 +3,11 @@
 //! tunnel, run it with `app_process`, accept video, audio and control in
 //! that order.
 
+use amane_kit::sync::Locked as _;
 use std::io::{BufRead, BufReader, Read};
 use std::net::{Ipv4Addr, TcpListener, TcpStream};
 use std::process::{Child, Command, Stdio};
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -162,16 +163,13 @@ impl Log {
         thread::spawn(move || {
             for line in BufReader::new(from).lines().map_while(Result::ok) {
                 log::info!(target: "scrcpy-server", "{line}");
-                log.0
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .push(line);
+                log.0.locked().push(line);
             }
         });
     }
 
     fn last_error(&self) -> Option<String> {
-        let lines = self.0.lock().unwrap_or_else(PoisonError::into_inner);
+        let lines = self.0.locked();
         lines
             .iter()
             .rev()
@@ -179,10 +177,7 @@ impl Log {
     }
 
     fn text(&self) -> String {
-        self.0
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .join("\n")
+        self.0.locked().join("\n")
     }
 }
 

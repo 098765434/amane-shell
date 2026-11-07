@@ -8,8 +8,9 @@
 //! name), and wakes the alert surface's view only when it comes or goes; the
 //! view syncs from that.
 
+use amane_kit::sync::Locked as _;
 use std::cell::Cell;
-use std::sync::{Mutex, Once, PoisonError};
+use std::sync::{Mutex, Once};
 
 use amane::{Bluetooth, PairingAnswer, PairingKind, PairingRequest, Service};
 
@@ -43,20 +44,17 @@ pub fn sync() {
     WATCH.call_once(|| {
         Bluetooth::subscribe(|bluetooth| {
             let fresh = asking(bluetooth);
-            let mut latest = LATEST.lock().unwrap_or_else(PoisonError::into_inner);
+            let mut latest = LATEST.locked();
             if *latest != fresh {
                 *latest = fresh;
                 alert::Requests::changed();
             }
         })
         .forever();
-        *LATEST.lock().unwrap_or_else(PoisonError::into_inner) = asking(&Bluetooth::read());
+        *LATEST.locked() = asking(&Bluetooth::read());
     });
     alert::Requests::watch();
-    let latest = LATEST
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .clone();
+    let latest = LATEST.locked().clone();
 
     let Some((request, device)) = latest else {
         if ASKED.take().is_some() && alert::showing(NAME) {

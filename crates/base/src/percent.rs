@@ -70,7 +70,10 @@ mod tests {
     fn escapes_round_trip() {
         assert_eq!(encode("a b/ø~"), "a%20b%2F%C3%B8~");
         assert_eq!(decode("a%20b%2F%C3%B8~"), "a b/ø~");
+        assert_eq!(encode("a&b=c"), "a%26b%3Dc");
+        assert_eq!(encode("https://a.io"), "https%3A%2F%2Fa.io");
         assert_eq!(decode("100%"), "100%");
+        assert_eq!(decode("/bad%2"), "/bad%2");
         assert_eq!(decode("%zz"), "%zz");
         assert_eq!(decode_strict("a%25b").as_deref(), Some("a%b"));
         assert_eq!(decode_strict("100%"), None);

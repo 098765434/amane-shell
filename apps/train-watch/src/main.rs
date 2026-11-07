@@ -39,7 +39,7 @@ enum Message {
 }
 
 fn main() {
-    amane_log::init("amane-train-watch");
+    amane_log::init(amane_base::app_ids::TRAIN_WATCH);
     let args: Vec<String> = std::env::args().skip(1).collect();
     let plain = args.iter().any(|a| a == "--plain");
     let names: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
@@ -71,11 +71,7 @@ struct Watch {
 
 impl Watch {
     fn new(host: String, name: String, plain: bool) -> Self {
-        let cache = std::env::var_os("XDG_CACHE_HOME")
-            .map(PathBuf::from)
-            .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))
-            .unwrap_or_else(std::env::temp_dir)
-            .join("amane-train-watch");
+        let cache = amane_base::paths::cache().join(amane_base::app_ids::TRAIN_WATCH);
         // the log is written below, which says so if the folder couldn't be made
         let _ = std::fs::create_dir_all(&cache);
         let copy = cache.join(format!("{name}.log"));

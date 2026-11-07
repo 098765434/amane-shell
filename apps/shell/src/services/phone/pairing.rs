@@ -2,7 +2,8 @@
 //! latest request, so what shows it (the shell's alert, or Quick Settings'
 //! Phone page) draws again only when one comes or goes.
 
-use std::sync::{Mutex, Once, PoisonError};
+use amane_kit::sync::Locked as _;
+use std::sync::{Mutex, Once};
 
 use amane::Service;
 use amane_phone::KdeConnect;
@@ -38,18 +39,15 @@ pub fn asking() -> Option<Asking> {
     WATCH.call_once(|| {
         KdeConnect::subscribe(|kdeconnect| {
             let fresh = of(kdeconnect);
-            let mut latest = LATEST.lock().unwrap_or_else(PoisonError::into_inner);
+            let mut latest = LATEST.locked();
             if *latest != fresh {
                 *latest = fresh;
                 Asked::changed();
             }
         })
         .forever();
-        *LATEST.lock().unwrap_or_else(PoisonError::into_inner) = of(&KdeConnect::read());
+        *LATEST.locked() = of(&KdeConnect::read());
     });
     Asked::watch();
-    LATEST
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .clone()
+    LATEST.locked().clone()
 }

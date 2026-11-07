@@ -73,14 +73,7 @@ pub fn switch(entry: &Entry, managed: &Managed) -> Switch {
 
 /// A `'static` id for a stepper's field, made once per setting.
 fn stepper_id(id: &str) -> &'static str {
-    thread_local! {
-        static IDS: std::cell::RefCell<std::collections::HashMap<String, &'static str>> =
-            std::cell::RefCell::new(std::collections::HashMap::new());
-    }
-    IDS.with_borrow_mut(|ids| {
-        *ids.entry(id.to_string())
-            .or_insert_with(|| Box::leak(format!("settings.system.stepper.{id}").into_boxed_str()))
-    })
+    amane_kit::intern::intern(&format!("settings.system.stepper.{id}"))
 }
 
 /// What a row says under a setting's name: what Set refused, where else

@@ -130,14 +130,12 @@ pub(super) fn one_line(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// When it arrived, briefly: "now", "5m ago", "2h ago", then the day.
+/// When it arrived: "just now", "5 min ago", "2 h ago", then the day.
 pub fn ago(received: SystemTime, now: SystemTime) -> String {
     let elapsed = now.duration_since(received).unwrap_or(Duration::ZERO);
-    let minutes = elapsed.as_secs() / 60;
-    match minutes {
-        0 => String::from("now"),
-        1..60 => format!("{minutes}m ago"),
-        60..1440 => format!("{}h ago", minutes / 60),
-        _ => local(received, "%a %H:%M"),
+    if elapsed < Duration::from_secs(24 * 60 * 60) {
+        amane_kit::format::ago(elapsed)
+    } else {
+        local(received, "%a %H:%M")
     }
 }

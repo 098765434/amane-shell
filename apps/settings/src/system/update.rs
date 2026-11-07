@@ -122,19 +122,11 @@ impl Check {
         }
     }
 
-    /// "2 hours ago", "yesterday".
+    /// "2 h ago", "yesterday".
     fn ago(&self) -> String {
-        let Some(when) = self.checked else {
-            return String::from("never");
-        };
-        let minutes = (Utc::now() - when).num_minutes();
-        match minutes {
-            i64::MIN..=1 => String::from("just now"),
-            2..=59 => format!("{minutes} minutes ago"),
-            60..=119 => String::from("an hour ago"),
-            120..=1439 => format!("{} hours ago", minutes / 60),
-            1440..=2879 => String::from("yesterday"),
-            _ => format!("{} days ago", minutes / 1440),
+        match self.checked {
+            Some(when) => amane_kit::format::ago((Utc::now() - when).to_std().unwrap_or_default()),
+            None => String::from("never"),
         }
     }
 }

@@ -425,16 +425,16 @@ mod tests {
     }
 
     #[test]
-    fn times_read_like_macos() {
+    fn times_read_in_words() {
         let now = SystemTime::UNIX_EPOCH + Duration::from_secs(100_000);
         let before = |secs| now - Duration::from_secs(secs);
 
-        assert_eq!(ago(before(0), now), "now");
-        assert_eq!(ago(before(59), now), "now");
-        assert_eq!(ago(before(60), now), "1m ago");
-        assert_eq!(ago(before(59 * 60), now), "59m ago");
-        assert_eq!(ago(before(3 * 3600), now), "3h ago");
+        assert_eq!(ago(before(0), now), "just now");
+        assert_eq!(ago(before(59), now), "just now");
+        assert_eq!(ago(before(60), now), "1 min ago");
+        assert_eq!(ago(before(59 * 60), now), "59 min ago");
+        assert_eq!(ago(before(3 * 3600), now), "3 h ago");
         // a clock that went backwards still reads as now
-        assert_eq!(ago(now + Duration::from_secs(5), now), "now");
+        assert_eq!(ago(now + Duration::from_secs(5), now), "just now");
     }
 }

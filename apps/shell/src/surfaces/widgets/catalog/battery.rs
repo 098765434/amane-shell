@@ -3,8 +3,6 @@
 //! one its settings name, else the first), Medium up to four side by side,
 //! Large a list with the time the machine's battery has left.
 
-use std::time::Duration;
-
 use amane::{Battery, BatteryState, Bluetooth, Service, Widget};
 
 use super::{
@@ -78,14 +76,7 @@ pub fn devices() -> Vec<Device> {
 
 /// "2 h 14 min left", "1 h 5 min until full", or nothing to say.
 fn time_left(battery: &Battery) -> Option<String> {
-    let span = |d: Duration| {
-        let minutes = d.as_secs() / 60;
-        match (minutes / 60, minutes % 60) {
-            (0, m) => format!("{m} min"),
-            (h, 0) => format!("{h} h"),
-            (h, m) => format!("{h} h {m} min"),
-        }
-    };
+    use amane_kit::format::span;
     if battery.charging() {
         battery
             .time_to_full()

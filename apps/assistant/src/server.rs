@@ -4,6 +4,7 @@
 //! answers asked for while it was busy, only the newest is worked out (the
 //! others were for what's since been typed over).
 
+use amane_base::sync::Locked as _;
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::{UnixListener, UnixStream};
@@ -52,7 +53,7 @@ impl Out {
             return;
         };
         line.push('\n');
-        let mut client = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let mut client = self.0.locked();
         if let Some(stream) = client.as_mut()
             && stream.write_all(line.as_bytes()).is_err()
         {
@@ -89,12 +90,12 @@ pub fn serve(engine: Engine) -> Result<(), String> {
             continue;
         };
         // the last shell's listening ends with it
-        if let Some(recording) = recording.lock().unwrap_or_else(|e| e.into_inner()).take() {
+        if let Some(recording) = recording.locked().take() {
             recording.stop();
             // the worker has gone: the server is ending
             let _ = jobs.send(Job::ListenCancel);
         }
-        *out.0.lock().unwrap_or_else(|e| e.into_inner()) = Some(writer);
+        *out.0.locked() = Some(writer);
         let (jobs, out, recording) = (jobs.clone(), out.clone(), recording.clone());
         std::thread::spawn(move || read(stream, &jobs, &out, &recording));
     }
@@ -134,7 +135,7 @@ fn read(
                 text,
             },
             Request::ListenStart { language, keywords } => {
-                let mut slot = recording.lock().unwrap_or_else(|e| e.into_inner());
+                let mut slot = recording.locked();
                 if let Some(before) = slot.take() {
                     before.stop();
                 }
@@ -171,7 +172,7 @@ fn read(
 
 /// Stops the recording, once its last piece is handed on.
 fn stop(recording: &Mutex<Option<Recording>>) {
-    if let Some(recording) = recording.lock().unwrap_or_else(|e| e.into_inner()).take() {
+    if let Some(recording) = recording.locked().take() {
         recording.stop();
     }
 }

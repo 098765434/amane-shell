@@ -258,21 +258,6 @@ pub(super) fn normalize_url(query: &str) -> String {
     }
 }
 
-/// `text` for a URL's query: RFC 3986's unreserved characters as they are,
-/// every other byte escaped.
-pub(super) fn percent_encode(text: &str) -> String {
-    let mut out = String::new();
-    for byte in text.bytes() {
-        match byte {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                out.push(byte as char)
-            }
-            other => out.push_str(&format!("%{other:02X}")),
-        }
-    }
-    out
-}
-
 /// How long `text` says: "5m", "5 min", "1h30m", "1h 30m", "90s",
 /// "2 hours", "1:30" (minutes and seconds), or a bare number of minutes.
 pub(super) fn parse_duration(text: &str) -> Option<Duration> {
@@ -309,43 +294,6 @@ pub(super) fn parse_duration(text: &str) -> Option<Duration> {
         rest = rest[unit_end..].trim_start();
     }
     (total > 0.0).then(|| Duration::from_secs_f64(total))
-}
-
-/// `length` in words: "5 min", "1 h 30 min", "45 s".
-pub(super) fn format_duration(length: Duration) -> String {
-    let secs = length.as_secs();
-    let (hours, minutes, seconds) = (secs / 3600, secs / 60 % 60, secs % 60);
-    let mut parts = Vec::new();
-    if hours > 0 {
-        parts.push(format!("{hours} h"));
-    }
-    if minutes > 0 {
-        parts.push(format!("{minutes} min"));
-    }
-    if seconds > 0 || parts.is_empty() {
-        parts.push(format!("{seconds} s"));
-    }
-    parts.join(" ")
-}
-
-/// How long ago something happened, `seconds` since: "Now", "5 min ago",
-/// "3 h ago", "2 d ago".
-pub(super) fn ago(seconds: u64) -> String {
-    match seconds {
-        0..60 => String::from("Now"),
-        60..3600 => format!("{} min ago", seconds / 60),
-        3600..86400 => format!("{} h ago", seconds / 3600),
-        _ => format!("{} d ago", seconds / 86400),
-    }
-}
-
-/// `bytes` as a size people read: "830 bytes", "12 KB", "2.4 MB".
-pub(super) fn size(bytes: usize) -> String {
-    match bytes {
-        0..1000 => format!("{bytes} bytes"),
-        1000..1_000_000 => format!("{} KB", bytes / 1000),
-        _ => format!("{:.1} MB", bytes as f64 / 1e6),
-    }
 }
 
 /// How many keys an action's quick keys can be.
@@ -417,25 +365,6 @@ mod tests {
     }
 
     #[test]
-    fn durations_are_shown_in_words() {
-        assert_eq!(format_duration(Duration::from_secs(300)), "5 min");
-        assert_eq!(format_duration(Duration::from_secs(5400)), "1 h 30 min");
-        assert_eq!(format_duration(Duration::from_secs(45)), "45 s");
-        assert_eq!(format_duration(Duration::from_secs(3601)), "1 h 1 s");
-    }
-
-    #[test]
-    fn times_and_sizes_read_as_people_say_them() {
-        assert_eq!(ago(5), "Now");
-        assert_eq!(ago(300), "5 min ago");
-        assert_eq!(ago(7200), "2 h ago");
-        assert_eq!(ago(200_000), "2 d ago");
-        assert_eq!(size(830), "830 bytes");
-        assert_eq!(size(12_345), "12 KB");
-        assert_eq!(size(2_400_000), "2.4 MB");
-    }
-
-    #[test]
     fn quick_keys_are_a_few_letters_or_digits() {
         assert!(valid_quick_keys("nl"));
         assert!(valid_quick_keys("1"));
@@ -492,12 +421,5 @@ mod tests {
         assert!(!looks_like_url("two words.com"));
         assert_eq!(normalize_url("example.com"), "https://example.com");
         assert_eq!(normalize_url("http://a.io"), "http://a.io");
-    }
-
-    #[test]
-    fn a_query_is_escaped_for_a_url() {
-        assert_eq!(percent_encode("rust lang"), "rust%20lang");
-        assert_eq!(percent_encode("a&b=c"), "a%26b%3Dc");
-        assert_eq!(percent_encode("é"), "%C3%A9");
     }
 }

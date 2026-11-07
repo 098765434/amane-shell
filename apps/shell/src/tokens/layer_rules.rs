@@ -782,7 +782,12 @@ mod tests {
     fn namespaces_in_code() -> std::collections::BTreeMap<String, String> {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let mut files = Vec::new();
-        for dir in ["src", "../../crates/kit/src", "../../crates/base/src", "../drop/src"] {
+        for dir in [
+            "src",
+            "../../crates/kit/src",
+            "../../crates/base/src",
+            "../drop/src",
+        ] {
             sources(&root.join(dir), &mut files);
         }
         let mut found = std::collections::BTreeMap::new();

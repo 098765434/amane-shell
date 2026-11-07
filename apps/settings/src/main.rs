@@ -22,6 +22,7 @@ use amane::{
 use amane_kit::app::{
     Dialog, Page, app, app_window, field_box, sidebar_with, standard_shortcut, text_field,
 };
+use amane_kit::args::flag;
 use amane_kit::buttons::Switch;
 use amane_kit::color::Accent;
 use amane_kit::form::{FormRow, Group};
@@ -290,23 +291,6 @@ fn page_arg(args: &[String]) -> Option<Place> {
     flag(args, "--page").and_then(|name| place_named(&name))
 }
 
-/// `--name value` or `--name=value`.
-fn flag(args: &[String], name: &str) -> Option<String> {
-    let mut args = args.iter();
-    while let Some(arg) = args.next() {
-        if let Some(value) = arg
-            .strip_prefix(name)
-            .and_then(|rest| rest.strip_prefix('='))
-        {
-            return Some(value.to_string());
-        }
-        if arg == name {
-            return args.next().cloned();
-        }
-    }
-    None
-}
-
 /// `--package <attr>`: the Apps page, with that nixpkgs package's details.
 fn package_arg(args: &[String]) {
     if let Some(attr) = flag(args, "--package") {
@@ -544,19 +528,9 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
     }
 }
 
-/// The scroll id a sub-page keeps its offset under: one per page and name,
-/// made once.
+/// The scroll id a sub-page keeps its offset under: one per page and name.
 fn sub_scroll(page: usize, name: &str) -> &'static str {
-    use std::cell::RefCell;
-    use std::collections::HashMap;
-    thread_local! {
-        static IDS: RefCell<HashMap<(usize, String), &'static str>> =
-            RefCell::new(HashMap::new());
-    }
-    IDS.with_borrow_mut(|ids| {
-        *ids.entry((page, name.to_string()))
-            .or_insert_with(|| Box::leak(format!("settings.scroll.{page}.{name}").into_boxed_str()))
-    })
+    amane_kit::intern::intern(&format!("settings.scroll.{page}.{name}"))
 }
 
 fn main_window() -> Window {

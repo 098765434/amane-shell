@@ -5,10 +5,11 @@
 //! package with an entry in the launcher. Each row has the one thing that can
 //! be done to it here: Remove (or Undo), Move to Settings, or Uninstall.
 
+use amane_kit::sync::Locked as _;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::{Mutex, Once, PoisonError};
+use std::sync::{Mutex, Once};
 use std::thread;
 use std::time::SystemTime;
 
@@ -205,7 +206,7 @@ impl FileAttrs {
             .collect();
         let key = (catalog, stamped);
         {
-            let mut reading = READING.lock().unwrap_or_else(PoisonError::into_inner);
+            let mut reading = READING.locked();
             if reading.as_ref() == Some(&key) {
                 return;
             }

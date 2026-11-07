@@ -13,12 +13,13 @@
 //!
 //! So no other program can put up the shell's trusted dialog to collect the master password.
 
+use amane_kit::sync::Locked as _;
 use std::fs;
 use std::io;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::os::unix::net::{UnixListener, UnixStream};
+use std::sync::Mutex;
 use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::{Mutex, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -78,24 +79,23 @@ impl PinEntry {
 
 /// The shell is about to run an rbw command that may ask for the master password.
 pub fn expect() {
-    *EXPECTED.lock().unwrap_or_else(PoisonError::into_inner) = Some(Instant::now() + ASKING_TIME);
+    *EXPECTED.locked() = Some(Instant::now() + ASKING_TIME);
 }
 
 /// The rbw command the shell ran is over; a later caller is told no.
 pub fn done_expecting() {
-    *EXPECTED.lock().unwrap_or_else(PoisonError::into_inner) = None;
+    *EXPECTED.locked() = None;
 }
 
 fn expected() -> bool {
     EXPECTED
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
+        .locked()
         .is_some_and(|until| Instant::now() < until)
 }
 
 /// The dialog's answer: the pin, which is wiped once sent, or none for Cancel.
 pub fn answer(id: u64, pin: Option<Zeroizing<String>>) {
-    let asking = ASKING.lock().unwrap_or_else(PoisonError::into_inner).take();
+    let asking = ASKING.locked().take();
 
     match asking {
         Some((asked, reply)) if asked == id => {
@@ -107,7 +107,7 @@ pub fn answer(id: u64, pin: Option<Zeroizing<String>>) {
         }
 
         // not the question showing: put it back
-        other => *ASKING.lock().unwrap_or_else(PoisonError::into_inner) = other,
+        other => *ASKING.locked() = other,
     }
 }
 
@@ -183,7 +183,7 @@ fn answer_caller(mut stream: UnixStream) -> io::Result<()> {
 
         // one question showing at a time; the next caller waits for this one's answer
         let answer = {
-            let _turn = TURN.lock().unwrap_or_else(PoisonError::into_inner);
+            let _turn = TURN.locked();
 
             if !expected() {
                 Answer::Refused
@@ -272,13 +272,13 @@ fn ask(prompt: Prompt) -> Answer {
         id
     };
 
-    *ASKING.lock().unwrap_or_else(PoisonError::into_inner) = Some((id, reply));
+    *ASKING.locked() = Some((id, reply));
 
     let answer = answered
         .recv_timeout(ANSWER_TIME)
         .unwrap_or(Answer::Cancelled);
 
-    ASKING.lock().unwrap_or_else(PoisonError::into_inner).take();
+    ASKING.locked().take();
 
     let mut entry = PinEntry::write();
     if entry

@@ -39,7 +39,7 @@ use amane_kit::icons::{
 use amane_kit::settings::{BUILTIN_ACTIVITIES, status_bar};
 use amane_status::{ActivityButton, ActivityContent, ItemIcon, Tint, Trailing};
 
-use crate::services::desktop::activities::{self as registry, Live, now_ms};
+use crate::services::desktop::activities::{self as registry, Live};
 use crate::services::desktop::privacy::{CastTarget, Privacy, stop_cast};
 use crate::services::do_not_disturb::DoNotDisturb;
 use crate::services::launcher::timer;

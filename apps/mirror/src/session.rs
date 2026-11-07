@@ -3,11 +3,12 @@
 //! Service, so the window redraws as the session starts, changes size or
 //! ends.
 
+use amane_kit::sync::Locked as _;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Sender};
-use std::sync::{LazyLock, Mutex, PoisonError};
+use std::sync::{LazyLock, Mutex};
 use std::thread;
 
 use amane::{Clipboard, Service, VideoFeed};
@@ -68,11 +69,7 @@ static CLIPBOARD_SEQUENCE: AtomicU64 = AtomicU64::new(1);
 
 /// Sends a message to the phone, dropped when no session is live.
 pub fn send(message: Control) {
-    if let Some(sender) = CONTROL
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
-        .as_ref()
-    {
+    if let Some(sender) = CONTROL.locked().as_ref() {
         // the screen has closed: nothing waits for it
         let _ = sender.send(message);
     }
@@ -108,7 +105,7 @@ pub fn start(options: Options) {
 
         let why = run(&options).err();
 
-        *CONTROL.lock().unwrap_or_else(PoisonError::into_inner) = None;
+        *CONTROL.locked() = None;
         FEED.clear();
 
         let mut mirror = Mirror::write();
@@ -129,7 +126,7 @@ fn run(options: &Options) -> Result<(), String> {
         let reader = control.try_clone().map_err(|error| error.to_string())?;
         let (sender, messages) = mpsc::channel();
 
-        *CONTROL.lock().unwrap_or_else(PoisonError::into_inner) = Some(sender);
+        *CONTROL.locked() = Some(sender);
 
         thread::spawn(move || write_control(control, messages));
         thread::spawn(move || read_device(reader));

@@ -157,7 +157,10 @@ impl Run {
                     parts.push(format!("val {val:.3}"));
                 }
                 if let Some(left) = self.left() {
-                    parts.push(format!("{} left", duration(left)));
+                    parts.push(format!(
+                        "{} left",
+                        amane_base::format::span(std::time::Duration::from_secs(left.into()))
+                    ));
                 }
                 parts.join(" · ")
             }
@@ -181,15 +184,6 @@ impl Run {
             }
             Phase::Failed => self.last.clone(),
         }
-    }
-}
-
-/// "4 min", "1 h 05 min", "40 s".
-pub fn duration(seconds: u32) -> String {
-    match seconds {
-        s if s < 60 => format!("{s} s"),
-        s if s < 3600 => format!("{} min", (s + 30) / 60),
-        s => format!("{} h {:02} min", s / 3600, (s % 3600) / 60),
     }
 }
 
@@ -275,12 +269,5 @@ mod tests {
             "00:00:10   step 20/100  loss 1",
         ]);
         assert_eq!(r.per_step(), Some(2.0));
-    }
-
-    #[test]
-    fn durations_read_plainly() {
-        assert_eq!(duration(40), "40 s");
-        assert_eq!(duration(250), "4 min");
-        assert_eq!(duration(3900), "1 h 05 min");
     }
 }

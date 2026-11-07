@@ -7,7 +7,7 @@
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime};
 
 use amane::serde::Deserialize;
 use amane_phone::PhoneDevice;
@@ -67,16 +67,11 @@ fn list() -> Option<List> {
     Some(list)
 }
 
-fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |time| time.as_secs())
-}
-
 /// Asks the phone for its apps, when adb has it and the list is old.
 fn refresh(device: &str, serial: &str, list: Option<&List>) {
     let fresh = list.is_some_and(|list| {
-        list.device == device && now().saturating_sub(list.updated) < FRESH.as_secs()
+        list.device == device
+            && amane_kit::time::unix_s().saturating_sub(list.updated) < FRESH.as_secs()
     });
     if fresh || LISTING.swap(true, Ordering::SeqCst) {
         return;

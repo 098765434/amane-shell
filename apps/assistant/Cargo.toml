@@ -17,6 +17,7 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
+amane-base = { workspace = true }
 log = { workspace = true }
 amane-log = { workspace = true }
 amane-assistant = { workspace = true }
