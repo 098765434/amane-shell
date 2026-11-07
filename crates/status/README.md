@@ -87,21 +87,9 @@ open, for example with `gdbus` in a loop or a small Python `dbus-next` client.
 
 ## The protocol
 
-At `/org/amane/StatusBar`, interface `org.amane.StatusBar1`:
-
-| Method | Arguments | Answers |
-|---|---|---|
-| `RegisterItem` | `s` an `ItemSpec` | an error when another program has the id |
-| `UpdateItem` | `s` an `ItemSpec` | |
-| `RemoveItem` | `s` the id | |
-| `StartActivity` | `s` an `ActivityContent` | `u` its handle |
-| `UpdateActivity` | `u` handle, `s` an `ActivityContent`, `b` alert | |
-| `EndActivity` | `u` handle, `s` a `Dismiss` (`"now"` or `{"after":5}`) | |
-
-| Signal | Arguments |
-|---|---|
-| `ItemEvent` | `s` the item's id, `s` an `ItemEvent` |
-| `ActivityEvent` | `u` the handle, `s` an `ActivityEvent` (`{"action":"stop"}` or `"dismissed"`) |
+At `/org/amane/StatusBar`, interface `org.amane.StatusBar1`. The methods, signals and errors
+are listed once, in amane-shell's
+[status-apps.md](../../docs/integration/status-apps.md#the-interface). What the client relies on:
 
 - **Versions.** Payloads carry `v` (now `1`; left out means `1`). The bar
   refuses a payload newer than it knows.
