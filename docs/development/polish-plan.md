@@ -168,6 +168,18 @@ graph TD
 
 **Shell chrome:** `panel::hidden(window)` for the 6 `.visible(false).blur_shapes(vec![]).child(blank())` sites.
 
+**Status (2026-11-07).** Done (shell `0ba540c` … the `WHEEL_STEP` commit).
+- **Done as planned:**
+  - `layout::frame`; 505 `Size::Fixed` wrappers gone (65 are left, each wrapping a bare literal, which wouldn't infer as `f32`); 161 redundant transparent fills.
+  - `reveal::Swell` and `reveal::showing` for the six swells and the threshold checks.
+  - `motion::eased`, `panel::empty`, `list::chevron`.
+  - `chrome::catalog::Sheet` for Customize and the gallery, and `chrome::edit_marks` for both edit modes, both in `chrome` rather than the kit: the kit's grid is pure by design, and only the shell has these sheets.
+  - The kit's `area::Area` replaces the two surfaces' copies.
+- **Smaller than planned:**
+  - **No `ScrollPane` type:** the two copies were a line each, so `kinetic::WHEEL_STEP` alone took the duplication.
+  - **Not moved onto `Area`:** the launcher's `shape.rs` and Quick Settings' `Sheet` keep their own types. Both carry more than a rectangle (the launcher's pill; the sheet's edge).
+  - **Left in place:** the four "scale about the centre" copies. Each is one line of arithmetic on different types.
+
 ## Phase 4: One table per fact (L): the architectural core
 
 Each table becomes the single source; parsers, lists, usage text and search are derived from it.
