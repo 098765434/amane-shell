@@ -206,18 +206,10 @@ fn with_shelves<R>(f: impl FnOnce(&mut Shelves) -> R) -> R {
 }
 
 fn save(shelves: &Shelves) {
-    let (Some(file), Ok(text)) = (shelf_file(), serde_json::to_string_pretty(shelves)) else {
+    let Some(file) = shelf_file() else {
         return;
     };
-    let write = || {
-        if let Some(folder) = file.parent() {
-            std::fs::create_dir_all(folder)?;
-        }
-        let part = file.with_extension("part");
-        std::fs::write(&part, text)?;
-        std::fs::rename(part, &file)
-    };
-    if let Err(e) = write() {
+    if let Err(e) = amane_kit::fs::save_json(&file, shelves) {
         log::warn!("couldn't save {}: {e}", file.display());
     }
 }

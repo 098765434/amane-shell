@@ -98,7 +98,7 @@ pub use controls::{
 };
 pub use foundation::{color, fuzzy, icons, layout, symbol};
 pub use look::{glass, glass_region, lab, material, style};
-pub use platform::{app, app_icon, marker, process, secrets, settings, shell_ipc};
+pub use platform::{app, app_icon, launch, marker, process, secrets, settings, shell_ipc};
 
 // what's below the UI, from amane-base, so an app needs only the kit
 pub use amane_base::{app_ids, args, format, fs, intern, mime, paths, percent, sync, time};

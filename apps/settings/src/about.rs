@@ -140,16 +140,7 @@ pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
             .subtitle(middle_elide(&tidy(&path, home.as_deref()), fits))
             .trailing(
                 PushButton::new(format!("settings.about.show.{name}"), "Show in Folder")
-                    .on_press(move || {
-                        let folder = folder.clone();
-                        std::thread::spawn(move || {
-                            if let Err(failure) =
-                                amane_process::Cmd::new("xdg-open").arg(&folder).status()
-                            {
-                                log::warn!("couldn't show {}: {failure}", folder.display());
-                            }
-                        });
-                    })
+                    .on_press(move || amane_kit::launch::open(folder.to_string_lossy()))
                     .build(),
             )
     });

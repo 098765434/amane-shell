@@ -588,7 +588,7 @@ impl StatusBar {
 pub const BUILTIN_ACTIVITIES: [&str; 3] = ["Now Playing", "Timer", "Screen Sharing"];
 
 impl Settings for StatusBar {
-    const APP: &'static str = "amane-shell";
+    const APP: &'static str = crate::app_ids::SHELL;
     const FILE: &'static str = "status-bar";
 }
 

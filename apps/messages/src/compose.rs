@@ -261,13 +261,7 @@ fn chip(draft: Draft, path: &PathBuf) -> Rectangle {
         name
     };
     let big = std::fs::metadata(path).is_ok_and(|meta| meta.len() > BIG);
-    let image = matches!(
-        path.extension()
-            .and_then(|extension| extension.to_str())
-            .map(str::to_ascii_lowercase)
-            .as_deref(),
-        Some("jpg" | "jpeg" | "png" | "gif" | "webp" | "heic")
-    );
+    let image = amane_kit::mime::is_image(path);
 
     let style = sys::r#type::caption();
     let label = if big {

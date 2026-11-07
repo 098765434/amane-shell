@@ -9,7 +9,6 @@ use amane::{Column, Parent, ScrollArea, Service, Size, Widget};
 use super::super::{Page, open};
 use crate::chrome::panel::close;
 use crate::services::network::tailscale::{Peer, State, Tailscale};
-use crate::services::run;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
@@ -79,7 +78,7 @@ pub(crate) fn page() -> DetailPage {
         })
         .footer("Admin Console…", || {
             close();
-            run("xdg-open", vec![ADMIN_CONSOLE.to_string()]);
+            amane_kit::launch::open(ADMIN_CONSOLE);
         })
 }
 

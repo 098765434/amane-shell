@@ -559,25 +559,13 @@ pub fn save(displays: &Displays, what: &str) -> Result<(), String> {
     commit(&folder, &[&file], &format!("displays: {what}"))
 }
 
-/// Into place by a rename, so niri never reads half a file; the text is on
-/// disk before the rename and the rename after it, or a crash in between can
-/// leave the file empty (btrfs and ext4 both may), which loses every
-/// display's settings.
+/// Into place whole and durably, so niri never reads half a file and a
+/// crash can't leave it empty, which would lose every display's settings.
 fn write_atomic(path: &Path, text: &str) -> Result<(), String> {
-    use std::io::Write as _;
-
-    let temp = path.with_extension("kdl.tmp");
-    let fail = |at: &Path, e: std::io::Error| format!("{}: {e}", at.display());
-    let mut file = fs::File::create(&temp).map_err(|e| fail(&temp, e))?;
-    file.write_all(text.as_bytes())
-        .and_then(|()| file.sync_all())
-        .map_err(|e| fail(&temp, e))?;
-    fs::rename(&temp, path).map_err(|e| fail(path, e))?;
-    if let Some(folder) = path.parent() {
-        // the file is in place; an unsynced folder only risks the rename in a crash
-        let _ = fs::File::open(folder).and_then(|folder| folder.sync_all());
-    }
-    Ok(())
+    amane_kit::fs::Whole::new()
+        .durable()
+        .write(path, text)
+        .map_err(|e| format!("{}: {e}", path.display()))
 }
 
 fn in_repo(folder: &Path) -> bool {

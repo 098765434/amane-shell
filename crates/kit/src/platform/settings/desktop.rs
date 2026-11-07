@@ -35,7 +35,7 @@ impl Default for Desktop {
 }
 
 impl Settings for Desktop {
-    const APP: &'static str = "amane-shell";
+    const APP: &'static str = crate::app_ids::SHELL;
     const FILE: &'static str = "desktop";
 }
 

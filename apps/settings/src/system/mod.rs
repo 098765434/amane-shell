@@ -35,7 +35,7 @@ use repo::{Applied, Repo, Running, Toplevel};
 pub fn state_dir() -> PathBuf {
     let state = amane_kit::paths::state();
 
-    state.join("amane-shell").join("nixos")
+    state.join(amane_kit::app_ids::SHELL).join("nixos")
 }
 
 /// Why the running system isn't the configuration.

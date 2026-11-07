@@ -133,7 +133,7 @@ impl Passwords {
 }
 
 impl Settings for Passwords {
-    const APP: &'static str = "amane-shell";
+    const APP: &'static str = crate::app_ids::SHELL;
     const FILE: &'static str = "passwords";
 
     // which apps have which accounts is private

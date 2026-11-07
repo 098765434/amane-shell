@@ -39,7 +39,7 @@ const LOCKER_START: Duration = Duration::from_secs(5);
 /// would wake it straight back up.
 const SCREEN_OFF_DELAY: Duration = Duration::from_secs(1);
 
-const WHO: &str = "amane-shell";
+const WHO: &str = amane_kit::app_ids::SHELL;
 const WHY: &str = "Keep Awake";
 
 /// The time limits the page offers; `None` holds until turned off.

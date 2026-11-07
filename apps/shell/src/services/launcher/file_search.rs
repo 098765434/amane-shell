@@ -422,10 +422,7 @@ fn file_url(path: &Path) -> String {
 
 /// Opens `path` in the app it opens with.
 pub fn open(path: &Path) {
-    let path = path.to_string_lossy().into_owned();
-    std::thread::spawn(move || {
-        run_now("xdg-open", &[path]);
-    });
+    amane_kit::launch::open(path.to_string_lossy());
 }
 
 /// Shows `path` in the file manager, picked out in its folder

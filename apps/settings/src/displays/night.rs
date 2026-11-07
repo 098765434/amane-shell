@@ -90,7 +90,9 @@ impl Service for NightLight {
 }
 
 fn state_file() -> PathBuf {
-    amane_kit::paths::state().join("amane-shell/night-light.json")
+    amane_kit::paths::state()
+        .join(amane_kit::app_ids::SHELL)
+        .join("night-light.json")
 }
 
 fn ask() -> Option<Light> {

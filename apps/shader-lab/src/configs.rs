@@ -93,15 +93,7 @@ pub fn save(config: &Config) -> Result<String, String> {
     let slug = slug(&config.name);
     let path = folder().join(format!("{slug}.json"));
 
-    let text = serde_json::to_string_pretty(config).map_err(|error| error.to_string())?;
-
-    fs::create_dir_all(folder()).map_err(|error| error.to_string())?;
-
-    // written whole and moved into place, so a reader never sees half of it
-    let partial = path.with_extension("json.partial");
-
-    fs::write(&partial, format!("{text}\n")).map_err(|error| error.to_string())?;
-    fs::rename(&partial, &path).map_err(|error| error.to_string())?;
+    amane_kit::fs::save_json(&path, config).map_err(|error| error.to_string())?;
 
     Ok(slug)
 }

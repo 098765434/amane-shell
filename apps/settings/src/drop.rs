@@ -89,10 +89,7 @@ fn grids() -> amane_kit::form::Group {
                         .build(),
                 ));
             }
-            let tiles = match grid.tiles.len() {
-                1 => String::from("1 tile"),
-                count => format!("{count} tiles"),
-            };
+            let tiles = amane_kit::format::count(grid.tiles.len(), "tile", "tiles");
             FormRow::new(id, &grid.name)
                 .subtitle(tiles)
                 .trailing(Row::new(trailing).gap(4.0).align(Center))

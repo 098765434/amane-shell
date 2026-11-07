@@ -31,7 +31,11 @@ pub struct List {
 
 pub fn file() -> Option<PathBuf> {
     let cache = amane_kit::paths::cache();
-    Some(cache.join("amane-shell").join("phone-apps.json"))
+    Some(
+        cache
+            .join(amane_kit::app_ids::SHELL)
+            .join("phone-apps.json"),
+    )
 }
 
 pub fn write(args: &[String]) -> Result<(), String> {
@@ -49,20 +53,11 @@ pub fn write(args: &[String]) -> Result<(), String> {
 
     let list = List {
         device,
-        updated: std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(0, |time| time.as_secs()),
+        updated: amane_kit::time::unix_s(),
         apps,
     };
 
     let path = file().ok_or("no cache directory")?;
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir).map_err(|error| error.to_string())?;
-    }
-    let text = serde_json::to_string(&list).map_err(|error| error.to_string())?;
-
-    // written whole, then moved over, so the shell never reads half of it
-    let partial = path.with_extension("json.part");
-    std::fs::write(&partial, text).map_err(|error| error.to_string())?;
-    std::fs::rename(&partial, &path).map_err(|error| error.to_string())
+    // whole, so the shell never reads half of it
+    amane_kit::fs::save_json(&path, &list).map_err(|error| error.to_string())
 }

@@ -43,7 +43,11 @@ static LISTING: AtomicBool = AtomicBool::new(false);
 
 fn file() -> Option<PathBuf> {
     let cache = amane_kit::paths::cache();
-    Some(cache.join("amane-shell").join("phone-apps.json"))
+    Some(
+        cache
+            .join(amane_kit::app_ids::SHELL)
+            .join("phone-apps.json"),
+    )
 }
 
 fn list() -> Option<List> {

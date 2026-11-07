@@ -124,7 +124,7 @@ fn sample_menu() -> ContextMenu {
 }
 
 fn main() -> ExitCode {
-    amane_log::init("amane-shell");
+    amane_log::init(amane_kit::app_ids::SHELL);
     let args: Vec<String> = std::env::args().skip(1).collect();
     if let Some(code) = cli(&args) {
         return code;

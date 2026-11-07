@@ -3,6 +3,7 @@
 
 pub mod app;
 pub mod app_icon;
+pub mod launch;
 pub mod marker;
 pub mod process;
 pub mod secrets;

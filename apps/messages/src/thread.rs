@@ -471,7 +471,7 @@ fn context_menu(message: &SmsMessage) {
                 {
                     PhoneMessages::download(part);
                 } else {
-                    amane::Launch::argv(&["xdg-open", &target]).activated();
+                    amane_kit::launch::open(&target);
                 }
             }
             Some(Pick::Retry) => retry(&message),
@@ -677,7 +677,7 @@ fn link_chip(link: &str) -> Rectangle {
         false,
         Actions {
             press: Some(Rc::new(move || {
-                amane::Launch::argv(&["xdg-open", &url]).activated();
+                amane_kit::launch::open(&url);
             })),
             ..Actions::default()
         },

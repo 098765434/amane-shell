@@ -87,38 +87,6 @@ fn join(base: &str, rest: &str) -> String {
     )
 }
 
-/// A few kinds of file by their extension, for the type S3 serves them as.
-fn content_type(file: &Path) -> &'static str {
-    let extension = file
-        .extension()
-        .map(|extension| extension.to_string_lossy().to_ascii_lowercase())
-        .unwrap_or_default();
-    match extension.as_str() {
-        "png" => "image/png",
-        "jpg" | "jpeg" => "image/jpeg",
-        "gif" => "image/gif",
-        "webp" => "image/webp",
-        "svg" => "image/svg+xml",
-        "mp4" => "video/mp4",
-        "webm" => "video/webm",
-        "mov" => "video/quicktime",
-        "pdf" => "application/pdf",
-        "zip" => "application/zip",
-        "txt" | "md" | "log" => "text/plain; charset=utf-8",
-        "html" | "htm" => "text/html; charset=utf-8",
-        "json" => "application/json",
-        _ => "application/octet-stream",
-    }
-}
-
-fn is_video(file: &Path) -> bool {
-    content_type(file).starts_with("video/")
-}
-
-fn is_image(file: &Path) -> bool {
-    content_type(file).starts_with("image/")
-}
-
 /// What curl's run for `file` to `to` is; `secret` is the account's
 /// password or key, looked up before.
 fn request(
@@ -144,10 +112,14 @@ fn request(
             Link::Answer
         }
         UploadTo::Imgur => {
-            if !is_image(file) && !is_video(file) {
+            if !amane_kit::mime::is_image(file) && !amane_kit::mime::is_video(file) {
                 return Err(String::from("Imgur takes pictures and videos"));
             }
-            let field = if is_video(file) { "video" } else { "image" };
+            let field = if amane_kit::mime::is_video(file) {
+                "video"
+            } else {
+                "image"
+            };
             config.push_str(&format!(
                 "header = {}\n",
                 quoted(&format!(
@@ -240,7 +212,7 @@ fn request(
                 String::from("-H"),
                 String::from("x-amz-content-sha256: UNSIGNED-PAYLOAD"),
                 String::from("-H"),
-                format!("Content-Type: {}", content_type(file)),
+                format!("Content-Type: {}", amane_kit::mime::of(file)),
             ]);
             if account.public {
                 args.extend([String::from("-H"), String::from("x-amz-acl: public-read")]);

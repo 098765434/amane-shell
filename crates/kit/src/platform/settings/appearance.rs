@@ -64,7 +64,7 @@ impl Default for Appearance {
 }
 
 impl Settings for Appearance {
-    const APP: &'static str = "amane-shell";
+    const APP: &'static str = crate::app_ids::SHELL;
     const FILE: &'static str = "appearance";
 }
 

@@ -72,7 +72,9 @@ impl Service for QuickControls {
 fn layout_file() -> PathBuf {
     let state = amane_kit::paths::state();
 
-    state.join("amane-shell").join("quick-settings.json")
+    state
+        .join(amane_kit::app_ids::SHELL)
+        .join("quick-settings.json")
 }
 
 fn ask() -> Option<Vec<(String, bool)>> {

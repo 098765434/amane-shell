@@ -24,7 +24,7 @@ pub fn state_file(name: &str) -> PathBuf {
         return folder.join(name);
     }
     let state = amane_kit::paths::state();
-    state.join("amane-shell").join(name)
+    state.join(amane_kit::app_ids::SHELL).join(name)
 }
 
 /// Something the shell keeps in a state file of its own.

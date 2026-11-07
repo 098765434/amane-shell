@@ -403,9 +403,8 @@ fn choose_terminal(id: &str) -> Result<(), String> {
     let mut lines = vec![String::from(id)];
     lines.extend(terminals_listed().into_iter().filter(|line| line != id));
     let file = terminals_file();
-    let temp = file.with_extension("list.new");
-    fs::write(&temp, lines.join("\n") + "\n").map_err(|e| format!("{}: {e}", temp.display()))?;
-    fs::rename(&temp, &file).map_err(|e| format!("{}: {e}", file.display()))
+    amane_kit::fs::write_whole(&file, lines.join("\n") + "\n")
+        .map_err(|e| format!("{}: {e}", file.display()))
 }
 
 /// The terminal row, while `xdg-terminal-exec` is installed.

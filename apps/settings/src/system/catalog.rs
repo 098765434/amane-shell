@@ -48,7 +48,7 @@ impl Service for Catalog {
 fn cache_dir() -> PathBuf {
     let cache = amane_kit::paths::cache();
 
-    cache.join("amane-shell").join("nixpkgs")
+    cache.join(amane_kit::app_ids::SHELL).join("nixpkgs")
 }
 
 fn path_for(rev: &str) -> PathBuf {

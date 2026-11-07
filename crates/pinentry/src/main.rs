@@ -49,7 +49,7 @@ fn shell() -> Option<UnixStream> {
 
     let exe = peer::exe(peer.pid)?;
 
-    if !peer::is_program(&exe, &["amane-shell"]) || !peer.still_there() {
+    if !peer::is_program(&exe, &[amane_base::app_ids::SHELL]) || !peer.still_there() {
         return None;
     }
 

@@ -82,7 +82,7 @@ fn cached(url: &str) -> PathBuf {
     let mut hasher = DefaultHasher::new();
     url.hash(&mut hasher);
     let base = amane_kit::paths::cache();
-    base.join("amane-shell")
+    base.join(amane_kit::app_ids::SHELL)
         .join("art")
         .join(format!("{:016x}", hasher.finish()))
 }

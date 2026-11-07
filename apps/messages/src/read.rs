@@ -17,7 +17,12 @@ thread_local! {
 
 fn path() -> Option<PathBuf> {
     let cache = amane_kit::paths::cache();
-    Some(cache.join("amane-shell/messages/read.json"))
+    Some(
+        cache
+            .join(amane_kit::app_ids::SHELL)
+            .join("messages")
+            .join("read.json"),
+    )
 }
 
 fn load() -> HashMap<i64, i64> {

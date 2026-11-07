@@ -29,7 +29,11 @@ struct Remembered {
 
 fn file() -> Option<PathBuf> {
     let config = amane_kit::paths::config();
-    Some(config.join("amane-shell").join("phone-screen.json"))
+    Some(
+        config
+            .join(amane_kit::app_ids::SHELL)
+            .join("phone-screen.json"),
+    )
 }
 
 fn remembered() -> Remembered {

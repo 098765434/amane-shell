@@ -43,18 +43,10 @@ fn with_list<R>(f: impl FnOnce(&mut Vec<Shared>) -> R) -> R {
 }
 
 fn save(list: &[Shared]) {
-    let (Some(file), Ok(text)) = (file(), serde_json::to_string_pretty(list)) else {
+    let Some(file) = file() else {
         return;
     };
-    let write = || {
-        if let Some(folder) = file.parent() {
-            std::fs::create_dir_all(folder)?;
-        }
-        let part = file.with_extension("part");
-        std::fs::write(&part, text)?;
-        std::fs::rename(part, &file)
-    };
-    if let Err(e) = write() {
+    if let Err(e) = amane_kit::fs::save_json(&file, list) {
         log::warn!("couldn't save {}: {e}", file.display());
     }
 }
@@ -148,7 +140,5 @@ pub fn delivered(title: &str, links: &[String]) -> bool {
 
 /// Opens `link` in the browser.
 pub fn open(link: &str) {
-    if let Err(error) = amane_process::Cmd::new("xdg-open").arg(link).detach() {
-        log::warn!("couldn't open {link}: {error}");
-    }
+    amane_kit::launch::open(link);
 }

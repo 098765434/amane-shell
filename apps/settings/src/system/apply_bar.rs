@@ -67,10 +67,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
         Phase::Idle => (
             boxed(line(format!(
                 "{} waiting · {}",
-                match changes.len() {
-                    1 => String::from("1 change"),
-                    n => format!("{n} changes"),
-                },
+                amane_kit::format::count(changes.len(), "change", "changes"),
                 changes.join(" · ")
             ))),
             vec![

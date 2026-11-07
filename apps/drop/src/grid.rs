@@ -731,7 +731,7 @@ fn next_phone(now: Option<&str>) -> Option<String> {
 }
 
 fn open_folder(folder: &Path) {
-    amane::Launch::argv(&["xdg-open", &folder.display().to_string()]).activated();
+    amane_kit::launch::open(folder.to_string_lossy());
     state::close();
 }
 
@@ -1323,7 +1323,7 @@ fn shelf(grid: &str, width: f32) -> Rectangle {
 fn stack_chip(grid: &str, index: usize, files: Vec<PathBuf>) -> Rectangle {
     let gone = files.iter().all(|file| !file.exists());
     let first = files.first().cloned().unwrap_or_default();
-    let picture: Box<dyn Widget> = if is_image(&first) && Image::loaded(&first) {
+    let picture: Box<dyn Widget> = if amane_kit::mime::is_image(&first) && Image::loaded(&first) {
         boxed(
             Rectangle::new()
                 .width(Size::Fixed(40.0))
@@ -1334,7 +1334,7 @@ fn stack_chip(grid: &str, index: usize, files: Vec<PathBuf>) -> Rectangle {
     } else {
         let glyph = if first.is_dir() {
             ICON_FOLDER_FILLED
-        } else if is_image(&first) {
+        } else if amane_kit::mime::is_image(&first) {
             ICON_IMAGE
         } else {
             ICON_DESCRIPTION
@@ -1394,17 +1394,6 @@ fn stack_chip(grid: &str, index: usize, files: Vec<PathBuf>) -> Rectangle {
         })
         .child(Stack::new(layers));
     if gone { chip.opacity(0.4) } else { chip }
-}
-
-fn is_image(file: &Path) -> bool {
-    file.extension()
-        .and_then(|extension| extension.to_str())
-        .is_some_and(|extension| {
-            matches!(
-                extension.to_ascii_lowercase().as_str(),
-                "png" | "jpg" | "jpeg" | "webp" | "gif" | "bmp"
-            )
-        })
 }
 
 #[cfg(test)]

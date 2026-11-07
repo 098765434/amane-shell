@@ -397,11 +397,7 @@ pub fn view() -> Column {
             fact("homepage", "Homepage")
                 .trailing(
                     PushButton::new("settings.package.homepage.open", "Open")
-                        .on_press(move || {
-                            if let Err(error) = Cmd::new("xdg-open").arg(&url).detach() {
-                                log::warn!("couldn't open {url}: {error}");
-                            }
-                        })
+                        .on_press(move || amane_kit::launch::open(&url))
                         .build(),
                 )
                 .subtitle(meta.homepage.clone()),
