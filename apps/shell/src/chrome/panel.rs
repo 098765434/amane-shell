@@ -8,9 +8,9 @@ use std::cell::{Cell, RefCell};
 
 use amane::{Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Vertical, Zone, mark_all};
 
-use crate::components::material;
 use crate::surfaces::{context_menu, launcher, notifications, quick_settings, status_bar};
 use crate::tokens::sys;
+use amane_kit::material;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Panel {

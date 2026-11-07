@@ -27,11 +27,6 @@ use amane_kit::icons::{
 };
 use amane_kit::settings::{BUILTIN_ACTIVITIES, status_bar};
 
-use crate::components::buttons::{DrawnButton, IconButton, PushButton, Style};
-use crate::components::card::{Card, Variant};
-use crate::components::layout::{boxed, cursor, icon, text_width};
-use crate::components::material::{self, FillLevel, Level, Material};
-use crate::components::motion;
 use crate::services::desktop::activities::{self as registry, Live, now_ms};
 use crate::services::desktop::privacy::{CastTarget, Privacy, stop_cast};
 use crate::services::launcher::timer;
@@ -39,6 +34,11 @@ use crate::surfaces::launcher;
 use crate::surfaces::notifications::DoNotDisturb;
 use crate::surfaces::quick_settings::{self, Page};
 use crate::tokens::{Styled, sys};
+use amane_kit::buttons::{DrawnButton, IconButton, PushButton, Style};
+use amane_kit::card::{Card, Variant};
+use amane_kit::layout::{boxed, cursor, icon, text_width};
+use amane_kit::material::{self, FillLevel, Level, Material};
+use amane_kit::motion;
 
 use super::{BAR_NS, item, menu_edge};
 
@@ -637,7 +637,7 @@ pub fn popup() -> Popup {
             .anchor_rect(0, 0, 1, 1)
             .parent(BAR_NS)
             .visible(false)
-            .child(crate::components::layout::blank());
+            .child(amane_kit::layout::blank());
     };
 
     let (card, height) = expanded(&activity);

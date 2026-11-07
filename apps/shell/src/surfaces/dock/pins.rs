@@ -14,8 +14,8 @@ use std::time::{Duration, Instant};
 
 use amane::{Windows, Workspaces};
 
-use crate::components::app_icon;
 use crate::services::{save_state, state_file};
+use amane_kit::app_icon;
 
 const FILE: &str = "dock-pins";
 

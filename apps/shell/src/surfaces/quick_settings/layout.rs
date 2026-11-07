@@ -6,7 +6,7 @@
 //! list rather than tearing a hole in the canvas.
 //!
 //! The layout itself, and the moves and resizes edit mode previews and
-//! commits, are the shared grid's (`components::grid::layout`); what's
+//! commits, are the shared grid's (`amane_kit::grid::layout`); what's
 //! Quick Settings' own is the default, the file, and that every control
 //! has an entry.
 
@@ -16,9 +16,9 @@ use serde_json::{Value, json};
 
 use super::controls::ControlId;
 use super::grid::{Canvas, Place, Span};
-use crate::components::grid::{self, GridKey};
 use crate::services::{save_state, state_file};
 use crate::surfaces::quick_settings::grid::FromTokens as _;
+use amane_kit::grid::{self, GridKey};
 
 const FILE: &str = "quick-settings";
 const VERSION: u64 = 2;

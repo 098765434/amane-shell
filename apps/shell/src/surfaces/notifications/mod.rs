@@ -8,7 +8,7 @@
 //! - [`center`] — the session's notifications, stacked by app, in a
 //!   right-edge sidebar the clock opens.
 //! - [`dnd`] — Do Not Disturb, on or until a time, kept across restarts.
-//! - [`card`] — the card both draw; [`motion`](crate::components::motion)
+//! - [`card`] — the card both draw; [`motion`](amane_kit::motion)
 //!   moves their cards.
 //!
 //! See `docs/shell/notifications.md`.
@@ -25,7 +25,7 @@ pub use center::{CENTER_NS, side_sheet, unseen};
 pub use dnd::DoNotDisturb;
 pub use toasts::{TOAST_NS, TOASTS};
 
-use crate::components::panel::{Panel, toggle};
+use crate::chrome::panel::{Panel, toggle};
 use dnd::Until;
 
 /// `amane-shell` IPC: `notifications [toggle | clear | dnd [on|off|toggle]]`.

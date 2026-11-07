@@ -17,14 +17,6 @@ use amane::{
 
 use super::super::{Page, open};
 use super::{connected_count, settings_link};
-use crate::components::buttons::{PushButton, Style, Switch};
-use crate::components::icons::{
-    ICON_HOTSPOT, ICON_LOCK, ICON_VPN, ICON_WIFI_NONE, ICON_WIFI_OFF, ICON_WIRED, wifi_glyph,
-};
-use crate::components::layout::{boxed, caption, fixed_width, icon, nothing, text_height};
-use crate::components::list::{self, List, ListItem};
-use crate::components::material::{self, Level};
-use crate::components::motion::redraw_after;
 use crate::services::network::connections::Connections;
 use crate::services::network::connections::Vpn;
 use crate::services::network::rfkill::Rfkill;
@@ -34,6 +26,14 @@ use crate::surfaces::quick_settings::detail::page_width;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::sys;
+use amane_kit::buttons::{PushButton, Style, Switch};
+use amane_kit::icons::{
+    ICON_HOTSPOT, ICON_LOCK, ICON_VPN, ICON_WIFI_NONE, ICON_WIFI_OFF, ICON_WIRED, wifi_glyph,
+};
+use amane_kit::layout::{boxed, caption, fixed_width, icon, nothing, text_height};
+use amane_kit::list::{self, List, ListItem};
+use amane_kit::material::{self, Level};
+use amane_kit::motion::redraw_after;
 
 /// How often the Wi‑Fi page looks for networks again.
 const RESCAN: Duration = Duration::from_secs(15);

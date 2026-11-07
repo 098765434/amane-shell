@@ -23,16 +23,7 @@ use amane::{
 
 use super::super::{Page, QS_NS, open};
 use super::connected_count;
-use crate::components::battery;
-use crate::components::buttons::{IconButton, PushButton, Style, Switch};
-use crate::components::control_size::ControlSize;
-use crate::components::dialog::Dialog;
-use crate::components::icons::{
-    ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_INFO, device_glyph,
-};
-use crate::components::layout::{boxed, caption, cursor, fixed_width, text_height};
-use crate::components::list::{self, List, ListItem};
-use crate::components::material::{self, Level};
+use crate::chrome::battery;
 use crate::services::network::rfkill::Rfkill;
 use crate::surfaces::alert;
 use crate::surfaces::context_menu::{self, ContextMenu, MenuItem};
@@ -41,6 +32,15 @@ use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
+use amane_kit::buttons::{IconButton, PushButton, Style, Switch};
+use amane_kit::control_size::ControlSize;
+use amane_kit::dialog::Dialog;
+use amane_kit::icons::{
+    ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_INFO, device_glyph,
+};
+use amane_kit::layout::{boxed, caption, cursor, fixed_width, text_height};
+use amane_kit::list::{self, List, ListItem};
+use amane_kit::material::{self, Level};
 
 /// Registry key for the rebuilt-per-device right-click menu.
 const DEVICE_MENU_KEY: &str = "amane.qs.bluetooth.device-menu";

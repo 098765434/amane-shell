@@ -12,17 +12,17 @@ use amane::{Audio, Brightness, DesktopApp, Media as Player, PowerProfile, Servic
 use amane_assistant::snapshot::{self, App, Snapshot, Switch};
 use amane_assistant::{Command, Level, Media, Power, Reading, Risk, Source, State, Target};
 
-use crate::components::dialog::Dialog;
-use crate::components::icons::{
-    Glyph, ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_LOCK, ICON_LOG_OUT, ICON_POWER,
-    ICON_RESTART, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS, ICON_SLEEP, ICON_TIMER, ICON_TUNE,
-    ICON_VOLUME_DOWN, ICON_VOLUME_OFF, ICON_VOLUME_UP, ICON_VPN,
-};
 use crate::services::launcher::timer;
 use crate::services::power::session::Session;
 use crate::surfaces::alert;
 use crate::surfaces::osd;
 use crate::surfaces::quick_settings::{self, ControlId};
+use amane_kit::dialog::Dialog;
+use amane_kit::icons::{
+    Glyph, ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_LOCK, ICON_LOG_OUT, ICON_POWER,
+    ICON_RESTART, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS, ICON_SLEEP, ICON_TIMER, ICON_TUNE,
+    ICON_VOLUME_DOWN, ICON_VOLUME_OFF, ICON_VOLUME_UP, ICON_VPN,
+};
 
 use super::actions::profile_name;
 use super::entries::{Action, Entry, Icon, app_key};
@@ -239,8 +239,8 @@ fn proposal(
             let playing = Player::read().playing();
             let media = *media;
             let (title, glyph) = match media {
-                Media::Play => ("Play", crate::components::icons::ICON_PLAY),
-                Media::Pause => ("Pause", crate::components::icons::ICON_MUSIC),
+                Media::Play => ("Play", amane_kit::icons::ICON_PLAY),
+                Media::Pause => ("Pause", amane_kit::icons::ICON_MUSIC),
                 Media::Next => ("Next Track", ICON_SKIP_NEXT),
                 Media::Previous => ("Previous Track", ICON_SKIP_PREVIOUS),
             };

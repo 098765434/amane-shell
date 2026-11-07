@@ -57,21 +57,21 @@ use amane::{
     Widget, WindowSize, modifiers, window_size,
 };
 
-use crate::components::divider::Divider;
-use crate::components::glass_region;
-use crate::components::kinetic::{Axis, AxisLock, Kinetic};
-use crate::components::layout::{blank, boxed, pad, track_cursor};
-use crate::components::material::Material;
-use crate::components::motion;
-use crate::components::pager::{Pager, PagerMotion};
-use crate::components::panel::{self, Panel, close, is_open, overlay};
-use crate::components::reveal::Reveal;
-use crate::components::scroll_view::ScrollbarFade;
-use crate::components::text_edit::{self, Field};
+use crate::chrome::panel::{self, Panel, close, is_open, overlay};
 use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history;
 use crate::services::launcher::file_search::{self, FileKind};
+use amane_kit::divider::Divider;
+use amane_kit::glass_region;
+use amane_kit::kinetic::{Axis, AxisLock, Kinetic};
+use amane_kit::layout::{blank, boxed, pad, track_cursor};
+use amane_kit::material::Material;
+use amane_kit::motion;
+use amane_kit::pager::{Pager, PagerMotion};
+use amane_kit::reveal::Reveal;
+use amane_kit::scroll_view::ScrollbarFade;
 use amane_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
+use amane_kit::text_edit::{self, Field};
 
 use entries::{Entry, Scope};
 use mode::Mode;

@@ -8,16 +8,16 @@ use super::super::grid::{Metrics, Span};
 use super::super::slider_card::{self, SliderRow};
 use super::super::{Page, open};
 use super::on_off;
-use crate::components::icons::{
-    ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_DARK_MODE, ICON_NIGHT_LIGHT,
-};
-use crate::components::layout::{boxed, caption};
-use crate::components::slider::Slider;
 use crate::services::display::dark_style;
 use crate::services::display::night_light::{self, NightLight, Schedule};
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::surfaces::quick_settings::tile::QuickToggle;
+use amane_kit::icons::{
+    ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_DARK_MODE, ICON_NIGHT_LIGHT,
+};
+use amane_kit::layout::{boxed, caption};
+use amane_kit::slider::Slider;
 
 pub(crate) fn brightness_cell(span: Span, inert: bool) -> Option<Box<dyn Widget>> {
     let brightness = Brightness::read();

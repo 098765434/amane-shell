@@ -21,12 +21,12 @@ use amane::{
 };
 use chrono::{DateTime, Local};
 
-use crate::components::app_icon::{icon_for, tile as app_icon_tile};
-use crate::components::buttons::{IconButton, PushButton, Style};
-use crate::components::icons::ICON_CLOSE;
-use crate::components::layout::{blank, boxed, inner_width, text_width};
-use crate::components::material::{self, FillLevel, Level, Material};
 use crate::tokens::{Styled, notification, sys};
+use amane_kit::app_icon::{icon_for, tile as app_icon_tile};
+use amane_kit::buttons::{IconButton, PushButton, Style};
+use amane_kit::icons::ICON_CLOSE;
+use amane_kit::layout::{blank, boxed, inner_width, text_width};
+use amane_kit::material::{self, FillLevel, Level, Material};
 
 /// The body is cut after this many lines, like a banner's.
 const BODY_LINES: usize = 2;

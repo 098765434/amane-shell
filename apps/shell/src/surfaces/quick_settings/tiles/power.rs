@@ -15,16 +15,16 @@ use amane::{
 };
 
 use super::super::{Page, open};
-use crate::components::battery;
-use crate::components::buttons::{Segment, SegmentedButton};
-use crate::components::icons::{peripheral_glyph, power_profile_glyph};
-use crate::components::layout::{boxed, caption};
-use crate::components::list::{self, List, ListItem};
-use crate::components::material::{self, Level};
+use crate::chrome::battery;
 use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
+use amane_kit::buttons::{Segment, SegmentedButton};
+use amane_kit::icons::{peripheral_glyph, power_profile_glyph};
+use amane_kit::layout::{boxed, caption};
+use amane_kit::list::{self, List, ListItem};
+use amane_kit::material::{self, Level};
 
 const BALANCED: &str = "balanced";
 

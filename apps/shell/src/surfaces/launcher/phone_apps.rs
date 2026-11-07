@@ -13,7 +13,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use amane::serde::Deserialize;
 use amane::{Adb, KdeConnect, Service};
 
-use crate::components::icons::ICON_PHONE;
+use amane_kit::icons::ICON_PHONE;
 
 use super::entries::{Action, Entry, Icon};
 use super::mode::Mode;

@@ -11,11 +11,11 @@ use super::{
     Face, accent, bar, caption_style, figure_style, header, header_height, label_style, line,
     percent, primary, ring_with, secondary,
 };
-use crate::components::battery::LOW;
-use crate::components::icons::{ICON_COMPUTER, battery_glyph, device_glyph, peripheral_glyph};
-use crate::components::layout::text_height;
+use crate::chrome::battery::LOW;
 use crate::surfaces::widgets::kind::{WidgetKind, WidgetSize};
 use crate::tokens::sys;
+use amane_kit::icons::{ICON_COMPUTER, battery_glyph, device_glyph, peripheral_glyph};
+use amane_kit::layout::text_height;
 
 /// One thing with a battery.
 #[derive(Clone, Debug, PartialEq)]
@@ -148,7 +148,7 @@ fn small(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
     if device.charging {
         let side = text_height(label_style());
         out.push(super::place(
-            crate::components::layout::icon(battery_glyph(device.percent, true), side, primary()),
+            amane_kit::layout::icon(battery_glyph(device.percent, true), side, primary()),
             face.width - side,
             0.0,
             side,
@@ -201,7 +201,7 @@ fn medium(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
             diameter,
         ));
         let label = percent(f32::from(device.percent) / 100.0);
-        let width = crate::components::layout::text_width(&label, caption);
+        let width = amane_kit::layout::text_width(&label, caption);
         out.push(line(
             label,
             caption,
@@ -233,7 +233,7 @@ fn large(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
             break;
         }
         out.push(super::place(
-            crate::components::layout::icon(device.glyph, side * 0.8, primary()),
+            amane_kit::layout::icon(device.glyph, side * 0.8, primary()),
             0.0,
             y + side * 0.1,
             side,

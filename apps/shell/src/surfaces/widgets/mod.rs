@@ -38,18 +38,18 @@ use amane::{
     Widget, WindowSize, WorkspaceSwitch, Workspaces, Zone,
 };
 
-use crate::components::glass::{self, Rim};
-use crate::components::glass_region;
-use crate::components::grid::Layout;
-use crate::components::grid::drag::{Drag, Hit, Origin, Session, hit};
-use crate::components::grid::geometry::{Canvas, Metrics, Place, Rect, Slot, Span};
-use crate::components::icons::ICON_CHECK;
-use crate::components::layout::{blank, boxed};
-use crate::components::material::{self, Material};
-use crate::components::motion::{self, Arrive, Item, Pose};
 use crate::services::desktop::system_stats::SystemStats;
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::surfaces::status_bar;
+use amane_kit::glass::{self, Rim};
+use amane_kit::glass_region;
+use amane_kit::grid::Layout;
+use amane_kit::grid::drag::{Drag, Hit, Origin, Session, hit};
+use amane_kit::grid::geometry::{Canvas, Metrics, Place, Rect, Slot, Span};
+use amane_kit::icons::ICON_CHECK;
+use amane_kit::layout::{blank, boxed};
+use amane_kit::material::{self, Material};
+use amane_kit::motion::{self, Arrive, Item, Pose};
 use amane_kit::settings::{ACCENTS, WidgetStyle, desktop};
 
 use kind::{Category, WidgetKey, WidgetKind, WidgetSize};

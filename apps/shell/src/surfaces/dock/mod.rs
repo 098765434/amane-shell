@@ -46,16 +46,16 @@ use amane::{
 
 use amane_kit::settings::dock as dock_settings;
 
-use crate::components::app_icon;
-use crate::components::divider::Divider;
-use crate::components::edge_reveal::EdgeReveal;
-use crate::components::glass_region;
-use crate::components::layout::{blank, boxed};
-use crate::components::material::{self, Material};
-use crate::components::motion::redraw_after;
 use crate::surfaces::context_menu;
 use crate::surfaces::status_bar;
 use crate::tokens::sys;
+use amane_kit::app_icon;
+use amane_kit::divider::Divider;
+use amane_kit::edge_reveal::EdgeReveal;
+use amane_kit::glass_region;
+use amane_kit::layout::{blank, boxed};
+use amane_kit::material::{self, Material};
+use amane_kit::motion::redraw_after;
 
 use drag::{Drag, Drop, Settle};
 use magnify::{Rest, Swollen};

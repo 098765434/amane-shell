@@ -22,18 +22,18 @@ use super::store::{self, Settings};
 use super::{
     BAND, Geometry, RADIUS, THRESHOLD, changed, commit, current, gallery, shown, with_desk,
 };
-use crate::components::buttons::{IconButton, Shape, Style};
-use crate::components::control_size::ControlSize;
-use crate::components::grid::Layout;
-use crate::components::grid::drag::{Drag, Origin, Session, follow};
-use crate::components::grid::geometry::{Metrics, Slot};
-use crate::components::grid::{Entry, GridKey};
-use crate::components::icons::{ICON_REMOVE, ICON_RESIZE};
-use crate::components::layout::{boxed, icon};
-use crate::components::material::{self, FillLevel, Level};
-use crate::components::motion::Pose;
 use crate::surfaces::context_menu;
 use crate::tokens::sys;
+use amane_kit::buttons::{IconButton, Shape, Style};
+use amane_kit::control_size::ControlSize;
+use amane_kit::grid::Layout;
+use amane_kit::grid::drag::{Drag, Origin, Session, follow};
+use amane_kit::grid::geometry::{Metrics, Slot};
+use amane_kit::grid::{Entry, GridKey};
+use amane_kit::icons::{ICON_REMOVE, ICON_RESIZE};
+use amane_kit::layout::{boxed, icon};
+use amane_kit::material::{self, FillLevel, Level};
+use amane_kit::motion::Pose;
 
 /// The key a widget lifted from the gallery has until it lands.
 pub(super) const PROVISIONAL: u32 = u32::MAX;

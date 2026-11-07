@@ -65,16 +65,16 @@ use amane::{
     Parent, Rectangle, Size, Stack, Start, Vertical, Widget, WindowSize, window_size,
 };
 
-use crate::components::glass_region;
-use crate::components::layout::{blank, boxed, pad, track_cursor};
-use crate::components::material::Material;
-use crate::components::motion;
-use crate::components::panel::{self, Panel, close, is_open, overlay, popover_margin};
-use crate::components::reveal::Reveal;
+use crate::chrome::panel::{self, Panel, close, is_open, overlay, popover_margin};
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::surfaces::quick_settings::layout::Stored as _;
 use crate::surfaces::status_bar;
 use crate::tokens::quick;
+use amane_kit::glass_region;
+use amane_kit::layout::{blank, boxed, pad, track_cursor};
+use amane_kit::material::Material;
+use amane_kit::motion;
+use amane_kit::reveal::Reveal;
 
 amane_kit::marker! {
     /// Quick Settings' own state changed (its page, editing, Customize):

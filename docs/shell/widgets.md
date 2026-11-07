@@ -75,7 +75,7 @@ whole cells as fit on the screen inside a 24 px margin and above the bar, centre
 on a 1920 × 1080 screen that's 20 × 11. The sizes on that grid: Small 2 × 2 (164 ×
 164), Medium 4 × 2, Large 4 × 4 and Extra Large 8 × 4.
 
-The grid, the layout and the drag are the shared `components::grid`, which Quick Settings is laid
+The grid, the layout and the drag are the kit's `grid`, which Quick Settings is laid
 out on too: `geometry` (spans, places, the canvas, its pixels, which cells are taken), `layout`
 (where each item sits, and the layout a move, a placement or a resize would leave: swap or push)
 and `drag` (what the pointer holds, and the preview a drag makes of the layout it began from).

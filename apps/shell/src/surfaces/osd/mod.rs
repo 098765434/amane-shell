@@ -24,17 +24,17 @@ use amane::{
     Text, Vertical, Widget,
 };
 
-use crate::components::glass_region;
-use crate::components::icons::{
+use crate::chrome::panel::overlay;
+use crate::tokens::{Styled, osd, sys};
+use amane_kit::glass_region;
+use amane_kit::icons::{
     ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_KEYBOARD_LIGHT, ICON_MIC, ICON_MIC_OFF,
     volume_glyph,
 };
-use crate::components::layout::{blank, boxed, icon, pad, slot};
-use crate::components::material::{self, FillLevel, Level, Material};
-use crate::components::motion;
-use crate::components::panel::overlay;
-use crate::components::slider::Slider;
-use crate::tokens::{Styled, osd, sys};
+use amane_kit::layout::{blank, boxed, icon, pad, slot};
+use amane_kit::material::{self, FillLevel, Level, Material};
+use amane_kit::motion;
+use amane_kit::slider::Slider;
 
 pub use keys::{ipc, set_brightness, set_volume};
 

@@ -28,12 +28,12 @@ use amane_kit::settings::{self, AppLink, Passwords};
 use amane_kit::style::{self as theme, px};
 use amane_kit::tokens::Styled;
 
-use crate::components::icons::{ICON_CLOSE, ICON_LOCK, ICON_SEARCH, ICON_WARNING};
 use crate::services::desktop::privacy::Privacy;
 use crate::services::vault::identity::{Identity, Verified};
 use crate::services::vault::matching::{self, Match, Reason};
 use crate::services::vault::secret::Secret;
 use crate::services::vault::{self, Identities, Status, Vault, rbw};
+use amane_kit::icons::{ICON_CLOSE, ICON_LOCK, ICON_SEARCH, ICON_WARNING};
 
 const NS: &str = "amane.fill";
 

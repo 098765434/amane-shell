@@ -32,20 +32,20 @@ use amane::{
 use super::controls::{self, ControlId, Ctx};
 use super::grid::{Metrics, Place, Rect, Slot};
 use super::{edit, layout, tile, tiles};
-use crate::components::buttons::{PushButton, Shape, Style};
-use crate::components::divider::Divider;
-use crate::components::flow::Flow;
-use crate::components::glass_region;
-use crate::components::kinetic::{Axis, Kinetic};
-use crate::components::layout::{boxed, caption, pad, split_row, text_height, wrapped_lines};
-use crate::components::list::{self, List, ListItem};
-use crate::components::material::{self, Level, Material};
-use crate::components::motion;
-use crate::components::scroll_view::{ScrollView, ScrollbarFade};
-use crate::components::search_field::SearchField;
-use crate::components::text_edit::Field;
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{Styled, quick, sys};
+use amane_kit::buttons::{PushButton, Shape, Style};
+use amane_kit::divider::Divider;
+use amane_kit::flow::Flow;
+use amane_kit::glass_region;
+use amane_kit::kinetic::{Axis, Kinetic};
+use amane_kit::layout::{boxed, caption, pad, split_row, text_height, wrapped_lines};
+use amane_kit::list::{self, List, ListItem};
+use amane_kit::material::{self, Level, Material};
+use amane_kit::motion;
+use amane_kit::scroll_view::{ScrollView, ScrollbarFade};
+use amane_kit::search_field::SearchField;
+use amane_kit::text_edit::Field;
 
 pub(super) use catalog::Category;
 

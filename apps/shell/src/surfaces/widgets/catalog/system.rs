@@ -8,10 +8,10 @@ use super::{
     Face, SPARK_POINTS, accent, bar, caption_style, figure_style, header, header_height,
     label_style, line, percent, place, primary, ring_with, secondary, sparkline,
 };
-use crate::components::layout::{icon, text_height};
 use crate::services::desktop::system_stats::{Series, SystemStats};
 use crate::surfaces::widgets::kind::{WidgetKind, WidgetSize};
 use crate::tokens::sys;
+use amane_kit::layout::{icon, text_height};
 
 /// Hotter than this reads in the critical colour.
 const HOT: f32 = 85.0;
@@ -504,7 +504,7 @@ pub(super) fn overview(face: &Face) -> Vec<Box<dyn Widget>> {
                 kind.glyph(),
             )
         } else {
-            amane::Stack::new(vec![crate::components::layout::boxed(icon(
+            amane::Stack::new(vec![amane_kit::layout::boxed(icon(
                 kind.glyph(),
                 diameter * 0.5,
                 primary(),

@@ -2,9 +2,7 @@
 //! of thing, picked from the round buttons beside it, Ctrl+1 … 4 or IPC
 //! (`launcher open files`).
 
-use crate::components::icons::{
-    ICON_APPS, ICON_CONTENT_PASTE, ICON_FOLDER, ICON_LAYERS, ICON_LOCK,
-};
+use amane_kit::icons::{ICON_APPS, ICON_CONTENT_PASTE, ICON_FOLDER, ICON_LAYERS, ICON_LOCK};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum Mode {

@@ -10,9 +10,9 @@ use std::sync::{Mutex, Once, PoisonError};
 
 use amane::{KdeConnect, Service};
 
-use crate::components::dialog::Dialog;
 use crate::surfaces::alert;
 use crate::surfaces::quick_settings::{self, Page};
+use amane_kit::dialog::Dialog;
 
 /// The alert's name, so only this alert is closed when the phone stops asking.
 const NAME: &str = "amane.alert.phone.pair";

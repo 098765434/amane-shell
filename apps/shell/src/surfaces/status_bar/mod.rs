@@ -40,21 +40,8 @@ use amane::{
 use amane_kit::settings::{AutoHide, BarPosition, BarStyle, ClockStyle, ShowDate, status_bar};
 use amane_kit::theme::{self, Mode};
 
-use crate::components::battery;
-use crate::components::buttons::{
-    ButtonBuilder, DrawnButton, IconButton, PushButton, Shape, Style,
-};
-use crate::components::edge_reveal::EdgeReveal;
-use crate::components::icons::{
-    Glyph, ICON_AIRPLANE, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE,
-    ICON_DND, ICON_KEEP_AWAKE, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS, ICON_PHONE, ICON_TUNE,
-    ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
-    battery_glyph, power_profile_glyph, wifi_glyph,
-};
-use crate::components::layout::{boxed, cursor, pad, text_width, track_cursor};
-use crate::components::material::{self, Level, Material};
-use crate::components::panel::{self, Panel, is_open};
-use crate::components::slider;
+use crate::chrome::battery;
+use crate::chrome::panel::{self, Panel, is_open};
 use crate::services::display::night_light::NightLight;
 use crate::services::launcher::clock::Clock;
 use crate::services::network::connections::Connections;
@@ -63,6 +50,17 @@ use crate::services::network::tailscale::{State as TailscaleState, Tailscale};
 use crate::services::power::keep_awake::KeepAwake;
 use crate::surfaces::notifications::{self, DoNotDisturb};
 use crate::surfaces::quick_settings::{self, Page};
+use amane_kit::buttons::{ButtonBuilder, DrawnButton, IconButton, PushButton, Shape, Style};
+use amane_kit::edge_reveal::EdgeReveal;
+use amane_kit::icons::{
+    Glyph, ICON_AIRPLANE, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE,
+    ICON_DND, ICON_KEEP_AWAKE, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS, ICON_PHONE, ICON_TUNE,
+    ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
+    battery_glyph, power_profile_glyph, wifi_glyph,
+};
+use amane_kit::layout::{boxed, cursor, pad, text_width, track_cursor};
+use amane_kit::material::{self, Level, Material};
+use amane_kit::slider;
 
 use crate::tokens::{bar, sys};
 
@@ -240,7 +238,7 @@ fn sections(output: &str) -> Row {
 /// The id niri's readings of the wallpaper under monitor `output`'s clear
 /// bar come by.
 fn clear_id(output: &str) -> u32 {
-    crate::components::glass_region::shape_id(&format!("amane.status-bar.{output}"))
+    amane_kit::glass_region::shape_id(&format!("amane.status-bar.{output}"))
 }
 
 /// Whether the bar on monitor `output` hides now, as `auto_hide` says.

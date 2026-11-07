@@ -8,11 +8,11 @@ use std::rc::Rc;
 
 use amane::DesktopApp;
 
-use crate::components::panel::close;
-use crate::components::text_edit;
+use crate::chrome::panel::close;
 use crate::services::launcher::clipboard_history::{self, Clip};
 use crate::services::launcher::file_search::{self, FileKind};
 use crate::services::run_now;
+use amane_kit::text_edit;
 
 use super::usage;
 

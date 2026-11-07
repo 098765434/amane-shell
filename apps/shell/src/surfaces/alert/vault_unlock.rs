@@ -10,10 +10,10 @@ use std::cell::Cell;
 
 use amane::{Service, TextInput};
 
-use crate::components::dialog::{Dialog, Field, Icon};
-use crate::components::icons::ICON_LOCK;
 use crate::services::vault::pinentry::{self, PinEntry, PinQuestion};
 use crate::surfaces::alert;
+use amane_kit::dialog::{Dialog, Field, Icon};
+use amane_kit::icons::ICON_LOCK;
 
 const NAME: &str = "amane.alert.vault";
 

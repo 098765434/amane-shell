@@ -19,10 +19,10 @@ use amane::{Audio, AudioKind, PowerProfile, Service};
 
 use super::keys::{airplane_readout, just_pressed, profile_readout};
 use super::{Readout, show};
-use crate::components::icons::{ICON_CAPS_LOCK, ICON_NUM_LOCK, audio_glyph};
-use crate::components::panel::{Panel, is_open};
+use crate::chrome::panel::{Panel, is_open};
 use crate::services::network::rfkill::Rfkill;
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
+use amane_kit::icons::{ICON_CAPS_LOCK, ICON_NUM_LOCK, audio_glyph};
 
 /// One reading of everything the display answers.
 #[derive(Clone, Debug, PartialEq)]

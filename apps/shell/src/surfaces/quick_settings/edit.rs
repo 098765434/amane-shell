@@ -16,7 +16,7 @@
 //! pointer took it: the pointer's position less where it was grabbed.
 //!
 //! The others make way live, each preview worked out from the
-//! layout the drag began from (`components::grid::drag::Session`).
+//! layout the drag began from (`amane_kit::grid::drag::Session`).
 //!
 //! amane finds the target being dragged by its position in the frame's hit
 //! areas, which has to stay the same from frame to frame while a drag is
@@ -32,16 +32,16 @@ use super::customize;
 use super::grid::{Canvas, Metrics, Occupancy, Rect, Slot, Span};
 use super::layout::{self, Layout};
 use super::tiles::{SCOPE, radius_of};
-use crate::components::buttons::{IconButton, Shape, Style};
-use crate::components::control_size::ControlSize;
-use crate::components::grid::drag::{self, Hit, Origin, Session, follow, hit, off_canvas};
-use crate::components::icons::{ICON_REMOVE, ICON_RESIZE};
-use crate::components::layout::{boxed, icon};
-use crate::components::material::{self, FillLevel, Level};
-use crate::components::motion::{self, Pose};
 use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::surfaces::quick_settings::layout::Stored as _;
 use crate::tokens::{quick, sys};
+use amane_kit::buttons::{IconButton, Shape, Style};
+use amane_kit::control_size::ControlSize;
+use amane_kit::grid::drag::{self, Hit, Origin, Session, follow, hit, off_canvas};
+use amane_kit::icons::{ICON_REMOVE, ICON_RESIZE};
+use amane_kit::layout::{boxed, icon};
+use amane_kit::material::{self, FillLevel, Level};
+use amane_kit::motion::{self, Pose};
 
 // TODO(token): `quick.drag.band` once Penpot has it (manual §1.1).
 /// How far past the middle of the next cell a held control goes before it

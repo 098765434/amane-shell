@@ -14,20 +14,20 @@
 use amane::{Blend, Center, Color, Rectangle, Row, Stack, Start, Text, Widget};
 use amane_kit::settings::{AppsLayout, change_launcher};
 
-use crate::components::color::with_alpha;
-use crate::components::icons::{
-    ICON_CHECK, ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MIC, ICON_MORE_HORIZ, ICON_SEARCH,
-};
-use crate::components::kinetic::Axis;
-use crate::components::layout::{boxed, cursor, icon, pad, slot, text_width};
-use crate::components::material::{self, FillLevel, Level, Material};
-use crate::components::motion;
-use crate::components::scroll_view::ScrollView;
-use crate::components::text_edit::Field;
 use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history;
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::tokens::{Styled, TextStyle, sys};
+use amane_kit::color::with_alpha;
+use amane_kit::icons::{
+    ICON_CHECK, ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MIC, ICON_MORE_HORIZ, ICON_SEARCH,
+};
+use amane_kit::kinetic::Axis;
+use amane_kit::layout::{boxed, cursor, icon, pad, slot, text_width};
+use amane_kit::material::{self, FillLevel, Level, Material};
+use amane_kit::motion;
+use amane_kit::scroll_view::ScrollView;
+use amane_kit::text_edit::Field;
 
 use super::entries::Scope;
 use super::mode::Mode;

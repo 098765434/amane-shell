@@ -21,16 +21,16 @@ use amane::{
 
 use super::card::{self, Measured, Place};
 use super::dnd::{DoNotDisturb, Until};
-use crate::components::app_bar::TopAppBar;
-use crate::components::buttons::{IconButton, PushButton, Shape, Style};
-use crate::components::card::Card;
-use crate::components::icons::ICON_DND;
-use crate::components::layout::{blank, boxed, cursor, split_row};
-use crate::components::material::{self, Level, Material};
-use crate::components::motion::{self, Arrive, Item, Pose};
-use crate::components::panel::{self, Panel, dismissable, is_open, overlay};
+use crate::chrome::panel::{self, Panel, dismissable, is_open, overlay};
 use crate::services::launcher::clock::Clock;
 use crate::tokens::{Styled, notification, sys};
+use amane_kit::app_bar::TopAppBar;
+use amane_kit::buttons::{IconButton, PushButton, Shape, Style};
+use amane_kit::card::Card;
+use amane_kit::icons::ICON_DND;
+use amane_kit::layout::{blank, boxed, cursor, split_row};
+use amane_kit::material::{self, Level, Material};
+use amane_kit::motion::{self, Arrive, Item, Pose};
 
 /// Layer-surface namespace; the niri `layer-rule` matches it for blur, and
 /// the Do Not Disturb menu hangs under it.

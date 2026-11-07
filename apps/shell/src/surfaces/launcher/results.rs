@@ -12,17 +12,15 @@ use amane::{
 };
 use amane_kit::settings::change_launcher;
 
-use crate::components::app_icon;
-use crate::components::buttons::{PushButton, Style};
-use crate::components::color::with_alpha;
-use crate::components::icons::{
-    ICON_APPS, ICON_CONTENT_PASTE, ICON_DESCRIPTION, ICON_FOLDER, ICON_SEARCH,
-};
-use crate::components::kinetic::Axis;
-use crate::components::layout::{boxed, icon, pad, slot, text_height, text_width, wrapped_lines};
-use crate::components::material::{self, FillLevel, Level};
-use crate::components::scroll_view::ScrollView;
 use crate::tokens::{Styled, TextStyle, sys};
+use amane_kit::app_icon;
+use amane_kit::buttons::{PushButton, Style};
+use amane_kit::color::with_alpha;
+use amane_kit::icons::{ICON_APPS, ICON_CONTENT_PASTE, ICON_DESCRIPTION, ICON_FOLDER, ICON_SEARCH};
+use amane_kit::kinetic::Axis;
+use amane_kit::layout::{boxed, icon, pad, slot, text_height, text_width, wrapped_lines};
+use amane_kit::material::{self, FillLevel, Level};
+use amane_kit::scroll_view::ScrollView;
 
 use std::cell::RefCell;
 use std::io::Read;

@@ -21,14 +21,14 @@ use amane::{
 };
 use qrcode::{Color as Module, EcLevel, QrCode};
 
-use crate::components::buttons::{PushButton, Style, Switch};
-use crate::components::layout::{boxed, caption};
-use crate::components::list::ListItem;
-use crate::components::material::{self, Level};
 use crate::services::installed;
 use crate::surfaces::quick_settings::QuickSettings;
 use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::tokens::{Styled, sys};
+use amane_kit::buttons::{PushButton, Style, Switch};
+use amane_kit::layout::{boxed, caption};
+use amane_kit::list::ListItem;
+use amane_kit::material::{self, Level};
 
 /// The app the screen opens in.
 pub(crate) const MIRROR_APP: &str = "amane-mirror";

@@ -5,16 +5,16 @@
 use amane::{ScrollArea, Service, Size, Widget};
 
 use super::super::{Page, open};
-use crate::components::buttons::{IconButton, Style};
-use crate::components::control_size::ControlSize;
-use crate::components::icons::{ICON_BACKGROUND_APPS, ICON_CLOSE};
-use crate::components::layout::{boxed, caption};
-use crate::components::list::{self, List, ListItem};
-use crate::components::material::{self, Level};
 use crate::services::desktop::background_apps::BackgroundApps;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::tokens::sys;
+use amane_kit::buttons::{IconButton, Style};
+use amane_kit::control_size::ControlSize;
+use amane_kit::icons::{ICON_BACKGROUND_APPS, ICON_CLOSE};
+use amane_kit::layout::{boxed, caption};
+use amane_kit::list::{self, List, ListItem};
+use amane_kit::material::{self, Level};
 
 fn count(n: usize) -> String {
     match n {

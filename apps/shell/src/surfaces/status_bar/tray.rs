@@ -15,11 +15,11 @@ use amane::{
 };
 use amane_kit::settings::{remember_tray, status_bar};
 
-use crate::components::buttons::DrawnButton;
-use crate::components::layout::{boxed, cursor};
-use crate::components::material::{self, Level};
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::tokens::sys;
+use amane_kit::buttons::DrawnButton;
+use amane_kit::layout::{boxed, cursor};
+use amane_kit::material::{self, Level};
 
 use super::{BAR_NS, bar_icon, item, menu_edge};
 

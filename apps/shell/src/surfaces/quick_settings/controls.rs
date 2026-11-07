@@ -12,8 +12,6 @@ use super::tiles::{
     airplane, appearance, background, bluetooth, keep_awake, keyboard, media, network,
     notifications, phone, power, software_update, sound, tailscale,
 };
-use crate::components::grid::GridKey;
-use crate::components::layout::boxed;
 use crate::services::desktop::background_apps::BackgroundApps;
 use crate::services::display::dark_style;
 use crate::services::display::night_light::NightLight;
@@ -23,6 +21,8 @@ use crate::services::network::tailscale::Tailscale;
 use crate::services::power::keep_awake::KeepAwake;
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::surfaces::quick_settings::grid::Sizes as _;
+use amane_kit::grid::GridKey;
+use amane_kit::layout::boxed;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ControlId {

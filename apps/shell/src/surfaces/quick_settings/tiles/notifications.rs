@@ -9,14 +9,14 @@ use amane::Service;
 use chrono::Local;
 
 use super::super::{Page, open};
-use crate::components::icons::ICON_DND;
-use crate::components::layout::boxed;
-use crate::components::list::{self, List, ListItem};
 use crate::surfaces::notifications::DoNotDisturb;
 use crate::surfaces::notifications::card::local;
 use crate::surfaces::notifications::dnd::{self, Until};
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
+use amane_kit::icons::ICON_DND;
+use amane_kit::layout::boxed;
+use amane_kit::list::{self, List, ListItem};
 
 /// "On", "Until 19:00" or "Off".
 fn status(until: Option<Until>) -> String {

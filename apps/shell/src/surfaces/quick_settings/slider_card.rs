@@ -10,12 +10,12 @@ use amane::{Button, Center, Color, Column, Rectangle, Row, Size, Stack, Start, T
 
 use super::grid::{Metrics, Span};
 use super::tile::module;
-use crate::components::color::with_alpha;
-use crate::components::layout::{boxed, icon, pad};
-use crate::components::material::{self, Level};
-use crate::components::slider::Slider;
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{Styled, quick, sys};
+use amane_kit::color::with_alpha;
+use amane_kit::layout::{boxed, icon, pad};
+use amane_kit::material::{self, Level};
+use amane_kit::slider::Slider;
 
 /// One slider in a card: its title, the glyphs either side of the track,
 /// the slider made for the width it gets, and what follows it (a chevron

@@ -8,10 +8,10 @@ use amane::{Center, Color, Rectangle, Row, Service, Text, Widget, Windows};
 use amane_kit::settings::dock;
 
 use super::model::Icon;
-use crate::components::app_icon;
-use crate::components::layout::{boxed, text_height, text_width};
-use crate::components::material::{self, Level, Material};
 use crate::tokens::{Styled, sys};
+use amane_kit::app_icon;
+use amane_kit::layout::{boxed, text_height, text_width};
+use amane_kit::material::{self, Level, Material};
 
 // TODO(token): `dock.running.size` once Penpot has it (manual §1.1).
 /// How big a running dot is.

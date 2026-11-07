@@ -20,17 +20,17 @@ use super::edit;
 use super::kind::{Category, WidgetKey, WidgetKind};
 use super::store::Settings;
 use super::{Geometry, MARGIN, RADIUS, changed};
-use crate::components::buttons::{PushButton, Shape, Style};
-use crate::components::divider::Divider;
-use crate::components::flow::Flow;
-use crate::components::layout::{boxed, caption, pad, split_row, text_height, wrapped_lines};
-use crate::components::list::{self, List, ListItem};
-use crate::components::material::{self, FillLevel, Level, Material};
-use crate::components::motion;
-use crate::components::search_field::SearchField;
-use crate::components::text_edit::Field;
 use crate::surfaces::status_bar;
 use crate::tokens::{Styled, sys};
+use amane_kit::buttons::{PushButton, Shape, Style};
+use amane_kit::divider::Divider;
+use amane_kit::flow::Flow;
+use amane_kit::layout::{boxed, caption, pad, split_row, text_height, wrapped_lines};
+use amane_kit::list::{self, List, ListItem};
+use amane_kit::material::{self, FillLevel, Level, Material};
+use amane_kit::motion;
+use amane_kit::search_field::SearchField;
+use amane_kit::text_edit::Field;
 
 // TODO(token): `widget.gallery.{width,height,sidebar,inset,preview}` once
 // Penpot has them (manual §1.1).
@@ -82,7 +82,7 @@ impl Section {
 
     fn glyph(self) -> char {
         match self {
-            Self::All => crate::components::icons::ICON_APPS,
+            Self::All => amane_kit::icons::ICON_APPS,
             Self::Only(category) => category.glyph(),
         }
     }
@@ -253,8 +253,8 @@ pub(super) fn sheet(output: &str, geometry: &Geometry) -> (Box<dyn Widget>, Vec<
     let surface = Material::Sheet.lit(surface, radius);
     let centre = (area.x + area.width / 2.0, area.y + area.height / 2.0);
     let glass = Material::Sheet.shape(area.x, area.y, area.width, area.height, radius, 1.0);
-    let frost = crate::components::glass_region::faded(
-        crate::components::glass_region::transformed(vec![glass], scale, centre, (0.0, 0.0)),
+    let frost = amane_kit::glass_region::faded(
+        amane_kit::glass_region::transformed(vec![glass], scale, centre, (0.0, 0.0)),
         opacity,
     );
     let widget = Rectangle::new()

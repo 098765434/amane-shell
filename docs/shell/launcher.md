@@ -350,7 +350,7 @@ never blocks anything.
 | `results.rs` | the answer card, the chips, the rows with their section headings and quick keys, and the empty states |
 | `app_menu.rs` | an app's and a file's right-click menus |
 | `model.rs` | categories, sums, URLs, session-action names, the history's steps, durations and quick keys (pure, tested) |
-| `components/text_edit.rs` | the search text, caret and selection (pure, tested; shared with Quick Settings' Customize window) |
+| the kit's `text_edit` | the search text, caret and selection (pure, tested; shared with Quick Settings' Customize window) |
 
 It's built on the kit's [`ScrollView`, `Kinetic`, `AxisLock`, `Pager` and
 `app_icon`](../kit/components.md), and the shell's

@@ -14,12 +14,12 @@ use std::time::{Duration, Instant};
 use amane::{Audio, Brightness, PowerProfile, Service};
 
 use super::{Readout, show};
-use crate::components::icons::{ICON_AIRPLANE, power_profile_glyph};
-use crate::components::slider::STEP;
 use crate::services::display::hdr_white;
 use crate::services::network::rfkill::{self, Rfkill};
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::surfaces::launcher::profile_name;
+use amane_kit::icons::{ICON_AIRPLANE, power_profile_glyph};
+use amane_kit::slider::STEP;
 
 /// How long a level a key set outranks what its service still says, and
 /// how long the services' own reports of it are left unshown.

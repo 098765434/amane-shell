@@ -22,9 +22,9 @@ use amane::{
 };
 use amane_kit::theme;
 
-use crate::components::buttons::DrawnButton;
-use crate::components::material::{self, Level};
 use crate::tokens::sys;
+use amane_kit::buttons::DrawnButton;
+use amane_kit::material::{self, Level};
 
 /// How many points go round every shape. 120 is a multiple of 3, 4, 5, 6
 /// and 8, so those shapes' corners fall on a point.

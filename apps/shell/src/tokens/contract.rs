@@ -38,7 +38,7 @@ fn component_sources() -> Vec<(String, String)> {
     let shell = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let roots = [
         shell.join("src/surfaces"),
-        shell.join("src/components"),
+        shell.join("src/chrome"),
         shell.join("../../crates/kit/src"),
     ];
 
@@ -95,7 +95,7 @@ fn components_read_only_sys_and_their_own_tokens() {
             assert_eq!(
                 Some(name.as_str()),
                 own,
-                "manual §3: src/components/{file} reads {name}.* tokens; code reads only \
+                "manual §3: {file} reads {name}.* tokens; code reads only \
                  sys.* and its own component's tokens"
             );
         }

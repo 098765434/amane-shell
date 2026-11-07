@@ -17,14 +17,14 @@ use std::rc::Rc;
 
 use amane::{Blend, Horizontal, Keyboard, LayerWindow, Rectangle, Vertical};
 
-use crate::components::dialog::Dialog;
-use crate::components::glass_region;
-use crate::components::layout::blank;
-use crate::components::material::Material;
-use crate::components::motion;
-use crate::components::panel::overlay;
-use crate::components::reveal::Reveal;
+use crate::chrome::panel::overlay;
 use crate::tokens::dialog;
+use amane_kit::dialog::Dialog;
+use amane_kit::glass_region;
+use amane_kit::layout::blank;
+use amane_kit::material::Material;
+use amane_kit::motion;
+use amane_kit::reveal::Reveal;
 
 amane_kit::marker! {
     /// The alert showed or closed: only its window draws again.

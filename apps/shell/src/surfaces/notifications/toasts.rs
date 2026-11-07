@@ -24,13 +24,13 @@ use amane::{
 
 use super::card::{self, Measured, Place, critical};
 use super::dnd::DoNotDisturb;
-use crate::components::glass_region;
-use crate::components::layout::blank;
-use crate::components::material::Material;
-use crate::components::motion::{self, Arrive, Item, Pose, Shown};
-use crate::components::panel::{Panel, is_open, overlay};
+use crate::chrome::panel::{Panel, is_open, overlay};
 use crate::services::Wake;
 use crate::tokens::{notification, sys};
+use amane_kit::glass_region;
+use amane_kit::layout::blank;
+use amane_kit::material::Material;
+use amane_kit::motion::{self, Arrive, Item, Pose, Shown};
 
 /// Layer-surface namespace of every toast; the niri `layer-rule` matches it.
 pub const TOAST_NS: &str = "amane.notifications.toast";

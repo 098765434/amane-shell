@@ -13,9 +13,9 @@ use amane::{Arc, Canvas, Cap, Color, Path, Rectangle, Shape, Size, Stack, Start,
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use super::store::Settings;
-use crate::components::layout::{boxed, icon, text_height, text_width};
-use crate::components::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, TextStyle, sys};
+use amane_kit::layout::{boxed, icon, text_height, text_width};
+use amane_kit::material::{self, FillLevel, Level};
 
 pub use battery::devices;
 pub use clock::settle as settle_clock;

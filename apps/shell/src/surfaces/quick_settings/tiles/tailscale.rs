@@ -7,18 +7,18 @@
 use amane::{Column, Parent, ScrollArea, Service, Size, Widget};
 
 use super::super::{Page, open};
-use crate::components::buttons::Switch;
-use crate::components::icons::{Glyph, ICON_CHEVRON_RIGHT, ICON_COMPUTER, os_glyph};
-use crate::components::layout::{boxed, caption, icon};
-use crate::components::list::{self, List, ListItem};
-use crate::components::material::{self, Level};
-use crate::components::panel::close;
+use crate::chrome::panel::close;
 use crate::services::network::tailscale::{Peer, State, Tailscale};
 use crate::services::run;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::sys;
+use amane_kit::buttons::Switch;
+use amane_kit::icons::{Glyph, ICON_CHEVRON_RIGHT, ICON_COMPUTER, os_glyph};
+use amane_kit::layout::{boxed, caption, icon};
+use amane_kit::list::{self, List, ListItem};
+use amane_kit::material::{self, Level};
 
 const ADMIN_CONSOLE: &str = "https://login.tailscale.com/admin";
 

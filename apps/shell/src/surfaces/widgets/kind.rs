@@ -4,11 +4,11 @@
 
 use amane::{Battery, Service};
 
-use crate::components::grid::GridKey;
-use crate::components::grid::geometry::Span;
-use crate::components::icons::{ICON_BATTERY_FULL, ICON_COMPUTER};
 use crate::services::installed;
 use crate::surfaces::quick_settings::{self, Page};
+use amane_kit::grid::GridKey;
+use amane_kit::grid::geometry::Span;
+use amane_kit::icons::{ICON_BATTERY_FULL, ICON_COMPUTER};
 
 // The icons the font has that the kit doesn't name yet.
 pub const ICON_CPU: char = '\u{e30d}';

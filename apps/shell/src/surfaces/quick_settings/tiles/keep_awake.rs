@@ -7,14 +7,14 @@ use std::time::{Duration, SystemTime};
 use amane::Service;
 
 use super::super::{Page, open};
-use crate::components::buttons::{Segment, SegmentedButton, Switch};
-use crate::components::icons::{ICON_KEEP_AWAKE, ICON_SCREEN_OFF};
-use crate::components::layout::boxed;
-use crate::components::list::{List, ListItem};
 use crate::services::power::keep_awake::{KeepAwake, LIMITS};
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
+use amane_kit::buttons::{Segment, SegmentedButton, Switch};
+use amane_kit::icons::{ICON_KEEP_AWAKE, ICON_SCREEN_OFF};
+use amane_kit::layout::boxed;
+use amane_kit::list::{List, ListItem};
 
 /// "1 h 24 min", "2 h" or "15 min", to the minute rounded up, so a hold
 /// never reads as over while it's still on.

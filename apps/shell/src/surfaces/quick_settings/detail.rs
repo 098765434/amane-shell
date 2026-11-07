@@ -21,17 +21,17 @@ use amane::{Center, Color, Column, Parent, Rectangle, Size, Stack, Start, Widget
 
 use super::grid::{Canvas, Metrics};
 use super::{ALONE, back, ramp};
-use crate::components::app_bar::TopAppBar;
-use crate::components::buttons::Switch;
-use crate::components::control_size;
-use crate::components::divider::Divider;
-use crate::components::icons::ICON_CHEVRON_RIGHT;
-use crate::components::layout::{boxed, icon};
-use crate::components::list::{self, ListItem};
-use crate::components::material::{self, Level};
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{quick, sys};
+use amane_kit::app_bar::TopAppBar;
+use amane_kit::buttons::Switch;
+use amane_kit::control_size;
+use amane_kit::divider::Divider;
+use amane_kit::icons::ICON_CHEVRON_RIGHT;
+use amane_kit::layout::{boxed, icon};
+use amane_kit::list::{self, ListItem};
+use amane_kit::material::{self, Level};
 
 /// How wide a page's content is: the grid's width less the sheet's padding
 /// either side.

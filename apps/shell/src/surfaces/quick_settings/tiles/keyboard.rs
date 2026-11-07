@@ -8,14 +8,14 @@ use amane::Service;
 
 use super::super::grid::{Metrics, Span};
 use super::super::{Page, open};
-use crate::components::buttons::{Segment, SegmentedButton};
-use crate::components::icons::ICON_KEYBOARD_LIGHT;
-use crate::components::layout::boxed;
-use crate::components::slider::Slider;
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::surfaces::quick_settings::tile::QuickToggle;
+use amane_kit::buttons::{Segment, SegmentedButton};
+use amane_kit::icons::ICON_KEYBOARD_LIGHT;
+use amane_kit::layout::boxed;
+use amane_kit::slider::Slider;
 
 thread_local! {
     // what turning it back on restores; none means the brightest

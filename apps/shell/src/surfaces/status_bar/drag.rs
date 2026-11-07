@@ -13,9 +13,9 @@ use std::collections::HashMap;
 
 use amane::{Center, Color, Parent, Point, Rectangle, Row, Size, Stack, Widget};
 
-use crate::components::buttons::swallow_click;
-use crate::components::layout::{boxed, fixed_width};
 use crate::tokens::sys;
+use amane_kit::buttons::swallow_click;
+use amane_kit::layout::{boxed, fixed_width};
 
 use super::indicators::{Item, move_item};
 

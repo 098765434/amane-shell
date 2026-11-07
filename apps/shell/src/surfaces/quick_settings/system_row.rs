@@ -7,11 +7,11 @@ use amane::{Battery, BatteryState, Service, Windows};
 use super::tile::QuickToggle;
 use super::tiles::power::battery_detail;
 use super::{Page, open};
-use crate::components::battery;
-use crate::components::icons::{ICON_LOCK, ICON_POWER, ICON_SCREENSHOT, battery_glyph};
-use crate::components::motion;
-use crate::components::panel::close;
+use crate::chrome::battery;
+use crate::chrome::panel::close;
 use crate::services::power::session::Session;
+use amane_kit::icons::{ICON_LOCK, ICON_POWER, ICON_SCREENSHOT, battery_glyph};
+use amane_kit::motion;
 
 /// The battery, when there is one: its charge and how long it lasts.
 pub(super) fn battery_toggle() -> Option<QuickToggle> {

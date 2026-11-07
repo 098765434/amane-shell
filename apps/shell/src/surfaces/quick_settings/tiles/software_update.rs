@@ -6,11 +6,11 @@
 
 use amane::Service;
 
-use crate::components::icons::ICON_UPDATE;
-use crate::components::panel::close;
+use crate::chrome::panel::close;
 use crate::services::desktop::updates::Updates;
 use crate::services::installed;
 use crate::surfaces::quick_settings::tile::QuickToggle;
+use amane_kit::icons::ICON_UPDATE;
 
 const SETTINGS: &str = "amane-settings";
 

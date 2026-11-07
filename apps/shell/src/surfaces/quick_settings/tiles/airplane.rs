@@ -4,9 +4,9 @@
 use amane::Service;
 
 use super::on_off;
-use crate::components::icons::ICON_AIRPLANE;
 use crate::services::network::rfkill::{self, Rfkill};
 use crate::surfaces::quick_settings::tile::QuickToggle;
+use amane_kit::icons::ICON_AIRPLANE;
 
 pub(crate) fn toggle() -> Option<QuickToggle> {
     let rfkill = Rfkill::read();

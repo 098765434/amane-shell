@@ -14,14 +14,14 @@ use std::time::Duration;
 
 use amane::{DesktopApp, PowerProfile, Service};
 
-use crate::components::icons::{
-    Glyph, ICON_KEEP_AWAKE, ICON_LOCK, ICON_LOG_OUT, ICON_PACKAGE, ICON_POWER, ICON_RESTART,
-    ICON_SLEEP, ICON_TIMER, ICON_TUNE, ICON_UPDATE, ICON_VPN,
-};
 use crate::services::launcher::timer;
 use crate::services::power::keep_awake::KeepAwake;
 use crate::services::power::session::Session;
 use crate::surfaces::quick_settings::{self, ControlId};
+use amane_kit::icons::{
+    Glyph, ICON_KEEP_AWAKE, ICON_LOCK, ICON_LOG_OUT, ICON_PACKAGE, ICON_POWER, ICON_RESTART,
+    ICON_SLEEP, ICON_TIMER, ICON_TUNE, ICON_UPDATE, ICON_VPN,
+};
 
 use super::entries::Icon;
 use super::model::{self, SessionAction};

@@ -6,14 +6,14 @@
 
 use amane::Service;
 
-use crate::components::dialog::Dialog;
-use crate::components::icons::{ICON_LOG_OUT, ICON_POWER, ICON_RESTART, ICON_SLEEP};
-use crate::components::layout::boxed;
-use crate::components::list::{List, ListItem};
-use crate::components::panel::close;
+use crate::chrome::panel::close;
 use crate::services::power::session::Session;
 use crate::surfaces::alert;
 use crate::surfaces::quick_settings::detail::DetailPage;
+use amane_kit::dialog::Dialog;
+use amane_kit::icons::{ICON_LOG_OUT, ICON_POWER, ICON_RESTART, ICON_SLEEP};
+use amane_kit::layout::boxed;
+use amane_kit::list::{List, ListItem};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Action {

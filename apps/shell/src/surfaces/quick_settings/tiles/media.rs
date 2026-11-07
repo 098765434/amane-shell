@@ -17,15 +17,13 @@ use amane::{
 
 use super::super::grid::{Metrics, Span};
 use super::super::tile::{line, module};
-use crate::components::buttons::{IconButton, expect, optimistic};
-use crate::components::icons::{
-    ICON_MUSIC, ICON_PAUSE, ICON_PLAY, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS,
-};
-use crate::components::layout::{boxed, icon, pad};
-use crate::components::material::{self, FillLevel, Level};
 use crate::surfaces::quick_settings::QuickSettings;
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{quick, sys};
+use amane_kit::buttons::{IconButton, expect, optimistic};
+use amane_kit::icons::{ICON_MUSIC, ICON_PAUSE, ICON_PLAY, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS};
+use amane_kit::layout::{boxed, icon, pad};
+use amane_kit::material::{self, FillLevel, Level};
 
 /// What the card shows.
 struct Playing {

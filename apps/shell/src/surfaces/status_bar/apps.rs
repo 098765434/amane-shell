@@ -11,12 +11,12 @@ use std::collections::HashSet;
 use amane::status_item::{BarEdge, ItemButton, ItemEvent, ItemSpec, MenuEntry};
 use amane::{Center, Color, Parent, Rectangle, Row, Size, Text, Vertical, Widget};
 
-use crate::components::buttons::DrawnButton;
-use crate::components::layout::{boxed, cursor, text_width};
-use crate::components::material::{self, Level};
 use crate::services::status_apps;
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::tokens::{Styled, sys};
+use amane_kit::buttons::DrawnButton;
+use amane_kit::layout::{boxed, cursor, text_width};
+use amane_kit::material::{self, Level};
 
 use super::activities::picture;
 use super::indicators::Item;

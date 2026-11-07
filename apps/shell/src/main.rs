@@ -1,4 +1,4 @@
-mod components;
+mod chrome;
 mod services;
 mod surfaces;
 mod tokens;
@@ -10,7 +10,7 @@ use std::process::ExitCode;
 
 use amane::App;
 
-use components::tooltip;
+use amane_kit::tooltip;
 use surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use surfaces::{
     alert, dock, fill, launcher, notifications, osd, quick_settings, status_bar, widgets,
@@ -47,7 +47,7 @@ fn cli(args: &[String]) -> Option<ExitCode> {
 /// nothing: for seeing the alert without ending the session. Debug builds
 /// only.
 fn alert_test(args: &[String]) -> String {
-    let sample = components::dialog::Dialog::new("amane.alert.test", "Discard changes?")
+    let sample = amane_kit::dialog::Dialog::new("amane.alert.test", "Discard changes?")
         .message("Your changes to this document will be lost if you don't save them.")
         .button("Cancel", || eprintln!("alert-test: cancel"));
     let sample = if args.first().map(String::as_str) == Some("stacked") {

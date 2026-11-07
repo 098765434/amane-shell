@@ -6,7 +6,7 @@
 
 use amane::{Blend, BlurShape};
 
-use crate::components::material::Material;
+use amane_kit::material::Material;
 
 // TODO(token): `launcher.pill.*`, `launcher.mode-button.*`,
 // `launcher.sheet.radius` and `launcher.top` once Penpot has them

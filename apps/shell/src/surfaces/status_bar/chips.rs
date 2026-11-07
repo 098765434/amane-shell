@@ -4,12 +4,12 @@
 
 use amane::{Center, Color, Rectangle, Service, Size, Widget};
 
-use crate::components::buttons::DrawnButton;
-use crate::components::icons::{ICON_CAMERA, ICON_MIC};
-use crate::components::layout::{boxed, cursor, icon};
 use crate::services::desktop::privacy::{Privacy, User};
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::surfaces::quick_settings::{self, Page};
+use amane_kit::buttons::DrawnButton;
+use amane_kit::icons::{ICON_CAMERA, ICON_MIC};
+use amane_kit::layout::{boxed, cursor, icon};
 
 use super::{BAR_NS, item, menu_edge};
 

@@ -20,9 +20,9 @@ use std::collections::{BTreeMap, HashMap};
 use serde_json::{Map, Value, json};
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
-use crate::components::grid::geometry::{Canvas, Place, Rect, Span};
-use crate::components::grid::{Entry, GridKey, Layout};
 use crate::services::{save_state, state_file};
+use amane_kit::grid::geometry::{Canvas, Place, Rect, Span};
+use amane_kit::grid::{Entry, GridKey, Layout};
 
 const FILE: &str = "widgets";
 const VERSION: u64 = 1;

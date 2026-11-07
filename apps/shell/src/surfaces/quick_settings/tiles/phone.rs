@@ -23,17 +23,7 @@ use amane::{
 };
 
 use super::super::{Page, open};
-use crate::components::battery;
-use crate::components::buttons::{IconButton, PushButton, Style, Switch};
-use crate::components::control_size::ControlSize;
-use crate::components::dialog::Dialog;
-use crate::components::icons::{
-    ICON_CHEVRON_RIGHT, ICON_COMPUTER, ICON_CONTENT_PASTE, ICON_DEVICE_OTHER, ICON_INFO,
-    ICON_KEYBOARD, ICON_PHONE,
-};
-use crate::components::layout::{boxed, caption, fixed_width, icon, text_height};
-use crate::components::list::{self, List, ListItem};
-use crate::components::material::{self, Level};
+use crate::chrome::battery;
 use crate::services::installed;
 use crate::surfaces::alert;
 use crate::surfaces::quick_settings::QuickSettings;
@@ -41,6 +31,16 @@ use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
+use amane_kit::buttons::{IconButton, PushButton, Style, Switch};
+use amane_kit::control_size::ControlSize;
+use amane_kit::dialog::Dialog;
+use amane_kit::icons::{
+    ICON_CHEVRON_RIGHT, ICON_COMPUTER, ICON_CONTENT_PASTE, ICON_DEVICE_OTHER, ICON_INFO,
+    ICON_KEYBOARD, ICON_PHONE,
+};
+use amane_kit::layout::{boxed, caption, fixed_width, icon, text_height};
+use amane_kit::list::{self, List, ListItem};
+use amane_kit::material::{self, Level};
 
 /// The app the phone's messages and remote input open in.
 pub(crate) const MESSAGES_APP: &str = "amane-messages";

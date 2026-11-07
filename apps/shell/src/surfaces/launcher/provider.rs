@@ -11,13 +11,13 @@ use std::path::PathBuf;
 use amane::DesktopApp;
 use amane_kit::settings::{QuickKey, launcher};
 
-use crate::components::icons::{
-    ICON_CALCULATE, ICON_CONTENT_COPY, ICON_DESCRIPTION, ICON_FOLDER, ICON_LOCK, ICON_OPEN_IN_NEW,
-    ICON_SEARCH, ICON_SWAP,
-};
 use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history::{self, Clip, Kind as ClipKind};
 use crate::services::launcher::file_search::{self, FileKind, Hit, Request};
+use amane_kit::icons::{
+    ICON_CALCULATE, ICON_CONTENT_COPY, ICON_DESCRIPTION, ICON_FOLDER, ICON_LOCK, ICON_OPEN_IN_NEW,
+    ICON_SEARCH, ICON_SWAP,
+};
 
 use super::actions::{self, Param, Spec, Value};
 use super::answers;

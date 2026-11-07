@@ -14,12 +14,12 @@ use amane::{
 
 pub use runtime::{arm, close, open_named, register, show_under};
 
-use crate::components::card::{Card, Variant};
-use crate::components::color::with_alpha;
-use crate::components::divider::Divider;
-use crate::components::layout::{blank, boxed, pad, slot, split_row, text_width};
-use crate::components::material::{self, Level, Material};
 use crate::tokens::{Styled, menu, sys};
+use amane_kit::card::{Card, Variant};
+use amane_kit::color::with_alpha;
+use amane_kit::divider::Divider;
+use amane_kit::layout::{blank, boxed, pad, slot, split_row, text_width};
+use amane_kit::material::{self, Level, Material};
 use runtime::{FocusSource, with, with_mut};
 
 /// Maximum submenu nesting depth. Each level is a distinct popup slot with
