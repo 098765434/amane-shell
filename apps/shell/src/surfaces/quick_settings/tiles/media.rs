@@ -5,11 +5,11 @@
 //! square it's the module beside the Wi‑Fi and Bluetooth tiles: art, two lines,
 //! the transport along the bottom; a whole row wide they sit side by side.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use amane::{
     Center, Color, Column, Image, Media, Rectangle, Row, Service, Size, Stack, Start, Widget,
@@ -24,6 +24,15 @@ use amane_kit::buttons::{IconButton, expect, optimistic};
 use amane_kit::icons::{ICON_MUSIC, ICON_PAUSE, ICON_PLAY, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS};
 use amane_kit::layout::{boxed, icon, pad};
 use amane_kit::material::{self, FillLevel, Level};
+
+amane_kit::marker! {
+    /// A playing track moved on: the progress line draws again. Players
+    /// don't say, so the card asks for a frame each second while one plays.
+    Progress
+}
+
+/// How often the progress line moves on while a track plays.
+const PROGRESS_EVERY: Duration = Duration::from_secs(1);
 
 /// What the card shows.
 struct Playing {
@@ -44,6 +53,9 @@ fn playing() -> Option<Playing> {
     let length = player.length();
     let progress = (length > Duration::ZERO)
         .then(|| (player.position().as_secs_f32() / length.as_secs_f32()).clamp(0.0, 1.0));
+    if progress.is_some() && player.playing() {
+        progress_in(PROGRESS_EVERY);
+    }
     Some(Playing {
         title: player.title().to_string(),
         artist: player.artist().to_string(),
@@ -54,11 +66,25 @@ fn playing() -> Option<Playing> {
 }
 
 thread_local! {
+    // when the next progress frame is asked for, so a frame drawn early asks once
+    static PROGRESS_DUE: Cell<Option<Instant>> = const { Cell::new(None) };
     // the web art being fetched, so each is asked for once
     static FETCHING: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
     // the web art already in the cache, by URL, so a frame doesn't look on disk
     static FOUND: RefCell<std::collections::HashMap<String, String>> =
         RefCell::new(std::collections::HashMap::new());
+}
+
+/// Asks for a frame `wait` from now, unless one is already asked for; the
+/// card's window reads the marker, so only it draws again.
+fn progress_in(wait: Duration) {
+    drop(Progress::read());
+    let now = Instant::now();
+    if PROGRESS_DUE.get().is_some_and(|due| due > now) {
+        return;
+    }
+    PROGRESS_DUE.set(Some(now + wait));
+    amane_kit::motion::redraw_after::<Progress>(wait);
 }
 
 /// The file holding the art at `url`: the file itself for a `file://`
