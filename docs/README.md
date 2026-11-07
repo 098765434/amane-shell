@@ -138,6 +138,7 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | Status apps, Activities and Drop: the pieces across amane, the shell and nixos-config, their threads, testing beside the desktop | [development/status-apps.md](development/status-apps.md) |
 | What the shell costs while idle, measured, to compare later work against | [development/idle-baseline.md](development/idle-baseline.md) |
 | Features the shell doesn't have yet, by how often they'd be missed | [development/backlog.md](development/backlog.md) |
+| The polish plan under way: one copy of each helper, one table per fact | [development/polish-plan.md](development/polish-plan.md) |
 
 ## Archive
 
