@@ -1188,11 +1188,17 @@ mod tests {
     fn a_screen_is_whole_cells_inside_the_margin_and_over_the_bar() {
         let geometry = Geometry::of(1920.0, 1080.0);
         let px = metrics();
+        // the bar is wherever the settings put it, top or bottom
         let bar = status_bar::height();
+        let (above, below) = match status_bar::edge() {
+            Vertical::Top => (bar, 0.0),
+            _ => (0.0, bar),
+        };
         assert!(px.extent(geometry.canvas.cols) <= 1920.0 - 2.0 * MARGIN);
         assert!(px.extent(geometry.canvas.cols + 1) > 1920.0 - 2.0 * MARGIN);
+        assert!(geometry.origin.1 >= above + MARGIN - 0.01);
         assert!(
-            geometry.origin.1 + px.extent(geometry.canvas.rows) <= 1080.0 - bar - MARGIN + 0.01
+            geometry.origin.1 + px.extent(geometry.canvas.rows) <= 1080.0 - below - MARGIN + 0.01
         );
         // centred: as much room left as right
         let right = 1920.0 - geometry.origin.0 - px.extent(geometry.canvas.cols);
