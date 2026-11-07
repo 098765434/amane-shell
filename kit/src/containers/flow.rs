@@ -5,6 +5,8 @@
 //! with it. amane has no wrapping layout, so the items are a stack of
 //! translated rectangles.
 
+#![allow(missing_docs)]
+
 use amane::{Color, Rectangle, Size, Stack, Widget};
 
 use crate::layout::boxed;

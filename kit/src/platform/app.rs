@@ -17,6 +17,8 @@
 //! }
 //! ```
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{

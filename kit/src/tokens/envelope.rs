@@ -4,6 +4,8 @@
 //! `build.rs` includes this file (with `error.rs`) to generate the token
 //! functions, so the build reads the export exactly as the shell does.
 
+#![allow(missing_docs)]
+
 use serde_json::{Map, Value};
 
 use super::error::TokenError;

@@ -2,6 +2,8 @@
 //! chevrons. The original only reported the click; given items, this one
 //! opens the [menu](super::menu) under itself.
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Radius, Rectangle, Size};

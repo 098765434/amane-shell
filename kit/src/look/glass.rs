@@ -12,6 +12,8 @@
 //! them all in one pass ([`rims`]): a shader pass costs the same whatever
 //! it covers, and one per module cost more than a frame.
 
+#![allow(missing_docs)]
+
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 

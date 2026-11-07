@@ -16,6 +16,8 @@
 //! last value and moves to its exit pose, and the view keeps drawing it
 //! until it gets there.
 
+#![allow(missing_docs)]
+
 use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;

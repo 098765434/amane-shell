@@ -6,6 +6,8 @@
 //! wallpaper's colours; focused, the edge takes the accent too (the
 //! original showed no focus at all).
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Rectangle, Size, TextInput};

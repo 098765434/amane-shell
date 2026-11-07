@@ -4,6 +4,8 @@
 //! anyone's widgets, drawn at the picker's size; they wrap to the width
 //! given.
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Color, Column, Rectangle, Row, Size, Text, Widget};

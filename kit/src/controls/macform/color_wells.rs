@@ -3,6 +3,8 @@
 //! and a "multicolor" first dot for following the system. Hovering a dot
 //! names it, for the row's value.
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Color, Rectangle, Row, Size, Widget};

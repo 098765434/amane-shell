@@ -4,6 +4,8 @@
 //! [`layout::icon`](crate::layout::icon), or, where a control can also show
 //! a mark the font hasn't got, as a [`Glyph`] with [`glyph`].
 
+#![allow(missing_docs)]
+
 use amane::{
     AudioKind, BatteryState, Center, Color, Column, DeviceKind, PowerDevice, Radius, Rectangle,
     Row, Size,

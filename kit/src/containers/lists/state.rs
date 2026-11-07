@@ -2,6 +2,8 @@
 //! layer fades at hover speed and an expressive item's corners spring to
 //! the shape of the state it's in.
 
+#![allow(missing_docs)]
+
 use amane::Animation;
 
 use super::style::{ListTokens, Shapes};

@@ -3,6 +3,8 @@
 //! `apps/shader-lab/configs/<name>.json`; the lab edits one, and
 //! [`super::look`] builds one for the shell.
 
+#![allow(missing_docs)]
+
 use std::collections::BTreeMap;
 
 use amane::serde::{Deserialize, Serialize};

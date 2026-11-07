@@ -1,6 +1,8 @@
 //! One list item: M3's anatomy (leading element, overline, headline,
 //! supporting text, trailing elements) laid out from a [`ListTokens`].
 
+#![allow(missing_docs)]
+
 use std::path::PathBuf;
 use std::rc::Rc;
 

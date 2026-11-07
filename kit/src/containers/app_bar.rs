@@ -7,6 +7,8 @@
 //! top of a [`Card`](crate::card::Card), in the vibrant labels of the
 //! material it's on.
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Column, Row, Start, Text, Widget};

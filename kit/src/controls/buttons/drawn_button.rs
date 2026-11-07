@@ -4,6 +4,8 @@
 //! pip in the status bar: it gets the same shapes, hover, highlight and
 //! clicks as the other buttons, and draws in whatever colour they settle on.
 
+#![allow(missing_docs)]
+
 use amane::{Color, Rectangle};
 
 use super::{ButtonBuilder, Shape, Style};

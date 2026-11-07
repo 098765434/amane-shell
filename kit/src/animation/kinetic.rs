@@ -8,6 +8,8 @@
 //! the moment the fingers lift, and an ease-out carries it there. Past an
 //! end, the scroll pulls on a rubber band and springs back.
 
+#![allow(missing_docs)]
+
 use std::time::{Duration, Instant};
 
 use amane::{Animation, Easing, Scroll, ScrollSource};

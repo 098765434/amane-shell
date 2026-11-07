@@ -4,6 +4,8 @@
 //! while the knob springs across (the original's overshooting 350 ms
 //! curve). Unlike the original it lights on hover and dims when disabled.
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Animation, Center, Radius, Rectangle, Size, Start};

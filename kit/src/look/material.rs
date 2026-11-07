@@ -19,6 +19,8 @@
 //! every material, as Apple's are; the contrast floors check each against
 //! each tint (`tokens::rules`). See `docs/design-system/materials.md`.
 
+#![allow(missing_docs)]
+
 use std::cell::Cell;
 
 use amane::{BlurShape, Color, Rectangle};

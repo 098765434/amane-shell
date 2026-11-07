@@ -7,6 +7,8 @@
 //! centre, and disabled fades the colours rather than replacing their
 //! alpha (which made the disabled track brighter).
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Color, Point, Pointer, Rectangle, Scroll, Shadow, Size, Stack, Start};

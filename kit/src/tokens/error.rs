@@ -2,6 +2,8 @@
 //! selection it was found under. Shared with `build.rs`, which includes this
 //! file and `envelope.rs` to read the export the same way the shell does.
 
+#![allow(missing_docs)]
+
 use std::fmt;
 
 #[derive(Clone, Debug, PartialEq)]

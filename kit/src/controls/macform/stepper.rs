@@ -10,6 +10,8 @@
 //! view redraws). Values are clamped to `from..=to` and rounded to the
 //! step.
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 use std::time::Instant;
 

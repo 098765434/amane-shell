@@ -5,6 +5,8 @@
 //! table. The Shader Lab edits effects through it, and [`super::look`]
 //! builds a saved one for the shell.
 
+#![allow(missing_docs)]
+
 use std::path::{Component, Path, PathBuf};
 
 use amane::serde::Deserialize;

@@ -2,6 +2,8 @@
 //! parentheses and a fixed set of functions. References are substituted by
 //! the resolver before evaluation, so this only sees literals.
 
+#![allow(missing_docs)]
+
 /// A number and whether it carries `px`. `px` propagates through every
 /// operation, as in Penpot (`{ref.space.8} * 2` is `16px`).
 #[derive(Clone, Copy, Debug, PartialEq)]

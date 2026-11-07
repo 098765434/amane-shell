@@ -8,6 +8,8 @@
 //! the third. Only how far it is moves; what the pages are is the view's
 //! business.
 
+#![allow(missing_docs)]
+
 use std::time::{Duration, Instant};
 
 use amane::{Animation, Easing, Scroll, ScrollSource};

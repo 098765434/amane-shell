@@ -11,6 +11,8 @@
 //! never gets narrower than the glyph's circle, so the glyph is the knob.
 //! The glyph can mute (`on_icon_press`).
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{

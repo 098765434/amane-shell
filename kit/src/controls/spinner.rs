@@ -6,6 +6,8 @@
 //! showing it lets its window rest. Where motion is reduced its spokes stay
 //! put and the whole spinner breathes instead.
 
+#![allow(missing_docs)]
+
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 

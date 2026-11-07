@@ -5,6 +5,8 @@
 //! glass is tinted and how things move (`glass_region`, `motion`). Env overrides are read once; the system values are read per
 //! frame through amane's `Appearance` service, so a change redraws.
 
+#![allow(missing_docs)]
+
 use std::sync::OnceLock;
 
 use amane::serde::{Deserialize, Serialize};

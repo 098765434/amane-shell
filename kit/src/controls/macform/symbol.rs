@@ -5,6 +5,8 @@
 //! draws on its quad pipeline (round-joined polylines), or plain
 //! rectangles for the round ones.
 
+#![allow(missing_docs)]
+
 use amane::{Canvas, Cap, Center, Color, Join, Path, Radius, Rectangle, Row, Shape, Size, Stack};
 
 use crate::layout::boxed;

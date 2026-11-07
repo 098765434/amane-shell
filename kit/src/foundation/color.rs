@@ -1,6 +1,8 @@
 //! Colour arithmetic the components share; amane's `Color` only holds the
 //! channels.
 
+#![allow(missing_docs)]
+
 use amane::Color;
 
 /// `top` painted over `bottom` (source-over), so a translucent state layer

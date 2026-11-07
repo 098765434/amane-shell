@@ -23,6 +23,8 @@
 //! the seconds down, and at zero the dialog closes and runs its action, as
 //! a display change that's kept only when confirmed.
 
+#![allow(missing_docs)]
+
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;

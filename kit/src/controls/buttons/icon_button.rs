@@ -6,6 +6,8 @@
 //! square at control height unless told otherwise; bar items stretch it to
 //! the bar's height.
 
+#![allow(missing_docs)]
+
 use amane::Rectangle;
 
 use super::{ButtonBuilder, Shape, Style};

@@ -8,6 +8,8 @@
 //!
 //! [`Switch`]: super::Switch
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Rectangle, Size};

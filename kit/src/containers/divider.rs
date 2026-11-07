@@ -4,6 +4,8 @@
 //! line in `sys.color.separator`, with `gap.xs` of room above and below it,
 //! or M3's vertical divider between groups in a row ([`Divider::vertical`]).
 
+#![allow(missing_docs)]
+
 use amane::{Color, Parent, Rectangle};
 
 use crate::layout::pad;

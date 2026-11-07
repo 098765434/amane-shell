@@ -3,6 +3,8 @@
 //! primary label. An optional Material Symbols glyph leads, 6 px before the
 //! text. Hover lays 8% of the content colour over it.
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Rectangle, Row, Size, Text, Widget};

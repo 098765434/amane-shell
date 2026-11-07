@@ -7,6 +7,8 @@
 //! handles on it move, which keeps drags steady (amane measures a drag
 //! against the last frame's hit areas).
 
+#![allow(missing_docs)]
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;

@@ -14,6 +14,8 @@
 //! font (Roboto isn't shipped), and the baseline scheme
 //! ([`super::scheme`]). See `docs/kit/lists-m3.md` for the sources.
 
+#![allow(missing_docs)]
+
 use amane::{Color, Shadow};
 
 use super::scheme;

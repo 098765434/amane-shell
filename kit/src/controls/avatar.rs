@@ -6,6 +6,8 @@
 //! colour for the name from the accents that take white text. Both build
 //! from [`Avatar`].
 
+#![allow(missing_docs)]
+
 use std::path::PathBuf;
 
 use amane::{Center, Color, Column, Image, Radius, Rectangle, Size, Text, Widget};

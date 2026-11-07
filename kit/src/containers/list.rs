@@ -11,6 +11,8 @@
 //! (`sys.size.row.two-line-height`); M3's overline is the next slot to add
 //! when a list needs it.
 
+#![allow(missing_docs)]
+
 use std::cell::Cell;
 use std::rc::Rc;
 

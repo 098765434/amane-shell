@@ -11,6 +11,8 @@
 //! window's (found by itself, from `current_window`), or a layer window's
 //! namespace given with [`Dropdown::layer`].
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Padding, Rectangle, Row, Size, Text, Widget};

@@ -11,6 +11,8 @@
 //! the area, so the screen moving under the pointer never changes what the
 //! pointer is measured against.
 
+#![allow(missing_docs)]
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;

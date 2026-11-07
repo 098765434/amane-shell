@@ -5,6 +5,8 @@
 //! or the accent's tint and colour for the fact that matters most.
 //! [`tags`] lays several out in rows that wrap, through [`Flow`].
 
+#![allow(missing_docs)]
+
 use amane::{Center, Radius, Rectangle, Size, Text};
 
 use crate::color::with_alpha;

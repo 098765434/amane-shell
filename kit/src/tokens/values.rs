@@ -1,6 +1,8 @@
 //! Per-type value rules, mirroring Penpot's validators: what a token of each
 //! `$type` may hold once its references are substituted.
 
+#![allow(missing_docs)]
+
 use serde_json::{Value as Json, json};
 
 use super::color::{self, Rgba};

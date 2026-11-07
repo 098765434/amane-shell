@@ -10,6 +10,8 @@
 //!
 //! [`Dropdown`]: crate::dropdown::Dropdown
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Radius, Rectangle, Size};

@@ -1,6 +1,8 @@
 //! Set selection and reference resolution, as Penpot does with one `mode`
 //! and one `density` theme active.
 
+#![allow(missing_docs)]
+
 use std::collections::{HashMap, HashSet};
 
 use serde_json::Value as Json;

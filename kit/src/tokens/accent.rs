@@ -2,6 +2,8 @@
 //! the runtime swaps them in for Penpot's values when the system publishes
 //! an accent, and everything referencing them follows.
 
+#![allow(missing_docs)]
+
 use super::color::{Rgba, to_linear};
 
 /// White text on the seed down to this contrast, dark text below it.

@@ -6,6 +6,8 @@
 //! literal values, with a light twin chosen to read the same on a light
 //! window.
 
+#![allow(missing_docs)]
+
 use amane::Color;
 
 use crate::color::with_alpha;

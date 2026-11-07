@@ -3,6 +3,8 @@
 //! Anything with a look, states or a builder is a component instead (see
 //! [`list`](crate::list), [`card`](crate::card) and the rest).
 
+#![allow(missing_docs)]
+
 use std::cell::Cell;
 
 use amane::{

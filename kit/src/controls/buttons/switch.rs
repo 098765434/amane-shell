@@ -12,6 +12,8 @@
 //!
 //! [`PENDING_TIMEOUT`]: super::PENDING_TIMEOUT
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 use std::time::Instant;
 

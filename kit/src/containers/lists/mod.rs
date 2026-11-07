@@ -20,6 +20,8 @@
 //! or `M3Expressive` (2025's segmented lists, whose items change shape
 //! with their state). Today's simpler [`crate::list`] stays as it is.
 
+#![allow(missing_docs)]
+
 mod item;
 mod nav;
 pub mod scheme;

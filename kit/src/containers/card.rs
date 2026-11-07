@@ -11,6 +11,8 @@
 //! A card records where the pointer is over it ([`layout::cursor`]), so a
 //! right-click on its content can anchor a menu.
 
+#![allow(missing_docs)]
+
 use amane::{Color, Column, Parent, Rectangle, Widget};
 
 use crate::layout::{pad, track_cursor};

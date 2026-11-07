@@ -3,6 +3,8 @@
 //! values, not derived from the shell's accent, so the M3 styles look the
 //! way Material's own spec pages do. The shell's look never reads them.
 
+#![allow(missing_docs)]
+
 use std::cell::Cell;
 
 use amane::Color;

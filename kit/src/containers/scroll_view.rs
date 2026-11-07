@@ -9,6 +9,8 @@
 //!
 //! [`Kinetic`]: crate::kinetic::Kinetic
 
+#![allow(missing_docs)]
+
 use amane::{Center, Color, Padding, Rectangle, Scroll, Stack, Start, Widget};
 
 use crate::kinetic::Axis;

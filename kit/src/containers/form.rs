@@ -18,6 +18,8 @@
 //! Sizes are the macform look's (`macform::theme`): rows 42 tall (52 with a
 //! subtitle), 12 px in, cards radius 12 in `groupFill`.
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Color, Column, Padding, Rectangle, Row, Size, Text, Widget};

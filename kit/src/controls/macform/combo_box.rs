@@ -7,6 +7,8 @@
 //! The original's menu was the old shell's Material one; this uses the
 //! pull-down's.
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Rectangle, Row, Size, Stack, TextInput};

@@ -2,6 +2,8 @@
 //! or a sidebar page: 20 px (28 large), radius 6, an accent fill and a
 //! white Material Symbols glyph (or a drawn mark, such as Tailscale's).
 
+#![allow(missing_docs)]
+
 use amane::{Center, Color, Rectangle, Size};
 
 use super::theme::{self, Accent, px};

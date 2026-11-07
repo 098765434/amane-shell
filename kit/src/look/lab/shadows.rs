@@ -5,6 +5,8 @@
 //! subject's shape out of itself, so they don't show through a see-through
 //! surface; inner shadows go over it.
 
+#![allow(missing_docs)]
+
 use amane::{Color, Mask, Rectangle, Shadow, Stack, Widget};
 
 use super::config::ShadowSpec;

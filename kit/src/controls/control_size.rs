@@ -8,6 +8,8 @@
 //! `sys.size.control.height`: a size changes the control drawn, not the
 //! room the panels leave for it.
 
+#![allow(missing_docs)]
+
 use std::cell::Cell;
 
 use amane::Radius;

@@ -3,6 +3,8 @@
 //! `controlFill` capsule with a soft shadow. A disabled side greys its
 //! chevron and takes no click.
 
+#![allow(missing_docs)]
+
 use std::rc::Rc;
 
 use amane::{Center, Color, Radius, Rectangle, Row, Shadow, Size};

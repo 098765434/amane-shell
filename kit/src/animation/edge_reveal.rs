@@ -13,6 +13,8 @@
 //!
 //! [`progress`]: EdgeReveal::progress
 
+#![allow(missing_docs)]
+
 use std::time::{Duration, Instant};
 
 use amane::{Animation, InputArea};

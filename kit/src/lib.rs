@@ -65,6 +65,8 @@
 //! And at the root, [`tokens`] and [`theme`]: the design tokens and the
 //! mode, density, accent and text scale they resolve with.
 
+#![warn(missing_docs)]
+
 mod animation;
 mod containers;
 mod controls;

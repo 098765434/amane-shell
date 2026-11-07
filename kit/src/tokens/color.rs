@@ -3,6 +3,8 @@
 //! replaces a colour's alpha, which is how translucent roles alias the
 //! palette.
 
+#![allow(missing_docs)]
+
 use amane::Color;
 
 /// sRGB with every channel in 0..=1. Kept in floats until the reader hands
