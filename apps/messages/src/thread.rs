@@ -230,13 +230,10 @@ fn new_below() -> Rectangle {
             ),
         key,
         false,
-        Actions {
-            press: Some(Rc::new(|| {
-                NEW_BELOW.set(false);
-                ScrollArea::scroll_to_end(SCROLL);
-            })),
-            ..Actions::default()
-        },
+        Actions::press(|| {
+            NEW_BELOW.set(false);
+            ScrollArea::scroll_to_end(SCROLL);
+        }),
     );
     Rectangle::new()
         .width(Size::Parent)
@@ -529,10 +526,7 @@ fn attachment(part: &SmsAttachment) -> Rectangle {
     let key = format!("messages.attachment.{}", part.unique());
     let fetching = PhoneMessages::read().downloading(part.unique());
     let opened = part.clone();
-    let actions = Actions {
-        press: Some(Rc::new(move || PhoneMessages::download(&opened))),
-        ..Actions::default()
-    };
+    let actions = Actions::press(move || PhoneMessages::download(&opened));
 
     let picture = part
         .thumbnail()
@@ -675,12 +669,9 @@ fn link_chip(link: &str) -> Rectangle {
             ),
         key,
         false,
-        Actions {
-            press: Some(Rc::new(move || {
-                amane_kit::launch::open(&url);
-            })),
-            ..Actions::default()
-        },
+        Actions::press(move || {
+            amane_kit::launch::open(&url);
+        }),
     )
 }
 
@@ -722,10 +713,7 @@ fn stamp(message: &SmsMessage, beside_avatar: bool) -> Rectangle {
                 ),
             key,
             false,
-            Actions {
-                press: Some(Rc::new(move || retry(&failed))),
-                ..Actions::default()
-            },
+            Actions::press(move || retry(&failed)),
         ));
     }
 

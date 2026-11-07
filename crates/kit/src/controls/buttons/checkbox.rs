@@ -1,6 +1,7 @@
 //! Checkbox — a setting that's on or off, in a list of independent ones.
 //!
-//! Drawn in the form controls' look ([`style`](crate::style)): a 16 px box, radius 5.5,
+//! Drawn in the form controls' look ([`style`](crate::style)), at the
+//! [`control_size`](crate::control_size) being built: a rounded box,
 //! `fieldFill` in a hairline while off, filling with the accent around a
 //! drawn checkmark when on, with an optional label 3 px after it that takes
 //! the click too. Where a setting applies at once, a [`Switch`] reads
@@ -10,13 +11,10 @@
 
 use std::rc::Rc;
 
-use amane::{Center, Rectangle, Size};
+use amane::Rectangle;
 
 use super::{Actions, interactive};
-use crate::controls::parts::labelled;
-use crate::look::hover::crossfade;
-use crate::style::{self, px};
-use crate::symbol::{Symbol, symbol};
+use crate::controls::parts::{Mark, labelled, mark};
 
 /// A checkbox. `id` keys its hover, so it must be unique and stable.
 pub struct Checkbox {
@@ -59,31 +57,11 @@ impl Checkbox {
 
     /// The box, and its label if it has one.
     pub fn build(self) -> Rectangle {
-        let side = px(16.0);
-        let fill = crossfade(
-            &format!("{}.fill", self.id),
-            self.checked,
-            style::field_fill(),
-            style::tint(),
-        );
-        let mark = Rectangle::new()
-            .width(Size::Fixed(side))
-            .height(Size::Fixed(side))
-            .radius(px(5.5))
-            .fill(fill)
-            .align_child(Center, Center);
-        let mark = if self.checked {
-            mark.child(symbol(Symbol::Checkmark, px(11.0), style::glyph_on_tint()))
-        } else {
-            mark.border(1.0, style::field_border())
-        };
+        let mark = mark(&self.id, self.checked, Mark::Check);
 
         let toggle = self.on_toggle;
         let next = !self.checked;
-        let actions = Actions {
-            press: Some(Rc::new(move || toggle(next))),
-            ..Actions::default()
-        };
+        let actions = Actions::press(move || toggle(next));
 
         let base = labelled(mark, self.label);
 

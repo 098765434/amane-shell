@@ -3,12 +3,13 @@
 //! and a "multicolor" first dot for following the system. Hovering a dot
 //! names it, for the row's value.
 
+use crate::buttons::Actions;
 use std::rc::Rc;
 
 use amane::{Center, Color, Rectangle, Row, Size, Widget};
 
 use crate::buttons::hovered;
-use crate::controls::parts::{interactive, on_press};
+use crate::buttons::interactive;
 use crate::layout::boxed;
 use crate::style::{self, px};
 
@@ -142,7 +143,7 @@ impl ColorWells {
                     dot,
                     format!("{}.{index}", self.id),
                     false,
-                    on_press(move || {
+                    Actions::press(move || {
                         if let Some(select) = &select {
                             select(index);
                         }

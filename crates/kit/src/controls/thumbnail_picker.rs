@@ -4,11 +4,12 @@
 //! anyone's widgets, drawn at the picker's size; they wrap to the width
 //! given.
 
+use crate::buttons::Actions;
 use std::rc::Rc;
 
 use amane::{Center, Color, Column, Rectangle, Row, Size, Text, Widget};
 
-use crate::controls::parts::{interactive, on_press};
+use crate::buttons::interactive;
 use crate::layout::{boxed, text_height};
 use crate::style::{self, px};
 use crate::tokens::Styled;
@@ -159,7 +160,7 @@ impl ThumbnailPicker {
                 cell,
                 format!("{}.{index}", self.id),
                 self.disabled,
-                on_press(move || {
+                Actions::press(move || {
                     if let Some(select) = &select {
                         select(index);
                     }

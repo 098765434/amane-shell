@@ -932,13 +932,10 @@ fn errors(manifest: Option<&String>) -> Option<(Column, usize)> {
 }
 
 fn button(id: &str, text: &str, enabled: bool, press: impl Fn() + 'static) -> Rectangle {
-    let button = PushButton::new(id.to_owned(), text.to_owned());
-
-    if enabled {
-        button.on_press(press).build()
-    } else {
-        button.build().opacity(0.4)
-    }
+    PushButton::new(id.to_owned(), text.to_owned())
+        .disabled(!enabled)
+        .on_press(press)
+        .build()
 }
 
 /// A setting's name over its control.

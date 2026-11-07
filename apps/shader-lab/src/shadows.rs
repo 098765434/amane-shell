@@ -183,11 +183,9 @@ fn swap(a: usize, b: usize) {
 }
 
 fn small(glyph: &str, id: &str, enabled: bool, press: impl Fn() + 'static) -> amane::Rectangle {
-    let button = PushButton::new(format!("lab.{id}"), glyph).width(30.0);
-
-    if enabled {
-        button.on_press(press).build()
-    } else {
-        button.build().opacity(0.35)
-    }
+    PushButton::new(format!("lab.{id}"), glyph)
+        .width(30.0)
+        .disabled(!enabled)
+        .on_press(press)
+        .build()
 }

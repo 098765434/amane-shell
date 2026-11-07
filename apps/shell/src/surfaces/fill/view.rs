@@ -175,7 +175,7 @@ pub(super) fn header(shown: &Shown, generation: u64) -> Rectangle {
             .child(icon(ICON_CLOSE, px(13.0), theme::label_secondary())),
         String::from("fill.close"),
         false,
-        press(move || {
+        Actions::press(move || {
             with(|state| state.dismissed = Some(generation));
             FillChanged::changed();
         }),
@@ -256,7 +256,7 @@ pub(super) fn entry_row(
             ),
         key,
         false,
-        press(move || {
+        Actions::press(move || {
             if has_text && !confirming {
                 with(|state| state.confirming = Some((generation, id.clone())));
                 FillChanged::changed();
@@ -296,7 +296,7 @@ pub(super) fn action_row(key: &'static str, glyph: char, text: &str, run: fn()) 
             ),
         String::from(key),
         false,
-        press(run),
+        Actions::press(run),
     )
 }
 
@@ -340,7 +340,7 @@ pub(super) fn remember_row(app: Option<&Verified>) -> Rectangle {
             ),
         String::from("fill.remember"),
         false,
-        press(|| {
+        Actions::press(|| {
             with(|state| state.remember = !state.remember);
             FillChanged::changed();
         }),
@@ -352,12 +352,5 @@ pub(super) fn hover(key: &str) -> Color {
         theme::hover_of(theme::label_primary())
     } else {
         Color::TRANSPARENT
-    }
-}
-
-pub(super) fn press(run: impl Fn() + 'static) -> Actions {
-    Actions {
-        press: Some(std::rc::Rc::new(run)),
-        ..Default::default()
     }
 }

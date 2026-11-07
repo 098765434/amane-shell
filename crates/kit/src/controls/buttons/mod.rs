@@ -51,9 +51,9 @@ use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, TextStyle, sys};
 use crate::{motion, tooltip};
 
-/// How faint a disabled control's content is. TODO(token): `sys.opacity.disabled` once
-/// Penpot has it (manual §1.1).
-const DISABLED_OPACITY: f32 = 0.38;
+/// How faint a disabled control is, every control alike. TODO(token):
+/// `sys.opacity.disabled` once Penpot has it (manual §1.1).
+pub const DISABLED_OPACITY: f32 = 0.4;
 
 /// How long a click's new state is shown before the service has to agree.
 const PENDING_TIMEOUT: Duration = Duration::from_millis(1500);
@@ -250,7 +250,7 @@ impl<K> ButtonBuilder<K> {
     /// How far the highlight has faded in, 0 to 1.
     fn highlighted(&self) -> f32 {
         let on = !self.disabled && (self.active || hovered(&self.id));
-        fade(&format!("{}.highlight", self.id), on)
+        fade(&format!("{}.highlight", self.id), on, motion::HOVER)
     }
 
     /// The button around `content`, `width` wide.
@@ -426,18 +426,28 @@ pub fn held(id: &str) -> bool {
 
 /// `fill` with the hover layer fading over it while `id` is hovered.
 pub fn state_fill(id: &str, fill: Color, disabled: bool) -> Color {
-    let amount = fade(&format!("{id}.hover"), !disabled && hovered(id));
-    Color::blend(fill, over(sys::color::state::hover(), fill), amount)
+    hover_layer(id, fill, sys::color::state::hover(), disabled)
 }
 
-/// The fade keyed `key`, 1 while `on` and 0 while not, at hover speed.
+/// `fill` with `layer` fading over it while `id` is hovered: the one hover
+/// every control shows, in the colour that suits it.
+pub(crate) fn hover_layer(id: &str, fill: Color, layer: Color, disabled: bool) -> Color {
+    let amount = fade(
+        &format!("{id}.hover"),
+        !disabled && hovered(id),
+        motion::HOVER,
+    );
+    Color::blend(fill, over(layer, fill), amount)
+}
+
+/// The fade keyed `key`, 1 while `on` and 0 while not, over `duration`.
 /// It starts where it is, so a control that appears under the pointer
 /// doesn't fade in its hover.
-fn fade(key: &str, on: bool) -> f32 {
+pub(crate) fn fade(key: &str, on: bool, duration: Duration) -> f32 {
     let target = if on { 1.0 } else { 0.0 };
     with_state(
         key,
-        || motion::fade(target, motion::HOVER),
+        || motion::fade(target, duration),
         |fade: &mut Animation| {
             fade.to(target);
             fade.value().clamp(0.0, 1.0)
@@ -519,6 +529,23 @@ pub struct Actions {
     pub middle: Option<Rc<dyn Fn()>>,
     /// A wheel or touchpad scroll over it.
     pub scroll: Option<Rc<dyn Fn(Scroll)>>,
+}
+
+impl Actions {
+    /// A left click doing `press`, and nothing else.
+    pub fn press(press: impl Fn() + 'static) -> Self {
+        Self {
+            press: Some(Rc::new(press)),
+            ..Self::default()
+        }
+    }
+
+    /// A right click doing `secondary` too, usually a menu.
+    #[must_use]
+    pub fn secondary(mut self, secondary: impl Fn() + 'static) -> Self {
+        self.secondary = Some(Rc::new(secondary));
+        self
+    }
 }
 
 /// Makes `base` a button: pointer cursor, hover tracking and the clicks.

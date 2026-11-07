@@ -553,15 +553,7 @@ pub(super) fn capsule_button(
 
     let button =
         module(width, height, height / 2.0, inner).scale(press_scale(id, quick::press::scale()));
-    interactive(
-        button,
-        id.to_string(),
-        false,
-        Actions {
-            press: Some(Rc::new(press)),
-            ..Actions::default()
-        },
-    )
+    interactive(button, id.to_string(), false, Actions::press(press))
 }
 
 #[cfg(test)]

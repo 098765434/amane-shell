@@ -45,6 +45,8 @@ pub const EXIT: Duration = Duration::from_millis(300);
 pub const HOVER: Duration = Duration::from_millis(120);
 /// A pressed control swelling back to its size.
 pub const PRESS: Duration = Duration::from_millis(220);
+/// A colour changing between two states, like a mark being ticked.
+pub const CROSSFADE: Duration = Duration::from_millis(300);
 /// A popover going: quicker than it came ([`POP`]).
 pub const CLOSE: Duration = Duration::from_millis(160);
 /// How small a card is as it enters, growing to its size.

@@ -312,9 +312,6 @@ fn segment_view(
         .align_child(Center, Center)
         .child(content);
 
-    let actions = Actions {
-        press: Some(Rc::new(click)),
-        ..Actions::default()
-    };
+    let actions = Actions::press(click);
     interactive(base, id, segment.disabled, actions)
 }

@@ -11,12 +11,12 @@
 //! window's (found by itself, from `current_window`), or a layer window's
 //! namespace given with [`Dropdown::layer`].
 
+use crate::buttons::Actions;
 use std::rc::Rc;
 
 use amane::{Center, Padding, Rectangle, Row, Size, Text, Widget};
 
 use crate::buttons::interactive;
-use crate::controls::parts::on_press;
 use crate::layout::{boxed, icon, text_width};
 use crate::look::hover::hover_fill;
 use crate::menu::{self, MenuItem};
@@ -183,7 +183,7 @@ impl Dropdown {
             base,
             self.id.clone(),
             self.disabled,
-            on_press(move || menu::toggle(&id)),
+            Actions::press(move || menu::toggle(&id)),
         );
         menu::track(&self.id, base)
     }

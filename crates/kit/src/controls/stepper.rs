@@ -17,8 +17,8 @@ use amane::{
     Center, Color, Column, Point, Pointer, Rectangle, Row, Scroll, Size, TextInput, request_frame,
 };
 
+use crate::buttons::DISABLED_OPACITY;
 use crate::buttons::{hover, with_state};
-use crate::controls::parts::DISABLED_OPACITY;
 use crate::layout::boxed;
 use crate::look::hover::hover_fill;
 use crate::style::{self, px};

@@ -2,11 +2,12 @@
 //! chevrons. The original only reported the click; given items, this one
 //! opens the [menu](super::menu) under itself.
 
+use crate::buttons::Actions;
 use std::rc::Rc;
 
 use amane::{Center, Radius, Rectangle, Size};
 
-use crate::controls::parts::{interactive, on_press};
+use crate::buttons::interactive;
 use crate::look::hover::hover_fill;
 use crate::menu::{self, MenuItem};
 use crate::style::{self, px};
@@ -96,7 +97,7 @@ impl PopUpButton {
             base,
             self.id.clone(),
             self.disabled,
-            on_press(move || {
+            Actions::press(move || {
                 if has_menu {
                     menu::toggle(&id);
                 } else if let Some(press) = &press {

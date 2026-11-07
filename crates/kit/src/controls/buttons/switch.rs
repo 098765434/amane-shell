@@ -93,13 +93,10 @@ impl Switch {
         let id = self.id.clone();
         let toggle = self.on_toggle;
         let next = !shown;
-        let actions = Actions {
-            press: Some(Rc::new(move || {
-                clicked(&id, next);
-                toggle(next);
-            })),
-            ..Actions::default()
-        };
+        let actions = Actions::press(move || {
+            clicked(&id, next);
+            toggle(next);
+        });
 
         interactive(base, self.id, self.disabled, actions)
     }

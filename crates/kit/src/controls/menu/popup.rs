@@ -14,6 +14,7 @@
 //! reports the pointer on the control and on the window, and the
 //! difference is the control's corner.
 
+use crate::buttons::Actions;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -28,7 +29,6 @@ use super::keys::{self, Move};
 use super::model::MenuItem;
 use super::rows::{Columns, Look, RowState};
 use crate::buttons::interactive;
-use crate::controls::parts::on_press;
 use crate::layout::{boxed, pad};
 use crate::look::hover::hover_fill;
 use crate::style::{self, px};
@@ -435,7 +435,7 @@ fn menu_row(
         base,
         key,
         false,
-        on_press(move || {
+        Actions::press(move || {
             let select = MENUS.with_borrow(|menus| menus.get(&id).map(|m| m.on_select.clone()));
             close(&id);
             if let Some(picked) = &picked {

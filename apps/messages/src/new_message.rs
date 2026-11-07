@@ -5,7 +5,6 @@
 //! it sends the message back.
 
 use std::cell::RefCell;
-use std::rc::Rc;
 
 use amane::{
     Center, Color, Column, Radius, Rectangle, Row, Service, Size, Text, TextInput, Widget,
@@ -233,10 +232,7 @@ fn token(name: &str, number: &str) -> Rectangle {
             .child(icon(ICON_CLOSE, 14.0, sys::color::accent::fg())),
         key,
         false,
-        Actions {
-            press: Some(Rc::new(move || unpick(&removed))),
-            ..Actions::default()
-        },
+        Actions::press(move || unpick(&removed)),
     );
     Rectangle::new()
         .width(Size::Fixed(
@@ -299,12 +295,7 @@ fn suggestion(name: String, number: String) -> Rectangle {
             ),
         key,
         false,
-        Actions {
-            press: Some(Rc::new(move || {
-                pick(picked_name.clone(), picked_number.clone())
-            })),
-            ..Actions::default()
-        },
+        Actions::press(move || pick(picked_name.clone(), picked_number.clone())),
     )
 }
 

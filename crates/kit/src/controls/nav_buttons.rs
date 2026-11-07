@@ -3,12 +3,12 @@
 //! `controlFill` capsule with a soft shadow. A disabled side greys its
 //! chevron and takes no click.
 
+use crate::buttons::Actions;
 use std::rc::Rc;
 
 use amane::{Center, Color, Radius, Rectangle, Row, Shadow, Size};
 
 use crate::buttons::interactive;
-use crate::controls::parts::on_press;
 use crate::layout::boxed;
 use crate::look::hover::{crossfade, hover_fill};
 use crate::style::{self, px};
@@ -77,7 +77,11 @@ impl NavButtons {
                 .align_child(Center, Center)
                 .child(symbol(glyph, px(13.0), fg));
             // a disabled side stays drawn at full strength, only greyed
-            interactive(base, key, !enabled, on_press(move || press())).opacity(1.0)
+            if enabled {
+                interactive(base, key, false, Actions::press(move || press()))
+            } else {
+                base
+            }
         };
 
         let line = Rectangle::new()

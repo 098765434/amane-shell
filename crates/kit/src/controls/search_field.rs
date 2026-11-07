@@ -108,10 +108,7 @@ impl<'a> SearchField<'a> {
                 button,
                 format!("{}.clear", self.id),
                 false,
-                Actions {
-                    press: Some(std::rc::Rc::new(clear)),
-                    ..Actions::default()
-                },
+                Actions::press(clear),
             )));
         }
 

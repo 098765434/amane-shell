@@ -283,10 +283,7 @@ fn chip(draft: Draft, path: &PathBuf) -> Rectangle {
             .child(icon(ICON_CLOSE, 14.0, material::label(Level::Secondary))),
         key,
         false,
-        Actions {
-            press: Some(Rc::new(move || detach(draft, &removed))),
-            ..Actions::default()
-        },
+        Actions::press(move || detach(draft, &removed)),
     );
 
     let width = 8.0 + 16.0 + 6.0 + label_width + 4.0 + 18.0 + 6.0;

@@ -18,12 +18,12 @@
 //! Sizes are the form controls' ([`style`](crate::style)): rows 42 tall (52 with a
 //! subtitle), 12 px in, cards radius 12 in `groupFill`.
 
+use crate::buttons::Actions;
 use std::rc::Rc;
 
 use amane::{Center, Color, Column, Padding, Rectangle, Row, Size, Text, Widget};
 
 use crate::color::Accent;
-use crate::controls::parts::on_press;
 use crate::icons::Glyph;
 use crate::layout::{boxed, icon, text_height, text_width, wrapped_lines};
 use crate::leading_icon::LeadingIcon;
@@ -389,13 +389,13 @@ impl FormRow {
             .child(Column::new(parts).width(Size::Parent));
 
         match self.on_press {
-            Some(press) => crate::controls::parts::interactive(
+            Some(press) => crate::buttons::interactive(
                 base,
                 self.id,
                 self.disabled,
-                on_press(move || press()),
+                Actions::press(move || press()),
             ),
-            None if self.disabled => base.opacity(0.5),
+            None if self.disabled => base.opacity(crate::buttons::DISABLED_OPACITY),
             None => base,
         }
     }

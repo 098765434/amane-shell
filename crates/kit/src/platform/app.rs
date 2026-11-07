@@ -290,10 +290,7 @@ pub fn sidebar_with(
 
                 let select = on_select.clone();
 
-                let actions = Actions {
-                    press: Some(Rc::new(move || select(index))),
-                    ..Actions::default()
-                };
+                let actions = Actions::press(move || select(index));
 
                 boxed(interactive(base, key, false, actions))
             }),

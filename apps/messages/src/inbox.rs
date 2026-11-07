@@ -5,7 +5,6 @@
 //! under them.
 
 use amane_kit::avatar::Avatar;
-use std::rc::Rc;
 
 use amane::{
     Center, Color, Column, Radius, Rectangle, Row, ScrollArea, Service, Size, Text, TextInput,
@@ -353,10 +352,7 @@ fn row(thread: &SmsThread, chosen: bool) -> Rectangle {
             .align(Center),
         );
 
-    let actions = Actions {
-        press: Some(Rc::new(move || Navigation::show(View::Thread(Some(id))))),
-        ..Actions::default()
-    };
+    let actions = Actions::press(move || Navigation::show(View::Thread(Some(id))));
     interactive(base, key, false, actions)
 }
 
@@ -432,10 +428,7 @@ fn input_row(chosen: bool) -> Rectangle {
             .gap(sys::space::gap::s())
             .align(Center),
         );
-    let actions = Actions {
-        press: Some(Rc::new(|| Navigation::show(View::Input))),
-        ..Actions::default()
-    };
+    let actions = Actions::press(|| Navigation::show(View::Input));
     interactive(base, key, false, actions)
 }
 
