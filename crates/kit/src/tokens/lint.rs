@@ -1,8 +1,6 @@
 //! The Design Token Manual's rules (manual §13), as checks over a Penpot
 //! export. `tokens check` prints them; the tests below fail on them.
 
-#![allow(missing_docs)]
-
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 use serde_json::Value as Json;
@@ -19,6 +17,7 @@ use crate::theme::{Density, Mode};
 /// panel secondary 2.06:1); raise them toward 4.5 and 3.0 as the design
 /// converges in Penpot.
 pub const FG_FLOOR: f64 = 3.4;
+/// The contrast floor for secondary labels; see [`FG_FLOOR`] for primary ones.
 pub const SECONDARY_FLOOR: f64 = 2.0;
 
 /// The surfaces checked for contrast: (background, primary, secondary, the
@@ -97,6 +96,8 @@ pub fn check(lib: &Library, source: &str) -> Vec<String> {
 
 // ───── 1. themes ─────────────────────────────────────────────────────────────
 
+/// Checks that every `mode` and `density` theme is there, each has a description, and none
+/// lists a set as anything but enabled (manual §9.2).
 pub fn themes(lib: &Library) -> Vec<String> {
     let mut out = Vec::new();
 
@@ -131,6 +132,8 @@ pub fn themes(lib: &Library) -> Vec<String> {
 
 // ───── 2. resolves in every combination ──────────────────────────────────────
 
+/// The export resolved in every `mode` × `density` combination, or every error any of them hit
+/// (manual §13.2).
 pub fn resolve_all(lib: &Library) -> Result<Vec<(Key, Resolved)>, Vec<String>> {
     let mut resolved = Vec::new();
     let mut errors = Vec::new();
@@ -180,6 +183,8 @@ fn types_by_name(lib: &Library) -> HashMap<&str, TokenType> {
         .collect()
 }
 
+/// Checks that every token has a tier prefix and references only the tiers its own may (manual
+/// §3).
 pub fn tiers(lib: &Library) -> Vec<String> {
     let types = types_by_name(lib);
     let mut out = Vec::new();
@@ -229,6 +234,8 @@ pub fn tiers(lib: &Library) -> Vec<String> {
 
 // ───── 4. set contents ───────────────────────────────────────────────────────
 
+/// Checks that each set holds only the tokens it's for, light and dark name the same colors,
+/// and each theme enables the sets it needs (manual §9.1, §8.1, §9.2).
 pub fn set_contents(lib: &Library) -> Vec<String> {
     let mut out = Vec::new();
 
@@ -325,6 +332,8 @@ fn segment_ok(s: &str) -> bool {
         })
 }
 
+/// Checks that token names are lowercase words with dots between levels, and a palette step is
+/// within 2 of the CIE L* its name gives (manual §4.1, §5).
 pub fn naming(lib: &Library) -> Vec<String> {
     let mut out = Vec::new();
 
@@ -401,6 +410,8 @@ fn geometry_fixed(name: &str, ty: TokenType) -> bool {
     ) || name.starts_with("sys.size.icon.")
 }
 
+/// Checks that only colors change with mode, and only density-scaled tokens with density
+/// (manual §1.4, §8.2).
 pub fn invariants(lib: &Library, resolved: &[(Key, Resolved)]) -> Vec<String> {
     let scaled = density_scaled(lib);
     let mut out = BTreeSet::new();
@@ -482,6 +493,8 @@ pub fn toned_contrast(bg: Rgba, fgs: &[Rgba], tone: f64) -> f64 {
         .fold(f64::INFINITY, f64::min)
 }
 
+/// Checks that every checked surface is a color and its labels reach the contrast floors over
+/// black and white wallpaper (manual §6.1, §11.1).
 pub fn contrast(resolved: &[(Key, Resolved)]) -> Vec<String> {
     let mut out = Vec::new();
 
@@ -584,6 +597,7 @@ pub fn type_roles(resolved: &[(Key, Resolved)]) -> Vec<String> {
 
 // ───── 9. hygiene ────────────────────────────────────────────────────────────
 
+/// Checks that the file is as `tokens normalize` would write it (manual §10.3).
 pub fn normalized(source: &str) -> Vec<String> {
     match super::check::normalize(source) {
         Ok(n) if n == source => Vec::new(),

@@ -8,8 +8,6 @@
 //! the moment the fingers lift, and an ease-out carries it there. Past an
 //! end, the scroll pulls on a rubber band and springs back.
 
-#![allow(missing_docs)]
-
 use std::time::{Duration, Instant};
 
 use amane::{Animation, Easing, Scroll, ScrollSource};
@@ -42,6 +40,7 @@ pub struct Tracker {
 }
 
 impl Tracker {
+    /// At rest, last heard of at `now`.
     pub fn new(now: Instant) -> Self {
         Self {
             velocity: 0.0,
@@ -83,7 +82,9 @@ impl Tracker {
 /// Which way something scrolls or pages.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Axis {
+    /// Left and right.
     Horizontal,
+    /// Up and down.
     Vertical,
 }
 

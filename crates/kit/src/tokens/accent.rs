@@ -2,8 +2,6 @@
 //! the runtime swaps them in for Penpot's values when the system publishes
 //! an accent, and everything referencing them follows.
 
-#![allow(missing_docs)]
-
 use super::color::{Rgba, to_linear};
 
 /// White text on the seed down to this contrast, dark text below it.
@@ -13,9 +11,13 @@ const ON_SEED_MIN_CONTRAST: f64 = 3.0;
 const DIM_MAX_L: f64 = 0.50;
 const BRIGHT_MIN_L: f64 = 0.85;
 
+/// The accent itself, the system's color.
 pub const SEED: &str = "ref.color.accent.seed";
+/// Text on the seed: white where it reads, else a translucent black.
 pub const ON_SEED: &str = "ref.color.accent.on-seed";
+/// The seed darkened enough for accent text on light surfaces.
 pub const DIM: &str = "ref.color.accent.dim";
+/// The seed lightened enough for accent text on dark surfaces.
 pub const BRIGHT: &str = "ref.color.accent.bright";
 
 /// Raw values for the four accent primitives, as hex strings to substitute
@@ -53,6 +55,7 @@ fn from_linear(c: f64) -> f64 {
     }
 }
 
+/// `c` in OKLab: lightness, then the a and b axes.
 pub fn to_oklab(c: Rgba) -> [f64; 3] {
     let (r, g, b) = (to_linear(c.r), to_linear(c.g), to_linear(c.b));
 

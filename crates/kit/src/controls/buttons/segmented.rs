@@ -14,8 +14,6 @@
 //!
 //! [`PENDING_TIMEOUT`]: super::PENDING_TIMEOUT
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 use std::time::Instant;
 
@@ -62,6 +60,7 @@ pub struct Segment {
 }
 
 impl Segment {
+    /// A segment reading `label`.
     pub fn new(label: impl Into<String>) -> Self {
         Self {
             label: label.into(),
@@ -70,6 +69,7 @@ impl Segment {
         }
     }
 
+    /// A Material Symbols glyph before the label.
     pub fn icon(mut self, glyph: char) -> Self {
         self.icon = Some(glyph);
         self
@@ -140,11 +140,13 @@ impl SegmentedButton {
         self
     }
 
+    /// Runs with a clicked segment's index and the state it asks for.
     pub fn on_select(mut self, select: impl Fn(usize, bool) + 'static) -> Self {
         self.on_select = Rc::new(select);
         self
     }
 
+    /// The track with its segments and thumb.
     pub fn build(self) -> Rectangle {
         // segments are control-height; the track grows around them by the inset
         let inset = sys::space::gap::xs();

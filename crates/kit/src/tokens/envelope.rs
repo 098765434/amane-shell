@@ -4,8 +4,6 @@
 //! `build.rs` includes this file (with `error.rs`) to generate the token
 //! functions, so the build reads the export exactly as the shell does.
 
-#![allow(missing_docs)]
-
 use serde_json::{Map, Value};
 
 use super::error::TokenError;
@@ -13,29 +11,51 @@ use super::error::TokenError;
 /// Penpot's 20 token types, by their names in the export.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TokenType {
+    /// `boolean`: true or false.
     Boolean,
+    /// `borderRadius`: a corner radius.
     BorderRadius,
+    /// `borderWidth`: a stroke width.
     BorderWidth,
+    /// `color`: a color.
     Color,
+    /// `dimension`: a length of no more particular kind.
     Dimension,
+    /// `fontFamilies`: a stack of font family names.
     FontFamilies,
+    /// `fontSizes`: a text size.
     FontSizes,
+    /// `fontWeights`: a weight, like 400 or `bold`.
     FontWeights,
+    /// `letterSpacing`: space added after every letter.
     LetterSpacing,
+    /// `number`: a plain number.
     Number,
+    /// `opacity`: from 0 to 1, or a percentage.
     Opacity,
+    /// `other`: free text.
     Other,
+    /// `rotation`: an angle in degrees.
     Rotation,
+    /// `shadow`: one or more shadows.
     Shadow,
+    /// `sizing`: a width or height.
     Sizing,
+    /// `spacing`: a gap or an inset.
     Spacing,
+    /// `string`: text.
     String,
+    /// `textCase`: upper, lower or capitalized text.
     TextCase,
+    /// `textDecoration`: underline or strike-through.
     TextDecoration,
+    /// `typography`: a whole text style.
     Typography,
 }
 
 impl TokenType {
+    /// The type with this name in the export, also taking the older singular names
+    /// (`fontFamily`, `fontSize`, `fontWeight`, `boxShadow`).
     pub fn from_name(name: &str) -> Option<Self> {
         use TokenType::*;
 
@@ -50,6 +70,7 @@ impl TokenType {
         legacy.or_else(|| ALL.iter().copied().find(|ty| ty.name() == name))
     }
 
+    /// The type's name in the export.
     pub fn name(self) -> &'static str {
         use TokenType::*;
 
@@ -105,23 +126,34 @@ const ALL: [TokenType; 20] = {
     ]
 };
 
+/// One token as the export has it, before its references are resolved.
 #[derive(Clone, Debug)]
 pub struct RawToken {
+    /// Its dotted path, like `sys.color.primary`.
     pub name: String,
+    /// Its own `$type`, or the nearest group's.
     pub ty: TokenType,
+    /// Its `$value`, untouched.
     pub value: Value,
 }
 
+/// A token set: one top-level key of the export.
 #[derive(Debug)]
 pub struct Set {
+    /// The set's name, like `sys/base`.
     pub name: String,
+    /// Every token in the set, flattened out of its groups.
     pub tokens: Vec<RawToken>,
 }
 
+/// A theme from `$themes`: a named choice of sets, one of a group.
 #[derive(Debug)]
 pub struct Theme {
+    /// The group it's one choice of, like `mode`; empty when it has none.
     pub group: String,
+    /// Its name within the group, like `dark`.
     pub name: String,
+    /// Its description, if the export gives one.
     pub description: Option<String>,
     /// Sets listed as `"enabled"`.
     pub sets: Vec<String>,
@@ -129,14 +161,18 @@ pub struct Theme {
     pub not_enabled: Vec<String>,
 }
 
+/// A whole parsed export: its sets and themes.
 #[derive(Debug)]
 pub struct Library {
     /// In resolution order: `tokenSetOrder`, then any set it doesn't name.
     pub sets: Vec<Set>,
+    /// Every theme in `$themes`, in the export's order.
     pub themes: Vec<Theme>,
 }
 
 impl Library {
+    /// Reads an export. A set or group that isn't an object, a token without a type, or a hand-
+    /// added `$extensions` is an error.
     pub fn parse(json: &str) -> Result<Library, TokenError> {
         let root: Value = serde_json::from_str(json)
             .map_err(|e| TokenError::file(format!("invalid JSON: {e}")))?;
@@ -185,6 +221,7 @@ impl Library {
         Ok(Library { sets, themes })
     }
 
+    /// The theme named `name` in `group`, if there is one.
     pub fn theme(&self, group: &str, name: &str) -> Option<&Theme> {
         self.themes
             .iter()

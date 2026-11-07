@@ -1,8 +1,6 @@
 //! Set selection and reference resolution, as Penpot does with one `mode`
 //! and one `density` theme active.
 
-#![allow(missing_docs)]
-
 use std::collections::{HashMap, HashSet};
 
 use serde_json::Value as Json;
@@ -17,11 +15,15 @@ const MAX_DEPTH: usize = 16;
 
 /// The active tokens for one `mode` × `density`, later sets winning.
 pub struct Selection<'a> {
+    /// The themes selected, like `mode/dark + density/comfortable`, for messages.
     pub key: String,
+    /// Every active token by its dotted name, with the name of the set it came from.
     pub tokens: HashMap<&'a str, (&'a str, &'a RawToken)>,
 }
 
 impl Library {
+    /// The tokens of the sets the `mode` and `density` themes enable, later sets winning; an
+    /// error if either theme is missing.
     pub fn select(&self, mode: Mode, density: Density) -> Result<Selection<'_>, TokenError> {
         let mut active = HashSet::new();
 

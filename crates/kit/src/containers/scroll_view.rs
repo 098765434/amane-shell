@@ -9,8 +9,6 @@
 //!
 //! [`Kinetic`]: crate::kinetic::Kinetic
 
-#![allow(missing_docs)]
-
 use std::time::{Duration, Instant};
 
 use amane::{Animation, Center, Color, Padding, Rectangle, Scroll, Service, Stack, Start, Widget};
@@ -25,6 +23,7 @@ use crate::motion;
 const SCROLLBAR: f32 = 6.0;
 const THUMB_MIN: f32 = 32.0;
 
+/// A clipped viewport scrolled along one axis by the caller, with an optional scrollbar.
 pub struct ScrollView {
     axis: Axis,
     width: f32,
@@ -71,6 +70,8 @@ impl ScrollView {
         self
     }
 
+    /// Runs with each wheel or touchpad scroll over the viewport; where that moves the content
+    /// is the caller's.
     pub fn on_scroll(mut self, scroll: impl Fn(Scroll) + 'static) -> Self {
         self.on_scroll = Some(Box::new(scroll));
         self
@@ -88,6 +89,7 @@ impl ScrollView {
         }
     }
 
+    /// The viewport with `child` in it, moved by the offset.
     pub fn build(self, child: impl Widget + 'static) -> Rectangle {
         let max = self.max();
         let (padding, content) = match self.axis {

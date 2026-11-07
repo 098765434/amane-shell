@@ -16,8 +16,6 @@
 //! scale. There is no `ref` module: code never reads primitives. The rules
 //! live in `docs/design-system/tokens.md`.
 
-#![allow(missing_docs)]
-
 pub mod accent;
 /// The manual's rules over a token file, and the `tokens check` / `tokens normalize` tools
 /// (`cargo xtask`); only built with the `tools` feature, which the shell leaves out.
@@ -63,16 +61,21 @@ pub const COMPONENTS: &[&str] = &[
     "material",
 ];
 
+/// One token after resolution: its type and its final value.
 #[derive(Clone, Debug)]
 pub struct ResolvedToken {
+    /// The token's `$type`.
     pub ty: TokenType,
+    /// Its value with every reference substituted.
     pub value: Value,
 }
 
 /// Every active token for one selection, resolved.
 #[derive(Debug)]
 pub struct Resolved {
+    /// The themes it was resolved for, like `mode/dark + density/comfortable`, for messages.
     pub key: String,
+    /// Every active token by its dotted name.
     pub tokens: HashMap<String, ResolvedToken>,
     /// Multiplies font sizes when read (manual §8.4).
     pub text_scale: f32,
@@ -81,7 +84,9 @@ pub struct Resolved {
 /// What the runtime varies on top of Penpot. Resolution is cached per key.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct Key {
+    /// The light or dark theme.
     pub mode: Mode,
+    /// The density theme.
     pub density: Density,
     /// The system accent as 8-bit RGB, replacing `ref.color.accent.*`.
     pub accent: Option<[u8; 3]>,
@@ -124,6 +129,7 @@ impl Key {
         }
     }
 
+    /// `mode` and `density` with no accent and the text at 100 %.
     pub fn new(mode: Mode, density: Density) -> Self {
         Self {
             mode,
@@ -134,6 +140,7 @@ impl Key {
     }
 }
 
+/// The bundled export, parsed once.
 pub fn library() -> &'static Library {
     static LIBRARY: OnceLock<Library> = OnceLock::new();
     // SOURCE is embedded, and the contract tests parse it in every
@@ -184,6 +191,7 @@ fn current() -> &'static Resolved {
     table
 }
 
+/// Resolve the bundled tokens for `key`, once per key; the table lives for the rest of the run.
 pub fn resolved(key: Key) -> &'static Resolved {
     static CACHE: OnceLock<Mutex<HashMap<Key, &'static Resolved>>> = OnceLock::new();
     let mut cache = CACHE
@@ -200,6 +208,8 @@ pub fn resolved(key: Key) -> &'static Resolved {
     })
 }
 
+/// Resolve `library` for `key`: select its mode and density sets, put the accent's derived
+/// colors in place of `ref.color.accent.*`, and set the text scale.
 pub fn resolve_key(library: &Library, key: Key) -> Result<Resolved, Vec<TokenError>> {
     let overrides: Vec<(&str, String)> = key
         .accent
@@ -224,15 +234,21 @@ pub use generated::*;
 /// its stack, and its size and letter spacing times the text scale.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TextStyle {
+    /// The first installed family of the stack.
     pub family: &'static str,
+    /// Text size in logical pixels, times the text scale.
     pub size: f32,
+    /// Weight, 100 to 950; 400 is regular.
     pub weight: u16,
+    /// Whether the style is italic.
     pub italic: bool,
     /// A multiple of the size.
     pub line_height: Option<f32>,
     /// Pixels after every letter.
     pub letter_spacing: Option<f32>,
+    /// How the case of the letters changes; `None` keeps amane's default.
     pub text_case: Option<TextCase>,
+    /// A line drawn through or under the text; `None` keeps amane's default.
     pub text_decoration: Option<TextDecoration>,
 }
 
@@ -241,6 +257,7 @@ pub struct TextStyle {
 /// spacing, case and decoration. Members the typography leaves out keep
 /// amane's defaults (the font's own line spacing, no tracking).
 pub trait Styled {
+    /// Sets the text's family, size, weight, italic and whatever else `style` holds.
     fn style(self, style: TextStyle) -> Self;
 }
 
@@ -299,6 +316,7 @@ pub mod read {
         panic!("token {name} resolved to {value:?}, not the type it was generated with")
     }
 
+    /// A `color` token.
     pub fn color(name: &str) -> Color {
         match get(name).1 {
             Value::Color(c) => c.to_color(),
@@ -306,6 +324,7 @@ pub mod read {
         }
     }
 
+    /// A number-like token, in its own units (pixels for lengths).
     pub fn number(name: &str) -> f32 {
         match get(name).1 {
             Value::Number(n) => n.value as f32,
@@ -313,6 +332,7 @@ pub mod read {
         }
     }
 
+    /// A `fontSizes` token, times the text scale.
     pub fn font_size(name: &str) -> f32 {
         let (r, value) = get(name);
         match value {
@@ -321,6 +341,7 @@ pub mod read {
         }
     }
 
+    /// A `fontFamilies` token: the first installed family of its stack.
     pub fn font_family(name: &str) -> &'static str {
         match get(name).1 {
             Value::FontFamily(stack) => font::first_installed(stack),
@@ -328,6 +349,7 @@ pub mod read {
         }
     }
 
+    /// A `fontWeights` token's weight, without its italic.
     pub fn font_weight(name: &str) -> u16 {
         match get(name).1 {
             Value::FontWeight { weight, .. } => *weight,
@@ -335,6 +357,7 @@ pub mod read {
         }
     }
 
+    /// A `typography` token as a [`TextStyle`], scaled by the text scale.
     pub fn text_style(name: &str) -> TextStyle {
         let (r, value) = get(name);
         let Value::Typography(t) = value else {
@@ -354,6 +377,7 @@ pub mod read {
         }
     }
 
+    /// A `shadow` token's layers.
     pub fn shadow(name: &str) -> Vec<Shadow> {
         match get(name).1 {
             Value::Shadow(s) => s.clone(),
@@ -361,6 +385,7 @@ pub mod read {
         }
     }
 
+    /// A `boolean` token.
     pub fn boolean(name: &str) -> bool {
         match get(name).1 {
             Value::Bool(b) => *b,
@@ -368,6 +393,7 @@ pub mod read {
         }
     }
 
+    /// A `string` or `other` token.
     pub fn string(name: &str) -> String {
         match get(name).1 {
             Value::Str(s) => s.clone(),
@@ -375,6 +401,7 @@ pub mod read {
         }
     }
 
+    /// A `textCase` token.
     pub fn text_case(name: &str) -> TextCase {
         match get(name).1 {
             Value::TextCase(c) => *c,
@@ -382,6 +409,7 @@ pub mod read {
         }
     }
 
+    /// A `textDecoration` token.
     pub fn text_decoration(name: &str) -> TextDecoration {
         match get(name).1 {
             Value::TextDecoration(d) => *d,

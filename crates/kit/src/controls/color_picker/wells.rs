@@ -32,6 +32,8 @@ fn gap() -> f32 {
 const SYSTEM: [&str; 4] = ["#0091ff", "#ff4245", "#ffd600", "#30d158"];
 
 impl ColorWells {
+    /// A row of `colors`, each a name and a color or `None` for the system's, with the one at
+    /// `chosen` marked. `id` keys the dots' hover, so it must be unique and stable.
     pub fn new(id: impl Into<String>, colors: Vec<(String, Option<Color>)>, chosen: usize) -> Self {
         Self {
             id: id.into(),
@@ -41,6 +43,7 @@ impl ColorWells {
         }
     }
 
+    /// Runs with a dot's index when it's clicked.
     pub fn on_select(mut self, select: impl Fn(usize) + 'static) -> Self {
         self.on_select = Some(Rc::new(select));
         self
@@ -56,11 +59,13 @@ impl ColorWells {
             .unwrap_or_default()
     }
 
+    /// The row's width in logical pixels.
     pub fn width(&self) -> f32 {
         let count = self.colors.len() as f32;
         count * side() + (count - 1.0).max(0.0) * gap()
     }
 
+    /// The row of dots.
     pub fn build(self) -> Row {
         let dots: Vec<Box<dyn Widget>> = self
             .colors

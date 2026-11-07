@@ -2,24 +2,28 @@
 //! selection it was found under. Shared with `build.rs`, which includes this
 //! file and `envelope.rs` to read the export the same way the shell does.
 
-#![allow(missing_docs)]
-
 use std::fmt;
 
+/// A problem with a token, its set or the export, and where it was found.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TokenError {
+    /// The token's dotted name; empty for a problem with a set or the file.
     pub token: String,
+    /// The set's name; empty for a problem with the whole file.
     pub set: String,
     /// The `mode` × `density` selection, when one applies.
     pub key: String,
+    /// What's wrong, in words.
     pub message: String,
 }
 
 impl TokenError {
+    /// A problem with the whole export.
     pub fn file(message: impl Into<String>) -> Self {
         Self::in_set("", "", message)
     }
 
+    /// A problem with `token` in `set`; an empty `token` is the set itself.
     pub fn in_set(set: &str, token: &str, message: impl Into<String>) -> Self {
         Self {
             token: token.to_string(),

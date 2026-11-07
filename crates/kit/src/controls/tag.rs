@@ -5,8 +5,6 @@
 //! or the accent's tint and colour for the fact that matters most.
 //! [`tags`] lays several out in rows that wrap, through [`Flow`].
 
-#![allow(missing_docs)]
-
 use amane::{Center, Radius, Rectangle, Size, Text};
 
 use crate::color::with_alpha;
@@ -15,12 +13,14 @@ use crate::layout::text_width;
 use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, sys};
 
+/// A short fact as a small capsule label.
 pub struct Tag {
     text: String,
     accent: bool,
 }
 
 impl Tag {
+    /// A tag reading `text`, on the secondary fill.
     pub fn new(text: impl Into<String>) -> Self {
         Self {
             text: text.into(),
@@ -41,6 +41,7 @@ impl Tag {
         (width.ceil(), height)
     }
 
+    /// The capsule, [`size`](Self::size) big.
     pub fn build(self) -> Rectangle {
         let (width, height) = self.size();
         let (fill, color) = if self.accent {

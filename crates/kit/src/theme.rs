@@ -5,8 +5,6 @@
 //! glass is tinted and how things move (`glass_region`, `motion`). Env overrides are read once; the system values are read per
 //! frame through amane's `Appearance` service, so a change redraws.
 
-#![allow(missing_docs)]
-
 use std::sync::OnceLock;
 
 use amane::serde::{Deserialize, Serialize};
@@ -14,17 +12,23 @@ use amane::{Appearance, Color, Scheme, Service};
 
 use crate::settings;
 
+/// Light or dark: which of Penpot's `mode` themes is active.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum Mode {
+    /// Dark text on light surfaces.
     Light,
+    /// Light text on dark surfaces.
     Dark,
 }
 
+/// How tightly things are spaced: which of Penpot's `density` themes is active.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum Density {
+    /// The default spacing.
     Comfortable,
+    /// Tighter spacing and smaller sizes.
     Compact,
 }
 
@@ -41,6 +45,7 @@ pub enum Glass {
 }
 
 impl Glass {
+    /// Every level, clearest first.
     pub const ALL: [Glass; 3] = [Glass::Clear, Glass::Tinted, Glass::Solid];
 
     /// The name in settings and `AMANE_GLASS`.
@@ -54,6 +59,7 @@ impl Glass {
 }
 
 impl Mode {
+    /// Both modes, light first.
     pub const ALL: [Mode; 2] = [Mode::Light, Mode::Dark];
 
     /// The theme name in Penpot's `mode` group.
@@ -66,6 +72,7 @@ impl Mode {
 }
 
 impl Density {
+    /// Both densities, the default first.
     pub const ALL: [Density; 2] = [Density::Comfortable, Density::Compact];
 
     /// The theme name in Penpot's `density` group.

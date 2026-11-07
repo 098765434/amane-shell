@@ -4,8 +4,6 @@
 //! [`layout::icon`](crate::layout::icon), or, where a control can also show
 //! a mark the font hasn't got, as a [`Glyph`] with [`glyph`].
 
-#![allow(missing_docs)]
-
 use amane::{
     AudioKind, BatteryState, Center, Color, Column, DeviceKind, PowerDevice, Radius, Rectangle,
     Row, Size,
@@ -13,70 +11,129 @@ use amane::{
 
 use crate::layout::{boxed, fixed_width, icon};
 
+/// A grid of squares (`apps`): the app launcher.
 pub const ICON_APPS: char = '\u{e5c3}';
+/// A speaker with waves (`volume_up`): sound on, and the built-in speakers.
 pub const ICON_VOLUME_UP: char = '\u{e050}';
+/// A struck-out speaker (`volume_off`): muted or silent.
 pub const ICON_VOLUME_OFF: char = '\u{e04f}';
+/// A speaker with one wave (`volume_down`): quiet.
 pub const ICON_VOLUME_DOWN: char = '\u{e04d}';
+/// A padlock (`lock`).
 pub const ICON_LOCK: char = '\u{e897}';
 /// The gear (`settings`).
 pub const ICON_SETTINGS: char = '\u{e8b8}';
+/// A check mark (`check`).
 pub const ICON_CHECK: char = '\u{e5ca}';
 /// A warning triangle (`warning`).
 pub const ICON_WARNING: char = '\u{e002}';
+/// An X (`close`).
 pub const ICON_CLOSE: char = '\u{e5cd}';
+/// A minus sign (`remove`).
 pub const ICON_REMOVE: char = '\u{e15b}';
+/// A plus sign (`add`).
 pub const ICON_ADD: char = '\u{e145}';
+/// Two arrows out to opposite corners (`open_in_full`): resize.
 pub const ICON_RESIZE: char = '\u{f1ce}';
+/// A mouse (`mouse`).
 pub const ICON_MOUSE: char = '\u{e323}';
+/// A keyboard (`keyboard`).
 pub const ICON_KEYBOARD: char = '\u{e312}';
+/// Headphones (`headphones`).
 pub const ICON_HEADPHONES: char = '\u{e310}';
+/// A game controller (`sports_esports`).
 pub const ICON_GAMEPAD: char = '\u{ea28}';
+/// A struck-out microphone (`mic_off`).
 pub const ICON_MIC_OFF: char = '\u{e02b}';
+/// A standing speaker (`speaker`).
 pub const ICON_SPEAKER: char = '\u{e32d}';
+/// A phone (`mobile`).
 pub const ICON_PHONE: char = '\u{e32c}';
+/// A laptop (`computer`).
 pub const ICON_COMPUTER: char = '\u{e30a}';
 /// A screen on its stand (`desktop_windows`).
 pub const ICON_DISPLAY: char = '\u{e30c}';
+/// A phone beside a screen (`devices_other`): a device of no known kind.
 pub const ICON_DEVICE_OTHER: char = '\u{e337}';
+/// The Bluetooth rune (`bluetooth`).
 pub const ICON_BLUETOOTH: char = '\u{e1a7}';
+/// The Bluetooth rune with dots either side (`bluetooth_connected`).
 pub const ICON_BLUETOOTH_CONNECTED: char = '\u{e1a8}';
+/// The struck-out Bluetooth rune (`bluetooth_disabled`).
 pub const ICON_BLUETOOTH_OFF: char = '\u{e1a9}';
+/// A bell (`notifications`).
 pub const ICON_NOTIFICATIONS: char = '\u{e7f4}';
+/// A crescent moon (`bedtime`): do not disturb.
 pub const ICON_DND: char = '\u{ef44}';
+/// A chevron pointing left (`chevron_left`): back.
 pub const ICON_CHEVRON_LEFT: char = '\u{e5cb}';
+/// A chevron pointing right (`chevron_right`): more inside.
 pub const ICON_CHEVRON_RIGHT: char = '\u{e5cc}';
+/// An i in a circle (`info`).
 pub const ICON_INFO: char = '\u{e88e}';
+/// A chevron pointing down (`expand_more`).
 pub const ICON_EXPAND_MORE: char = '\u{e5cf}';
+/// Sliders (`tune`): settings for one thing.
 pub const ICON_TUNE: char = '\u{e429}';
+/// The power symbol (`power_settings_new`).
 pub const ICON_POWER: char = '\u{f8c7}';
+/// A dashed frame (`screenshot_region`): a screenshot.
 pub const ICON_SCREENSHOT: char = '\u{f7d2}';
+/// A dim sun (`brightness_low`).
 pub const ICON_BRIGHTNESS_LOW: char = '\u{e1ad}';
+/// A bright sun (`brightness_high`).
 pub const ICON_BRIGHTNESS_HIGH: char = '\u{e1ac}';
+/// A sun on the horizon (`wb_twilight`): night light.
 pub const ICON_NIGHT_LIGHT: char = '\u{e1c6}';
+/// A half-filled circle (`contrast`): dark mode.
 pub const ICON_DARK_MODE: char = '\u{eb37}';
+/// An airplane (`airplanemode_active`).
 pub const ICON_AIRPLANE: char = '\u{e53d}';
+/// A key (`vpn_key`): a VPN.
 pub const ICON_VPN: char = '\u{e0da}';
+/// Waves out from a point (`wifi_tethering`): a hotspot.
 pub const ICON_HOTSPOT: char = '\u{e1e2}';
+/// Linked boxes (`lan`): a wired network.
 pub const ICON_WIRED: char = '\u{eb2f}';
+/// A lamp giving off light (`backlight_high`): the keyboard light.
 pub const ICON_KEYBOARD_LIGHT: char = '\u{f7ed}';
+/// An arrow up over a bar (`keyboard_capslock`): Caps Lock.
 pub const ICON_CAPS_LOCK: char = '\u{e318}';
+/// The digits 123 (`123`): Num Lock.
 pub const ICON_NUM_LOCK: char = '\u{eb8d}';
+/// A video camera (`videocam`).
 pub const ICON_CAMERA: char = '\u{e04b}';
+/// A screen with an arrow out of it (`screen_share`).
 pub const ICON_SCREEN_SHARE: char = '\u{e0e2}';
+/// A music note (`music_note`).
 pub const ICON_MUSIC: char = '\u{e405}';
+/// A play triangle (`play_arrow`).
 pub const ICON_PLAY: char = '\u{e037}';
+/// Two bars (`pause`).
 pub const ICON_PAUSE: char = '\u{e034}';
+/// Skip forward (`skip_next`).
 pub const ICON_SKIP_NEXT: char = '\u{e044}';
+/// Skip back (`skip_previous`).
 pub const ICON_SKIP_PREVIOUS: char = '\u{e045}';
+/// A crescent in a circle (`mode_standby`): sleep.
 pub const ICON_SLEEP: char = '\u{f037}';
+/// A circular arrow (`restart_alt`): restart.
 pub const ICON_RESTART: char = '\u{f053}';
+/// An arrow out of a door (`logout`): log out.
 pub const ICON_LOG_OUT: char = '\u{e9ba}';
+/// Tiles with one turned (`widgets`): apps running in the background.
 pub const ICON_BACKGROUND_APPS: char = '\u{e1bd}';
+/// A microphone (`mic`).
 pub const ICON_MIC: char = '\u{e029}';
+/// A coffee cup (`coffee`): keep the screen awake.
 pub const ICON_KEEP_AWAKE: char = '\u{efef}';
+/// A struck-out screen (`desktop_access_disabled`): turn the screen off.
 pub const ICON_SCREEN_OFF: char = '\u{e99d}';
+/// A magnifying glass (`search`).
 pub const ICON_SEARCH: char = '\u{e8b6}';
+/// The four sums (`calculate`): a calculator.
 pub const ICON_CALCULATE: char = '\u{ea5f}';
+/// A box with an arrow out of it (`open_in_new`).
 pub const ICON_OPEN_IN_NEW: char = '\u{e89e}';
 const ICON_MIC_EXTERNAL: char = '\u{ef5a}';
 const ICON_HEADSET_MIC: char = '\u{e311}';
@@ -120,6 +177,7 @@ pub fn volume_glyph(muted: bool, volume: u8, kind: AudioKind) -> char {
 const ICON_BATTERY_LEVELS: [char; 7] = [
     '\u{f30d}', '\u{f30c}', '\u{f30b}', '\u{f30a}', '\u{f309}', '\u{f308}', '\u{f307}',
 ];
+/// A full horizontal battery (`battery_android_full`).
 pub const ICON_BATTERY_FULL: char = '\u{f304}';
 const ICON_BATTERY_BOLT: char = '\u{f305}';
 
@@ -140,27 +198,45 @@ pub fn battery_glyph(percent: u8, charging: bool) -> char {
 /// filled `signal_wifi_4_bar`), drawn like the battery glyphs: the filled part
 /// shows the signal.
 const ICON_WIFI_LEVELS: [char; 5] = ['\u{ebe4}', '\u{ebd6}', '\u{ebe1}', '\u{e1ba}', '\u{e1d8}'];
+/// The filled wedge (`signal_wifi_4_bar`): full signal, and Wi-Fi in general.
 pub const ICON_WIFI: char = ICON_WIFI_LEVELS[4];
 /// The empty wedge (`signal_wifi_0_bar`): the radio is on but nothing is joined.
 pub const ICON_WIFI_NONE: char = '\u{f0b0}';
+/// The struck-out wedge (`signal_wifi_off`): the radio is off.
 pub const ICON_WIFI_OFF: char = '\u{e1da}';
+/// A plug on a cable (`cable`).
 pub const ICON_CABLE: char = '\u{efe6}';
+/// A folder (`folder`).
 pub const ICON_FOLDER: char = '\u{e2c7}';
+/// Stacked sheets (`layers`).
 pub const ICON_LAYERS: char = '\u{e53b}';
+/// A clipboard (`content_paste`): paste.
 pub const ICON_CONTENT_PASTE: char = '\u{e14f}';
+/// Two sheets (`content_copy`): copy.
 pub const ICON_CONTENT_COPY: char = '\u{e14d}';
+/// Three dots in a row (`more_horiz`): more.
 pub const ICON_MORE_HORIZ: char = '\u{e5d3}';
+/// Three dots in a column (`more_vert`): more.
 pub const ICON_MORE_VERT: char = '\u{e5d4}';
 /// The two bars a reorderable list item is dragged by (`drag_handle`).
 pub const ICON_DRAG_HANDLE: char = '\u{e25d}';
+/// A head and shoulders (`person`).
 pub const ICON_PERSON: char = '\u{e7fd}';
+/// A picture (`image`).
 pub const ICON_IMAGE: char = '\u{e3f4}';
+/// A star (`star`).
 pub const ICON_STAR: char = '\u{e838}';
+/// An envelope (`mail`).
 pub const ICON_MAIL: char = '\u{e158}';
+/// Two arrows, left and right (`swap_horiz`): swap.
 pub const ICON_SWAP: char = '\u{e8d4}';
+/// A lightning bolt (`bolt`).
 pub const ICON_BOLT: char = '\u{ea0b}';
+/// A clock with an arrow around it (`history`).
 pub const ICON_HISTORY: char = '\u{e889}';
+/// Stacked drives (`storage`).
 pub const ICON_STORAGE: char = '\u{e1db}';
+/// A clock with a circling arrow (`update`): updates.
 pub const ICON_UPDATE: char = '\u{e923}';
 /// `dns`: a server, for services.
 pub const ICON_DNS: char = '\u{e875}';
@@ -168,22 +244,31 @@ pub const ICON_DNS: char = '\u{e875}';
 pub const ICON_PACKAGE: char = '\u{f720}';
 /// `terminal`: a command-line tool.
 pub const ICON_TERMINAL: char = '\u{eb8e}';
+/// A stopwatch (`timer`).
 pub const ICON_TIMER: char = '\u{e425}';
 /// `schedule`: a clock face.
 pub const ICON_SCHEDULE: char = '\u{e8b5}';
 /// `partly_cloudy_day`: the weather.
 pub const ICON_PARTLY_CLOUDY: char = '\u{f172}';
+/// A sheet with lines (`description`): a document.
 pub const ICON_DESCRIPTION: char = '\u{e873}';
+/// An arrow up onto a bar (`upload`).
 pub const ICON_UPLOAD: char = '\u{e2c6}';
+/// An arrow down onto a bar (`download`).
 pub const ICON_DOWNLOAD: char = '\u{e2c4}';
+/// A cloud with an arrow up (`cloud_upload`).
 pub const ICON_CLOUD_UPLOAD: char = '\u{e2c3}';
 /// A tray with an arrow into it (`move_to_inbox`): somewhere to drop things.
 pub const ICON_TRAY: char = '\u{e168}';
+/// Three linked dots (`share`).
 pub const ICON_SHARE: char = '\u{e80d}';
+/// A paper plane (`send`).
 pub const ICON_SEND: char = '\u{e163}';
 /// A filled dot (`fiber_manual_record`): recording, or a mark with no picture.
 pub const ICON_RECORD: char = '\u{e061}';
+/// An exclamation mark in a circle (`error`).
 pub const ICON_ERROR: char = '\u{e000}';
+/// A check mark in a circle (`check_circle`).
 pub const ICON_CHECK_CIRCLE: char = '\u{e86c}';
 
 /// The symbols other programs may ask for by name, for their status items
@@ -253,6 +338,8 @@ pub fn device_glyph(icon: &str) -> char {
 }
 
 const ICON_POWER_SAVER: char = '\u{ea35}';
+/// A balance scale (`balance`): the balanced power profile, and the fallback for an unknown
+/// one.
 pub const ICON_BALANCED: char = '\u{eaf6}';
 const ICON_PERFORMANCE: char = '\u{e9e4}';
 
@@ -288,6 +375,7 @@ pub fn os_glyph(os: &str) -> char {
 /// What a control shows: a font glyph, or a mark drawn from shapes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Glyph {
+    /// A glyph from the icon font.
     Font(char),
     /// Tailscale's nine dots.
     Tailscale,

@@ -6,8 +6,6 @@
 //! square at control height unless told otherwise; bar items stretch it to
 //! the bar's height.
 
-#![allow(missing_docs)]
-
 use amane::Rectangle;
 
 use super::{ButtonBuilder, Shape, Style};
@@ -27,6 +25,7 @@ pub struct Lone {
 }
 
 impl IconButton {
+    /// A plain round button showing `glyph`, control height square.
     pub fn new(id: impl Into<String>, glyph: impl Into<Glyph>) -> Self {
         let kind = Lone {
             glyph: glyph.into(),
@@ -55,6 +54,7 @@ impl IconButton {
         self
     }
 
+    /// The button.
     pub fn build(self) -> Rectangle {
         let color = match (self.kind.selected, self.style) {
             (true, Style::Filled) => sys::color::accent::fg(),

@@ -17,8 +17,6 @@
 //! }
 //! ```
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 
 use amane::{
@@ -137,7 +135,9 @@ pub fn field_box(id: &'static str, input: TextInput, width: impl Into<Size>) -> 
 /// One row in a [`sidebar`]: a page, with its glyph and its name, or a
 /// section's title over the pages after it.
 pub struct Page {
+    /// The page's glyph, if it has one.
     pub glyph: Option<char>,
+    /// The page's name, or the section's title.
     pub name: String,
     /// A title over a run of pages, not a page: it can't be selected.
     pub section: bool,
@@ -147,6 +147,7 @@ pub struct Page {
 }
 
 impl Page {
+    /// A page named `name` with `glyph`, drawn bare.
     pub fn new(glyph: char, name: impl Into<String>) -> Self {
         Self {
             glyph: Some(glyph),

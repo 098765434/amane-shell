@@ -23,8 +23,6 @@
 //! the seconds down, and at zero the dialog closes and runs its action, as
 //! a display change that's kept only when confirmed.
 
-#![allow(missing_docs)]
-
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
@@ -80,7 +78,9 @@ pub enum Layout {
     /// Side by side when they fit, else stacked.
     #[default]
     Auto,
+    /// In one row, whatever fits.
     SideBySide,
+    /// One above the other.
     Stacked,
 }
 
@@ -114,6 +114,7 @@ pub struct Field {
     /// The input's id, under which its text is kept: read it with
     /// `TextInput::text(id)` from a button's action.
     pub id: &'static str,
+    /// The faint text shown while the field is empty.
     pub placeholder: String,
     /// Hide what's typed, as a password.
     pub secret: bool,
@@ -128,6 +129,8 @@ struct Countdown {
     action: Rc<dyn Fn()>,
 }
 
+/// A question answered with one of its buttons: an optional icon, a title, a message and
+/// the buttons, in a modal window ([`Dialog::open`]) or on the shell's alert layer.
 #[derive(Clone)]
 pub struct Dialog {
     name: String,
@@ -202,6 +205,7 @@ impl Dialog {
         }
     }
 
+    /// The text under the title.
     pub fn message(mut self, message: impl Into<String>) -> Self {
         self.message = message.into();
         self
@@ -233,6 +237,7 @@ impl Dialog {
         self
     }
 
+    /// What shows above the title: an app's icon or a symbol.
     pub fn icon(mut self, icon: Icon) -> Self {
         self.icon = Some(icon);
         self
@@ -307,10 +312,12 @@ impl Dialog {
         self
     }
 
+    /// The name it was made with, which keys its window.
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Its title.
     pub fn title(&self) -> &str {
         &self.title
     }

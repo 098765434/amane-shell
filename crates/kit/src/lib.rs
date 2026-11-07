@@ -71,12 +71,12 @@
 //! - [`app`] — an app's window, text fields, dialogs and sidebar.
 //! - [`app_icon`] — an app's icon from its desktop entry, by app_id.
 //! - [`settings`] — the shell's settings file, which a settings app changes.
-//! - [`marker`] — scoped redraws for state kept outside a service.
+//! - [`mod@marker`] — scoped redraws for state kept outside a service.
 //!
 //! And at the root, [`tokens`] and [`theme`]: the design tokens and the
 //! mode, density, accent and text scale they resolve with.
 
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 mod animation;
 mod containers;

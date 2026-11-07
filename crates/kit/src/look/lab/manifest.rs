@@ -5,8 +5,6 @@
 //! table. The Shader Lab edits effects through it, and [`super::look`]
 //! builds a saved one for the shell.
 
-#![allow(missing_docs)]
-
 use std::path::{Component, Path, PathBuf};
 
 use amane::serde::Deserialize;
@@ -17,21 +15,29 @@ use crate::color_picker::parse_hex;
 /// The most rows amane hands a pass.
 pub const VALUE_ROWS: usize = 64;
 
+/// An effect's `effect.json`, parsed: what it draws, the controls that set it, and where each
+/// control's value goes in the `values` rows.
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct Manifest {
+    /// The name the lab lists the effect by.
     pub name: String,
+    /// Logical pixels the passes reach past the subject, for glows and blurs that spill out.
     #[serde(default)]
     pub margin: f32,
+    /// The shader passes, run in order; empty when `shader` is set.
     #[serde(default)]
     pub passes: Vec<PassSpec>,
     /// A rectangle shader drawn over the subject's fill, in place of passes.
     pub shader: Option<String>,
     /// Draws the subject as a translucent surface for the shader to light.
     pub surface: Option<SurfaceSpec>,
+    /// The numbers the controls set, each as a slider or a dropdown.
     #[serde(default)]
     pub params: Vec<Param>,
+    /// A gradient of up to eight stops the controls edit, if the effect takes one.
     pub gradient: Option<GradientSpec>,
+    /// A parameter the Animate switch sweeps, if any.
     pub animate: Option<Animate>,
     /// Values no control changes.
     #[serde(default)]
@@ -49,13 +55,17 @@ pub struct Manifest {
     pub suggest: Suggest,
 }
 
+/// A color the controls set, filling one row of `values`.
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct ColorParam {
+    /// The name presets and the surface refer to it by.
     pub key: String,
+    /// The name shown beside its control.
     pub label: String,
     /// `#rrggbb` or `#rrggbbaa`.
     pub default: String,
+    /// The row of `values` it fills.
     pub row: usize,
 }
 
@@ -67,20 +77,29 @@ pub struct ColorParam {
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct SurfaceSpec {
+    /// The key of the color the surface is filled with.
     pub tint: String,
+    /// The key of the color of the inner glow.
     pub glow: String,
+    /// The key of the param that blurs the glow, in logical pixels.
     pub glow_blur: String,
+    /// The key of the param that blurs the backdrop, in logical pixels.
     pub frost: String,
+    /// The key of the param for the corner radius, in logical pixels.
     pub radius: String,
+    /// The row the surface's rectangle goes in.
     pub rect_row: usize,
+    /// The row and lane the corner radius goes in.
     pub radius_slot: [usize; 2],
 }
 
+/// What the lab switches to when an effect is picked, so it shows on something it suits.
 #[derive(Deserialize, Clone, Default)]
 #[serde(crate = "amane::serde")]
 pub struct Suggest {
     /// The index of a subject, as the Subject dropdown lists them.
     pub subject: Option<usize>,
+    /// The index of a backdrop, as the Backdrop dropdown lists them.
     pub backdrop: Option<usize>,
 }
 
@@ -90,15 +109,21 @@ pub struct Suggest {
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct Clicks {
+    /// The first row the presses go in.
     pub rows_from: usize,
+    /// The most presses kept; older ones are dropped.
     pub max: usize,
+    /// Seconds a press is kept for.
     pub seconds: f32,
+    /// The row and lane the number of presses goes in.
     pub count_slot: [usize; 2],
 }
 
+/// A named set of parameter and color values, picked from a dropdown.
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct ParamPreset {
+    /// The name the dropdown shows.
     pub name: String,
     /// By parameter key; those left out keep their value.
     #[serde(default)]
@@ -108,17 +133,23 @@ pub struct ParamPreset {
     pub colors: std::collections::HashMap<String, String>,
 }
 
+/// A value no control changes, put in its slot every frame.
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct Constant {
+    /// The row and lane it fills.
     pub slot: [usize; 2],
+    /// The number.
     pub value: f32,
 }
 
+/// One shader pass of an effect.
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct PassSpec {
+    /// The shader file, relative to the effect's folder.
     pub shader: String,
+    /// What the pass reads, at most four.
     pub inputs: Vec<InputSpec>,
 }
 
@@ -127,16 +158,23 @@ pub struct PassSpec {
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde", untagged)]
 pub enum InputSpec {
+    /// The output of an earlier pass, by index.
     Pass(usize),
+    /// An image file, blurred.
     Image {
+        /// The file's path; a leading `~/` is the home folder.
         image: String,
+        /// Blur radius in pixels; 0 leaves it sharp.
         #[serde(default)]
         blur: u32,
     },
+    /// `"content"` or `"backdrop"`.
     Named(String),
 }
 
 impl InputSpec {
+    /// The amane input it names. An unknown name reads the content; [`Manifest::check`] refuses
+    /// it first.
     pub fn input(&self) -> Input {
         match self {
             Self::Pass(earlier) => Input::Pass(*earlier),
@@ -162,6 +200,7 @@ impl InputSpec {
     }
 }
 
+/// `path` with a leading `~/` replaced by the home folder.
 pub fn home(path: &str) -> PathBuf {
     match (path.strip_prefix("~/"), std::env::var_os("HOME")) {
         (Some(rest), Some(home)) => PathBuf::from(home).join(rest),
@@ -169,16 +208,24 @@ pub fn home(path: &str) -> PathBuf {
     }
 }
 
+/// A number a control sets: a slider, or a dropdown when it has `options`.
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct Param {
+    /// The name presets and the surface refer to it by.
     pub key: String,
+    /// The name shown beside its control.
     pub label: String,
+    /// The value it starts at.
     pub default: f32,
+    /// The smallest value the control allows.
     pub min: f32,
+    /// The largest value the control allows.
     pub max: f32,
+    /// The step the value snaps to; 0 doesn't snap.
     #[serde(default)]
     pub step: f32,
+    /// The unit shown after the value, like `px`; empty for none.
     #[serde(default)]
     pub unit: String,
     /// The row and lane of `values` it fills.
@@ -188,21 +235,27 @@ pub struct Param {
     pub options: Vec<String>,
 }
 
+/// A gradient the controls edit, up to eight stops, with presets to start from.
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct GradientSpec {
+    /// The name shown beside its control.
     pub label: String,
     /// Eight rows of stop colors start here.
     pub colors_row: usize,
     /// Two rows of stop positions, four to a row, start here.
     pub positions_row: usize,
+    /// The row and lane the number of stops goes in.
     pub count_slot: [usize; 2],
+    /// Named gradients to pick from.
     pub presets: Vec<Preset>,
 }
 
+/// A named gradient.
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct Preset {
+    /// The name the dropdown shows.
     pub name: String,
     /// Position, then red, green, blue and alpha from 0 to 1.
     pub stops: Vec<[f32; 5]>,
@@ -212,9 +265,13 @@ pub struct Preset {
 #[derive(Deserialize, Clone)]
 #[serde(crate = "amane::serde")]
 pub struct Animate {
+    /// The key of the param it sweeps.
     pub key: String,
+    /// The value each loop starts at.
     pub from: f32,
+    /// The value each loop ends at, before it jumps back.
     pub to: f32,
+    /// Seconds a whole loop takes.
     pub seconds: f32,
 }
 

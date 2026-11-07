@@ -3,24 +3,29 @@
 //! replaces a colour's alpha, which is how translucent roles alias the
 //! palette.
 
-#![allow(missing_docs)]
-
 use amane::Color;
 
 /// sRGB with every channel in 0..=1. Kept in floats until the reader hands
 /// an `amane::Color` out, so a value is rounded to 8 bits exactly once.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Rgba {
+    /// Red, 0..=1.
     pub r: f64,
+    /// Green, 0..=1.
     pub g: f64,
+    /// Blue, 0..=1.
     pub b: f64,
+    /// Alpha, 0 transparent to 1 opaque.
     pub a: f64,
 }
 
 impl Rgba {
+    /// Opaque white.
     pub const WHITE: Rgba = Rgba::opaque(1.0, 1.0, 1.0);
+    /// Opaque black.
     pub const BLACK: Rgba = Rgba::opaque(0.0, 0.0, 0.0);
 
+    /// An opaque color from channels in 0..=1.
     pub const fn opaque(r: f64, g: f64, b: f64) -> Self {
         Self { r, g, b, a: 1.0 }
     }
@@ -31,6 +36,7 @@ impl Rgba {
         Self::opaque(unit(r), unit(g), unit(b))
     }
 
+    /// The color rounded to 8-bit channels, clamped into range.
     pub fn to_color(self) -> Color {
         let byte = |c: f64| (c.clamp(0.0, 1.0) * 255.0).round() as u8;
         Color::rgba(byte(self.r), byte(self.g), byte(self.b), byte(self.a))
@@ -79,6 +85,8 @@ impl Rgba {
     }
 }
 
+/// Reads a CSS color as Penpot does: hex, `rgb()`/`rgba()`, `hsl()`/`hsla()`, a name or
+/// `transparent`.
 pub fn parse(src: &str) -> Result<Rgba, String> {
     let s = src.trim();
     let lower = s.to_ascii_lowercase();

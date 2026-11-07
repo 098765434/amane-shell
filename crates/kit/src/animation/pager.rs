@@ -8,8 +8,6 @@
 //! the third. Only how far it is moves; what the pages are is the view's
 //! business.
 
-#![allow(missing_docs)]
-
 use std::time::{Duration, Instant};
 
 use amane::{Animation, Easing, Scroll, ScrollSource};
@@ -22,6 +20,7 @@ pub struct PagerMotion {
     /// How long settling on a page takes (zero arrives at once), and on
     /// what curve.
     pub duration: Duration,
+    /// The curve settling follows.
     pub easing: Easing,
     /// How fast a swipe (pages a second) turns the page however far it got.
     pub flick: f32,
@@ -43,6 +42,7 @@ impl PagerMotion {
     }
 }
 
+/// Where a set of pages is, as a page offset, and how swipes, flicks and wheel notches move it.
 pub struct Pager {
     axis: Axis,
     // where it's settling, in pages

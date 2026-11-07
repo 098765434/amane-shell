@@ -1,66 +1,99 @@
 //! Per-type value rules, mirroring Penpot's validators: what a token of each
 //! `$type` may hold once its references are substituted.
 
-#![allow(missing_docs)]
-
 use serde_json::{Value as Json, json};
 
 use super::color::{self, Rgba};
 use super::envelope::TokenType;
 use super::expr::{self, Num};
 
+/// A `textCase` token: how a text style changes the case of its letters.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextCase {
+    /// Letters as written.
     None,
+    /// Every letter upper case.
     Uppercase,
+    /// Every letter lower case.
     Lowercase,
+    /// The first letter of each word upper case.
     Capitalize,
 }
 
+/// A `textDecoration` token: a line a text style draws through or under its letters.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TextDecoration {
+    /// No line.
     None,
+    /// A line under the text.
     Underline,
+    /// A line through the middle of the text.
     StrikeThrough,
 }
 
+/// A `typography` token: a whole text style, every part but the families optional.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Typography {
+    /// Font family names, the first installed one used.
     pub families: Vec<String>,
+    /// Text size in pixels.
     pub size: Option<f32>,
+    /// Weight (100 to 900 in hundreds, or 950) and whether it's italic.
     pub weight: Option<(u16, bool)>,
+    /// Pixels added after every letter.
     pub letter_spacing: Option<f32>,
     /// A multiple of the font size.
     pub line_height: Option<f32>,
+    /// How the case of the letters changes.
     pub text_case: Option<TextCase>,
+    /// A line drawn through or under the text.
     pub text_decoration: Option<TextDecoration>,
 }
 
+/// One layer of a `shadow` token.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Shadow {
+    /// Offset to the right, in pixels.
     pub x: f32,
+    /// Offset down, in pixels.
     pub y: f32,
+    /// Blur radius in pixels.
     pub blur: f32,
+    /// How far the shadow grows past the shape before the blur, in pixels.
     pub spread: f32,
+    /// The shadow's color.
     pub color: Rgba,
+    /// An inner shadow, drawn inside the shape, rather than one cast behind it.
     pub inset: bool,
 }
 
+/// A token's value once parsed for its `$type`.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
+    /// A `color` token.
     Color(Rgba),
     /// Every number-like type: dimensions, sizes, opacity, rotation, number.
     Number(Num),
+    /// A `fontFamilies` token: family names, first choice first.
     FontFamily(Vec<String>),
+    /// A `fontWeights` token.
     FontWeight {
+        /// 100 to 900 in hundreds, or 950; 400 is regular.
         weight: u16,
+        /// Whether the weight names an italic, like `400 italic`.
         italic: bool,
     },
+    /// A `textCase` token.
     TextCase(TextCase),
+    /// A `textDecoration` token.
     TextDecoration(TextDecoration),
+    /// A `typography` token.
     Typography(Typography),
+    /// A `shadow` token: its layers, in order.
     Shadow(Vec<Shadow>),
+    /// A `boolean` token.
     Bool(bool),
+    /// A `string` or `other` token.
     Str(String),
 }
 

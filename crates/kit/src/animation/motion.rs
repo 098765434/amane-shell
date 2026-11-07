@@ -16,8 +16,6 @@
 //! last value and moves to its exit pose, and the view keeps drawing it
 //! until it gets there.
 
-#![allow(missing_docs)]
-
 use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -154,10 +152,15 @@ pub fn redraw_after<M: Service>(delay: Duration) -> amane::TimerHandle {
 /// stacked card behind another is a blank plate).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Pose {
+    /// Moved right, in logical pixels.
     pub x: f32,
+    /// Moved down, in logical pixels.
     pub y: f32,
+    /// Size as a multiple of its own, about its center; 1 is its size.
     pub scale: f32,
+    /// The whole card's opacity, 0 to 1.
     pub opacity: f32,
+    /// Its content's opacity, 0 to 1; 0 leaves a blank plate.
     pub content: f32,
 }
 
@@ -173,6 +176,7 @@ impl Pose {
         }
     }
 
+    /// Moved a further `x` logical pixels to the right.
     pub const fn moved(self, x: f32) -> Self {
         Self {
             x: self.x + x,
@@ -180,6 +184,7 @@ impl Pose {
         }
     }
 
+    /// The same pose, fully transparent.
     pub const fn faded(self) -> Self {
         Self {
             opacity: 0.0,
@@ -229,20 +234,31 @@ impl Blend for Pose {
 /// One entry: where it should be now, where it comes in from the first
 /// time, and where it goes once it's no longer listed.
 pub struct Item<T> {
+    /// Who it is across frames: the same key keeps its motion.
     pub key: u64,
+    /// What the view draws it from; kept while it leaves.
     pub value: T,
+    /// Its height in logical pixels.
     pub height: f32,
+    /// Where it should be now.
     pub pose: Pose,
+    /// Where it comes in from the first time it's listed.
     pub enter: Pose,
+    /// Where it goes once it's no longer listed.
     pub exit: Pose,
 }
 
 /// One entry as it shows this frame.
 pub struct Shown<T> {
+    /// The item's key.
     pub key: u64,
+    /// The item's value; for one leaving, the last one it was listed with.
     pub value: T,
+    /// Its height in logical pixels.
     pub height: f32,
+    /// Where it is and how it looks this frame.
     pub pose: Pose,
+    /// Whether it's on its way out, no longer listed.
     pub leaving: bool,
 }
 
@@ -251,7 +267,10 @@ pub struct Shown<T> {
 /// everything in it).
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Arrive {
+    /// New items move in from their `enter` pose.
     Enter,
+    /// Items in a list seen for the first time start at their pose; ones added later still
+    /// enter.
     Rest,
 }
 

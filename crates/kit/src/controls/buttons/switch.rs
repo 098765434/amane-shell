@@ -12,8 +12,6 @@
 //!
 //! [`PENDING_TIMEOUT`]: super::PENDING_TIMEOUT
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 use std::time::Instant;
 
@@ -42,6 +40,7 @@ pub struct Switch {
 }
 
 impl Switch {
+    /// A switch, on or off, with a click that does nothing yet.
     pub fn new(id: impl Into<String>, on: bool) -> Self {
         Self {
             id: id.into(),
@@ -63,6 +62,7 @@ impl Switch {
         self
     }
 
+    /// The track and knob, at the current control size.
     pub fn build(self) -> Rectangle {
         let size = control_size::current().switch();
         let (knob_w, knob_h) = size.knob;

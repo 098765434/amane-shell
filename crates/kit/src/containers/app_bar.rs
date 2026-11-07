@@ -7,8 +7,6 @@
 //! top of a [`Card`](crate::card::Card), in the vibrant labels of the
 //! material it's on.
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 
 use amane::{Center, Column, Row, Start, Text, Widget};
@@ -19,6 +17,7 @@ use crate::layout::{boxed, clipped_label, split_row};
 use crate::material::{Level, label};
 use crate::tokens::{Styled, sys};
 
+/// A sheet's title row: a title, an optional subtitle and back chevron, and trailing actions.
 pub struct TopAppBar {
     title: String,
     subtitle: Option<String>,
@@ -29,6 +28,7 @@ pub struct TopAppBar {
 }
 
 impl TopAppBar {
+    /// A bar with `title` alone.
     pub fn new(title: impl Into<String>) -> Self {
         Self {
             title: title.into(),
@@ -65,6 +65,7 @@ impl TopAppBar {
         self
     }
 
+    /// The bar as a row, as tall as its content.
     pub fn build(self) -> Row {
         let color = label(Level::Primary);
 

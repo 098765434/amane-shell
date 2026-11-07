@@ -5,8 +5,6 @@
 //! with it. amane has no wrapping layout, so the items are a stack of
 //! translated rectangles.
 
-#![allow(missing_docs)]
-
 use amane::{Color, Rectangle, Size, Stack, Widget};
 
 use crate::layout::boxed;
@@ -14,12 +12,17 @@ use crate::layout::boxed;
 /// Where an item was put, in the flow's own coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Placed {
+    /// Its left edge, in logical pixels.
     pub x: f32,
+    /// Its top edge, in logical pixels.
     pub y: f32,
+    /// Its width, in logical pixels.
     pub width: f32,
+    /// Its height, in logical pixels.
     pub height: f32,
 }
 
+/// Fixed-size items in rows that wrap at a width.
 pub struct Flow {
     width: f32,
     gap_x: f32,

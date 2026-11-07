@@ -10,8 +10,6 @@
 //!
 //! [`Dropdown`]: crate::dropdown::Dropdown
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 
 use amane::{Center, Radius, Rectangle, Size};
@@ -31,6 +29,7 @@ pub struct Radio {
 }
 
 impl Radio {
+    /// A radio, chosen or not, with no label and a click that does nothing yet.
     pub fn new(id: impl Into<String>, selected: bool) -> Self {
         Self {
             id: id.into(),
@@ -59,6 +58,7 @@ impl Radio {
         self
     }
 
+    /// The ring, and its label if it has one.
     pub fn build(self) -> Rectangle {
         let side = px(16.0);
         let fill = crossfade(

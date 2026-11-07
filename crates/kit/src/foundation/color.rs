@@ -1,8 +1,6 @@
 //! Colour arithmetic the components share; amane's `Color` only holds the
 //! channels.
 
-#![allow(missing_docs)]
-
 use amane::Color;
 
 /// `top` painted over `bottom` (source-over), so a translucent state layer
@@ -41,22 +39,36 @@ pub fn with_alpha(color: Color, alpha: f32) -> Color {
 /// the sidebar.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Accent {
+    /// Red (`#ff383c`).
     Red,
+    /// Orange (`#ff8d28`).
     Orange,
+    /// Yellow (`#ffcc00`).
     Yellow,
+    /// Green (`#34c759`).
     Green,
+    /// Mint (`#00c8b3`).
     Mint,
+    /// Teal (`#00c3d0`).
     Teal,
+    /// Cyan (`#00c0e8`).
     Cyan,
+    /// Blue (`#0088ff`).
     Blue,
+    /// Indigo (`#6155f5`).
     Indigo,
+    /// Purple (`#cb30e0`).
     Purple,
+    /// Pink (`#ff2d55`).
     Pink,
+    /// Brown (`#ac7f5e`).
     Brown,
+    /// Gray (`#98989d`).
     Gray,
 }
 
 impl Accent {
+    /// Every accent, in the order a picker shows them.
     pub const ALL: [Accent; 13] = [
         Self::Red,
         Self::Orange,

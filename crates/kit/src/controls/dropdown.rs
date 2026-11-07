@@ -11,8 +11,6 @@
 //! window's (found by itself, from `current_window`), or a layer window's
 //! namespace given with [`Dropdown::layer`].
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 
 use amane::{Center, Padding, Rectangle, Row, Size, Text, Widget};
@@ -40,6 +38,7 @@ pub struct Dropdown {
 }
 
 impl Dropdown {
+    /// A dropdown of plain text `options` showing the one at `selected`.
     pub fn new(id: impl Into<String>, options: Vec<String>, selected: usize) -> Self {
         Self::items(
             id,
@@ -94,6 +93,7 @@ impl Dropdown {
         self
     }
 
+    /// The button showing the choice; clicking it opens the menu.
     pub fn build(self) -> Rectangle {
         let style = style::control_font();
         let height = style::control_height();

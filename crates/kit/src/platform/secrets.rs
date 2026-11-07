@@ -8,8 +8,6 @@
 //! of their own. [`known`] is for drawing: it answers from what was last
 //! found, and looks again on a thread when it doesn't know yet.
 
-#![allow(missing_docs)]
-
 use std::collections::{BTreeMap, HashMap};
 use std::io::Write;
 use std::path::PathBuf;
@@ -25,6 +23,7 @@ crate::marker! {
 /// Where a secret went.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kept {
+    /// The desktop's keyring, through `secret-tool`.
     Keyring,
     /// The keyring didn't answer: the app's own file, 0600.
     File,

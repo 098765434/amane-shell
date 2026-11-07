@@ -11,8 +11,6 @@
 //! (`sys.size.row.two-line-height`); M3's overline is the next slot to add
 //! when a list needs it.
 
-#![allow(missing_docs)]
-
 use std::cell::Cell;
 use std::rc::Rc;
 
@@ -62,6 +60,7 @@ pub struct ListItem {
 }
 
 impl ListItem {
+    /// A row with `headline` alone; `id` keys its hover state, so it must be unique and stable.
     pub fn new(id: impl Into<String>, headline: impl Into<String>) -> Self {
         Self {
             id: id.into(),
@@ -154,6 +153,7 @@ impl ListItem {
         self
     }
 
+    /// The row, as wide as the popover or [`with_row_width`]'s width.
     pub fn build(self) -> Rectangle {
         let color = self.color.unwrap_or(if self.selected {
             material::label(Level::Primary)
@@ -273,6 +273,7 @@ pub struct List {
 }
 
 impl List {
+    /// A list of `items` with no header.
     pub fn new(items: Vec<ListItem>) -> Self {
         Self {
             header: None,
@@ -293,6 +294,7 @@ impl List {
         self
     }
 
+    /// The header, then the items or the empty note, top to bottom.
     pub fn build(self) -> Column {
         let mut rows: Vec<Box<dyn Widget>> = Vec::new();
         if let Some(header) = self.header {

@@ -6,8 +6,6 @@
 //! colour for the name from the accents that take white text. Both build
 //! from [`Avatar`].
 
-#![allow(missing_docs)]
-
 use std::path::PathBuf;
 
 use amane::{Center, Color, Column, Image, Radius, Rectangle, Size, Text, Widget};
@@ -17,6 +15,7 @@ use crate::icons::ICON_PERSON;
 use crate::layout::{boxed, icon};
 use crate::tokens::{Styled, TextStyle};
 
+/// A person or thing as a circle: their photo, or their initials on a color.
 pub struct Avatar {
     name: String,
     side: f32,
@@ -58,6 +57,7 @@ impl Avatar {
         self
     }
 
+    /// The circle, `side` across.
     pub fn build(self) -> Rectangle {
         let circle = Rectangle::new()
             .width(Size::Fixed(self.side))

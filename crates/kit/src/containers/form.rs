@@ -18,8 +18,6 @@
 //! Sizes are the form controls' ([`style`](crate::style)): rows 42 tall (52 with a
 //! subtitle), 12 px in, cards radius 12 in `groupFill`.
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 
 use amane::{Center, Color, Column, Padding, Rectangle, Row, Size, Text, Widget};
@@ -268,6 +266,7 @@ impl FormRow {
         self.text_start()
     }
 
+    /// The row, [`height`](Self::height) tall in a group `width` wide.
     pub fn build(self, width: f32) -> Rectangle {
         let height = self.height(width);
         let head = self.head_height(width);
@@ -454,10 +453,12 @@ impl SliderRow {
             }
     }
 
+    /// How tall the row is, in logical pixels: a title line over the slider.
     pub fn height(&self) -> f32 {
         px(12.0) + text_height(title_font()) + px(6.0) + px(24.0) + px(8.0)
     }
 
+    /// The row in a group `width` wide.
     pub fn build(self, width: f32) -> Rectangle {
         let height = self.height();
         let start = self.text_start();
@@ -550,6 +551,7 @@ impl Default for Group {
 }
 
 impl Group {
+    /// An empty group, [`DEFAULT_WIDTH`] wide.
     pub fn new() -> Self {
         Self {
             items: Vec::new(),
@@ -559,6 +561,7 @@ impl Group {
         }
     }
 
+    /// One more row.
     pub fn row(mut self, row: FormRow) -> Self {
         self.items.push(Item::Row(row));
         self
@@ -570,6 +573,7 @@ impl Group {
         self
     }
 
+    /// One more slider row.
     pub fn slider(mut self, row: SliderRow) -> Self {
         self.items.push(Item::Slider(row));
         self
@@ -640,6 +644,7 @@ impl Group {
         header + self.card_height() + footer
     }
 
+    /// The caption, the card with its rows and the note, top to bottom.
     pub fn build(self) -> Column {
         let width = self.width;
         let gap = px(6.0);

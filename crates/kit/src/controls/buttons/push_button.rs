@@ -5,8 +5,6 @@
 //! state. It is sized like the shell's controls rather than M3's: control
 //! height, and as wide as its content plus the inset unless told otherwise.
 
-#![allow(missing_docs)]
-
 use amane::Rectangle;
 
 use super::{ButtonBuilder, Shape, Style, label_row};
@@ -27,6 +25,7 @@ pub struct Label {
 }
 
 impl PushButton {
+    /// A tonal square button reading `label`, hugging its content.
     pub fn new(id: impl Into<String>, label: impl Into<String>) -> Self {
         let kind = Label {
             label: label.into(),
@@ -62,6 +61,7 @@ impl PushButton {
         self
     }
 
+    /// The button.
     pub fn build(self) -> Rectangle {
         let kind = &self.kind;
         let content = label_row(

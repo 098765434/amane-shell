@@ -11,8 +11,6 @@
 //! never gets narrower than the glyph's circle, so the glyph is the knob.
 //! The glyph can mute (`on_icon_press`).
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 
 use amane::{
@@ -40,6 +38,7 @@ pub fn scrolled(value: u8, scroll: Scroll, step: u8) -> u8 {
     }
 }
 
+/// A level from 0 to 100 along a track: thin, or the large kind with a glyph for its knob.
 pub struct Slider {
     value: u8,
     width: f32,
@@ -60,6 +59,7 @@ pub struct Slider {
 }
 
 impl Slider {
+    /// A thin slider at `value` (kept to 100 at most), `width` logical pixels long.
     pub fn new(value: u8, width: f32) -> Self {
         Self {
             value: value.min(100),
@@ -95,6 +95,7 @@ impl Slider {
         self
     }
 
+    /// Runs with the new level, 0 to 100, on a press, a drag or a wheel step.
     pub fn on_value_change(mut self, change: impl Fn(u8) + 'static) -> Self {
         self.on_value_change = Rc::new(change);
         self
@@ -129,6 +130,7 @@ impl Slider {
         self
     }
 
+    /// The slider, a full control tall.
     pub fn build(self) -> Rectangle {
         if let Some(glyph) = self.large {
             return self.build_large(glyph);

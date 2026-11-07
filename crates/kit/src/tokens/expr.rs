@@ -2,19 +2,20 @@
 //! parentheses and a fixed set of functions. References are substituted by
 //! the resolver before evaluation, so this only sees literals.
 
-#![allow(missing_docs)]
-
 /// A number and whether it carries `px`. `px` propagates through every
 /// operation, as in Penpot (`{ref.space.8} * 2` is `16px`).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Num {
+    /// The number.
     pub value: f64,
+    /// Whether it carries `px`.
     pub px: bool,
 }
 
 /// Penpot rejects values outside JavaScript's safe-integer range.
 const SAFE: f64 = 9_007_199_254_740_991.0;
 
+/// Evaluates a token expression with its references already substituted, like `8px * 2`.
 pub fn eval(src: &str) -> Result<Num, String> {
     let tokens = lex(src)?;
     let mut parser = Parser { tokens, pos: 0 };

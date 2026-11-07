@@ -17,8 +17,6 @@
 //! }
 //! ```
 
-#![allow(missing_docs)]
-
 pub mod config;
 pub mod manifest;
 pub mod shadows;
@@ -52,6 +50,7 @@ pub fn files() -> &'static [(&'static str, &'static str)] {
     FILES.get().copied().unwrap_or(&[])
 }
 
+/// The registered file at `name`, its path under `apps/shader-lab`, if there is one.
 pub fn file(name: &str) -> Option<&'static str> {
     files()
         .iter()

@@ -7,8 +7,6 @@
 //! handles on it move, which keeps drags steady (amane measures a drag
 //! against the last frame's hit areas).
 
-#![allow(missing_docs)]
-
 mod wells;
 
 pub use wells::ColorWells;
@@ -42,6 +40,7 @@ thread_local! {
     static RECENT_COLORS: RefCell<Vec<[f32; 4]>> = const { RefCell::new(Vec::new()) };
 }
 
+/// A color picker for a color as red, green, blue and alpha from 0 to 1.
 pub struct ColorPicker {
     id: String,
     color: [f32; 4],
@@ -61,6 +60,7 @@ impl ColorPicker {
         }
     }
 
+    /// Its width in logical pixels; 260 by default.
     pub fn width(mut self, width: f32) -> Self {
         self.width = width;
         self
@@ -72,6 +72,7 @@ impl ColorPicker {
         self
     }
 
+    /// The square, the strips, the hex field and the recent colors, top to bottom.
     pub fn build(self) -> Column {
         let Self {
             id,
@@ -390,6 +391,7 @@ fn static_id(id: String) -> &'static str {
     })
 }
 
+/// Red, green, blue and alpha from 0 to 1 as an amane color, clamped into range.
 pub fn to_color(color: [f32; 4]) -> Color {
     let [red, green, blue, alpha] =
         color.map(|value| (value.clamp(0.0, 1.0) * 255.0).round() as u8);
@@ -461,6 +463,7 @@ pub fn rgb_to_hsv(rgb: [f32; 3]) -> [f32; 3] {
     [hue, saturation, max]
 }
 
+/// Hue, saturation and value from 0 to 1 as red, green and blue from 0 to 1; the hue wraps.
 pub fn hsv_to_rgb(hsv: [f32; 3]) -> [f32; 3] {
     let [hue, saturation, value] = hsv;
 

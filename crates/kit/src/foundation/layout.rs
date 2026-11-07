@@ -3,8 +3,6 @@
 //! Anything with a look, states or a builder is a component instead (see
 //! [`list`](crate::list), [`card`](crate::card) and the rest).
 
-#![allow(missing_docs)]
-
 use std::cell::Cell;
 
 use amane::{
@@ -14,6 +12,7 @@ use amane::{
 use crate::material::{self, Level};
 use crate::tokens::{Styled, TextStyle, sys};
 
+/// `widget` boxed, for a list of children.
 pub fn boxed(widget: impl Widget + 'static) -> Box<dyn Widget> {
     Box::new(widget)
 }

@@ -8,20 +8,24 @@
 //! `sys.size.control.height`: a size changes the control drawn, not the
 //! room the panels leave for it.
 
-#![allow(missing_docs)]
-
 use std::cell::Cell;
 
 use amane::Radius;
 
 use crate::tokens::sys;
 
+/// One of the five sizes a standard control comes in.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ControlSize {
+    /// The smallest.
     Mini,
+    /// Smaller than the default.
     Small,
+    /// The default, outside any [`scope`].
     Medium,
+    /// Larger than the default; buttons become capsules.
     Large,
+    /// The largest.
     Xl,
 }
 
@@ -45,12 +49,16 @@ pub fn current() -> ControlSize {
 /// A switch's track and the pill-shaped knob inside it.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SwitchSize {
+    /// The track's width in logical pixels.
     pub width: f32,
+    /// The track's height in logical pixels: the control height.
     pub height: f32,
+    /// The knob's width and height in logical pixels.
     pub knob: (f32, f32),
 }
 
 impl ControlSize {
+    /// Every size, smallest first.
     pub const ALL: [ControlSize; 5] =
         [Self::Mini, Self::Small, Self::Medium, Self::Large, Self::Xl];
 
@@ -84,6 +92,7 @@ impl ControlSize {
         }
     }
 
+    /// A switch's track and knob at this size.
     pub fn switch(self) -> SwitchSize {
         use sys::size::switch;
 

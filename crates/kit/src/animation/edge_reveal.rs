@@ -13,8 +13,6 @@
 //!
 //! [`progress`]: EdgeReveal::progress
 
-#![allow(missing_docs)]
-
 use std::time::{Duration, Instant};
 
 use amane::{Animation, InputArea};
@@ -27,6 +25,7 @@ crate::marker! {
     Reveals
 }
 
+/// A surface's hiding at a screen edge: how far out it is, and what keeps it out.
 pub struct EdgeReveal {
     // 0 hidden … 1 out, on the motion it was made with
     motion: Animation,
@@ -62,6 +61,8 @@ impl EdgeReveal {
         self
     }
 
+    /// [`at_top`](Self::at_top) on one kept across frames, for a bar whose edge can change
+    /// while it runs.
     pub fn set_top(&mut self, top: bool) {
         self.top = top;
     }

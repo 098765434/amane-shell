@@ -5,8 +5,6 @@
 //! subject's shape out of itself, so they don't show through a see-through
 //! surface; inner shadows go over it.
 
-#![allow(missing_docs)]
-
 use amane::{Color, Mask, Rectangle, Shadow, Stack, Widget};
 
 use super::config::ShadowSpec;
@@ -58,6 +56,8 @@ pub fn in_front(shadows: &[ShadowSpec], width: f32, height: f32, radius: f32) ->
     )
 }
 
+/// The amane shadow a saved shadow describes, its blur kept to 0 or more and its opacity to
+/// 0..1.
 pub fn to_shadow(spec: &ShadowSpec) -> Shadow {
     let color = to_color(spec.rgba());
 

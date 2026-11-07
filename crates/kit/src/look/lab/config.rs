@@ -3,8 +3,6 @@
 //! `apps/shader-lab/configs/<name>.json`; the lab edits one, and
 //! [`super::look`] builds one for the shell.
 
-#![allow(missing_docs)]
-
 use std::collections::BTreeMap;
 
 use amane::serde::{Deserialize, Serialize};
@@ -12,35 +10,47 @@ use amane::serde::{Deserialize, Serialize};
 use super::manifest::{ColorParam, Manifest, Param};
 use crate::color_picker::parse_hex;
 
+/// A saved look: an effect, the values its controls were set to, and what it was tried on.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 #[serde(crate = "amane::serde", default)]
 pub struct Config {
+    /// The look's name, as the lab lists it; its file name is the [`slug`] of it.
     pub name: String,
+    /// Free text about the look.
     pub notes: String,
     /// The effect's folder, like `chrome` or `liquid-glass`.
     pub effect: String,
+    /// What the effect was tried on.
     pub subject: Subject,
+    /// What was behind the subject.
     pub backdrop: Backdrop,
     /// By param key; one left out is at the manifest's default.
     pub values: BTreeMap<String, f32>,
     /// By colour key, as `#rrggbb` or `#rrggbbaa`.
     pub colors: BTreeMap<String, String>,
+    /// The gradient's stops, if the effect takes one.
     pub gradient: GradientChoice,
     /// Drawn in order: drop shadows behind the subject, inner ones over it.
     pub shadows: Vec<ShadowSpec>,
 }
 
+/// The thing an effect is drawn on in the lab's preview.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct Subject {
+    /// Its shape.
     pub kind: Kind,
     /// The size every subject's measurements follow, in logical pixels.
     pub size: f32,
+    /// The words a [`Kind::Text`] subject shows.
     pub text: String,
+    /// The image file a [`Kind::Image`] subject shows.
     pub image: String,
+    /// The picture file a [`Kind::Photo`] subject shows.
     pub photo: String,
     /// How far it's moved from the preview's centre.
     pub x: f32,
+    /// How far it's moved down from the preview's center, in logical pixels.
     pub y: f32,
 }
 
@@ -58,13 +68,18 @@ impl Default for Subject {
     }
 }
 
+/// The shape of a [`Subject`].
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, Default)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum Kind {
+    /// A rectangle with rounded corners.
     #[default]
     Rounded,
+    /// A rectangle with fully round ends.
     Pill,
+    /// A circle.
     Circle,
+    /// Its text, drawn large.
     Text,
     /// An image fitted inside, like an icon.
     Image,
@@ -75,6 +90,7 @@ pub enum Kind {
 }
 
 impl Kind {
+    /// Every kind, in the order the Subject dropdown lists them.
     pub const ALL: [Kind; 7] = [
         Kind::Rounded,
         Kind::Pill,
@@ -85,6 +101,7 @@ impl Kind {
         Kind::Photo,
     ];
 
+    /// The name the Subject dropdown shows.
     pub fn label(self) -> &'static str {
         match self {
             Kind::Rounded => "Rounded rectangle",
@@ -97,10 +114,12 @@ impl Kind {
         }
     }
 
+    /// Its place in [`Kind::ALL`].
     pub fn index(self) -> usize {
         Kind::ALL.iter().position(|kind| *kind == self).unwrap_or(0)
     }
 
+    /// The kind at `index` in [`Kind::ALL`]; the default past its end.
     pub fn from_index(index: usize) -> Self {
         Kind::ALL.get(index).copied().unwrap_or_default()
     }
@@ -111,17 +130,23 @@ impl Kind {
     }
 }
 
+/// What the lab's preview shows behind the subject.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, Default)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum Backdrop {
+    /// A dark plain fill.
     #[default]
     Dark,
+    /// A light plain fill.
     Light,
+    /// A mid-gray plain fill.
     Grey,
+    /// The desktop wallpaper.
     Wallpaper,
 }
 
 impl Backdrop {
+    /// Every backdrop, in the order the Backdrop dropdown lists them.
     pub const ALL: [Backdrop; 4] = [
         Backdrop::Dark,
         Backdrop::Light,
@@ -129,6 +154,7 @@ impl Backdrop {
         Backdrop::Wallpaper,
     ];
 
+    /// The name the Backdrop dropdown shows.
     pub fn label(self) -> &'static str {
         match self {
             Backdrop::Dark => "Dark",
@@ -138,6 +164,7 @@ impl Backdrop {
         }
     }
 
+    /// Its place in [`Backdrop::ALL`].
     pub fn index(self) -> usize {
         Backdrop::ALL
             .iter()
@@ -145,6 +172,7 @@ impl Backdrop {
             .unwrap_or(0)
     }
 
+    /// The backdrop at `index` in [`Backdrop::ALL`]; the default past its end.
     pub fn from_index(index: usize) -> Self {
         Backdrop::ALL.get(index).copied().unwrap_or_default()
     }
@@ -154,6 +182,7 @@ impl Backdrop {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 #[serde(crate = "amane::serde", default)]
 pub struct GradientChoice {
+    /// The index of the manifest's gradient preset; past the end, the first.
     pub preset: usize,
     /// Position, then red, green, blue and alpha from 0 to 1; these win over the preset.
     pub stops: Option<Vec<[f32; 5]>>,
@@ -163,13 +192,20 @@ pub struct GradientChoice {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct ShadowSpec {
+    /// An inner shadow, drawn over the subject, rather than a drop shadow behind it.
     pub inner: bool,
     /// `#rrggbb` or `#rrggbbaa`.
     pub color: String,
+    /// Offset to the right, in logical pixels.
     pub x: f32,
+    /// Offset down, in logical pixels.
     pub y: f32,
+    /// Blur radius in logical pixels.
     pub blur: f32,
+    /// How far the shadow grows past the shape before the blur, in logical pixels; negative
+    /// shrinks it.
     pub spread: f32,
+    /// The shadow's opacity, 0 to 1.
     pub opacity: f32,
 }
 
@@ -188,6 +224,7 @@ impl Default for ShadowSpec {
 }
 
 impl ShadowSpec {
+    /// The color as red, green, blue and alpha from 0 to 1; opaque black if it isn't valid hex.
     pub fn rgba(&self) -> [f32; 4] {
         parse_hex(&self.color).unwrap_or([0.0, 0.0, 0.0, 1.0])
     }
@@ -202,6 +239,7 @@ impl Config {
         }
     }
 
+    /// The value saved for `param`, else its default.
     pub fn value(&self, param: &Param) -> f32 {
         self.values
             .get(&param.key)
@@ -209,6 +247,8 @@ impl Config {
             .unwrap_or(param.default)
     }
 
+    /// The color saved for `param` as red, green, blue and alpha from 0 to 1, else its default,
+    /// else opaque black.
     pub fn color(&self, param: &ColorParam) -> [f32; 4] {
         self.colors
             .get(&param.key)
@@ -244,6 +284,7 @@ impl Config {
         rows
     }
 
+    /// The effect's `values` rows with every param at its saved value.
     pub fn rows(&self, manifest: &Manifest) -> Vec<[f32; 4]> {
         self.rows_with(manifest, |param| self.value(param))
     }

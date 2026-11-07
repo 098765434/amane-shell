@@ -8,8 +8,6 @@
 //!
 //! [`Switch`]: super::Switch
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 
 use amane::{Center, Rectangle, Size};
@@ -30,6 +28,7 @@ pub struct Checkbox {
 }
 
 impl Checkbox {
+    /// A checkbox, checked or not, with no label and a click that does nothing yet.
     pub fn new(id: impl Into<String>, checked: bool) -> Self {
         Self {
             id: id.into(),
@@ -58,6 +57,7 @@ impl Checkbox {
         self
     }
 
+    /// The box, and its label if it has one.
     pub fn build(self) -> Rectangle {
         let side = px(16.0);
         let fill = crossfade(

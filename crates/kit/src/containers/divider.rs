@@ -4,14 +4,13 @@
 //! line in `sys.color.separator`, with `gap.xs` of room above and below it,
 //! or M3's vertical divider between groups in a row ([`Divider::vertical`]).
 
-#![allow(missing_docs)]
-
 use amane::{Color, Parent, Rectangle};
 
 use crate::layout::pad;
 use crate::material;
 use crate::tokens::sys;
 
+/// A hairline between groups of content, across or ([`Divider::vertical`]) up and down.
 pub struct Divider;
 
 impl Divider {
@@ -20,6 +19,7 @@ impl Divider {
         sys::border::hairline() + 2.0 * sys::space::gap::xs()
     }
 
+    /// A full-width hairline with `gap.xs` of room above and below, [`Divider::height`] tall.
     pub fn build() -> Rectangle {
         Rectangle::new()
             .width(Parent)

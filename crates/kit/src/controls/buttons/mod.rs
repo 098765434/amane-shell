@@ -19,8 +19,6 @@
 //! motion, live here in tables keyed by each control's `id`. Ids must
 //! therefore be unique and stable, like a `ScrollArea`'s.
 
-#![allow(missing_docs)]
-
 mod checkbox;
 mod drawn_button;
 mod icon_button;
@@ -156,11 +154,13 @@ impl<K> ButtonBuilder<K> {
         }
     }
 
+    /// How much it stands out: filled, tonal, plain or destructive.
     pub fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
     }
 
+    /// Round (a capsule) or square (the control size's corners).
     pub fn shape(mut self, shape: Shape) -> Self {
         self.shape = shape;
         self
@@ -174,6 +174,7 @@ impl<K> ButtonBuilder<K> {
         self
     }
 
+    /// Its height; `sys.size.control.height` by default.
     pub fn height(mut self, height: impl Into<Size>) -> Self {
         self.height = height.into();
         self
@@ -296,11 +297,12 @@ fn label_row(
 }
 
 /// A click's new state, shown before the service agrees, until it does or
-/// [`PENDING_TIMEOUT`] passes.
+/// `PENDING_TIMEOUT` (1.5 seconds) passes.
 #[derive(Clone, Copy)]
 pub struct Pending<T>(Option<(T, Instant)>);
 
 impl<T: Copy + PartialEq> Pending<T> {
+    /// Nothing pending: show what the service says.
     pub const NONE: Self = Self(None);
 
     /// What to show while the service says `actual`.
@@ -313,6 +315,8 @@ impl<T: Copy + PartialEq> Pending<T> {
         self.0.map_or(actual, |(wanted, _)| wanted)
     }
 
+    /// A click asked for `wanted` at `now`: show it until the service agrees or the wait runs
+    /// out.
     pub fn set(&mut self, wanted: T, now: Instant) {
         self.0 = Some((wanted, now));
     }
@@ -407,6 +411,7 @@ pub fn hover(id: &str, inside: bool) {
     });
 }
 
+/// Whether the pointer is over the button `id`, as [`hover`] last recorded.
 pub fn hovered(id: &str) -> bool {
     HOVERED.with_borrow(|hovered| hovered.iter().any(|h| h == id))
 }
@@ -508,9 +513,13 @@ fn swallowed() -> bool {
 /// is optional too.
 #[derive(Clone, Default)]
 pub struct Actions {
+    /// The left button's click.
     pub press: Option<Rc<dyn Fn()>>,
+    /// The right button's click, usually a menu.
     pub secondary: Option<Rc<dyn Fn()>>,
+    /// The middle button's click, a shortcut.
     pub middle: Option<Rc<dyn Fn()>>,
+    /// A wheel or touchpad scroll over it.
     pub scroll: Option<Rc<dyn Fn(Scroll)>>,
 }
 

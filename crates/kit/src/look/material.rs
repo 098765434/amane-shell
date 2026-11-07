@@ -19,8 +19,6 @@
 //! every material; the contrast floors check each against
 //! each tint (`tokens::lint`). See `docs/design-system/materials.md`.
 
-#![allow(missing_docs)]
-
 use std::cell::Cell;
 
 use amane::{BlurShape, Color, Rectangle};
@@ -86,10 +84,15 @@ pub enum Variant {
 /// How opaque a material's tint is, thinnest first.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Thickness {
+    /// The faintest tint, for media's clear glass.
     UltraThin,
+    /// For small controls over content.
     Thin,
+    /// For menus, popovers and sidebars.
     Regular,
+    /// For large glass that holds text, tooltips and windows.
     Thick,
+    /// The most opaque tint, for grouped content inside a material.
     UltraThick,
     /// The status bar's.
     Bar,
@@ -108,17 +111,22 @@ pub enum Blending {
 /// What a [`Material`] is made of.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Spec {
+    /// Glass or standard.
     pub family: Family,
+    /// How opaque its tint is.
     pub thickness: Thickness,
     /// Turns light or dark with its backdrop, as small glass does.
     pub adaptive: bool,
+    /// What it frosts: what's behind the window, or what the window drew below.
     pub blending: Blending,
 }
 
 /// Label levels, most contrast first.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Level {
+    /// Titles and body text: the most contrast.
     Primary,
+    /// Subtitles and supporting text.
     Secondary,
     /// Inactive things, where legibility matters less.
     Tertiary,
@@ -129,14 +137,17 @@ pub enum Level {
 /// Fill levels, for controls and rows on a material.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FillLevel {
+    /// The most opaque fill.
     Primary,
+    /// A fainter fill, the one most controls take.
     Secondary,
+    /// The faintest fill.
     Tertiary,
 }
 
 impl Thickness {
     /// The tint at this thickness, at the glass level
-    /// ([`glass_region::level`]).
+    /// (`glass_region::level`).
     pub fn tint(self) -> Color {
         glass_region::level(self.token())
     }
@@ -198,6 +209,7 @@ pub fn current() -> Option<Material> {
 }
 
 impl Material {
+    /// Every material, for tools and tests that go through them all.
     pub const ALL: [Material; 13] = [
         Self::Control,
         Self::Banner,
@@ -214,6 +226,8 @@ impl Material {
         Self::Content,
     ];
 
+    /// What the material is made of: its family, tint thickness, whether it adapts to its
+    /// backdrop, and what it frosts.
     pub fn spec(self) -> Spec {
         use Blending::*;
         use Family::*;

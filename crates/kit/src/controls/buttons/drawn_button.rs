@@ -4,8 +4,6 @@
 //! pip in the status bar: it gets the same shapes, hover, highlight and
 //! clicks as the other buttons, and draws in whatever colour they settle on.
 
-#![allow(missing_docs)]
-
 use amane::{Color, Rectangle};
 
 use super::{ButtonBuilder, Shape, Style};
@@ -37,6 +35,7 @@ impl DrawnButton {
         self
     }
 
+    /// The button, its content drawn in the color its style and state settle on.
     pub fn build(mut self) -> Rectangle {
         let draw = self.kind.draw.take().expect("built once");
         let content = draw(self.fg());

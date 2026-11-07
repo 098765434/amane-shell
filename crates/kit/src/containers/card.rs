@@ -8,10 +8,8 @@
 //! [`glass`](crate::glass) when asked. M3's elevated card is left out:
 //! there's no `sys.shadow` role yet.
 //!
-//! A card records where the pointer is over it ([`layout::cursor`]), so a
+//! A card records where the pointer is over it ([`layout::cursor`](crate::layout::cursor)), so a
 //! right-click on its content can anchor a menu.
-
-#![allow(missing_docs)]
 
 use amane::{Color, Column, Parent, Rectangle, Widget};
 
@@ -43,6 +41,7 @@ pub struct Card {
 }
 
 impl Card {
+    /// A filled card on `Material::Popover` holding `content`, inset by `sys.space.inset.l`.
     pub fn new(content: Vec<Box<dyn Widget>>) -> Self {
         Self {
             content,
@@ -64,6 +63,7 @@ impl Card {
         self
     }
 
+    /// Filled or outlined; filled by default.
     pub fn variant(mut self, variant: Variant) -> Self {
         self.variant = variant;
         self
@@ -90,13 +90,13 @@ impl Card {
         self
     }
 
-    /// The corners; `sys.radius.popover` by default.
     /// An outlined card's hairline in place of the material's separator.
     pub fn stroke(mut self, stroke: Color) -> Self {
         self.stroke = Some(stroke);
         self
     }
 
+    /// The corner radius in logical pixels; `sys.radius.popover` by default.
     pub fn radius(mut self, radius: f32) -> Self {
         self.radius = radius;
         self
@@ -114,6 +114,7 @@ impl Card {
         self
     }
 
+    /// The card, filling its parent.
     pub fn build(self) -> Rectangle {
         let mut card = Rectangle::new()
             .width(Parent)

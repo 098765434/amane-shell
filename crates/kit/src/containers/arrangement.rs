@@ -11,8 +11,6 @@
 //! the area, so the screen moving under the pointer never changes what the
 //! pointer is measured against.
 
-#![allow(missing_docs)]
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -27,14 +25,21 @@ use crate::tokens::{Styled, sys};
 /// A screen where it sits, in logical pixels.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Screen {
+    /// The name shown in its middle.
     pub label: String,
+    /// Its left edge.
     pub x: i32,
+    /// Its top edge.
     pub y: i32,
+    /// Its width, at least 1.
     pub width: i32,
+    /// Its height, at least 1.
     pub height: i32,
 }
 
 impl Screen {
+    /// A screen named `label` with its top-left at `x`, `y`; a width or height under 1 becomes
+    /// 1.
     pub fn new(label: impl Into<String>, x: i32, y: i32, width: i32, height: i32) -> Self {
         Self {
             label: label.into(),
@@ -63,6 +68,7 @@ thread_local! {
 /// How far a press must travel before it's a drag, not a pick.
 const SLOP: f32 = 3.0;
 
+/// Screens drawn where they sit, scaled to fit an area, to pick and drag into place.
 pub struct Arrangement {
     id: String,
     screens: Vec<Screen>,
@@ -87,11 +93,13 @@ impl Arrangement {
         }
     }
 
+    /// The screen drawn in the accent, by index; `None` for none.
     pub fn selected(mut self, index: Option<usize>) -> Self {
         self.selected = index;
         self
     }
 
+    /// Runs with a screen's index when a press picks it.
     pub fn on_select(mut self, select: impl Fn(usize) + 'static) -> Self {
         self.on_select = Rc::new(select);
         self
@@ -104,6 +112,7 @@ impl Arrangement {
         self
     }
 
+    /// The area with its screens, the size given to [`new`](Self::new).
     pub fn build(self) -> Rectangle {
         let fit = Fit::new(&self.screens, self.width, self.height);
         let held = HELD.with_borrow(|held| held.get(&self.id).copied());

@@ -5,14 +5,12 @@
 //! draws a thin rim lit from the top-left, a fainter catch on the far edge
 //! and a soft bloom inside the lit edge, and an inner shadow adds an even
 //! glow. The drop shadow under a surface is niri's
-//! ([`layer_rules`](crate::tokens::layer_rules)): each surface is only as big
+//! (the shell's `tokens::layer_rules`): each surface is only as big
 //! as its card, so a shadow drawn here would be cut off.
 //!
 //! A surface holding many glass pieces (Quick Settings' modules) lights
 //! them all in one pass ([`rims`]): a shader pass costs the same whatever
 //! it covers, and one per module cost more than a frame.
-
-#![allow(missing_docs)]
 
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
@@ -86,11 +84,17 @@ pub fn apply(surface: Rectangle, radius: f32) -> Rectangle {
 /// how round, and how far it has faded in.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Rim {
+    /// Its left edge on the surface, in logical pixels.
     pub x: f32,
+    /// Its top edge on the surface, in logical pixels.
     pub y: f32,
+    /// Its width in logical pixels.
     pub width: f32,
+    /// Its height in logical pixels.
     pub height: f32,
+    /// Its corner radius in logical pixels.
     pub radius: f32,
+    /// How far it has faded in, 0 to 1.
     pub opacity: f32,
 }
 

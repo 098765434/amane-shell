@@ -6,8 +6,6 @@
 //! showing it lets its window rest. Where motion is reduced its spokes stay
 //! put and the whole spinner breathes instead.
 
-#![allow(missing_docs)]
-
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
@@ -70,6 +68,7 @@ pub struct Spinner {
 }
 
 impl Spinner {
+    /// A spinner `size` logical pixels across, in the secondary label's color.
     pub fn new(size: f32) -> Self {
         Self { size, color: None }
     }
@@ -80,6 +79,7 @@ impl Spinner {
         self
     }
 
+    /// The spinner at its current step; building it asks for the next step.
     pub fn build(self) -> Rectangle {
         next_step();
         let step = step();
@@ -133,6 +133,7 @@ pub struct ProgressBar {
 }
 
 impl ProgressBar {
+    /// A bar `width` logical pixels long, filled to `fraction` (kept to 0..1).
     pub fn new(fraction: f32, width: f32) -> Self {
         Self {
             fraction: fraction.clamp(0.0, 1.0),
@@ -140,6 +141,7 @@ impl ProgressBar {
         }
     }
 
+    /// The track, 6 logical pixels tall, with its fill.
     pub fn build(self) -> Rectangle {
         const HEIGHT: f32 = 6.0;
         let filled =
