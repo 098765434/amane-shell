@@ -27,15 +27,14 @@ fn main_window() -> amane::Window {
 
 ## Docs
 
-- [Controls](../../docs/kit/controls.md): buttons, switch, checkbox, radio, dropdown and control sizes.
+- [Controls](../../docs/kit/controls.md): buttons, switch, checkbox, radio, dropdown, menu, stepper and
+  control sizes; `cargo run -p amane-kit --example controls` shows them all.
 - [Components](../../docs/kit/components.md): card, list, slider, dialog, scroll view and the other
   building blocks, and the modules under them.
 - [App scaffolding](../../docs/kit/app.md): `app`, `app_window`, text fields and the sidebar.
 - [Motion](../../docs/kit/motion.md): the springs, keyed list motion, `Kinetic` and `Pager`.
 - [Colour picker](../../docs/kit/color-picker.md): a colour from a square, a hue strip or hex, and
   the HSV helpers.
-- [Lists](../../docs/kit/lists-m3.md): `lists` in the shell's, M3's and M3 Expressive's styles, and
-  where each number comes from.
 - [Shader Lab looks](../../docs/kit/lab.md): a saved look from the Shader Lab, put on a rectangle.
 - [Design tokens](../../docs/design-system/tokens.md), [materials](../../docs/design-system/materials.md):
   how the tokens are made in Penpot and read, and the glass every surface is made of.
