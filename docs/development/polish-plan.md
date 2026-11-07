@@ -132,6 +132,14 @@ graph TD
 - **Delete unused public items:** `ListItem::leading_tile_accent`, `Launcher::keys_for`.
 - **`pad_x(l, r)`:** a helper beside `layout::pad`, for the ~12 hand-built `Padding {..}`.
 
+**Status (2026-11-07).** Done (shell `1505a3b`, `6366dcd`, and the `pad_x` commit after them).
+- **Done as planned:** `Actions::press`, one hover layer and one fade, one `DISABLED_OPACITY` (0.4), the checkbox's and radio's one mark, named timings, the dead items, `Stepper::new(impl AsRef<str>)`, `pad_x`.
+- **Kept, on a second look:**
+  - **`look/style.rs`'s aliases:** they are the form controls' vocabulary, written once; inlining them would spread `material::label(Level::Primary)` and the like over about 110 call sites.
+  - **One `pressable` row for the list, the form row, the app sidebar and the menu:** they share only the last three lines. Each has its own fill, hover colour and radius, so a helper would save little and hide more.
+  - **The round glyph buttons as an `IconButton` variant:** the pop-up, nav and stepper buttons are drawn in the form controls' look, which `IconButton` isn't. Folding them would change how Shell Settings looks.
+  - **`NavButtons`' `back_enabled`/`forward_enabled`:** it has two sides, and one `disabled(bool)` can't say which.
+
 ## Phase 3: Layout, motion and container primitives (M)
 
 **Layout:**
