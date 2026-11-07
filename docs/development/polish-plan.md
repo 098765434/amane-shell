@@ -216,6 +216,20 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 - **`RowSpec { id, title, words }` constants:** pages build their rows from them (`FormRow::spec(&ACCENT)`), and search iterates the same constants. The 63 copied rows in `search.rs` and the source-grepping drift test (`search.rs:732`) go. A structural test replaces it: every spec is reachable and every page has its rows.
 - **Size:** about 400 lines less, and adding a page touches one place.
 
+**Status (2026-11-07).** Done, in a lighter form than planned where the plan's form would have cost readability.
+- **4a, the IPC:**
+  - A `words!` macro spells each keyword enum once, both ways, and `handlers![…]` makes the shell's handler table.
+  - **Not done: a table generating `parse` and `to_lines` whole.** The grammar has defaults, optional and trailing arguments, and lenient forms (`dnd` alone, `close` only without a mode). A macro that covered them would be harder to read than the two matches, which the `LINES` round-trip test already holds together.
+- **4b, choices:**
+  - `settings_file!` replaces the eleven `Settings` impls and their accessors.
+  - `Dropdown::choice(id, options, now, pick)` takes `(label, value)` pairs, which serves both the enums' `ALL` and the hand-made tables. So no `Choice` trait was needed.
+  - `SeenFile<T>` went in Phase 1, as `remember_named`.
+- **4c, Quick Settings:** `controls::SPECS`, with `ControlId` in its order. A page's availability is its control's.
+- **4d, Shell Settings:**
+  - `pages::SIDEBAR` holds each page once; the search index builds its page entries from it.
+  - One visible change: the search shows the shell's About page under its sidebar title, "About", rather than "About Shell Settings".
+  - **Not done: `RowSpec`.** The 63 rows the index copies from the pages still have their own titles there, and the source-grepping test still checks them. Moving every page's rows onto shared constants is a change to each page; it fits best with Phase 6's form helpers.
+
 ## Phase 5: Service helpers, and the idle bug (M)
 
 - **`ServiceExt` (in the kit, no amane change):**
