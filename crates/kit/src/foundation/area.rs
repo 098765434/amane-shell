@@ -46,6 +46,17 @@ impl Area {
     }
 }
 
+impl amane::Blend for Area {
+    fn blend(from: Self, to: Self, amount: f32) -> Self {
+        Self::new(
+            f32::blend(from.x, to.x, amount),
+            f32::blend(from.y, to.y, amount),
+            f32::blend(from.width, to.width, amount),
+            f32::blend(from.height, to.height, amount),
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

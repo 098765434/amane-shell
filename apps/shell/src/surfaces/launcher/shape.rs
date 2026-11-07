@@ -24,31 +24,14 @@ const TOP: f32 = 0.2;
 /// The least room between the glass and the screen's edges.
 const MARGIN: f32 = 16.0;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub(super) struct Rect {
-    pub(super) x: f32,
-    pub(super) y: f32,
-    pub(super) width: f32,
-    pub(super) height: f32,
-}
-
-impl Blend for Rect {
-    fn blend(from: Self, to: Self, amount: f32) -> Self {
-        Self {
-            x: f32::blend(from.x, to.x, amount),
-            y: f32::blend(from.y, to.y, amount),
-            width: f32::blend(from.width, to.width, amount),
-            height: f32::blend(from.height, to.height, amount),
-        }
-    }
-}
+pub(super) use amane_kit::area::Area;
 
 /// The glass this moment, in the surface's coordinates.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub(super) struct Geometry {
-    pub(super) sheet: Rect,
+    pub(super) sheet: Area,
     pub(super) radius: f32,
-    pub(super) circles: [Rect; 4],
+    pub(super) circles: [Area; 4],
     /// How much the mode buttons show: 1 beside the pill, 0 gone.
     pub(super) circles_shown: f32,
 }
@@ -57,10 +40,10 @@ impl Blend for Geometry {
     fn blend(from: Self, to: Self, amount: f32) -> Self {
         let mut circles = to.circles;
         for (at, circle) in circles.iter_mut().enumerate() {
-            *circle = Rect::blend(from.circles[at], to.circles[at], amount);
+            *circle = Area::blend(from.circles[at], to.circles[at], amount);
         }
         Self {
-            sheet: Rect::blend(from.sheet, to.sheet, amount),
+            sheet: Area::blend(from.sheet, to.sheet, amount),
             radius: f32::blend(from.radius, to.radius, amount),
             circles,
             circles_shown: f32::blend(from.circles_shown, to.circles_shown, amount),
@@ -84,7 +67,7 @@ pub(super) fn target(screen: (f32, f32), size: (f32, f32), compact: bool) -> Geo
     let (width, height) = if compact { (PILL_W, PILL_H) } else { size };
     // the top stays put as the pill grows, unless the panel wouldn't fit
     let top = (screen_h * TOP).min(screen_h - height - MARGIN).max(MARGIN);
-    let sheet = Rect {
+    let sheet = Area {
         x: ((screen_w - width) / 2.0).max(0.0),
         y: top,
         width,
@@ -93,20 +76,20 @@ pub(super) fn target(screen: (f32, f32), size: (f32, f32), compact: bool) -> Geo
 
     let pill_x = ((screen_w - PILL_W) / 2.0).max(0.0);
     let pill_top = (screen_h * TOP).min(screen_h - PILL_H - MARGIN).max(MARGIN);
-    let mut circles = [Rect::default(); 4];
+    let mut circles = [Area::default(); 4];
     let beside = fits_beside(screen_w);
     let row = 4.0 * CIRCLE + 3.0 * CIRCLE_GAP;
     for (at, circle) in circles.iter_mut().enumerate() {
         let along = at as f32 * (CIRCLE + CIRCLE_GAP);
         *circle = if beside {
-            Rect {
+            Area {
                 x: pill_x + PILL_W + CIRCLE_GAP + along,
                 y: pill_top,
                 width: CIRCLE,
                 height: CIRCLE,
             }
         } else {
-            Rect {
+            Area {
                 x: (screen_w - row) / 2.0 + along,
                 y: pill_top + PILL_H + CIRCLE_GAP,
                 width: CIRCLE,
@@ -126,8 +109,8 @@ pub(super) fn target(screen: (f32, f32), size: (f32, f32), compact: bool) -> Geo
 impl Geometry {
     /// The sheet as it's drawn: never smaller than the pill, nor rounder
     /// than half its height, whatever the spring overshoots to.
-    pub(super) fn drawn(self) -> (Rect, f32) {
-        let sheet = Rect {
+    pub(super) fn drawn(self) -> (Area, f32) {
+        let sheet = Area {
             width: self.sheet.width.max(PILL_H),
             height: self.sheet.height.max(PILL_H),
             ..self.sheet
@@ -211,7 +194,7 @@ mod tests {
     #[test]
     fn the_drawn_sheet_never_turns_inside_out() {
         let squashed = Geometry {
-            sheet: Rect {
+            sheet: Area {
                 x: 0.0,
                 y: 0.0,
                 width: 600.0,
