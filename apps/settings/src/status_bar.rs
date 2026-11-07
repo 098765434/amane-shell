@@ -44,28 +44,22 @@ const STYLES: [(&str, BarStyle); 4] = [
 pub fn page() -> Column {
     let now = status_bar().clone();
 
-    let position = Dropdown::new(
+    let position = Dropdown::choice(
         "settings.bar.position",
-        POSITIONS.map(|(label, _)| String::from(label)).to_vec(),
-        POSITIONS
-            .iter()
-            .position(|(_, position)| *position == now.position)
-            .unwrap_or(0),
+        POSITIONS,
+        now.position,
+        |position| change_status_bar(|now| now.position = position),
     )
     .width(200.0)
-    .on_select(|index| change_status_bar(|now| now.position = POSITIONS[index].1))
     .build();
 
-    let size = Dropdown::new(
+    let size = Dropdown::choice(
         "settings.bar.size",
-        BarSize::ALL.map(|size| String::from(size.label())).to_vec(),
-        BarSize::ALL
-            .iter()
-            .position(|size| *size == now.size)
-            .unwrap_or(0),
+        BarSize::ALL.map(|size| (size.label(), size)),
+        now.size,
+        |size| change_status_bar(|now| now.size = size),
     )
     .width(200.0)
-    .on_select(|index| change_status_bar(|now| now.size = BarSize::ALL[index]))
     .build();
 
     let hiding = [
@@ -74,16 +68,13 @@ pub fn page() -> Column {
         "On the desktop only",
         "In full screen only",
     ];
-    let auto_hide = Dropdown::new(
+    let auto_hide = Dropdown::choice(
         "settings.bar.auto-hide",
-        hiding.map(String::from).to_vec(),
-        AutoHide::ALL
-            .iter()
-            .position(|mode| *mode == now.auto_hide)
-            .unwrap_or(0),
+        hiding.into_iter().zip(AutoHide::ALL),
+        now.auto_hide,
+        |mode| change_status_bar(|now| now.auto_hide = mode),
     )
-    .width(200.0)
-    .on_select(|index| change_status_bar(|now| now.auto_hide = AutoHide::ALL[index]));
+    .width(200.0);
 
     let width = crate::page_width() - 2.0 * style::row_pad_h();
     let mut styles = ThumbnailPicker::new("settings.bar.style", previews::WIDTH, previews::HEIGHT)
@@ -242,34 +233,28 @@ fn clock() -> Column {
     .option(previews::clock(true), "Analog");
     let styles_height = styles.height();
 
-    let show_date = Dropdown::new(
+    let show_date = Dropdown::choice(
         "settings.bar.show-date",
         ["When space allows", "Always", "Never"]
-            .map(String::from)
-            .to_vec(),
-        ShowDate::ALL
-            .iter()
-            .position(|when| *when == now.show_date)
-            .unwrap_or(2),
+            .into_iter()
+            .zip(ShowDate::ALL),
+        now.show_date,
+        |when| change_status_bar(|now| now.show_date = when),
     )
-    .width(200.0)
-    .on_select(|index| change_status_bar(|now| now.show_date = ShowDate::ALL[index]));
+    .width(200.0);
 
     let dates = [
         "Sunday 25 October",
         "Sun 25 Oct",
         "Numbers, as the locale has them",
     ];
-    let date_format = Dropdown::new(
+    let date_format = Dropdown::choice(
         "settings.bar.date",
-        dates.map(String::from).to_vec(),
-        DateFormat::ALL
-            .iter()
-            .position(|format| *format == now.date_format)
-            .unwrap_or(0),
+        dates.into_iter().zip(DateFormat::ALL),
+        now.date_format,
+        |format| change_status_bar(|now| now.date_format = format),
     )
-    .width(240.0)
-    .on_select(|index| change_status_bar(|now| now.date_format = DateFormat::ALL[index]));
+    .width(240.0);
 
     groups(vec![
         group().row(

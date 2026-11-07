@@ -18,16 +18,13 @@ pub fn page() -> Column {
     let (least, most) = DOCK_ICON_SIZES;
     let span = f32::from(most - least);
     let at = ((f32::from(now.icon_size.clamp(least, most) - least) / span) * 100.0).round() as u8;
-    let magnify = Dropdown::new(
+    let magnify = Dropdown::choice(
         "settings.dock.magnify",
-        MAGNIFY.map(String::from).to_vec(),
-        Magnify::ALL
-            .iter()
-            .position(|amount| *amount == now.magnification)
-            .unwrap_or(0),
+        MAGNIFY.into_iter().zip(Magnify::ALL),
+        now.magnification,
+        |amount| change_dock(|now| now.magnification = amount),
     )
     .width(200.0)
-    .on_select(|index| change_dock(|now| now.magnification = Magnify::ALL[index]))
     .build();
 
     let switch = |id: &str, title: &str, on: bool, set: fn(&mut Dock, bool)| {

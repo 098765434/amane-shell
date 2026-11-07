@@ -47,6 +47,27 @@ impl Dropdown {
         )
     }
 
+    /// A choice among `options`, each what it says and the value it picks,
+    /// showing `now`'s (the first's if none is `now`); choosing one hands
+    /// its value to `pick`.
+    pub fn choice<T: Copy + PartialEq + 'static>(
+        id: impl Into<String>,
+        options: impl IntoIterator<Item = (impl Into<String>, T)>,
+        now: T,
+        pick: impl Fn(T) + 'static,
+    ) -> Self {
+        let (labels, values): (Vec<String>, Vec<T>) = options
+            .into_iter()
+            .map(|(label, value)| (label.into(), value))
+            .unzip();
+        let selected = values.iter().position(|value| *value == now).unwrap_or(0);
+        Self::new(id, labels, selected).on_select(move |index| {
+            if let Some(value) = values.get(index) {
+                pick(*value);
+            }
+        })
+    }
+
     /// Options with glyphs before or after their text; `selected` may be
     /// none, which shows [`fallback`](Self::fallback).
     pub fn items(id: impl Into<String>, items: Vec<MenuItem>, selected: Option<usize>) -> Self {

@@ -118,17 +118,17 @@ pub fn page() -> Column {
         .on_toggle(|on| change_appearance(|now| now.vibrancy = on))
         .build();
 
-    let motions = [None, Some(true), Some(false)];
-    let motion_control = Dropdown::new(
+    let motion_control = Dropdown::choice(
         "settings.motion",
-        ["Automatic", "Reduced", "Full"].map(String::from).to_vec(),
-        motions
-            .iter()
-            .position(|choice| *choice == reduce_motion)
-            .unwrap_or(0),
+        [
+            ("Automatic", None),
+            ("Reduced", Some(true)),
+            ("Full", Some(false)),
+        ],
+        reduce_motion,
+        |choice| change_appearance(|now| now.reduce_motion = choice),
     )
     .width(180.0)
-    .on_select(move |index| change_appearance(|now| now.reduce_motion = motions[index]))
     .build();
 
     let saved = accent.as_deref().map(|hex| {
