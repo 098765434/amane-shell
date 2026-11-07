@@ -9,7 +9,7 @@ This plan turns amane-shell and its forks (amane, niri, vello) into one delibera
 | niri (`niri/`) | ocbk | `16384e00` | 2 commits ahead of origin, not pushed |
 | vello (`vello/`) | ocbk | `46585523` | |
 
-After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`).
+After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`). After Phase 3, shell `main` pins amane `292d486`.
 
 ## Ground rules
 
@@ -396,6 +396,19 @@ The list to work from is [docs/development/macos-references.md](docs/development
 - Shell Settings search still finds the pages by their new words.
 
 **Risks.** Low. Search aliases and the assistant's phrases are behaviour: re-run the assistant's tests, and check search by hand. The Penpot font change alters text metrics; look at the bar, dock and Shell Settings after the switch.
+
+**Status (2026-11-07).** Done. Shell `main` pins amane `292d486`; niri `ocbk` carries the reword as `fixup!` commits.
+- **The lint.** `scripts/lint-terms` runs in the shell's CI on every tracked file. In each fork's CI it runs with `--diff fork-base` (amane) or `--diff v26.04` (niri), so it checks only the lines the fork added.
+  - What it lets through is listed in `scripts/lint-terms.allow`: `ROADMAP.md`, `Cargo.lock`, and the identifiers left for Phase 8 (`macform`, the `mac::` alias, `show_in_spotlight`, the `spotlight` page id and widget ids).
+  - Lines kept for compatibility carry a `lint-terms: allow` marker, such as Shell Settings still accepting `spotlight` as a page name.
+  - `docs/development/macos-references.md` is deleted.
+- **Names.**
+  - Live Activities are **Activities**.
+  - Shell Settings' Spotlight page is the **Launcher** page, and the launcher's placeholder is "Search".
+  - Drop is "a drop shelf".
+- **The font** was already Atkinson Hyperlegible Next in `tokens.json`. Only two tests still named the old one.
+- **niri.** The reword is in 12 `fixup!` commits on `ocbk` (11 for text, 1 for the CI lint step), which Phase 5's autosquash folds into their feature commits. Two of the commits they fix have Apple terms in their subjects (`ada326f0` and `78620a8c`), so Phase 5 should reword those subjects as it squashes.
+- **The assistant's training phrases** are reworded; the shipped model is unchanged until the next retrain.
 
 ---
 
