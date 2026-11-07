@@ -4,6 +4,10 @@ What amane-shell relies on from the repositories it is built with, and the oldes
 each that has it. Read this before a rebase of either fork, or before changing an interface the
 shell or its apps use: if a row changes, the shell changes with it.
 
+amane's revisions are on its history as rebased onto upstream on 2026-11-07 (amane-shell's
+Phase 12). The commits from before that rebase, which older shell commits pin, are kept on
+amane's `ocbk-pre-tidy` branch.
+
 The pins live in two places:
 
 | Repository | Pinned in | Checked by |
@@ -57,15 +61,15 @@ enough to follow.
 
 | Interface | Used for | Checked at |
 |---|---|---|
-| `amane::niri` (`features()`, `outputs()`, `windows()`, `focused_window()`, the actions `focus_window`, `switch_keyboard_layout`, `power_off_monitors`, `quit`, `set_output_mode`, `stop_cast`), `Timer`, `Service::subscribe`, `Launch` | the shell's niri calls, timers and services following each other ([services.md](services.md#while-idle)) | `808b695` |
-| `amane::niri::set_output` with `OutputChange`, `Transform`, `Output`'s serial, size and VRR, `follow_config_loads` | Shell Settings' Displays page, and the shell keeping the HDR white across a config read | `9d5fb6f` |
-| `Rfkill`, `Logind`, `ClipboardWatcher`, `LockKeys`, `Casts`, `Outputs`, `Network::profiles` / `wired` / `activate` / `deactivate` / `set_device` | airplane mode, the clock and Keep Awake waking from sleep, clipboard history, the OSD, privacy, the refresh rate on battery, the wired, VPN and hotspot tiles | `e7bf47a` |
-| `protocols/niri-*.xml` | the client side of the three niri protocols above, kept identical to niri's | all three as niri has them since `292d486` |
-| `Service` and its services: `Battery`, `Apps`, `Bluetooth`, `Windows`, `Workspaces`, `Brightness`, `PowerProfile`, `Notifications`, `Audio`, `Network`, `Media`, `Lock`, `Idle`, `Tray`, `WorkspaceSwitch`, `FocusedField`, `Desktop`, `Appearance`, `Polkit` (the `polkit-agent` feature), `Overview`, `MimeApps`, `Memory`, `Cpu`, `Backdrop` | everything the bar, Quick Settings and the apps show ([services.md](services.md)) | `e7bf47a` |
-| `ServiceError`, `ErrorKind`, `run_in_order`, `Service::watched_within`, `Service::peek`, `IDLE_STOP`, `Network::operation` / `failure` | failures the UI words and times, and the services in `amane-phone` and `amane-status` | `e7bf47a` |
-| `Config<T>` | settings files, watched and written atomically | `808b695` |
-| `spawn`, `spawn_activated` | launching apps with an activation token | `808b695` |
-| popups, `open_popup`, `close_window`, windows, the quad and vello renderers, `material_available`, `blur_fades` | every surface | `808b695` |
+| `amane::niri` (`features()`, `outputs()`, `windows()`, `focused_window()`, the actions `focus_window`, `switch_keyboard_layout`, `power_off_monitors`, `quit`, `set_output_mode`, `stop_cast`), `Timer`, `Service::subscribe`, `Launch` | the shell's niri calls, timers and services following each other ([services.md](services.md#while-idle)) | `bc6d503` |
+| `amane::niri::set_output` with `OutputChange`, `Transform`, `Output`'s serial, size and VRR, `follow_config_loads` | Shell Settings' Displays page, and the shell keeping the HDR white across a config read | `3b26f5e` |
+| `Rfkill`, `Logind`, `ClipboardWatcher`, `LockKeys`, `Casts`, `Outputs`, `Network::profiles` / `wired` / `activate` / `deactivate` / `set_device` | airplane mode, the clock and Keep Awake waking from sleep, clipboard history, the OSD, privacy, the refresh rate on battery, the wired, VPN and hotspot tiles | `224ba58` |
+| `protocols/niri-*.xml` | the client side of the three niri protocols above, kept identical to niri's | all three as niri has them since `6ac64aa` |
+| `Service` and its services: `Battery`, `Apps`, `Bluetooth`, `Windows`, `Workspaces`, `Brightness`, `PowerProfile`, `Notifications`, `Audio`, `Network`, `Media`, `Lock`, `Idle`, `Tray`, `WorkspaceSwitch`, `FocusedField`, `Desktop`, `Appearance`, `Polkit` (the `polkit-agent` feature), `Overview`, `MimeApps`, `Memory`, `Cpu`, `Backdrop` | everything the bar, Quick Settings and the apps show ([services.md](services.md)) | `224ba58` |
+| `ServiceError`, `ErrorKind`, `run_in_order`, `Service::watched_within`, `Service::peek`, `IDLE_STOP`, `Network::operation` / `failure` | failures the UI words and times, and the services in `amane-phone` and `amane-status` | `224ba58` |
+| `Config<T>` | settings files, watched and written atomically | `bc6d503` |
+| `spawn`, `spawn_activated`, `Launch::argv(..).activated()` | launching apps with an activation token, without quoting for the shell | `742e771` |
+| popups, `open_popup`, `close_window`, windows, the quad and vello renderers, `material_available`, `blur_fades` | every surface | `bc6d503` |
 
 Apart from `amane::niri`, amane's services, not the shell or Shell Settings, talk to niri's socket. The shell runs
 no `niri msg` of its own; niri `Spawn` (`Windows::spawn`) still starts the dock's and launcher's

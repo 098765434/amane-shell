@@ -9,7 +9,7 @@ This plan turns amane-shell and its forks (amane, niri, vello) into one delibera
 | niri (`niri/`) | ocbk | `16384e00` | 2 commits ahead of origin, not pushed |
 | vello (`vello/`) | ocbk | `46585523` | |
 
-After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`). After Phase 3, shell `main` pins amane `292d486`. After Phase 4, shell `main` pins amane `112da4d`, in the new layout (`apps/shell`, `crates/`, `xtask`). After Phase 5, niri `ocbk` is `745e72d5` (history tidied; the old branch is `ocbk-pre-tidy`). After Phase 6a, shell `main` pins amane `af52270`. After Phase 11, shell `main` pins amane `9d5fb6f`.
+After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`). After Phase 3, shell `main` pins amane `292d486`. After Phase 4, shell `main` pins amane `112da4d`, in the new layout (`apps/shell`, `crates/`, `xtask`). After Phase 5, niri `ocbk` is `745e72d5` (history tidied; the old branch is `ocbk-pre-tidy`). After Phase 6a, shell `main` pins amane `af52270`. After Phase 11, shell `main` pins amane `9d5fb6f`. After Phase 12, amane and vello are rebased onto upstream `main`; the shell pins amane `387c583` and vello `8b61bd28`.
 
 ## Ground rules
 
@@ -92,7 +92,7 @@ Details and file references are in the analysis that preceded this roadmap; each
 |---|---|---|
 | **niri fork** | Compositor rendering and policy: materials, blur shapes, vibrancy, HDR and colour management, the mat, the desktop layer, gaps, the IPC additions, and a `Features` request that says which of these exist. | Names or behaviour specific to amane-shell. |
 | **vello fork** | Memory tuning only (scratch sizes, releasing idle buffers). Pinned by `rev`. | Anything else. |
-| **amane fork** | A generic shell library: Wayland, rendering, widgets, text, a complete niri client, generic system services (UPower, BlueZ, NetworkManager, logind, rfkill, tray, polkit agent mechanics, clipboard), an event-loop timer, change subscriptions, services that stop when unwatched, and launching apps in their own systemd scope. Code that needs the niri fork sits behind a `niri-fork` feature. | UI strings, display timings, `org.amane.*` interfaces, product features (phone, status apps). |
+| **amane fork** | A generic shell library: Wayland, rendering, widgets, text, a complete niri client, generic system services (UPower, BlueZ, NetworkManager, logind, rfkill, tray, polkit agent mechanics, clipboard), an event-loop timer, change subscriptions, services that stop when unwatched, and launching apps in their own systemd scope. Code that needs the niri fork checks `amane::niri::features()` at run time, so one build runs on stock niri and the fork. | UI strings, display timings, `org.amane.*` interfaces, product features (phone, status apps). |
 | **`crates/*`** in the shell repo | Libraries shared by the shell and apps: `amane-kit`, `amane-status`, `amane-phone`, `amane-nixos`, `amane-assistant`, `amane-pinentry`. | Surfaces or windows of their own. |
 | **`apps/shell`** | The surfaces and the state only the shell has. | Generic UI, generic system clients. |
 | **`apps/*`** | One app each, built on the kit. | Their own niri, IPC or process clients. |
@@ -525,7 +525,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
   - focused window;
   - `Features` (Phase 5).
 
-  Gate the fork-only fields behind a `niri-fork` feature, on by default in the shell.
+  Gate the fork-only fields behind a `niri-fork` feature, on by default in the shell. (Superseded: run-time `features()` checks, decided in Phase 12.)
 - [amane] Generic services:
   - `Rfkill`, from `/dev/rfkill` events; the Bluetooth service's rfkill writes move onto it;
   - `NetworkManager` connections over D-Bus (wired, VPN, hotspot), extending `Network`;
@@ -538,7 +538,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
   - it passes the activation token;
   - it puts the program in its own transient systemd scope (`StartTransientUnit` over D-Bus), so restarting the shell no longer kills apps started from the dock or launcher.
 
-  Keep `spawn(&str)` as a thin wrapper until Phase 10, then remove it.
+  Keep `spawn(&str)` as a thin wrapper until Phase 10, then remove it. (Superseded in Phase 12: upstream has `spawn(&str)`, so removing it would add a hunk; it stays, on `Launch`.)
 - [amane] Rustdoc (`///`) on every public item added in this phase, and a `docs/fork/` page for each new service.
 - [shell] Bump the amane rev and `outputHashes`, with no shell code changes yet.
 
@@ -823,6 +823,15 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 - CI is green; the shell runs on the new rev, with the text field, password fill, popups, gestures and glass checked live.
 
 **Risks.** High for the text-field port (password clearing is security-relevant: test fill, submit and clear by hand). Keep `ocbk-pre-tidy` until a week of use.
+
+**Status (2026-11-07).** Done in code; the live checks after the switch are yours. amane `ocbk` is `387c583`: 106 commits on upstream `main` `544cbfc` (tags `fork-base` and `fork-base-2026-11-07`; the old base is `fork-base-2026-10-16`), the old history on `ocbk-pre-tidy` (`d009e96`). vello `ocbk` is `8b61bd28`: 4 commits on upstream `main` `c161b8ae`, the old ones on `ocbk-pre-tidy`. The shell pins both.
+- **The order.** Hunk moves and `Launch::activated` first, as commits on the old base. Then the history tidy, then the rebase, resolved toward a merge of upstream made first (`rebase-reference`, local); the rebased tip's tree matches it but for one blank line. Every one of the 106 commits builds on its own (`cargo check --all-targets`).
+- **History: folded, not regrouped**, as niri's was. 136 commits became 104: the 29 docs-only ones folded into the commit before them (or into one docs commit for the reorganisation), the `ARCHITECTURE.md` and `docs/src` edits and their reset filtered out of every commit, and the KDE Connect, adb and status-item code (with `mdns-sd` and its lock entries) filtered out of every commit instead of kept with its removal. The generic pieces those commits brought stay, reworded: D-Bus `av` lists and `Bus::emit_to`, the `ScrollArea` end, a multiline input that sends with Enter, video frames. The bundled commits were split by file into popups / `Windows` and `Gestures`, and zeroized passwords / input method and secure fill; Gestures stayed with Windows, as they share `compositor/niri.rs` hunk by hunk.
+- **Hunk moves** (`docs/fork/maintaining.md` has the table): `paint.rs` 24 → 18 hunks (+764 → +77 lines), `quads/draw.rs` 11 → 6 (+566 → +31; upstream's own test is upstream's again), `quads/batch.rs` 22 → 19, `compositor/niri.rs` 22 → 17 (+628 → +229), `path.rs` 14 → 12 (+401 → +54), `dropped.rs` 38 → 34, `keyboard.rs` +165 → +103. They stay commits at the tip: folding them into the features that wrote the code meant moving them across later commits that change the same lines. `field.rs`, `font.rs`, `normal.rs` and `scroll_area/offsets.rs` are written down as fork-owned.
+- **The rebase's real work** was upstream's single submit per frame (`e2e29c9`): the fork's own submits had to join the frame's encoder (`lay_at`), the glyph atlas starting over mid-frame now submits the frame so far first (a queue's texture writes land ahead of later encoders), and the fork's GPU tests draw through a helper that submits. Upstream's direct icon lookup (`45c90da`) replaced the fork's icon index; `Apps::find_icon` keeps the theme folders once read. Upstream's password clear after submit (`f6a96b8`) wipes the field through `fields::take`, with two tests. Upstream's `text_stroke` example calls a `Text::stroke` upstream hasn't committed, so the fork removes it.
+- **vello.** Rebased onto upstream (clean, version and wgpu unchanged), docs folded in. `VELLO_SCRATCH` is gone: `vello_encoding::use_upstream_scratch`, which amane calls under `AMANE_VELLO_SCRATCH=upstream`.
+- **Launching.** `Launch::activated()` asks the compositor for a token and starts the program when it comes; `spawn_activated` rides on it. The shell's, Messages', Drop's and `amane-phone`'s launches of other programs are argv now, so the hand-quoted `xdg-open '…'` and `sh -c` words are gone. `spawn(&str)` stays: upstream has it.
+- **`niri-fork`.** Run-time `features()` checks, as Phase 6 built; the target table says so now.
 
 ---
 

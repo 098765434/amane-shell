@@ -55,7 +55,7 @@ Settings and the Shader Lab while they run.
 `Cargo.toml` carries the same patch entry as amane's, and `flake.nix` has the fork's hash in
 `outputHashes`. When amane bumps its vello, both move together.
 
-**Switching it off.** `VELLO_SCRATCH=upstream` in the shell's environment restores upstream's
+**Switching it off.** `AMANE_VELLO_SCRATCH=upstream` in the shell's environment restores upstream's
 sizes without a rebuild. An overflow is silent (the run comes out blank), so if something that
 should draw through vello shows nothing, try that first.
 
