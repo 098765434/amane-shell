@@ -102,11 +102,15 @@ fn remember(device: &str) {
     let Some(path) = file() else {
         return;
     };
-    if let Some(dir) = path.parent() {
-        let _ = std::fs::create_dir_all(dir);
+    if let Some(dir) = path.parent()
+        && let Err(error) = std::fs::create_dir_all(dir)
+    {
+        log::warn!("{}: {error}", dir.display());
     }
-    if let Ok(text) = serde_json::to_string_pretty(&known) {
-        let _ = std::fs::write(path, text);
+    if let Ok(text) = serde_json::to_string_pretty(&known)
+        && let Err(error) = std::fs::write(&path, text)
+    {
+        log::warn!("{}: {error}", path.display());
     }
 }
 

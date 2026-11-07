@@ -30,7 +30,7 @@ fn cli(args: &[String]) -> Option<ExitCode> {
             Ok(())
         }
         ["tokens", ..] => {
-            eprintln!("amane-shell: the token tools are `cargo xtask tokens …` now");
+            log::warn!("the token tools are `cargo xtask tokens …` now");
             Err(())
         }
         _ => return None,
@@ -49,13 +49,13 @@ fn cli(args: &[String]) -> Option<ExitCode> {
 fn alert_test(args: &[String]) -> String {
     let sample = amane_kit::dialog::Dialog::new("amane.alert.test", "Discard changes?")
         .message("Your changes to this document will be lost if you don't save them.")
-        .button("Cancel", || eprintln!("alert-test: cancel"));
+        .button("Cancel", || log::info!("alert-test: cancel"));
     let sample = if args.first().map(String::as_str) == Some("stacked") {
         sample
-            .destructive("Don't Save", || eprintln!("alert-test: don't save"))
-            .main_button("Save", || eprintln!("alert-test: save"))
+            .destructive("Don't Save", || log::info!("alert-test: don't save"))
+            .main_button("Save", || log::info!("alert-test: save"))
     } else {
-        sample.main_button("Discard", || eprintln!("alert-test: discard"))
+        sample.main_button("Discard", || log::info!("alert-test: discard"))
     };
     alert::show(sample);
     String::from("ok")
@@ -80,18 +80,18 @@ fn sample_menu() -> ContextMenu {
         .item(
             MenuItem::label("Nearby Share")
                 .icon(Icon::glyph("\u{E2BD}"))
-                .on_select(|| eprintln!("airdrop")),
+                .on_select(|| log::info!("airdrop")),
         )
         .item(
             MenuItem::label("Messages")
                 .icon(Icon::glyph("\u{F8E3}"))
-                .on_select(|| eprintln!("messages")),
+                .on_select(|| log::info!("messages")),
         )
         .separator()
         .item(
             MenuItem::label("Mail")
                 .icon(Icon::glyph("\u{2709}"))
-                .on_select(|| eprintln!("mail")),
+                .on_select(|| log::info!("mail")),
         );
 
     // "Code" carries a third-level submenu to exercise arbitrary nesting.
@@ -99,21 +99,24 @@ fn sample_menu() -> ContextMenu {
         .item(
             MenuItem::label("Code").submenu(
                 ContextMenu::new()
-                    .item(MenuItem::label("New Window").on_select(|| eprintln!("code: new window")))
                     .item(
-                        MenuItem::label("New Workspace").on_select(|| eprintln!("code: workspace")),
+                        MenuItem::label("New Window").on_select(|| log::info!("code: new window")),
+                    )
+                    .item(
+                        MenuItem::label("New Workspace")
+                            .on_select(|| log::info!("code: workspace")),
                     ),
             ),
         )
-        .item(MenuItem::label("Firefox").on_select(|| eprintln!("firefox")))
-        .item(MenuItem::label("Preview").on_select(|| eprintln!("preview")));
+        .item(MenuItem::label("Firefox").on_select(|| log::info!("firefox")))
+        .item(MenuItem::label("Preview").on_select(|| log::info!("preview")));
 
     ContextMenu::new()
         .item(
             MenuItem::label("Open")
                 .icon(Icon::glyph("\u{1F4C2}"))
                 .shortcut("\u{2318}O")
-                .on_select(|| eprintln!("open")),
+                .on_select(|| log::info!("open")),
         )
         .item(
             MenuItem::label("Open With")
@@ -125,7 +128,7 @@ fn sample_menu() -> ContextMenu {
             MenuItem::label("Rename")
                 .icon(Icon::glyph("\u{270F}"))
                 .shortcut("\u{21B5}")
-                .on_select(|| eprintln!("rename")),
+                .on_select(|| log::info!("rename")),
         )
         .item(
             MenuItem::label("Duplicate")
@@ -145,11 +148,12 @@ fn sample_menu() -> ContextMenu {
                 .icon(Icon::glyph("\u{1F5D1}"))
                 .shortcut("\u{2318}\u{232B}")
                 .destructive()
-                .on_select(|| eprintln!("trash")),
+                .on_select(|| log::info!("trash")),
         )
 }
 
 fn main() -> ExitCode {
+    amane_log::init("amane-shell");
     let args: Vec<String> = std::env::args().skip(1).collect();
     if let Some(code) = cli(&args) {
         return code;

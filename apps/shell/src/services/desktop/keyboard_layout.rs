@@ -11,7 +11,7 @@ pub fn switch(index: usize) {
     };
     std::thread::spawn(move || {
         if let Err(err) = amane::niri::switch_keyboard_layout(index) {
-            eprintln!("amane-shell: couldn't switch the keyboard layout: {err}");
+            log::warn!("couldn't switch the keyboard layout: {err}");
         }
     });
 }

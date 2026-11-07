@@ -10,6 +10,6 @@ pub use amane::Rfkill;
 /// Blocks every radio, or lifts every software block.
 pub fn set_airplane(on: bool) {
     if let Err(err) = Rfkill::set_blocked(None, on) {
-        eprintln!("amane-shell: couldn't switch airplane mode: {err}");
+        log::warn!("couldn't switch airplane mode: {err}");
     }
 }

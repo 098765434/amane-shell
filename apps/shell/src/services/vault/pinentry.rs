@@ -99,6 +99,7 @@ pub fn answer(id: u64, pin: Option<Zeroizing<String>>) {
 
     match asking {
         Some((asked, reply)) if asked == id => {
+            // a caller that hung up no longer wants the answer
             let _ = reply.send(match pin {
                 Some(pin) => Answer::Pin(pin),
                 None => Answer::Cancelled,
@@ -116,14 +117,16 @@ pub fn serve() {
         let listener = match listen() {
             Ok(listener) => listener,
             Err(error) => {
-                eprintln!("amane-shell: passwords: no pinentry socket: {error}");
+                log::warn!("passwords: no pinentry socket: {error}");
                 return;
             }
         };
 
         for stream in listener.incoming().flatten() {
             thread::spawn(move || {
-                let _ = answer_caller(stream);
+                if let Err(error) = answer_caller(stream) {
+                    log::warn!("passwords: pinentry caller: {error}");
+                }
             });
         }
     });
@@ -147,6 +150,7 @@ fn listen() -> io::Result<UnixListener> {
     }
     fs::set_permissions(folder, fs::Permissions::from_mode(0o700))?;
 
+    // a socket left by an earlier run; bind below fails if it stays
     let _ = fs::remove_file(&path);
 
     let listener = UnixListener::bind(&path)?;

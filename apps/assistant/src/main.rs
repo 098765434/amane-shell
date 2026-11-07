@@ -22,6 +22,7 @@ mod server;
 use std::path::PathBuf;
 
 fn main() {
+    amane_log::init("amane-assistant");
     let args: Vec<String> = std::env::args().skip(1).collect();
     let engine = engine::Engine::new(models_dir(), cache_dir());
     let result = match args

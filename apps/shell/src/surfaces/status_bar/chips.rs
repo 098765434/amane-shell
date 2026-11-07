@@ -130,7 +130,9 @@ fn focus_pid(pid: u64) {
         for _ in 0..4 {
             let Some(pid) = wanted else { break };
             if let Some(id) = window_for_pid(&windows, pid) {
-                let _ = amane::niri::focus_window(id);
+                if let Err(error) = amane::niri::focus_window(id) {
+                    log::warn!("couldn't focus window {id}: {error}");
+                }
                 return;
             }
             wanted = parent(pid);

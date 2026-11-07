@@ -11,6 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// it couldn't start or failed.
 pub fn run(program: &'static str, args: Vec<String>) {
     std::thread::spawn(move || {
+        // run_now has logged a failure; nobody waits for this one
         let _ = run_now(program, &args);
     });
 }
@@ -27,11 +28,11 @@ pub fn run_now(program: &str, args: &[String]) -> Option<String> {
         Ok(out) if out.status.success() => Some(String::from_utf8_lossy(&out.stdout).into_owned()),
         Ok(out) => {
             let err = String::from_utf8_lossy(&out.stderr);
-            eprintln!("{program}: {}", err.trim());
+            log::warn!("{program}: {}", err.trim());
             None
         }
         Err(e) => {
-            eprintln!("{program}: {e}");
+            log::warn!("{program}: {e}");
             None
         }
     }

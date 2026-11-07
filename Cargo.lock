@@ -63,8 +63,10 @@ name = "amane-assistant-daemon"
 version = "0.1.0"
 dependencies = [
  "amane-assistant",
+ "amane-log",
  "libpulse-binding",
  "libpulse-simple-binding",
+ "log",
  "serde",
  "serde_json",
 ]
@@ -75,8 +77,10 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
+ "amane-log",
  "amane-phone",
  "amane-status",
+ "log",
  "serde_json",
 ]
 
@@ -86,7 +90,15 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "fontconfig",
+ "log",
  "serde_json",
+]
+
+[[package]]
+name = "amane-log"
+version = "0.1.0"
+dependencies = [
+ "log",
 ]
 
 [[package]]
@@ -95,8 +107,10 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
+ "amane-log",
  "amane-phone",
  "chrono",
+ "log",
  "serde_json",
 ]
 
@@ -106,10 +120,12 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
+ "amane-log",
  "amane-phone",
  "ffmpeg-next",
  "libpulse-binding",
  "libpulse-simple-binding",
+ "log",
  "serde_json",
 ]
 
@@ -118,6 +134,7 @@ name = "amane-phone"
 version = "0.1.0"
 dependencies = [
  "amane",
+ "log",
  "mdns-sd",
  "serde_json",
 ]
@@ -126,7 +143,9 @@ dependencies = [
 name = "amane-pinentry"
 version = "0.1.0"
 dependencies = [
+ "amane-log",
  "libc",
+ "log",
  "proptest",
  "zeroize",
 ]
@@ -137,9 +156,11 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
+ "amane-log",
  "chrono",
  "drm",
  "libc",
+ "log",
  "serde",
  "serde_json",
 ]
@@ -150,6 +171,8 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
+ "amane-log",
+ "log",
  "serde_json",
 ]
 
@@ -160,11 +183,13 @@ dependencies = [
  "amane",
  "amane-assistant",
  "amane-kit",
+ "amane-log",
  "amane-phone",
  "amane-pinentry",
  "amane-status",
  "chrono",
  "libc",
+ "log",
  "qrcode",
  "serde_json",
  "zbus",
@@ -176,6 +201,7 @@ name = "amane-status"
 version = "0.1.0"
 dependencies = [
  "amane",
+ "log",
  "serde",
  "serde_json",
 ]
@@ -185,7 +211,9 @@ name = "amane-train-watch"
 version = "0.1.0"
 dependencies = [
  "amane",
+ "amane-log",
  "amane-status",
+ "log",
 ]
 
 [[package]]

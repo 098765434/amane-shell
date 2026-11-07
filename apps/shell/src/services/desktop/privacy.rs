@@ -104,7 +104,7 @@ pub fn stop_cast(session: u64) {
     // niri's answer can take a moment, so not on the UI thread
     std::thread::spawn(move || {
         if let Err(err) = niri::stop_cast(session) {
-            eprintln!("amane-shell: couldn't stop the screencast: {err}");
+            log::warn!("couldn't stop the screencast: {err}");
         }
     });
 }
@@ -117,7 +117,7 @@ fn watch_pipewire() {
         .stderr(Stdio::null())
         .spawn();
     let Ok(mut child) = child else {
-        eprintln!("amane-shell: pw-dump isn't available; no microphone or camera indicator");
+        log::warn!("pw-dump isn't available; no microphone or camera indicator");
         return;
     };
     let Some(stdout) = child.stdout.take() else {
@@ -145,6 +145,7 @@ fn watch_pipewire() {
             }
         }
     }
+    // the stream has ended; the child is likely gone already
     let _ = child.kill();
     let _ = child.wait();
 }

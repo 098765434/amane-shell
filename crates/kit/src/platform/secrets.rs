@@ -103,10 +103,13 @@ pub fn store(app: &str, name: &str, label: &str, secret: &str) -> Kept {
 
 /// Forgets `name` of `app`, from the keyring and the file.
 pub fn forget(app: &str, name: &str) {
-    let _ = Command::new("secret-tool")
+    if let Err(error) = Command::new("secret-tool")
         .args(["clear", "application", app, "account", name])
         .stderr(Stdio::null())
-        .status();
+        .status()
+    {
+        log::warn!("secret-tool clear: {error}");
+    }
     let mut file = file_secrets(app);
     if file.remove(name).is_some() {
         write_file_secrets(app, &file);
@@ -158,6 +161,7 @@ fn write_file_secrets(app: &str, secrets: &BTreeMap<String, String>) {
         return;
     };
     if secrets.is_empty() {
+        // no secrets and no file is the same
         let _ = std::fs::remove_file(file);
         return;
     }
@@ -180,6 +184,6 @@ fn write_file_secrets(app: &str, secrets: &BTreeMap<String, String>) {
         std::fs::rename(partial, &file)
     };
     if let Err(e) = write() {
-        eprintln!("amane-kit: couldn't save {}: {e}", file.display());
+        log::warn!("couldn't save {}: {e}", file.display());
     }
 }

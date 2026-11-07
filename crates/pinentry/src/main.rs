@@ -26,6 +26,7 @@ const FALLBACK: &str = match option_env!("AMANE_PINENTRY_FALLBACK") {
 const ANSWER_TIME: Duration = Duration::from_secs(180);
 
 fn main() -> ExitCode {
+    amane_log::init("amane-pinentry");
     let Some(shell) = shell() else {
         return fallback();
     };

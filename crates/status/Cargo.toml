@@ -9,6 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+log = { workspace = true }
 # the session bus, and the one ordered thread for calls
 amane = { workspace = true }
 serde = { workspace = true }

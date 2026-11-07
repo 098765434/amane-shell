@@ -139,7 +139,7 @@ fn set_mode(name: &str, mode: Mode) {
         is_preferred: false,
     };
     if let Err(err) = niri::set_output_mode(name, mode) {
-        eprintln!("amane-shell: couldn't set {name}'s refresh rate: {err}");
+        log::warn!("couldn't set {name}'s refresh rate: {err}");
     }
 }
 

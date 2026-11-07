@@ -293,6 +293,7 @@ mod files {
 }
 
 fn main() {
+    amane_log::init("amane-shader-lab");
     amane_kit::lab::register(files::FILES);
     app("amane-shader-lab")
         .normal_window("main", main_window)

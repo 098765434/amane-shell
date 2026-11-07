@@ -17,6 +17,8 @@ name = "amane-pinentry"
 path = "src/main.rs"
 
 [dependencies]
+log = { workspace = true }
+amane-log = { workspace = true }
 # SO_PEERCRED, SO_PEERPIDFD and pidfd_send_signal, which std doesn't have
 libc = { workspace = true }
 # the pin is wiped from every buffer it passes through

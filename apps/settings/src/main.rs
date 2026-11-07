@@ -285,6 +285,7 @@ fn package_arg(args: &[String]) {
 }
 
 fn main() {
+    amane_log::init("amane-settings");
     let args: Vec<String> = std::env::args().skip(1).collect();
     if let Some(place) = page_arg(&args) {
         *Navigation::write() = Navigation {

@@ -229,8 +229,7 @@ fn place(geometry: &Geometry) -> Area {
 }
 
 /// The sheet over the whole surface, and the frost behind it.
-pub(super) fn sheet(output: &str, geometry: &Geometry) -> (Box<dyn Widget>, Vec<BlurShape>) {
-    let _ = output;
+pub(super) fn sheet(_output: &str, geometry: &Geometry) -> (Box<dyn Widget>, Vec<BlurShape>) {
     let area = place(geometry);
     let radius = sys::radius::popover().max(RADIUS);
     let opened = OPEN.with_borrow_mut(|open| open.value());

@@ -216,6 +216,7 @@ fn follow(args: &[String]) {
 }
 
 fn main() {
+    amane_log::init("amane-messages");
     let args: Vec<String> = std::env::args().skip(1).collect();
     follow(&args);
     app("amane-messages")

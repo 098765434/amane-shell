@@ -37,6 +37,7 @@ members = [
     "crates/pinentry",
     "crates/phone",
     "crates/status",
+    "crates/log",
     "crates/assistant",
     "xtask",
 ]
@@ -56,6 +57,8 @@ amane-kit = { path = "crates/kit" }
 amane-pinentry = { path = "crates/pinentry" }
 amane-phone = { path = "crates/phone" }
 amane-status = { path = "crates/status" }
+amane-log = { path = "crates/log" }
+log = "0.4"
 amane-assistant = { path = "crates/assistant" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

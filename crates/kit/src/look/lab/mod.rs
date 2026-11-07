@@ -42,6 +42,7 @@ static FILES: OnceLock<&'static [(&'static str, &'static str)]> = OnceLock::new(
 /// build script embeds (`amane_shader_lab`'s `FILES`). Call once, before the
 /// first look; a second call is ignored. Without it the lab has no files.
 pub fn register(files: &'static [(&'static str, &'static str)]) {
+    // documented: a second call is ignored
     let _ = FILES.set(files);
 }
 
@@ -72,7 +73,7 @@ pub fn config(name: &str) -> Option<Config> {
     let text = file(&format!("configs/{}.json", slug(name)))?;
 
     serde_json::from_str(text)
-        .map_err(|error| eprintln!("amane-kit: lab config {name}: {error}"))
+        .map_err(|error| log::warn!("lab config {name}: {error}"))
         .ok()
 }
 
@@ -87,16 +88,16 @@ pub fn manifest(effect: &str) -> Option<Manifest> {
     };
 
     let value = read_manifest(Path::new("effects").join(effect).as_path(), &read, 0)
-        .map_err(|error| eprintln!("amane-kit: lab effect {effect}: {error}"))
+        .map_err(|error| log::warn!("lab effect {effect}: {error}"))
         .ok()?;
 
     let manifest: Manifest = serde_json::from_value(value)
-        .map_err(|error| eprintln!("amane-kit: lab effect {effect}: {error}"))
+        .map_err(|error| log::warn!("lab effect {effect}: {error}"))
         .ok()?;
 
     manifest
         .check()
-        .map_err(|error| eprintln!("amane-kit: lab effect {effect}: {error}"))
+        .map_err(|error| log::warn!("lab effect {effect}: {error}"))
         .ok()?;
 
     Some(manifest)
@@ -214,7 +215,7 @@ fn written() -> Option<&'static Path> {
         let root = crate::paths::runtime().join("amane-shell").join("lab");
 
         write_effects(&root)
-            .map_err(|error| eprintln!("amane-kit: {}: {error}", root.display()))
+            .map_err(|error| log::warn!("{}: {error}", root.display()))
             .ok()?;
 
         Some(root)

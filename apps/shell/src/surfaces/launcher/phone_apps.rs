@@ -92,9 +92,14 @@ fn refresh(device: &str, serial: &str, list: Option<&List>) {
     }
     let (device, serial) = (device.to_string(), serial.to_string());
     std::thread::spawn(move || {
-        let _ = std::process::Command::new("amane-mirror")
+        let listed = std::process::Command::new("amane-mirror")
             .args(["--list-apps", "--serial", &serial, "--device", &device])
             .status();
+        match listed {
+            Ok(status) if !status.success() => log::warn!("amane-mirror --list-apps: {status}"),
+            Err(error) => log::warn!("amane-mirror --list-apps: {error}"),
+            Ok(_) => {}
+        }
         LISTING.store(false, Ordering::SeqCst);
     });
 }

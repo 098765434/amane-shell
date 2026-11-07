@@ -15,6 +15,8 @@ name = "amane-assistant"
 path = "src/main.rs"
 
 [dependencies]
+log = { workspace = true }
+amane-log = { workspace = true }
 amane-assistant = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

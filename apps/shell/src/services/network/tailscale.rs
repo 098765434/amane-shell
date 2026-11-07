@@ -362,6 +362,7 @@ fn watch() -> bool {
         let (notices, changes) = mpsc::channel();
         let reader = thread::spawn(move || {
             tailscale_local::watch(|| {
+                // the receiver goes when this watch is given up
                 let _ = notices.send(());
             })
         });
@@ -392,6 +393,7 @@ fn watch() -> bool {
     });
 
     let heard = settle_and_refresh(&changes);
+    // the stream has ended; the child is likely gone already
     let _ = child.kill();
     let _ = child.wait();
     heard

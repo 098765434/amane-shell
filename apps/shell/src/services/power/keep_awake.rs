@@ -215,7 +215,7 @@ impl KeepAwake {
             // niri's answer isn't for the UI thread
             thread::spawn(|| {
                 if let Err(err) = amane::niri::power_off_monitors() {
-                    eprintln!("amane-shell: couldn't turn the screens off: {err}");
+                    log::warn!("couldn't turn the screens off: {err}");
                 }
             });
         });
@@ -292,7 +292,7 @@ fn inhibit_screen() -> Option<u32> {
     match cookie {
         amane::Value::Number(cookie) => Some(cookie as u32),
         _ => {
-            eprintln!("amane-shell: keep awake: the screensaver refused the inhibit");
+            log::warn!("keep awake: the screensaver refused the inhibit");
             None
         }
     }
@@ -313,7 +313,7 @@ fn inhibit_lid() -> Option<OwnedFd> {
         Ok(OwnedFd::from(fd))
     });
     answer
-        .inspect_err(|e| eprintln!("amane-shell: keep awake: lid: {e}"))
+        .inspect_err(|e| log::warn!("keep awake: lid: {e}"))
         .ok()
 }
 

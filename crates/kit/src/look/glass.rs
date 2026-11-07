@@ -173,7 +173,7 @@ fn shader() -> Option<&'static Path> {
         match written {
             Ok(()) => Some(path),
             Err(e) => {
-                eprintln!("amane-shell: {}: {e}", path.display());
+                log::warn!("{}: {e}", path.display());
                 None
             }
         }

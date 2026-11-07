@@ -121,6 +121,7 @@ pub(crate) fn art_path(url: &str) -> Option<String> {
         let url = url.to_string();
         std::thread::spawn(move || {
             if let Some(dir) = path.parent() {
+                // a folder that can't be made fails the fetch below, which is shown as no art
                 let _ = std::fs::create_dir_all(dir);
             }
             let part = path.with_extension("part");
@@ -133,6 +134,7 @@ pub(crate) fn art_path(url: &str) -> Option<String> {
             if fetched && std::fs::rename(&part, &path).is_ok() {
                 QuickSettings::changed();
             } else {
+                // a part file that was never written is gone already
                 let _ = std::fs::remove_file(&part);
             }
         });

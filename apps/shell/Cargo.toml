@@ -19,6 +19,8 @@ path = 'src/main.rs'
 workspace = true
 
 [dependencies]
+log = { workspace = true }
+amane-log = { workspace = true }
 # pinned in [workspace.dependencies], shared with the kit
 amane = { workspace = true }
 amane-phone = { workspace = true }

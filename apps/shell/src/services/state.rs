@@ -17,6 +17,6 @@ pub fn save_state(name: &str, text: &str) {
         .map_or(Ok(()), std::fs::create_dir_all)
         .and_then(|()| std::fs::write(&path, text));
     if let Err(e) = result {
-        eprintln!("amane-shell: {}: {e}", path.display());
+        log::warn!("{}: {e}", path.display());
     }
 }

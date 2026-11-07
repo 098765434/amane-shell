@@ -56,7 +56,7 @@ fn first_installed_by_name(stack: &[String]) -> &'static str {
         fontconfig.as_ref().is_some_and(|fc| installed(fc, f))
     });
     if std::env::var_os("AMANE_DEBUG").is_some() {
-        eprintln!("amane-shell: font stack {stack:?} → {family}");
+        log::debug!("font stack {stack:?} → {family}");
     }
     let family: &'static str = Box::leak(family.into_boxed_str());
     chosen.insert(stack.to_vec(), family);

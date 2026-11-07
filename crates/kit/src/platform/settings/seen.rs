@@ -22,7 +22,7 @@ pub(super) fn write_whole(file: &std::path::Path, text: &str) {
         std::fs::rename(partial, file)
     };
     if let Err(e) = write() {
-        eprintln!("amane-kit: couldn't save {}: {e}", file.display());
+        log::warn!("couldn't save {}: {e}", file.display());
     }
 }
 

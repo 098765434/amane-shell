@@ -122,7 +122,7 @@ pub fn serve() {
         let introspect = bus.methods(PATH, INTROSPECTABLE);
         let leaving = bus.signals("org.freedesktop.DBus", "NameOwnerChanged");
         if !bus.own(BUS_NAME) {
-            eprintln!("amane-shell: another program serves {BUS_NAME}; status apps go there");
+            log::warn!("another program serves {BUS_NAME}; status apps go there");
             return;
         }
         thread::spawn(move || {

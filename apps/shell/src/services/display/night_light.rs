@@ -143,13 +143,14 @@ impl Service for NightLight {
 fn wait_for(mut child: Child) -> u32 {
     let pid = child.id();
     std::thread::spawn(move || {
+        // either way it has ended, which is all this waits for
         let _ = child.wait();
         let mut light = NightLight::write();
         if light.child != Some(pid) {
             light.quiet();
             return;
         }
-        eprintln!("amane-shell: wlsunset exited; night light is off");
+        log::warn!("wlsunset exited; night light is off");
         light.child = None;
         light.on = false;
     });
@@ -301,7 +302,7 @@ fn start(kelvin: u32, schedule: Schedule) -> Option<u32> {
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .spawn()
-        .map_err(|e| eprintln!("amane-shell: wlsunset: {e}"))
+        .map_err(|e| log::warn!("wlsunset: {e}"))
         .ok()
         .map(wait_for)
 }

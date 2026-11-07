@@ -366,6 +366,7 @@ fn watch_lock() {
         }
     }
 
+    // a panicked thread has stopped watching either way
     let _ = sleeps.join();
 }
 

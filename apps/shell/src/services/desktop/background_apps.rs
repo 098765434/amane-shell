@@ -71,6 +71,7 @@ impl BackgroundApps {
                 ],
             );
             if asked.is_err() {
+                // run_now logs a kill that fails; the app then just stays
                 let _ = run_now("flatpak", &["kill".into(), app_id]);
             }
         });

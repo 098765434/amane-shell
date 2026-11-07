@@ -203,7 +203,7 @@ fn listen(mut receiver: Receiver) {
                     state.done = Some((text, None));
                 }
                 if error != "superseded" {
-                    eprintln!("amane-assistant: {error}");
+                    log::warn!("assistant: {error}");
                     if state.listening.on {
                         state.listening.error = Some(error);
                     }
@@ -259,6 +259,7 @@ pub fn listen_start(keywords: Vec<String>) -> bool {
 /// Stops listening; what was heard comes as [`take_heard`].
 pub fn listen_stop() {
     if state().listening.on {
+        // a daemon that is gone has stopped listening already
         let _ = send(Request::ListenStop);
     }
 }
@@ -267,6 +268,7 @@ pub fn listen_stop() {
 pub fn listen_cancel() {
     let on = std::mem::take(&mut state().listening).on;
     if on {
+        // a daemon that is gone has stopped listening already
         let _ = send(Request::ListenCancel);
         Assistant::changed();
     }
@@ -289,6 +291,7 @@ pub fn status() -> Option<String> {
     let hello = state().hello.clone();
     if hello.is_none() {
         std::thread::spawn(|| {
+            // no daemon leaves hello empty, which is what the caller shows
             let _ = send_now(Request::Hello);
         });
     }

@@ -196,7 +196,7 @@ fn save(until: Option<Until>) {
             .and_then(|()| std::fs::write(&path, format(until) + "\n")),
     };
     if let Err(e) = result {
-        eprintln!("amane-shell: {}: {e}", path.display());
+        log::warn!("{}: {e}", path.display());
     }
 }
 

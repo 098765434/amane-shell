@@ -76,7 +76,7 @@ impl Session {
     pub fn log_out() {
         std::thread::spawn(|| {
             if let Err(err) = amane::niri::quit() {
-                eprintln!("amane-shell: couldn't log out: {err}");
+                log::warn!("couldn't log out: {err}");
             }
         });
     }

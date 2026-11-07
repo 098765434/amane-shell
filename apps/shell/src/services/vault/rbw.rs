@@ -374,6 +374,7 @@ fn secret_of(args: &[&str]) -> Result<Secret, Error> {
 
     let mut stderr = Vec::new();
     if let Some(mut pipe) = child.stderr.take() {
+        // what could be read is enough; the exit status decides
         let _ = pipe.read_to_end(&mut stderr);
     }
 

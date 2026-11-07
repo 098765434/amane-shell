@@ -163,6 +163,7 @@ fn watch(settings: Settings) -> Subscription {
         if clipboard.mime_types().is_empty() {
             return;
         }
+        // the reader thread only ends with the shell
         let _ = reader.send((settings.clone(), clipboard.mime_types().to_vec()));
     })
 }
@@ -222,7 +223,7 @@ fn take(settings: &Settings, types: &[String]) {
             .map_or(Ok(()), std::fs::create_dir_all)
             .and_then(|()| std::fs::write(&path, &bytes));
         if let Err(e) = written {
-            eprintln!("amane-shell: clipboard history: {}: {e}", path.display());
+            log::warn!("clipboard history: {}: {e}", path.display());
             return;
         }
     }
@@ -297,6 +298,7 @@ pub fn clear() {
 
 fn forget(clips: &[Clip]) {
     for clip in clips {
+        // a blob already gone is what was wanted
         let _ = std::fs::remove_file(clip.path());
     }
 }
