@@ -2,6 +2,7 @@
 //! its footer.
 
 use super::*;
+use crate::chrome::catalog as sheet;
 use amane_kit::layout::frame;
 use amane_kit::reveal::{self, Swell};
 
@@ -54,95 +55,57 @@ pub(crate) fn view(screen: (f32, f32), card: Area) -> Option<Built> {
     })
 }
 
+/// The sheet: the categories beside the controls, over the footer.
+const SHEET: sheet::Sheet = sheet::Sheet {
+    id: "amane.qs.customize",
+    sidebar: SIDEBAR,
+    inset: INSET,
+};
+
 /// What's on the sheet: the sidebar, a hairline, the pane over the footer.
 pub(super) fn content(area: &Area) -> Rectangle {
-    let (field, category) = with(|state| (state.field.clone(), state.category));
+    let (field, picked) = with(|state| (state.field.clone(), state.category));
     let query = field.text().to_string();
-    let searching = !query.trim().is_empty();
-
-    let pane_x = SIDEBAR + Divider::width();
-    let pane_w = (area.width - pane_x).max(1.0);
-    let footer_h = sys::size::control::height() + sys::space::gap::m() * 2.0;
-    let pane_h = (area.height - footer_h - Divider::height()).max(1.0);
-
-    let sidebar = sidebar(&field, category, area.height);
-    let pane = pane(
-        category,
-        &query,
-        Area {
-            x: area.x + pane_x,
-            y: area.y,
-            width: pane_w,
-            height: pane_h,
-        },
-        searching,
-    );
-    let right = amane::Column::new(vec![
-        boxed(pane),
-        boxed(Divider::build()),
-        boxed(footer(pane_w, footer_h)),
-    ])
-    .width(pane_w);
-
-    frame(area.width, area.height)
-        .align_child(Start, Start)
-        .child(
-            Row::new(vec![
-                boxed(sidebar),
-                boxed(Divider::vertical(area.height)),
-                boxed(right),
-            ])
-            .align(Start),
-        )
-}
-
-/// The search field over the category rows, scrolling when they don't fit.
-pub(super) fn sidebar(field: &Field, picked: Category, height: f32) -> Rectangle {
-    let inner_w = SIDEBAR - INSET * 2.0;
-    let gap = sys::space::gap::m();
-    let search = SearchField::new("amane.qs.customize.search", field, true)
-        .placeholder("Search Controls")
-        .width(inner_w)
-        .on_clear(clear_query)
-        .build();
-
-    let items: Vec<ListItem> = Category::ALL
+    let search = sheet::Search {
+        field: &field,
+        placeholder: "Search Controls",
+        clear: clear_query,
+    };
+    let sections = Category::ALL
         .into_iter()
-        .map(|category| {
-            ListItem::new(
-                format!("amane.qs.customize.category.{}", category.key()),
-                category.title(),
-            )
-            .leading_tile(category.glyph())
-            .bare(true)
-            .selected(category == picked)
-            .on_press(move || pick(category))
+        .map(|category| sheet::Section {
+            key: category.key(),
+            title: category.title(),
+            glyph: category.glyph(),
+            picked: category == picked,
+            pick: Box::new(move || pick(category)),
         })
         .collect();
-    let rows = Category::ALL.len() as f32;
-    let rows_h = rows * sys::size::row::height() + (rows - 1.0) * sys::space::gap::xs();
-    let list = list::with_row_width(inner_w, || List::new(items).build());
-
-    let list_h = (height - INSET * 2.0 - SearchField::height() - gap).max(1.0);
-    let scroll = SIDE_SCROLL.with_borrow_mut(|scroll| {
-        scroll.set_max((rows_h - list_h).max(0.0));
-        scroll.settle_stale();
-        scroll.value()
-    });
-    let list = ScrollView::new(Axis::Vertical, inner_w, list_h)
-        .content(rows_h)
-        .offset(scroll)
-        .on_scroll(on_side_scroll)
-        .build(list);
-
-    frame(SIDEBAR, height)
-        .padding(pad(INSET, INSET))
-        .align_child(Start, Start)
-        .child(
-            amane::Column::new(vec![boxed(search), boxed(list)])
-                .gap(gap)
-                .width(inner_w),
-        )
+    // the rows scroll when the window is too short for them
+    let scrolling = sheet::Scrolling {
+        offset: Box::new(|max| {
+            SIDE_SCROLL.with_borrow_mut(|scroll| {
+                scroll.set_max(max);
+                scroll.settle_stale();
+                scroll.value()
+            })
+        }),
+        on_scroll: on_side_scroll,
+    };
+    let sidebar = SHEET.sidebar(search, sections, area.height, Some(scrolling));
+    let footer = sheet::Footer {
+        hint: "Drag a control to place it in Quick Settings.",
+        reset: "Reset Layout",
+        undo: edit::can_undo().then_some(edit::undo),
+        on_reset: edit::reset,
+        on_done: edit::leave,
+    };
+    SHEET.build(
+        area,
+        sidebar,
+        |viewport| pane(picked, &query, viewport, !query.trim().is_empty()),
+        footer,
+    )
 }
 
 /// The pane: the sections of controls, scrolling. `viewport` is where it
@@ -306,41 +269,6 @@ pub(super) fn catalog_item(id: ControlId, px: &Metrics) -> (Rectangle, f32, f32,
         ),
     ]));
     (item, item_w, item_h, slot)
-}
-
-/// The hint and, at the end, Undo Remove (while there's something to
-/// undo), Reset Layout and Done, the one main action, in the accent.
-pub(super) fn footer(width: f32, height: f32) -> Rectangle {
-    let mut actions: Vec<Box<dyn Widget>> = Vec::new();
-    if edit::can_undo() {
-        actions.push(boxed(
-            PushButton::new("amane.qs.customize.undo", "Undo Remove")
-                .style(Style::Plain)
-                .shape(Shape::Round)
-                .on_press(edit::undo)
-                .build(),
-        ));
-    }
-    actions.push(boxed(
-        PushButton::new("amane.qs.customize.reset", "Reset Layout")
-            .style(Style::Plain)
-            .shape(Shape::Round)
-            .on_press(edit::reset)
-            .build(),
-    ));
-    actions.push(boxed(
-        PushButton::new("amane.qs.customize.done", "Done")
-            .style(Style::Filled)
-            .shape(Shape::Round)
-            .text(sys::r#type::label())
-            .on_press(edit::leave)
-            .build(),
-    ));
-    let hint = caption("Drag a control to place it in Quick Settings.");
-    frame(width, height)
-        .padding(pad(INSET, 0.0))
-        .align_child(Start, Center)
-        .child(split_row(hint, actions))
 }
 
 /// How much the scrollbar shows: while the pane moves, and a little after.

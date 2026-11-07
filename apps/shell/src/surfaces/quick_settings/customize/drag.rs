@@ -45,7 +45,7 @@ pub(super) fn drag_at(point: Point) {
         state
             .tiles
             .iter()
-            .find(|(_, area)| area.contains(point))
+            .find(|(_, area)| area.contains(point.x, point.y))
             .map(|(id, area)| (*id, *area))
     });
     match under {

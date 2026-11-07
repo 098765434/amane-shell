@@ -74,6 +74,6 @@ fn an_area_clips_to_another() {
         height: 50.0,
     };
     assert_eq!(out.clipped(&pane), None);
-    assert!(pane.contains(Point { x: 100.0, y: 100.0 }));
-    assert!(!pane.contains(Point { x: 300.0, y: 100.0 }));
+    assert!(pane.contains(100.0, 100.0));
+    assert!(!pane.contains(300.0, 100.0));
 }

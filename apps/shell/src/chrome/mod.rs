@@ -5,6 +5,7 @@
 
 pub mod bar;
 pub mod battery;
+pub mod catalog;
 pub mod panel;
 pub mod per_output;
 pub mod workspace_menu;

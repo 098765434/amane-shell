@@ -34,7 +34,7 @@ pub(super) use view::view;
 use std::cell::{Cell, RefCell};
 
 use amane::{
-    Animation, BlurShape, Center, Cursor, Key, Parent, Point, Rectangle, Row, Scroll, Stack, Start,
+    Animation, BlurShape, Center, Cursor, Key, Parent, Point, Rectangle, Scroll, Stack, Start,
     Text, Widget, modifiers,
 };
 
@@ -43,16 +43,13 @@ use super::grid::{Metrics, Place, Rect, Slot};
 use super::{edit, layout, tile, tiles};
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{Styled, quick, sys};
-use amane_kit::buttons::{PushButton, Shape, Style};
 use amane_kit::divider::Divider;
 use amane_kit::flow::Flow;
 use amane_kit::kinetic::{Axis, Kinetic};
-use amane_kit::layout::{boxed, caption, pad, split_row, text_height, wrapped_lines};
-use amane_kit::list::{self, List, ListItem};
+use amane_kit::layout::{boxed, caption, text_height, wrapped_lines};
 use amane_kit::material::{self, Level, Material};
 use amane_kit::motion;
 use amane_kit::scroll_view::{ScrollView, ScrollbarFade};
-use amane_kit::search_field::SearchField;
 use amane_kit::text_edit::Field;
 
 pub(super) use catalog::Category;
@@ -72,34 +69,7 @@ const OPEN_SCALE: f32 = 0.96;
 /// How far one wheel notch scrolls the pane.
 const WHEEL_STEP: f32 = 60.0;
 
-/// A rectangle in the surface's pixels.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(super) struct Area {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
-}
-
-impl Area {
-    fn contains(&self, p: Point) -> bool {
-        p.x >= self.x && p.y >= self.y && p.x < self.x + self.width && p.y < self.y + self.height
-    }
-
-    /// The part of `self` inside `other`, if any.
-    fn clipped(&self, other: &Area) -> Option<Area> {
-        let x = self.x.max(other.x);
-        let y = self.y.max(other.y);
-        let right = (self.x + self.width).min(other.x + other.width);
-        let bottom = (self.y + self.height).min(other.y + other.height);
-        (right > x && bottom > y).then_some(Area {
-            x,
-            y,
-            width: right - x,
-            height: bottom - y,
-        })
-    }
-}
+pub(super) use amane_kit::area::Area;
 
 struct State {
     field: Field,

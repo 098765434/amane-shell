@@ -12,8 +12,7 @@ use amane_kit::reveal::Swell;
 use std::cell::{Cell, RefCell};
 
 use amane::{
-    Animation, BlurShape, Center, Key, Rectangle, Row, Stack, Start, Text, Vertical, Widget,
-    modifiers,
+    Animation, BlurShape, Center, Key, Rectangle, Stack, Start, Text, Vertical, Widget, modifiers,
 };
 
 use super::catalog;
@@ -22,15 +21,12 @@ use super::kind::{Category, WidgetKey, WidgetKind};
 use super::store::Settings;
 use super::{Geometry, MARGIN, RADIUS, changed};
 use crate::chrome::bar;
+use crate::chrome::catalog as sheet;
 use crate::tokens::{Styled, sys};
-use amane_kit::buttons::{PushButton, Shape, Style};
-use amane_kit::divider::Divider;
 use amane_kit::flow::Flow;
-use amane_kit::layout::{boxed, caption, frame, pad, split_row, text_height, wrapped_lines};
-use amane_kit::list::{self, List, ListItem};
+use amane_kit::layout::{boxed, caption, frame, pad, text_height, wrapped_lines};
 use amane_kit::material::{self, FillLevel, Level, Material};
 use amane_kit::motion;
-use amane_kit::search_field::SearchField;
 use amane_kit::text_edit::Field;
 
 // TODO(token): `widget.gallery.{width,height,sidebar,inset,preview}` once
@@ -44,20 +40,7 @@ const PREVIEW: f32 = 120.0;
 /// How small the sheet is as it swells in.
 const OPEN_SCALE: f32 = 0.96;
 
-/// A rectangle in the surface's pixels.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(super) struct Area {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
-}
-
-impl Area {
-    fn contains(&self, x: f32, y: f32) -> bool {
-        x >= self.x && y >= self.y && x < self.x + self.width && y < self.y + self.height
-    }
-}
+pub(super) use amane_kit::area::Area;
 
 /// The sidebar's rows: every kind, or one category's.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -300,77 +283,49 @@ pub(super) fn ghost(
     Some((boxed(widget), vec![frost]))
 }
 
+/// The sheet: the sections beside every kind of widget, over the footer.
+const SHEET: sheet::Sheet = sheet::Sheet {
+    id: "amane.widgets.gallery",
+    sidebar: SIDEBAR,
+    inset: INSET,
+};
+
 /// The sidebar, a hairline, the pane over the footer.
 fn content(area: &Area) -> Rectangle {
-    let (field, section) = with(|state| (state.field.clone(), state.section));
+    let (field, picked) = with(|state| (state.field.clone(), state.section));
     let query = field.text().to_string();
-    let pane_x = SIDEBAR + Divider::width();
-    let pane_w = (area.width - pane_x).max(1.0);
-    let footer_h = sys::size::control::height() + sys::space::gap::m() * 2.0;
-    let pane_h = (area.height - footer_h - Divider::height()).max(1.0);
-
-    let sidebar = sidebar(&field, section, area.height);
-    let pane = pane(
-        &kinds(section, &query),
-        Area {
-            x: area.x + pane_x,
-            y: area.y,
-            width: pane_w,
-            height: pane_h,
-        },
-        !query.trim().is_empty(),
-    );
-    let right = amane::Column::new(vec![
-        boxed(pane),
-        boxed(Divider::build()),
-        boxed(footer(pane_w, footer_h)),
-    ])
-    .width(pane_w);
-
-    frame(area.width, area.height)
-        .align_child(Start, Start)
-        .child(
-            Row::new(vec![
-                boxed(sidebar),
-                boxed(Divider::vertical(area.height)),
-                boxed(right),
-            ])
-            .align(Start),
-        )
-}
-
-fn sidebar(field: &Field, picked: Section, height: f32) -> Rectangle {
-    let inner_w = SIDEBAR - INSET * 2.0;
-    let search = SearchField::new("amane.widgets.gallery.search", field, true)
-        .placeholder("Search Widgets")
-        .width(inner_w)
-        .on_clear(|| {
+    let search = sheet::Search {
+        field: &field,
+        placeholder: "Search Widgets",
+        clear: || {
             clear_query();
             changed();
-        })
-        .build();
-    let items: Vec<ListItem> = Section::ALL
+        },
+    };
+    let sections = Section::ALL
         .into_iter()
-        .map(|section| {
-            ListItem::new(
-                format!("amane.widgets.gallery.section.{}", section.key()),
-                section.title(),
-            )
-            .leading_tile(section.glyph())
-            .bare(true)
-            .selected(section == picked)
-            .on_press(move || pick(section))
+        .map(|section| sheet::Section {
+            key: section.key(),
+            title: section.title(),
+            glyph: section.glyph(),
+            picked: section == picked,
+            pick: Box::new(move || pick(section)),
         })
         .collect();
-    let list = list::with_row_width(inner_w, || List::new(items).build());
-    frame(SIDEBAR, height)
-        .padding(pad(INSET, INSET))
-        .align_child(Start, Start)
-        .child(
-            amane::Column::new(vec![boxed(search), boxed(list)])
-                .gap(sys::space::gap::m())
-                .width(inner_w),
-        )
+    let sidebar = SHEET.sidebar(search, sections, area.height, None);
+    let footer = sheet::Footer {
+        hint: "Drag a widget onto the desktop, or click it to add it.",
+        reset: "Remove All",
+        undo: edit::can_undo().then_some(edit::undo),
+        on_reset: edit::reset,
+        on_done: edit::leave_all,
+    };
+    SHEET.build(
+        area,
+        sidebar,
+        |viewport| pane(&kinds(picked, &query), viewport, !query.trim().is_empty()),
+        footer,
+    )
 }
 
 /// Every kind in `kinds`, its preview live at its default size scaled to
@@ -459,39 +414,6 @@ fn pane(kinds: &[WidgetKind], viewport: Area, searching: bool) -> Rectangle {
         .align_child(Start, Start)
         .clip()
         .child(Stack::new(vec![body]))
-}
-
-fn footer(width: f32, height: f32) -> Rectangle {
-    let mut actions: Vec<Box<dyn Widget>> = Vec::new();
-    if edit::can_undo() {
-        actions.push(boxed(
-            PushButton::new("amane.widgets.gallery.undo", "Undo Remove")
-                .style(Style::Plain)
-                .shape(Shape::Round)
-                .on_press(edit::undo)
-                .build(),
-        ));
-    }
-    actions.push(boxed(
-        PushButton::new("amane.widgets.gallery.reset", "Remove All")
-            .style(Style::Plain)
-            .shape(Shape::Round)
-            .on_press(edit::reset)
-            .build(),
-    ));
-    actions.push(boxed(
-        PushButton::new("amane.widgets.gallery.done", "Done")
-            .style(Style::Filled)
-            .shape(Shape::Round)
-            .text(sys::r#type::label())
-            .on_press(edit::leave_all)
-            .build(),
-    ));
-    let hint = caption("Drag a widget onto the desktop, or click it to add it.");
-    frame(width, height)
-        .padding(pad(INSET, 0.0))
-        .align_child(Start, Center)
-        .child(split_row(hint, actions))
 }
 
 #[cfg(test)]

@@ -96,7 +96,7 @@ pub use controls::{
     avatar, buttons, color_picker, control_size, dropdown, leading_icon, menu, nav_buttons,
     pop_up_button, search_field, slider, spinner, stepper, tag, text_edit, thumbnail_picker,
 };
-pub use foundation::{color, fuzzy, icons, layout, symbol};
+pub use foundation::{area, color, fuzzy, icons, layout, symbol};
 pub use look::{glass, glass_region, lab, material, style};
 pub use platform::{app, app_icon, launch, marker, process, secrets, settings, shell_ipc};
 
