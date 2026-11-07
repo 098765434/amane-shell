@@ -9,6 +9,7 @@ mod displays;
 mod dock;
 mod drop;
 mod launcher;
+mod pages;
 mod passwords;
 mod previews;
 mod quick_settings;
@@ -20,17 +21,12 @@ use amane::{
     Center, Column, Key, Rectangle, Row, ScrollArea, Service, Size, Text, TextInput, Widget, Window,
 };
 use amane_kit::app::{
-    Dialog, Page, app, app_window, field_box, sidebar_with, standard_shortcut, text_field,
+    Dialog, app, app_window, field_box, sidebar_with, standard_shortcut, text_field,
 };
 use amane_kit::args::flag;
 use amane_kit::buttons::Switch;
 use amane_kit::color::Accent;
 use amane_kit::form::{FormRow, Group};
-use amane_kit::icons::{
-    ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO,
-    ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_PACKAGE, ICON_SEARCH, ICON_SETTINGS,
-    ICON_STORAGE, ICON_TRAY, ICON_TUNE, ICON_UPDATE,
-};
 use amane_kit::layout::boxed;
 use amane_kit::material::{self, Level};
 use amane_kit::nav_buttons::NavButtons;
@@ -171,96 +167,10 @@ fn forward() {
     }
 }
 
-// the sidebar's rows: two sections, each over its pages
-const APPEARANCE: usize = 1;
-const DESKTOP: usize = 2;
-const DISPLAYS: usize = 3;
-const STATUS_BAR: usize = 4;
-const DOCK: usize = 5;
-const QUICK_SETTINGS: usize = 6;
-const LAUNCHER: usize = 7;
-const DROP: usize = 8;
-const PASSWORDS: usize = 9;
-const ABOUT_SHELL: usize = 10;
-const SYS_ABOUT: usize = 12;
-const SYS_GENERAL: usize = 13;
-const SYS_APPS: usize = 14;
-const SYS_DEFAULTS: usize = 15;
-const SYS_SERVICES: usize = 16;
-const SYS_POWER: usize = 17;
-const SYS_STORAGE: usize = 18;
-const SYS_HISTORY: usize = 19;
-const SYS_UPDATE: usize = 20;
-
-/// The page `--page <name>` opens: the sidebar's names, lowercased, or a
-/// System page's short name.
-pub fn page_named(name: &str) -> Option<usize> {
-    Some(match name.trim().to_lowercase().as_str() {
-        "appearance" => APPEARANCE,
-        "desktop" => DESKTOP,
-        "displays" | "display" | "monitors" => DISPLAYS,
-        "status-bar" | "bar" => STATUS_BAR,
-        "dock" => DOCK,
-        "quick-settings" => QUICK_SETTINGS,
-        "launcher" | "spotlight" => LAUNCHER, // lint-terms: allow (the old name, for keybinds)
-        "drop" | "amane-drop" => DROP,
-        "passwords" | "bitwarden" => PASSWORDS,
-        "about-shell" => ABOUT_SHELL,
-        "about" | "system" | "computer" => SYS_ABOUT,
-        "general" => SYS_GENERAL,
-        "apps" | "software" => SYS_APPS,
-        "default-apps" | "defaults" | "open-with" => SYS_DEFAULTS,
-        "services" => SYS_SERVICES,
-        "power" | "lock" => SYS_POWER,
-        "storage" => SYS_STORAGE,
-        "history" => SYS_HISTORY,
-        "update" | "updates" => SYS_UPDATE,
-        _ => return None,
-    })
-}
-
-/// Each page's `--page` name, in the sidebar's order: the one the search
-/// index and `page_named` go by.
-pub const PAGE_NAMES: [(&str, usize); 19] = [
-    ("appearance", APPEARANCE),
-    ("desktop", DESKTOP),
-    ("displays", DISPLAYS),
-    ("status-bar", STATUS_BAR),
-    ("dock", DOCK),
-    ("quick-settings", QUICK_SETTINGS),
-    ("launcher", LAUNCHER),
-    ("drop", DROP),
-    ("passwords", PASSWORDS),
-    ("about-shell", ABOUT_SHELL),
-    ("about", SYS_ABOUT),
-    ("general", SYS_GENERAL),
-    ("apps", SYS_APPS),
-    ("default-apps", SYS_DEFAULTS),
-    ("services", SYS_SERVICES),
-    ("power", SYS_POWER),
-    ("storage", SYS_STORAGE),
-    ("history", SYS_HISTORY),
-    ("update", SYS_UPDATE),
-];
-
 /// A page's title in the sidebar.
 pub fn page_title(page: usize) -> String {
-    pages()
-        .get(page)
-        .map_or_else(String::new, |page| page.name.clone())
+    pages::def(page).map_or_else(String::new, |def| String::from(def.title))
 }
-
-/// The sub-pages a `--page` name can reach as `page/sub`, by page.
-pub const SUBS: [(usize, &str); 8] = [
-    (STATUS_BAR, "clock"),
-    (STATUS_BAR, "weather"),
-    (STATUS_BAR, "items"),
-    (STATUS_BAR, "activities"),
-    (DISPLAYS, "advanced"),
-    (ABOUT_SHELL, "files"),
-    (SYS_ABOUT, "advanced"),
-    (SYS_DEFAULTS, "file-types"),
-];
 
 /// A place by name: a page's name, or `page/sub` for one of its sub-pages.
 pub fn place_named(name: &str) -> Option<Place> {
@@ -268,12 +178,12 @@ pub fn place_named(name: &str) -> Option<Place> {
         Some((page, sub)) => (page, Some(sub)),
         None => (name, None),
     };
-    let mut place = Place::page(page_named(page)?);
+    let mut place = Place::page(pages::named(page)?);
     if let Some(sub) = sub {
-        let (_, sub) = SUBS
+        let (subs, _) = pages::def(place.page)?.subs;
+        let sub = subs
             .iter()
-            .copied()
-            .find(|(on, known)| *on == place.page && known.eq_ignore_ascii_case(sub.trim()))?;
+            .find(|known| known.eq_ignore_ascii_case(sub.trim()))?;
         place.views.push(View::Sub(sub));
     }
     Some(place)
@@ -294,7 +204,7 @@ fn page_arg(args: &[String]) -> Option<Place> {
 /// `--package <attr>`: the Apps page, with that nixpkgs package's details.
 fn package_arg(args: &[String]) {
     if let Some(attr) = flag(args, "--package") {
-        Navigation::write().set_page(SYS_APPS);
+        Navigation::write().set_page(pages::named("apps").unwrap_or_default());
         system::package::Details::open(&attr);
     }
 }
@@ -320,32 +230,6 @@ fn main() {
             package_arg(args);
         })
         .run();
-}
-
-fn pages() -> [Page; 21] {
-    [
-        Page::section("Shell"),
-        Page::new(ICON_DARK_MODE, "Appearance").accent(Accent::Blue),
-        Page::new(ICON_APPS, "Desktop").accent(Accent::Cyan),
-        Page::new(ICON_DISPLAY, "Displays").accent(Accent::Teal),
-        Page::new(ICON_MORE_HORIZ, "Status Bar").accent(Accent::Gray),
-        Page::new(ICON_LAYERS, "Dock").accent(Accent::Indigo),
-        Page::new(ICON_TUNE, "Quick Settings").accent(Accent::Gray),
-        Page::new(ICON_SEARCH, "Launcher").accent(Accent::Purple),
-        Page::new(ICON_TRAY, "Drop").accent(Accent::Orange),
-        Page::new(ICON_LOCK, "Passwords").accent(Accent::Gray),
-        Page::new(ICON_COMPUTER, "About").accent(Accent::Gray),
-        Page::section("System"),
-        Page::new(ICON_INFO, "About This Computer").accent(Accent::Gray),
-        Page::new(ICON_SETTINGS, "General").accent(Accent::Gray),
-        Page::new(ICON_PACKAGE, "Apps").accent(Accent::Blue),
-        Page::new(amane_kit::icons::ICON_OPEN_IN_NEW, "Default Apps").accent(Accent::Purple),
-        Page::new(ICON_DNS, "Services").accent(Accent::Green),
-        Page::new(ICON_LOCK, "Power & Lock").accent(Accent::Orange),
-        Page::new(ICON_STORAGE, "Storage").accent(Accent::Gray),
-        Page::new(ICON_HISTORY, "History").accent(Accent::Brown),
-        Page::new(ICON_UPDATE, "Software Update").accent(Accent::Red),
-    ]
 }
 
 /// Closing while a build runs would end it (nix stops a build whose client
@@ -400,19 +284,6 @@ fn shortcut(key: Key) -> bool {
     standard_shortcut(key)
 }
 
-/// A page's sub-page: its title and body, or None for a name it doesn't
-/// have.
-fn sub_page(page: usize, name: &str) -> Option<(String, Box<dyn Widget>)> {
-    match page {
-        STATUS_BAR => status_bar::sub(name),
-        SYS_DEFAULTS => system::defaults::sub(name),
-        DISPLAYS => displays::sub(name),
-        ABOUT_SHELL => about::sub(name),
-        SYS_ABOUT => system::about::sub(name),
-        _ => None,
-    }
-}
-
 /// What shows in the page's place: its title and body, scrolled under a
 /// name of its own.
 fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
@@ -437,99 +308,28 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
             system::package::title(),
             scrolled("settings.scroll.package", boxed(system::package::view())),
         ),
-        Some(View::Sub(name)) => match sub_page(page, name) {
+        Some(View::Sub(name)) => match pages::def(page).and_then(|def| (def.subs.1)(name)) {
             Some((title, body)) => (title, scrolled(sub_scroll(page, name), body)),
             None => content(page, None),
         },
         None => {
-            let (title, scroll, body): (&str, &'static str, Box<dyn Widget>) = match page {
-                APPEARANCE => (
-                    "Appearance",
-                    "settings.scroll.appearance",
-                    boxed(appearance::page()),
-                ),
-                DESKTOP => ("Desktop", "settings.scroll.desktop", boxed(desktop::page())),
-                DISPLAYS => (
-                    "Displays",
-                    "settings.scroll.displays",
-                    boxed(displays::page()),
-                ),
-                STATUS_BAR => (
-                    "Status Bar",
-                    "settings.scroll.status-bar",
-                    boxed(status_bar::page()),
-                ),
-                DOCK => ("Dock", "settings.scroll.dock", boxed(dock::page())),
-                QUICK_SETTINGS => (
-                    "Quick Settings",
-                    "settings.scroll.quick-settings",
-                    boxed(quick_settings::page()),
-                ),
-                LAUNCHER => (
-                    "Launcher",
-                    "settings.scroll.launcher",
-                    boxed(launcher::page()),
-                ),
-                DROP => ("Drop", "settings.scroll.drop", boxed(drop::page())),
-                PASSWORDS => (
-                    "Passwords",
-                    "settings.scroll.passwords",
-                    boxed(passwords::page()),
-                ),
-                SYS_ABOUT => (
-                    "About This Computer",
-                    "settings.scroll.system-about",
-                    boxed(system::about::page()),
-                ),
-                SYS_GENERAL => (
-                    "General",
-                    "settings.scroll.system-general",
-                    boxed(system::general::page()),
-                ),
-                SYS_APPS => (
-                    "Apps",
-                    "settings.scroll.system-apps",
-                    boxed(system::apps::page()),
-                ),
-                SYS_DEFAULTS => (
-                    "Default Apps",
-                    "settings.scroll.system-defaults",
-                    boxed(system::defaults::page()),
-                ),
-                SYS_SERVICES => (
-                    "Services",
-                    "settings.scroll.system-services",
-                    boxed(system::services::page()),
-                ),
-                SYS_POWER => (
-                    "Power & Lock",
-                    "settings.scroll.system-power",
-                    boxed(system::power::page()),
-                ),
-                SYS_HISTORY => (
-                    "History",
-                    "settings.scroll.system-history",
-                    boxed(system::history::page()),
-                ),
-                SYS_STORAGE => (
-                    "Storage",
-                    "settings.scroll.system-storage",
-                    boxed(system::storage::page()),
-                ),
-                SYS_UPDATE => (
-                    "Software Update",
-                    "settings.scroll.system-update",
-                    boxed(system::update::page()),
-                ),
-                _ => ("About", "settings.scroll.about", boxed(about::page())),
+            // a page that's gone shows the first
+            let Some(def) = pages::def(page).or_else(|| pages::all().next().map(|(_, def)| def))
+            else {
+                return (String::new(), amane_kit::layout::nothing());
             };
-            (String::from(title), scrolled(scroll, body))
+            let scroll = amane_kit::intern::intern(&format!("settings.scroll.{}", def.name));
+            (
+                String::from(def.title),
+                scrolled(scroll, boxed((def.body)())),
+            )
         }
     }
 }
 
 /// The scroll id a sub-page keeps its offset under: one per page and name.
 fn sub_scroll(page: usize, name: &str) -> &'static str {
+    let page = pages::def(page).map_or("", |def| def.name);
     amane_kit::intern::intern(&format!("settings.scroll.{page}.{name}"))
 }
 
@@ -541,9 +341,9 @@ fn main_window() -> Window {
     let page = place.page;
     let view = place.view();
 
-    let pages = pages();
+    let pages = pages::sidebar();
     // its poll rests while another page shows
-    displays::showing(page == DISPLAYS && view.is_none());
+    displays::showing(pages::is(page, "displays") && view.is_none());
 
     // a search shows what it finds in the page's place, and narrows the
     // sidebar to the pages with something found
@@ -555,7 +355,7 @@ fn main_window() -> Window {
             .map(|index| {
                 found.iter().any(|found| {
                     let page = found.place.split('/').next().unwrap_or_default();
-                    page_named(page) == Some(index)
+                    pages::named(page) == Some(index)
                 })
             })
             .collect()
@@ -690,10 +490,9 @@ fn toolbar_action(page: usize, view: Option<View>) -> Option<Box<dyn Widget>> {
     if view.is_some() {
         return None;
     }
-    match page {
-        QUICK_SETTINGS => quick_settings::toolbar(),
-        _ => None,
-    }
+    pages::def(page)
+        .and_then(|def| def.toolbar)
+        .and_then(|toolbar| toolbar())
 }
 
 /// The toolbar over the page: back and forward, the page's title, and any
@@ -831,20 +630,20 @@ mod tests {
 
     #[test]
     fn the_launcher_page_opens_by_its_old_name_too() {
-        assert_eq!(page_named("launcher"), Some(LAUNCHER));
         // the old name, which keybinds may still use
-        assert_eq!(page_named("spotlight"), Some(LAUNCHER)); // lint-terms: allow
+        assert_eq!(pages::named("spotlight"), pages::named("launcher")); // lint-terms: allow
     }
 
     #[test]
     fn back_and_forward_walk_the_places() {
         let mut nav = Navigation::new();
         assert!(!nav.can_back());
-        nav.set_page(STATUS_BAR);
+        let bar = pages::named("status-bar").unwrap();
+        nav.set_page(bar);
         nav.open(View::Sub("clock"));
         assert_eq!(nav.here().view(), Some(View::Sub("clock")));
         nav.back();
-        assert_eq!(nav.here(), &Place::page(4));
+        assert_eq!(nav.here(), &Place::page(bar));
         assert!(nav.can_forward());
         nav.forward();
         assert_eq!(nav.here().view(), Some(View::Sub("clock")));

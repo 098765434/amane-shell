@@ -20,6 +20,7 @@ pub const FIELD: &str = "settings.search";
 
 /// One thing to find: where it is (`--page` names, `page/sub` for a
 /// sub-page), its title, the row it lights, and other words for it.
+#[derive(Clone, Copy)]
 pub struct Entry {
     pub place: &'static str,
     pub title: &'static str,
@@ -50,10 +51,16 @@ const fn row(
     }
 }
 
-/// Every page and the Shell pages' settings.
-pub const INDEX: &[Entry] = &[
+/// Everything a search finds: every page, from the pages' table, then the
+/// sub-pages and the Shell pages' settings.
+pub fn entries() -> impl Iterator<Item = Entry> {
+    let pages = crate::pages::all().map(|(_, def)| page(def.name, def.title, def.words));
+    pages.chain(INDEX.iter().copied())
+}
+
+/// The sub-pages and the Shell pages' settings.
+const INDEX: &[Entry] = &[
     // Appearance
-    page("appearance", "Appearance", &["look", "theme"]),
     row(
         "appearance",
         "Light, dark or auto",
@@ -103,7 +110,6 @@ pub const INDEX: &[Entry] = &[
         &["reduce motion", "animations"],
     ),
     // Desktop
-    page("desktop", "Desktop", &["wallpaper"]),
     row(
         "desktop",
         "Show widgets on the desktop",
@@ -123,7 +129,6 @@ pub const INDEX: &[Entry] = &[
         &["add widget", "move widget"],
     ),
     // Displays
-    page("displays", "Displays", &["monitor", "screen"]),
     row(
         "displays",
         "Resolution",
@@ -209,11 +214,6 @@ pub const INDEX: &[Entry] = &[
         &["background color"],
     ),
     // Status Bar
-    page(
-        "status-bar",
-        "Status Bar",
-        &["menu bar", "panel", "taskbar", "top bar"],
-    ),
     row(
         "status-bar",
         "Bar position",
@@ -330,7 +330,6 @@ pub const INDEX: &[Entry] = &[
         &["tray", "system tray", "app icons"],
     ),
     // Dock
-    page("dock", "Dock", &["taskbar", "launcher bar"]),
     row(
         "dock",
         "Dock size",
@@ -362,11 +361,6 @@ pub const INDEX: &[Entry] = &[
         &["bounce"],
     ),
     // Quick Settings
-    page(
-        "quick-settings",
-        "Quick Settings",
-        &["controls", "wifi", "bluetooth", "volume", "toggles"],
-    ),
     row(
         "quick-settings",
         "Reset the Quick Settings layout",
@@ -374,11 +368,6 @@ pub const INDEX: &[Entry] = &[
         &["customize"],
     ),
     // Launcher
-    page(
-        "launcher",
-        "Launcher",
-        &["search", "app launcher", "run", "apps"],
-    ),
     row(
         "launcher",
         "Show applications as",
@@ -398,7 +387,6 @@ pub const INDEX: &[Entry] = &[
         &["shortcuts", "hotkeys"],
     ),
     // Drop
-    page("drop", "Drop", &["amane-drop", "grid", "shelf", "share"]),
     row(
         "drop",
         "Tiles a row",
@@ -436,20 +424,6 @@ pub const INDEX: &[Entry] = &[
         &["aws", "r2", "minio", "upload", "bucket"],
     ),
     // Passwords
-    page(
-        "passwords",
-        "Passwords",
-        &[
-            "bitwarden",
-            "vaultwarden",
-            "rbw",
-            "autofill",
-            "fill",
-            "vault",
-            "login",
-            "keychain",
-        ],
-    ),
     row(
         "passwords",
         "Server",
@@ -469,7 +443,6 @@ pub const INDEX: &[Entry] = &[
         &["autofill", "input method", "password field"],
     ),
     // About
-    page("about-shell", "About Shell Settings", &["version"]),
     page(
         "about-shell/files",
         "Settings files",
@@ -477,82 +450,15 @@ pub const INDEX: &[Entry] = &[
     ),
     // System
     page(
-        "about",
-        "About This Computer",
-        &["nixos", "kernel", "version", "generation", "system"],
-    ),
-    page(
         "about/advanced",
         "Configuration folder",
         &["flake", "repository", "nixos-config"],
-    ),
-    page(
-        "general",
-        "General",
-        &[
-            "computer name",
-            "hostname",
-            "language",
-            "keyboard",
-            "layout",
-        ],
-    ),
-    page(
-        "apps",
-        "Apps",
-        &[
-            "install",
-            "software",
-            "packages",
-            "nixpkgs",
-            "flatpak",
-            "uninstall",
-        ],
-    ),
-    page(
-        "default-apps",
-        "Default Apps",
-        &[
-            "default browser",
-            "open with",
-            "file types",
-            "associations",
-            "mime",
-            "terminal",
-            "mail",
-            "pdf",
-        ],
     ),
     row(
         "default-apps/file-types",
         "File Types",
         "settings.defaults.type-row",
         &["extension", "kind of file", "reset"],
-    ),
-    page(
-        "services",
-        "Services",
-        &["ssh", "tailscale", "syncthing", "bluetooth", "daemons"],
-    ),
-    page(
-        "power",
-        "Power & Lock",
-        &["sleep", "lock screen", "idle", "screen off", "dim"],
-    ),
-    page(
-        "storage",
-        "Storage",
-        &["disk", "space", "clean up", "garbage", "free space"],
-    ),
-    page(
-        "history",
-        "History",
-        &["rollback", "generations", "go back", "restore"],
-    ),
-    page(
-        "update",
-        "Software Update",
-        &["upgrade", "updates", "flake.lock"],
     ),
 ];
 
@@ -562,7 +468,7 @@ fn where_is(place: &str) -> String {
         Some((page, sub)) => (page, Some(sub)),
         None => (place, None),
     };
-    let page = crate::page_named(page).map_or_else(|| page.to_string(), crate::page_title);
+    let page = crate::pages::named(page).map_or_else(|| page.to_string(), crate::page_title);
     match sub {
         Some(sub) => {
             let mut sub = sub.to_string();
@@ -609,8 +515,7 @@ pub fn find(query: &str, system: &[(String, String, String)]) -> Vec<Found> {
     if query.is_empty() {
         return Vec::new();
     }
-    let mut found: Vec<Found> = INDEX
-        .iter()
+    let mut found: Vec<Found> = entries()
         .filter_map(|entry| {
             Some(Found {
                 place: entry.place.to_string(),
@@ -703,23 +608,16 @@ mod tests {
 
     #[test]
     fn every_page_and_sub_page_can_be_found() {
-        for (name, page) in crate::PAGE_NAMES {
-            assert!(
-                INDEX.iter().any(|entry| entry.place == name),
-                "{name} has nothing to find"
-            );
-            assert_eq!(crate::page_named(name), Some(page), "{name} isn't its page");
-            for (on, sub) in crate::SUBS {
-                let place = format!("{name}/{sub}");
-                if on == page {
-                    assert!(
-                        INDEX.iter().any(|entry| entry.place == place),
-                        "{place} has nothing to find"
-                    );
-                }
+        for (_, def) in crate::pages::all() {
+            for sub in def.subs.0 {
+                let place = format!("{}/{sub}", def.name);
+                assert!(
+                    entries().any(|entry| entry.place == place),
+                    "{place} has nothing to find"
+                );
             }
         }
-        for entry in INDEX {
+        for entry in entries() {
             assert!(
                 crate::place_named(entry.place).is_some(),
                 "{} isn't a page or sub-page",
