@@ -68,6 +68,7 @@ impl StatusItem {
         client().items.insert(id.clone(), spec.clone());
 
         run_in_order(move || {
+            // no bar yet: items are registered again when one appears
             let _ = call("RegisterItem", &[Argument::Text(encode(&spec))]);
         });
 
@@ -85,6 +86,7 @@ impl StatusItem {
         client().items.insert(self.id.clone(), spec.clone());
 
         run_in_order(move || {
+            // no bar yet: items are registered again when one appears
             let _ = call("UpdateItem", &[Argument::Text(encode(&spec))]);
         });
     }
@@ -111,6 +113,7 @@ impl StatusItem {
         let id = self.id;
 
         run_in_order(move || {
+            // no bar: nothing to remove
             let _ = call("RemoveItem", &[Argument::Text(id)]);
         });
     }
@@ -177,6 +180,7 @@ impl LiveActivity {
                 return;
             };
 
+            // no bar yet: activities start again when one appears
             let _ = call(
                 "UpdateActivity",
                 &[
@@ -224,6 +228,7 @@ impl LiveActivity {
                 return;
             };
 
+            // no bar: nothing to end
             let _ = call(
                 "EndActivity",
                 &[Argument::Unsigned(handle), Argument::Text(encode(&dismiss))],
@@ -271,6 +276,7 @@ fn register_again() {
     };
 
     for spec in items {
+        // no bar yet: they go again when one appears
         let _ = call("RegisterItem", &[Argument::Text(encode(&spec))]);
     }
 

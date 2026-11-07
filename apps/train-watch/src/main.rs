@@ -76,6 +76,7 @@ impl Watch {
             .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))
             .unwrap_or_else(std::env::temp_dir)
             .join("amane-train-watch");
+        // the log is written below, which says so if the folder couldn't be made
         let _ = std::fs::create_dir_all(&cache);
         let copy = cache.join(format!("{name}.log"));
         let mut watch = Self {
@@ -99,9 +100,11 @@ impl Watch {
             let tx = tx.clone();
             activity.on_event(move |event| match event {
                 ActivityEvent::Action(action) => {
+                    // the watcher has gone
                     let _ = tx.send(Message::Action(action));
                 }
                 ActivityEvent::Dismissed => {
+                    // the watcher has gone
                     let _ = tx.send(Message::Action(String::from("dismissed")));
                 }
             });

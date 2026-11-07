@@ -237,7 +237,7 @@ impl Applied {
             fs::write(&path, json.to_string())
         };
         if let Err(e) = write() {
-            eprintln!("amane-settings: couldn't save {}: {e}", path.display());
+            log::warn!("couldn't save {}: {e}", path.display());
         }
     }
 }

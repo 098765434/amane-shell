@@ -99,7 +99,7 @@ pub fn folder() -> &'static Path {
         let root = amane_kit::paths::runtime().join("amane-shader-lab");
 
         if let Err(error) = amane_kit::lab::write_effects(&root) {
-            eprintln!("amane-shader-lab: {}: {error}", root.display());
+            log::warn!("{}: {error}", root.display());
         }
 
         root.join("effects")

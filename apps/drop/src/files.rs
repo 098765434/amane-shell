@@ -129,6 +129,7 @@ pub fn copy(
     result?;
     fs::set_permissions(to, meta.permissions())?;
     if let Ok(modified) = meta.modified() {
+        // the time is a nicety; the copy is whole without it
         let _ = File::options()
             .write(true)
             .open(to)
@@ -176,6 +177,7 @@ pub fn move_to(
         }
         Err(error) if error.kind() == io::ErrorKind::CrossesDevices => {
             if let Err(error) = copy(from, to, done, cancel) {
+                // what was copied goes; the copy's error is the one reported
                 let _ = remove(to);
                 return Err(error);
             }

@@ -145,6 +145,7 @@ impl Catalog {
                 if let Ok(entries) = fs::read_dir(cache_dir()) {
                     for entry in entries.flatten() {
                         if entry.path() != path {
+                            // an old catalog left behind is only space; the next build tries again
                             let _ = fs::remove_file(entry.path());
                         }
                     }

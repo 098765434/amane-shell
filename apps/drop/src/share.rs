@@ -312,6 +312,7 @@ pub fn upload_text(
     let file = folder.join(format!("Text {}.txt", std::process::id()));
     std::fs::write(&file, text)?;
     let result = upload(&file, to, cancel, tell);
+    // a file of its own for this upload; a leftover is only space
     let _ = std::fs::remove_file(file);
     result
 }
@@ -347,6 +348,7 @@ fn run_curl(
     let mut stdout = child.stdout.take().ok_or(io::ErrorKind::BrokenPipe)?;
     let answer = std::thread::spawn(move || {
         let mut text = String::new();
+        // a pipe closed early leaves what was read
         let _ = stdout.read_to_string(&mut text);
         text
     });
@@ -361,6 +363,7 @@ fn run_curl(
             }
             for &byte in &buffer[..read] {
                 if byte == b'\r' || byte == b'\n' {
+                    // the reader is gone: the upload has ended
                     let _ = pieces.send(String::from_utf8_lossy(&piece).into_owned());
                     piece.clear();
                 } else {
@@ -369,6 +372,7 @@ fn run_curl(
             }
         }
         if !piece.is_empty() {
+            // the reader is gone: the upload has ended
             let _ = pieces.send(String::from_utf8_lossy(&piece).into_owned());
         }
     });
@@ -376,6 +380,7 @@ fn run_curl(
     let mut said = String::new();
     loop {
         if cancel.load(Ordering::Relaxed) {
+            // cancelled: curl may have ended already
             let _ = child.kill();
             let _ = child.wait();
             return Err(io::ErrorKind::Interrupted.into());

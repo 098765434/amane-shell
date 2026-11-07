@@ -146,6 +146,7 @@ impl Connection {
 
 impl Drop for Connection {
     fn drop(&mut self) {
+        // the server may have ended already
         let _ = self.process.kill();
         let _ = self.process.wait();
     }
@@ -160,7 +161,7 @@ impl Log {
         let log = self.clone();
         thread::spawn(move || {
             for line in BufReader::new(from).lines().map_while(Result::ok) {
-                eprintln!("{line}");
+                log::info!(target: "scrcpy-server", "{line}");
                 log.0
                     .lock()
                     .unwrap_or_else(PoisonError::into_inner)
@@ -251,6 +252,7 @@ pub fn start(options: &Options) -> Result<Connection, String> {
     ) {
         Ok(_) => {
             let result = start_reverse(options, scid, &listener);
+            // tidying after the start, whose result is the one that matters
             let _ = adb(&options.serial, &["reverse", "--remove", &socket]);
             result
         }
@@ -296,6 +298,7 @@ fn start_reverse(
                         .unwrap_or_else(|| "The phone stopped the server.".into()));
                 }
                 if Instant::now() > deadline {
+                    // past the deadline: it may have ended already
                     let _ = process.kill();
                     return Err("The phone didn't connect back in time.".into());
                 }
@@ -343,6 +346,7 @@ fn start_forward(options: &Options, scid: u32, socket: &str) -> Result<Connectio
         connection(options, sockets, process, log)
     });
 
+    // tidying after the session, whose result is the one that matters
     let _ = adb(
         &options.serial,
         &["forward", "--remove", &format!("tcp:{port}")],
@@ -377,6 +381,7 @@ fn connection(
     };
 
     if let Some(control) = &control {
+        // only latency rides on it
         let _ = control.set_nodelay(true);
     }
 
@@ -405,6 +410,7 @@ pub fn list_apps(serial: &str) -> Result<Vec<App>, String> {
     ];
 
     let mut process = run_server(serial, &arguments, &log)?;
+    // its end is read from the log it leaves
     let _ = process.wait();
 
     // the readers may still be taking the last lines

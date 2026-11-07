@@ -68,6 +68,7 @@ impl Service for NightLight {
     fn listen() {
         let path = state_file();
         if let Some(folder) = path.parent() {
+            // a write that follows says so if the folder couldn't be made
             let _ = fs::create_dir_all(folder);
         }
         {

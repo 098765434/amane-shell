@@ -73,6 +73,7 @@ pub fn send(message: Control) {
         .unwrap_or_else(PoisonError::into_inner)
         .as_ref()
     {
+        // the screen has closed: nothing waits for it
         let _ = sender.send(message);
     }
 }
@@ -143,7 +144,7 @@ fn run(options: &Options) -> Result<(), String> {
         thread::spawn(move || {
             let result = audio::run(audio, |sound| Mirror::write().sound = Some(sound));
             if let Err(why) = result {
-                eprintln!("amane-mirror: sound: {why}");
+                log::warn!("sound: {why}");
                 Mirror::write().sound = Some(Sound::Unavailable);
             }
         });

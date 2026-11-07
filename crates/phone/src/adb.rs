@@ -325,6 +325,7 @@ fn track() {
         }
     }
 
+    // it may have ended already
     let _ = child.kill();
     let _ = child.wait();
 

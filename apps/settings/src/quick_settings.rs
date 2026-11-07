@@ -41,6 +41,7 @@ impl Service for QuickControls {
 
         // the folder is watched, so it has to be there
         if let Some(folder) = path.parent() {
+            // watching a folder that couldn't be made just hears nothing
             let _ = fs::create_dir_all(folder);
         }
 

@@ -66,6 +66,7 @@ impl Recording {
     pub fn stop(mut self) {
         self.running.store(false, Ordering::SeqCst);
         if let Some(thread) = self.thread.take() {
+            // a recording thread that panicked has nothing left to give
             let _ = thread.join();
         }
     }

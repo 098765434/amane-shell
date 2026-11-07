@@ -149,10 +149,12 @@ pub fn run(mut stream: impl Read, mut started: impl FnMut(Sound)) -> Result<(), 
             .get_latency()
             .is_ok_and(|latency| Duration::from_micros(latency.0) > TOO_LATE)
         {
+            // sound is best effort: a device gone mid-stream just goes quiet
             let _ = output.flush();
         }
     }
 
+    // as above
     let _ = output.drain();
 
     Ok(())

@@ -72,7 +72,7 @@ fn fallback() -> ExitCode {
         .args(std::env::args_os().skip(1))
         .exec();
 
-    eprintln!("amane-pinentry: no shell to ask, and {FALLBACK} didn't run: {error}");
+    log::error!("no shell to ask, and {FALLBACK} didn't run: {error}");
 
     ExitCode::FAILURE
 }

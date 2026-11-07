@@ -621,22 +621,26 @@ impl PhoneMessages {
                 }
             }
 
-            let _ = bus.try_call(
+            if let Err(error) = bus.try_call(
                 KDECONNECT,
                 &path,
                 CONVERSATIONS,
                 "requestAllConversationThreads",
                 &[],
-            );
+            ) {
+                log::debug!("asking the phone for its conversations: {error:?}");
+            }
 
             // and its contacts, which come by localCacheSynchronized; names show from then on
-            let _ = bus.try_call(
+            if let Err(error) = bus.try_call(
                 KDECONNECT,
                 &format!("{path}/contacts"),
                 CONTACTS,
                 "synchronizeRemoteWithLocal",
                 &[],
-            );
+            ) {
+                log::debug!("asking the phone for its contacts: {error:?}");
+            }
         });
     }
 
@@ -761,6 +765,7 @@ impl PhoneMessages {
             .collect();
 
         if message.thread < 0 {
+            // a message that couldn't go stays in the list as failed
             let _ = Self::new_conversation(&message.addresses, &message.body, &files);
         } else {
             Self::reply(message.thread, &message.body, &files);
@@ -769,6 +774,7 @@ impl PhoneMessages {
 
     // forgets a failed message
     pub fn discard(uid: i64) {
+        // nothing to forget is fine
         let _ = PhoneMessages::write().take_local(uid);
     }
 
@@ -1079,7 +1085,7 @@ fn send(
 
         let bus = Bus::session();
 
-        let _ = match thread.filter(|thread| *thread >= 0) {
+        if let Err(error) = match thread.filter(|thread| *thread >= 0) {
             Some(thread) => bus.try_call(
                 KDECONNECT,
                 &path,
@@ -1104,7 +1110,9 @@ fn send(
                     files,
                 ],
             ),
-        };
+        } {
+            log::warn!("couldn't send the message: {error:?}");
+        }
     });
 }
 

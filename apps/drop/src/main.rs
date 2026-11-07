@@ -36,6 +36,7 @@ fn main() {
     if !running {
         let item = StatusItem::register(spec());
         item.on_event(event);
+        // set once, here
         let _ = ITEM.set(item);
         command(&args);
     }

@@ -33,6 +33,7 @@ pub struct RunCommand {
 static COMMANDS: OnceLock<&'static [RunCommand]> = OnceLock::new();
 
 pub(crate) fn set_list(list: &'static [RunCommand]) {
+    // the program's list is set once; a second is ignored
     let _ = COMMANDS.set(list);
 }
 

@@ -217,7 +217,7 @@ fn save(shelves: &Shelves) {
         std::fs::rename(part, &file)
     };
     if let Err(e) = write() {
-        eprintln!("amane-drop: couldn't save {}: {e}", file.display());
+        log::warn!("couldn't save {}: {e}", file.display());
     }
 }
 

@@ -47,6 +47,7 @@ impl Sender {
     }
 
     pub fn shutdown(&self) {
+        // already closed is closed
         let _ = self.stream.shutdown(std::net::Shutdown::Both);
     }
 }

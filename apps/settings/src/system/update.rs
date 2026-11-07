@@ -114,9 +114,12 @@ impl Check {
         let now = Utc::now().timestamp();
         let json = format!("{{\n  \"checked\": {now},\n  \"changes\": []\n}}\n");
         if let Some(folder) = path.parent() {
+            // the write below says so if the folder couldn't be made
             let _ = fs::create_dir_all(folder);
         }
-        let _ = fs::write(path, json);
+        if let Err(error) = fs::write(path, json) {
+            log::warn!("couldn't keep the update check: {error}");
+        }
     }
 
     /// "2 hours ago", "yesterday".

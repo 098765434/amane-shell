@@ -186,7 +186,7 @@ fn main() {
         std::process::exit(match apps::write(&args) {
             Ok(()) => 0,
             Err(why) => {
-                eprintln!("amane-mirror: {why}");
+                log::warn!("{why}");
                 1
             }
         });
@@ -196,7 +196,7 @@ fn main() {
         std::process::exit(match webcam(&args, &facing) {
             Ok(()) => 0,
             Err(why) => {
-                eprintln!("amane-mirror: camera: {why}");
+                log::warn!("camera: {why}");
                 1
             }
         });
@@ -499,7 +499,7 @@ fn push_files(paths: Vec<std::path::PathBuf>) {
                 .is_some_and(|extension| extension.eq_ignore_ascii_case("apk"));
             if is_apk {
                 if let Err(why) = amane_phone::adb(Some(&serial), &["install", "-r", &local]) {
-                    eprintln!("amane-mirror: install {local}: {why}");
+                    log::warn!("install {local}: {why}");
                 }
                 continue;
             }
@@ -509,7 +509,7 @@ fn push_files(paths: Vec<std::path::PathBuf>) {
             let remote = format!("/sdcard/Download/{}", name.to_string_lossy());
             match amane_phone::adb(Some(&serial), &["push", &local, &remote]) {
                 Ok(_) => session::send(protocol::Control::ScanFile(remote)),
-                Err(why) => eprintln!("amane-mirror: push {local}: {why}"),
+                Err(why) => log::warn!("push {local}: {why}"),
             }
         }
     });

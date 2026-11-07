@@ -66,11 +66,14 @@ pub fn serve(engine: Engine) -> Result<(), String> {
     if UnixStream::connect(&path).is_ok() {
         return Err(format!("another one already serves {}", path.display()));
     }
+    // a socket an earlier run left, if any
     let _ = std::fs::remove_file(&path);
     let listener =
         UnixListener::bind(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-    let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
-    eprintln!("amane-assistant: serving {}", path.display());
+    if let Err(error) = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)) {
+        log::warn!("couldn't make the socket private: {error}");
+    }
+    log::info!("serving {}", path.display());
 
     let out = Arc::new(Out::default());
     let (jobs, queue) = mpsc::channel();
@@ -88,6 +91,7 @@ pub fn serve(engine: Engine) -> Result<(), String> {
         // the last shell's listening ends with it
         if let Some(recording) = recording.lock().unwrap_or_else(|e| e.into_inner()).take() {
             recording.stop();
+            // the worker has gone: the server is ending
             let _ = jobs.send(Job::ListenCancel);
         }
         *out.0.lock().unwrap_or_else(|e| e.into_inner()) = Some(writer);
@@ -138,6 +142,7 @@ fn read(
                 *slot = Some(Recording::start(
                     move |pcm, rms| {
                         levels.send(&Message::Level { rms });
+                        // the worker has gone: the server is ending
                         let _ = pieces.send(Job::Audio(pcm, rms));
                     },
                     move |error| {

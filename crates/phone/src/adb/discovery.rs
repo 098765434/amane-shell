@@ -45,6 +45,7 @@ pub fn start() {
     };
 
     let (Ok(pairing), Ok(connect)) = (started.browse(PAIRING), started.browse(CONNECT)) else {
+        // a browser that already stopped stops as well
         let _ = started.shutdown();
 
         return;
@@ -87,6 +88,7 @@ pub fn start() {
 
 pub fn stop() {
     if let Some(daemon) = DAEMON.lock().unwrap_or_else(PoisonError::into_inner).take() {
+        // a browser that already stopped stops as well
         let _ = daemon.shutdown();
     }
 }

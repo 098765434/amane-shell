@@ -48,7 +48,7 @@ fn main() {
         )),
     };
     if let Err(error) = result {
-        eprintln!("amane-assistant: {error}");
+        log::error!("{error}");
         std::process::exit(1);
     }
 }
@@ -69,6 +69,7 @@ fn models_dir() -> PathBuf {
 
 fn cache_dir() -> PathBuf {
     let dir = dir("XDG_CACHE_HOME", ".cache").join("amane-assistant");
+    // binding the socket below says so if the folder couldn't be made
     let _ = std::fs::create_dir_all(&dir);
     dir
 }

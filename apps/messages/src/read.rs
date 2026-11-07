@@ -75,9 +75,12 @@ fn save() {
         serde_json::to_string(&named).unwrap_or_default()
     });
     if let Some(folder) = path.parent() {
+        // the write below says so if the folder couldn't be made
         let _ = std::fs::create_dir_all(folder);
     }
-    let _ = std::fs::write(path, text);
+    if let Err(error) = std::fs::write(path, text) {
+        log::warn!("couldn't keep what was read: {error}");
+    }
 }
 
 #[cfg(test)]

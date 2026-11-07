@@ -119,7 +119,7 @@ impl Service for Lab {
                     state = config;
                     saved_as = Some(slug);
                 }
-                Err(error) => eprintln!("amane-shader-lab: {}: {error}", path.display()),
+                Err(error) => log::warn!("{}: {error}", path.display()),
             }
         }
 

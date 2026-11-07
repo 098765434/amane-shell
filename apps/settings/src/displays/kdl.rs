@@ -574,6 +574,7 @@ fn write_atomic(path: &Path, text: &str) -> Result<(), String> {
         .map_err(|e| fail(&temp, e))?;
     fs::rename(&temp, path).map_err(|e| fail(path, e))?;
     if let Some(folder) = path.parent() {
+        // the file is in place; an unsynced folder only risks the rename in a crash
         let _ = fs::File::open(folder).and_then(|folder| folder.sync_all());
     }
     Ok(())

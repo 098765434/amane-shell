@@ -218,6 +218,7 @@ pub fn write_catalog(config: &Config, path: &Path) -> Result<usize, String> {
         Err(failure) => Err(failure.message),
     };
     if result.is_err() {
+        // a part-written catalog is only space; the next build writes another
         let _ = fs::remove_file(&new);
     }
     result

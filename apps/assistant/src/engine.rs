@@ -97,8 +97,8 @@ impl Engine {
             load(&self.models.join(name))?;
         }
         self.loaded = true;
-        eprintln!(
-            "amane-assistant: loaded {} in {} ms",
+        log::info!(
+            "loaded {} in {} ms",
             self.models.display(),
             started.elapsed().as_millis()
         );
@@ -130,6 +130,7 @@ impl Engine {
         self.load()?;
         // what was left of one before
         if self.listening.is_some() {
+            // a stream that already ended stops as well
             let _ = stream_stop();
         }
         self.listening = Some(Listening {
@@ -181,6 +182,7 @@ impl Engine {
 
     pub fn listen_cancel(&mut self) {
         if self.listening.take().is_some() {
+            // a stream that already ended stops as well
             let _ = stream_stop();
         }
     }

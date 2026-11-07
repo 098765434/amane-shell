@@ -18,13 +18,15 @@ impl KdeConnect {
      */
     pub fn start() {
         run_in_order(|| {
-            let _ = Bus::session().try_call(
+            if let Err(error) = Bus::session().try_call(
                 KDECONNECT,
                 DAEMON_PATH,
                 DAEMON,
                 "devices",
                 &[Argument::from(false), Argument::from(false)],
-            );
+            ) {
+                log::debug!("KDE Connect's devices: {error:?}");
+            }
 
             super::resync();
         });
@@ -33,13 +35,15 @@ impl KdeConnect {
     // looks for phones on the network again
     pub fn refresh() {
         run_in_order(|| {
-            let _ = Bus::session().try_call(
+            if let Err(error) = Bus::session().try_call(
                 KDECONNECT,
                 DAEMON_PATH,
                 DAEMON,
                 "forceOnNetworkChange",
                 &[],
-            );
+            ) {
+                log::debug!("asking KDE Connect to look again: {error:?}");
+            }
 
             super::resync();
         });
@@ -169,13 +173,15 @@ impl KdeConnect {
                 return;
             }
 
-            let _ = Bus::session().try_call(
+            if let Err(error) = Bus::session().try_call(
                 KDECONNECT,
                 &device_path(&device),
                 DEVICE,
                 "reloadPlugins",
                 &[],
-            );
+            ) {
+                log::debug!("reloading the phone's plugins: {error:?}");
+            }
 
             super::resync();
         });
@@ -200,13 +206,15 @@ fn restart_plugin(device: &str, plugin: &str) {
 
     // d-bus keeps the order, so the plugin is back on after it was off
     for on in [false, true] {
-        let _ = bus.try_call(
+        if let Err(error) = bus.try_call(
             KDECONNECT,
             &path,
             DEVICE,
             "setPluginEnabled",
             &[Argument::from(plugin), Argument::from(on)],
-        );
+        ) {
+            log::debug!("switching a phone plugin: {error:?}");
+        }
     }
 }
 
@@ -250,7 +258,11 @@ pub(crate) fn input_call(
     run_in_order(move || {
         let path = format!("{}{sub}", device_path(&device));
 
-        let _ = Bus::session().try_call(KDECONNECT, &path, interface, method, &arguments);
+        if let Err(error) =
+            Bus::session().try_call(KDECONNECT, &path, interface, method, &arguments)
+        {
+            log::debug!("KDE Connect: {error:?}");
+        }
     });
 }
 
