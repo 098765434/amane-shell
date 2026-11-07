@@ -135,7 +135,7 @@ Writes `dock.json` (`dock.rs`); see [dock.md](dock.md).
 
 The layout is the shell's own state, so this page (`quick_settings.rs`) has no file of its own: it
 calls the running shell over IPC ([ipc.md](../integration/ipc.md#quick-settings)) and watches
-`$XDG_STATE_HOME/amane-shell/quick-settings` to stay in step with Customize.
+`$XDG_STATE_HOME/amane-shell/quick-settings.json` to stay in step with Customize.
 
 - **Customize…** (`quick-settings customize`) and **Reset Layout…** (`reset-layout`, after a
   dialog).

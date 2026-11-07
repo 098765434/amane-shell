@@ -1,7 +1,8 @@
 //! The layout — where each control sits on the canvas and how big it is,
-//! as edit mode leaves it. Kept in `$XDG_STATE_HOME/amane-shell/
-//! quick-settings` as JSON; absent, unreadable or from an older version,
-//! it's the default order packed onto the canvas. A control the file
+//! as edit mode leaves it. Kept in the state file `quick-settings.json`
+//! (the older `quick-settings`, version 2 of the same shape, is read when
+//! that isn't there); absent or unreadable, it's the default order packed
+//! onto the canvas. A control the file
 //! doesn't know, or one whose hardware shows up later, waits in the Add
 //! list rather than tearing a hole in the canvas.
 //!
@@ -12,16 +13,59 @@
 
 use std::cell::RefCell;
 
-use serde_json::{Value, json};
+use amane::serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use super::controls::ControlId;
 use super::grid::{Canvas, Place, Span};
-use crate::services::{save_state, state_file};
+use crate::services::state::{self, State};
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use amane_kit::grid::{self, GridKey};
 
-const FILE: &str = "quick-settings";
-const VERSION: u64 = 2;
+/// The file from before the state files, with the version inside.
+const OLD_FILE: &str = "quick-settings";
+/// The old file's version this reads; older ones were never moved on.
+const OLD_VERSION: u64 = 2;
+
+/// The file's shape. Each field is optional so one bad control is dropped,
+/// not the whole file.
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", default)]
+pub struct Kept {
+    controls: Vec<KeptControl>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", default)]
+struct KeptControl {
+    id: String,
+    cols: Option<u64>,
+    rows: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    col: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    row: Option<u64>,
+}
+
+impl State for Kept {
+    const FILE: &'static str = "quick-settings.json";
+    const VERSION: u32 = 1;
+
+    fn legacy() -> Option<Self> {
+        Self::from_old(&state::legacy_text(OLD_FILE)?)
+    }
+}
+
+impl Kept {
+    /// The old file: the same shape, with `"version": 2` beside it.
+    fn from_old(text: &str) -> Option<Self> {
+        let value: Value = serde_json::from_str(text).ok()?;
+        if value.get("version").and_then(Value::as_u64) != Some(OLD_VERSION) {
+            return None;
+        }
+        serde_json::from_value(value).ok()
+    }
+}
 
 /// A control's place and size, or that it waits in the Add list.
 pub type Entry = grid::Entry<ControlId>;
@@ -65,12 +109,12 @@ pub trait Stored: Sized {
     fn load(canvas: Canvas, present: &dyn Fn(ControlId) -> bool) -> Self;
     /// Writes the layout file.
     fn save(&self);
-    /// `None` for anything but a current layout file.
-    fn parse(canvas: Canvas, text: &str) -> Option<Self>;
+    /// The layout a file kept, on `canvas`.
+    fn from_kept(canvas: Canvas, kept: Kept) -> Self;
     /// Makes the entries a layout: every control placed where it fits, or hidden.
     fn reconcile(&mut self);
-    /// The layout file's text.
-    fn to_json(&self) -> String;
+    /// What the file keeps of the layout.
+    fn to_kept(&self) -> Kept;
 }
 
 impl Stored for Layout {
@@ -97,47 +141,34 @@ impl Stored for Layout {
     }
 
     fn load(canvas: Canvas, present: &dyn Fn(ControlId) -> bool) -> Self {
-        std::fs::read_to_string(state_file(FILE))
-            .ok()
-            .and_then(|text| Self::parse(canvas, &text))
+        state::load::<Kept>()
+            .map(|kept| Self::from_kept(canvas, kept))
             .unwrap_or_else(|| Self::default_for(canvas, present))
     }
 
     fn save(&self) {
-        save_state(FILE, &self.to_json());
+        state::save(&self.to_kept());
     }
 
-    /// `None` for anything but a current layout file. What it places is
-    /// kept where it fits, unknown names are dropped, and every other
-    /// control is hidden.
-    fn parse(canvas: Canvas, text: &str) -> Option<Self> {
-        let value: Value = serde_json::from_str(text).ok()?;
-        if value.get("version").and_then(Value::as_u64) != Some(VERSION) {
-            return None;
-        }
-        let controls = value.get("controls")?.as_array()?;
-
+    /// What the file places is kept where it fits, unknown names are
+    /// dropped, and every other control is hidden.
+    fn from_kept(canvas: Canvas, kept: Kept) -> Self {
         let mut entries: Vec<Entry> = Vec::new();
-        for control in controls {
-            let Some(id) = control
-                .get("id")
-                .and_then(Value::as_str)
-                .and_then(ControlId::named)
-            else {
+        for control in kept.controls {
+            let Some(id) = ControlId::named(&control.id) else {
                 continue;
             };
             if entries.iter().any(|entry| entry.id == id) {
                 continue;
             }
-            let number = |key: &str| control.get(key).and_then(Value::as_u64);
-            let span = match (number("cols"), number("rows")) {
+            let span = match (control.cols, control.rows) {
                 (Some(cols), Some(rows)) => id.clamp(Span {
                     cols: cols.min(255) as u8,
                     rows: rows.min(255) as u8,
                 }),
                 _ => id.default_span(),
             };
-            let at = match (number("col"), number("row")) {
+            let at = match (control.col, control.row) {
                 (Some(col), Some(row)) => Some(Place::new(col.min(255) as u8, row.min(255) as u8)),
                 _ => None,
             };
@@ -146,7 +177,7 @@ impl Stored for Layout {
 
         let mut layout = Self { canvas, entries };
         layout.reconcile();
-        Some(layout)
+        layout
     }
 
     /// Makes the entries a layout: anything off the canvas or over another
@@ -165,25 +196,19 @@ impl Stored for Layout {
         }
     }
 
-    fn to_json(&self) -> String {
-        let controls: Vec<Value> = self
+    fn to_kept(&self) -> Kept {
+        let controls = self
             .entries
             .iter()
-            .map(|entry| {
-                let mut control = json!({
-                    "id": entry.id.name(),
-                    "cols": entry.span.cols,
-                    "rows": entry.span.rows,
-                });
-                if let Some(at) = entry.at {
-                    control["col"] = json!(at.col);
-                    control["row"] = json!(at.row);
-                }
-                control
+            .map(|entry| KeptControl {
+                id: entry.id.name().to_string(),
+                cols: Some(u64::from(entry.span.cols)),
+                rows: Some(u64::from(entry.span.rows)),
+                col: entry.at.map(|at| u64::from(at.col)),
+                row: entry.at.map(|at| u64::from(at.row)),
             })
             .collect();
-        serde_json::to_string_pretty(&json!({ "version": VERSION, "controls": controls }))
-            .unwrap_or_default()
+        Kept { controls }
     }
 }
 
@@ -233,16 +258,14 @@ mod tests {
     }
 
     #[test]
-    fn the_file_round_trips_and_old_files_are_ignored() {
+    fn the_file_round_trips_and_older_old_files_are_ignored() {
         let mut layout = default();
         layout.hide(ControlId::Lock);
-        let parsed = Layout::parse(CANVAS, &layout.to_json()).expect("a layout");
+        let text = serde_json::to_string(&layout.to_kept()).unwrap();
+        let parsed = Layout::from_kept(CANVAS, serde_json::from_str(&text).unwrap());
         assert_eq!(parsed, layout);
-        assert_eq!(
-            Layout::parse(CANVAS, r#"{"version":1,"controls":[]}"#),
-            None
-        );
-        assert_eq!(Layout::parse(CANVAS, "not json"), None);
+        assert!(Kept::from_old(r#"{"version":1,"controls":[]}"#).is_none());
+        assert!(Kept::from_old("not json").is_none());
     }
 
     #[test]
@@ -254,7 +277,7 @@ mod tests {
             {"id":"lock","cols":9,"rows":1,"col":3,"row":7},
             {"id":"display","cols":3,"rows":1}
         ]}"#;
-        let layout = Layout::parse(CANVAS, text).expect("a layout");
+        let layout = Layout::from_kept(CANVAS, Kept::from_old(text).expect("an old file"));
         assert_eq!(layout.entries.len(), ControlId::ALL.len());
         assert_eq!(at(&layout, ControlId::Sound), Some(Place::new(0, 0)));
         // Focus overlapped Sound, so it moved to the first free cells
@@ -414,5 +437,16 @@ mod tests {
         };
         assert_eq!(tight.resized(ControlId::Sound, Span::FULL), None);
         assert_eq!(tight.resized(ControlId::Lock, Span::M), None);
+    }
+
+    #[test]
+    fn a_live_old_file_migrates() {
+        let old = include_str!("../../../tests/fixtures/state/quick-settings");
+        crate::services::state::tests::in_folder("quick-settings", &[(OLD_FILE, old)], |_| {
+            let layout = Layout::from_kept(CANVAS, state::load::<Kept>().expect("the old file"));
+            assert_eq!(layout.entries.len(), ControlId::ALL.len());
+            let back = Layout::from_kept(CANVAS, layout.to_kept());
+            assert_eq!(back, layout);
+        });
     }
 }

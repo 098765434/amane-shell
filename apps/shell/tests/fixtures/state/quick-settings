@@ -1,0 +1,149 @@
+{
+  "controls": [
+    {
+      "col": 0,
+      "cols": 2,
+      "id": "wifi",
+      "row": 0,
+      "rows": 1
+    },
+    {
+      "col": 2,
+      "cols": 2,
+      "id": "now-playing",
+      "row": 0,
+      "rows": 2
+    },
+    {
+      "col": 0,
+      "cols": 2,
+      "id": "bluetooth",
+      "row": 1,
+      "rows": 1
+    },
+    {
+      "cols": 2,
+      "id": "focus",
+      "rows": 1
+    },
+    {
+      "col": 2,
+      "cols": 1,
+      "id": "dark-style",
+      "row": 6,
+      "rows": 1
+    },
+    {
+      "col": 3,
+      "cols": 1,
+      "id": "night-light",
+      "row": 6,
+      "rows": 1
+    },
+    {
+      "col": 0,
+      "cols": 4,
+      "id": "display",
+      "row": 2,
+      "rows": 1
+    },
+    {
+      "col": 0,
+      "cols": 4,
+      "id": "sound",
+      "row": 3,
+      "rows": 1
+    },
+    {
+      "col": 0,
+      "cols": 2,
+      "id": "battery",
+      "row": 4,
+      "rows": 1
+    },
+    {
+      "col": 2,
+      "cols": 1,
+      "id": "airplane",
+      "row": 7,
+      "rows": 1
+    },
+    {
+      "col": 3,
+      "cols": 1,
+      "id": "power-mode",
+      "row": 7,
+      "rows": 1
+    },
+    {
+      "col": 0,
+      "cols": 1,
+      "id": "keyboard",
+      "row": 6,
+      "rows": 1
+    },
+    {
+      "cols": 1,
+      "id": "background-apps",
+      "rows": 1
+    },
+    {
+      "col": 1,
+      "cols": 1,
+      "id": "screenshot",
+      "row": 6,
+      "rows": 1
+    },
+    {
+      "col": 0,
+      "cols": 1,
+      "id": "lock",
+      "row": 7,
+      "rows": 1
+    },
+    {
+      "col": 1,
+      "cols": 1,
+      "id": "power-off",
+      "row": 7,
+      "rows": 1
+    },
+    {
+      "cols": 2,
+      "id": "vpn",
+      "rows": 1
+    },
+    {
+      "cols": 2,
+      "id": "wired",
+      "rows": 1
+    },
+    {
+      "col": 2,
+      "cols": 2,
+      "id": "tailscale",
+      "row": 5,
+      "rows": 1
+    },
+    {
+      "col": 2,
+      "cols": 2,
+      "id": "keep-awake",
+      "row": 4,
+      "rows": 1
+    },
+    {
+      "cols": 2,
+      "id": "software-update",
+      "rows": 1
+    },
+    {
+      "col": 0,
+      "cols": 2,
+      "id": "phone",
+      "row": 5,
+      "rows": 1
+    }
+  ],
+  "version": 2
+}

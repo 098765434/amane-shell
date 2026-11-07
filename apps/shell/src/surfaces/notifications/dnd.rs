@@ -1,14 +1,16 @@
 //! Do Not Disturb — hides toasts until it's turned off or its time runs out.
 //!
 //! Notifications still arrive and collect in the center, and critical ones
-//! still show as toasts. The state is the one thing the shell keeps on disk
-//! (`$XDG_STATE_HOME/amane-shell/dnd`), so a timed Do Not Disturb survives a
-//! restart; a missing or unreadable file means off.
+//! still show as toasts. It's kept in the state file `dnd.json` (the older
+//! one-line `dnd` is read when that isn't there), so a timed Do Not Disturb
+//! survives a restart; a missing or unreadable file means off.
 
-use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use amane::Service;
+use amane::serde::{Deserialize, Serialize};
+
+use crate::services::state::{self, State};
 
 use crate::services::Wake;
 use chrono::{Days, Local, NaiveDateTime, NaiveTime, TimeZone};
@@ -34,9 +36,7 @@ pub struct DoNotDisturb {
 
 impl Service for DoNotDisturb {
     fn new() -> Self {
-        let until = std::fs::read_to_string(path())
-            .ok()
-            .and_then(|text| parse(&text, SystemTime::now()));
+        let until = state::load::<Kept>().and_then(|kept| kept.until(SystemTime::now()));
         Self { until }
     }
 
@@ -156,12 +156,55 @@ fn tomorrow_morning(now: NaiveDateTime) -> NaiveDateTime {
 
 // ───── the file ──────────────────────────────────────────────────────────────
 
-fn path() -> PathBuf {
-    let state = amane_kit::paths::state();
-    state.join("amane-shell").join("dnd")
+/// The file from before the state files, one line, deleted when off.
+const OLD_FILE: &str = "dnd";
+
+/// What's kept: off, on until it's turned off, or on until a time (in
+/// seconds since 1970).
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+enum Kept {
+    Off,
+    Forever,
+    Until(u64),
 }
 
-/// One line: `forever`, or `until <unix seconds>`. A time already past
+impl Kept {
+    fn of(until: Option<Until>) -> Self {
+        match until {
+            None => Kept::Off,
+            Some(Until::Forever) => Kept::Forever,
+            Some(Until::At(end)) => {
+                Kept::Until(end.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs())
+            }
+        }
+    }
+
+    /// What it means at `now`: a time already past is off.
+    fn until(&self, now: SystemTime) -> Option<Until> {
+        match *self {
+            Kept::Off => None,
+            Kept::Forever => Some(Until::Forever),
+            Kept::Until(seconds) => {
+                let end = UNIX_EPOCH + Duration::from_secs(seconds);
+                (end > now).then_some(Until::At(end))
+            }
+        }
+    }
+}
+
+impl State for Kept {
+    const FILE: &'static str = "dnd.json";
+    const VERSION: u32 = 1;
+
+    fn legacy() -> Option<Self> {
+        // no old file meant off, and so does one that can't be read
+        let text = state::legacy_text(OLD_FILE).unwrap_or_default();
+        Some(Kept::of(parse(&text, SystemTime::now())))
+    }
+}
+
+/// The old file's one line: `forever`, or `until <unix seconds>`. A time already past
 /// reads as off.
 fn parse(text: &str, now: SystemTime) -> Option<Until> {
     let text = text.trim();
@@ -173,31 +216,8 @@ fn parse(text: &str, now: SystemTime) -> Option<Until> {
     (end > now).then_some(Until::At(end))
 }
 
-fn format(until: Until) -> String {
-    match until {
-        Until::Forever => String::from("forever"),
-        Until::At(end) => {
-            let seconds = end.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
-            format!("until {seconds}")
-        }
-    }
-}
-
 fn save(until: Option<Until>) {
-    let path = path();
-    let result = match until {
-        None => match std::fs::remove_file(&path) {
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            other => other,
-        },
-        Some(until) => path
-            .parent()
-            .map_or(Ok(()), std::fs::create_dir_all)
-            .and_then(|()| std::fs::write(&path, format(until) + "\n")),
-    };
-    if let Err(e) = result {
-        log::warn!("{}: {e}", path.display());
-    }
+    state::save(&Kept::of(until));
 }
 
 #[cfg(test)]
@@ -243,15 +263,19 @@ mod tests {
     }
 
     #[test]
-    fn the_file_round_trips() {
+    fn the_kept_state_round_trips() {
         let now = UNIX_EPOCH + Duration::from_secs(1_000);
         let later = UNIX_EPOCH + Duration::from_secs(5_000);
-
-        assert_eq!(parse(&format(Until::Forever), now), Some(Until::Forever));
+        for until in [None, Some(Until::Forever), Some(Until::At(later))] {
+            let text = serde_json::to_string(&Kept::of(until)).unwrap();
+            let kept: Kept = serde_json::from_str(&text).unwrap();
+            assert_eq!(kept.until(now), until, "{text}");
+        }
         assert_eq!(
-            parse(&format(Until::At(later)), now),
-            Some(Until::At(later))
+            serde_json::to_string(&Kept::Until(5)).unwrap(),
+            r#"{"until":5}"#
         );
+        assert_eq!(Kept::Until(500).until(now), None);
     }
 
     #[test]
@@ -263,5 +287,19 @@ mod tests {
         assert_eq!(parse("", now), None);
         assert_eq!(parse("garbage\n", now), None);
         assert_eq!(parse("forever\n", now), Some(Until::Forever));
+    }
+
+    #[test]
+    fn an_old_file_migrates_and_none_is_off() {
+        use crate::services::state::tests::in_folder;
+        in_folder("dnd-forever", &[(OLD_FILE, "forever\n")], |_| {
+            assert_eq!(state::load::<Kept>(), Some(Kept::Forever));
+        });
+        in_folder("dnd-until", &[(OLD_FILE, "until 99999999999\n")], |_| {
+            assert_eq!(state::load::<Kept>(), Some(Kept::Until(99_999_999_999)));
+        });
+        in_folder("dnd-off", &[], |_| {
+            assert_eq!(state::load::<Kept>(), Some(Kept::Off));
+        });
     }
 }

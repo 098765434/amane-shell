@@ -4,27 +4,31 @@
 //!
 //! A pin knows its workspace by name when the workspace has one, which
 //! niri keeps whatever its place, else by its place on the monitor (niri
-//! renumbers unnamed workspaces as empty ones go). Kept in
-//! `$XDG_STATE_HOME/amane-shell/dock-pins`, a pin a line:
-//! `app_id<TAB>output<TAB>name:<name>` or `…<TAB>index:<n>`.
+//! renumbers unnamed workspaces as empty ones go). Kept in the state file
+//! `dock-pins.json`; the older `dock-pins`, a pin a line
+//! (`app_id<TAB>output<TAB>name:<name>` or `…<TAB>index:<n>`), is read when
+//! that isn't there.
 
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
+use amane::serde::{Deserialize, Serialize};
 use amane::{Windows, Workspaces};
 
-use crate::services::{save_state, state_file};
+use crate::services::state::{self, State};
 use amane_kit::app_icon;
 
-const FILE: &str = "dock-pins";
+/// The file from before the state files, a pin a line.
+const OLD_FILE: &str = "dock-pins";
 
 /// How long after a pin opens its app a window of that app that turns up
 /// on another workspace is still taken to be the one it opened.
 const PLACING: Duration = Duration::from_secs(10);
 
 /// Which workspace a pin is on.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum Place {
     Named(String),
     /// Its place on the monitor, from 1.
@@ -32,7 +36,8 @@ pub enum Place {
 }
 
 /// One pinned app.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(crate = "amane::serde")]
 pub struct Pin {
     pub app_id: String,
     /// The monitor it was pinned on, for a pin by index.
@@ -55,12 +60,23 @@ impl Pin {
     }
 }
 
+/// Every pin, as kept.
+#[derive(Default, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", transparent)]
+struct Pins(Vec<Pin>);
+
+impl State for Pins {
+    const FILE: &'static str = "dock-pins.json";
+    const VERSION: u32 = 1;
+
+    fn legacy() -> Option<Self> {
+        state::legacy_text(OLD_FILE).map(|text| Self(parse(&text)))
+    }
+}
+
 thread_local! {
-    static PINS: RefCell<Vec<Pin>> = RefCell::new(
-        std::fs::read_to_string(state_file(FILE))
-            .map(|text| parse(&text))
-            .unwrap_or_default(),
-    );
+    static PINS: RefCell<Vec<Pin>> =
+        RefCell::new(state::load::<Pins>().unwrap_or_default().0);
 
     // apps a pin opened on a workspace, and until when a window of theirs
     // turning up elsewhere is moved there
@@ -95,7 +111,7 @@ pub fn remove(pin: &Pin) {
 fn change(edit: impl FnOnce(&mut Vec<Pin>) -> bool) {
     let changed = PINS.with_borrow_mut(edit);
     if changed {
-        PINS.with_borrow(|pins| save_state(FILE, &format(pins)));
+        PINS.with_borrow(|pins| state::save(&Pins(pins.clone())));
         super::Docks::changed();
     }
 }
@@ -162,31 +178,33 @@ fn parse(text: &str) -> Vec<Pin> {
         .collect()
 }
 
-fn format(pins: &[Pin]) -> String {
-    pins.iter()
-        .map(|pin| {
-            let place = match &pin.place {
-                Place::Named(name) => format!("name:{name}"),
-                Place::Index(index) => format!("index:{index}"),
-            };
-            format!("{}\t{}\t{place}\n", pin.app_id, pin.output)
-        })
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn pins_keep_to_a_line_each_and_read_back() {
+    fn the_old_file_a_pin_a_line_is_read() {
         let pins = vec![
             Pin::new("firefox", "eDP-1", None, 2),
             Pin::new("foot", "HDMI-A-1", Some("code"), 1),
         ];
-        let text = format(&pins);
-        assert_eq!(text, "firefox\teDP-1\tindex:2\nfoot\tHDMI-A-1\tname:code\n");
-        assert_eq!(parse(&text), pins);
+        let text = "firefox\teDP-1\tindex:2\nfoot\tHDMI-A-1\tname:code\n";
+        assert_eq!(parse(text), pins);
+    }
+
+    #[test]
+    fn pins_are_kept_as_json() {
+        let pins = Pins(vec![
+            Pin::new("firefox", "eDP-1", None, 2),
+            Pin::new("foot", "HDMI-A-1", Some("code"), 1),
+        ]);
+        let text = serde_json::to_string(&pins).unwrap();
+        assert_eq!(
+            text,
+            r#"[{"app_id":"firefox","output":"eDP-1","place":{"index":2}},{"app_id":"foot","output":"HDMI-A-1","place":{"named":"code"}}]"#
+        );
+        let back: Pins = serde_json::from_str(&text).unwrap();
+        assert_eq!(back.0, pins.0);
     }
 
     #[test]
@@ -203,5 +221,14 @@ mod tests {
             "firefox\teDP-1\tindex:x\n\nfoot\teDP-1\n\tDP-1\tindex:1\nfoot\teDP-1\tindex:1\n",
         );
         assert_eq!(pins, [Pin::new("foot", "eDP-1", None, 1)]);
+    }
+
+    #[test]
+    fn a_live_old_file_migrates() {
+        let old = include_str!("../../../tests/fixtures/state/dock-pins");
+        crate::services::state::tests::in_folder("dock-pins", &[(OLD_FILE, old)], |_| {
+            let pins = state::load::<Pins>().expect("the old file").0;
+            assert_eq!(pins, [Pin::new("code", "eDP-1", None, 2)]);
+        });
     }
 }

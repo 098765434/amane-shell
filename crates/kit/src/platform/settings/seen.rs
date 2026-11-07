@@ -10,18 +10,10 @@ pub(super) fn cache_file(name: &str) -> Option<PathBuf> {
     Some(cache.join("amane-shell").join(name))
 }
 
-/// Writes `text` to `file` whole, through a part file. A failure is
-/// reported, since the change it carried is lost.
+/// Writes `text` to `file` whole. A failure is reported, since the change it
+/// carried is lost.
 pub(super) fn write_whole(file: &std::path::Path, text: &str) {
-    let write = || {
-        if let Some(folder) = file.parent() {
-            std::fs::create_dir_all(folder)?;
-        }
-        let partial = file.with_extension("part");
-        std::fs::write(&partial, text)?;
-        std::fs::rename(partial, file)
-    };
-    if let Err(e) = write() {
+    if let Err(e) = crate::platform::files::write_whole(file, text) {
         log::warn!("couldn't save {}: {e}", file.display());
     }
 }

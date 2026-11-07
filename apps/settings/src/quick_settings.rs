@@ -69,11 +69,11 @@ impl Service for QuickControls {
 }
 
 /// Where the shell keeps the layout: `$XDG_STATE_HOME/amane-shell/
-/// quick-settings`.
+/// quick-settings.json`.
 fn layout_file() -> PathBuf {
     let state = amane_kit::paths::state();
 
-    state.join("amane-shell").join("quick-settings")
+    state.join("amane-shell").join("quick-settings.json")
 }
 
 fn ask() -> Option<Vec<(String, bool)>> {

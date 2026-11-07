@@ -40,8 +40,10 @@ pointer goes. Files held over it reveal it from the bottom edge like the pointer
 Under the pointer (or held files), the icons swell: 1.5× for the hovered icon, 1.2×
 and 1.1× for its neighbours, with lifts of 10, 6 and 0 px.
 
-Pins are kept in `$XDG_STATE_HOME/amane-shell/dock-pins`, one a line:
-`app_id<TAB>output<TAB>name:<workspace name>` or `…<TAB>index:<place>`. Only an app with a desktop
+Pins are kept in the state file `dock-pins.json`
+([services.md](../integration/services.md#settings-and-state)), each `{"app_id", "output",
+"place": {"named": …} | {"index": …}}`; the older `dock-pins`, one a line
+(`app_id<TAB>output<TAB>name:<workspace name>` or `…<TAB>index:<place>`), is read when that isn't there. Only an app with a desktop
 entry (`app_icon::entry_for`) can be pinned, since that's how it's opened again.
 
 ## Configuring the motion

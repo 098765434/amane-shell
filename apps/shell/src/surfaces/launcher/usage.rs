@@ -1,5 +1,5 @@
-//! What the launcher remembers of its use, in
-//! `$XDG_STATE_HOME/amane-shell/launcher-usage.json`: how much each result
+//! What the launcher remembers of its use, in the state file
+//! `launcher-usage.json`: how much each result
 //! was used, what was picked for the first few letters of a query, and the
 //! queries run, newest first, for Up to bring back.
 
@@ -9,11 +9,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use amane::serde::{Deserialize, Serialize};
 
-use crate::services::{save_state, state_file};
+use crate::services::state::{self, State};
 
 use super::rank::Use;
 
-const FILE: &str = "launcher-usage.json";
 /// How much is kept: results, query prefixes, and queries run.
 const USES: usize = 500;
 const PREFIXES: usize = 2000;
@@ -145,21 +144,25 @@ pub(super) fn read<R>(f: impl FnOnce(&Usage) -> R) -> R {
 
 /// Counts `key` picked for `query`, and saves it.
 pub(super) fn record(key: &str, query: &str) {
-    let text = USAGE.with_borrow_mut(|usage| {
+    USAGE.with_borrow_mut(|usage| {
         let usage = usage.get_or_insert_with(load);
         usage.record(key, query, now());
-        serde_json::to_string(usage).ok()
+        state::save(usage);
     });
-    if let Some(text) = text {
-        save_state(FILE, &text);
-    }
 }
 
 fn load() -> Usage {
-    std::fs::read_to_string(state_file(FILE))
-        .ok()
-        .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default()
+    state::load().unwrap_or_default()
+}
+
+impl State for Usage {
+    const FILE: &'static str = "launcher-usage.json";
+    const VERSION: u32 = 1;
+
+    /// The same file, from before it had a version.
+    fn legacy() -> Option<Self> {
+        serde_json::from_str(&state::legacy_text(Self::FILE)?).ok()
+    }
 }
 
 #[cfg(test)]

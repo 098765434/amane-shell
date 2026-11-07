@@ -97,4 +97,4 @@ pub use controls::{
 };
 pub use foundation::{color, icons, layout, paths, symbol};
 pub use look::{glass, glass_region, lab, material, style};
-pub use platform::{app, app_icon, marker, process, secrets, settings};
+pub use platform::{app, app_icon, files, marker, process, secrets, settings};

@@ -1,12 +1,13 @@
 //! The widgets kept: for each monitor (by connector name) where each sits
-//! and how big it is, and each one's settings. Kept in
-//! `$XDG_STATE_HOME/amane-shell/widgets` as JSON:
+//! and how big it is, and each one's settings. Kept in the state file
+//! `widgets.json` (the older `widgets`, version 1 of the same shape, is read
+//! when that isn't there):
 //!
 //! ```json
-//! { "version": 1, "next_id": 3, "outputs": { "eDP-1": [
+//! { "version": 1, "data": { "next_id": 3, "outputs": { "eDP-1": [
 //!     { "id": 1, "kind": "battery", "cols": 2, "rows": 2, "col": 0, "row": 0 },
 //!     { "id": 2, "kind": "disk", "cols": 4, "rows": 2, "col": 2, "row": 0,
-//!       "settings": { "mount": "/home" } } ] } }
+//!       "settings": { "mount": "/home" } } ] } } }
 //! ```
 //!
 //! A monitor's layout is kept on the canvas it was last laid out on and
@@ -17,71 +18,96 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 
-use serde_json::{Map, Value, json};
+use amane::serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
-use crate::services::{save_state, state_file};
+use crate::services::state::{self, State};
 use amane_kit::grid::geometry::{Canvas, Place, Rect, Span};
 use amane_kit::grid::{Entry, GridKey, Layout};
 
-const FILE: &str = "widgets";
-const VERSION: u64 = 1;
+/// The file from before the state files, with the version inside.
+const OLD_FILE: &str = "widgets";
 
 /// What one widget is set to show; each kind reads what's its own.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", default)]
 pub struct Settings {
     /// Batteries: the one device a Small widget shows (a peripheral's
     /// model, a Bluetooth device's address, or "system"); none is the
     /// machine's battery, or the first device there is.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub device: Option<String>,
     /// Network: the interface; none follows the default route.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub interface: Option<String>,
     /// Disk: the mount point; none is the root, or the first disk where the root is none.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mount: Option<String>,
     /// Temperature: the sensor's label; none is the hottest.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sensor: Option<String>,
     /// Clock: the line colour as `#rrggbb`; none is the accent.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
     /// Clock: how thick the line is, `thin` or `bold`; none is regular.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub line: Option<String>,
     /// Clock: `on` shows the seconds; none hides them.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub seconds: Option<String>,
     /// Clock: `12` counts the hours to 12; none to 24, like the bar.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hours: Option<String>,
 }
 
 impl Settings {
-    fn fields(&mut self) -> [(&'static str, &mut Option<String>); 8] {
-        [
-            ("device", &mut self.device),
-            ("interface", &mut self.interface),
-            ("mount", &mut self.mount),
-            ("sensor", &mut self.sensor),
-            ("color", &mut self.color),
-            ("line", &mut self.line),
-            ("seconds", &mut self.seconds),
-            ("hours", &mut self.hours),
-        ]
+    fn is_empty(&self) -> bool {
+        *self == Self::default()
     }
+}
 
-    fn parse(value: Option<&Value>) -> Self {
-        let mut settings = Self::default();
-        if let Some(object) = value.and_then(Value::as_object) {
-            for (name, field) in settings.fields() {
-                *field = object.get(name).and_then(Value::as_str).map(String::from);
-            }
-        }
-        settings
+/// The file's shape. Each field is optional so one bad widget is dropped,
+/// not the whole file.
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", default)]
+struct Kept {
+    next_id: u64,
+    outputs: BTreeMap<String, Vec<KeptWidget>>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", default)]
+struct KeptWidget {
+    id: Option<u64>,
+    kind: String,
+    cols: Option<u64>,
+    rows: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    col: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    row: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    settings: Option<Settings>,
+}
+
+impl State for Kept {
+    const FILE: &'static str = "widgets.json";
+    const VERSION: u32 = 1;
+
+    fn legacy() -> Option<Self> {
+        Self::from_old(&state::legacy_text(OLD_FILE)?)
     }
+}
 
-    fn to_json(&self) -> Option<Value> {
-        let mut object = Map::new();
-        for (name, field) in self.clone().fields() {
-            if let Some(value) = field {
-                object.insert(name.to_string(), json!(value));
-            }
+impl Kept {
+    /// The old file: the same shape, with `"version": 1` beside it.
+    fn from_old(text: &str) -> Option<Self> {
+        let value: Value = serde_json::from_str(text).ok()?;
+        if value.get("version").and_then(Value::as_u64) != Some(1) {
+            return None;
         }
-        (!object.is_empty()).then_some(Value::Object(object))
+        serde_json::from_value(value).ok()
     }
 }
 
@@ -122,107 +148,90 @@ impl Store {
     }
 
     fn load() -> Self {
-        std::fs::read_to_string(state_file(FILE))
-            .ok()
-            .and_then(|text| Self::parse(&text))
+        state::load::<Kept>()
+            .map(Self::from_kept)
             .unwrap_or_else(Self::empty)
     }
 
     fn save(&self) {
         // the tests never touch the real file
         if !cfg!(test) {
-            save_state(FILE, &self.to_json());
+            state::save(&self.to_kept());
         }
     }
 
-    /// `None` for anything but a current file. Unknown kinds are dropped,
-    /// sizes a kind lacks snap to the nearest it has, and overlaps move
-    /// to the first free cells.
-    pub fn parse(text: &str) -> Option<Self> {
-        let value: Value = serde_json::from_str(text).ok()?;
-        if value.get("version").and_then(Value::as_u64) != Some(VERSION) {
-            return None;
-        }
+    /// The store a file kept. Unknown kinds are dropped, sizes a kind lacks
+    /// snap to the nearest it has, and overlaps move to the first free
+    /// cells.
+    fn from_kept(kept: Kept) -> Self {
         let mut store = Self::empty();
         store.seeded = true;
         let mut highest = 0;
-        for (output, widgets) in value.get("outputs")?.as_object()? {
+        let small = |n: u64| n.min(255) as u8;
+        for (output, widgets) in kept.outputs {
             let mut layout = Layout::new(UNBOUNDED);
-            for widget in widgets.as_array().into_iter().flatten() {
-                let number = |key: &str| widget.get(key).and_then(Value::as_u64);
-                let small = |n: u64| n.min(255) as u8;
-                let Some(kind) = widget
-                    .get("kind")
-                    .and_then(Value::as_str)
-                    .and_then(WidgetKind::named)
-                else {
+            for widget in widgets {
+                let Some(kind) = WidgetKind::named(&widget.kind) else {
                     continue;
                 };
-                let Some(id) = number("id").and_then(|id| u32::try_from(id).ok()) else {
+                let Some(id) = widget.id.and_then(|id| u32::try_from(id).ok()) else {
                     continue;
                 };
                 if store.settings.contains_key(&id) {
                     continue;
                 }
                 let key = WidgetKey { id, kind };
-                let span = match (number("cols"), number("rows")) {
+                let span = match (widget.cols, widget.rows) {
                     (Some(cols), Some(rows)) => key.clamp(Span::new(small(cols), small(rows))),
                     _ => kind.default_size().span(),
                 };
-                let at = match (number("col"), number("row")) {
+                let at = match (widget.col, widget.row) {
                     (Some(col), Some(row)) => Some(Place::new(small(col), small(row))),
                     _ => None,
                 };
                 layout.insert(Entry { id: key, span, at });
                 store
                     .settings
-                    .insert(id, Settings::parse(widget.get("settings")));
+                    .insert(id, widget.settings.unwrap_or_default());
                 highest = highest.max(id);
             }
             layout.repair();
-            store.outputs.insert(output.clone(), layout);
+            store.outputs.insert(output, layout);
         }
-        let next = value.get("next_id").and_then(Value::as_u64).unwrap_or(1);
-        store.next_id = u32::try_from(next).unwrap_or(u32::MAX).max(highest + 1);
-        Some(store)
+        let next = u32::try_from(kept.next_id.max(1)).unwrap_or(u32::MAX);
+        store.next_id = next.max(highest + 1);
+        store
     }
 
-    pub fn to_json(&self) -> String {
-        let outputs: Map<String, Value> = self
+    fn to_kept(&self) -> Kept {
+        let outputs = self
             .outputs
             .iter()
             .map(|(output, layout)| {
-                let widgets: Vec<Value> = layout
+                let widgets = layout
                     .entries
                     .iter()
-                    .map(|entry| {
-                        let mut widget = json!({
-                            "id": entry.id.id,
-                            "kind": entry.id.kind.name(),
-                            "cols": entry.span.cols,
-                            "rows": entry.span.rows,
-                        });
-                        if let Some(at) = entry.at {
-                            widget["col"] = json!(at.col);
-                            widget["row"] = json!(at.row);
-                        }
-                        if let Some(settings) =
-                            self.settings.get(&entry.id.id).and_then(Settings::to_json)
-                        {
-                            widget["settings"] = settings;
-                        }
-                        widget
+                    .map(|entry| KeptWidget {
+                        id: Some(u64::from(entry.id.id)),
+                        kind: entry.id.kind.name().to_string(),
+                        cols: Some(u64::from(entry.span.cols)),
+                        rows: Some(u64::from(entry.span.rows)),
+                        col: entry.at.map(|at| u64::from(at.col)),
+                        row: entry.at.map(|at| u64::from(at.row)),
+                        settings: self
+                            .settings
+                            .get(&entry.id.id)
+                            .filter(|settings| !settings.is_empty())
+                            .cloned(),
                     })
                     .collect();
-                (output.clone(), Value::Array(widgets))
+                (output.clone(), widgets)
             })
             .collect();
-        serde_json::to_string_pretty(&json!({
-            "version": VERSION,
-            "next_id": self.next_id,
-            "outputs": outputs,
-        }))
-        .unwrap_or_default()
+        Kept {
+            next_id: u64::from(self.next_id),
+            outputs,
+        }
     }
 
     /// `output`'s widgets on `canvas`. A desktop with no file yet starts
@@ -383,7 +392,8 @@ mod tests {
                 ..Settings::default()
             },
         );
-        let parsed = Store::parse(&store.to_json()).expect("a store");
+        let text = serde_json::to_string(&store.to_kept()).unwrap();
+        let parsed = Store::from_kept(serde_json::from_str(&text).unwrap());
         assert_eq!(parsed, store);
         let shown = parsed.clone().layout_for("eDP-1", SCREEN);
         assert_eq!(
@@ -392,8 +402,8 @@ mod tests {
         );
         assert_eq!(shown.rect_of(disk).map(|r| r.at), Some(Place::new(4, 0)));
         assert_eq!(parsed.settings(disk.id).mount.as_deref(), Some("/home"));
-        assert_eq!(Store::parse(r#"{"version":0,"outputs":{}}"#), None);
-        assert_eq!(Store::parse("not json"), None);
+        assert!(Kept::from_old(r#"{"version":0,"outputs":{}}"#).is_none());
+        assert!(Kept::from_old("not json").is_none());
     }
 
     #[test]
@@ -405,7 +415,7 @@ mod tests {
             {"id":5,"kind":"disk","cols":2,"rows":2,"col":8,"row":0},
             {"id":8,"kind":"disk","cols":8,"rows":4,"col":10,"row":0}
         ]}}"#;
-        let mut store = Store::parse(text).expect("a store");
+        let mut store = Store::from_kept(Kept::from_old(text).expect("an old file"));
         let layout = store.layout_for("DP-1", SCREEN);
         assert_eq!(layout.entries.len(), 3);
         // the overlap moved, a size Disk lacks snapped to one it has
@@ -479,5 +489,21 @@ mod tests {
         store.commit("eDP-1", &shown);
         assert!(!store.settings.contains_key(&key.id));
         assert!(store.all().next().is_none());
+    }
+
+    #[test]
+    fn a_live_old_file_migrates_and_round_trips() {
+        let old = include_str!("../../../tests/fixtures/state/widgets");
+        crate::services::state::tests::in_folder("widgets", &[(OLD_FILE, old)], |_| {
+            let store = Store::from_kept(state::load::<Kept>().expect("the old file"));
+            assert_eq!(store.next_id, 8);
+            assert_eq!(store.all().count(), 7);
+            assert!(store.settings.values().any(|s| s.interface.is_some()));
+            let text = serde_json::to_string(&store.to_kept()).unwrap();
+            assert_eq!(
+                Store::from_kept(serde_json::from_str(&text).unwrap()),
+                store
+            );
+        });
     }
 }

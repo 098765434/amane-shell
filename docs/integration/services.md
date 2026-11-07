@@ -44,9 +44,9 @@ without a probe write), and the page has the command to copy. The shell never es
 so turning night light on stops any other `wlsunset`. A `spawn-at-startup "wlsunset" …` line in
 the niri config would fight the shell's, so remove it. By default it's on at the chosen
 temperature until turned off; Shell Settings' Displays page can give it a schedule (sunset to
-sunrise, or set hours), which `wlsunset` follows by itself. Its state (`on 4000 manual`) is kept in
-`$XDG_STATE_HOME/amane-shell/night-light`, so it comes back on after a restart. A last-used VPN
-is kept beside it, in `vpn`.
+sunrise, or set hours), which `wlsunset` follows by itself. Its state is kept in the state file
+`night-light.json`, so it comes back on after a restart; the IPC `state` verb still answers the old
+one-line form (`on 4000 manual`). A last-used VPN is kept beside it, in `vpn.json`.
 
 **Keep Awake never writes a power setting** (amane's idle support:
 [`system/idle.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/idle.md)). Each hold is an inhibitor tied to the shell: the
@@ -102,19 +102,22 @@ whether [Shell Settings](../shell/settings-app.md), the launcher or a text edito
 | `launcher.json` | the apps' layout, the search sources left out, quick keys, the clipboard history's settings |
 
 **State** lives in `$XDG_STATE_HOME/amane-shell/` (else `~/.local/state/amane-shell/`). A missing
-file means the default:
+file means the default. Each state file is JSON with its format's version beside the data,
+`{"version": 1, "data": …}`, written whole through a part file and a rename
+(`services/state.rs`). A file from before this format, under the old name in the last column, is
+read when the new one isn't there, and left as it was: deleting the new file reads the old one
+again. The old readers go after 2027-01.
 
-| File | Holds | Written by |
-|---|---|---|
-| `dnd` | Do Not Disturb: `forever` or `until <unix seconds>` | `notifications/dnd.rs` |
-| `status-bar` | the hidden status icons, one per line (the old `taskbar` file is read until it exists) | `status_bar/indicators.rs` |
-| `dock-pins` | the dock's pins, one a line | `dock/pins.rs` |
-| `quick-settings` | Quick Settings' layout (JSON) | `quick_settings/layout.rs` |
-| `widgets` | each monitor's widgets and their settings (JSON) | `widgets/store.rs` |
-| `night-light` | whether night light is on, how warm and when (`on 4000 manual`, `on 3500 sun 59.92 10.75`, `on 4000 hours 21:00 07:00`; a line without the schedule is all day) | `services/display/night_light.rs` |
-| `vpn` | the last VPN used | `services/network/connections.rs` |
-| `launcher-usage.json` | how much each result was used, and the last searches | `launcher/usage.rs` |
-| `clipboard/` | the clipboard history: `index.json` and a file a copy | `services/launcher/clipboard_history.rs` |
+| File | Holds | Written by | Read before it |
+|---|---|---|---|
+| `dnd.json` | Do Not Disturb: `"off"`, `"forever"` or `{"until": <unix seconds>}` | `notifications/dnd.rs` | `dnd` |
+| `dock-pins.json` | the dock's pins | `dock/pins.rs` | `dock-pins` |
+| `quick-settings.json` | Quick Settings' layout | `quick_settings/layout.rs` | `quick-settings` (version 2) |
+| `widgets.json` | each monitor's widgets and their settings | `widgets/store.rs` | `widgets` (version 1) |
+| `night-light.json` | whether night light is on, how warm and when | `services/display/night_light.rs` | `night-light` (`on 4000 manual`) |
+| `vpn.json` | the last VPN used | `services/network/connections.rs` | `vpn` |
+| `launcher-usage.json` | how much each result was used, and the last searches | `launcher/usage.rs` | the same file without a version |
+| `clipboard/index.json` | the clipboard history; each copy is a file of its own beside it | `services/launcher/clipboard_history.rs` | the same file without a version |
 
 Keep Awake keeps nothing: its holds are inhibitors tied to the running shell.
 

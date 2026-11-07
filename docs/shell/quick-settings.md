@@ -165,18 +165,20 @@ mode begins and shrinks back to the card once the window has faded out, both at 
 place on the surface is worked out from the surface's size in both modes, so the one frame amane
 draws at the old size as the mode changes draws the card where it is.
 
-The layout is kept in `$XDG_STATE_HOME/amane-shell/quick-settings`:
+The layout is kept in the state file `quick-settings.json`
+([services.md](../integration/services.md#settings-and-state)); the older `quick-settings`, the
+same shape with `"version": 2` inside, is read when that isn't there:
 
 ```json
-{ "version": 2, "controls": [ { "id": "focus", "cols": 2, "rows": 1, "col": 0, "row": 2 }, … ] }
+{ "version": 1, "data": { "controls": [ { "id": "focus", "cols": 2, "rows": 1, "col": 0, "row": 2 }, … ] } }
 ```
 
 The ids are `wifi`, `bluetooth`, `now-playing`, `vpn`, `wired`, `focus`, `dark-style`,
 `night-light`, `display`, `sound`, `battery`, `power-mode`, `keyboard`, `airplane`,
 `background-apps`, `screenshot`, `lock`, `power-off`, `tailscale`, `keep-awake`,
 `software-update` and `phone`. A control
-without `col`/`row` is hidden (it waits in the window's Suggestions). A file from an older
-version is ignored. One that places something off the canvas or over another control moves it to
+without `col`/`row` is hidden (it waits in the window's Suggestions). A file from another
+version is left alone and the default shown. One that places something off the canvas or over another control moves it to
 the first free cells (or hides it); a control the file doesn't name is added hidden, so a control
 that arrives with an update or new hardware waits in Suggestions rather than tearing a hole in
 the canvas. The default layout packs the default order onto the canvas for the controls this machine

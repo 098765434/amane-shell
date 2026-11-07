@@ -102,15 +102,11 @@ fn remember(device: &str) {
     let Some(path) = file() else {
         return;
     };
-    if let Some(dir) = path.parent()
-        && let Err(error) = std::fs::create_dir_all(dir)
-    {
-        log::warn!("{}: {error}", dir.display());
-    }
+    // Messages reads this file too, looking for the id in quotes
     if let Ok(text) = serde_json::to_string_pretty(&known)
-        && let Err(error) = std::fs::write(&path, text)
+        && let Err(error) = amane_kit::files::write_whole(&path, text)
     {
-        log::warn!("{}: {error}", path.display());
+        log::warn!("couldn't save {}: {error}", path.display());
     }
 }
 

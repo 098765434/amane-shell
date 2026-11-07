@@ -96,8 +96,9 @@ Tomorrow** (08:00), **Turn On** / **Turn Off**.
 It is kept on disk beside the shell's other state files (the dock's pins, the status icons, the
 Quick Settings and widget layouts, night light, the last VPN, the launcher's use and clipboard
 history; see [services.md](../integration/services.md#settings-and-state)):
-`$XDG_STATE_HOME/amane-shell/dnd` holds `forever` or `until <unix seconds>`. A missing, unreadable
-or past file reads as off.
+the state file `dnd.json` holds `"off"`, `"forever"` or `{"until": <unix seconds>}`. A missing,
+unreadable or past one reads as off; the older `dnd` (`forever` or `until <unix seconds>`, deleted
+when off) is read when there's no `dnd.json`.
 
 ## Bar
 

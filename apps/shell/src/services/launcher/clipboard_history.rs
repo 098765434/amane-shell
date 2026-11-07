@@ -24,7 +24,8 @@ use amane::serde::{Deserialize, Serialize};
 use amane::{ClipboardWatcher, Service, Subscription, Windows};
 use amane_kit::settings::ClipboardHistory as Settings;
 
-use crate::services::{run_now, save_state, state_file};
+use crate::services::run_now;
+use crate::services::state::{self, State, state_file};
 
 amane_kit::marker! {
     /// The history changed: what read the clips draws again.
@@ -33,7 +34,6 @@ amane_kit::marker! {
 
 /// Where the history is kept, under the shell's state directory.
 const DIR: &str = "clipboard";
-const INDEX: &str = "clipboard/index.json";
 /// The most a single copy, and all of them together, may be.
 const ITEM_BYTES: usize = 4 << 20;
 const TOTAL_BYTES: usize = 64 << 20;
@@ -102,17 +102,28 @@ fn with<R>(f: impl FnOnce(&mut History) -> R) -> R {
     }))
 }
 
+/// The copies kept, in the state file `clipboard/index.json`; what each
+/// one is, is in a file of its own beside it ([`Clip::path`]).
+#[derive(Default, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", transparent)]
+struct Index(Vec<Clip>);
+
+impl State for Index {
+    const FILE: &'static str = "clipboard/index.json";
+    const VERSION: u32 = 1;
+
+    /// The same file, from before it had a version.
+    fn legacy() -> Option<Self> {
+        serde_json::from_str(&state::legacy_text(Self::FILE)?).ok()
+    }
+}
+
 fn load() -> Vec<Clip> {
-    std::fs::read_to_string(state_file(INDEX))
-        .ok()
-        .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default()
+    state::load::<Index>().unwrap_or_default().0
 }
 
 fn save(clips: &[Clip]) {
-    if let Ok(text) = serde_json::to_string(clips) {
-        save_state(INDEX, &text);
-    }
+    state::save(&Index(clips.to_vec()));
 }
 
 /// The copies kept, newest first.
@@ -218,11 +229,8 @@ fn take(settings: &Settings, types: &[String]) {
     };
     let path = clip.path();
     if !path.exists() {
-        let written = path
-            .parent()
-            .map_or(Ok(()), std::fs::create_dir_all)
-            .and_then(|()| std::fs::write(&path, &bytes));
-        if let Err(e) = written {
+        // written whole: named by what it holds, a half-written one would never be redone
+        if let Err(e) = amane_kit::files::write_whole(&path, &bytes) {
             log::warn!("clipboard history: {}: {e}", path.display());
             return;
         }

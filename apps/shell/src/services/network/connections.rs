@@ -7,7 +7,7 @@
 
 use amane::{Network, NetworkProfile, Service};
 
-use crate::services::{save_state, state_file};
+use crate::services::state::{self, State};
 
 pub use amane::Wired;
 
@@ -91,7 +91,7 @@ impl Connections {
 
     pub fn set_vpn(uuid: &str, on: bool) {
         if on {
-            save_state("vpn", &format!("{uuid}\n"));
+            remember_vpn(uuid);
             Network::activate(uuid);
         } else {
             Network::deactivate(uuid);
@@ -100,10 +100,10 @@ impl Connections {
 
     /// The VPN the toggle turns on: the last one used, else the first.
     pub fn preferred_vpn(&self) -> Option<&Vpn> {
-        let last = std::fs::read_to_string(state_file("vpn")).unwrap_or_default();
+        let last = last_vpn();
         self.vpns
             .iter()
-            .find(|vpn| vpn.uuid == last.trim())
+            .find(|vpn| Some(&vpn.uuid) == last.as_ref())
             .or(self.vpns.first())
     }
 
@@ -187,5 +187,62 @@ mod tests {
             })
         );
         assert_eq!(c.wired, None);
+    }
+}
+
+/// The VPN last turned on, kept in the state file `vpn.json` (the older
+/// `vpn`, its id alone, is read when that isn't there).
+#[derive(amane::serde::Serialize, amane::serde::Deserialize)]
+#[serde(crate = "amane::serde")]
+struct LastVpn {
+    uuid: String,
+}
+
+impl State for LastVpn {
+    const FILE: &'static str = "vpn.json";
+    const VERSION: u32 = 1;
+
+    fn legacy() -> Option<Self> {
+        let uuid = state::legacy_text("vpn")?.trim().to_string();
+        (!uuid.is_empty()).then_some(Self { uuid })
+    }
+}
+
+// read once, since Quick Settings asks on every frame it shows the VPN
+static LAST_VPN: std::sync::Mutex<Option<Option<String>>> = std::sync::Mutex::new(None);
+
+fn last_vpn() -> Option<String> {
+    let mut last = LAST_VPN
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    last.get_or_insert_with(|| state::load::<LastVpn>().map(|vpn| vpn.uuid))
+        .clone()
+}
+
+fn remember_vpn(uuid: &str) {
+    *LAST_VPN
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(Some(uuid.to_string()));
+    state::save(&LastVpn {
+        uuid: uuid.to_string(),
+    });
+}
+
+#[cfg(test)]
+mod last_vpn_tests {
+    use super::*;
+
+    #[test]
+    fn the_old_vpn_file_migrates() {
+        use crate::services::state::tests::in_folder;
+        in_folder("vpn", &[("vpn", "0d6f-uuid\n")], |_| {
+            assert_eq!(
+                state::load::<LastVpn>().map(|vpn| vpn.uuid).as_deref(),
+                Some("0d6f-uuid")
+            );
+        });
+        in_folder("vpn-none", &[], |_| {
+            assert!(state::load::<LastVpn>().is_none())
+        });
     }
 }

@@ -12,9 +12,12 @@
 //! to sunrise where the machine is, or between two set times, and the
 //! screens' own colours by day. Under a schedule, on means it follows it.
 //!
-//! Whether it's on, how warm and the schedule are kept in
-//! `$XDG_STATE_HOME/amane-shell/night-light`, so the shell turns it back on
-//! after a restart. Shell Settings changes them over IPC ([`ipc`]).
+//! Whether it's on, how warm and the schedule are kept in the state file
+//! `night-light.json` (the older one-line `night-light` is read when that
+//! isn't there), so the shell turns it back on after a restart. Shell
+//! Settings changes them over IPC ([`ipc`]).
+
+use amane::serde::{Deserialize, Serialize};
 
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
@@ -22,9 +25,11 @@ use std::time::Duration;
 
 use amane::Service;
 
-use crate::services::{Latest, run_now, save_state, state_file};
+use crate::services::state::{self, State};
+use crate::services::{Latest, run_now};
 
-const FILE: &str = "night-light";
+/// The file from before the state files, one line.
+const OLD_FILE: &str = "night-light";
 
 /// The warmest and coolest the slider goes, in kelvin.
 pub const WARMEST: u32 = 2500;
@@ -34,7 +39,8 @@ const DEFAULT: u32 = 4000;
 const DAY: u32 = 6500;
 
 /// When it warms the screens.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum Schedule {
     /// All day, while it's on.
     #[default]
@@ -91,6 +97,30 @@ fn parse_clock(text: &str) -> Option<(u8, u8)> {
     (hour < 24 && minute < 60).then_some((hour, minute))
 }
 
+/// What's kept: whether it's on, how warm, and when.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(crate = "amane::serde")]
+struct Kept {
+    on: bool,
+    temperature: u32,
+    #[serde(default)]
+    schedule: Schedule,
+}
+
+impl State for Kept {
+    const FILE: &'static str = "night-light.json";
+    const VERSION: u32 = 1;
+
+    fn legacy() -> Option<Self> {
+        let (on, temperature, schedule) = parse(&state::legacy_text(OLD_FILE)?)?;
+        Some(Self {
+            on,
+            temperature,
+            schedule,
+        })
+    }
+}
+
 // one change at a time: a restart is a stop and a start
 static APPLYING: Mutex<()> = Mutex::new(());
 static TEMPERATURE: Latest<u32> = Latest::new();
@@ -108,9 +138,14 @@ pub struct NightLight {
 
 impl Service for NightLight {
     fn new() -> Self {
-        let (on, temperature, schedule) = std::fs::read_to_string(state_file(FILE))
-            .ok()
-            .and_then(|text| parse(&text))
+        let (on, temperature, schedule) = state::load::<Kept>()
+            .map(|kept| {
+                (
+                    kept.on,
+                    kept.temperature.clamp(WARMEST, COOLEST),
+                    kept.schedule,
+                )
+            })
             .unwrap_or((false, DEFAULT, Schedule::Manual));
         Self {
             on,
@@ -252,7 +287,11 @@ fn apply(on: Option<bool>, kelvin: Option<u32>, schedule: Option<Schedule>) {
     let mut light = NightLight::write();
     light.on = child.is_some();
     light.child = child;
-    save_state(FILE, &format(light.on, kelvin, schedule));
+    state::save(&Kept {
+        on: light.on,
+        temperature: kelvin,
+        schedule,
+    });
 }
 
 /// What `wlsunset` is started with: `kelvin` all day, or by night on a
@@ -319,6 +358,7 @@ fn stop(child: Option<u32>) {
 
 /// One line: `on 4000`, `off 4000 sun 59.91 10.75` or `on 3500 hours
 /// 21:00 07:00`; a line without a schedule is from before there was one.
+/// The old file's format, and what the `state` verb answers.
 fn parse(text: &str) -> Option<(bool, u32, Schedule)> {
     let mut words = text.split_whitespace();
     let on = match words.next()? {
@@ -395,6 +435,27 @@ mod tests {
     }
 
     #[test]
+    fn the_kept_state_round_trips_as_json() {
+        let kept = Kept {
+            on: true,
+            temperature: 2500,
+            schedule: Schedule::Hours {
+                from: (21, 30),
+                to: (7, 0),
+            },
+        };
+        let text = serde_json::to_string(&kept).unwrap();
+        assert_eq!(
+            text,
+            r#"{"on":true,"temperature":2500,"schedule":{"hours":{"from":[21,30],"to":[7,0]}}}"#
+        );
+        assert_eq!(serde_json::from_str::<Kept>(&text).unwrap(), kept);
+        let manual: Kept =
+            serde_json::from_str(r#"{"on":false,"temperature":4000,"schedule":"manual"}"#).unwrap();
+        assert_eq!(manual.schedule, Schedule::Manual);
+    }
+
+    #[test]
     fn a_schedule_is_wlsunsets_night() {
         let hours = Schedule::Hours {
             from: (21, 0),
@@ -417,5 +478,21 @@ mod tests {
         assert_eq!(slider_kelvin(0), COOLEST);
         assert_eq!(slider_kelvin(100), WARMEST);
         assert_eq!(slider_kelvin(slider_value(4250)), 4250);
+    }
+
+    #[test]
+    fn a_live_old_file_migrates() {
+        let old = include_str!("../../../tests/fixtures/state/night-light");
+        crate::services::state::tests::in_folder("night-light", &[(OLD_FILE, old)], |_| {
+            let kept = state::load::<Kept>().expect("the old file");
+            assert_eq!(
+                kept,
+                Kept {
+                    on: true,
+                    temperature: 2500,
+                    schedule: Schedule::Manual
+                }
+            );
+        });
     }
 }

@@ -111,12 +111,14 @@ frame and keeps the target being dragged by its place among them, so a drag meas
 that moves every frame overshoots; the layer never moves. A press becomes a drag once the pointer
 has moved 6 px, so a click stays a click.
 
-The layout is per monitor, by connector name, in `$XDG_STATE_HOME/amane-shell/widgets`:
+The layout is per monitor, by connector name, in the state file `widgets.json`
+([services.md](../integration/services.md#settings-and-state)); the older `widgets`, the same
+shape with `"version": 1` inside, is read when that isn't there:
 
 ```json
-{ "version": 1, "next_id": 3, "outputs": { "eDP-1": [
+{ "version": 1, "data": { "next_id": 3, "outputs": { "eDP-1": [
     { "id": 1, "kind": "battery", "cols": 2, "rows": 2, "col": 0, "row": 0 },
-    { "id": 2, "kind": "disk", "cols": 4, "rows": 2, "col": 2, "row": 0, "settings": { "mount": "/home" } } ] } }
+    { "id": 2, "kind": "disk", "cols": 4, "rows": 2, "col": 2, "row": 0, "settings": { "mount": "/home" } } ] } } }
 ```
 
 The kinds are `clock`, `battery`, `cpu`, `memory`, `temperature`, `network`, `disk` and `system`;
@@ -125,7 +127,7 @@ the settings `device`, `interface`, `mount`, `sensor`, and the clock's `color` (
 on: a card that no longer fits moves to the first free cells, or hides where there are none. What
 the refit moved is never saved, so a smaller screen or a bigger scale doesn't lose where the cards
 were on the bigger one; a card moved by hand is kept where it went. A file from another version is
-ignored; unknown kinds are dropped, and overlaps move to the first free cells. With no file at
+left alone and the default shown; unknown kinds are dropped, and overlaps move to the first free cells. With no file at
 all, the first monitor starts with the battery (where there is one) and the CPU.
 
 ## Frost

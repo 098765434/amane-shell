@@ -45,7 +45,7 @@
 //! - [`vault`] — Bitwarden through rbw: locked or not, its entries without their
 //!   secrets, the shell's pinentry, and which app owns a field (`docs/shell/passwords.md`).
 //!
-//! Shared helpers: [`state_file`] and [`save_state`] (`state.rs`),
+//! Shared helpers: [`state`] (the state files),
 //! [`run`], [`run_now`], [`installed`] and [`Latest`] (`process.rs`), and [`Wake`] (`wake.rs`).
 //!
 //! See `docs/shell/quick-settings.md` and `docs/shell/widgets.md`.
@@ -62,9 +62,9 @@ pub mod power;
 pub mod status_apps;
 pub mod vault;
 
-mod state;
+pub mod state;
 mod wake;
 
 pub use amane_kit::process::{Latest, installed, run, run_now};
-pub use state::{save_state, state_file};
+pub use state::state_file;
 pub use wake::Wake;

@@ -1,0 +1,67 @@
+{
+  "next_id": 8,
+  "outputs": {
+    "eDP-1": [
+      {
+        "col": 0,
+        "cols": 2,
+        "id": 1,
+        "kind": "battery",
+        "row": 0,
+        "rows": 2
+      },
+      {
+        "col": 4,
+        "cols": 2,
+        "id": 2,
+        "kind": "cpu",
+        "row": 2,
+        "rows": 2
+      },
+      {
+        "col": 0,
+        "cols": 4,
+        "id": 3,
+        "kind": "system",
+        "row": 6,
+        "rows": 4
+      },
+      {
+        "col": 2,
+        "cols": 2,
+        "id": 4,
+        "kind": "disk",
+        "row": 0,
+        "rows": 2
+      },
+      {
+        "col": 4,
+        "cols": 2,
+        "id": 5,
+        "kind": "network",
+        "row": 0,
+        "rows": 2,
+        "settings": {
+          "interface": "wlp194s0"
+        }
+      },
+      {
+        "col": 0,
+        "cols": 4,
+        "id": 6,
+        "kind": "memory",
+        "row": 4,
+        "rows": 2
+      },
+      {
+        "col": 0,
+        "cols": 4,
+        "id": 7,
+        "kind": "clock",
+        "row": 2,
+        "rows": 2
+      }
+    ]
+  },
+  "version": 1
+}
