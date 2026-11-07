@@ -64,47 +64,6 @@ a list needs it.
 `List::new(items)` stacks items `sys.space.gap.xs` apart, under an optional `.header(…)`
 caption, with an `.empty(…)` note while there are none.
 
-## Lists (M3)
-
-`lists` is Material 3's list component in full, beside the simpler `list` above, which keeps
-its current users. Its spec and sources are in [lists-m3.md](lists-m3.md), and
-`cargo run -p amane-kit --example lists` compares it with Material's versions and today's lists.
-
-### ListItem
-
-`lists::ListItem::new(id, headline)` takes these parts:
-
-- **Text:** `.overline(…)`, `.supporting(…)`, `.supporting_lines(2)` and `.trailing_text(…)`.
-- **Leading:** `.leading(Leading::…)`, one of `Icon`, `Avatar`, `Image`, `Video`, `Checkbox`,
-  `Radio`, `Switch`, `Tile` or `Widget`.
-- **Trailing:** `.trailing(Trailing::…)`, one or more of `Icon`, `Text`, `Checkbox`, `Radio`,
-  `Switch`, `Chevron`, `Expand`, `DragHandle`, `Check` or `Widget`.
-- **Item type:** `.kind(ItemKind::…)`, one of `Text`, `Button` or `Link`.
-- **State:** `.selected`, `.disabled`, `.on_press`, `.on_secondary`, `.on_toggle`, and
-  `.force_state(State::…)` for a showcase.
-
-Its line count, one to three, comes from its text. It draws M3's states (hovered, focused,
-pressed, dragged and disabled, with selected on top of any of them) as a state layer, and in
-the expressive style as a change of shape too.
-
-### List
-
-`lists::List::new(id, items)` takes:
-
-- **Look:** `.style(ListStyle::…)`, one of `Shell` (the default), `M3` or `M3Expressive`.
-- **Size:** `.width(w)`.
-- **Header and empty state:** `.header(…)` (a subheader) and `.empty(…)`.
-- **Dividers:** `.dividers(Dividers::…)`, one of `Full`, `Inset` or `Middle`.
-- **Selection:** `.select(Selection::Single(…) | Multi(…), on_change)`, which drives the items'
-  fills and controls.
-- **Keyboard:** `.keyboard(true)`. Pass the window's keys to `lists::handle_key(id, key)`.
-- **Reorder:** `.reorder(on_move)`, which adds drag handles.
-- **Long lists:** `.window(offset, height)`, which builds only the rows in view of a long list
-  whose items are all the same height.
-- **Backdrop:** `.backdrop(true)`, the surface an M3 list sits on.
-
-`avatar::Avatar` (initials or a photo on a circle) and `Divider::inset` came with it.
-
 ## Form
 
 `form` lays settings out as grouped rows, and is what Shell Settings' pages are

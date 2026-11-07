@@ -80,7 +80,7 @@ pub mod tokens;
 
 pub use animation::{edge_reveal, kinetic, motion, pager};
 pub use containers::{
-    app_bar, arrangement, card, dialog, divider, flow, form, list, lists, scroll_view, tooltip,
+    app_bar, arrangement, card, dialog, divider, flow, form, list, scroll_view, tooltip,
 };
 pub use controls::{
     avatar, buttons, color_picker, control_size, dropdown, macform, slider, spinner, tag,

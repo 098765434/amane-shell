@@ -134,6 +134,8 @@ const UNREAD_ALLOWED: &[&str] = &[
     "sys.color.surface.popover.fg",
     "sys.color.surface.popover.fg-secondary",
     "sys.color.surface.popover.stroke",
+    // the M3 lists' dragged row read it; kept for the next raised surface
+    "sys.color.surface.raised.bg",
     "sys.size.list.max-height",
     "sys.size.popover.height",
     "wifi.button.width",

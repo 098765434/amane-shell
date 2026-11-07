@@ -78,7 +78,6 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | An app's window, text fields and sidebar | [kit/app.md](kit/app.md) |
 | The colour picker, and hex and HSV helpers | [kit/color-picker.md](kit/color-picker.md) |
 | Saved Shader Lab looks, and putting one on a rectangle | [kit/lab.md](kit/lab.md) |
-| Lists in three styles, and the Material 3 numbers they follow | [kit/lists-m3.md](kit/lists-m3.md) |
 | Springs and fades, keyed list motion, `Kinetic`, `Pager` | [kit/motion.md](kit/motion.md) |
 
 ## Design system
