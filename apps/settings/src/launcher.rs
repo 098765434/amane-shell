@@ -1,4 +1,4 @@
-//! Spotlight, the shell's launcher: which sources its search draws on, how
+//! The shell's launcher: which sources its search draws on, how
 //! Applications lays the apps out, its clipboard history, and the quick
 //! keys set for its actions.
 //! Each control changes `launcher.json`, which the shell follows at once.

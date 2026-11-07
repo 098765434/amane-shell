@@ -1,5 +1,5 @@
 //! What the assistant can ask the shell to do: the system commands the shell
-//! already has (Control Center's switches, volume and brightness, apps,
+//! already has (Quick Settings' switches, volume and brightness, apps,
 //! what's playing, the session, a timer, the power mode), named by what the
 //! shell knows them by, so running one is the shell's ordinary action.
 
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "do", rename_all = "kebab-case")]
 pub enum Command {
-    /// One of Control Center's switches, by its control's name
+    /// One of Quick Settings' switches, by its control's name
     /// ("night-light", "wifi").
     Switch {
         control: String,

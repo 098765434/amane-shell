@@ -370,7 +370,7 @@ fn fill(status: &VaultStatus) -> amane_kit::form::Group {
         ))
         .row(switch_row(
             "settings.passwords.spotlight",
-            "Passwords in Spotlight",
+            "Passwords in the Launcher",
             settings.show_in_spotlight,
             |on| change_passwords(|passwords| passwords.show_in_spotlight = on),
         ))
@@ -386,8 +386,8 @@ fn fill(status: &VaultStatus) -> amane_kit::form::Group {
             shown = shown.row(problem_row(
                 "settings.passwords.ime",
                 "Another input method has the keyboard",
-                "fcitx5 or IBus is running, so the shell can't offer fill in apps. Spotlight's \
-                 passwords still work.",
+                "fcitx5 or IBus is running, so the shell can't offer fill in apps. The \
+                 launcher's passwords still work.",
                 "",
             ));
         }
@@ -407,7 +407,7 @@ fn fill(status: &VaultStatus) -> amane_kit::form::Group {
          only if the same field still has the keyboard. Turning fill on or off takes effect \
          when the shell starts again. Browsers are left to the Bitwarden extension. Chromium \
          and Electron apps need --enable-wayland-ime --wayland-text-input-version=3. In \
-         Spotlight, type pw and a name.",
+         the launcher, type pw and a name.",
     )
 }
 

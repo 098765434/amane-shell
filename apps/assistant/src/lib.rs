@@ -1,4 +1,4 @@
-//! Spotlight's assistant, the part the shell and the daemon share: what a
+//! The launcher's assistant, the part the shell and the daemon share: what a
 //! command is ([`Command`]), what the machine has for one to name
 //! ([`Snapshot`]), reading a command from what was typed or said, first by
 //! [`rules`] and then by Needle 3 through the [`tools`] it's offered, and

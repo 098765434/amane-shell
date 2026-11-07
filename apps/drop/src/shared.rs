@@ -1,4 +1,4 @@
-//! Recently Shared, as Dropzone's menu keeps it: the last links uploads
+//! Recently Shared, as the menu keeps it: the last links uploads
 //! gave, in `$XDG_STATE_HOME/amane-drop/shared.json`, the newest first. A
 //! link goes on the clipboard and a notification says so, as Settings has
 //! it.

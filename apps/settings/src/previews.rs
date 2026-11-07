@@ -243,7 +243,7 @@ pub fn widgets(look: WidgetStyle) -> Rectangle {
     picture(layers)
 }
 
-/// Spotlight's apps as a grid of icons or a list of rows.
+/// The launcher's apps as a grid of icons or a list of rows.
 pub fn launcher(grid: bool) -> Rectangle {
     let dark = dark_now();
     let ink = if dark {

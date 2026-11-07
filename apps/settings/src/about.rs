@@ -28,7 +28,7 @@ pub fn page() -> Column {
 /// How tall the app's card is.
 const HERO: f32 = 112.0;
 
-/// The app's icon, name and version, as macOS's About shows them.
+/// The app's icon, name and version.
 fn hero() -> Rectangle {
     let tile = Rectangle::new()
         .width(Size::Fixed(64.0))
@@ -76,7 +76,7 @@ fn files() -> [(&'static str, std::path::PathBuf); 5] {
         ("Desktop", Config::<Desktop>::path()),
         ("Status Bar", Config::<StatusBar>::path()),
         ("Dock", Config::<Dock>::path()),
-        ("Spotlight", Config::<Launcher>::path()),
+        ("Launcher", Config::<Launcher>::path()),
     ]
 }
 
@@ -89,7 +89,7 @@ fn tidy(path: &Path, home: Option<&Path>) -> String {
 }
 
 /// `text` cut in the middle with an ellipsis until `fits` says it fits,
-/// as macOS shortens a path: its start and its file name stay.
+/// so a path keeps its start and its file name.
 fn middle_elide(text: &str, fits: impl Fn(&str) -> bool) -> String {
     if fits(text) {
         return text.to_string();

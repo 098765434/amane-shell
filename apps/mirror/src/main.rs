@@ -11,7 +11,7 @@
 //! window of its own instead: a virtual display that resizes with the
 //! window, under its own app id (`amane-mirror.<package>`), so each app is
 //! a window of its own. `--list-apps --serial <serial> --device <id>`
-//! writes the phone's apps for Spotlight and exits. `--camera front|back`
+//! writes the phone's apps for the launcher and exits. `--camera front|back`
 //! makes the phone's camera this computer's webcam, without a window.
 
 mod apps;

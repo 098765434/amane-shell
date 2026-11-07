@@ -138,7 +138,7 @@ pub fn page() -> Column {
                     .on_press(|| crate::open(View::Sub("items"))),
             )
             .row(
-                FormRow::new("settings.bar.activities-link", "Live Activities")
+                FormRow::new("settings.bar.activities-link", "Activities")
                     .value(activities_summary(&now))
                     .on_press(|| crate::open(View::Sub("activities"))),
             ),
@@ -168,7 +168,7 @@ pub fn page() -> Column {
     ])
 }
 
-/// Live Activities as their row sums them up: "Off", or how many show
+/// Activities as their row sums them up: "Off", or how many show
 /// with their text.
 fn activities_summary(now: &StatusBar) -> String {
     if !now.shows("activities") {
@@ -212,7 +212,7 @@ pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
         "clock" => (String::from("Clock"), boxed(clock())),
         "weather" => (String::from("Weather"), boxed(weather())),
         "items" => (String::from("Items"), boxed(items())),
-        "activities" => (String::from("Live Activities"), boxed(activities())),
+        "activities" => (String::from("Activities"), boxed(activities())),
         _ => return None,
     })
 }
@@ -458,7 +458,7 @@ fn item_row(name: &'static str, index: usize, last: usize, shown: bool) -> FormR
         .trailing(Row::new(trailing).gap(4.0).align(Center))
 }
 
-/// Live Activities: whether they show, how many with their text, Now
+/// Activities: whether they show, how many with their text, Now
 /// Playing's "Always show", and which apps may show them.
 fn activities() -> Column {
     let now = status_bar().clone();
@@ -500,7 +500,7 @@ fn activities() -> Column {
         group()
             .row(switch_row(
                 "settings.bar.activities",
-                "Show Live Activities",
+                "Show Activities",
                 on,
                 |on| change_status_bar(|now| now.set_shown("activities", on)),
             ))
@@ -512,8 +512,8 @@ fn activities() -> Column {
                     .disabled(!on),
             )
             .footer(
-                "What's going on now, as macOS's menu bar has it: what plays, a timer, screen \
-                 sharing, an upload. Click one for its controls.",
+                "What's going on now: what plays, a timer, screen sharing, an upload. Click \
+                 one for its controls.",
             ),
         group().header("Now Playing").row(
             switch_row(
@@ -525,14 +525,13 @@ fn activities() -> Column {
             .subtitle("Else only while something plays, or was paused in the last few minutes"),
         ),
         group()
-            .header("Allow Live Activities")
+            .header("Allow Activities")
             .rows(rows)
             .footer("Other apps show here once they have started one."),
     ])
 }
 
-/// The apps the bar has had in its tray, each allowed in it or not, as
-/// macOS's "Allow in the Menu Bar".
+/// The apps the bar has had in its tray, each allowed in it or not.
 fn allowed_apps(now: &amane_kit::settings::StatusBar) -> amane_kit::form::Group {
     let seen = tray_seen();
     // programs' own items (amane's status items), kept by `app:<id>`

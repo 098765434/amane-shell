@@ -201,7 +201,7 @@ pub fn page_named(name: &str) -> Option<usize> {
         "status-bar" | "bar" => STATUS_BAR,
         "dock" => DOCK,
         "quick-settings" => QUICK_SETTINGS,
-        "spotlight" | "launcher" => SPOTLIGHT,
+        "spotlight" | "launcher" => SPOTLIGHT, // lint-terms: allow (an old name, for keybinds)
         "drop" | "amane-drop" => DROP,
         "passwords" | "bitwarden" => PASSWORDS,
         "about-shell" => ABOUT_SHELL,
@@ -296,7 +296,7 @@ fn main() {
     package_arg(&args);
     app("amane-settings")
         .normal_window("main", main_window)
-        // launched again (Spotlight, a notification) while running: show that page
+        // launched again (the launcher, a notification) while running: show that page
         .on_activate(|args| {
             if let Some(place) = page_arg(args) {
                 Navigation::write().go_to(place);
@@ -315,7 +315,7 @@ fn pages() -> [Page; 21] {
         Page::new(ICON_MORE_HORIZ, "Status Bar").accent(Accent::Gray),
         Page::new(ICON_LAYERS, "Dock").accent(Accent::Indigo),
         Page::new(ICON_TUNE, "Quick Settings").accent(Accent::Gray),
-        Page::new(ICON_SEARCH, "Spotlight").accent(Accent::Purple),
+        Page::new(ICON_SEARCH, "Launcher").accent(Accent::Purple),
         Page::new(ICON_TRAY, "Drop").accent(Accent::Orange),
         Page::new(ICON_LOCK, "Passwords").accent(Accent::Gray),
         Page::new(ICON_COMPUTER, "About").accent(Accent::Gray),
@@ -364,7 +364,7 @@ fn shortcut(key: Key) -> bool {
         forward();
         return true;
     }
-    // Ctrl+F searches, as macOS's Command-F does
+    // Ctrl+F searches
     if held.ctrl && !held.alt && key == Key::Character('f') {
         search::focus();
         drop(Navigation::write());
@@ -450,7 +450,7 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
                     boxed(quick_settings::page()),
                 ),
                 SPOTLIGHT => (
-                    "Spotlight",
+                    "Launcher",
                     "settings.scroll.spotlight",
                     boxed(launcher::page()),
                 ),

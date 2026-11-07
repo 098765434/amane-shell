@@ -20,7 +20,7 @@ pub struct Snapshot {
     pub timer_running: bool,
 }
 
-/// One of Control Center's switches.
+/// One of Quick Settings' switches.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Switch {
     /// Its control's name: "night-light".

@@ -404,7 +404,7 @@ NEGATIVES = [
     "how to pause a netflix download on my phone", "timer for eggs how long",
     "lock and key emoji", "sleep apnea symptoms", "shut down meaning",
     "restart my life", "log in to gmail", "open a bank account", "open sesame",
-    "start a business", "launch date of the iphone", "fire up the grill recipes",
+    "start a business", "launch date of the new phone", "fire up the grill recipes",
     "terminal illness", "files to share with my team", "email etiquette tips",
     "calculator watch", "photos of norway", "settings for a dnd campaign",
     "code of conduct", "messages from the president", "how is the volume of a box measured",

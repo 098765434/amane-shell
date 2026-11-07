@@ -1,4 +1,4 @@
-//! The phone's apps for Spotlight: `amane-mirror --list-apps --serial
+//! The phone's apps for the launcher: `amane-mirror --list-apps --serial
 //! <serial> --device <kdeconnect id>` asks scrcpy's server for them and
 //! writes `~/.cache/amane-shell/phone-apps.json`, which the shell's
 //! Phone Apps search reads. The shell runs it when adb has the phone and

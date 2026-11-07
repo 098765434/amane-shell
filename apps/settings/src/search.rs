@@ -1,5 +1,5 @@
-//! Searching Shell Settings, as the field over macOS's sidebar does: what's
-//! typed finds pages and the settings on them, by their titles and by
+//! Searching Shell Settings, from the field over the sidebar: what's typed
+//! finds pages and the settings on them, by their titles and by
 //! other words people use for them ("dark mode", "wifi"). A result opens
 //! its page (or sub-page) and lights the row it names for a moment.
 //!
@@ -257,13 +257,20 @@ pub const INDEX: &[Entry] = &[
     ),
     row(
         "status-bar/activities",
-        "Live Activities",
+        "Activities",
         "settings.bar.activities",
-        &["activity", "timer", "screen sharing", "progress", "upload"],
+        &[
+            "activity",
+            "live",
+            "timer",
+            "screen sharing",
+            "progress",
+            "upload",
+        ],
     ),
     row(
         "status-bar/activities",
-        "Allow Live Activities",
+        "Allow Activities",
         "settings.bar.activities-compact",
         &["apps", "permission"],
     ),
@@ -357,7 +364,7 @@ pub const INDEX: &[Entry] = &[
     page(
         "quick-settings",
         "Quick Settings",
-        &["control center", "wifi", "bluetooth", "volume", "toggles"],
+        &["controls", "wifi", "bluetooth", "volume", "toggles"],
     ),
     row(
         "quick-settings",
@@ -365,11 +372,11 @@ pub const INDEX: &[Entry] = &[
         "settings.quick.reset-row",
         &["customize"],
     ),
-    // Spotlight
+    // Launcher
     page(
         "spotlight",
-        "Spotlight",
-        &["launcher", "search", "app launcher", "run"],
+        "Launcher",
+        &["search", "app launcher", "run", "apps"],
     ),
     row(
         "spotlight",
@@ -390,11 +397,7 @@ pub const INDEX: &[Entry] = &[
         &["shortcuts", "hotkeys"],
     ),
     // Drop
-    page(
-        "drop",
-        "Drop",
-        &["dropzone", "amane-drop", "grid", "shelf", "share"],
-    ),
+    page("drop", "Drop", &["amane-drop", "grid", "shelf", "share"]),
     row(
         "drop",
         "Tiles a row",
@@ -561,7 +564,7 @@ fn where_is(place: &str) -> String {
         ("status-bar", "Status Bar"),
         ("dock", "Dock"),
         ("quick-settings", "Quick Settings"),
-        ("spotlight", "Spotlight"),
+        ("spotlight", "Launcher"),
         ("drop", "Drop"),
         ("passwords", "Passwords"),
         ("about-shell", "About"),

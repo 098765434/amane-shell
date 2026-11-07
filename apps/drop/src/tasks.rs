@@ -1,6 +1,6 @@
 //! What a tile does with what's let go on it, each on a thread of its own:
-//! its progress shows on the tile and as a Live Activity in the bar, with
-//! Cancel, as Dropzone's tasks show in its grid and menu bar item. A name
+//! its progress shows on the tile and as an activity in the bar, with
+//! Cancel. A name
 //! taken where files go asks first: keep both, replace, or stop.
 
 use std::path::{Path, PathBuf};

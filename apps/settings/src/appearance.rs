@@ -14,7 +14,7 @@ use amane_kit::theme::{Density, Glass, Mode};
 
 use crate::{group, groups, previews};
 
-/// Accents saved before macOS 27's colours, and the entry that shows for
+/// Accents saved before the current colours, and the entry that shows for
 /// each; picking it again saves the new colour.
 const OLD_ACCENTS: [(&str, &str); 6] = [
     ("#0a84ff", "#0091ff"),

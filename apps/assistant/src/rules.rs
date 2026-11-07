@@ -40,7 +40,7 @@ const QUESTIONS: &[&str] = &[
 ];
 
 /// Whether the model is worth asking about `query`, once no rule read it.
-/// Not a word alone, nor the bare name of a switch or an app (Spotlight
+/// Not a word alone, nor the bare name of a switch or an app (the launcher
 /// already shows that thing), nor a question: each of those, asked, gets a
 /// confident wrong call more often than a right one.
 pub fn worth_asking(query: &str, snapshot: &Snapshot) -> bool {
@@ -596,7 +596,7 @@ mod tests {
             Some(Command::Open { app: "code".into() })
         );
         assert_eq!(reads("open the pod bay doors"), None);
-        assert_eq!(reads("firefox"), None, "a bare name is Spotlight's");
+        assert_eq!(reads("firefox"), None, "a bare name is the launcher's");
     }
 
     #[test]

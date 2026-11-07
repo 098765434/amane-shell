@@ -1,4 +1,4 @@
-//! Uploads, as Dropzone's sharing actions: 0x0.st, Imgur, an SFTP server
+//! Uploads, the sharing actions: 0x0.st, Imgur, an SFTP server
 //! or an S3 bucket, each through `curl`. Secrets go to curl on its stdin
 //! (`-K -`), never in its arguments, where `ps` would show them. Progress
 //! comes from curl's progress bar; a cancel kills curl.

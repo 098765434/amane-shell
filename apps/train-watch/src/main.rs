@@ -1,5 +1,5 @@
-//! A Needle fine-tune on another machine, followed from the status bar: a
-//! Live Activity with the step, the loss and the time left, an alert when it
+//! A Needle fine-tune on another machine, followed from the status bar:
+//! an activity with the step, the loss and the time left, an alert when it
 //! ends with how it scored, and Stop and Log buttons. `--plain` prints the
 //! same to the terminal instead.
 //!

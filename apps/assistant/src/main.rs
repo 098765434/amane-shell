@@ -1,4 +1,4 @@
-//! `amane-assistant`: Spotlight's assistant's engine, a user service beside
+//! `amane-assistant`: the launcher's assistant's engine, a user service beside
 //! the shell. It holds Cactus (Needle 3 for commands, Whistle for speech),
 //! listens to the microphone while asked to, and answers the shell over a
 //! Unix socket ([`amane_assistant::protocol`]). It never runs a command

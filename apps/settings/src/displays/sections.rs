@@ -787,7 +787,7 @@ fn open_apps_menu(added: &[String], add: impl Fn(&str) + Clone + 'static) -> Rec
         .build()
 }
 
-/// The scales offered, as macOS's "Looks like" choices.
+/// The scales offered.
 const SCALES: [f64; 9] = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0];
 
 pub fn scale(ctx: &Ctx) -> FormRow {

@@ -1,8 +1,8 @@
-//! amane-drop: a status bar app in the manner of Aptonic's Dropzone. Its
+//! amane-drop: a drop shelf in the status bar. Its
 //! item in the bar (an amane status item) opens a grid of folders, apps and
 //! actions to let files go on, and a Drop Bar to hold them; dragging files
 //! over the item opens it at once, so the drag carries on into it. Work
-//! shows on its tile and as a Live Activity in the bar.
+//! shows on its tile and as an activity in the bar.
 //!
 //! `amane-drop` runs it; launched again, `amane-drop toggle | open | close`
 //! goes to the copy running (a keybind's way in), as does the same over its
@@ -71,8 +71,8 @@ fn reply(args: &[&str]) -> String {
 }
 
 /// `toggle`, `open [grid]`, `close`, `edit`, `run <tile> <file>…` (the tile's
-/// action on the files, numbered from 1 in the grid showing, as Dropzone's
-/// `dz run`) or `hold <file>…` (onto the Drop Bar), from a launch or IPC.
+/// action on the files, numbered from 1 in the grid showing) or
+/// `hold <file>…` (onto the Drop Bar), from a launch or IPC.
 fn command(args: &[String]) {
     let output = amane::pointer_monitor();
     match args.first().map(String::as_str) {

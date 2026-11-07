@@ -191,8 +191,7 @@ fn tidy(path: &str) -> String {
     }
 }
 
-/// The computer's card: its glyph, its name and the NixOS it runs, as
-/// macOS's About This Mac opens.
+/// The computer's card: its glyph, its name and the NixOS it runs.
 fn hero(version: Option<&str>) -> amane::Rectangle {
     use amane::{Color, Rectangle, Size, Text};
     use amane_kit::macform::theme as mac;

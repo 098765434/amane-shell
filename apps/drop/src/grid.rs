@@ -1,4 +1,4 @@
-//! The grid, as Dropzone's: a card that hangs from the bar under Drop's
+//! The grid: a card that hangs from the bar under Drop's
 //! item, its tiles (folders, apps and actions) to let files go on, and the
 //! Drop Bar under them to hold files for later. Opened by a click it takes
 //! the keys (Escape closes, 1–9 and the arrows pick a grid) and a click

@@ -7,5 +7,5 @@ Exec=amane-drop open
 Icon=folder-download
 Terminal=false
 Categories=Utility;FileTools;
-Keywords=dropzone;shelf;upload;share;sftp;s3;imgur;
+Keywords=shelf;drop;upload;share;sftp;s3;imgur;
 StartupNotify=false
