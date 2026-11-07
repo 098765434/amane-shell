@@ -88,7 +88,6 @@ impl Navigation {
 /// it's there.
 fn find_thread(wanted: &str) -> Option<i64> {
     let messages = PhoneMessages::read();
-    let digits: String = wanted.chars().filter(char::is_ascii_digit).collect();
     let threads = messages.threads();
     threads
         .iter()
@@ -99,14 +98,10 @@ fn find_thread(wanted: &str) -> Option<i64> {
                 .find(|thread| thread.title().eq_ignore_ascii_case(wanted))
         })
         .or_else(|| {
-            (digits.len() >= 7).then(|| {
-                threads.iter().find(|thread| {
-                    thread.addresses().iter().any(|address| {
-                        let own: String = address.chars().filter(char::is_ascii_digit).collect();
-                        own.ends_with(&digits) || digits.ends_with(&own)
-                    })
-                })
-            })?
+            threads.iter().find(|thread| {
+                (thread.addresses().iter())
+                    .any(|address| amane_phone::same_phone_number(address, wanted))
+            })
         })
         .map(amane_phone::SmsThread::id)
 }

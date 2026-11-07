@@ -11,6 +11,8 @@
 mod actions;
 mod config;
 mod contacts;
+
+pub use contacts::{digits, same_phone_number};
 mod device;
 mod files;
 mod input;

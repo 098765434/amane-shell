@@ -64,7 +64,10 @@ fn pick(name: String, number: String) {
         return;
     }
     PICKED.with_borrow_mut(|picked| {
-        if !picked.iter().any(|(_, old)| digits(old) == digits(&number)) {
+        if !picked
+            .iter()
+            .any(|(_, old)| amane_phone::digits(old) == amane_phone::digits(&number))
+        {
             picked.push((name, number));
         }
     });
@@ -77,14 +80,10 @@ fn unpick(number: &str) {
     amane::mark_all();
 }
 
-fn digits(text: &str) -> String {
-    text.chars().filter(char::is_ascii_digit).collect()
-}
-
 /// Whether `text` could be a phone number: digits, with the usual marks.
 fn number_like(text: &str) -> bool {
     let text = text.trim();
-    digits(text).len() >= 3
+    amane_phone::digits(text).len() >= 3
         && text
             .chars()
             .all(|c| c.is_ascii_digit() || matches!(c, '+' | ' ' | '-' | '(' | ')'))
@@ -97,7 +96,7 @@ fn suggestions(query: &str) -> Vec<(String, String)> {
     if query.is_empty() {
         return Vec::new();
     }
-    let wanted_digits = digits(&query);
+    let wanted_digits = amane_phone::digits(&query);
     let contacts = PhoneMessages::read().contacts();
     let mut found: Vec<(u8, (String, String))> = contacts
         .into_iter()
@@ -111,7 +110,9 @@ fn suggestions(query: &str) -> Vec<(String, String)> {
                 0
             } else if lower.contains(&query) {
                 1
-            } else if wanted_digits.len() >= 3 && digits(&number).contains(&wanted_digits) {
+            } else if wanted_digits.len() >= 3
+                && amane_phone::digits(&number).contains(&wanted_digits)
+            {
                 2
             } else {
                 return None;

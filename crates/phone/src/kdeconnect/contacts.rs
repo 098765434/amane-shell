@@ -179,7 +179,15 @@ pub(crate) fn same_number(a: &str, b: &str) -> bool {
     short.len() >= SUFFIX_DIGITS && long.ends_with(short)
 }
 
-pub(crate) fn digits(text: &str) -> String {
+/// Whether `a` and `b`, written any way (`+47 957 23 015`, `95723015`), are
+/// the same phone number: the same digits, or one ending in the other's,
+/// at least seven of them, so a short service code only matches whole.
+pub fn same_phone_number(a: &str, b: &str) -> bool {
+    same_number(&digits(a), &digits(b))
+}
+
+/// The digits of a phone number, as it's compared.
+pub fn digits(text: &str) -> String {
     text.chars().filter(char::is_ascii_digit).collect()
 }
 
