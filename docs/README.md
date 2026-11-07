@@ -30,8 +30,8 @@ A module's folder says what kind of thing it is. A new one goes where its kind i
 
 | Folder | What goes there |
 |---|---|
-| `apps/shell/src/surfaces/` | a surface of its own: the status bar, dock, launcher, notifications, Quick Settings, widgets, context menu, alert, on-screen display and the password-fill popup (`fill.rs`), each with its doc in `shell/` |
-| `apps/shell/src/chrome/` | what several surfaces share and only the shell has (`panel`, `battery`); the rest is the kit's |
+| `apps/shell/src/surfaces/` | a surface of its own, a folder each: the status bar, dock, launcher, notifications, Quick Settings, widgets, alert, on-screen display and the password-fill popup (`fill/`), each with its doc in `shell/`; how a surface is laid out is in [shell-structure.md](development/shell-structure.md) |
+| `apps/shell/src/chrome/` | what several surfaces share and only the shell has (`panel`, `bar`, `per_output`, `battery`, `workspace_menu`); the rest is the kit's |
 | `apps/shell/src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; `vault/` (rbw, for passwords); the assistant's client (`assistant.rs`); the status apps' bus server (`status_apps.rs`); helpers in `process.rs` and `state.rs` |
 | `apps/` | the programs beside the shell (`apps/shell`): Shell Settings, Messages, Phone Screen, Shader Lab (with its effects and saved looks), Drop, the assistant's daemon, and `train-watch`, which follows a training run from the status bar |
 | `crates/` | what they share: the kit (`crates/kit`, with the design tokens in `design-tokens/`), rbw's pinentry and the assistant's library |

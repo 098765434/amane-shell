@@ -138,7 +138,7 @@ Code:
 - amane: `src/wayland/input_method_v2.rs`, `src/wayland/secure_fill.rs`,
   `src/services/focused_field.rs` (amane's `docs/fork/input/input-method.md`);
 - niri: `src/protocols/secure_fill.rs` (niri's `docs/fork/input/secure-fill.md`);
-- shell: `apps/shell/src/surfaces/fill.rs`.
+- shell: `apps/shell/src/surfaces/fill/`.
 
 ### Who owns a field
 

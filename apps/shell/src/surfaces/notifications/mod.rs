@@ -7,7 +7,7 @@
 //! - [`toasts`] — a banner per arriving notification, for its lifetime.
 //! - [`center`] — the session's notifications, stacked by app, in a
 //!   right-edge sidebar the clock opens.
-//! - [`dnd_menu`] — Do Not Disturb's timed choices; Do Not Disturb itself
+//! - [`dnd_menu()`] — Do Not Disturb's timed choices; Do Not Disturb itself
 //!   is a service (`services::do_not_disturb`).
 //! - [`card`] — the card both draw; [`motion`](amane_kit::motion)
 //!   moves their cards.

@@ -334,10 +334,14 @@ never blocks anything.
 
 | File | What |
 |---|---|
-| `mod.rs` | the surface, its state, what it shows (`View`, `Kind`, `Layout`), IPC, focus, keys and gestures |
+| `mod.rs` | the surface, its state, and `open(Mode)` |
+| `layout.rs` | what it shows (`View`, `Kind`, `Layout`) |
+| `view.rs` | the panel, the glass behind it and the scrollbar |
+| `input.rs`, `keys.rs` | typing, the pointer, the wheel and voice; each key in each mode |
+| `ipc.rs` | `launcher …` and `assistant …` |
 | `shape.rs` | where the glass is: the pill, the panel and the buttons (`Geometry`, which blends), and its frost (pure, tested) |
 | `mode.rs` | the modes, their glyphs, names and keys (pure, tested) |
-| `provider.rs` | the sources a search draws on (`Provider`) and how their finds are arranged (`search`; tested) |
+| `provider.rs` | the sources a search draws on (`Provider`) and how their finds are arranged (`search`; tested); the bigger sources in `provider/` (files, commands, passwords, clipboard) |
 | `services/launcher/file_search.rs` | file searches through LocalSearch or `fd`, the kinds, and the SPARQL (tested) |
 | `actions.rs` | the actions (`Spec`), what they ask for, and an argument typed after a name (tested) |
 | `rank.rs` | the fuzzy match and the frecency score (pure, tested) |
@@ -347,7 +351,7 @@ never blocks anything.
 | `entries.rs` | a row (`Entry`), what narrows a search (`Scope`), and what each row does |
 | `header.rs` | the search row, the round mode buttons, the ⋯ menu, and the pill bar with its sliding fill |
 | `grid.rs` | the category pages, each a grid with its highlight, the suggested row on the first |
-| `results.rs` | the answer card, the chips, the rows with their section headings and quick keys, and the empty states |
+| `results.rs` | the rows with their section headings and quick keys; the answer card, the chips and the empty states in `results/cards.rs`, the preview in `results/preview.rs` |
 | `app_menu.rs` | an app's and a file's right-click menus |
 | `model.rs` | categories, sums, URLs, session-action names, the history's steps, durations and quick keys (pure, tested) |
 | the kit's `text_edit` | the search text, caret and selection (pure, tested; shared with Quick Settings' Customize window) |
