@@ -798,24 +798,91 @@ mod tests {
         format!("{}::{}(", parts[1], parts[0])
     }
 
-    /// Report only: tokens no code reads, and tier sizes against the budget.
+    /// Tokens no function call reads today. Each is either read some other
+    /// way or waiting to be used or removed; a token added to Penpot and
+    /// never read fails the test below instead of joining this list quietly.
+    const UNREAD_ALLOWED: &[&str] = &[
+        // not read by code yet: use or remove in the kit consolidation
+        "bar.overview.height",
+        "bar.pill.padding-y",
+        "bar.volume.width",
+        "bar.window-item.max-width",
+        "bar.window-item.radius",
+        "bar.workspace-dot.active-size",
+        "bar.workspace-dot.size",
+        "menu.label.advance-ratio",
+        "sys.color.accent.text",
+        "sys.color.scrollbar",
+        "sys.color.surface.notification.bg",
+        "sys.color.surface.notification.fg",
+        "sys.color.surface.notification.fg-secondary",
+        "sys.color.surface.notification.stroke",
+        "sys.color.surface.panel.bg",
+        "sys.color.surface.panel.fg",
+        "sys.color.surface.popover.bg",
+        "sys.color.surface.popover.fg",
+        "sys.color.surface.popover.fg-secondary",
+        "sys.color.surface.popover.stroke",
+        "sys.size.list.max-height",
+        "sys.size.popover.height",
+        "wifi.button.width",
+        "wifi.icon-button.width",
+    ];
+
+    /// Each tier's size on 2026-11-07. The manual's budget (§3, about 60,
+    /// 70 and 15) is far below this for sys and component; until the kit
+    /// consolidation brings them down, they may shrink but not grow.
+    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 133), ("component", 163)];
+
+    /// Every generated token is read by some code, or is on the list above.
+    /// `sys.density.factor` is read by the theme, and `material.*` by name
+    /// when the layer rules are written, not through a function.
     #[test]
-    fn report() {
+    fn every_token_is_read_or_listed() {
         let code: String = component_sources().into_iter().map(|(_, s)| s).collect();
         let unread: Vec<&str> = GENERATED
             .iter()
             .filter(|(name, _, path)| {
-                *name != "sys.density.factor" && !code.contains(&call_suffix(path))
+                *name != "sys.density.factor"
+                    && !name.starts_with("material.")
+                    && !code.contains(&call_suffix(path))
             })
             .map(|(name, _, _)| *name)
+            .filter(|name| !UNREAD_ALLOWED.contains(name))
             .collect();
+        assert!(
+            unread.is_empty(),
+            "tokens no code reads (read them, remove them, or list them in UNREAD_ALLOWED):\n  {}",
+            unread.join("\n  ")
+        );
 
-        eprintln!("tokens no code reads ({}):", unread.len());
-        for name in unread {
-            eprintln!("  {name}");
-        }
-        for (tier, count, budget) in tier_counts(library()) {
-            eprintln!("{tier}: {count} tokens (budget about {budget})");
+        let stale: Vec<&str> = UNREAD_ALLOWED
+            .iter()
+            .copied()
+            .filter(|name| {
+                GENERATED
+                    .iter()
+                    .find(|(n, _, _)| n == name)
+                    .is_none_or(|(_, _, path)| code.contains(&call_suffix(path)))
+            })
+            .collect();
+        assert!(
+            stale.is_empty(),
+            "UNREAD_ALLOWED lists tokens that are read now, or gone; drop them:\n  {}",
+            stale.join("\n  ")
+        );
+    }
+
+    #[test]
+    fn no_tier_grows_past_its_ceiling() {
+        for ((tier, count, _budget), (ceiling_tier, ceiling)) in
+            tier_counts(library()).into_iter().zip(TIER_CEILING)
+        {
+            assert_eq!(tier, ceiling_tier);
+            assert!(
+                count <= ceiling,
+                "manual §3: {tier} has {count} tokens, more than its ceiling of {ceiling}"
+            );
         }
     }
 

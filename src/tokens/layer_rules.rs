@@ -552,6 +552,49 @@ mod tests {
         assert!(script.contains(&format!("SENTINEL=\"{SENTINEL}\"")));
     }
 
+    /// niri's ranges for each material setting, copied from niri-config.
+    const MATERIAL_RANGES: &str = include_str!("../../tests/fixtures/niri/material-ranges.json");
+
+    /// niri refuses a config with an unknown material setting or a value
+    /// out of its range, so every generated one must be known and in range.
+    #[test]
+    fn every_material_setting_is_one_niri_accepts() {
+        let ranges: serde_json::Value =
+            serde_json::from_str(MATERIAL_RANGES).expect("the ranges fixture is JSON");
+        let settings = &ranges["settings"];
+        let mut wrong = Vec::new();
+        for material in materials() {
+            for (setting, value) in &material.settings {
+                let at = format!("{}.{setting} = {value}", material.name);
+                let Some(range) = settings.get(setting) else {
+                    wrong.push(format!("{at}: niri has no such setting"));
+                    continue;
+                };
+                let fits = match range["kind"].as_str() {
+                    Some("bool") => value == "true" || value == "false",
+                    Some(kind) => {
+                        let (min, max) = (range["min"].as_f64(), range["max"].as_f64());
+                        match (value.parse::<f64>(), min, max) {
+                            (Ok(v), Some(min), Some(max)) => {
+                                (min..=max).contains(&v) && (kind != "integer" || v.fract() == 0.0)
+                            }
+                            _ => false,
+                        }
+                    }
+                    None => false,
+                };
+                if !fits {
+                    wrong.push(format!("{at}: outside {range}"));
+                }
+            }
+        }
+        assert!(
+            wrong.is_empty(),
+            "niri would refuse:\n  {}",
+            wrong.join("\n  ")
+        );
+    }
+
     #[test]
     fn every_material_the_shell_asks_for_is_generated() {
         let names: Vec<String> = materials().into_iter().map(|m| m.name).collect();

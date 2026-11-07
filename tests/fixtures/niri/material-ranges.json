@@ -1,0 +1,22 @@
+{
+  "source": "niri-config/src/appearance.rs, struct Material, niri ocbk 72d679c5. Copy again when niri changes a material setting.",
+  "settings": {
+    "refraction": { "kind": "number", "min": 0, "max": 200 },
+    "bevel": { "kind": "number", "min": 0, "max": 200 },
+    "dispersion": { "kind": "number", "min": 0, "max": 1 },
+    "rim": { "kind": "number", "min": 0, "max": 1 },
+    "glow": { "kind": "number", "min": 0, "max": 1 },
+    "light-angle": { "kind": "number", "min": 0, "max": 360 },
+    "far-rim": { "kind": "number", "min": 0, "max": 1 },
+    "specular": { "kind": "number", "min": 0, "max": 1 },
+    "tint": { "kind": "number", "min": 0, "max": 2 },
+    "adaptive-tint": { "kind": "number", "min": 0, "max": 1 },
+    "tone": { "kind": "number", "min": 0, "max": 1 },
+    "saturation": { "kind": "number", "min": 0, "max": 1000 },
+    "noise": { "kind": "number", "min": 0, "max": 1000 },
+    "blur-offset": { "kind": "number", "min": 0, "max": 100 },
+    "blur-passes": { "kind": "integer", "min": 0, "max": 255 },
+    "materialize": { "kind": "bool" },
+    "report-backdrop": { "kind": "bool" }
+  }
+}
