@@ -9,7 +9,7 @@ This plan turns amane-shell and its forks (amane, niri, vello) into one delibera
 | niri (`niri/`) | ocbk | `16384e00` | 2 commits ahead of origin, not pushed |
 | vello (`vello/`) | ocbk | `46585523` | |
 
-After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`). After Phase 3, shell `main` pins amane `292d486`. After Phase 4, shell `main` pins amane `112da4d`, in the new layout (`apps/shell`, `crates/`, `xtask`).
+After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`). After Phase 3, shell `main` pins amane `292d486`. After Phase 4, shell `main` pins amane `112da4d`, in the new layout (`apps/shell`, `crates/`, `xtask`). After Phase 5, niri `ocbk` is `745e72d5` (history tidied; the old branch is `ocbk-pre-tidy`). After Phase 6a, shell `main` pins amane `af52270`.
 
 ## Ground rules
 
@@ -500,6 +500,13 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 
 **Risks.** Medium. A history rewrite on a branch the live system builds from: keep `ocbk-pre-tidy`, and switch back if anything looks different. Contract: `Features` is additive.
 
+**Status (2026-11-07).** Done in code; the session check by eye is the user's. niri `ocbk` is `745e72d5`, 43 commits on `v26.04` (from 67), and nixos-config builds it (`dc96e86`).
+- **History: folded, not reordered.** Fixups squashed, each feature's docs folded into it, the rustfmt commit split into its features, the `docs/wiki` edits and their reset dropped, the vendor terms reworded out of three subjects and their bodies. Commits keep their order, since a full reorder meant hand-resolving conflicts for no change in the tree. The tree equals `ocbk-pre-tidy` apart from one comment, and every commit builds.
+- **Hunks.** `tty.rs` 36 → 30 hunks, 374 → 119 lines added (HDR in `src/backend/tty/hdr.rs`); `niri.rs` 38 → 36, 163 → 101 (`src/niri/fork.rs`). The render helpers stay: they're mostly fork additions already.
+- **`Features`** lists the fork's features with contract versions; the protocol versions come from the globals' constants. `niri msg features` prints it.
+- **`contract.toml`** holds the niri revision the shell is checked against, since the shell's flake doesn't pin niri; `cargo xtask contract` also checks it against nixos-config's lock.
+- **Dispatch2.** The porting note in niri's `maintaining.md` lists what each protocol dispatches; the port waits for the tag that needs it.
+
 ---
 
 ### Phase 6: amane foundations: timer, subscriptions, niri client, system services (L)
@@ -542,6 +549,14 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 - An app started from the dock survives `systemctl --user restart amane-shell`.
 
 **Risks.** High, in amane's core loop: a timer or subscription bug freezes redraws. Land behind tests, try the shell for a day before Phase 7. Contract: amane's API grows; nothing removed.
+
+**Status (2026-11-07).** 6a done: amane `af52270`, pinned by shell `main`; the new services (6b) are next. Done in two steps, so the core gets a day on the machine first.
+- **No `niri-fork` cargo feature.** The fork's parts check `amane::niri::features()` at run time; one build runs on stock niri and the fork.
+- **Watched, not just read.** An idle bar draws no frames, so reads alone would stop a service the bar shows. A service is watched while an open window's last frame read it, or something read it within its idle time. `Brightness` keeps polling: the OSD reads it once per key press.
+- **Subscriptions run on their own thread,** one at a time, so a callback never runs inside a writer's lock, and a burst of writes costs one call.
+- **One niri stream**: a late listener gets the state so far replayed, as niri does for a new connection. It doesn't reconnect: niri closing the stream ends the session.
+- **Scopes** are `app-amane-<app>-<pid>.scope` under `app.slice`, named for the desktop id when there is one.
+- **The internal timers** stay calloop timers; the sleeps inside Bluetooth's D-Bus sequences stay on the worker thread.
 
 ---
 

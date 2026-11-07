@@ -3,7 +3,7 @@
 //! - Every protocol XML the niri fork adds (`resources/niri-*.xml`) is in amane's
 //!   `protocols/`, byte for byte, and amane has no fork protocol niri lacks.
 //! - Every niri IPC name amane's niri client sends or parses (requests, actions, events,
-//!   and their fields) exists in `niri-ipc` at the pinned niri revision.
+//!   and their fields) exists in `niri-ipc`'s sources at the pinned niri revision.
 //! - `contract.toml`'s niri revision is the one nixos-config's lock builds, when that lock is
 //!   there to read.
 //!
@@ -176,9 +176,16 @@ fn ipc_names(amane: &Repo, niri: &Repo, problems: &mut Vec<String>) {
         ));
         return;
     }
-    let ipc = niri.text("niri-ipc/src/lib.rs");
+    // lib.rs, and the fork's own types beside it (fork.rs)
+    let ipc: String = niri
+        .files("niri-ipc/src")
+        .iter()
+        .filter(|path| path.ends_with(".rs"))
+        .map(|path| niri.text(path))
+        .collect::<Vec<_>>()
+        .join("\n");
     if ipc.is_empty() {
-        problems.push(String::from("niri has no niri-ipc/src/lib.rs"));
+        problems.push(String::from("niri has no niri-ipc/src"));
         return;
     }
 

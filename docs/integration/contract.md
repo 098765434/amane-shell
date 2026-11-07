@@ -55,14 +55,15 @@ enough to follow.
 
 | Interface | Used for | Checked at |
 |---|---|---|
+| `amane::niri` (`features()`, `outputs()`, `windows()`, `casts()`), `Timer`, `Service::subscribe`, `Launch` | added for the shell's idle pass (Phase 7); nothing uses them yet | `af52270` |
 | `protocols/niri-*.xml` | the client side of the three niri protocols above, kept identical to niri's | all three as niri has them since `292d486` |
-| `Service` and its services: `Battery`, `Apps`, `KdeConnect`, `Bluetooth`, `Windows`, `Workspaces`, `Brightness`, `PowerProfile`, `Notifications`, `Audio`, `Network`, `PhoneMessages`, `Media`, `Lock`, `Idle`, `Adb`, `Tray`, `WorkspaceSwitch`, `FocusedField`, `Desktop`, `Appearance`, `Polkit`, `Overview`, `MimeApps`, `Memory`, `Cpu`, `Backdrop` | everything the bar, Quick Settings and the apps show ([services.md](services.md)) | `112da4d` |
-| `Config<T>` | settings files, watched and written atomically | `112da4d` |
-| `status_item` (`org.amane.StatusBar1`) | status apps ([status-apps.md](status-apps.md)) | `112da4d` |
-| `spawn`, `spawn_activated` | launching apps with an activation token | `112da4d` |
-| popups, `open_popup`, `close_window`, windows, the quad and vello renderers, `material_available`, `blur_fades` | every surface | `112da4d` |
+| `Service` and its services: `Battery`, `Apps`, `KdeConnect`, `Bluetooth`, `Windows`, `Workspaces`, `Brightness`, `PowerProfile`, `Notifications`, `Audio`, `Network`, `PhoneMessages`, `Media`, `Lock`, `Idle`, `Adb`, `Tray`, `WorkspaceSwitch`, `FocusedField`, `Desktop`, `Appearance`, `Polkit`, `Overview`, `MimeApps`, `Memory`, `Cpu`, `Backdrop` | everything the bar, Quick Settings and the apps show ([services.md](services.md)) | `af52270` |
+| `Config<T>` | settings files, watched and written atomically | `af52270` |
+| `status_item` (`org.amane.StatusBar1`) | status apps ([status-apps.md](status-apps.md)) | `af52270` |
+| `spawn`, `spawn_activated` | launching apps with an activation token | `af52270` |
+| popups, `open_popup`, `close_window`, windows, the quad and vello renderers, `material_available`, `blur_fades` | every surface | `af52270` |
 
-amane's niri client is private: amane, not the shell, talks to niri's socket, except for the shell
+Apart from `amane::niri`, amane's services, not the shell, talk to niri's socket, except for the shell
 services that still run `niri msg` (listed in [services.md](services.md); Phase 7 of the
 [roadmap](../../ROADMAP.md) moves them onto amane).
 
