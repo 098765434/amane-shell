@@ -220,9 +220,37 @@ rebuilt the whole chain every frame), and a swiped tile's offscreen cleared.
 
 ## Planned
 
-In order of payoff, from the 2026-10-26 research: the GTT Quick Settings leaves behind (a
-driver-level view next), images decoded at their drawn size with a byte-capped cache, shared
-pipelines and picture textures across windows, and event-driven services in place of polls.
+The open items, in order of payoff, from the 2026-10-26 research and plan (the numbers are the
+plan's, kept so its notes can be found). Pollers to events is part of the cleanup roadmap
+([ROADMAP.md](../../ROADMAP.md), Phases 6 and 7); the rest isn't scheduled yet.
+
+- **8.2 The GTT Quick Settings leaves behind.** About 68 MB survive `hide()`. Next, a
+  driver-level view (`RADV_DEBUG=info` or `VK_EXT_device_memory_report`) of what outlives the
+  hide, then wgpu's `generate_report()` to map it to buffers and textures. Suspects: per-window
+  blur passes, notification pictures.
+- **8.3 Images at their drawn size, with a byte cap.** Decode notification images and launcher
+  previews at twice their drawn size, keep a 64 MB LRU over loaded images, and cap the
+  notification history at 200.
+- **8.4 A smaller BIOS UMA carve-out.** On a UMA iGPU, VRAM and GTT are the same memory: once
+  the busy peak (launcher, Quick Settings, a screenshot, a swipe) is well under 1 GiB, a 512 MB
+  or 1 GiB frame buffer gives 2–3 GiB back to Linux. Measure the peak first.
+- **8.5 No canvas where nothing post-processes it.** A window with no blur or vibrancy (the
+  bar, toasts) could render straight into its swapchain: about 21 MB per full-size surface.
+- **8.6 Release everything while the screen is off.** Drop every window's GPU state
+  (`Gpu::release`) on the output-off event and rebuild on wake.
+- **8.7 Content-sized vibrant layers.** Each vibrant surface still has two full-size extra
+  subsurfaces; draw each layer at its content's bounds, rounded to 64 px.
+- **8.8 Picture textures and pipelines shared across windows.** The wallpaper uploads once per
+  monitor; the quads atlas and the glyph atlas become one R8 atlas, tinted in the shader.
+- **8.9 niri: one blur chain for targets of the same size.** Output, screencast and screen
+  capture each keep their own; sharing it makes a screenshot or a running cast nearly free.
+- **8.10 Pollers to events.** Few bytes but many wakeups: the roadmap's Phases 6 and 7, measured
+  against [idle-baseline.md](idle-baseline.md).
+- **8.11 The heap.** `MALLOC_ARENA_MAX=2` and a `malloc_trim` after big transients (the
+  launcher closing) usually save 10–20 MB; check whether parley loads the whole font database.
+- **8.12 Other apps out of the number.** Report niri and the shell alone, so the floor is
+  honest: the editor and browser are easily 500 MB of the whole-GPU figure.
+
 Each lands with a section above and a row here:
 
 | Scenario | 2026-10-26 baseline | After |

@@ -1,8 +1,8 @@
 //! macform — macOS-style form controls, ported from the Quickshell
 //! `components/macform` set for a side-by-side look against the kit's own.
 //!
-//! Experimental: nothing in the shell uses these yet. `cargo run -p
-//! amane-kit --example macform` shows each one next to its kit counterpart.
+//! Shell Settings, Messages and the password-fill popup use them. `cargo run
+//! -p amane-kit --example macform` shows each one next to its kit counterpart.
 //!
 //! They follow the kit's conventions: a builder per control, `build()`
 //! giving a `Rectangle`, closures for what input does, and hover and

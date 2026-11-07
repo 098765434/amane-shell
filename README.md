@@ -1,11 +1,11 @@
 # amane-shell
 
 A macOS-flavoured Wayland desktop shell for the [niri](https://github.com/YaLTeR/niri) compositor, built on the
-[amane](https://github.com/098765434/amane) shell library (a fork). It has a compact
-bottom bar that is one uniform frosted strip (`Material::Bar`, frosted by niri), a dock that rises
-from the bottom edge and with niri's overview, and glass floating surfaces (context menus, Quick
-Settings, the launcher, notification toasts and the notification center), all blurred by the
-compositor.
+[amane](https://github.com/098765434/amane) shell library (a fork). It has a status bar on every
+monitor, at the top or the bottom, in three sizes (Compact, Regular, Comfortable) and four styles
+(Frosted, Glass, Solid, Clear); a dock that rises from the bottom edge and with niri's overview;
+and glass floating surfaces (context menus, Quick Settings, the launcher, notification toasts and
+the notification center), all blurred by the compositor.
 
 > **Built for a forked niri**: [098765434/niri](https://github.com/098765434/niri). The generated
 > layer rules use options only the fork has (named `materials {}`, `background-effect { material }`
@@ -17,7 +17,8 @@ the forks add is in their docs: [niri](https://github.com/098765434/niri/blob/oc
 ## Features
 
 - **Status bar**: workspace pips, the status icons, Quick Settings, notifications and the clock,
-  on one frosted strip ([docs/shell/status-bar.md](docs/shell/status-bar.md)).
+  one bar a monitor, top or bottom, in three sizes and four styles
+  ([docs/shell/status-bar.md](docs/shell/status-bar.md)).
 - **Status apps and Live Activities**: other programs' items in the bar and what's going on now
   (Now Playing, the timer, screen sharing, uploads), over `org.amane.StatusBar1`, as macOS 27.3
   has them ([docs/integration/status-apps.md](docs/integration/status-apps.md), and
@@ -113,41 +114,9 @@ and the shell is the session's polkit agent, so the password prompt is its own. 
 
 ## Layout
 
-```
-src/
-  main.rs                       App builder: windows, popups, IPC handlers, `tokens` CLI
-  tokens/layer_rules.rs         the niri layer rules generated from the tokens
-  components/
-    status_bar/                 the bar (mod.rs) and its optional status icons (indicators.rs)
-    panel.rs                    the one-open-at-a-time overlay state the panels share
-    context_menu/               reusable nested context menu on xdg-popups
-    notifications/              toasts, the notification center and Do Not Disturb
-    launcher/                   the launcher: Spotlight's search pill, its modes and the app grid
-    dock/                       the dock: workspaces' windows and pins, drag, file drops (docs/shell/dock.md)
-    quick_settings/             Quick Settings: tiles, sliders and their pages
-    grid/                       the grid Quick Settings and the widgets share: cells, layout, drag
-    widgets/                    desktop widgets, their faces and the gallery (docs/shell/widgets.md)
-    workspace_menu.rs           a submenu of workspaces (the dock's and the launcher's menus)
-    alert.rs                    the shell's alert in the middle of the screen
-    mod.rs                      re-exports the kit's controls under their old paths
-  services/                     what amane has no service for: session, night light, Tailscale, timer …
-kit/                            amane-kit: the look as a library, for the shell and its apps
-  build.rs                      generates `tokens::sys::…`, `tokens::bar::…`, … from tokens.json
-  src/tokens/ theme.rs          Penpot token resolver, the manual's checks, mode/accent/density/scale
-  src/settings.rs               appearance.json, which theme.rs reads, and desktop.json
-  src/buttons/                  push, icon, drawn and segmented buttons, switch, checkbox, radio
-  src/card.rs list.rs …         shared M3-style components (docs/kit/components.md)
-  src/app.rs dropdown.rs        an app's window, fields, sidebar and dialog; the dropdown
-  examples/gallery.rs           every control in one window
-apps/settings/                  Shell Settings (amane-settings)
-apps/drop/                      Drop (amane-drop), a Dropzone-style status app (docs/shell/drop.md)
-examples/liquid_glass.rs        a look test for the glass edge, not shell code
-design-tokens/tokens.json       Penpot export (normalized); edit in Penpot, not here
-tests/fixtures/                 service fixtures (the token ones are in kit/tests/fixtures/)
-niri-layer-rule.kdl             layer rules generated from the tokens (see docs/integration/layer-rules.md)
-gen-layer-rules.sh              injects those rules into the niri config
-flake.nix                       the package (shell and apps) and the devShell
-```
+`src/` is the shell, `kit/` is amane-kit (the look as a library, for the shell and its apps),
+`apps/` the programs beside it, and `design-tokens/tokens.json` the Penpot export. Where each
+part lives, folder by folder, is in the source-layout table of [docs/README.md](docs/README.md).
 
 ## License
 

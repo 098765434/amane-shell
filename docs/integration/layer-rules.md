@@ -25,8 +25,12 @@ frost them and name the same `glass` material (`background-effect { material "gl
 option of our niri fork, [`effects/materials.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md)): niri draws them as glass in the shape of their geometry, and the popup
 draws its own tint over it. niri's `popups {}` block has no shadow, so they go without one.
 
-The bar is the one plain-frost surface (`frost`): niri frosts all of it, square, with xray blur,
-since it reserves its zone and only the wallpaper is ever behind it.
+The bar is the one plain-frost surface (`frost`): in its default style, Frosted, niri frosts all
+of it, square, with xray blur, since it reserves its zone and only the wallpaper is ever behind
+it. Its other styles say where themselves, through blur shapes that take the rule's place: Glass
+sends one shape of glass (`Material::Control`), Solid an empty list (no frost; the bar is opaque),
+and Clear one all but invisible shape of clear glass, so niri still reads the wallpaper under it.
+A Frosted bar that is hiding sends its shape too, so the frost slides away with it.
 
 Where niri has the `glass` material (`amane::material_available`), it draws the lit edge too, so
 the cards leave out the shader's (`kit/src/look/glass.rs`) and their hairlines. A niri config
@@ -41,9 +45,10 @@ generated from (2), not hand-edited, so neither can drift.
 | Namespace | Surface |
 |---|---|
 | `amane.status-bar` | the bar: frosted whole, square, without a shadow or `xray false` (`frost`: it reserves its zone, so only the wallpaper is behind it); its xdg-popups, tooltips and Do Not Disturb's menu, are frosted too |
-| `amane.quick-settings` | Quick Settings: a clear surface that frosts its own modules through a blur region; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
+| `amane.quick-settings` | Quick Settings: a clear surface that frosts its own modules through blur shapes; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
+| `amane.dock` | the dock, one surface a monitor over the bar: a clear surface that frosts its card through a blur shape; `xray false`, and its popups (a window's or pinned app's menu) frosted |
 | `amane.widgets.<output>` | the desktop widgets, one surface a monitor on the background layer (matched by the prefix `^amane\.widgets\.`): a clear surface that frosts its own cards; `desktop true` (niri fork, [`layout/desktop-layer.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md): on the wallpaper, still while workspaces switch, faded out with the overview), `xray false`, and its popups (a card's menu) frosted |
-| `amane.launcher` | the app launcher: a clear surface over the output that frosts its glass panel through a blur region; `xray false`, and its popups (an app's menu) frosted |
+| `amane.launcher` | the app launcher: a clear surface over the output that frosts its glass panel through a blur shape; `xray false`, and its popups (an app's menu) frosted |
 | `amane.notifications.toast` | each notification toast: one surface per banner, frosting its card itself; `clear`, rounded `notification.card.radius`, with niri's shadow at softness 48 (the banner design's `0 8 48`; other surfaces use 16) |
 | `amane.alert` | the shell's alert in the middle of the screen, as big as its card, frosting itself in thick glass; `clear`, rounded `dialog.radius`, with niri's shadow at softness 48 and offset 18 (the dialog design's `0 18 48`) |
 | `amane.osd` | the on-screen display above the bottom edge, as big as its capsule, frosting itself in small glass; `clear`, rounded `osd.radius`, with niri's shadow at softness 48 (the banner's) |
@@ -52,12 +57,22 @@ generated from (2), not hand-edited, so neither can drift.
 | `amane.context-menu.0` … `.7` | nested context-menu levels |
 | `amane.drop` | amane-drop's grid ([drop.md](../shell/drop.md)): a clear full-screen surface that frosts only its card through a blur shape; `xray false`, and its popups frosted. The activities' expanded view is a popup of the bar, frosted by `amane.status-bar`'s rule |
 
+Some namespaces have no rule of their own, and need none: the context-menu levels, the
+activities' expanded view (`amane.status-bar.activity`), tooltips (`amane.tooltip`) and the form
+controls' menu (`amane.macform.menu`) are popups, frosted by the `popups {}` block of the surface
+they hang from; and `amane.fill`, the password-fill popup, is an input-method popup over another
+app's window, not a layer surface. A test in `layer_rules.rs` checks that every namespace in the
+code has a rule or is on that list.
+
 ## Generating the rules
 
-The generated file holds the layer rules, two `window-rule`s for each amane app (`APP_IDS`: its
+The generated file holds the layer rules, two `window-rule`s for each amane app (`APP_IDS`:
+`amane-settings` and `amane-messages`; its
 window frosted behind in `frost`, its popups in `glass`; and its floating windows, its dialogs,
 in `glass-large` with the alert's 34 corners and `0 18 48` shadow, which a window floated by hand
-takes too) and, last, a `materials {}` block. It defines one
+takes too), one for Phone Screen (`amane-mirror`: it opens floating, with the alert's corners and
+shadow, clipped to them, and no blur, since the phone's screen fills it) and, last, a
+`materials {}` block. It defines one
 niri material per `material.<name>.*` token group: `glass`, `glass-small`, `glass-large`,
 `glass-clear` and `frost`, each with a `-still` twin (`materialize false`) for reduced motion;
 which the shell asks for where is in [materials.md](../design-system/materials.md). What each

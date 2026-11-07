@@ -69,7 +69,8 @@ fn pick(index: usize) {
   without remembering to be. Examples:
   - `timer::left()` watches `Countdown`;
   - `clipboard_history::clips()` watches `Clips`;
-  - `Indicator::shown()` watches `Indicators`.
+  - `amane_kit::settings::status_bar()` reads the `Config<StatusBar>` service, so a view that
+    reads it (`Indicator::shown()` among them) redraws when the bar's settings change.
 - A handler that runs from a menu popup lands on the *popup's* window. Its changes still need the
   marker.
 - Drag motion and scroll steps on the window that shows them need nothing.

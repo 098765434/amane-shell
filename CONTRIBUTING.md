@@ -19,9 +19,22 @@ library together, check `amane` out as a sibling directory and create a git-igno
 paths = ["../amane"]
 ```
 
-Cargo then builds against your local `../amane` checkout instead of the pinned rev. Bump the
-`rev` (and the `outputHashes` in `flake.nix`) when you want the published build to pick up library
-changes.
+Cargo then builds against your local `../amane` checkout instead of the pinned rev.
+
+### Bumping revs
+
+When the published build should pick up library changes, push amane (and vello, if it changed)
+first, then:
+
+1. Set amane's `rev` in `[workspace.dependencies]`. vello is patched in `[patch.crates-io]`
+   (`vello` and `vello_encoding`), and the patch only works from the root manifest, so its `rev`
+   must be the one amane's own `Cargo.toml` uses.
+2. In `Cargo.lock`, change only the `source` line of the bumped crate to the new rev.
+   `cargo update -p amane` re-resolves unrelated crates as well.
+3. In `flake.nix`, `cargoLock.outputHashes` has one entry per git rev, not per crate:
+   `amane-0.1.2` and `vello-0.11.0`. Set the bumped one to `sha256-AAAA…=` (44 characters), run
+   `nix build`, and copy the hash it prints after `got:`.
+4. `scripts/check-pins` is silent when the local checkouts match.
 
 `scripts/check-pins` tells you when that local build differs from the Nix build: `../amane` isn't
 at the pinned rev, has uncommitted changes, or pins a different vello rev than the shell does.
@@ -40,7 +53,15 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-CI runs these three inside the devShell, then shellcheck on the scripts and `nix build`.
+CI runs the same in the devShell (`fmt --check`, and clippy and the tests with `--locked`), then
+shellcheck on `gen-layer-rules.sh` and the scripts, then `nix build`, which runs the tests again.
+
+The workspace lints are in the root `Cargo.toml` (`[workspace.lints]`); `unwrap` is allowed only in
+tests (`clippy.toml`). In the kit, a file that starts with `#![allow(missing_docs)]` still has
+undocumented items: document them and remove the line. Some tests check the code against the
+docs and the compositor: every IPC verb is in `docs/integration/ipc.md`, every layer namespace
+has a niri rule, every material setting is in niri's range, and the service parsers read the
+recorded output in `tests/fixtures/`. When one fails, the message says which side to fix.
 
 Before adding a component, read [docs/development/performance.md](docs/development/performance.md):
 what makes a window draw, and the rules that keep an idle desktop from drawing at all. Every doc

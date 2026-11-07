@@ -4,8 +4,8 @@
 //! fails the build at the line that reads it. Also embeds the Shader Lab's
 //! effects and saved looks.
 //!
-//! The export is read by the shell's own parser (`src/tokens/envelope.rs`),
-//! so the build refuses exactly what the shell refuses.
+//! The export is read by the kit's own parser (`src/tokens/envelope.rs`),
+//! so the build refuses exactly what the kit refuses at run time.
 
 use std::fmt::Write;
 use std::{env, fs, path::Path};

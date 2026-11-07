@@ -9,7 +9,7 @@ niri fork  (compositor: materials, blur shapes, vibrancy, the desktop layer, ges
    ▲  Wayland protocols + niri IPC
 amane fork (Rust UI library: layer windows, popups, services, blur regions)
    ▲  Cargo git dependency
-amane-shell (this repo: src/ the shell, kit/ amane-kit, apps/settings/ Shell Settings)
+amane-shell (this repo: src/ the shell, kit/ amane-kit, apps/ the programs beside it)
 ```
 
 - niri fork: <https://github.com/098765434/niri> (branch `ocbk`); what it adds:
@@ -30,10 +30,10 @@ A module's folder says what kind of thing it is. A new one goes where its kind i
 
 | Folder | What goes there |
 |---|---|
-| `src/surfaces/` | a surface of its own: the status bar, dock, launcher, notifications, Quick Settings, widgets, context menu, alert and on-screen display, each with its doc in `shell/` |
+| `src/surfaces/` | a surface of its own: the status bar, dock, launcher, notifications, Quick Settings, widgets, context menu, alert, on-screen display and the password-fill popup (`fill.rs`), each with its doc in `shell/` |
 | `src/components/` | the shell's pieces that several surfaces share (`panel`, `battery`, `grid`, `search_field`, `text_edit`), and the kit's modules re-exported under their old paths |
-| `src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; the status apps' bus server (`status_apps.rs`); helpers in `process.rs` and `state.rs` |
-| `apps/` | the programs beside the shell: Shell Settings, Messages, Phone Screen, Shader Lab, Drop, the assistant's daemon |
+| `src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; `vault/` (rbw, for passwords); the assistant's client (`assistant.rs`); the status apps' bus server (`status_apps.rs`); helpers in `process.rs` and `state.rs` |
+| `apps/` | the programs beside the shell: Shell Settings, Messages, Phone Screen, Shader Lab, Drop, the assistant's daemon, rbw's pinentry (`pinentry`), and `train-watch`, which follows a training run from the status bar |
 | `src/tokens/` | what the shell generates from the tokens (niri's layer rules) |
 | `kit/src/controls/` | what's pressed, dragged or picked: buttons, slider, dropdown, colour picker, tag, control sizes |
 | `kit/src/containers/` | what content sits in: card, list, divider, app bar, dialog, tooltip, scroll view, flow, arrangement |
@@ -75,6 +75,7 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | An app's window, text fields and sidebar | [kit/app.md](kit/app.md) |
 | The colour picker, and hex and HSV helpers | [kit/color-picker.md](kit/color-picker.md) |
 | Saved Shader Lab looks, and putting one on a rectangle | [kit/lab.md](kit/lab.md) |
+| Lists in three styles, and the Material 3 numbers they follow | [kit/lists-m3.md](kit/lists-m3.md) |
 | Springs and fades, keyed list motion, `Kinetic`, `Pager` | [kit/motion.md](kit/motion.md) |
 
 ## Design system
@@ -106,6 +107,10 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | What the desktop holds in GPU memory, how to measure it, and what has been cut (the vello fork) | [development/memory.md](development/memory.md) |
 | Trying shader effects live, and porting Figma shaders | [development/shader-lab.md](development/shader-lab.md) |
 | Status apps, Live Activities and Drop: the pieces across amane, the shell and nixos-config, their threads, testing beside the desktop, shipping | [development/status-apps.md](development/status-apps.md) |
+| What the shell costs while idle, measured, to compare later work against | [development/idle-baseline.md](development/idle-baseline.md) |
+| Features the shell doesn't have yet, by how often they'd be missed | [development/backlog.md](development/backlog.md) |
+| The cleanup plan across the shell and its forks | [ROADMAP.md](../ROADMAP.md) |
+| Every Apple platform term still in the text, to remove | [development/macos-references.md](development/macos-references.md) |
 
 ## Archive
 

@@ -1,8 +1,9 @@
 # macOS / Apple references — full list (2026-11-07)
 
-shell: every tracked file. Forks: only lines the fork added (amane vs upstream/main 72e23eb; niri vs v26.04 8ed0da44). Commit history is not included.
+shell: every tracked file. Forks: only lines the fork added (amane vs upstream/main 72e23eb; niri vs v26.04 8ed0da44). Commit history is not included. Line numbers are from the day it was made; later phases move
+lines, so search for the text. `docs/development/backlog.md` was added in Phase 2.
 
-## shell (621 lines)
+## shell (625 lines)
 
 ```
 Cargo.toml:6:description = "A macOS-flavoured Wayland desktop bar for the niri compositor, built on the amane shell library."
@@ -626,6 +627,10 @@ src/surfaces/widgets/mod.rs:77:/// A card's corners: macOS's widgets'.
 src/surfaces/widgets/mod.rs:295:/// over the windows, as macOS clears the desktop to edit it; hidden the
 src/tokens/layer_rules.rs:95:                "Status bar: one uniform frosted strip along the bottom, macOS 27's toolbar:\n\
 tests/fixtures/tailscale/status.json:23:      "OS": "iOS",
+docs/development/backlog.md:51:macOS and GNOME both put there.
+docs/development/backlog.md:154:From `docs/shell/dock.md` *Known limits* and macOS parity:
+docs/development/backlog.md:166:- Media chip: title of what's playing, click for Now Playing (GNOME/macOS menu-bar style).
+docs/development/backlog.md:169:  Nextcloud, etc.). It goes against the macOS look, so it should be hideable, but without it those
 ```
 
 ## amane (18 lines)

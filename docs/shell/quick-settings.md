@@ -289,9 +289,8 @@ password field types without a click first. A click outside closes it.
 The parts are in `src/surfaces/quick_settings/`:
 
 - **`tile.rs` (`QuickToggle`, `module`)**: GNOME's QuickToggle in Control Center's shapes
-  (`Style`): a `Card` (a glass capsule two, three or four cells wide), a `Row` (one line of a module), a
-  `Round` button (the disc alone in a glass circle, named by a tooltip), a bare `Disc` inside a
-  module. `module` is the glass piece every control sits in; `sheet` the page's, with the full
+  (`Style`): a `Card` (a glass capsule two, three or four cells wide) or a `Round` button (the disc
+  alone in a glass circle a cell big, named by a tooltip). `module` is the glass piece every control sits in; `sheet` the page's, with the full
   glass edge; `capsule_button` the labelled capsules; `plain` builds modules on a flat tint for the window.
   - A round disc holding the glyph. It springs to the accent when the setting is on, like the
     `Switch` knob.

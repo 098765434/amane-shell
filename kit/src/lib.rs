@@ -15,8 +15,9 @@
 //! - [`color_picker`] — a colour, from a square, a hue strip or hex.
 //! - [`control_size`] — the control sizes, and the one in use.
 //! - [`tag`] — a small fact about something, like M3's assist chip.
-//! - [`macform`] — experimental macOS-style controls ported from Quickshell,
-//!   shown against the kit's own by the `macform` example.
+//! - [`macform`] — form controls ported from Quickshell, which Shell
+//!   Settings and the password-fill popup use; the `macform` example shows
+//!   them against the kit's own.
 //!
 //! Containers (`containers/`):
 //!
