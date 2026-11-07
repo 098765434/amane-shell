@@ -157,26 +157,19 @@ impl Default for DropGrids {
     }
 }
 
-impl Settings for DropGrids {
-    const APP: &'static str = "amane-drop";
-    const FILE: &'static str = "grids";
-}
+settings_file!(
+    DropGrids,
+    crate::app_ids::DROP,
+    "grids",
+    drop_grids,
+    change_drop_grids
+);
 
 impl DropGrids {
     /// Tiles a row, 3 to 6.
     pub fn columns(&self) -> usize {
         usize::from(self.columns.clamp(3, 6))
     }
-}
-
-/// The grids as they are now; a view that reads them redraws when they change.
-pub fn drop_grids() -> RwLockReadGuard<'static, Config<DropGrids>> {
-    Config::<DropGrids>::read()
-}
-
-/// Changes the grids and saves them, for input handlers.
-pub fn change_drop_grids(edit: impl FnOnce(&mut DropGrids)) {
-    Config::<DropGrids>::change(edit);
 }
 
 /// The SFTP server Drop uploads to. A password, when there's no key, is
@@ -264,10 +257,13 @@ impl Default for DropSharing {
     }
 }
 
-impl Settings for DropSharing {
-    const APP: &'static str = "amane-drop";
-    const FILE: &'static str = "sharing";
-}
+settings_file!(
+    DropSharing,
+    crate::app_ids::DROP,
+    "sharing",
+    drop_sharing,
+    change_drop_sharing
+);
 
 impl DropSharing {
     /// What `to` still needs before it can upload, in a few words; none
@@ -285,14 +281,4 @@ impl DropSharing {
             UploadTo::S3 => None,
         }
     }
-}
-
-/// The accounts as they are now.
-pub fn drop_sharing() -> RwLockReadGuard<'static, Config<DropSharing>> {
-    Config::<DropSharing>::read()
-}
-
-/// Changes the accounts and saves them.
-pub fn change_drop_sharing(edit: impl FnOnce(&mut DropSharing)) {
-    Config::<DropSharing>::change(edit);
 }

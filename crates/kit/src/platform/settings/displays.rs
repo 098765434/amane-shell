@@ -12,18 +12,10 @@ pub struct Displays {
     pub battery_refresh: bool,
 }
 
-impl Settings for Displays {
-    const APP: &'static str = crate::app_ids::SHELL;
-    const FILE: &'static str = "displays";
-}
-
-/// The display settings as they are now; a view that reads them redraws
-/// when they change.
-pub fn displays() -> RwLockReadGuard<'static, Config<Displays>> {
-    Config::<Displays>::read()
-}
-
-/// Changes the display settings and saves them, for input handlers.
-pub fn change_displays(edit: impl FnOnce(&mut Displays)) {
-    Config::<Displays>::change(edit);
-}
+settings_file!(
+    Displays,
+    crate::app_ids::SHELL,
+    "displays",
+    displays,
+    change_displays
+);

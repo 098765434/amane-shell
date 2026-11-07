@@ -132,23 +132,15 @@ impl Passwords {
     }
 }
 
-impl Settings for Passwords {
-    const APP: &'static str = crate::app_ids::SHELL;
-    const FILE: &'static str = "passwords";
-
-    // which apps have which accounts is private
+// which apps have which accounts is private
+settings_file!(
+    Passwords,
+    crate::app_ids::SHELL,
+    "passwords",
+    passwords,
+    change_passwords;
     const PRIVATE: bool = true;
-}
-
-/// The password fill settings as they are now.
-pub fn passwords() -> RwLockReadGuard<'static, Config<Passwords>> {
-    Config::<Passwords>::read()
-}
-
-/// Changes the password fill settings and saves them, for input handlers.
-pub fn change_passwords(edit: impl FnOnce(&mut Passwords)) {
-    Config::<Passwords>::change(edit);
-}
+);
 
 #[cfg(test)]
 mod tests {

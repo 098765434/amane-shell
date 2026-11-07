@@ -587,18 +587,10 @@ impl StatusBar {
 /// launcher's timer, and screen sharing.
 pub const BUILTIN_ACTIVITIES: [&str; 3] = ["Now Playing", "Timer", "Screen Sharing"];
 
-impl Settings for StatusBar {
-    const APP: &'static str = crate::app_ids::SHELL;
-    const FILE: &'static str = "status-bar";
-}
-
-/// The status bar settings as they are now; a view that reads them redraws
-/// when they change.
-pub fn status_bar() -> RwLockReadGuard<'static, Config<StatusBar>> {
-    Config::<StatusBar>::read()
-}
-
-/// Changes the status bar settings and saves them, for input handlers.
-pub fn change_status_bar(edit: impl FnOnce(&mut StatusBar)) {
-    Config::<StatusBar>::change(edit);
-}
+settings_file!(
+    StatusBar,
+    crate::app_ids::SHELL,
+    "status-bar",
+    status_bar,
+    change_status_bar
+);

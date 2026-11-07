@@ -36,20 +36,6 @@ impl Nixos {
     }
 }
 
-impl Settings for Nixos {
-    const APP: &'static str = crate::app_ids::SHELL;
-    const FILE: &'static str = "nixos";
-}
-
-/// The NixOS settings as they are now; a view that reads them redraws when
-/// they change.
-pub fn nixos() -> RwLockReadGuard<'static, Config<Nixos>> {
-    Config::<Nixos>::read()
-}
-
-/// Changes the NixOS settings and saves them, for input handlers.
-pub fn change_nixos(edit: impl FnOnce(&mut Nixos)) {
-    Config::<Nixos>::change(edit);
-}
+settings_file!(Nixos, crate::app_ids::SHELL, "nixos", nixos, change_nixos);
 
 // ───── Drop (amane-drop) ────────────────────────────────────────────────────

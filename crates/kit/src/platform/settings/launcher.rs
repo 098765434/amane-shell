@@ -81,18 +81,10 @@ pub struct Launcher {
     pub clipboard: ClipboardHistory,
 }
 
-impl Settings for Launcher {
-    const APP: &'static str = crate::app_ids::SHELL;
-    const FILE: &'static str = "launcher";
-}
-
-/// The launcher settings as they are now; a view that reads them redraws
-/// when they change.
-pub fn launcher() -> RwLockReadGuard<'static, Config<Launcher>> {
-    Config::<Launcher>::read()
-}
-
-/// Changes the launcher settings and saves them, for input handlers.
-pub fn change_launcher(edit: impl FnOnce(&mut Launcher)) {
-    Config::<Launcher>::change(edit);
-}
+settings_file!(
+    Launcher,
+    crate::app_ids::SHELL,
+    "launcher",
+    launcher,
+    change_launcher
+);

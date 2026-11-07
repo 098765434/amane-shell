@@ -34,18 +34,10 @@ impl Default for Desktop {
     }
 }
 
-impl Settings for Desktop {
-    const APP: &'static str = crate::app_ids::SHELL;
-    const FILE: &'static str = "desktop";
-}
-
-/// The desktop settings as they are now; a view that reads them redraws
-/// when they change.
-pub fn desktop() -> RwLockReadGuard<'static, Config<Desktop>> {
-    Config::<Desktop>::read()
-}
-
-/// Changes the desktop settings and saves them, for input handlers.
-pub fn change_desktop(edit: impl FnOnce(&mut Desktop)) {
-    Config::<Desktop>::change(edit);
-}
+settings_file!(
+    Desktop,
+    crate::app_ids::SHELL,
+    "desktop",
+    desktop,
+    change_desktop
+);

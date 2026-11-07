@@ -15,6 +15,29 @@ use crate::color::Accent;
 use crate::icons::{self, Glyph};
 use crate::theme::{Density, Glass, Mode};
 
+/// Makes `$ty` the settings file `$file` (`.json`) in `$app`'s folder, read
+/// with `$read()` and changed with `$change(…)`; anything after the `;`
+/// goes in its `Settings` impl.
+macro_rules! settings_file {
+    ($ty:ty, $app:expr, $file:literal, $read:ident, $change:ident $(; $($extra:tt)*)?) => {
+        impl Settings for $ty {
+            const APP: &'static str = $app;
+            const FILE: &'static str = $file;
+            $($($extra)*)?
+        }
+
+        #[doc = concat!("`", $file, ".json` as it is now; a view that reads it redraws when it changes.")]
+        pub fn $read() -> RwLockReadGuard<'static, Config<$ty>> {
+            Config::<$ty>::read()
+        }
+
+        #[doc = concat!("Changes `", $file, ".json` and saves it, for input handlers.")]
+        pub fn $change(edit: impl FnOnce(&mut $ty)) {
+            Config::<$ty>::change(edit);
+        }
+    };
+}
+
 mod appearance;
 mod desktop;
 mod displays;

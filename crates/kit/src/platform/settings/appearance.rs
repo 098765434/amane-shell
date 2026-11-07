@@ -63,10 +63,13 @@ impl Default for Appearance {
     }
 }
 
-impl Settings for Appearance {
-    const APP: &'static str = crate::app_ids::SHELL;
-    const FILE: &'static str = "appearance";
-}
+settings_file!(
+    Appearance,
+    crate::app_ids::SHELL,
+    "appearance",
+    appearance,
+    change_appearance
+);
 
 impl Appearance {
     /// The accent colour, if a valid one is set.
@@ -81,16 +84,4 @@ impl Appearance {
 
         Some(Color::rgb(channel(0)?, channel(2)?, channel(4)?))
     }
-}
-
-/// The appearance settings as they are now; a view that reads them redraws
-/// when they change, from this program or the settings app. Every token
-/// read looks here, so it hands out the lock rather than a copy.
-pub fn appearance() -> RwLockReadGuard<'static, Config<Appearance>> {
-    Config::<Appearance>::read()
-}
-
-/// Changes the appearance settings and saves them, for input handlers.
-pub fn change_appearance(edit: impl FnOnce(&mut Appearance)) {
-    Config::<Appearance>::change(edit);
 }

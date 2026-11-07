@@ -83,18 +83,4 @@ impl Dock {
     }
 }
 
-impl Settings for Dock {
-    const APP: &'static str = crate::app_ids::SHELL;
-    const FILE: &'static str = "dock";
-}
-
-/// The dock settings as they are now; a view that reads them redraws when
-/// they change.
-pub fn dock() -> RwLockReadGuard<'static, Config<Dock>> {
-    Config::<Dock>::read()
-}
-
-/// Changes the dock settings and saves them, for input handlers.
-pub fn change_dock(edit: impl FnOnce(&mut Dock)) {
-    Config::<Dock>::change(edit);
-}
+settings_file!(Dock, crate::app_ids::SHELL, "dock", dock, change_dock);
