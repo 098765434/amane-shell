@@ -1,7 +1,7 @@
 //! About This Computer: the running system, whether it's the configuration,
 //! the repo, and the settings the registry puts here.
 
-use amane::{Center, Column, Row, Service, TextInput};
+use amane::{Column, Service, TextInput};
 use amane_kit::app::{commit_on_blur, field_box, text_field};
 use amane_kit::buttons::{PushButton, Style};
 use amane_kit::color::Accent;
@@ -16,6 +16,7 @@ use super::nixos::Snapshot;
 use super::repo::{Repo, Running, Toplevel, short};
 use super::{Status, controls, status};
 use crate::View;
+use crate::about::{HERO, card, tidy_path};
 use crate::{group, groups};
 
 /// Whether the running system is the configuration, with Apply when not.
@@ -160,15 +161,12 @@ pub fn page() -> Column {
             }),
         group().row(
             FormRow::new("settings.about.advanced-row", "Configuration folder")
-                .value(tidy(&settings_repo()))
+                .value(tidy_path(std::path::Path::new(&settings_repo())))
                 .on_press(|| crate::open(View::Sub("advanced"))),
         ),
         group().rows(controls::rows("about")),
     ])
 }
-
-/// How tall the computer's card is.
-const HERO: f32 = 104.0;
 
 /// This computer's name, as the kernel has it.
 fn host_name() -> String {
@@ -181,64 +179,30 @@ fn settings_repo() -> String {
     nixos().repo_path().to_string_lossy().into_owned()
 }
 
-/// A path with the home folder as `~`.
-fn tidy(path: &str) -> String {
-    match std::env::var("HOME") {
-        Ok(home) if !home.is_empty() && path.starts_with(&home) => {
-            format!("~{}", &path[home.len()..])
-        }
-        _ => path.to_string(),
-    }
-}
-
 /// The computer's card: its glyph, its name and the NixOS it runs.
 fn hero(version: Option<&str>) -> amane::Rectangle {
-    use amane::{Color, Rectangle, Size, Text};
+    use amane::{Color, Text};
     use amane_kit::style;
     use amane_kit::tokens::Styled;
-    let tile = Rectangle::new()
-        .width(Size::Fixed(60.0))
-        .height(Size::Fixed(60.0))
-        .radius(14.0)
-        .fill(Color::from("#0091ff"))
-        .align_child(Center, Center)
-        .child(amane_kit::layout::icon(
-            amane_kit::icons::ICON_COMPUTER,
-            36.0,
-            Color::WHITE,
-        ));
     let name = host_name();
-    let mut lines: Vec<Box<dyn amane::Widget>> = vec![boxed(
-        Text::new(if name.is_empty() {
-            String::from("This computer")
-        } else {
-            name
-        })
-        .style(style::page_title_font())
-        .color(style::label_primary()),
-    )];
-    lines.push(match version {
+    let under = match version {
         Some(version) => boxed(
             Text::new(format!("NixOS {version}"))
                 .style(style::subtitle_font())
                 .color(style::label_secondary()),
         ),
         None => boxed(amane_kit::spinner::Spinner::new(14.0).build()),
-    });
-    Rectangle::new()
-        .width(Size::Parent)
-        .height(Size::Fixed(HERO))
-        .fill(Color::TRANSPARENT)
-        .padding(amane::Padding {
-            left: style::row_pad_h(),
-            ..amane::Padding::default()
-        })
-        .align_child(amane::Start, Center)
-        .child(
-            Row::new(vec![boxed(tile), boxed(Column::new(lines).gap(2.0))])
-                .gap(16.0)
-                .align(Center),
-        )
+    };
+    card(
+        Color::from("#0091ff"),
+        amane_kit::icons::ICON_COMPUTER,
+        if name.is_empty() {
+            String::from("This computer")
+        } else {
+            name
+        },
+        under,
+    )
 }
 
 /// The Advanced sub-page: where the configuration is, and reading it again.

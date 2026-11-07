@@ -23,7 +23,6 @@ pub mod repo;
 pub mod services;
 pub mod storage;
 pub mod update;
-pub mod xkb;
 
 use std::path::PathBuf;
 

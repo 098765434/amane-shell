@@ -39,6 +39,7 @@ members = [
     "crates/status",
     "crates/log",
     "crates/process",
+    "crates/nixos",
     "crates/assistant",
     "xtask",
 ]
@@ -60,6 +61,7 @@ amane-phone = { path = "crates/phone" }
 amane-status = { path = "crates/status" }
 amane-log = { path = "crates/log" }
 amane-process = { path = "crates/process" }
+amane-nixos = { path = "crates/nixos" }
 log = "0.4"
 amane-assistant = { path = "crates/assistant" }
 serde = { version = "1", features = ["derive"] }

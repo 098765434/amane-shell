@@ -39,22 +39,12 @@ const SEARCH: &str = "settings.system.apps.search";
 /// How long a search runs before it's said to be building the index.
 const SLOW: Duration = Duration::from_secs(3);
 
-/// How many results show.
-pub const RESULTS: usize = 50;
-
 /// How long typing pauses before the search runs.
 const PAUSE: Duration = Duration::from_millis(150);
 
 // ───── nixpkgs search ────────────────────────────────────────────────────────
 
-/// A package `nix search` found.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Found {
-    pub attr: String,
-    pub pname: String,
-    pub version: String,
-    pub description: String,
-}
+pub use amane_nixos::catalog::{Found, RESULTS, parse_search};
 
 /// The last search: its query, results (the first [`RESULTS`] of `total`),
 /// whether it's still running, and what was typed meanwhile.
@@ -91,66 +81,6 @@ impl Service for Search {
     }
 
     fn listen() {}
-}
-
-/// `nix search --json` output: `legacyPackages.<system>.<attr>` to
-/// `{pname, version, description}`, best match for `query` first.
-pub fn parse_search(json: &str, query: &str) -> Result<Vec<Found>, String> {
-    let value: Value = serde_json::from_str(json).map_err(|e| e.to_string())?;
-    let map = value.as_object().ok_or("not an object")?;
-    let mut found: Vec<Found> = map
-        .iter()
-        .map(|(key, info)| {
-            let text = |field: &str| {
-                info.get(field)
-                    .and_then(Value::as_str)
-                    .unwrap_or_default()
-                    .to_string()
-            };
-            Found {
-                attr: attr_of(key).to_string(),
-                pname: text("pname"),
-                version: text("version"),
-                description: text("description").lines().next().unwrap_or("").to_string(),
-            }
-        })
-        .collect();
-    found.sort_by_cached_key(|found| rank(found, query));
-    Ok(found)
-}
-
-/// A `nix search` key's attribute path, past "legacyPackages.x86_64-linux.".
-pub fn attr_of(key: &str) -> &str {
-    key.strip_prefix("legacyPackages.")
-        .and_then(|rest| rest.split_once('.'))
-        .map_or(key, |(_, attr)| attr)
-}
-
-/// How well a package matches: top-level packages before the ones in a set
-/// (`python3Packages.…`) unless the query names a set; then the name equal
-/// to the query, starting with it, containing it, and last a match only in
-/// the description; then shorter attribute paths.
-pub fn rank(found: &Found, query: &str) -> (bool, u8, usize, String) {
-    let query = query.to_lowercase();
-    let name = found
-        .attr
-        .rsplit('.')
-        .next()
-        .unwrap_or(&found.attr)
-        .to_lowercase();
-    let pname = found.pname.to_lowercase();
-    let names = [name.as_str(), pname.as_str()];
-    let tier = if names.contains(&query.as_str()) {
-        0
-    } else if names.iter().any(|n| n.starts_with(&query)) {
-        1
-    } else if names.iter().any(|n| n.contains(&query)) {
-        2
-    } else {
-        3
-    };
-    let in_set = found.attr.contains('.') && !query.contains('.');
-    (in_set, tier, found.attr.len(), found.attr.clone())
 }
 
 /// Whether a package is on the system already: added here, or installed by
@@ -783,52 +713,6 @@ pub fn page() -> Column {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn search_results_are_named_by_attribute_top_level_first() {
-        let json = r#"{"legacyPackages.x86_64-linux.bat-extras.batgrep":{"description":"Quickly search","pname":"batgrep","version":"2024"},
-            "legacyPackages.x86_64-linux.ripgrep":{"description":"Fast grep\nmore","pname":"ripgrep","version":"14.1.1"}}"#;
-        let found = parse_search(json, "grep").unwrap();
-        assert_eq!(found[0].attr, "ripgrep");
-        assert_eq!(found[0].pname, "ripgrep");
-        assert_eq!(found[0].description, "Fast grep");
-        assert_eq!(found[1].attr, "bat-extras.batgrep");
-        assert!(parse_search("[]", "grep").is_err());
-    }
-
-    fn found(attr: &str, pname: &str) -> Found {
-        Found {
-            attr: attr.into(),
-            pname: pname.into(),
-            version: String::new(),
-            description: String::new(),
-        }
-    }
-
-    #[test]
-    fn the_closest_name_ranks_first_and_sets_last() {
-        let mut all = [
-            found("python3Packages.spotify", "spotify"),
-            found("musikcube", "musikcube"),
-            found("spotify-player", "spotify-player"),
-            found("ncspot", "ncspot"),
-            found("spotify", "spotify"),
-        ];
-        all.sort_by_cached_key(|f| rank(f, "Spotify"));
-        let order: Vec<&str> = all.iter().map(|f| f.attr.as_str()).collect();
-        assert_eq!(
-            order,
-            [
-                "spotify",
-                "spotify-player",
-                "ncspot",
-                "musikcube",
-                "python3Packages.spotify"
-            ]
-        );
-        // naming the set puts it back in the running
-        assert!(!rank(&all[4], "python3Packages.spotify").0);
-    }
 
     #[test]
     fn present_by_attribute_or_installed_name() {

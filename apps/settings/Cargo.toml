@@ -12,6 +12,7 @@ authors.workspace = true
 log = { workspace = true }
 amane-log = { workspace = true }
 amane-process = { workspace = true }
+amane-nixos = { workspace = true }
 amane = { workspace = true }
 amane-kit = { workspace = true }
 serde = { workspace = true }

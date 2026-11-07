@@ -25,18 +25,36 @@ pub fn page() -> Column {
     ])
 }
 
-/// How tall the app's card is.
-const HERO: f32 = 112.0;
+/// How tall an About page's card is.
+pub const HERO: f32 = 112.0;
 
 /// The app's icon, name and version.
 fn hero() -> Rectangle {
+    card(
+        Color::from("#8e8e93"),
+        ICON_TUNE,
+        String::from("Shell Settings"),
+        boxed(
+            Text::new(format!("Version {}", env!("CARGO_PKG_VERSION")))
+                .style(style::subtitle_font())
+                .color(style::label_secondary()),
+        ),
+    )
+}
+
+/// An About page's card: a coloured tile with a glyph, a title, and a
+/// line under it. Both About pages have one.
+pub fn card(fill: Color, glyph: char, title: String, under: Box<dyn Widget>) -> Rectangle {
     let tile = Rectangle::new()
         .width(Size::Fixed(64.0))
         .height(Size::Fixed(64.0))
         .radius(15.0)
-        .fill(Color::from("#8e8e93"))
+        .fill(fill)
         .align_child(Center, Center)
-        .child(icon(ICON_TUNE, 38.0, Color::WHITE));
+        .child(icon(glyph, 38.0, Color::WHITE));
+    let title = Text::new(title)
+        .style(style::page_title_font())
+        .color(style::label_primary());
     Rectangle::new()
         .width(Size::Parent)
         .height(Size::Fixed(HERO))
@@ -49,25 +67,20 @@ fn hero() -> Rectangle {
         .child(
             Row::new(vec![
                 boxed(tile),
-                boxed(
-                    Column::new(vec![
-                        boxed(
-                            Text::new("Shell Settings")
-                                .style(style::page_title_font())
-                                .color(style::label_primary()),
-                        ),
-                        boxed(
-                            Text::new(format!("Version {}", env!("CARGO_PKG_VERSION")))
-                                .style(style::subtitle_font())
-                                .color(style::label_secondary()),
-                        ),
-                    ])
-                    .gap(2.0),
-                ),
+                boxed(Column::new(vec![boxed(title), under]).gap(2.0)),
             ])
             .gap(16.0)
             .align(Center),
         )
+}
+
+/// A path as a row shows it: under the home folder, from `~`.
+pub fn tidy_path(path: &Path) -> String {
+    let home = std::env::var_os("HOME").map(std::path::PathBuf::from);
+    tidy(
+        path,
+        home.as_deref().filter(|home| !home.as_os_str().is_empty()),
+    )
 }
 
 fn files() -> [(&'static str, std::path::PathBuf); 5] {

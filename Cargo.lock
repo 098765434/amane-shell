@@ -132,6 +132,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "amane-nixos"
+version = "0.1.0"
+dependencies = [
+ "amane-process",
+ "chrono",
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "amane-phone"
 version = "0.1.0"
 dependencies = [
@@ -163,6 +174,7 @@ dependencies = [
  "amane",
  "amane-kit",
  "amane-log",
+ "amane-nixos",
  "amane-process",
  "chrono",
  "drm",

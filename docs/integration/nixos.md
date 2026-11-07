@@ -2,8 +2,9 @@
 
 Shell Settings' **System** pages manage the NixOS configuration the machine is built from
 (`~/nixos-config`, a flake), the way a normal OS's settings app works: change a setting, press
-Apply, done. It never edits the hand-written `.nix` files. The code is `apps/settings/src/system/`;
-the pages are in [settings-app.md](../shell/settings-app.md#system).
+Apply, done. It never edits the hand-written `.nix` files. The model and the jobs, with no UI, are
+the [`amane-nixos`](../../crates/nixos/README.md) crate; the pages and the state they keep are
+`apps/settings/src/system/`, described in [settings-app.md](../shell/settings-app.md#system).
 
 ## The contract with the repo
 
