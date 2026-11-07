@@ -32,15 +32,13 @@ use super::customize;
 use super::grid::{Canvas, Metrics, Occupancy, Rect, Slot, Span};
 use super::layout::{self, Layout};
 use super::tiles::{SCOPE, radius_of};
+use crate::chrome::edit_marks as marks;
 use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::surfaces::quick_settings::layout::Stored as _;
 use crate::tokens::{quick, sys};
-use amane_kit::buttons::{IconButton, Shape, Style};
 use amane_kit::control_size::ControlSize;
 use amane_kit::grid::drag::{self, Hit, Origin, Session, follow, hit, off_canvas};
-use amane_kit::icons::{ICON_REMOVE, ICON_RESIZE};
-use amane_kit::layout::{boxed, frame, icon};
-use amane_kit::material::{self, FillLevel, Level};
+use amane_kit::layout::{boxed, frame};
 use amane_kit::motion::{self, Pose};
 
 // TODO(token): `quick.drag.band` once Penpot has it (manual §1.1).
@@ -355,18 +353,12 @@ pub(super) fn body(control: Box<dyn Widget>, slot: Slot) -> Box<dyn Widget> {
 pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget> {
     let side = handle_side();
 
-    let badge = IconButton::new(format!("amane.qs.edit.{}.remove", id.name()), ICON_REMOVE)
-        .style(Style::Tonal)
-        .shape(Shape::Round)
-        .size(sys::size::icon::s())
-        .height(side)
-        .width(side)
-        .color(material::label(Level::Primary))
-        .on_press(move || hide(id))
-        .build();
-    let badge = frame(slot.width, slot.height)
-        .align_child(amane::Start, amane::Start)
-        .child(badge);
+    let badge = marks::remove_badge(
+        format!("amane.qs.edit.{}.remove", id.name()),
+        side,
+        move || hide(id),
+    );
+    let badge = marks::top_left(slot.width, slot.height, badge);
 
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
 
@@ -394,23 +386,11 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
                     .child(ghost),
             ));
         }
-        let handle = Rectangle::new()
-            .width(side)
-            .height(side)
-            .radius(Radius::Full)
-            .fill(material::fill_role(FillLevel::Secondary))
-            .align_child(amane::Center, amane::Center)
-            .cursor(Cursor::ResizeBottomRight)
-            .child(icon(
-                ICON_RESIZE,
-                sys::size::icon::s(),
-                material::label(Level::Primary),
-            ));
-        layers.push(boxed(
-            frame(slot.width, slot.height)
-                .align_child(amane::End, amane::End)
-                .child(handle),
-        ));
+        layers.push(boxed(marks::bottom_right(
+            slot.width,
+            slot.height,
+            marks::resize_handle(side),
+        )));
     }
     layers.push(boxed(badge));
 

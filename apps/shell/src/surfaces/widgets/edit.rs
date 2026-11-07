@@ -15,23 +15,21 @@
 
 use std::cell::RefCell;
 
-use amane::{Cursor, Key, Point, Radius, Rectangle, Size, Stack, Widget};
+use amane::{Key, Point, Rectangle, Size, Stack, Widget};
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use super::store::{self, Settings};
 use super::{
     BAND, Geometry, RADIUS, THRESHOLD, changed, commit, current, gallery, shown, with_desk,
 };
+use crate::chrome::edit_marks as marks;
 use crate::tokens::sys;
-use amane_kit::buttons::{IconButton, Shape, Style};
 use amane_kit::control_size::ControlSize;
 use amane_kit::grid::Layout;
 use amane_kit::grid::drag::{Drag, Origin, Session, follow};
 use amane_kit::grid::geometry::{Metrics, Slot};
 use amane_kit::grid::{Entry, GridKey};
-use amane_kit::icons::{ICON_REMOVE, ICON_RESIZE};
-use amane_kit::layout::{boxed, frame, icon};
-use amane_kit::material::{self, FillLevel, Level};
+use amane_kit::layout::{boxed, frame};
 use amane_kit::menu::layer as context_menu;
 use amane_kit::motion::Pose;
 
@@ -301,40 +299,20 @@ pub(super) fn dressing(output: &str, key: WidgetKey, slot: Slot, pose: Pose) -> 
     let side = ControlSize::Medium.height();
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
     if key.supported().len() > 1 {
-        let handle = Rectangle::new()
-            .width(side)
-            .height(side)
-            .radius(Radius::Full)
-            .fill(material::fill_role(FillLevel::Secondary))
-            .align_child(amane::Center, amane::Center)
-            .cursor(Cursor::ResizeBottomRight)
-            .child(icon(
-                ICON_RESIZE,
-                sys::size::icon::s(),
-                material::label(Level::Primary),
-            ));
-        layers.push(boxed(
-            frame(slot.width, slot.height)
-                .align_child(amane::End, amane::End)
-                .child(handle),
-        ));
+        layers.push(boxed(marks::bottom_right(
+            slot.width,
+            slot.height,
+            marks::resize_handle(side),
+        )));
     }
     if key.id != PROVISIONAL {
         let on = output.to_string();
-        let badge = IconButton::new(format!("amane.widgets.edit.{}.remove", key.id), ICON_REMOVE)
-            .style(Style::Tonal)
-            .shape(Shape::Round)
-            .size(sys::size::icon::s())
-            .height(side)
-            .width(side)
-            .color(material::label(Level::Primary))
-            .on_press(move || remove(&on, key))
-            .build();
-        layers.push(boxed(
-            frame(slot.width, slot.height)
-                .align_child(amane::Start, amane::Start)
-                .child(badge),
-        ));
+        let badge = marks::remove_badge(
+            format!("amane.widgets.edit.{}.remove", key.id),
+            side,
+            move || remove(&on, key),
+        );
+        layers.push(boxed(marks::top_left(slot.width, slot.height, badge)));
     }
     boxed(
         frame(slot.width, slot.height)
