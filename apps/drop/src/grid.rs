@@ -731,10 +731,7 @@ fn next_phone(now: Option<&str>) -> Option<String> {
 }
 
 fn open_folder(folder: &Path) {
-    amane::spawn(&format!(
-        "xdg-open '{}'",
-        folder.display().to_string().replace('\'', "'\\''")
-    ));
+    amane::Launch::argv(&["xdg-open", &folder.display().to_string()]).activated();
     state::close();
 }
 

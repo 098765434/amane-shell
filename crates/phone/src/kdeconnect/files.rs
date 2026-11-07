@@ -85,11 +85,6 @@ pub(crate) fn decode(text: &str) -> Option<Vec<u8>> {
     Some(out)
 }
 
-// a shell word for `text`, quoted, for a command line
-pub(crate) fn quoted(text: &str) -> String {
-    format!("'{}'", text.replace('\'', r"'\''"))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

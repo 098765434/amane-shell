@@ -66,7 +66,7 @@ pub fn view(device: &PhoneDevice) -> Column {
                     PushButton::new("amane.messages.input.screen", "Show Screen")
                         .style(Style::Tonal)
                         .on_press(move || {
-                            amane::spawn_activated(&format!("amane-mirror --device {shown}"));
+                            amane::Launch::argv(&["amane-mirror", "--device", &shown]).activated();
                         })
                         .build(),
                 ),

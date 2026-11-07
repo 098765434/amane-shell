@@ -63,20 +63,5 @@ pub fn available() -> bool {
 
 /// Opens `amane-messages` on `device`, at `view` ("messages" or "input").
 pub fn open_messages(device: &str, view: &str) {
-    amane::spawn_activated(&format!("{MESSAGES_APP} --device {device} --view {view}"));
-}
-
-/// A word for `sh -c`, as amane's spawn runs commands.
-pub(crate) fn quoted(text: &str) -> String {
-    format!("'{}'", text.replace('\'', r"'\''"))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn quotes_a_name_with_an_apostrophe() {
-        assert_eq!(quoted("Kid's"), r"'Kid'\''s'");
-    }
+    amane::Launch::argv(&[MESSAGES_APP, "--device", device, "--view", view]).activated();
 }

@@ -59,11 +59,14 @@ pub fn messaging_app(device: &PhoneDevice) -> Option<(String, String)> {
 
 /// Opens `package` from the phone in a window of its own.
 pub fn open_app(device: &PhoneDevice, package: &str, name: &str) {
-    let quote = |text: &str| format!("'{}'", text.replace('\'', r"'\''"));
-    amane::spawn_activated(&format!(
-        "amane-mirror --device {} --app {} --name {}",
-        quote(device.id()),
-        quote(package),
-        quote(name),
-    ));
+    amane::Launch::argv(&[
+        "amane-mirror",
+        "--device",
+        device.id(),
+        "--app",
+        package,
+        "--name",
+        name,
+    ])
+    .activated();
 }

@@ -84,7 +84,7 @@ pub fn ready(device: &PhoneDevice) -> bool {
 
 /// Opens the phone's screen.
 pub fn open_screen(device: &str) {
-    amane::spawn_activated(&format!("{MIRROR_APP} --device {device}"));
+    amane::Launch::argv(&[MIRROR_APP, "--device", device]).activated();
 }
 
 /// The serial adb has `device` by, at one of the addresses KDE Connect knows.

@@ -12,7 +12,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use amane::serde::Deserialize;
 use amane_phone::PhoneDevice;
 
-use super::{MIRROR_APP, quoted, screen};
+use super::{MIRROR_APP, screen};
 
 /// How long a list is kept before it's asked for again.
 const FRESH: Duration = Duration::from_secs(24 * 60 * 60);
@@ -109,12 +109,16 @@ pub fn of(phone: &PhoneDevice) -> Vec<App> {
 
 /// Opens `app` of `phone` in a window of its own.
 pub fn open(phone: &str, app: &App) {
-    amane::spawn_activated(&format!(
-        "{MIRROR_APP} --device {} --app {} --name {}",
-        quoted(phone),
-        quoted(&app.package),
-        quoted(&app.name)
-    ));
+    amane::Launch::argv(&[
+        MIRROR_APP,
+        "--device",
+        phone,
+        "--app",
+        &app.package,
+        "--name",
+        &app.name,
+    ])
+    .activated();
 }
 
 #[cfg(test)]

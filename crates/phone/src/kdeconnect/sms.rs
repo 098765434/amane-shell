@@ -1117,10 +1117,10 @@ fn send(
 }
 
 fn open_file(path: &Path) {
-    amane::spawn(&format!(
-        "xdg-open {}",
-        files::quoted(&path.display().to_string())
-    ));
+    // opened when the download comes in, often long after the click, so without a token
+    if let Err(error) = amane::Launch::argv(&["xdg-open", &path.display().to_string()]).spawn() {
+        log::warn!("{error}");
+    }
 }
 
 fn now_ms() -> i64 {

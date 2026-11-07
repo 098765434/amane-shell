@@ -45,7 +45,7 @@ pub(super) fn actions(n: &Notification, width: f32, color: Color) -> Row {
             .text(sys::r#type::label())
             .color(color)
             .on_press(move || {
-                amane::spawn_activated(&command);
+                amane::Launch::argv(&command).activated();
                 Notifications::dismiss(id);
             })
             .build(),

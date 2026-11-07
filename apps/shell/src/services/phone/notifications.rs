@@ -10,7 +10,7 @@
 use amane::{Notification, Service};
 use amane_phone::{KdeConnect, PhoneNotification};
 
-use super::{MESSAGES_APP, MIRROR_APP, quoted, screen};
+use super::{MESSAGES_APP, MIRROR_APP, screen};
 
 /// What the button says.
 pub const LABEL: &str = "Open on Phone";
@@ -42,7 +42,7 @@ pub const MESSAGES_LABEL: &str = "Open in Messages";
 /// commands they run: Open in Messages for a text message, and Open on
 /// Phone (its app in a window of its own) once the phone's screen can be
 /// shown.
-pub fn commands(notification: &Notification) -> Vec<(&'static str, String)> {
+pub fn commands(notification: &Notification) -> Vec<(&'static str, Vec<String>)> {
     if !from_kdeconnect(notification) {
         return Vec::new();
     }
@@ -66,24 +66,29 @@ pub fn commands(notification: &Notification) -> Vec<(&'static str, String)> {
         if MESSAGING.contains(&package) && device.can_message() {
             commands.push((
                 MESSAGES_LABEL,
-                format!(
-                    "{} --device {} --view messages --thread-of {}",
-                    MESSAGES_APP,
-                    quoted(device.id()),
-                    quoted(&found.title),
-                ),
+                vec![
+                    MESSAGES_APP.to_string(),
+                    "--device".to_string(),
+                    device.id().to_string(),
+                    "--view".to_string(),
+                    "messages".to_string(),
+                    "--thread-of".to_string(),
+                    found.title.clone(),
+                ],
             ));
         }
         if screen::set_up(device.id()) || screen::ready(device) {
             commands.push((
                 LABEL,
-                format!(
-                    "{} --device {} --app {} --name {}",
-                    MIRROR_APP,
-                    quoted(device.id()),
-                    quoted(package),
-                    quoted(&found.app),
-                ),
+                vec![
+                    MIRROR_APP.to_string(),
+                    "--device".to_string(),
+                    device.id().to_string(),
+                    "--app".to_string(),
+                    package.to_string(),
+                    "--name".to_string(),
+                    found.app.clone(),
+                ],
             ));
         }
         return commands;

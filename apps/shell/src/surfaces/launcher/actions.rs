@@ -345,7 +345,9 @@ fn nixos(specs: &mut Vec<Spec>) {
                 Icon::Glyph(glyph),
             )
             .keywords(keywords)
-            .run(move |_| amane::spawn_activated(&format!("amane-settings --page {page}"))),
+            .run(move |_| {
+                amane::Launch::argv(&["amane-settings", "--page", page]).activated();
+            }),
         );
     }
 }

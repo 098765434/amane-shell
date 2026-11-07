@@ -29,7 +29,7 @@ pub(crate) fn toggle() -> Option<QuickToggle> {
             .checked(true)
             .on_press(|| {
                 close();
-                amane::spawn_activated(&format!("{SETTINGS} --page update"));
+                amane::Launch::argv(&[SETTINGS, "--page", "update"]).activated();
             }),
     )
 }

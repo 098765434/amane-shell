@@ -471,7 +471,7 @@ fn context_menu(message: &SmsMessage) {
                 {
                     PhoneMessages::download(part);
                 } else {
-                    amane::spawn(&format!("xdg-open '{}'", target.replace('\'', r"'\''")));
+                    amane::Launch::argv(&["xdg-open", &target]).activated();
                 }
             }
             Some(Pick::Retry) => retry(&message),
@@ -677,7 +677,7 @@ fn link_chip(link: &str) -> Rectangle {
         false,
         Actions {
             press: Some(Rc::new(move || {
-                amane::spawn(&format!("xdg-open '{}'", url.replace('\'', r"'\''")));
+                amane::Launch::argv(&["xdg-open", &url]).activated();
             })),
             ..Actions::default()
         },
