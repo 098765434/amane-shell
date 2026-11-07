@@ -194,7 +194,7 @@ pub(super) fn on_body_scroll(scroll: Scroll) {
     let (paging, pages) = with(|state| (state.shown.0 == Kind::Apps, state.pages));
     match scroll.source {
         ScrollSource::Wheel => {
-            SCROLL.with_borrow_mut(|body| body.scroll(&scroll, Axis::Vertical, WHEEL_STEP));
+            SCROLL.with_borrow_mut(|body| body.scroll(&scroll, Axis::Vertical));
             moved();
         }
         ScrollSource::Tilt if paging => {
@@ -235,16 +235,14 @@ pub(super) fn on_body_scroll(scroll: Scroll) {
 /// The pill bar follows a sideways swipe, or a wheel turned over it.
 pub(super) fn on_pill_scroll(scroll: Scroll) {
     PILL_SCROLL.with_borrow_mut(|pills| match scroll.source {
-        ScrollSource::Finger | ScrollSource::Continuous => {
-            pills.scroll(&scroll, Axis::Horizontal, WHEEL_STEP)
-        }
+        ScrollSource::Finger | ScrollSource::Continuous => pills.scroll(&scroll, Axis::Horizontal),
         ScrollSource::Wheel | ScrollSource::Tilt => {
             let lines = if scroll.x.abs() > f32::EPSILON {
                 scroll.x
             } else {
                 scroll.y
             };
-            let to = pills.target() + lines * WHEEL_STEP;
+            let to = pills.target() + lines * amane_kit::kinetic::WHEEL_STEP;
             pills.go(to);
         }
     });

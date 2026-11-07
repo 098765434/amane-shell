@@ -66,8 +66,6 @@ const SIDEBAR: f32 = 300.0;
 const INSET: f32 = 24.0;
 /// How small the window is as it swells in.
 const OPEN_SCALE: f32 = 0.96;
-/// How far one wheel notch scrolls the pane.
-const WHEEL_STEP: f32 = 60.0;
 
 pub(super) use amane_kit::area::Area;
 

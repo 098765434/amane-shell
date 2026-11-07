@@ -23,13 +23,13 @@ pub(super) fn moved() {
 }
 
 pub(super) fn on_pane_scroll(scroll: Scroll) {
-    SCROLL.with_borrow_mut(|pane| pane.scroll(&scroll, Axis::Vertical, WHEEL_STEP));
+    SCROLL.with_borrow_mut(|pane| pane.scroll(&scroll, Axis::Vertical));
     moved();
     super::super::QuickSettings::changed();
 }
 
 pub(super) fn on_side_scroll(scroll: Scroll) {
-    SIDE_SCROLL.with_borrow_mut(|side| side.scroll(&scroll, Axis::Vertical, WHEEL_STEP));
+    SIDE_SCROLL.with_borrow_mut(|side| side.scroll(&scroll, Axis::Vertical));
     super::super::QuickSettings::changed();
 }
 

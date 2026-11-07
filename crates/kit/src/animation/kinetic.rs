@@ -181,6 +181,8 @@ pub fn banded(offset: f32, max: f32, band: Option<f32>) -> f32 {
     }
 }
 
+/// How far a wheel's notch scrolls, in pixels.
+pub const WHEEL_STEP: f32 = 60.0;
 /// One axis of scrolling, in pixels from `0` to `max`: following fingers
 /// one to one, coasting after a flick, and easing after a wheel or a
 /// [`go`](Kinetic::go).
@@ -259,14 +261,14 @@ impl Kinetic {
     }
 
     /// `scroll` along `axis`: fingers are followed, a wheel eases on by
-    /// `wheel_step` a notch.
-    pub fn scroll(&mut self, scroll: &Scroll, axis: Axis, wheel_step: f32) {
+    /// [`WHEEL_STEP`] a notch.
+    pub fn scroll(&mut self, scroll: &Scroll, axis: Axis) {
         match scroll.source {
             ScrollSource::Finger | ScrollSource::Continuous => {
                 self.follow(axis.pixels(scroll), scroll.stop, Instant::now());
             }
             ScrollSource::Wheel | ScrollSource::Tilt => {
-                let to = self.target() + axis.lines(scroll) * wheel_step;
+                let to = self.target() + axis.lines(scroll) * WHEEL_STEP;
                 self.go(to);
             }
         }
@@ -398,11 +400,11 @@ mod tests {
             y,
             ..Scroll::default()
         };
-        scroll.scroll(&wheel(1.0), Axis::Vertical, 60.0);
+        scroll.scroll(&wheel(1.0), Axis::Vertical);
         assert_eq!(scroll.target(), 60.0);
-        scroll.scroll(&wheel(1.0), Axis::Vertical, 60.0);
+        scroll.scroll(&wheel(1.0), Axis::Vertical);
         assert_eq!(scroll.target(), 100.0);
-        scroll.scroll(&wheel(-3.0), Axis::Vertical, 60.0);
+        scroll.scroll(&wheel(-3.0), Axis::Vertical);
         assert_eq!(scroll.target(), 0.0);
     }
 

@@ -139,8 +139,6 @@ const FILE_CHIPS: [FileKind; 4] = [
 const CLIP_LIST_W: f32 = 420.0;
 /// How tall Clipboard is under its search row while it asks to keep copies.
 const EMPTY_H: f32 = 200.0;
-/// How far one wheel notch scrolls.
-const WHEEL_STEP: f32 = 60.0;
 /// How small the glass is as it swells in.
 const OPEN_SCALE: f32 = 0.96;
 /// How the categories turn under the fingers: the dock's paging, a touch
