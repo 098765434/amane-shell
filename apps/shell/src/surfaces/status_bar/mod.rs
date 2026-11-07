@@ -36,9 +36,9 @@ use std::cell::Cell;
 use std::time::Duration;
 
 use amane::{
-    Animation, Audio, Battery, Bluetooth, BluetoothDevice, Center, Color, Easing, Full, InputArea,
-    Justify, Keyboard, Layer, LayerWindow, Link, Monitor, Network, Parent, PowerProfile, Rectangle,
-    Row, Scroll, ScrollSource, Service, Size, Start, Vertical, Widget, Workspace, Workspaces, Zone,
+    Audio, Battery, Bluetooth, BluetoothDevice, Center, Color, Easing, Full, InputArea, Justify,
+    Keyboard, Layer, LayerWindow, Link, Monitor, Network, Parent, PowerProfile, Rectangle, Row,
+    Scroll, ScrollSource, Service, Size, Start, Vertical, Widget, Workspace, Workspaces, Zone,
     window_size,
 };
 use amane_kit::settings::{AutoHide, BarStyle, ClockStyle, ShowDate, status_bar};
@@ -100,13 +100,7 @@ thread_local! {
 
 fn new_reveal() -> EdgeReveal {
     EdgeReveal::new(
-        Animation::new(0.0)
-            .duration(if theme::reduced_motion() {
-                Duration::ZERO
-            } else {
-                Duration::from_millis(220)
-            })
-            .easing(Easing::Out),
+        amane_kit::motion::eased(0.0, Duration::from_millis(220), Easing::Out),
         Duration::from_millis(400),
     )
 }

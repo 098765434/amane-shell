@@ -19,7 +19,6 @@ use amane::{
     Animation, Canvas, Center, Color, Easing, Path, Rectangle, Service, Shape as _, Size,
     Workspace, WorkspaceSwitch,
 };
-use amane_kit::theme;
 
 use crate::tokens::sys;
 use amane_kit::buttons::DrawnButton;
@@ -265,14 +264,12 @@ fn settle(position: f64, count: usize) -> f32 {
 }
 
 fn spring(value: f32) -> Animation<f32> {
-    Animation::new(value)
-        .duration(if theme::reduced_motion() {
-            Duration::ZERO
-        } else {
-            // about as long as niri's own critically damped switch takes
-            Duration::from_millis(280)
-        })
-        .easing(Easing::Spring { bounce: 0.0 })
+    // about as long as niri's own critically damped switch takes
+    amane_kit::motion::eased(
+        value,
+        Duration::from_millis(280),
+        Easing::Spring { bounce: 0.0 },
+    )
 }
 
 /// Where the shape on monitor `output` is: niri's switch while niri

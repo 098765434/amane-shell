@@ -16,8 +16,6 @@ use std::time::Duration;
 use amane::{Animation, Blend, Easing};
 use amane_kit::settings::{self, dock};
 
-use crate::theme;
-
 // TODO(token): these become `dock.motion.*` tokens once Penpot has them
 // (manual §1.1; docs/design-system/penpot-backlog.md).
 /// The dock's motion as shipped.
@@ -163,10 +161,12 @@ fn configured(motion: DockMotion, var: Option<&str>, settings: &settings::Dock) 
 /// An animation resting at `value` that runs as `anim` says, or arrives at
 /// once when it or the dock's motion is off, or motion is reduced.
 pub fn anim<T: Blend>(anim: &Anim, value: T) -> Animation<T> {
-    let runs = anim.on && motion().enabled && !theme::reduced_motion();
-    Animation::new(value)
-        .duration(if runs { anim.duration } else { Duration::ZERO })
-        .easing(anim.easing)
+    let runs = anim.on && motion().enabled;
+    amane_kit::motion::eased(
+        value,
+        if runs { anim.duration } else { Duration::ZERO },
+        anim.easing,
+    )
 }
 
 #[cfg(test)]

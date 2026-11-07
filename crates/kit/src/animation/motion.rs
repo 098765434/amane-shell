@@ -136,6 +136,15 @@ pub fn spring_curve(progress: f32) -> f32 {
     .apply(progress.clamp(0.0, 1.0))
 }
 
+/// An animation at rest at `value` that runs over `duration` with `easing`,
+/// or arrives at once where motion is reduced: for motion of a surface's
+/// own, timed to match something outside the kit.
+pub fn eased<T: Blend>(value: T, duration: Duration, easing: Easing) -> Animation<T> {
+    Animation::new(value)
+        .duration(if reduced() { Duration::ZERO } else { duration })
+        .easing(easing)
+}
+
 /// An ease-out over `duration`, for fades and exits.
 pub fn fade<T: Blend>(value: T, duration: Duration) -> Animation<T> {
     Animation::new(value).duration(duration).easing(Easing::Out)
