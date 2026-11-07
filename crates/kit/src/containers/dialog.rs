@@ -452,9 +452,8 @@ impl Dialog {
             let glyph = match shown {
                 Icon::App(path) if Image::loaded(path) => slot.fill(Image::contain(path.clone())),
                 // an icon still loading leaves its room
-                Icon::App(_) => slot.fill(Color::TRANSPARENT),
+                Icon::App(_) => slot,
                 Icon::Symbol(glyph) => slot
-                    .fill(Color::TRANSPARENT)
                     .align_child(Center, Center)
                     .child(icon(*glyph, side, fg)),
             };

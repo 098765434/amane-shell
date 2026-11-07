@@ -177,12 +177,15 @@ fn is_runtime(exe: &Path) -> bool {
 
 // a path in the home folder, where the user's own programs can write
 fn in_home(path: &Path) -> bool {
-    let homes = [std::env::var_os("HOME"), std::env::var_os("XDG_DATA_HOME")];
+    let homes = [
+        std::env::var_os("HOME").map(PathBuf::from),
+        Some(amane_kit::paths::data()),
+    ];
 
     homes
         .into_iter()
         .flatten()
-        .filter(|home| !home.is_empty())
+        .filter(|home| !home.as_os_str().is_empty())
         .any(|home| path.starts_with(home))
 }
 
@@ -359,11 +362,10 @@ fn read_entry(path: PathBuf) -> Option<DesktopEntry> {
 fn application_folders() -> Vec<PathBuf> {
     let mut folders = Vec::new();
 
-    let home_data = std::env::var_os("XDG_DATA_HOME")
-        .filter(|folder| !folder.is_empty())
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/share")));
-    folders.extend(home_data);
+    let home_data = amane_kit::paths::data();
+    if !home_data.as_os_str().is_empty() {
+        folders.push(home_data);
+    }
 
     let data = std::env::var("XDG_DATA_DIRS")
         .unwrap_or_else(|_| String::from("/usr/local/share:/usr/share"));

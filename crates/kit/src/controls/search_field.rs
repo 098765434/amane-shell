@@ -96,14 +96,11 @@ impl<'a> SearchField<'a> {
             )),
         ];
         if let Some(clear) = self.clear.filter(|_| typed) {
-            let button = slot(glyph)
-                .radius(Radius::Full)
-                .fill(Color::TRANSPARENT)
-                .child(icon(
-                    ICON_CLOSE,
-                    glyph * 0.8,
-                    material::label(Level::Secondary),
-                ));
+            let button = slot(glyph).radius(Radius::Full).child(icon(
+                ICON_CLOSE,
+                glyph * 0.8,
+                material::label(Level::Secondary),
+            ));
             parts.push(boxed(interactive(
                 button,
                 format!("{}.clear", self.id),

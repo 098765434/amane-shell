@@ -11,6 +11,7 @@
 //! - `contract`: amane and niri agree at the pinned revisions (contract.rs).
 
 mod contract;
+mod hygiene;
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};

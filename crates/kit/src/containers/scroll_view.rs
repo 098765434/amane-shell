@@ -11,7 +11,7 @@
 
 use std::time::{Duration, Instant};
 
-use amane::{Animation, Center, Color, Padding, Rectangle, Scroll, Service, Stack, Start, Widget};
+use amane::{Animation, Center, Padding, Rectangle, Scroll, Service, Stack, Start, Widget};
 
 use crate::kinetic::Axis;
 use crate::layout::{boxed, frame};
@@ -118,7 +118,7 @@ impl ScrollView {
             .clip()
             .padding(padding)
             .align_child(Start, Start)
-            .child(content.fill(Color::TRANSPARENT).child(child));
+            .child(content.child(child));
         if let Some(scroll) = self.on_scroll {
             viewport = viewport.on_scroll(scroll);
         }
