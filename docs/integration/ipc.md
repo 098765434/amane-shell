@@ -57,7 +57,7 @@ The modes also answer to `applications` (for `apps`) and `home` or `search` (the
 
 | Verb | What it does |
 |---|---|
-| `listen start` | opens Spotlight on a fresh search and listens for a command |
+| `listen start` | opens the launcher on a fresh search and listens for a command |
 | `listen stop` | stops; what was heard is typed into the field and searched |
 | `listen toggle` | starts, or stops while listening (for one key) |
 | `listen cancel` | stops, forgetting what was heard |
@@ -139,7 +139,7 @@ shows or hides one of the optional status icons, `activities`, `tray`, `volume`,
   right-click on one do.
 - **Programs' items** ([status-apps.md](status-apps.md)). `status-bar apps list` lists them
   (id, bus name, title, `shown` or `hidden`). `status-bar apps activate <id>` clicks one.
-- **Live Activities.** `status-bar activities list` lists those going on, most relevant first
+- **Activities.** `status-bar activities list` lists those going on, most relevant first
   (key, app, title). `status-bar activities end bus.<handle>` ends another program's activity as
   the user would, and `status-bar activities press bus.<handle> <button>` presses one of its
   buttons (`cancel` on a Drop upload).
@@ -203,7 +203,7 @@ A keybind spawns the call through a shell:
 
 ```kdl
 binds {
-    Mod+Space hotkey-overlay-title="Spotlight" {
+    Mod+Space hotkey-overlay-title="Launcher" {
         spawn "sh" "-c" "printf 'launcher\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
     }
     Mod+Ctrl+V hotkey-overlay-title="Clipboard" {

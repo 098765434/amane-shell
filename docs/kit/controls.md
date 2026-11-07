@@ -2,7 +2,7 @@
 
 amane-kit's buttons and controls (`kit/src/controls/buttons/`, `amane_kit::buttons`). Each follows its Material 3
 counterpart in structure (variants, shapes, a hover state layer, a disabled state), but is drawn
-in the shell's macOS/iOS look and sized like its other controls. They read `sys.*` tokens
+in the shell's glass look and sized like its other controls. They read `sys.*` tokens
 only, so any component can use them.
 
 | Component | M3 counterpart | Used for |
@@ -71,7 +71,7 @@ it reads on any surface. Turning on, it blends to `sys.color.accent.bg`. The
 
 `Checkbox::new(id, checked)` and `Radio::new(id, selected)` take an optional `.label(…)` that takes
 the click too, `.disabled(…)`, and `.on_toggle(|checked| …)` or `.on_select(|| …)`. They're drawn
-in the macform look (macOS's): a 16 px mark (times the density) with the label 3 px after it in
+in the macform look: a 16 px mark (times the density) with the label 3 px after it in
 the control font (13 medium), the whole control as wide as its mark and label and
 `theme::control_height()` (24) tall.
 
@@ -85,7 +85,7 @@ the control font (13 medium), the whole control as wide as its mark and label an
 
 ## Dropdown
 
-`dropdown::Dropdown::new(id, options, selected)` is one choice out of a list, drawn like macOS's
+`dropdown::Dropdown::new(id, options, selected)` is one choice out of a list, drawn as a
 pop-up button (the macform pull-down): a `controlFill` button, radius 6, with the chosen option
 and a drawn chevron, as wide as the widest option unless given `.width(…)`.
 `Dropdown::items(id, Vec<MenuItem>, Option<usize>)` takes options with glyphs (`MenuItem::new(text)
@@ -105,7 +105,7 @@ right click (`on_click` with `Button::Right`). A second right click while it's o
 
 ## Control sizes
 
-`control_size` has the macOS 27 kit's five sizes, Mini, Small, Medium, Large and XL. The switch,
+`control_size` has the design kit's five sizes, Mini, Small, Medium, Large and XL. The switch,
 checkbox, radio, thin slider's knob and push buttons' corners read the innermost
 `control_size::scope`, Medium outside any. From Large up, `Shape::Square` buttons are capsules.
 Layout heights (rows, a thin slider's hit area) stay on `sys.size.control.height`, so a size
@@ -114,7 +114,7 @@ value; an inert slider, a meter, has none.
 
 ## macform
 
-`amane_kit::macform` holds the macOS-style controls ported from the old Quickshell `macform` set.
+`amane_kit::macform` holds the controls ported from the old Quickshell `macform` set.
 The kit's `Radio`, `Checkbox`, `Dropdown`, `field_box`, `ListItem::leading_tile` and the
 sidebar's tiles draw with its pieces; the rest are its own types, which Shell Settings uses
 where it needs them. `cargo run -p amane-kit --example macform` shows them beside the kit's other
@@ -132,7 +132,7 @@ a page).
   (labels, `fill.secondary`, separator, accent) and keeps the rest as literals with a light twin.
   Sizes are the original's Figma pixels times `sys.density.factor`. `color::Accent` holds the 13
   system accents the tiles take.
-- `macform::symbol` draws the SF Symbols the controls use (chevrons, checkmark, ellipsis,
+- `macform::symbol` draws the symbols the controls use (chevrons, checkmark, ellipsis,
   info) as round-joined strokes, which stay on the quad pipeline.
 - Left out: the Material press ripple and the menu's scale-in (a fade and a 4 px slide instead).
 

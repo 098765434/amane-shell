@@ -1,13 +1,13 @@
 # Assistant
 
-Spotlight reads a query as a system command and offers it as the card over the
+The launcher reads a query as a system command and offers it as the card over the
 results: "turn the volume down" shows **Turn Volume Down**, and Return runs it. A key
 held, or pressed twice, does the same by voice. Everything runs on this machine, on the
 CPU, through [Cactus](https://cactuscompute.com/): **Needle 3** for commands (35 MB) and
 **Whistle** for speech (17 MB).
 
 It covers what the shell already does, and nothing else:
-- Control Center's switches: Wi‑Fi, Bluetooth, Focus, Dark Style, Night Light, Airplane
+- Quick Settings' switches: Wi‑Fi, Bluetooth, Focus, Dark Style, Night Light, Airplane
   Mode, Keep Awake, VPN, Tailscale, Screenshot, and so on.
 - The volume and screen brightness, set or stepped, with the OSD.
 - Muting.
@@ -17,7 +17,7 @@ It covers what the shell already does, and nothing else:
 - A timer.
 - The power mode.
 
-Questions and anything else go to Spotlight's usual rows and the web search.
+Questions and anything else go to the launcher's usual rows and the web search.
 
 ## How a query is read
 
@@ -30,7 +30,7 @@ Questions and anything else go to Spotlight's usual rows and the web search.
 2. **Needle 3**, 180 ms after the last key, for the queries the rules don't read and that
    are worth its guess (`rules::worth_asking`). It isn't asked about:
    - a word alone;
-   - the bare name of a switch or an app ("night light", "firefox"): Spotlight's rows
+   - the bare name of a switch or an app ("night light", "firefox"): the launcher's rows
      show that thing;
    - a question ("how do I turn on night light", "what is bluetooth"; "can you …" is a
      request, "can I …" a question).
@@ -47,7 +47,7 @@ Questions and anything else go to Spotlight's usual rows and the web search.
      as lock) costs too much.
    - A fine-tuned model has no confidence: its calls count as 0.6, a suggestion.
    - Below 0.75 the card says "Assistant · Suggested".
-3. **Spotlight's rows**, as always. The assistant stands aside for:
+3. **The launcher's rows**, as always. The assistant stands aside for:
    - a sum or a conversion (they keep the card);
    - a row that already matches outright, when the reading is Needle's.
 
@@ -80,16 +80,16 @@ The card's hint is "Return to run", or "Return to confirm" for a destructive com
 
 ## Voice
 
-`assistant listen start` opens Spotlight on a fresh search and starts listening:
+`assistant listen start` opens the launcher on a fresh search and starts listening:
 - The magnifier becomes the microphone, on an accent disc that swells with the level.
 - What's heard so far shows as the field's placeholder.
 
 `assistant listen stop` ends it:
-- What was heard is typed into the field, so Spotlight searches it.
+- What was heard is typed into the field, so the launcher searches it.
 - A rule's reading of a non-destructive command runs at once.
 - Anything less certain waits on its card for Return.
 
-Escape, or closing Spotlight, cancels.
+Escape, or closing the launcher, cancels.
 
 - **Silence:** Whistle makes words up from it ("Bye-bye."). The daemon passes nothing to
   Whistle until a piece is louder than the room (`VOICE`), and keeps 0.3 s before that
@@ -157,7 +157,7 @@ others get `superseded`.
 - **Pinning:** the flake pins the library, header, licence and both models to Hugging
   Face commits and hashes (`cactusFor`). Nothing is downloaded at run time.
 - **Hardware:** CPU only. Cactus has no Vulkan or ROCm backend on Linux. Its general
-  chat engine (`cactus-engine` 2.x) is ARM and Apple only.
+  chat engine (`cactus-engine` 2.x) is ARM only.
 - **Network:** `libcactus.a` has no network code (no `socket` or `connect` among its
   symbols). The wrapper still sets `CACTUS_TELEMETRY=0` and `DO_NOT_TRACK=1`, and the
   unit can be held to `RestrictAddressFamilies=AF_UNIX`.
@@ -218,7 +218,7 @@ by the daemon's own engine.
    - `sweep.sh DATA DEV`: trains a grid in turn and ranks it by dev score (right − 3 ×
      wrong; a wrong Destructive command disqualifies).
 3. **Watching:** `amane-train-watch HOST NAME` ([`apps/train-watch`](../../apps/train-watch))
-   follows the run's log and shows a Live Activity: step, loss, time left, and the
+   follows the run's log and shows an activity: step, loss, time left, and the
    validation loss after each epoch. It alerts when the run ends, with the held-out and
    dev scores. Stop asks first. Log opens a copy of the log. `remote.sh run` starts it on
    its own while a bar is running; `--plain` prints to the terminal instead.

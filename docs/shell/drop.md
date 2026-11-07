@@ -1,9 +1,9 @@
 # Drop (`amane-drop`)
 
-A status bar app in the manner of Aptonic's Dropzone (`apps/drop`). Its item in the bar opens a
+A drop shelf in the status bar (`apps/drop`). Its item in the bar opens a
 **grid** of folders, apps and actions to let files go on, with a **Drop Bar** under them to hold
 files for later. It runs as its own program and puts its item up over the bar's
-[status apps](../integration/status-apps.md) service. Its work shows as a Live Activity in the
+[status apps](../integration/status-apps.md) service. Its work shows as an activity in the
 bar.
 
 ## Usage
@@ -37,7 +37,7 @@ Files let go on the item itself go onto the Drop Bar.
 
 ## Sharing
 
-A sharing tile works like the others: progress on its tile and as a Live Activity, with Cancel.
+A sharing tile works like the others: progress on its tile and as an activity, with Cancel.
 
 - **Send to Phone** goes to the phone paired with KDE Connect (Quick Settings › Phone). With
   several connected it asks which, unless the tile names one: a click on it while editing goes
@@ -95,7 +95,7 @@ A launch while it runs goes to the copy running, as does the same over its socke
 | `amane-drop open [n]` | opens it, on grid `n` (from 1) |
 | `amane-drop close` | closes it |
 | `amane-drop edit` | opens it, editing |
-| `amane-drop run <tile> <file>…` | what letting the files go on tile `<tile>` (from 1, in the grid showing) does, as Dropzone's `dz run` |
+| `amane-drop run <tile> <file>…` | what letting the files go on tile `<tile>` (from 1, in the grid showing) does |
 | `amane-drop hold <file>…` | puts the files on the Drop Bar as a stack |
 
 ```sh
@@ -127,7 +127,7 @@ A fresh install starts with ~/Downloads and ~/Desktop (when they're there) and t
 
 The shell's flake builds `amane-drop` with the rest of the workspace. Its wrapper puts `curl`,
 `secret-tool` (libsecret) and `wl-copy` (wl-clipboard) after the system's `PATH`, so they're
-there even when the system lacks them, and it installs `amane-drop.desktop`, so Spotlight finds
+there even when the system lacks them, and it installs `amane-drop.desktop`, so the launcher finds
 "Drop". nixos-config runs it as a user service and binds a key:
 
 ```nix

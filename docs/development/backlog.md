@@ -48,7 +48,7 @@ schedules" (`docs/shell/notifications.md`, *Not yet*).
 
 ### 4. A calendar in the notification center · S–M
 **Gap.** The clock opens the notification center, but there's no month view or upcoming events, which
-macOS and GNOME both put there.
+GNOME puts there.
 **Build.** A month grid card at the top of the center (today highlighted, week numbers optional);
 later, events from Evolution Data Server / a local `.ics` / khal. The bar clock's tooltip already
 formats the date (`Clock::date`).
@@ -151,7 +151,7 @@ corner layer surface, like the dock's 2 px edge strip (`EdgeReveal`). The amane 
 fit in the Input page.
 
 ### 16. Dock niceties · S each
-From `docs/shell/dock.md` *Known limits* and macOS parity:
+From `docs/shell/dock.md` *Known limits* and what a dock is expected to do:
 - Closing window shrinks away instead of vanishing.
 - Notification badges on icons (count from the center's per-app groups, or the Unity
   `LauncherEntry` D-Bus API that many apps already emit), and progress bars from the same API.
@@ -163,10 +163,10 @@ From `docs/shell/dock.md` *Known limits* and macOS parity:
 ### 17. Bar additions · S each
 - Keyboard layout indicator (see 9).
 - Weather in the clock's tooltip or as a widget (Open-Meteo, no key needed).
-- Media chip: title of what's playing, click for Now Playing (GNOME/macOS menu-bar style).
+- Media chip: title of what's playing, click for Now Playing (GNOME style).
 - Recording/screen-share chip with a stop button (the privacy icon only shows state today).
 - Optional tray (StatusNotifierItem) for apps that still rely on one (Discord, Steam,
-  Nextcloud, etc.). It goes against the macOS look, so it should be hideable, but without it those
+  Nextcloud, etc.). It goes against the bar's clean look, so it should be hideable, but without it those
   apps have no way to be reopened or quit from the shell. Background Apps covers only portal apps.
 
 ### 18. More widgets · S each

@@ -1,16 +1,16 @@
 # Launcher
 
-macOS Tahoe's Spotlight (`src/surfaces/launcher/`): a glass search pill high on the screen,
+The launcher (`src/surfaces/launcher/`): a glass search pill high on the screen,
 with round buttons beside it for its modes, that grows down into a panel as you type. Its
-Applications mode is the Launchpad grid the launcher started as, after KDE's
-[Tahoe Launcher](https://github.com/EliverLara/TahoeLauncher). It's opened over IPC from a
+Applications mode is the app grid the launcher started as, after a KDE
+[launcher](https://github.com/EliverLara/TahoeLauncher). It's opened over IPC from a
 keybind. Its namespace is `amane.launcher`, and its surface covers the output, clear outside the
 glass, so a click anywhere but the glass closes it.
 
 ## What it shows
 
 - **The pill**, a fifth of the way down the screen: a magnifier, the search field
-  ("Spotlight Search") and, while there's a query, a button that clears it.
+  ("Search") and, while there's a query, a button that clears it.
   - The text, the caret and the selection are drawn by the launcher itself, so every key
     reaches it (see [Typing](#typing)).
 - **Four round buttons** beside the pill, for the modes: Applications, Files, Actions and
@@ -88,11 +88,11 @@ pointer, the glyph turns into a back button (a chevron on a soft square), back t
 
 ## Actions
 
-What the launcher does without opening an app (`actions.rs`), Spotlight's Actions:
+What the launcher does without opening an app (`actions.rs`), the launcher's Actions:
 
 | Section | Actions |
 |---|---|
-| Control Center | each of Quick Settings' toggles and buttons this machine has, as it is now ("Turn Night Light On" while it's off, Screenshot), Set Power Mode (a choice of the modes the daemon offers), Keep Awake For (how long) |
+| Quick Settings | each of Quick Settings' toggles and buttons this machine has, as it is now ("Turn Night Light On" while it's off, Screenshot), Set Power Mode (a choice of the modes the daemon offers), Keep Awake For (how long) |
 | System | Lock Screen, Log Out, Suspend, Restart, Power Off, each when logind allows it; with Shell Settings installed, Check for Updates, Apply System Changes and Install Software, which open its System pages (`amane-settings --page update` / `about` / `apps`) |
 | Clock | Start Timer (how long), and Cancel Timer while one runs |
 | *an app* | each of its `[Desktop Action]`s, like Firefox's "New Private Window" |
@@ -122,7 +122,7 @@ notification says so.
 
 ## Files
 
-Spotlight's Files (`services/launcher/file_search.rs`). A search runs off the UI thread a moment after
+The launcher's Files (`services/launcher/file_search.rs`). A search runs off the UI thread a moment after
 the last key, the newest replacing any before it.
 
 - **Where it looks.**
@@ -156,7 +156,7 @@ It indexes the home folder by default (dconf `org.freedesktop.Tracker3.Miner.Fil
 
 ## Clipboard
 
-Spotlight's clipboard history (`services/launcher/clipboard_history.rs`). It's **off until asked for**:
+The launcher's clipboard history (`services/launcher/clipboard_history.rs`). It's **off until asked for**:
 the first time, Clipboard explains what it would keep, with **Not Now** (back to the pill) and
 **Enable**.
 
@@ -182,7 +182,7 @@ Once on:
 
 It watches the clipboard through wl-clipboard (`wl-paste --watch`), which follows the
 compositor's selection without needing the keyboard. It starts and stops as the setting
-changes (`clipboard.enabled` in `launcher.json`, or Shell Settings' Spotlight page).
+changes (`clipboard.enabled` in `launcher.json`, or Shell Settings' Launcher page).
 
 To open it from a key, bind `launcher toggle clipboard` in place of another history's picker
 ([ipc.md](../integration/ipc.md#niri-keybinds)).
@@ -299,7 +299,7 @@ fuller lines.
   - `clipboard`: whether the history is on, how many copies it keeps, whether images too,
     and the apps it leaves out.
 
-  Shell Settings' **Spotlight** page changes them.
+  Shell Settings' **Launcher** page changes them.
 
 ## IPC
 

@@ -1,19 +1,19 @@
 # Quick Settings
 
-GNOME's quick settings menu, drawn as the macOS Control Center
-(`src/surfaces/quick_settings/`). As on macOS Tahoe the card itself has no background: it's a
-clear surface above the bar's right end holding frosted glass modules, laid out as Control
-Center is — Wi‑Fi and Bluetooth tiles beside Now Playing, the Focus tile and round buttons, a
+GNOME's quick settings menu, drawn as a grid of glass modules
+(`src/surfaces/quick_settings/`). The card itself has no background: it's a
+clear surface above the bar's right end holding frosted glass modules — Wi‑Fi and
+Bluetooth tiles beside Now Playing, the Focus tile and round buttons, a
 Display card and a Sound card with their sliders, then the battery and more round buttons.
 Each control can open a page of its own, and an edit mode moves, resizes, removes and adds them.
 
-It's opened from the bar's Control Center button (the slider glyph, between the battery and the
+It's opened from the bar's Quick Settings button (the slider glyph, between the battery and the
 notification bell), and closed by the same button, by Escape, or by opening the notification
 center, whose one-open-at-a-time state it shares (`Panel::QuickSettings`). It's the only place
 for sound, Wi‑Fi, Bluetooth and power: the bar's volume, Bluetooth, network and battery icons open
-their page **on its own**: no grid behind it and no back chevron, only that icon lit (the Control
-Center button lights only for the whole card), Escape closes it, and the icon again closes it; the
-Control Center button over such a page brings the whole card. Each of those pages has a **Show in
+their page **on its own**: no grid behind it and no back chevron, only that icon lit (the Quick
+Settings button lights only for the whole card), Escape closes it, and the icon again closes it; the
+Quick Settings button over such a page brings the whole card. Each of those pages has a **Show in
 Status Bar** switch for its icon (see [status-bar.md](status-bar.md#status-icons)). A page inside a
 page (a Bluetooth device's) keeps its chevron back to the page it's in.
 
@@ -23,7 +23,7 @@ the page. In edit mode clicks outside the card and the Customize window go throu
 
 ## What's in it
 
-In Control Center's order (the default layout; edit mode changes it). Every control shows only
+In the default order (edit mode changes it). Every control shows only
 when the machine has what it drives, as in GNOME, and the grid packs around what's missing:
 
 | Control | Shows | Click | Page |
@@ -43,12 +43,12 @@ when the machine has what it drives, as in GNOME, and the grid packs around what
 | Battery | only with a battery; the charge and how long it lasts, the disc in the critical colour when it's low | opens its page | Battery (time left, power mode, peripherals) |
 | Round buttons | Power Mode (on while not Balanced), Keyboard (the backlight), Background Apps (how many, in a tooltip), screenshot, lock, power off | switch; a right click opens the page; screenshot closes the card, then opens niri's screenshot UI; lock locks through logind | Power Mode: the modes; Keyboard: Off/Low/High (a slider for keyboards with many steps); Background Apps: the apps, each with a close button; Power Off: suspend, restart, power off, log out |
 
-A control works like a macOS Control Center module. A click on the round disc switches the
+A control is a module. A click on the round disc switches the
 setting, and a click anywhere else on a tile or a module row opens its page. A control with no
 page switches from anywhere. A right click opens the page too; a round button has no label, so a
 tooltip names it, and a tile whose lines are too long for it names itself the same way. The
 Power Off page's Restart…, Power Off… and Log Out… close Quick Settings and ask first, in the
-shell's alert (macOS's "Are you sure you want to restart your computer now?"; see
+shell's alert ("Are you sure you want to restart your computer now?"; see
 [the alert](#the-alert)). Log Out's answer is destructive, in red. Switch
 User is left out because greetd has no user switching.
 
@@ -56,7 +56,7 @@ A page is at least five rows tall, however short the grid is, and its lists scro
 they have. A page whose setting goes away while it's open (the adapter unplugged) gives way to
 the grid, and `quick-settings open` answers with an error for a page the machine can't show.
 
-Now Playing is always there, saying "Not Playing" when nothing is, as on macOS; everything else
+Now Playing is always there, saying "Not Playing" when nothing is; everything else
 follows GNOME's rule and hides without its hardware.
 
 A page's last row opens the app with the rest of its settings when that app is installed:
@@ -85,7 +85,7 @@ Clicking any of them opens Quick Settings.
 ## Edit Controls
 
 "Edit Controls" under the grid enters edit mode, as does a right click on the canvas's empty
-space and `quick-settings edit` over IPC. As on macOS Tahoe, editing opens the **Customize
+space and `quick-settings edit` over IPC. Editing opens the **Customize
 window** beside the card (`customize/`): a frosted sheet in the middle of the screen, moved left
 of the card when the screen has the room and no taller than the screen allows, with a sidebar and
 a pane. The card stays open at the bottom-right in edit mode: it grows to the whole canvas, the
@@ -126,22 +126,22 @@ Using it:
   moving back restores the start). A control keeps its cell until it's clearly in the next (half
   a pitch and a tenth more), so a hand resting on a boundary doesn't make the grid flap. Escape
   lets go of it where it started.
-- **Remove**: drag a control off the card (more than half a cell past its edge) and let go, as a
-  module is dragged out of Control Center, or click its badge. Dragged off, the others close up
+- **Remove**: drag a control off the card (more than half a cell past its edge) and let go,
+  or click its badge. Dragged off, the others close up
   behind it as it goes.
 - **Resize**: drag the handle; the pull picks the nearest size the control comes in, by width
   and height (a round button becomes a tile, a tile three or four cells wide, Now Playing a
   full row). An outline follows the hand, the control snaps between its sizes (holding the one
   it has until another is clearly nearer), and the others make way the same way.
 - **Undo Remove** puts the last removed control back where it was; **Reset Layout** restores
-  Control Center's order (as `quick-settings reset-layout` does).
+  the default order (as `quick-settings reset-layout` does).
 - **Done** (in the window's footer, or the card's capsule, or Escape) leaves edit mode and closes
   the window. Escape clears the search first when there is one. The card's capsule is then
   glass tinted with the accent rather than filled with it: its frost carries the accent as its
   tint, which niri's material lays on like stained glass (a compositor without the material gets
   the accent as a fill).
 
-The grid is iOS Control Center's canvas: `quick.grid.cols` × `quick.grid.rows` (4 × 8) cells of
+The grid is a canvas of `quick.grid.cols` × `quick.grid.rows` (4 × 8) cells of
 `quick.grid.cell` (74 px) with `quick.grid.gap` (16 px) between them, so a row is 344 px. A
 control spans whole cells: a round button 1×1, a tile 2×1 (164 × 74), Now Playing and the
 Now Playing 2×2 (164 × 164), a slider 3×1 (254 × 74, room for a button beside it) or
@@ -179,7 +179,7 @@ without `col`/`row` is hidden (it waits in the window's Suggestions). A file fro
 version is ignored. One that places something off the canvas or over another control moves it to
 the first free cells (or hides it); a control the file doesn't name is added hidden, so a control
 that arrives with an update or new hardware waits in Suggestions rather than tearing a hole in
-the canvas. The default packs Control Center's order onto the canvas for the controls this machine
+the canvas. The default layout packs the default order onto the canvas for the controls this machine
 has, with VPN, Wired, Tailscale, Keep Awake and Software Update hidden. `quick-settings
 reset-layout` over IPC restores it. Software Update (Utilities; with Shell Settings installed)
 draws only while the NixOS configuration's scheduled update check found newer inputs
@@ -288,7 +288,7 @@ password field types without a click first. A click outside closes it.
 
 The parts are in `src/surfaces/quick_settings/`:
 
-- **`tile.rs` (`QuickToggle`, `module`)**: GNOME's QuickToggle in Control Center's shapes
+- **`tile.rs` (`QuickToggle`, `module`)**: GNOME's QuickToggle in the module shapes
   (`Style`): a `Card` (a glass capsule two, three or four cells wide) or a `Round` button (the disc
   alone in a glass circle a cell big, named by a tooltip). `module` is the glass piece every control sits in; `sheet` the page's, with the full
   glass edge; `capsule_button` the labelled capsules; `plain` builds modules on a flat tint for the window.
@@ -319,8 +319,8 @@ The parts are in `src/surfaces/quick_settings/`:
 - **`tiles/media.rs`**: the square Now Playing module.
 - **`slider_card.rs`**: the Display and Sound cards: a title over each thin slider, a small
   glyph before the track and a large faint one after it, and a right click (`Card::on_secondary`)
-  for a card with a page. The track's fill is the panel's `fg` (white in dark mode) as on macOS,
-  a documented departure from the one-accent rule (§11.2). (Control Center's microphone slider
+  for a card with a page. The track's fill is the panel's `fg` (white in dark mode),
+  a documented departure from the one-accent rule (§11.2). (A microphone slider
   would need a taller module; the grid's cells are one height, so it's on the Sound page.)
 - **`detail.rs` (`DetailPage`)**: a page, as tall as the grid.
   - A back chevron (`TopAppBar::back`), the title and subtitle (elided to the room the
@@ -370,7 +370,7 @@ and `quick.drag.scale` (see [penpot-backlog.md](../design-system/penpot-backlog.
 ## The alert
 
 The Power Off page's Restart…, Power Off… and Log Out… ask first in the shell's alert
-(`src/surfaces/alert/mod.rs`): macOS's alert in the middle of the screen, a kit
+(`src/surfaces/alert/mod.rs`): an alert in the middle of the screen, a kit
 [`Dialog`](../kit/components.md#dialog) on thick glass. `alert::show(dialog)` puts it on the
 `amane.alert` surface, as big as its card, which frosts itself and holds the keyboard until
 answered; its layer rule rounds it (`dialog.radius`) and gives it niri's shadow (`0 18 48`). In

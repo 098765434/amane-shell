@@ -1,7 +1,7 @@
-# Status apps and Live Activities
+# Status apps and Activities
 
 The bar serves `org.amane.StatusBar1` on the session bus. Through it, other programs put up
-their own items in the bar, like macOS's status items, and Live Activities, like macOS 27.3's.
+their own items in the bar, and Activities: what's going on now, shown in the bar until it ends.
 The server is `src/services/status_apps.rs`. What the bar draws is in
 [status-bar.md](../shell/status-bar.md#programs-items).
 

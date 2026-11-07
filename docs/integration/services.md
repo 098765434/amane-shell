@@ -30,8 +30,8 @@ widgets.
 | `timer` | the launcher's one countdown; a thread sleeps it out, then a notification says so | Start Timer / Cancel Timer |
 | `clipboard_history` | `wl-paste --watch` while it's on; the copies under `clipboard/` | `wl-copy`, then `wtype` Ctrl+V (Ctrl+Shift+V in a terminal) |
 | `file_search` | LocalSearch's index through `tinysparql`, else `fd` over the home folder, off the UI thread | — |
-| `status_apps` | `org.amane.StatusBar1` on the session bus: other programs' items and Live Activities, each kept with its owner's unique name, dropped when that name leaves ([status-apps.md](status-apps.md)) | the programs' own calls; clicks, picks and drops go back as unicast signals |
-| `desktop/activities` | the Live Activities from the bus, by handle: owner, content, when last updated, when it goes (a kit `marker!`) | `status-bar activities end` / `press`, a button in the expanded view, its program leaving, 8 hours |
+| `status_apps` | `org.amane.StatusBar1` on the session bus: other programs' items and Activities, each kept with its owner's unique name, dropped when that name leaves ([status-apps.md](status-apps.md)) | the programs' own calls; clicks, picks and drops go back as unicast signals |
+| `desktop/activities` | the Activities from the bus, by handle: owner, content, when last updated, when it goes (a kit `marker!`) | `status-bar activities end` / `press`, a button in the expanded view, its program leaving, 8 hours |
 | `system_stats` | `/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, `/proc/net/route`, `/sys/class/hwmon`, `/proc/mounts` and `statvfs`, on one 2 s tick, only while a system widget shows | — |
 
 **Tailscale needs the operator grant to change anything.** Reads work for anyone, but `tailscaled`

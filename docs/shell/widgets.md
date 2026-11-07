@@ -1,6 +1,6 @@
 # Desktop Widgets
 
-macOS's desktop widgets on the wallpaper (`src/surfaces/widgets/`). Quick Settings' tiles are
+Desktop widgets on the wallpaper (`src/surfaces/widgets/`). Quick Settings' tiles are
 controls; widgets are readings: the batteries, the processor, memory, temperature, the network
 and the disks. Each is a frosted card on a clear surface under the windows, laid out on Quick
 Settings' grid across the whole screen (the surface itself is only as big as the cards), and the same kind can be placed more than once, each
@@ -36,7 +36,7 @@ leftwards.
   two switches instead), **Edit Widgets…** and **Remove Widget**.
 - **Right-click the desktop**: **Edit Widgets…**.
 
-As on macOS, the cards fade back while a window is open on the monitor's workspace, and come up
+The cards fade back while a window is open on the monitor's workspace, and come up
 again on an empty one; during a workspace switch the fade follows the switch, part way between the
 two workspaces as far as it has gone. The cards stay put while the workspaces slide over them, and
 fade out in place as the overview opens. Shell Settings' **Desktop** page has **Show widgets on the desktop** and the
@@ -72,8 +72,8 @@ niri, would come out clear.
 
 The canvas is Quick Settings' grid: 74 px cells, 16 px between them (`grid::geometry`), as many
 whole cells as fit on the screen inside a 24 px margin and above the bar, centred in what's left;
-on a 1920 × 1080 screen that's 20 × 11. The sizes are macOS's on that grid: Small 2 × 2 (164 ×
-164, near macOS's 170 pt), Medium 4 × 2, Large 4 × 4 and Extra Large 8 × 4.
+on a 1920 × 1080 screen that's 20 × 11. The sizes on that grid: Small 2 × 2 (164 ×
+164), Medium 4 × 2, Large 4 × 4 and Extra Large 8 × 4.
 
 The grid, the layout and the drag are the shared `components::grid`, which Quick Settings is laid
 out on too: `geometry` (spans, places, the canvas, its pixels, which cells are taken), `layout`

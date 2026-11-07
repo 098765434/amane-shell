@@ -88,8 +88,8 @@ Why three tiers: it's the shape every mature system converged on — Material 3
 (reference → system → component), Fluent 2 (global → alias → control), GitHub Primer
 (base → functional → component), Adobe Spectrum, Brad Frost's tiers 1–3. The middle tier
 does the work: it's where theming happens ("the alias layer is where theming happens" —
-Fluent). Primer and Spectrum both keep component tokens rare. OS toolkits (libadwaita, KDE,
-Apple) theme their chrome by *surface roles*, not by widget, which is exactly the semantic
+Fluent). Primer and Spectrum both keep component tokens rare. OS toolkits (libadwaita, KDE)
+theme their chrome by *surface roles*, not by widget, which is exactly the semantic
 tier.
  
 Why tier prefixes in the name: Penpot token names are global across all active sets and
@@ -165,8 +165,8 @@ and component non-colour values may use them.
 | Group | Penpot type | Rule | Seed values |
 |-------|-------------|------|-------------|
 | `ref.color.neutral.<L>` | `color` | `<L>` = CIE L\* lightness rounded (0 black … 100 white); CI allows ±2 | `.0` #000000, `.11` #1d1d1f, `.97` #f5f5f7, `.100` #ffffff |
-| `ref.color.<hue>.<L>` | `color` | same rule for status hues (none today: the status red is macOS 27's, per mode, in `sys.color.status.*`) | `ref.color.red.58` #ff453a |
-| `ref.color.accent.seed` | `color` | the default accent | #0091ff (macOS 27's blue) |
+| `ref.color.<hue>.<L>` | `color` | same rule for status hues (none today: the status red is the design kit's, per mode, in `sys.color.status.*`) | `ref.color.red.58` #ff453a |
+| `ref.color.accent.seed` | `color` | the default accent | #0091ff (the design kit's blue) |
 | `ref.color.accent.on-seed` | `color` | text/icons on the seed (§8.3) | #ffffff |
 | `ref.color.accent.dim` | `color` | seed with OKLab L ≤ 0.50 — accent text on light surfaces | #0060bf |
 | `ref.color.accent.bright` | `color` | seed with OKLab L ≥ 0.85 — accent text on dark surfaces | #add1ff |
@@ -245,7 +245,7 @@ How to set them:
 | `sys.size.row.two-line-height` | `sizing` | `round(56 * {sys.density.factor})` — a row with supporting text |
 | `sys.size.row.trailing-width` | `sizing` | room a row keeps for its trailing content |
 | `sys.size.control.<variant>` | `sizing` | `round(<px> * {sys.density.factor})` — only for heights shared by two or more components |
-| `sys.size.control.<size>`, `sys.size.switch.<size>.*`, `sys.size.checkbox.<size>`, `sys.size.radio.<size>.dot`, `sys.size.slider.<size>.knob-*`, `sys.radius.control.<size>`, `sys.radius.checkbox.<size>` | `sizing`, `borderRadius` | the five control sizes `mini`, `small`, `medium`, `large`, `xl` (`control_size.rs`), after the macOS 27 kit |
+| `sys.size.control.<size>`, `sys.size.switch.<size>.*`, `sys.size.checkbox.<size>`, `sys.size.radio.<size>.dot`, `sys.size.slider.<size>.knob-*`, `sys.radius.control.<size>`, `sys.radius.checkbox.<size>` | `sizing`, `borderRadius` | the five control sizes `mini`, `small`, `medium`, `large`, `xl` (`control_size.rs`), after the design kit |
 | `sys.size.slider.height` | `sizing` | a slider's track; its hit area is `sys.size.control.height` |
 | `sys.radius.popover / .raised` | `borderRadius` | not density-scaled |
 | `sys.border.hairline` | `borderWidth` | `{ref.border.1}` |

@@ -1,6 +1,6 @@
 # amane-shell
 
-A macOS-flavoured Wayland desktop shell for the [niri](https://github.com/YaLTeR/niri) compositor, built on the
+A Wayland desktop shell for the [niri](https://github.com/YaLTeR/niri) compositor, built on the
 [amane](https://github.com/098765434/amane) shell library (a fork). It has a status bar on every
 monitor, at the top or the bottom, in three sizes (Compact, Regular, Comfortable) and four styles
 (Frosted, Glass, Solid, Clear); a dock that rises from the bottom edge and with niri's overview;
@@ -19,20 +19,20 @@ the forks add is in their docs: [niri](https://github.com/098765434/niri/blob/oc
 - **Status bar**: workspace pips, the status icons, Quick Settings, notifications and the clock,
   one bar a monitor, top or bottom, in three sizes and four styles
   ([docs/shell/status-bar.md](docs/shell/status-bar.md)).
-- **Status apps and Live Activities**: other programs' items in the bar and what's going on now
-  (Now Playing, the timer, screen sharing, uploads), over `org.amane.StatusBar1`, as macOS 27.3
-  has them ([docs/integration/status-apps.md](docs/integration/status-apps.md), and
+- **Status apps and Activities**: other programs' items in the bar and what's going on now
+  (Now Playing, the timer, screen sharing, uploads), over `org.amane.StatusBar1`
+  ([docs/integration/status-apps.md](docs/integration/status-apps.md), and
   [writing one](docs/integration/writing-a-status-app.md)).
-- **Drop**: `amane-drop`, a Dropzone-style status app: drop files on folders, apps, your phone
+- **Drop**: `amane-drop`, a drop shelf in the bar: drop files on folders, apps, your phone
   or an upload (0x0.st, Imgur, SFTP, S3), with a Drop Bar to hold them
   ([docs/shell/drop.md](docs/shell/drop.md)).
 - **Dock**: every workspace's windows and pinned apps, rising from the bottom edge and with the
   overview; drag to reorder or move, drop files to open them ([docs/shell/dock.md](docs/shell/dock.md)).
-- **Launcher**: macOS Tahoe's Spotlight, with Applications, Files, Actions and a clipboard
+- **Launcher**: a search pill, with Applications, Files, Actions and a clipboard
   history ([docs/shell/launcher.md](docs/shell/launcher.md)).
 - **Notifications**: the shell is the notification daemon: toasts, a notification center and
   Do Not Disturb ([docs/shell/notifications.md](docs/shell/notifications.md)).
-- **Quick Settings**: GNOME's quick settings in the macOS Control Center look, with a page per
+- **Quick Settings**: GNOME's quick settings as a grid of glass modules, with a page per
   control and Edit Controls ([docs/shell/quick-settings.md](docs/shell/quick-settings.md)).
 - **Desktop widgets**: a stroke-drawn clock, batteries and the system's readings on the wallpaper
   ([docs/shell/widgets.md](docs/shell/widgets.md)).
@@ -105,7 +105,7 @@ there ([docs/shell/drop.md](docs/shell/drop.md#installing)).
 
 `amane-settings` is a settings app for the shell, built on the [kit](kit/README.md): appearance
 (light or dark, accent, density, text size, glass, adaptive glass, vibrant labels, motion), the
-desktop's widgets and Spotlight. It writes `~/.config/amane-shell/*.json`, which the running shell
+desktop's widgets and the launcher. It writes `~/.config/amane-shell/*.json`, which the running shell
 follows at once. Its **System** pages manage the NixOS configuration the machine is built from
 (the computer's name, language and keyboard; apps, services, idle timeouts, storage, history,
 updates with a scheduled check), through [docs/integration/nixos.md](docs/integration/nixos.md),

@@ -7,7 +7,7 @@ file by hand works the same way.
 
 Only one copy runs: launching it again brings the open window forward, and `--page <name>`
 (`general`, `apps`, `services`, `power`, `storage`, `history`, `update`, `about`; or a Shell
-page's name, like `displays`) opens that page, cold or in the running copy (`App::on_activate`): Spotlight's
+page's name, like `displays`) opens that page, cold or in the running copy (`App::on_activate`): the launcher's
 system actions and the update toast use it. `--package <attr>` opens Apps with that nixpkgs
 package's details. The flake installs it with a `.desktop` entry, so
 the launcher lists it as *Shell Settings*.
@@ -19,7 +19,7 @@ fits), with a 200 px [`sidebar`](../kit/app.md#sidebar) in two sections, **Shell
 the shell's own settings and the displays) and **System** (eight, the NixOS configuration), each
 page's glyph on a coloured tile, under a **Search** field. Beside it, a toolbar row holds the
 back and forward pill, the page's title, and a page's own button where it has one (Quick
-Settings' **Customize…**). The settings are macOS-style grouped rows
+Settings' **Customize…**). The settings are grouped rows
 ([`form`](../kit/components.md#form)): rounded cards of rows, each a title (and a grey subtitle)
 with its control at the trailing edge, small pictures to choose from
 ([`ThumbnailPicker`](../kit/components.md#form)), a slider across its row, captions above the
@@ -72,7 +72,7 @@ Writes `appearance.json` (`apps/settings/src/appearance.rs`).
 | Setting | Control | Choices | Field |
 |---|---|---|---|
 | Appearance | pictures | Light, Dark, Auto (follows the system) | `mode`: `"light"`, `"dark"`, `null` |
-| Accent color | dots, the hovered one named | System (multicolor), Blue, Purple, Pink, Red, Orange, Yellow, Green, Graphite (macOS 27's colors) | `accent`: `null` or `#rrggbb` |
+| Accent color | dots, the hovered one named | System (multicolor), Blue, Purple, Pink, Red, Orange, Yellow, Green, Graphite (the design kit's colors) | `accent`: `null` or `#rrggbb` |
 | Density | segmented | Comfortable, Compact | `density` |
 | Text size | dropdown | Smaller 0.9, Default 1, Larger 1.1, Large 1.25, Largest 1.5 (the nearest one shows for a hand-set value) | `text_scale` |
 | Glass | pictures | Clear, Tinted, Solid | `glass` |
@@ -80,7 +80,7 @@ Writes `appearance.json` (`apps/settings/src/appearance.rs`).
 | Vibrant labels | switch, off under Solid glass | labels blending with the frosted backdrop, through niri's vibrancy (an experiment) | `vibrancy` |
 | Motion | segmented | Automatic, Reduced, Full | `reduce_motion`: `null`, `true`, `false` |
 
-An accent saved before macOS 27's colours shows as its new counterpart; picking it again saves
+An accent saved before the design kit's colours shows as its new counterpart; picking it again saves
 the new colour. What each setting does to the look is in
 [materials.md](../design-system/materials.md#settings) and [tokens.md](../design-system/tokens.md).
 
@@ -114,10 +114,10 @@ Writes `status-bar.json` (`status_bar.rs`); see [status-bar.md](status-bar.md#se
 | Clock › (sub-page) | pictures: Digital, Analog; switches: 24-hour time, Show seconds, Flash the time separators (dimmed under Analog), Show the day of the week; dropdowns: Show the date (When space allows, Always, Never), Date in the tooltip | `clock_style`, `clock_24h`, `clock_seconds`, `flash_separators`, `show_weekday`, `show_date`, `date_format` |
 | Weather › (sub-page) | switch: Show the weather; field: Place (kept on Return or when left) | `weather`, `weather_place` |
 | Items › (sub-page) | every item in the bar's order, each with buttons to move it a place and, for the optional ones, a switch; Reset Order… (asks first); Allow in the Status Bar, a switch per program seen with its own item (`app:<id>` in `hidden`) and per app seen in the tray | `order`, `hidden`, `tray_denied` |
-| Live Activities › (sub-page) | switch: Show Live Activities; segmented: Show with their text, 1–3; Now Playing's Always show; Allow Live Activities, a switch per app (Now Playing, Timer, Screen Sharing, then each seen) | `hidden` (`activities`), `activities_compact`, `media_always`, `activities_denied` |
+| Activities › (sub-page) | switch: Show Activities; segmented: Show with their text, 1–3; Now Playing's Always show; Allow Activities, a switch per app (Now Playing, Timer, Screen Sharing, then each seen) | `hidden` (`activities`), `activities_compact`, `media_always`, `activities_denied` |
 | Workspaces | switches: Show workspaces, and under it Scroll to switch | `show_workspaces`, `scroll_workspaces` |
 
-The main page's Clock, Weather, Items and Live Activities rows sum up what's set ("24-hour · date
+The main page's Clock, Weather, Items and Activities rows sum up what's set ("24-hour · date
 when space allows", "Oslo", "13 shown", "2 with their text").
 
 ### Dock
@@ -142,7 +142,7 @@ calls the running shell over IPC ([ipc.md](../integration/ipc.md#quick-settings)
 - **Controls**: a switch per control this machine has (`controls`, then `show` or `hide`).
 - While the shell doesn't answer, a line says so, with **Try Again**.
 
-### Spotlight
+### Launcher
 
 Writes `launcher.json` (`launcher.rs`); see [launcher.md](launcher.md).
 
@@ -188,7 +188,7 @@ unlock is always the shell's own, and its dialog asks.
   account removes the old one's copy of the vault, after asking.
 - **Security:** lock after 5–60 minutes, and lock with the screen.
 - **Fill:**
-  - the toggles: fill in apps, username fields, Spotlight, and hiding while sharing;
+  - the toggles: fill in apps, username fields, the launcher, and hiding while sharing;
   - a warning when another input method holds the seat, or niri can't fill safely.
 - **Remembered for apps:** each entry linked to an app, by desktop id and package, with ×. The
   apps never offered fill are listed too.

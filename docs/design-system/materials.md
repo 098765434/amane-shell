@@ -1,6 +1,6 @@
 # Materials
 
-The shell's glass follows the materials in Apple's Human Interface Guidelines. A piece of glass
+The shell's glass is a set of materials, one for each role. A piece of glass
 asks for the **material of its role**, never for a colour (`amane_kit::material::Material`). The
 material then decides the rest:
 
@@ -13,44 +13,45 @@ The glass setting, reduced motion and higher contrast change every material at o
 
 ## Two families
 
-- **Glass**, Apple's Liquid Glass, is the layer of controls and navigation that floats over
+- **Glass** is the layer of controls and navigation that floats over
   content. niri's `glass` material lenses it. Its **Clear** variant (`glass-clear`) is for media
   only: it is dark whatever the theme, keeps 0.7 of its tint, and keeps all of it over a bright
-  backdrop. That is Apple's 35% dimming layer.
+  backdrop, a 35% dimming layer.
 - **Small glass frosts less.** A piece of Regular glass no more than `SMALL_GLASS` (44) across its
   short side, a button or a chip, asks for niri's `glass-small`. It frosts at about 6 (2 passes,
   offset 1.5) with a narrower lens (bevel 12). Larger glass, the modules, menus and sheets, takes
   `glass`: about 16 (3 passes, offset 2) with bevel 16, so a module isn't all lens edge. This is
-  the macOS 27 kit's frost: 6 for small glass, 16 for medium and large. Without `glass-small` in
+  the design kit's frost ([its spec](../archive/spec-system-colour-variables.md)): 6 for small
+  glass, 16 for medium and large. Without `glass-small` in
   the config, small glass takes `glass`.
 - **Standard** materials frost without a lens (`frost`). They are used inside the content layer:
   the bar, tooltips and app windows. `frost` blurs at about 32 (4 passes, offset 2) and saturates
-  1.8, as macOS's materials do (Gaussian 30 pt, saturation 1.6 to 2.4).
+  1.8 (a Gaussian of about 30 pt; saturation stays within 1.6 to 2.4).
 - **Tone, not opacity.** The tints are thin (the glass's around 36% to 55%). They stay readable
   because niri's `tone` (0.6) squeezes the backdrop's brightness toward the tint's side first:
   under dark glass a white wallpaper reads as 60% grey, and under light glass a black one reads
-  as 40%. Apple's materials do the same with a darken or lighten layer. Where niri doesn't tone the
+  as 40%, as a darken or lighten layer would. Where niri doesn't tone the
   backdrop (a tint the surface fills itself, such as the bar's, or no niri material), the tint goes
   `UNTONED` (0.4) of the way to opaque instead. `adaptive-tint` is 0.25, so glass over a backdrop
   near its own brightness thickens only a little, not to milky white.
 
 ## Roles
 
-| `Material` | Apple's | Family | Thickness | Adapts | Used by |
+| `Material` | For | Family | Thickness | Adapts | Used by |
 |---|---|---|---|---|---|
-| `Control` | Control Center module, tab bar | glass | thin | yes | Quick Settings modules, the dock |
+| `Control` | a control module, tab bar | glass | thin | yes | Quick Settings modules, the dock |
 | `Banner` | notification banner | glass | thin | yes | toasts |
 | `Prominent` | prominent button | glass, stained with the accent | — | no | Quick Settings' Done |
 | `Menu` | menu | glass | regular | no | context menus, every popup |
 | `Popover` | popover | glass | regular | no | dropdowns, a Quick Settings page (it grows out of a `Control`) |
 | `Sheet` | sheet, sidebar | glass | thick | no | the launcher, the notification center, Customize |
-| `ToolTip` | toolTip | standard | thick | no | tooltips |
+| `ToolTip` | tooltip | standard | thick | no | tooltips |
 | `Bar` | bar | standard | bar | no | the status bar |
-| `Media` | Clear glass | glass, clear | ultra-thin | dims | nothing yet. The media module's art is inside it, not behind it. |
-| `Window` | windowBackground | standard | opaque | no | an app window's content |
+| `Media` | clear glass over media | glass, clear | ultra-thin | dims | nothing yet. The media module's art is inside it, not behind it. |
+| `Window` | window background | standard | opaque | no | an app window's content |
 | `Sidebar` | sidebar | standard | `material.sidebar` | no | an app's sidebar |
-| `Header` | headerView | standard, within the window | regular | no | an app's header over its scrolling page |
-| `Content` | contentBackground | standard | ultra-thick | no | grouped content inside a material |
+| `Header` | header view | standard, within the window | regular | no | an app's header over its scrolling page |
+| `Content` | content background | standard | ultra-thick | no | grouped content inside a material |
 
 A piece of glass is built with its material's methods:
 
@@ -65,13 +66,13 @@ A piece of glass is built with its material's methods:
 
 - **Window frost.** An amane app's window frosts what's behind it in niri's `frost` material.
   The rule comes from `layer-rules`, which writes a `window-rule` for each app in
-  `layer_rules::APP_IDS`. As in macOS's System Settings, only the sidebar shows it: the window
+  `layer_rules::APP_IDS`. Only the sidebar shows it: the window
   draws its content on the opaque `sys.color.window.bg`, and the sidebar cuts itself out of that
-  (a `Mask` fill) and lays `sys.color.material.sidebar` over the frost. That is Apple's sidebar
-  recipe: grey 0.965 at 84% in light. Without the generated config there is no rule to frost
+  (a `Mask` fill) and lays `sys.color.material.sidebar` over the frost. The sidebar's
+  recipe is grey 0.965 at 84% in light. Without the generated config there is no rule to frost
   the window, and the sidebar is the opaque `sys.color.sidebar.bg.*`.
 - **Inactive windows.** While another window has the focus, `Sidebar` and `Header` go halfway to
-  opaque, calmer, as AppKit's inactive windows are. The window itself doesn't fade.
+  opaque, so a window in the background looks calmer. The window itself doesn't fade.
 - **Header.** It is defined, but no page scrolls under a header yet.
 
 ## Rules
@@ -84,15 +85,15 @@ A piece of glass is built with its material's methods:
   several controls.
 - **Small glass adapts, large glass is thick.** Only `Control` and `Banner` flip light or dark
   with their backdrop. Large glass that holds text is thicker, so it stays legible over anything.
-- **A panel flips together, and seldom.** Apple: "small elements like navbars and tabbars …
-  flip from light to dark based on the background. Bigger elements, like menus or sidebars,
-  also adapt based on context, but they don't flip." Quick Settings' modules are one panel:
+- **A panel flips together, and seldom.** Small elements, such as bars of buttons and tabs,
+  flip from light to dark with their background. Bigger ones, such as menus and sidebars,
+  adapt to what's behind them but don't flip. Quick Settings' modules are one panel:
   `Material::adapted_group` keeps the theme's tint on all of them, thinned together from the
   mean of the readings behind them, while their labels, glyphs and fills flip with how bright
-  the glass itself comes out, the tint laid over that mean ("symbols and glyphs … flip from
-  light to dark, mirroring the glass"): dark labels above 0.6, light below 0.45
+  the glass itself comes out, the tint laid over that mean, so symbols and glyphs mirror
+  the glass: dark labels above 0.6, light below 0.45
   (`glass_region::PANEL_LABELS`). So thin light glass over a blue wallpaper is blue glass
-  with white labels, as macOS's Control Center is, while dark glass keeps white labels until
+  with white labels, while dark glass keeps white labels until
   the backdrop is near white (`glass_region::panel_adaptation`, `material::under_labels`).
   The readings arrive a frame after the first draw, so the decision is on the glass, not the
   backdrop, or a dark panel would flip to black labels and fills over a bright sky. Dock items
@@ -101,20 +102,19 @@ A piece of glass is built with its material's methods:
   with no lift (`glass` tone 1), so a module is the wallpaper with a touch of white or black,
   saturated 1.5. Thick glass, the sheets and the launcher, is 55% (light) / 60% (dark) on its
   own `glass-large` niri material: the 30 pt blur (4 passes), saturation 1.8 and a little
-  lift (tone 0.9), so the sheet shows its backdrop's colour the way Apple's does. A plain
+  lift (tone 0.9), so the sheet shows its backdrop's colour. A plain
   module in the Customize catalog is a translucent fill on the sheet (`fill_role(Secondary)`)
   with no shadow, not a tint over it. The contrast floors let a flipping surface pass with
   either mode's labels over each wallpaper.
-- **The edge.** niri's lens bends the backdrop in from past the shape's edge, as the recovered
-  macOS 26 glass shaders do, so a rim continues what lies beside it (no stretched ring). The
-  light comes from the top (`light-angle 270`) with an opposite fill (`far-rim 0.5`), Apple's
-  preset, kept faint (`rim 0.12`, `far-rim 0.25`, `specular 0.1`: a hint of an edge, not a
+- **The edge.** niri's lens bends the backdrop in from past the shape's edge, so a rim
+  continues what lies beside it (no stretched ring). The light comes from the
+  top (`light-angle 270`) with an opposite fill (`far-rim 0.5`), kept faint (`rim 0.12`, `far-rim 0.25`, `specular 0.1`: a hint of an edge, not a
   lit one) with next to no `glow` over the bevel. Glass is
-  saturated 2.0, at the top of Apple's 1.6–2.4, so the backdrop comes through vivid.
+  saturated 2.0, at the top of the 1.6–2.4 range, so the backdrop comes through vivid.
 - **Labels are vibrant and monochrome.** Text and glyphs on a material take `label(Level::..)`.
   The levels are primary, secondary, tertiary and quaternary, plus `fill_role(..)` and
-  `separator()`. These are translucent, so the backdrop tints them, as Apple's label colours
-  are. Quaternary isn't for thin or ultra-thin materials (a debug assertion checks it).
+  `separator()`. These are translucent, so the backdrop tints them.
+  Quaternary isn't for thin or ultra-thin materials (a debug assertion checks it).
   A custom colour opts out of vibrancy. Keep colour for status and the primary action.
 
 ## Tokens
@@ -122,7 +122,7 @@ A piece of glass is built with its material's methods:
 - `sys.color.material.ultra-thin` … `.ultra-thick` and `.bar` are the tints, thinnest first.
   `.sidebar` is an app sidebar's, over the window's frost.
 - `sys.color.vibrant.label.*`, `.fill.*` and `.separator` are the labels, fills and separator.
-  The values are the macOS 27 kit's vibrant greys as translucent white (dark) and black (light),
+  The values are the design kit's vibrant greys as translucent white (dark) and black (light),
   which blend the same way and still sort onto the right vibrancy layer. On an opaque surface
   (solid glass, `Material::Content`) labels and fills come from `sys.color.label.*` and
   `sys.color.fill.*` instead, a little weaker, as the kit's content area is. The vibrant set is
@@ -138,19 +138,19 @@ A piece of glass is built with its material's methods:
 ## Settings
 
 - **Glass level.** Clear keeps 0.8 of every tint. Solid makes the tints opaque and turns niri's
-  materials off, as Apple's Reduce Transparency does.
+  materials off, for those who want less transparency.
 - **Higher contrast.** Like Solid, it turns the materials off and brings the hairlines back. It
   also raises every label level (secondary to at least 85%, tertiary 70%, quaternary 60%),
   doubles the fills, and strengthens the separator.
 - **Reduced motion.** Glass asks for its material's `-still` twin, so the lens appears at once
-  instead of building up (Apple: avoid animating into and out of blurs).
+  instead of building up: blurs don't animate in or out.
 - **Vibrant labels** (an experiment, off by default: `vibrancy` in `appearance.json`, the
   Settings switch, or `AMANE_VIBRANCY=1`) makes every shell surface, popup and app window
   vibrant (`material::vibrant`, amane's `.vibrant(true)`). On niri with `niri-vibrancy-v1`
   ([`effects/vibrancy.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/vibrancy.md)),
   light grey labels, glyphs and fills are then added to the frosted backdrop and dark grey ones
-  subtracted from it (Apple's plus-lighter and plus-darker), so they take on its colour, as
-  Apple's vibrancy does. Solid glass and higher
+  subtracted from it (plus-lighter and plus-darker), so they take on its colour.
+  Solid glass and higher
   contrast turn it off. Elsewhere the translucent label colours stand in.
 - **Adaptive glass** (an experiment, off by default) lets `Control` and `Banner` follow niri's
   readings of their backdrop (amane's `Backdrop`, [`graphics/blur.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md)); see `glass_region` and [components.md](../kit/components.md).

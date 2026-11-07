@@ -63,6 +63,11 @@ docs and the compositor: every IPC verb is in `docs/integration/ipc.md`, every l
 has a niri rule, every material setting is in niri's range, and the service parsers read the
 recorded output in `tests/fixtures/`. When one fails, the message says which side to fix.
 
+`scripts/lint-terms` (also in CI) fails on terms borrowed from another vendor's platform: name a feature for
+what it is ("the launcher", "Quick Settings", "glass"). Names kept on purpose are in
+`scripts/lint-terms.allow`, or carry a `lint-terms: allow` comment. The forks' CI runs it on the
+lines they add, with `--diff`.
+
 Before adding a component, read [docs/development/performance.md](docs/development/performance.md):
 what makes a window draw, and the rules that keep an idle desktop from drawing at all. Every doc
 is listed in [docs/README.md](docs/README.md).

@@ -117,7 +117,7 @@ whose output is static: it can't follow the mode, so it holds one value for both
   - `sys.color.vibrant.label.primary`, `.secondary`, `.tertiary` and `.quaternary`,
     `sys.color.vibrant.fill.primary`, `.secondary` and `.tertiary`, and
     `sys.color.vibrant.separator` are the monochrome, translucent labels, fills and separator
-    on every material, as Apple's are.
+    on every material.
   - The `material.glass.*`, `material.glass-clear.*` and `material.frost.*` component tokens are
     niri's material settings (refraction, bevel, dispersion, rim, far-rim, specular, tint,
     adaptive-tint, report-backdrop). `material` is a new component prefix, read only by the niri
@@ -132,24 +132,24 @@ whose output is static: it can't follow the mode, so it holds one value for both
   `quick.open.scale` has since been retuned by hand from 0.98 to 0.92, so the card's swell reads.
 - `ref.font.family.ui` was reordered by hand to put "Atkinson Hyperlegible Next" first
   (then "Atkinson Hyperlegible", "Inter", `sans-serif`). Make the same change to the stack in
-  Penpot, or the next export puts SF Pro Text back.
+  Penpot, or the next export puts the old first family back.
 - The materials replace the glass's surface roles, so these are no longer read. Delete them:
   `sys.color.surface.panel.*`, `sys.color.surface.notification.*`,
   `sys.color.surface.popover.*` and `sys.color.surface.raised.bg`. The vibrant labels, fills and
   separator take their place, and an app window is `Material::Window`. (`sys.color.content.secondary`
   is gone from `tokens.json` already, and `sys.color.separator` is read again, below.) The hand-added `sys.color.glass.thin` and `.thick` are gone
   already.
-- The macOS 27 kit's values were added to `tokens.json` by hand
-  ([spec-macos27-variables.md](../archive/spec-macos27-variables.md)). Recreate them in Penpot under the same
+- The design kit's values were added to `tokens.json` by hand
+  ([spec-system-colour-variables.md](../archive/spec-system-colour-variables.md)). Recreate them in Penpot under the same
   names:
   - `sys.color.label.primary` … `.quaternary` (85, 50/55, 25, 10 %), `sys.color.fill.primary` …
     `.tertiary` (10, 8, 5 %) and `sys.color.separator` (10 %, light raised from 8 %): labels,
     fills and the separator on opaque surfaces (solid glass, `Material::Content`).
   - New values for `sys.color.vibrant.label.*` and `.fill.*`, the kit's plus-lighter and
     plus-darker greys turned into translucent white and black.
-  - `sys.color.status.critical.*` now holds macOS 27's red, light `#ff383c`, dark `#ff4245`,
+  - `sys.color.status.critical.*` now holds the kit's red, light `#ff383c`, dark `#ff4245`,
     and `ref.color.red.58` is deleted.
-  - `ref.color.accent.seed` is macOS 27's blue `#0091ff`, with `dim` `#0064b3` and `bright`
+  - `ref.color.accent.seed` is the kit's blue `#0091ff`, with `dim` `#0064b3` and `bright`
     `#a9d2ff` derived from it.
   - `sys.color.window.bg`, `sys.color.sidebar.bg.active`, `.inactive`,
     `sys.color.sidebar.label.inactive`, `sys.color.scrollbar` (`{sys.color.label.secondary}`),
@@ -163,12 +163,12 @@ whose output is static: it can't follow the mode, so it holds one value for both
   - `material.glass-small.*`, the same settings as `material.glass`, and
     `material.glass.blur-passes` (2) and `material.glass.blur-offset` (1.5): big glass frosts
     more than small ([materials.md](materials.md)).
-  - macOS's blur, saturation and tone ([materials.md](materials.md)): `material.frost.blur-passes`
+  - The frost's blur, saturation and tone ([materials.md](materials.md)): `material.frost.blur-passes`
     4, `.blur-offset` 2, `.saturation` 1.8, `.tone` 0.6; `material.glass` 3, 2, 1.6, 0.6 with
     `.bevel` 16, `.refraction` 12, `.adaptive-tint` 0.25; `material.glass-small` 2, 1.5, 1.6, 0.6
     with `.bevel` 12, `.refraction` 10, `.adaptive-tint` 0.25; `material.glass-clear` 3, 2, 1.6,
     `.tone` 0.8.
-  - Apple's edge and light: `material.glass` `.refraction` 16, `.bevel` 12, `.dispersion` 0.3,
+  - The glass's edge and light: `material.glass` `.refraction` 16, `.bevel` 12, `.dispersion` 0.3,
     `.rim` 0.12, `.glow` 0.05 (new), `.light-angle` 270, `.far-rim` 0.25, `.specular` 0.1,
     `.saturation` 1.5; `material.glass-small` the same at `.refraction` 12, `.bevel` 8;
     `material.glass-clear` `.refraction` 24, `.bevel` 16, `.dispersion` 0.4, `.glow` 0.08,

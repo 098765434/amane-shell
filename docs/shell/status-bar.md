@@ -2,12 +2,12 @@
 
 A layer-shell bar (`src/surfaces/status_bar/mod.rs`), full-width, anchored to the bottom (or the
 top, see [Settings](#settings)) on the `Top` layer with `Zone::Reserve`. There is one on every
-monitor, as macOS has a menu bar on every display (`App::window_per_monitor`): each shows the
+monitor (`App::window_per_monitor`): each shows the
 workspaces of its own monitor and hides on its own, and what it opens (Quick Settings, the
 notification center, menus and tooltips) opens on that monitor (`panel::on_output`, from
 `amane::pointer_monitor`). Namespace `amane.status-bar`. The root is a rounded
 `Rectangle` holding one `Row` justified `SpaceBetween`: workspaces on the left and the status
-cluster on the right. The bar is one uniform frosted strip, like macOS 27's toolbar: its layer
+cluster on the right. The bar is one uniform frosted strip: its layer
 rule frosts the whole surface in niri's `frost` material (no lens, square corners), and the bar
 fills it with `Material::Bar`'s tint (`sys.color.material.bar`, as thick as a sheet's), since it
 holds text. It reserves its zone,
@@ -26,9 +26,9 @@ The bar comes in three sizes (`size`, Shell Settings' Status Bar → Size), all 
 | Regular | 24 | 16 | 30 | 13 px |
 | Comfortable | 32 | 24 | 40 | 14 px |
 
-All bar text (the clock, the weather, programs' titles, Live Activities' text, the keyboard
+All bar text (the clock, the weather, programs' titles, activities' text, the keyboard
 layout) is on a 16 px line, in `sys.type.label`'s weight, or `sys.type.numeric`'s for figures
-(`Metrics::label`, `::numeric`). Tray pictures, Live Activities' leading pictures (a glyph plus 2),
+(`Metrics::label`, `::numeric`). Tray pictures, activities' leading pictures (a glyph plus 2),
 the privacy chips (three quarters of a glyph) and the analog clock grow with the glyph. Regular's
 and Comfortable's numbers wait for Penpot ([penpot-backlog.md](../design-system/penpot-backlog.md)).
 
@@ -83,7 +83,7 @@ names (`BAR_ITEMS` and `StatusBar::items` in kit's settings, shared with Shell S
 leaves out (such as ones added later) go back after the item they usually follow, and names it
 doesn't know are skipped. Over IPC: `status-bar move <item> <index>` and `status-bar reset-order`.
 
-**Dragging** (`drag.rs`), as macOS moves menu bar items with ⌘-drag: the bar never has the
+**Dragging** (`drag.rs`) needs no held key: the bar never has the
 keyboard, so it can't see a held key, and a press that moves more than 6 px picks the item up
 instead (a click stays a click). The others close up as it passes, letting go keeps the new order,
 and letting go more than 40 px off the bar hides an item that can be hidden (it dims on the way).
@@ -92,13 +92,13 @@ the click that ends a drop is swallowed (`buttons::swallow_click`). The layer ta
 own press, so they don't shrink when pressed. The usual order, left to right:
 
 1. **Apps** (the tray, [below](#apps-the-tray)).
-2. **Privacy** (`chips.rs`), in macOS's colours: a green camera while a camera runs; an orange
-   microphone while an app records. Screen sharing is a [Live Activity](#live-activities). Their tooltips name the apps, and the dots' menu lists them by
+2. **Privacy** (`chips.rs`): a green camera while a camera runs; an orange
+   microphone while an app records. Screen sharing is an [activity](#activities). Their tooltips name the apps, and the dots' menu lists them by
    camera and microphone; picking one brings its window up (found by its process, or its parent's,
    in niri's window list), and Sound Settings… opens Quick Settings' Sound page.
 3. Glyphs for settings that are **on**: night light, a VPN, a power mode other than Balanced, and
    airplane mode. Each opens Quick Settings.
-4. **Live Activities** (`activities.rs`, [below](#live-activities)): Now Playing, the timer, screen
+4. **Activities** (`activities.rs`, [below](#activities)): Now Playing, the timer, screen
    sharing and other programs' activities.
 5. The optional **status icons** (see [below](#status-icons)), each opening its Quick Settings page:
    - **Volume**: the glyph shows the default output (built-in speaker, speaker, headphones,
@@ -126,7 +126,7 @@ stay even.
 
 ## Apps (the tray)
 
-The first item, **Apps** (`tray.rs`), is macOS's menu bar extras: the system tray's icons from
+The first item, **Apps** (`tray.rs`), is the system tray's icons from
 amane's `Tray` (StatusNotifierItem, see amane's `docs/fork/system/tray.md`), for Steam, Discord,
 nm-applet and the like, in the order they came. Each is the app's picture (16 px; a dot for one that
 sent none), ringed in the accent while the app wants attention. Apps whose item is `Passive` (KDE
@@ -138,11 +138,11 @@ Connect's indicator with no phone, say) don't show.
   asked to show its own (`ContextMenu`).
 - **Middle click**: its second action. **Scrolling** goes to it.
 
-**Allow in the Status Bar**, as macOS's: Shell Settings lists every app seen in the tray
+**Allow in the Status Bar**: Shell Settings lists every app seen in the tray
 (`~/.cache/amane-shell/tray-seen.json`), each with a switch; one switched off stays out of the bar
 (`StatusBar::tray_denied`, by the item's id) and keeps running.
 
-**Overflow**, as macOS 27's: when the right-hand items would be wider than the bar leaves them (its
+**Overflow**: when the right-hand items would be wider than the bar leaves them (its
 width less the workspaces and insets), the last apps go behind a » button, which lists them in a
 menu, each doing what its click would.
 
@@ -150,8 +150,8 @@ Over IPC: `status-bar tray list`, `status-bar tray activate <id>` and `status-ba
 
 ## Programs' items
 
-Other programs put their own items in the bar over its bus service, `org.amane.StatusBar1`. This
-is macOS's status items (`NSStatusItem`), as amane's `StatusItem` client or plain JSON over
+Other programs put their own items in the bar over its bus service, `org.amane.StatusBar1`. Each
+is a status item, put up with amane's `StatusItem` client or plain JSON over
 `busctl` ([status-apps.md](../integration/status-apps.md)). The server is
 `services/status_apps.rs` and the drawing is `apps.rs`.
 
@@ -173,9 +173,9 @@ is macOS's status items (`NSStatusItem`), as amane's `StatusItem` client or plai
 - **Ownership.** An item belongs to the program that registered it: no other program may use
   its id. It goes when that program leaves the bus.
 
-## Live Activities
+## Activities
 
-What's going on now, as macOS 27.3 puts in the menu bar (`activities.rs`).
+What's going on now, shown in the bar until it ends (`activities.rs`).
 
 **Sources**
 
@@ -184,7 +184,7 @@ What's going on now, as macOS 27.3 puts in the menu bar (`activities.rs`).
     minutes. `media_always` shows it always, as "Not Playing" when nothing plays. Its buttons
     are previous, play/pause and next, plus the player in Quick Settings. A middle click plays
     or pauses.
-  - **Timer**: the launcher's timer counting down, in orange, with Cancel and Open in Spotlight.
+  - **Timer**: the launcher's timer counting down, in orange, with Cancel and Open in the Launcher.
   - **Screen Sharing**: purple, with what each niri cast shares and Stop Sharing for each.
 - Other programs' come over `org.amane.StatusBar1` and are kept in
   `services/desktop/activities.rs`.
@@ -213,7 +213,7 @@ What's going on now, as macOS 27.3 puts in the menu bar (`activities.rs`).
 **Limits**
 
 - An activity ends after 8 hours, or when its program leaves the bus.
-- Shell Settings' Status Bar › Live Activities has the switch, how many show compact, Now
+- Shell Settings' Status Bar › Activities has the switch, how many show compact, Now
   Playing's "Always show", and which apps may show them (`activities_denied`, by the name they
   give). The bar's own three are always listed; others are listed once seen
   (`activities-seen.json`).
@@ -224,9 +224,9 @@ Every piece is rectangles, glyphs and arcs (the quad pipeline): `AMANE_FRAMES=1`
 ## Status icons
 
 Volume, Bluetooth, network, Tailscale, Keep Awake, the phone and battery are optional, and so are four
-groups: `activities` (the Live Activities), `privacy` (camera, microphone), `status-icons` (Night
+groups: `activities` (the activities), `privacy` (camera, microphone), `status-icons` (Night
 Light, VPN, power mode, Airplane Mode) and `notifications` (the bell or the moon). A `media`
-hidden before Now Playing became a Live Activity is kept out as one (`indicators::migrate`). Each Quick Settings page that has
+hidden before Now Playing became an activity is kept out as one (`indicators::migrate`). Each Quick Settings page that has
 one ends in a **Show in Status Bar** switch; Shell Settings' Status Bar page has a switch for
 each, and the `status-bar` IPC command does the same ([ipc.md](../integration/ipc.md#status-bar)).
 The hidden ones' names are `hidden` in `status-bar.json` (`indicators.rs`), which the bar follows
@@ -241,21 +241,21 @@ Bar page), followed live:
 | Field | Does |
 |---|---|
 | `position` | `bottom` or `top`. Quick Settings (`panel::popover_margin`, its anchor and its rise), the dock's gap, the widgets' canvas and gallery, and Do Not Disturb's menu follow `status_bar::edge()`; the notification center and toasts already keep clear of the reserved zone |
-| `style` | `frosted`: the layer rule's frost and `Material::Bar`'s tint. `glass`: one blur shape in `Material::Control`'s glass over the strip. `solid`: no blur, black in dark mode and white in light, not vibrant. `clear`, as macOS 26's menu bar: no strip; one all but invisible clear-glass shape (2%) with an id, so niri reads the wallpaper under it, and the items built under `Material::Control.adapted`, so their labels are light or dark to suit it |
+| `style` | `frosted`: the layer rule's frost and `Material::Bar`'s tint. `glass`: one blur shape in `Material::Control`'s glass over the strip. `solid`: no blur, black in dark mode and white in light, not vibrant. `clear`: no strip; one all but invisible clear-glass shape (2%) with an id, so niri reads the wallpaper under it, and the items built under `Material::Control.adapted`, so their labels are light or dark to suit it |
 | `clock_24h`, `clock_seconds` | the clock's format; `Clock` signals once a minute, or a second while seconds show |
 | `clock_style` | `digital`, or `analog`: a small drawn face whose two hands are frames the size of the face, turned (`Rectangle::rotate`); its tooltip has the time |
 | `show_date` | the date before the time: `never`, `always`, or `when-space`: dropped before any app's icon goes behind » |
 | `show_weekday` | the day of the week before the time (`StatusBar::clock_pattern`) |
-| `flash_separators` | the colons blink each second, as macOS's; a figure space stands in, and the clock keeps the width it has with colons. `Clock` signals each second while on |
+| `flash_separators` | the colons blink each second; a figure space stands in, and the clock keeps the width it has with colons. `Clock` signals each second while on |
 | `media_always` | Now Playing shows with nothing playing too |
-| `activities_compact`, `activities_denied` | how many Live Activities show with their text (1–3), and the apps whose activities stay out, by name |
+| `activities_compact`, `activities_denied` | how many activities show with their text (1–3), and the apps whose activities stay out, by name |
 | `weather`, `weather_place` | the Weather item (`services/desktop/weather.rs`): Open-Meteo, the place found once by its geocoding, read every half hour and whenever the place changes; nothing is fetched while it's off. Its glyph and temperature, the tooltip the place, the conditions and the day's high and low; a moon on clear nights |
 | `order`, `tray_denied` | the items' order and the apps kept out (above); programs' items are in `order` as `app:<id>`. The older `media` and `timer` read as `activities` |
 | `date_format` | the clock tooltip's day: `long` ("Sunday 25 October"), `short` ("Sun 25 Oct"), `numeric` (the locale's `%x`) |
 | `size` | `compact` (the default), `regular` or `comfortable` (above) |
 | `show_workspaces`, `scroll_workspaces` | the workspace's shape, and whether scrolling over it moves between workspaces |
 | `hidden` | the status icons left out (above) |
-| `auto_hide` | `never`, `always`, `desktop` (while the bar's monitor shows a workspace with no windows) or `fullscreen` (while a window on that workspace is fullscreen: `WindowInfo::fullscreen`, which needs the niri fork's `is_fullscreen`), as macOS's four choices; the old `true`/`false` read as `always`/`never`. Hiding slides the bar past its edge (an [`EdgeReveal`](../kit/components.md#edgereveal) at the top or bottom) and keeps no room from windows (`Zone::Ignore`). It comes back while the pointer is on a 2 px strip at the edge or on the bar, or while Quick Settings or the notification center is open, and goes again 400 ms after. Its frost becomes a blur shape that slides with it. At the bottom, a hiding dock (Overlay) takes the edge first |
+| `auto_hide` | `never`, `always`, `desktop` (while the bar's monitor shows a workspace with no windows) or `fullscreen` (while a window on that workspace is fullscreen: `WindowInfo::fullscreen`, which needs the niri fork's `is_fullscreen`); the old `true`/`false` read as `always`/`never`. Hiding slides the bar past its edge (an [`EdgeReveal`](../kit/components.md#edgereveal) at the top or bottom) and keeps no room from windows (`Zone::Ignore`). It comes back while the pointer is on a 2 px strip at the edge or on the bar, or while Quick Settings or the notification center is open, and goes again 400 ms after. Its frost becomes a blur shape that slides with it. At the bottom, a hiding dock (Overlay) takes the edge first |
 
 Every style draws only rectangles and glyphs (the quad pipeline); the glass is niri's, not a
 shader.

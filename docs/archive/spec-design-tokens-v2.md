@@ -122,7 +122,7 @@ these files exist any more.
 | **Names that mislead.** `space` holds sizes (`panel-w`, `icon-size`, `dot-size`, `row-h`). The menu has `space.row-h` = 10 (actually horizontal row padding) next to `space.row-height` = 24. The accent is called `blue`. Font sizes are typed `number`. | both JSON files |
 | **Dead tokens.** Never read: bar `theme.*.separator`, bar `font.ui.weight.regular`, menu `font.ui.weight.medium`, menu `animation.open-ms` / `close-ms`. | both JSON files |
 | **Theme is an env var.** `Theme::auto()` reads `AMANE_THEME` at seven call sites, defaults to dark, ignores the system preference and accent. Each component defines its own `Mode`, and `Theme` copies every field of `ThemeTokens` by hand. | `taskbar/theme.rs`, `context_menu/theme.rs` |
-| **Font fallback doesn't happen.** Only the first family of a stack is used. amane passes it to fontconfig's `find`, which always returns *some* font, so on a machine without SF Pro Text the text falls to fontconfig's default, never to Inter. | `font_family()` in both `tokens.rs`; amane `src/graphics/font.rs` |
+| **Font fallback doesn't happen.** Only the first family of a stack is used. amane passes it to fontconfig's `find`, which always returns *some* font, so on a machine without the UI font the text falls to fontconfig's default, never to Inter. | `font_family()` in both `tokens.rs`; amane `src/graphics/font.rs` |
 | **niri radii are copied by hand, and one is wrong.** `niri-layer-rule.kdl` hardcodes `geometry-corner-radius 10` for menus and **14** for the Wi-Fi card, which is drawn with `radius.tile` = **10**. The blur's corners don't match the card's. | `niri-layer-rule.kdl`, `wifi.rs` `card()` |
 | **`effect.blur` is ambiguous.** It feeds amane's in-surface `Rectangle::blur` on the bar and the Wi-Fi card, while the KDL comment says the bar is deliberately unblurred. | `bar.tokens.json`, `taskbar/mod.rs`, `wifi.rs` |
  
@@ -431,7 +431,7 @@ follows exactly as if a designer had changed those primitives in Penpot. With no
 accent, Penpot's values are used unchanged; the seed values in §5.1 are this derivation
 applied to #0a84ff, so the default and a system accent of #0a84ff look identical.
  
-The 3.0 threshold keeps white on mid blues, as macOS and libadwaita do (white on #0a84ff is
+The 3.0 threshold keeps white on mid blues, as libadwaita does (white on #0a84ff is
 3.65:1), and switches to dark text on yellows and limes. It's below WCAG's 4.5 for small text;
 §12.
  
@@ -458,7 +458,7 @@ Generic names (`sans-serif`, `monospace`) are accepted as is. The choice is cach
 the chosen family is logged once at debug level.
  
 Penpot renders only the first family, and only if Penpot has it; amane walks the stack on the
-user's machine. The token value is the same; only the fallback differs (§12 on SF Pro).
+user's machine. The token value is the same; only the fallback differs (§12 on the UI font).
  
 ---
  
@@ -710,7 +710,7 @@ All in `cargo test`. Tests 1–10 are the contract between Penpot, the manual an
   small text. Raising it to 4.5 would turn selected-row text black on the default blue.
 - **Font weight 510.** Resolved: 500. Penpot only accepts hundreds and 950, and amane draws
   510 and 500 with the same Medium face.
-- **Fonts in Penpot.** "SF Pro Text" needs a team upload (licence permitting), or designers
+- **Fonts in Penpot.** The UI font needs a team upload (licence permitting), or designers
   see "Missing font". Alternative: Inter first in `ref.font.family.ui`.
 - **Conflicts at seed time.** Bar and menu may disagree on a role today (secondary text,
   label size). The seed keeps them as separate roles to stay pixel-identical; PR 7 converges
@@ -754,7 +754,7 @@ All in `cargo test`. Tests 1–10 are the contract between Penpot, the manual an
 3. **Theme.** Shared `Mode`, `AMANE_THEME` read once, Appearance adapter, accent override and
    derivation, text scale. Tests 14, 15.
 4. **Density.** `AMANE_DENSITY`, compact factor set in Penpot. Visible only in compact.
-5. **Font stacks.** §8 and test 16. Visible only without SF Pro Text installed.
+5. **Font stacks.** §8 and test 16. Visible only without the UI font installed.
 6. **Layer rules from tokens.** §9, `layer-rules`, golden test. Visible: Wi-Fi blur corners
    match the card.
 7. **Convergence (design-led).** In Penpot, resolve the seed's kept conflicts into single
@@ -786,7 +786,7 @@ PRs 1–2 change no pixels; 3–7 each change one thing.
    text.
 6. **Density (PR 4):** `AMANE_DENSITY=compact` tightens gaps, paddings and row heights;
    radii and font sizes don't change.
-7. **Fonts (PR 5):** with SF Pro Text absent and Inter installed, the debug log names Inter.
+7. **Fonts (PR 5):** with the UI font absent and Inter installed, the debug log names Inter.
 8. **Layer rules (PR 6):** `./gen-layer-rules.sh`, `niri validate`, reload; a Wi-Fi card
    corner's blur and edge line up; `niri msg layers | grep amane` lists the same namespaces.
 ---

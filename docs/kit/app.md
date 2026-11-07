@@ -23,7 +23,7 @@ fn main_window() -> amane::Window {
 |---|---|
 | `app(app_id)` | `amane::App` with this app-id: its windows, its IPC socket (`$XDG_RUNTIME_DIR/<app_id>.sock` for an id starting `amane-`, else `amane-<app_id>.sock`) and its settings folder go by it, and only one copy runs: a second launch hands over to the first |
 | `app_window(content)` | a normal `Window` in the shell's look: `window_bg()` behind `content`, a `sys.space.inset.l` padding, vibrant labels where they're on. Set the title, size and shortcuts on the `Window` it returns |
-| `window_bg()` | the opaque window background, `sys.color.window.bg`, as macOS draws a window's content |
+| `window_bg()` | the opaque window background, `sys.color.window.bg`, behind a window's content |
 | `standard_shortcut(key)` | the shortcuts every window has: Ctrl+W closes it. Call it from your own `on_shortcut` and handle what it leaves (`false`) |
 | `text_field(id, placeholder)` | a one-line `TextInput` in the control font (13), its selection in the accent; its text is kept under `id` |
 | `field_box(id, input, width)` | the box a text field sits in, in the macform look: 24 px tall, radius 6, `fieldFill` in a 1 px `fieldBorder` that takes the accent while it has the keys |
@@ -39,13 +39,13 @@ settings files a shell app changes are `amane_kit::settings` ([settings-app.md](
 
 `sidebar(id, &pages, selected, on_select)` lists `Page::new(glyph, name)`s one row each
 (`sys.size.row.height`, a glyph and a `sys.type.label` name; with `.accent(Accent)` the glyph sits
-on a `MacLeadingIcon` tile of that colour, as macOS's System Settings draws it), the shown one filled
+on a `MacLeadingIcon` tile of that colour), the shown one filled
 `sys.color.state.selected`, with the hover layer; `on_select` gets the index of a row clicked.
 Each row is keyed `<id>.<index>`. A `Page::section(name)` is a caption over the pages after it,
-as macOS groups its sidebar; it can't be selected but takes an index like a page, so one array
+which groups the sidebar; it can't be selected but takes an index like a page, so one array
 still names every row.
 
-As in macOS's System Settings, the sidebar is the one part of the window that shows what's behind
+The sidebar is the one part of the window that shows what's behind
 it. Where the compositor frosts behind the window, the sidebar cuts itself out of the window's
 opaque background (a `Mask` fill) and lays `Material::Sidebar`'s tint over the frost; nothing
 between `app_window` and the sidebar may then be a `Rectangle`. Where it doesn't, the sidebar is

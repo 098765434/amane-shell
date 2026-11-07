@@ -1,4 +1,4 @@
-# Status apps, Live Activities and Drop: how they're built
+# Status apps, Activities and Drop: how they're built
 
 This page is for working on the framework itself. It explains how the pieces fit across the
 three repos, which thread does what, and how to test it all beside a running desktop without
@@ -42,7 +42,7 @@ touching the user's clipboard, keyring or phone. To use the framework, see
 | kit | `src/platform/secrets.rs` | secrets through `secret-tool`, with a 0600 file as a fallback |
 | kit | `src/foundation/icons.rs` | `NAMED` and `named()`: the glyph names an `ItemIcon::Glyph` may use |
 | apps | `apps/drop/` | amane-drop: `main.rs`, `state.rs`, `grid.rs`, `tasks.rs`, `files.rs`, `share.rs`, `shared.rs` |
-| apps | `apps/settings/src/status_bar.rs`, `drop.rs` | Status Bar › Live Activities, and the Drop page |
+| apps | `apps/settings/src/status_bar.rs`, `drop.rs` | Status Bar › Activities, and the Drop page |
 | nixos-config | `home/home.nix`, `niri/config.kdl` | the `amane-drop` user unit, the Mod+Shift+D bind, the `amane.drop` layer rule |
 
 ## How things travel
@@ -66,7 +66,7 @@ an `ActivityEvent` to the owner. `EndActivity` with `After(n)` keeps it dimmed f
 then `Dismissed` is sent.
 
 **The bar restarts.** The client watches `owner_changes("org.amane.StatusBar1")`. When a new
-owner appears, it sends every item and live activity again and maps the new handles. Drop
+owner appears, it sends every item and activity again and maps the new handles. Drop
 doesn't notice. Tested: kill the test shell, start it again, and `status-bar apps list` shows
 Drop's item again.
 

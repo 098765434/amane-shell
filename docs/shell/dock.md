@@ -1,6 +1,6 @@
 # Dock
 
-The macOS Big Sur dock, for the windows open on every workspace (`src/surfaces/dock/`). It's one
+A magnifying dock, for the windows open on every workspace (`src/surfaces/dock/`). It's one
 frosted glass card over the bar on every monitor (`App::window_per_monitor`), namespace
 `amane.dock`.
 
@@ -37,7 +37,7 @@ frosted glass card over the bar on every monitor (`App::window_per_monitor`), na
 While its menu is open, an icon is held, or files are held over it, the dock stays up wherever the
 pointer goes. Files held over it reveal it from the bottom edge like the pointer does.
 
-Under the pointer (or held files), the icons swell as on macOS: 1.5× for the hovered icon, 1.2×
+Under the pointer (or held files), the icons swell: 1.5× for the hovered icon, 1.2×
 and 1.1× for its neighbours, with lifts of 10, 6 and 0 px.
 
 Pins are kept in `$XDG_STATE_HOME/amane-shell/dock-pins`, one a line:

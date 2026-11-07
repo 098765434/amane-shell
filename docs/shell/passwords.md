@@ -1,6 +1,6 @@
 # Passwords (Bitwarden fill)
 
-Bitwarden logins, filled into password fields in any app, the way macOS's Passwords fills them:
+Bitwarden logins, filled into password fields in any app:
 a small popup by the field lists that app's entries, and a click fills one in. The vault is
 [rbw](https://github.com/doy/rbw), which talks to bitwarden.com or a self-hosted Vaultwarden. The
 shell is the seat's input method (`zwp_input_method_v2`), so it sees which field has the keyboard
@@ -24,7 +24,7 @@ bottom of the screen):
   fills the username, and on a code field (Digits/Pin) the two-factor code.
 - **Unlock Bitwarden…** shows instead while the vault is locked, and **Sign in…** while
   there's no account.
-- **Search vault…** opens Spotlight's Passwords mode.
+- **Search vault…** opens the launcher's Passwords mode.
 - **Remember the choice for <app>:** on by default. A filled entry is then linked to the app
   and comes first next time.
 - **×** closes it for this field.
@@ -39,16 +39,16 @@ A field that already holds text asks once ("fill anyway?"). The text goes in at 
 | Terminal | only on `passwords suggest` |
 | The shell's own fields, browsers, apps set aside | never |
 
-**Spotlight.** Type `pw ` and a name in Spotlight, or open the Passwords mode
+**The launcher.** Type `pw ` and a name in the launcher, or open the Passwords mode
 (`launcher open passwords`). **Enter** fills the password into the window behind the launcher,
 once that window has the keyboard back. The best match also offers **Fill username**, **Fill
-two-factor code** and **Copy password**. A Spotlight fill goes through the popup's checks
+two-factor code** and **Copy password**. A fill from the launcher goes through the popup's checks
 too:
 - the app must be verified, and not a browser or one set aside;
 - a password goes only into a password field.
 
 When it can't fill, a notification says why, and nothing is copied unless you pick **Copy
-password**. A copy is made while Spotlight still has the keyboard, as the compositor only takes
+password**. A copy is made while the launcher still has the keyboard, as the compositor only takes
 a copy from the focused app. It's marked `x-kde-passwordManagerHint`, which wl-clipboard turns
 into `CLIPBOARD_STATE=sensitive`, so cliphist and the shell's own history leave it out. It's
 cleared after 30 seconds.
@@ -61,7 +61,7 @@ cleared after 30 seconds.
 | Lock with the screen | on | also locks before sleep |
 | Fill passwords in apps | on | takes effect when the shell starts |
 | Suggest on username fields | off | |
-| Passwords in Spotlight | on | |
+| Passwords in the Launcher | on | |
 | Hide while the screen is shared | on | |
 
 The page also lists the entries remembered for apps, each with ×, and the apps never offered
@@ -81,7 +81,7 @@ lines and never a secret.
 | GTK 3/4, Qt 6, amane apps | yes |
 | Firefox | yes (text-input-v3), but set aside by default |
 | Chromium, Electron (Signal, Element, VS Code…) | with `--enable-wayland-ime --wayland-text-input-version=3` |
-| X11 apps (xwayland-satellite) | no input method: Spotlight copies instead |
+| X11 apps (xwayland-satellite) | no input method: the launcher copies instead |
 | Sandboxed (Flatpak) | unverified: Search vault… only |
 
 ## Threat model
@@ -225,7 +225,7 @@ D-Bus isn't used, as any program of yours can watch the session bus.
 - **A field that already had the keyboard when the shell started** has to be focused again: a
   text input only tells an input method once it is enabled with one there.
 - **One input method a seat.** With fcitx5 or IBus running, the compositor gives the seat to
-  that one, and fill in apps is off (Settings says so). Spotlight's passwords still work.
+  that one, and fill in apps is off (Settings says so). The launcher's passwords still work.
 - **One app's fields aren't told apart by niri.** Many toolkits (GTK, Chromium) use one text
   input for every field of a window. If the app moves the keyboard to another of its own fields
   in the instant between the click and the fill, that field gets the text. It stays in the same
@@ -239,4 +239,4 @@ D-Bus isn't used, as any program of yours can watch the session bus.
   they hold text, so the "fill anyway?" question only comes for other fields.
 - **Copies in other processes.** The text passes through niri's and the app's memory, and over
   the Wayland socket.
-- **X11 apps** get no popup and no fill, only Spotlight's copy.
+- **X11 apps** get no popup and no fill, only the launcher's copy.

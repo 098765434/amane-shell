@@ -1,7 +1,7 @@
 # On-Screen Display
 
-The capsule that shows a level or a switch as it changes (`src/surfaces/osd/`), as macOS and
-GNOME answer the media keys: a glyph and a level, or a glyph and a few words, in small glass above
+The capsule that shows a level or a switch as it changes (`src/surfaces/osd/`), as
+GNOME answers the media keys: a glyph and a level, or a glyph and a few words, in small glass above
 the bottom edge, gone again after 1.5 s (2.2 s for a few words). Pressing again while it shows
 changes it in place.
 
@@ -50,7 +50,7 @@ it dims in HDR too (falling back to `brightnessctl -s` and `-r`). Dimming shows 
 brightens, and keeps the level it dimmed from; that level is never written as the HDR brightness.
 
 Volume and brightness step 5%, 1% with Shift. In HDR they move SDR white rather than the backlight
-(see [Displays](displays.md#hdr)). Raising the volume unmutes, as on macOS. The keys
+(see [Displays](displays.md#hdr)). Raising the volume unmutes. The keys
 never take the screen to black (1% at least). The airplane key isn't bound: the kernel's rfkill
 handler already acts on it, and the display shows the change.
 

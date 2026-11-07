@@ -1,6 +1,6 @@
 # Writing a status app
 
-A status app is a program with its own item in the bar, and Live Activities while something is
+A status app is a program with its own item in the bar, and Activities while something is
 going on. It runs on its own and talks to the bar over `org.amane.StatusBar1`. amane-drop
 ([drop.md](../shell/drop.md), `apps/drop`) is the worked example this guide points into.
 
@@ -13,7 +13,7 @@ This page covers how to build one that behaves like the bar's own items.
 | You have | Use | Not |
 |---|---|---|
 | A place people go to do something: a grid, a list, a control | a **status item**, opening your own window under it | a tray icon: the bar can't place your window or forward drops to a tray icon |
-| Something going on now that ends: an upload, a timer, a call, a recording | a **Live Activity**, ended when it's done | a notification for each step |
+| Something going on now that ends: an upload, a timer, a call, a recording | an **activity**, ended when it's done | a notification for each step |
 | Something that happened and is over | a notification (`amane::Notify`) | an activity left on screen |
 | A program that already speaks StatusNotifierItem | the tray ([status-bar.md](../shell/status-bar.md#apps-the-tray)) | |
 
@@ -120,7 +120,7 @@ once, and the user can carry the files on into it:
 - **Files let go on the item itself** come as `DroppedFiles`. Drop keeps them on its Drop Bar.
 - **A click while a drag-opened window shows** turns it into a normal one that takes the keys.
 
-## 5. Show work as a Live Activity
+## 5. Show work as an activity
 
 ```rust
 let mut content = ActivityContent::new("Shelf", ItemIcon::Glyph("cloud-upload".into()), "");
@@ -140,7 +140,7 @@ activity.update(finished, false);
 activity.end(Dismiss::After(3));
 ```
 
-These follow Apple's guidance for Live Activities, fitted to the bar:
+These are the bar's rules for activities:
 
 - **Compact is a glance.** The leading picture says what it is. The trailing part is the one
   number that changes: a short text, a countdown, a count-up or a progress ring. Put the rest in
@@ -178,7 +178,7 @@ These follow Apple's guidance for Live Activities, fitted to the bar:
 - **Quitting.** Remove the item, give the worker a moment to send that, then exit 0. A unit with
   `Restart=on-failure` then stays stopped.
 - **The user decides.** An item can be hidden (you get `Shown(false)`), and an app's activities
-  can be turned off in Shell Settings › Status Bar › Live Activities. Keep working either way.
+  can be turned off in Shell Settings › Status Bar › Activities. Keep working either way.
 - **Secrets.** Keep passwords in the keyring, with `amane_kit::secrets` in this repo or
   `secret-tool`. Never pass one as a program's argument, which `ps` shows: Drop gives curl its
   secrets on standard input (`-K -`).

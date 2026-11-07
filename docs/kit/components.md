@@ -3,7 +3,7 @@
 amane-kit's building blocks (`kit/src/`, `amane_kit::*`), which Quick Settings, the notification
 center, the context menu, the dock, the launcher and Shell Settings are made of. Like the
 [buttons](controls.md), each is named and structured after its Material 3 counterpart and drawn in
-the shell's macOS look. They read `sys.*` tokens only, so any component can use them.
+the shell's glass look. They read `sys.*` tokens only, so any component can use them.
 
 | Component | `kit/src/` | M3 counterpart | Used for |
 |---|---|---|---|
@@ -30,7 +30,7 @@ it. What sits on it takes the vibrant labels and fills (`material::label`, `fill
 
 `Variant::Filled` is the fill alone, and `Variant::Outlined` adds a `sys.border.hairline` in the
 material's separator. M3's elevated card is left out because there's no `sys.shadow` role yet.
-`.blur(true)` frosts what's below with `sys.effect.backdrop-blur`, a macOS departure from M3. It
+`.blur(true)` frosts what's below with `sys.effect.backdrop-blur`, a departure from M3. It
 blurs only what the window has drawn under the card, so a card that is its surface's root (the
 panels, tooltips, dropdowns) leaves it off: niri frosts those through a layer rule. `.radius(..)`
 sets the corners, `sys.radius.popover` by default. A
@@ -107,7 +107,7 @@ the expressive style as a change of shape too.
 
 ## Form
 
-`form` lays settings out as macOS's System Settings does, and is what Shell Settings' pages are
+`form` lays settings out as grouped rows, and is what Shell Settings' pages are
 built from. A `Group::new()` is a rounded card (radius 12, `groupFill`) of rows with hairlines
 between them, starting past each row's tile; `.header(text)` is a caption above it and
 `.footer(text)` a note below it, wrapped to its `.width(…)` (504 by default, Shell Settings'
@@ -147,7 +147,7 @@ Pieces that go in rows:
 ## Divider and Slider
 
 The thin `Slider` takes `fill` and `thickness` in place of the accent and `sys.size.slider.height`:
-Quick Settings' glass cards fill it with the panel's `fg`, as macOS does, a documented departure
+Quick Settings' glass cards fill it with the panel's `fg`, a documented departure
 from the one-accent rule (§11.2).
 
 
@@ -161,7 +161,7 @@ accent, or greyed with `.dimmed(true)`. A pill knob at the current control size
 slider is a meter and has none. The hit area is a full control tall. One scroll notch moves it `slider::STEP` (5). The bar's volume button
 uses the same `slider::scrolled`. `.on_value_change` takes any closure.
 
-`.large(glyph)` is the macOS Control Center slider: a track a full control tall with the glyph
+`.large(glyph)` is Quick Settings' large slider: a track a full control tall with the glyph
 inside it, at the start of a fill that's never narrower than the glyph's circle, so the glyph is
 the knob. `.on_icon_press(id, action)` makes the glyph a button (Quick Settings' mute).
 
@@ -173,7 +173,7 @@ Quick Settings' own parts (the tile, the grid, the page) are in
 A plain tooltip: one `sys.type.caption` line on a frosted, glass-edged `Card` of `Material::ToolTip`, with a `sys.space.inset.s` inset. niri blurs behind it from the bar's
 `popups {}` layer rule, which has the same `sys.radius.popover` corners. It shows after the pointer rests on its
 control for half a second. It's an xdg-popup with no grab, so it never takes input or focus. It
-hangs under the control's surface and is centred above the pointer, as macOS's are, sliding inward
+hangs under the control's surface and is centred above the pointer, sliding inward
 at a screen edge.
 
 Buttons take one with `.tooltip(parent_ns, text)`, where `parent_ns` is the namespace of the
@@ -228,7 +228,7 @@ items are drawn. The row breaking is `flow::place`, pure and tested.
 
 ## Dialog
 
-`kit::dialog::Dialog` is macOS 26's alert (`dialog/dialog-*.css`): a 260-wide card of thick glass
+`kit::dialog::Dialog` is the shell's alert (`dialog/dialog-*.css`): a 260-wide card of thick glass
 (`Material::Sheet`, radius `dialog.radius`) with an optional icon (`Icon::App(path)` or
 `Icon::Symbol(glyph)`, `dialog.icon-size`), a bold title (`dialog.title`), a message
 (`dialog.message`), and its buttons. Each button has a role:
@@ -286,7 +286,7 @@ measured against. It's all quads.
 - `color.rs` holds `over`, `faded` and `with_alpha`.
 - `motion.rs`, `kinetic.rs` and `pager.rs` are the shared springs and fades, scrolling with
   momentum and turning pages: see [motion.md](motion.md).
-- `material.rs` holds the materials, Apple's: glass by role (`Material::Control`, `Sheet` …), the
+- `material.rs` holds the materials: glass by role (`Material::Control`, `Sheet` …), the
   frost it asks niri for (`shape`), what the surface draws where niri lays the tint and edge on
   itself (`fill`, `lit`, `stroke`), and the vibrant labels, fills and separator on it. See
   [materials.md](../design-system/materials.md).
@@ -315,8 +315,8 @@ measured against. It's all quads.
   the tint, `Tinted`, `Solid` opaque, and the system's high contrast, which, like `Solid`, turns
   the material off and brings the hairlines back).
   **Adaptive glass** (an experiment, off by default: `adaptive_glass` in `appearance.json`, or
-  `AMANE_ADAPTIVE_GLASS=1`) turns small glass light or dark with its backdrop, as Apple's small
-  glass does. Each piece names its shape (`shape_id`, sent as `BlurShape::id`), niri reports how
+  `AMANE_ADAPTIVE_GLASS=1`) turns small glass light or dark with its backdrop.
+  Each piece names its shape (`shape_id`, sent as `BlurShape::id`), niri reports how
   bright the backdrop behind it is (amane's `Backdrop`, for a material with `report-backdrop true`
   in niri's `materials {}`), and `Material::adapted(id, ..)` builds the piece and its frost with
   the mode that reading gives (light above 0.65, dark again below 0.35). The dock's card, each

@@ -204,8 +204,8 @@ niri rule is generated with the others).
 
 ### The phone's apps
 
-Spotlight finds the phone's apps by name ("On Galaxy S24"; Shell Settings →
-Spotlight → Phone apps). Each one opens alone in a window of its own: a virtual
+The launcher finds the phone's apps by name ("On Galaxy S24"; Shell Settings →
+Launcher → Phone apps). Each one opens alone in a window of its own: a virtual
 display on the phone, twice the window's size at 320 dpi, that resizes with
 the window. Its app id is `amane-mirror.<package>`, and its bar is just Back.
 The list comes from `amane-mirror --list-apps` into

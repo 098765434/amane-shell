@@ -55,7 +55,7 @@ it is, keeping its `Animation<Pose>` across rebuilds under its key:
 `Kinetic` is one axis of scrolling from 0 to `set_max(max)`, in pixels:
 
 - `follow(moved, stop, now)` follows fingers one to one, pulling on a rubber band past the ends.
-- When the fingers lift, it coasts as far as their speed carries it (an iOS-like projection eased
+- When the fingers lift, it coasts as far as their speed carries it (a projection eased
   out over a short coast) or springs back from past an end. Fingers that rested before lifting
   leave no momentum.
 - `scroll(&scroll, axis, wheel_step)` does either from an amane `Scroll`: fingers are followed, a

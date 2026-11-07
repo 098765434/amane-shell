@@ -1,4 +1,4 @@
-# Spec: adopting the macOS 27 kit's variables
+# Spec: adopting a design kit's system colour variables
 
 > **Archived: implemented.** Kept as history and not kept up to date. The current references are
 > [design-system/materials.md](../design-system/materials.md),
@@ -20,9 +20,8 @@
   sets a heavier one of its own (2 passes, offset 1.5). Small means no more than 44 across the
   short side, not under 60 tall: a wide capsule button is small glass too.
 
-The source is `variables(1).json`, exported on 2026-10-26 from the Figma community file
-"macOS 27 (Community)". The file isn't Apple's own, but its values match Apple's published
-system colours and AppKit control sizes. This spec says which of its variables the shell takes
+The source is `variables(1).json`, exported on 2026-10-26 from a community design kit in Figma:
+system colours, vibrant labels and fills, glass values and control sizes. This spec says which of its variables the shell takes
 and where each one goes. It also lists two vibrancy bugs that the export exposes.
 
 ## What the export holds
@@ -31,7 +30,7 @@ and where each one goes. It also lists two vibrancy bugs that the export exposes
 |---|---|---|---|
 | Colors | Light, Dark | 63 | labels, fills, the vibrant forms of both, accents, window, sidebar, tables and the remaining roles |
 | Sizes | Mini, Small, Medium, Large, XL | 65 | the control-size scale |
-| Kit | one | 18 | the 8 Liquid Glass values only. The rest (`Component Fill`, `Section Stroke`, `Link` and the like) is scaffolding for the file's own designers |
+| Kit | one | 18 | the 8 glass values only. The rest (`Component Fill`, `Section Stroke`, `Link` and the like) is scaffolding for the file's own designers |
 | Context | Content Area, Over-glass | 1 (a string) | not a value. It's the rule that the vibrant set is for use over glass, which `material::vibrant()` already applies |
 
 The `Mode`, `String` and `Labels/White` variables, and `Grays/Black` and `Grays/White`, carry no
@@ -39,7 +38,7 @@ design information and are skipped.
 
 ## 1. What the export teaches about vibrancy
 
-### 1.1 Apple's vibrant colours are opaque greys, one blend per appearance
+### 1.1 The kit's vibrant colours are opaque greys, one blend per appearance
 
 Each vibrant colour in the export is an opaque grey, labelled "Use Plus Lighter | Darker". The
 blend that applies depends on the appearance, not on how light the grey is:
@@ -60,13 +59,13 @@ Do **not** put the opaque greys into the tokens as they are. `amane/src/graphics
 would land on the darker layer, and light mode's `#bfbfbf` on the lighter one, so both would
 come out inverted.
 
-### 1.2 Bug: niri's plus-darker is a multiply, not Apple's subtraction
+### 1.2 Bug: niri's plus-darker is a multiply, not a subtraction
 
 `niri/src/render_helpers/vibrant.rs` draws plus-darker as `(DST_COLOR, ONE_MINUS_SRC_ALPHA)`,
-a multiply. Apple's formula is `D − a·(1 − c)`, clamped at 0. On a mid-grey backdrop
+a multiply. The kit's formula is `D − a·(1 − c)`, clamped at 0. On a mid-grey backdrop
 (`D = 0.5`), the 50% secondary label gives:
 
-- Apple: `0.5 − 0.5 = 0.0`;
+- the kit: `0.5 − 0.5 = 0.0`;
 - ours: `0.5 × 0.5 = 0.25`.
 
 So light-mode vibrant labels come out too faint over darker parts of the backdrop.
@@ -111,8 +110,8 @@ They replace `content.secondary`, a single ad hoc level (dark `#ffffff66`, light
 The light separator moves from `#00000014` to `#0000001a`.
 
 Not taken: the quinary and "seximal" labels (5% and 3%) and the quaternary and quinary fills
-(3% and 2%). Apple's API has four label levels and three fill levels, and `material.rs` keeps
-to them.
+(3% and 2%). Four label levels and three fill levels are enough, and `material.rs` keeps to
+them.
 
 **Code:**
 - In `kit/src/material.rs`, give `label_in` and `fill_in` a `content` path for when
@@ -120,8 +119,8 @@ to them.
   functions already take `high_contrast`.
 - Replace the uses of `content.secondary` with `label(Level::Secondary)`. Find them with
   `grep -rn content::secondary`.
-- Contrast floors (`kit/src/tokens/rules.rs`): quaternary at 10% can't pass a text floor. As
-  in Apple's system, it's for decoration such as placeholders and disabled glyphs, so exempt it
+- Contrast floors (`kit/src/tokens/rules.rs`): quaternary at 10% can't pass a text floor. It's
+  for decoration such as placeholders and disabled glyphs, so exempt it
   from the floors and assert in debug builds that it isn't used for body text. Primary,
   secondary and tertiary keep their floors.
 
@@ -171,7 +170,7 @@ Also `gray`: light `#8e8e93`, dark `#98989f`.
 - `sys.color.<mode>.system.<name>` and `sys.color.<mode>.system-vibrant.<name>` as roles.
 
 **What changes:**
-- `ref.color.accent.seed` (`#0a84ff`, the older iOS blue) becomes an alias of
+- `ref.color.accent.seed` (`#0a84ff`, an older blue) becomes an alias of
   `system.blue`, per mode.
 - `ref.color.red.58` (`#ff453a`) becomes `system.red`. `status.critical.*` keeps its
   structure, and only its values change.
@@ -223,7 +222,7 @@ Large and XL buttons and disclosures are capsules; the export stores their radiu
   - track: 36×16, 44×20, 54×24, 64×28, 80×36;
   - knob: 21×13, 26×16, 32×20, 38×24, 47×30;
   - knob while pressed: 33×20, 40×26, 50×31, 59×37, 73×46. The pill grows past the track,
-    which is the Liquid Glass press.
+    which is the glass press.
 - **Slider, unticked knob:**
   - size: 16×12, 18×14, 20×16, 24×20, 24×20;
   - while pressed: 20×15, 23×18, 25×20, 30×25, 30×25;
@@ -263,9 +262,8 @@ cursor height. The kit has none of these controls. Add their values when one is 
 `control.height` = row − 10, which gives 30; the switch is 44×22 and the slider track is 6.
 The proposal:
 
-- the Settings app's content uses **Medium**, as macOS apps do;
-- Quick Settings, the launcher and notifications use **Large**, with capsule buttons, as
-  macOS 26's Control Center does;
+- the Settings app's content uses **Medium**;
+- Quick Settings, the launcher and notifications use **Large**, with capsule buttons;
 - density picks one step up or down from these: compact goes one step smaller.
 
 `kit/src/buttons/{switch,checkbox,radio,segmented,push_button}.rs`, `slider.rs`,
@@ -278,7 +276,7 @@ in its own commit.
 This section changes how the shell looks more than any other. Do it last, and screenshot the
 Quick Settings and Settings pages before and after.
 
-## 7. Liquid Glass parameters
+## 7. Glass parameters
 
 These are Figma's glass-effect values, in Figma's units:
 
@@ -293,8 +291,8 @@ These are Figma's glass-effect values, in Figma's units:
 | Opacity | 25 (%) | the thin tint (`#0000008c` dark) | not a direct match. The materials' tints already set opacity per thickness |
 
 **The one new idea is size-dependent frost.** Small glass, like a button, blurs lightly (6).
-Medium and large glass blurs heavily (16). This matches Apple's rule that larger glass is more
-opaque. niri's `Material` has no blur-radius field (`niri-config/src/appearance.rs:1118`), so
+Medium and large glass blurs heavily (16). Larger glass is more opaque, so it
+reads as a surface rather than a lens. niri's `Material` has no blur-radius field (`niri-config/src/appearance.rs:1118`), so
 this needs work in niri:
 - add `blur-radius` to `Material` and `MaterialParams`;
 - render each shape's backdrop at its material's radius. The blur passes are per-region

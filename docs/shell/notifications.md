@@ -1,6 +1,6 @@
 # Notifications
 
-Toasts, a notification center and Do Not Disturb, in the style of macOS and iOS
+Toasts, a notification center and Do Not Disturb
 (`src/surfaces/notifications/`). amane is the notification daemon: its `Notifications`
 service owns `org.freedesktop.Notifications`, keeps the list and talks to senders (see
 [amane `system/notifications.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md)). Everything here is presentation: how long a toast shows, how
@@ -15,12 +15,12 @@ A banner slides in at the top-right for each arriving notification, newest on to
 `amane.notifications.toast`, one of `SLOTS` windows) sized to its card, so niri's shadow, which
 its layer rule gives the surface, falls under exactly the card. The card is glass: the surface
 asks for one blur shape the size of the card, a `Material::Banner`: thin glass that turns light or
-dark with its backdrop, as Apple's banners do (see [materials.md](../design-system/materials.md)). Sliding in, sliding out and swiping
+dark with its backdrop (see [materials.md](../design-system/materials.md)). Sliding in, sliding out and swiping
 move the surface itself (its margin), not a widget inside it.
 
 ### The card (`card.rs`)
 
-Toasts and the center share one card, laid out like an iOS banner in three columns:
+Toasts and the center share one card, laid out as a banner in three columns:
 
 - **Leading:** the app's icon (`card.icon-size`), centered in a `card.icon-frame`-wide frame as
   tall as the content.
@@ -75,7 +75,7 @@ Notifications are grouped by app (`desktop-entry`, else the app name), newest gr
 History lasts the session: a notification stays until it is dismissed or the shell restarts.
 
 - **One notification** is a plain card.
-- **Several** form an iOS **stack**: the newest card in front, and up to
+- **Several** form a **stack**: the newest card in front, and up to
   `notification.stack.max-peek` blank plates peeking `notification.stack.peek` below it. Each
   plate is `stack.scale-step` smaller and `stack.fade-step` fainter. Click the stack to spring it
   open into a list under the app's name, with **Show Less** and ✕ (clear the group). Stacks fold
