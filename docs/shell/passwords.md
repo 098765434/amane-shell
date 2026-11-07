@@ -214,8 +214,10 @@ D-Bus isn't used, as any program of yours can watch the session bus.
 - **State, from disk:**
   - the config is `~/.config/rbw/config.json`;
   - a copy of the vault is `~/.cache/rbw/<server>:<email>.json`;
-  - whether it's unlocked comes from `rbw unlocked`, looked at every 15 seconds and after
-    every command.
+  - whether it's unlocked comes from `rbw unlocked`, looked at after every command, when a
+    fill or the launcher's passwords want it, and once the agent's lock timeout could have
+    locked it. rbw announces nothing, so there's no poll: a `rbw lock` in a terminal shows at
+    the next look.
 - **Entries** (`rbw list --raw`: name, user, folder, websites) are kept in memory while
   unlocked, and dropped when it locks.
 

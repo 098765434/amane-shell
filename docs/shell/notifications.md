@@ -59,8 +59,9 @@ Which toasts show is computed fresh from the notification list and the clock (`a
   (`Notifications::expire`), so they never reach the center.
 - Opening the center puts every toast away.
 
-A small `Toasts` service ticks every 100 ms. It only wakes the toasts when the set that shows
-changes, and keeps what the list can't say: swiped toasts, hover, grace times.
+A small `Toasts` service waits for the next toast's lifetime to end, or for the notifications,
+Do Not Disturb, the pointer or a swipe to change; it doesn't tick. It only wakes the toasts when
+the set that shows changes, and keeps what the list can't say: swiped toasts, hover, grace times.
 
 ## Notification center (`center.rs`)
 

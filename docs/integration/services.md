@@ -15,24 +15,24 @@ widgets.
 
 | Service | Reads | Changes with |
 |---|---|---|
-| `session` | what logind allows (`CanSuspend`, `CanReboot`, `CanPowerOff`), asked once | logind `Suspend`/`Reboot`/`PowerOff`, `Session.Lock`; logging out quits niri |
-| `night_light` | its own state file | runs `wlsunset` at one temperature all day or on a schedule; stopping it gives the screens their colours back |
-| `power_refresh` | `displays.json` | on battery, each display's slowest refresh rate at its resolution, through niri's temporary output mode; the rate it had back on AC ([displays.md](../shell/displays.md#refresh-rate-on-battery)) |
+| `session` | what logind allows (`CanSuspend`, `CanReboot`, `CanPowerOff`), asked once | logind `Suspend`/`Reboot`/`PowerOff`, `Session.Lock`; logging out quits niri (`amane::niri::quit`) |
+| `night_light` | its own state file; a thread waits on the running `wlsunset`, so one that exits turns it off | runs `wlsunset` at one temperature all day or on a schedule; stopping it gives the screens their colours back |
+| `power_refresh` | `displays.json`, amane's `Battery` and `Outputs`, checked when one changes | on battery, each display's slowest refresh rate at its resolution, through niri's temporary output mode (`amane::niri::set_output_mode`); the rate it had back on AC ([displays.md](../shell/displays.md#refresh-rate-on-battery)) |
 | `dark_style` | amane's `Appearance` (the Settings portal) | `dconf write /org/gnome/desktop/interface/color-scheme` |
-| `rfkill` | `/sys/class/rfkill`, polled each second | `rfkill block all` / `unblock all` |
-| `keyboard_backlight` | the first `*::kbd_backlight` LED, polled | logind `SetBrightness("leds", …)` |
-| `connections` | `nmcli -t` every 3 s: VPN profiles, the Ethernet device, a Wi‑Fi profile in access-point mode | `nmcli connection up/down`, `nmcli device connect/disconnect` |
-| `privacy` | `pw-dump --monitor` (recording streams, running v4l2/libcamera sources); `niri msg --json casts` every 2 s | — |
-| `background_apps` | `org.freedesktop.background.Monitor`'s `BackgroundApps`, on each change | the app's `quit` action, else `flatpak kill` |
-| `keep_awake` | what it holds and until when (kept in memory only); `NameHasOwner` on the screensaver and logind's `BlockInhibited`, asked once, say whether it can; logind's `Session.Lock` for this session | `org.freedesktop.ScreenSaver.Inhibit`/`UnInhibit` for the screen; logind `Inhibit("handle-lid-switch", …, "block")` for the lid, held as the fd it hands back; `niri msg action power-off-monitors` |
+| `rfkill` | amane's `Rfkill` (`/dev/rfkill` events) | `Rfkill::set_blocked(None, …)`, as `rfkill block all` |
+| `keyboard_backlight` | the first `*::kbd_backlight` LED, polled once a second (LEDs announce no change) | logind `SetBrightness("leds", …)` |
+| `connections` | amane's `Network`, which follows NetworkManager's signals: VPN profiles, the Ethernet device, a Wi‑Fi profile in access-point mode | `Network::activate` / `deactivate` / `set_device` |
+| `privacy` | `pw-dump --monitor` (recording streams, running v4l2/libcamera sources); amane's `Casts` (niri's cast events) | stopping a cast (`amane::niri::stop_cast`) |
+| `background_apps` | `org.freedesktop.background.Monitor`'s `BackgroundApps`, on each change | the app's `quit` action over the session bus, else `flatpak kill` |
+| `keep_awake` | what it holds and until when (kept in memory only); `NameHasOwner` on the screensaver and logind's `BlockInhibited`, asked once, say whether it can; logind's `Session.Lock` for this session | `org.freedesktop.ScreenSaver.Inhibit`/`UnInhibit` for the screen; logind `Inhibit("handle-lid-switch", …, "block")` for the lid, held as the fd it hands back; `amane::niri::power_off_monitors`. While locked, the locker's exit is waited on with a pidfd |
 | `tailscale` | `tailscale status --json` and `tailscale debug prefs`, read again whenever `tailscale debug watch-ipn` prints (a burst settles for 300 ms first; the stream is restarted with a 1–60 s backoff when the daemon goes) | `tailscale up` (never with flags), `down`, `set --exit-node / --accept-routes / --accept-dns / --shields-up`, `login` (left running; its URL is taken from `status --json` and opened with `xdg-open`); copying is `wl-copy` |
-| `clock` | the wall-clock time and date, read again each second; it signals only when the shown text changes | — |
-| `timer` | the launcher's one countdown; a thread sleeps it out, then a notification says so | Start Timer / Cancel Timer |
-| `clipboard_history` | `wl-paste --watch` while it's on; the copies under `clipboard/` | `wl-copy`, then `wtype` Ctrl+V (Ctrl+Shift+V in a terminal) |
+| `clock` | the wall-clock time and date, read again on the minute (each second while seconds or flashing colons show), after a change to the bar's settings, and on waking from sleep | — |
+| `timer` | the launcher's one countdown; a timer on amane's event loop runs it out, then a notification says so | Start Timer / Cancel Timer |
+| `clipboard_history` | amane's `ClipboardWatcher` while it's on (data-control, no program started); the copies under `clipboard/` | `wl-copy`, then `wtype` Ctrl+V (Ctrl+Shift+V in a terminal) |
 | `file_search` | LocalSearch's index through `tinysparql`, else `fd` over the home folder, off the UI thread | — |
 | `status_apps` | `org.amane.StatusBar1` on the session bus: other programs' items and Activities, each kept with its owner's unique name, dropped when that name leaves ([status-apps.md](status-apps.md)) | the programs' own calls; clicks, picks and drops go back as unicast signals |
 | `desktop/activities` | the Activities from the bus, by handle: owner, content, when last updated, when it goes (a kit `marker!`) | `status-bar activities end` / `press`, a button in the expanded view, its program leaving, 8 hours |
-| `system_stats` | `/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, `/proc/net/route`, `/sys/class/hwmon`, `/proc/mounts` and `statvfs`, on one 2 s tick, only while a system widget shows | — |
+| `system_stats` | `/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, `/proc/net/route`, `/sys/class/hwmon`, `/proc/mounts` and `statvfs`, on one 2 s tick, only while a system widget shows (asleep otherwise) | — |
 
 **Tailscale needs the operator grant to change anything.** Reads work for anyone, but `tailscaled`
 refuses writes from a user who isn't root or its operator. Grant it once with
@@ -133,3 +133,13 @@ Keep Awake keeps nothing: its holds are inhibitors tied to the running shell.
 | `~/.config/amane-drop/secrets.json` | passwords and keys, mode 0600, only when no keyring answered `secret-tool` (`amane_kit::secrets`); otherwise they're in the keyring under `application amane-drop` |
 | `$XDG_STATE_HOME/amane-drop/dropbar.json` | each grid's Drop Bar: stacks of paths, by the grid's name |
 | `$XDG_STATE_HOME/amane-drop/shared.json` | Recently Shared: the last 10 links, with what they were and when |
+
+## While idle
+
+Nothing the shell runs polls on a clock of its own while the desktop is left alone, apart from the
+keyboard light (once a second: an LED announces no change). Toasts, Do Not Disturb, the clock,
+weather, Keep Awake and the vault wait for their next deadline or a change (`services::Wake`,
+amane's `Timer`); the radios, the network, casts, lock keys, outputs, the clipboard and
+brightness are pushed by amane. The vault is looked at when a fill or the launcher's passwords
+want it, and when its lock timeout could have run out. `scripts/idle-report` measures it; see
+[idle-baseline.md](../development/idle-baseline.md).

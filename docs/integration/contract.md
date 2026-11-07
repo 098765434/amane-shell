@@ -41,6 +41,8 @@ an error), so a client can tell what is there before using it.
 | `MoveColumnToIndex { window_id }` | dock reordering without moving focus | `3a984abc` | `move-column-to-index-window-id 1` |
 | `Output.hdr_*`, `sdr_brightness`, `peak_luminance`; `Output { Hdr, SdrBrightness }` | the Displays page and the brightness slider in HDR | `ae549528` | `hdr 1` |
 | `wp-color-management-v1` | HDR video in apps | `ddd3381d` | `hdr 1` |
+| `KeyboardLockKeysChanged` event | the OSD's Caps Lock and Num Lock, without polling the LEDs | `989d475e` | `lock-keys 1` |
+| `OutputsChanged` event | brightness in HDR and the refresh rate on battery, without polling `Outputs` | `989d475e` | `outputs-changed 1` |
 | `Features` | detecting the fork | `bebe757d` | — |
 
 The layer namespaces and materials the shell's surfaces use are generated into
@@ -55,17 +57,18 @@ enough to follow.
 
 | Interface | Used for | Checked at |
 |---|---|---|
-| `amane::niri` (`features()`, `outputs()`, `windows()`, `casts()`), `Timer`, `Service::subscribe`, `Launch` | added for the shell's idle pass (Phase 7); nothing uses them yet | `af52270` |
+| `amane::niri` (`features()`, `outputs()`, `windows()`, `focused_window()`, the actions `focus_window`, `switch_keyboard_layout`, `power_off_monitors`, `quit`, `set_output_mode`, `stop_cast`), `Timer`, `Service::subscribe`, `Launch` | the shell's niri calls, timers and services following each other ([services.md](services.md#while-idle)) | `808b695` |
+| `Rfkill`, `Logind`, `ClipboardWatcher`, `LockKeys`, `Casts`, `Outputs`, `Network::profiles` / `wired` / `activate` / `deactivate` / `set_device` | airplane mode, the clock and Keep Awake waking from sleep, clipboard history, the OSD, privacy, the refresh rate on battery, the wired, VPN and hotspot tiles | `808b695` |
 | `protocols/niri-*.xml` | the client side of the three niri protocols above, kept identical to niri's | all three as niri has them since `292d486` |
-| `Service` and its services: `Battery`, `Apps`, `KdeConnect`, `Bluetooth`, `Windows`, `Workspaces`, `Brightness`, `PowerProfile`, `Notifications`, `Audio`, `Network`, `PhoneMessages`, `Media`, `Lock`, `Idle`, `Adb`, `Tray`, `WorkspaceSwitch`, `FocusedField`, `Desktop`, `Appearance`, `Polkit`, `Overview`, `MimeApps`, `Memory`, `Cpu`, `Backdrop` | everything the bar, Quick Settings and the apps show ([services.md](services.md)) | `af52270` |
-| `Config<T>` | settings files, watched and written atomically | `af52270` |
-| `status_item` (`org.amane.StatusBar1`) | status apps ([status-apps.md](status-apps.md)) | `af52270` |
-| `spawn`, `spawn_activated` | launching apps with an activation token | `af52270` |
-| popups, `open_popup`, `close_window`, windows, the quad and vello renderers, `material_available`, `blur_fades` | every surface | `af52270` |
+| `Service` and its services: `Battery`, `Apps`, `KdeConnect`, `Bluetooth`, `Windows`, `Workspaces`, `Brightness`, `PowerProfile`, `Notifications`, `Audio`, `Network`, `PhoneMessages`, `Media`, `Lock`, `Idle`, `Adb`, `Tray`, `WorkspaceSwitch`, `FocusedField`, `Desktop`, `Appearance`, `Polkit`, `Overview`, `MimeApps`, `Memory`, `Cpu`, `Backdrop` | everything the bar, Quick Settings and the apps show ([services.md](services.md)) | `808b695` |
+| `Config<T>` | settings files, watched and written atomically | `808b695` |
+| `status_item` (`org.amane.StatusBar1`) | status apps ([status-apps.md](status-apps.md)) | `808b695` |
+| `spawn`, `spawn_activated` | launching apps with an activation token | `808b695` |
+| popups, `open_popup`, `close_window`, windows, the quad and vello renderers, `material_available`, `blur_fades` | every surface | `808b695` |
 
-Apart from `amane::niri`, amane's services, not the shell, talk to niri's socket, except for the shell
-services that still run `niri msg` (listed in [services.md](services.md); Phase 7 of the
-[roadmap](../../ROADMAP.md) moves them onto amane).
+Apart from `amane::niri`, amane's services, not the shell, talk to niri's socket. The shell runs
+no `niri msg` of its own; niri `Spawn` (`Windows::spawn`) still starts the dock's and launcher's
+apps.
 
 ## The kit and the shell's own interfaces
 

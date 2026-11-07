@@ -68,8 +68,10 @@ Tokens: `osd.width`, `osd.height`, `osd.radius`, `osd.pad`, `osd.offset`, `osd.t
 
 ## Known limits
 
-- Caps Lock and Num Lock are read from the keyboards' LEDs every 250 ms (niri says nothing of them),
-  so the capsule can come up a moment after the key.
-- A keyboard light whose key is the firmware's shows up to half a second late (it's polled).
+- Caps Lock and Num Lock come from the niri fork's `KeyboardLockKeysChanged` event (amane's
+  `LockKeys`); on stock niri they're read from the keyboards' LEDs every 250 ms, so the capsule
+  can come up a moment after the key.
+- A keyboard light whose key is the firmware's shows up to a second late (it's polled: an LED
+  announces no change).
 - The keyboard layout isn't shown yet: amane doesn't read niri's layout events.
 - No settings: it can't be turned off or moved.

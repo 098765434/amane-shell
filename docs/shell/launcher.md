@@ -180,8 +180,8 @@ Once on:
 - **Delete** forgets it.
 - The **⋯** menu clears the history, or turns it off.
 
-It watches the clipboard through wl-clipboard (`wl-paste --watch`), which follows the
-compositor's selection without needing the keyboard. It starts and stops as the setting
+It follows the clipboard through amane's `ClipboardWatcher` (the compositor's data-control
+protocol), which needs no keyboard focus and starts no program. It starts and stops as the setting
 changes (`clipboard.enabled` in `launcher.json`, or Shell Settings' Launcher page).
 
 To open it from a key, bind `launcher toggle clipboard` in place of another history's picker
