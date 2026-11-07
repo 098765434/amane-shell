@@ -80,7 +80,7 @@ impl BackgroundApps {
 
 fn refresh() {
     let apps = fetch();
-    if BackgroundApps::read().apps != apps {
+    if BackgroundApps::peek().apps != apps {
         BackgroundApps::write().apps = apps;
     }
 }

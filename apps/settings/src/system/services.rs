@@ -3,6 +3,7 @@
 //! needed" for the ones that are installed but not started at boot, and
 //! Start/Stop for right now (systemd asks through polkit).
 
+use amane_kit::service::ServiceExt as _;
 use std::collections::BTreeMap;
 use std::thread;
 use std::time::Duration;
@@ -127,13 +128,7 @@ impl Units {
     /// Looks again now, after a Start or Stop.
     pub fn refresh() {
         thread::spawn(|| {
-            let fresh = look();
-            let mut now = Self::write();
-            if fresh == *now {
-                now.quiet();
-            } else {
-                *now = fresh;
-            }
+            Self::replace(look());
         });
     }
 

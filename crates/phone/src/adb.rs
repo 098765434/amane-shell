@@ -73,7 +73,7 @@ impl Service for Adb {
 
     // adb writes the whole list again on each change, until its server goes away
     fn listen() {
-        if !Self::read().installed {
+        if !Self::peek().installed {
             return;
         }
 

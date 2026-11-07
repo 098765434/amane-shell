@@ -5,6 +5,7 @@
 //! page draws an installed package with its entry's name and icon, and can
 //! open it.
 
+use amane_kit::service::ServiceExt as _;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
@@ -73,13 +74,7 @@ impl Launchers {
     /// Looks again now: an Apply just changed the profile.
     pub fn refresh() {
         std::thread::spawn(|| {
-            let fresh = look();
-            let mut now = Self::write();
-            if fresh == *now {
-                now.quiet();
-            } else {
-                *now = fresh;
-            }
+            Self::replace(look());
         });
     }
 

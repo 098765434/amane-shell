@@ -161,7 +161,7 @@ impl Service for NightLight {
     // turns it back on after a restart; after that a thread per wlsunset notices it exit
     fn listen() {
         let (restore, kelvin, schedule) = {
-            let light = Self::read();
+            let light = Self::peek();
             (!light.restored, light.temperature, light.schedule)
         };
         if !restore {

@@ -1,6 +1,7 @@
 //! The system generations, from `/nix/var/nix/profiles/system-N-link`: what
 //! History lists and Restore goes back to.
 
+use amane_kit::service::ServiceExt as _;
 use std::path::PathBuf;
 use std::thread;
 
@@ -31,12 +32,7 @@ fn scan() -> Generations {
 }
 
 fn store(fresh: Generations) {
-    let mut now = Generations::write();
-    if fresh == *now {
-        now.quiet();
-    } else {
-        *now = fresh;
-    }
+    Generations::replace(fresh);
 }
 
 impl Service for Generations {

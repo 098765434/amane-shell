@@ -5,6 +5,7 @@
 //! reads what the shell says, never a secret. The fill settings are
 //! `~/.config/amane-shell/passwords.json`, readable only by you.
 
+use amane_kit::service::ServiceExt as _;
 use amane_kit::shell_ipc::{Passwords as Ask, ShellCommand};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -58,13 +59,7 @@ impl Service for VaultStatus {
                 None => VaultStatus::default(),
             };
 
-            let mut status = VaultStatus::write();
-            if *status == next {
-                status.quiet();
-            } else {
-                *status = next;
-            }
-            drop(status);
+            VaultStatus::replace(next);
 
             thread::sleep(Duration::from_secs(2));
         }

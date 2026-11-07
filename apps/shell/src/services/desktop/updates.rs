@@ -4,6 +4,7 @@
 //! clears it once an update is applied. The Software Update tile reads it.
 
 use amane::{Service, watch_file};
+use amane_kit::service::ServiceExt as _;
 use serde_json::Value;
 
 use crate::services::state_file;
@@ -55,13 +56,7 @@ impl Service for Updates {
                 continue;
             }
             for _ in watch_file(&path.to_string_lossy()) {
-                let fresh = look();
-                let mut now = Self::write();
-                if fresh == *now {
-                    now.quiet();
-                } else {
-                    *now = fresh;
-                }
+                Self::replace(look());
             }
         }
     }

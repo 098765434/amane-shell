@@ -5,6 +5,7 @@
 //! installed, from Settings, the repo's `.nix` files and Flatpak, is one
 //! list ([`super::inventory`]).
 
+use amane_kit::service::ServiceExt as _;
 use amane_kit::sync::Locked as _;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -348,13 +349,7 @@ impl Service for Flatpaks {
 impl Flatpaks {
     pub fn refresh() {
         thread::spawn(|| {
-            let fresh = look();
-            let mut now = Self::write();
-            if fresh == *now {
-                now.quiet();
-            } else {
-                *now = fresh;
-            }
+            Self::replace(look());
         });
     }
 }

@@ -5,6 +5,7 @@
 //! `modules/managed.nix` turns that file into option definitions, so the
 //! hand-written modules are never touched.
 
+use amane_kit::service::ServiceExt as _;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -194,13 +195,7 @@ impl Service for Managed {
 impl Managed {
     /// Reads the file and HEAD's copy again.
     pub fn reload() {
-        let fresh = look();
-        let mut now = Self::write();
-        if fresh == *now {
-            now.quiet();
-        } else {
-            *now = fresh;
-        }
+        Self::replace(look());
     }
 
     /// The value shown for a setting: the file's, else the configuration's.

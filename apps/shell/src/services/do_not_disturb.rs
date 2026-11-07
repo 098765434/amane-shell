@@ -40,7 +40,7 @@ impl Service for DoNotDisturb {
     // only a timed one changes by itself: the listener waits for its end, or for a new setting
     fn listen() {
         loop {
-            let end = match Self::read().until {
+            let end = match Self::peek().until {
                 Some(Until::At(end)) => Some(end),
                 _ => None,
             };

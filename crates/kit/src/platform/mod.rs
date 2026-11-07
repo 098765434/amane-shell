@@ -7,5 +7,6 @@ pub mod launch;
 pub mod marker;
 pub mod process;
 pub mod secrets;
+pub mod service;
 pub mod settings;
 pub mod shell_ipc;

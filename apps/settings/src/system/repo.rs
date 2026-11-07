@@ -2,6 +2,7 @@
 //! files, what `nixos-version` says the running system was built from, the
 //! record of the last Apply, and the system the working tree evaluates to.
 
+use amane_kit::service::ServiceExt as _;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -80,13 +81,7 @@ impl Repo {
     /// Looks again now, after a write of our own.
     pub fn refresh() {
         thread::spawn(|| {
-            let fresh = look();
-            let mut now = Self::write();
-            if fresh == *now {
-                now.quiet();
-            } else {
-                *now = fresh;
-            }
+            Self::replace(look());
         });
     }
 
@@ -181,13 +176,7 @@ impl Service for Running {
 impl Running {
     pub fn refresh() {
         thread::spawn(|| {
-            let fresh = look_running();
-            let mut now = Self::write();
-            if fresh == *now {
-                now.quiet();
-            } else {
-                *now = fresh;
-            }
+            Self::replace(look_running());
         });
     }
 

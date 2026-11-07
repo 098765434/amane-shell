@@ -331,7 +331,7 @@ fn read_now() -> (Status, Option<Prefs>) {
 /// Reads the daemon again, redrawing only on a change.
 fn refresh() {
     let (status, prefs) = read_now();
-    let tailscale = Tailscale::read();
+    let tailscale = Tailscale::peek();
     let same = tailscale.status == status && tailscale.prefs == prefs;
     drop(tailscale);
     if same {

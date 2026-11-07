@@ -4,6 +4,7 @@
 //! weather is read every half hour, and again when the place changes.
 //! Nothing but the place name and its coordinates leave the machine.
 
+use amane_kit::service::ServiceExt as _;
 use std::process::Command;
 use std::time::{Duration, Instant, SystemTime};
 
@@ -65,9 +66,7 @@ impl Service for Weather {
                     },
                     None => Weather::default(),
                 };
-                if *Weather::read() != next {
-                    *Weather::write() = next;
-                }
+                Weather::replace(next);
                 asked = Some((place, Instant::now()));
             }
             // the next read is due in half an hour, while it's on; a setting may change sooner

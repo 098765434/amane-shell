@@ -115,10 +115,10 @@ impl Service for KeepAwake {
     fn listen() {
         watch_lock();
         loop {
-            let until = Self::read().until;
+            let until = Self::peek().until;
             WAKE.wait(until.map(|until| until.min(SystemTime::now() + Self::interval())));
             // a write redraws whatever reads this, so only with a limit running
-            if Self::read().until.is_some() {
+            if Self::peek().until.is_some() {
                 Self::write().update();
             }
         }

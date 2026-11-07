@@ -3,6 +3,7 @@
 //! system from a fresh lock and shows what changes before anything is
 //! written. Applying it puts the lock in the repo and commits it.
 
+use amane_kit::service::ServiceExt as _;
 use std::fs;
 use std::path::PathBuf;
 use std::thread;
@@ -93,13 +94,7 @@ impl Service for Check {
                 continue;
             }
             for _ in watch_file(&path.to_string_lossy()) {
-                let fresh = look_check();
-                let mut now = Self::write();
-                if fresh == *now {
-                    now.quiet();
-                } else {
-                    *now = fresh;
-                }
+                Self::replace(look_check());
             }
         }
     }
