@@ -13,7 +13,7 @@ Three sources are read for each output, and none of them is configured by hand:
 | Source | Read by | Gives |
 |---|---|---|
 | niri's IPC (`Outputs`) | `niri.rs` | make, model, serial, size in mm, every mode, the current one, whether VRR is supported and on, the logical size, scale, transform and place |
-| the EDID, `/sys/class/drm/card*-<connector>/edid` | `edid.rs` | the panel's name, bits per colour and interface, its colour primaries (so its gamut), the refresh range (the range limits descriptor, or AMD's FreeSync block), the CTA-861 colorimetry and the HDR static metadata (PQ, HLG, peak, full-frame and black luminance) |
+| the EDID, `/sys/class/drm/card*-<connector>/edid` | `edid.rs` | the panel's name, bits per color and interface, its color primaries (so its gamut), the refresh range (the range limits descriptor, or AMD's FreeSync block), the CTA-861 colorimetry and the HDR static metadata (PQ, HLG, peak, full-frame and black luminance) |
 | the DRM connector's properties | `drm.rs` (the `drm` crate, read-only: never DRM master) | `panel_type` (amdgpu marks OLED panels), `vrr_capable`, the `max bpc` range, the `Colorspace` encodings, and whether `HDR_OUTPUT_METADATA` is there |
 
 `caps.rs` puts them together (`Caps`) and reads them again only when the EDID changes, as when
@@ -129,7 +129,7 @@ and:
   It never writes `displays.kdl`. This page saves the level niri shows into the panel's
   `sdr-brightness` with its next change, so niri starts a new session close to it.
 - The note names what shows HDR: mpv with `--vo=gpu-next`, Firefox with `gfx.wayland.hdr`, and
-  Vulkan games that ask for HDR. These describe their colour through `wp-color-management-v1`,
+  Vulkan games that ask for HDR. These describe their color through `wp-color-management-v1`,
   and niri shows their highlights up to the panel's peak.
 
 A display that supports HDR10 under a niri without it (an older build, or a screen on another GPU)

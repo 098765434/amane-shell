@@ -19,7 +19,7 @@ with its own settings.
 | Disk | Small, Medium | Small: how full one disk is, in a ring, and what's free; Medium: every disk as a bar | `baobab` or `gnome-disks` | which disk (the root, or the first disk where the root isn't one) |
 | System | Large, Extra Large | CPU, memory and disk rings and the network's rates; Extra Large adds each one's graph | as CPU | — |
 
-A reading turns the critical colour past a limit: a processor or memory 90% busy, a disk 90% full, a
+A reading turns the critical color past a limit: a processor or memory 90% busy, a disk 90% full, a
 sensor at 85 °C, a battery at 15% and not charging. The graphs span the last two minutes, the
 newest at the right edge; a widget placed a moment ago starts its graph at the right and fills
 leftwards.

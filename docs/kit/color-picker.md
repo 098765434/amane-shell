@@ -1,6 +1,6 @@
-# Colour picker
+# Color picker
 
-`amane_kit::color_picker::ColorPicker` picks a colour by dragging, by hex, or from the colours
+`amane_kit::color_picker::ColorPicker` picks a color by dragging, by hex, or from the colors
 picked last.
 
 ```rust,ignore
@@ -15,9 +15,9 @@ ColorPicker::new("lab.tint", [0.11, 0.11, 0.12, 0.5])
 - **Square:** saturation across, brightness up, over the current hue.
 - **Hue strip** and **alpha strip** (over a checkerboard).
 - **Hex field:** `#rrggbb`, or `#rrggbbaa` when partly clear; Enter applies it.
-- **Recent row:** the last 8 colours picked; clicking one picks it again.
+- **Recent row:** the last 8 colors picked; clicking one picks it again.
 
-Colours are `[red, green, blue, alpha]` from 0 to 1, not premultiplied. `on_change` runs on every
+Colors are `[red, green, blue, alpha]` from 0 to 1, not premultiplied. `on_change` runs on every
 change, during drags too. The `id` must be unique and stable: it keys the hex field and the hue
 the picker remembers, so dragging through grey or black doesn't lose the hue.
 

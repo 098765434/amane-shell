@@ -40,7 +40,7 @@ when the machine has what it drives, as in GNOME, and the grid packs around what
 | Dark Style, Night Light | round buttons, white with the glyph in the accent while on | switch; a right click on Night Light opens its page | Night Light: how warm, or "Scheduled" when it follows a schedule set on the [Displays page](displays.md#night-light) |
 | Display | only with a backlight; the brightness slider between a dim and a bright glyph | drag or scroll | — |
 | Sound | the default output's level; the small glyph says how loud (off, down, up) | the small glyph mutes; drag or scroll sets the level; the chevron or a right click opens the page | Sound: the output's level and percentage (its glyph mutes it) and its devices, then the microphone's level and its devices (with a microphone); the default device checked, a click makes another the default |
-| Battery | only with a battery; the charge and how long it lasts, the disc in the critical colour when it's low | opens its page | Battery (time left, power mode, peripherals) |
+| Battery | only with a battery; the charge and how long it lasts, the disc in the critical color when it's low | opens its page | Battery (time left, power mode, peripherals) |
 | Round buttons | Power Mode (on while not Balanced), Keyboard (the backlight), Background Apps (how many, in a tooltip), screenshot, lock, power off | switch; a right click opens the page; screenshot closes the card, then opens niri's screenshot UI; lock locks through logind | Power Mode: the modes; Keyboard: Off/Low/High (a slider for keyboards with many steps); Background Apps: the apps, each with a close button; Power Off: suspend, restart, power off, log out |
 
 A control is a module. A click on the round disc switches the
@@ -77,7 +77,7 @@ The bar also shows GNOME's status icons, each only while it applies:
   The microphone's tooltip names the app.
 - **Glyphs for settings that are on**: night light, a VPN, a power mode other than Balanced, and
   airplane mode.
-- **Keep Awake's cup**, in the accent colour while it holds anything (the time left in its
+- **Keep Awake's cup**, in the accent color while it holds anything (the time left in its
   tooltip), unless its page's Show in Status Bar is off.
 
 Clicking any of them opens Quick Settings.

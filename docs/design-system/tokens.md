@@ -9,7 +9,7 @@ lives in amane-kit's `tokens` module (`crates/kit/src/tokens`, with the generate
  
 ## 1. The rules on one page
  
-1. **Penpot is the source of truth.** Every colour, size, gap, radius, font and timing the
+1. **Penpot is the source of truth.** Every color, size, gap, radius, font and timing the
    shell draws is a token in the Penpot file *amane-shell design system*. Nobody edits
    `crates/kit/design-tokens/tokens.json` by hand.
 2. **Three tiers, one direction.** `ref.*` (raw values) ← `sys.*` (decisions) ← component
@@ -37,17 +37,15 @@ lives in amane-kit's `tokens` module (`crates/kit/src/tokens`, with the generate
  
 ## 2. How the pieces fit
  
-```
-Penpot file "amane-shell design system"            ← designers edit here
-   │  Tokens panel → Export → Single file
-   ▼
-design-tokens/tokens.json  (normalized, committed)  ← developers commit it
-   │  include_str! + resolver that behaves like Penpot
-   ▼
-resolved values per (mode, density, accent)         ← cached at runtime
-   │  build.rs: one Rust function per sys.* and component token
-   ▼
-bar · dock · launcher · menus · notifications · Quick Settings · widgets · alert · Shell Settings · niri layer rules
+```mermaid
+flowchart TB
+    penpot["Penpot file 'amane-shell design system'<br/>(designers edit here)"]
+    json["design-tokens/tokens.json<br/>normalized, committed (developers commit it)"]
+    resolved["resolved values per (mode, density, accent)<br/>cached at runtime"]
+    code["bar, dock, launcher, menus, notifications, Quick Settings,<br/>widgets, alert, Shell Settings, niri layer rules"]
+    penpot -->|"Tokens panel, Export, Single file"| json
+    json -->|"include_str! and a resolver that behaves like Penpot"| resolved
+    resolved -->|"build.rs: one Rust function per sys.* and component token"| code
 ```
  
 What the running shell may change on top of Penpot, and nothing else:
@@ -75,13 +73,14 @@ the system), reduced motion, adaptive glass (`AMANE_ADAPTIVE_GLASS`) and vibrant
 | Tier | Prefix | Holds | May reference | Read by code? | Changes with mode? |
 |------|--------|-------|---------------|---------------|--------------------|
 | 1 · Primitives | `ref.` | raw values and scales: palette, spacing steps, font families, sizes, radii, opacities | nothing (literals only) | **no** | no |
-| 2 · Semantic | `sys.` | decisions by role: surfaces, content, accent, status, states, spacing roles, control sizes, typography roles, shadows | `ref.*`, other `sys.*` | yes | colours yes; dimensions via density |
-| 3 · Component | `bar.`, `menu.`, `notification.`, `quick.`, `dialog.`, `material.`, `wifi.` | values unique to one component, or its deliberate departures | `sys.*`; `ref.*` only for non-colour values; `sys.density.factor` | only by that component | no |
+| 2 · Semantic | `sys.` | decisions by role: surfaces, content, accent, status, states, spacing roles, control sizes, typography roles, shadows | `ref.*`, other `sys.*` | yes | colors yes; dimensions via density |
+| 3 · Component | `bar.`, `menu.`, `notification.`, `quick.`, `dialog.`, `material.`, `wifi.` | values unique to one component, or its deliberate departures | `sys.*`; `ref.*` only for non-color values; `sys.density.factor` | only by that component | no |
  
-```
-ref.color.neutral.11 ──► sys.color.surface.popover.bg (in sys/color/dark) ──► menu code
-ref.space.10 ──────────► sys.space.inset.l ─────────────────────────────────► menu code
-sys.density.factor ────► menu.row.height = round(24 * {sys.density.factor}) ► menu code
+```mermaid
+flowchart LR
+    n11["ref.color.neutral.11"] --> bg["sys.color.surface.popover.bg<br/>(in sys/color/dark)"] --> m1["menu code"]
+    s10["ref.space.10"] --> inset["sys.space.inset.l"] --> m2["menu code"]
+    density["sys.density.factor"] --> row["menu.row.height =<br/>round(24 * {sys.density.factor})"] --> m3["menu code"]
 ```
  
 Why three tiers: it's the shape every mature system converged on — Material 3
@@ -133,7 +132,7 @@ Use these words; add new ones only by updating this manual.
 | Surfaces | `panel` (the bar), `popover` (menus and other popovers), `notification`, `raised` (rows, chips and cards inside a surface). The glass surfaces take a material instead (§6.1) |
 | Surface parts | `bg`, `fg`, `stroke` |
 | Content levels | `primary`, `secondary`, `tertiary`, `disabled` |
-| Accent | `bg` (fill), `fg` (text/icons on the fill), `text` (accent-coloured text on a normal surface) |
+| Accent | `bg` (fill), `fg` (text/icons on the fill), `text` (accent-colored text on a normal surface) |
 | Status | `critical`, `warning`, `success` — each with `bg`, `fg`, `text` |
 | States | `hover`, `pressed`, `selected`, `focus`, `disabled` |
 | Spacing roles | `inset` (padding inside a surface or control), `gap` (between siblings) |
@@ -160,7 +159,7 @@ Use these words; add new ones only by updating this manual.
 ## 5. Tier 1 — primitives (`ref.*`)
  
 Raw, context-free, mode-free values. Designers build scales here; nothing outside `sys.*`
-and component non-colour values may use them.
+and component non-color values may use them.
  
 | Group | Penpot type | Rule | Seed values |
 |-------|-------------|------|-------------|
@@ -181,7 +180,7 @@ and component non-colour values may use them.
 | `ref.duration.<ms>` | `number` | milliseconds | as used |
  
 Don't:
-- put a translucent colour in `ref` (`rgba(255,255,255,0.06)` is a decision — it goes in
+- put a translucent color in `ref` (`rgba(255,255,255,0.06)` is a decision — it goes in
   `sys/color/*`);
 - name a primitive after where it's used (`ref.color.menu-grey`);
 - reference another token from a primitive.
@@ -189,10 +188,10 @@ Don't:
  
 ## 6. Tier 2 — semantic (`sys.*`)
  
-The vocabulary the shell is built from. Every colour role has a light and a dark value; every
+The vocabulary the shell is built from. Every color role has a light and a dark value; every
 dimension role may follow density.
  
-### 6.1 Colour roles
+### 6.1 Color roles
  
 | Token | Meaning |
 |-------|---------|
@@ -206,7 +205,7 @@ dimension role may follow density.
 | `sys.color.surface.notification.bg / .fg / .fg-secondary / .stroke` | notification toasts (no longer read: `Material::Banner`) |
 | `sys.color.surface.raised.bg` | chips, rows and cards inside any surface (the bar's pill) |
 | `sys.color.surface.popover.fg-secondary` | secondary text in menus (no longer read: menus take `material::label(Level::Secondary)`) |
-| `sys.color.accent.bg / .fg / .text` | accent fill, content on it, accent-coloured text |
+| `sys.color.accent.bg / .fg / .text` | accent fill, content on it, accent-colored text |
 | `sys.color.status.critical.bg / .fg / .text` | urgent/destructive (also `warning`, `success` when needed) |
 | `sys.color.status.critical.hover` | hover fill on a destructive row |
 | `sys.color.state.hover / .selected` | overlay fills painted on top of a surface |
@@ -214,7 +213,7 @@ dimension role may follow density.
 | `sys.color.state.on.bg / .fg` | a Quick Settings control that's on |
 
 This table lists only roles that are in `tokens.json`. Roles the shell doesn't have yet (a
-pressed state, a focus ring, a scrim, a shadow colour) are under *Roles to consider* in
+pressed state, a focus ring, a scrim, a shadow color) are under *Roles to consider* in
 [penpot-backlog.md](penpot-backlog.md); add them in Penpot before any code names them.
  
 Primary content is the surface's own `fg`. Secondary, tertiary and disabled content are
@@ -227,7 +226,7 @@ How to set them:
 - **States** follow Material's state-layer rule: the surface's `fg` at 8 % (hover),
   10 % (pressed), 12 % (selected, when selection isn't shown with the accent). Write them as
   `rgba({sys.color.surface.popover.fg}, 0.08)` once that's verified in Penpot (§11.5),
-  literal `rgba()` until then. Disabled content is the content colour at 38 % opacity.
+  literal `rgba()` until then. Disabled content is the content color at 38 % opacity.
 - **Elevation**: in dark mode a raised surface is *lighter* than what it sits on
   (popover lighter than panel, `raised` lighter still); in light mode use shadow plus stroke.
 ### 6.2 Dimension roles
@@ -292,7 +291,7 @@ The glass components take their surface from a material, not from a `sys.color.s
 3. designers need one knob for one component that would otherwise mean editing a shared role.
 **Never add one when:**
 - it only renames a `sys` token (`menu.bg = {sys.color.surface.popover.bg}`);
-- it would need a different value in light and dark — that's a `sys` colour role
+- it would need a different value in light and dark — that's a `sys` color role
   (add a surface variant like `sys.color.surface.panel.fg-secondary`);
 - the role is missing — add the `sys` role instead if a second component could use it.
 **Promote** a component token to `sys` as soon as a second component needs the same value.
@@ -320,11 +319,11 @@ Density: component dimensions that should follow density reference
  
 - Penpot holds the default accent in the four `ref.color.accent.*` primitives.
 - At runtime, when the system publishes an accent, the shell replaces those four before
-  resolving: `seed` = the system colour; `on-seed` = white if white has at least 3:1
+  resolving: `seed` = the system color; `on-seed` = white if white has at least 3:1
   contrast on the seed, else black at 80 %; `dim` and `bright` = the seed with OKLab
   lightness clamped to ≤ 0.50 and ≥ 0.85 (libadwaita's rule), with chroma reduced where
   needed to stay inside sRGB at that lightness. Everything referencing them follows.
-- So: **anything accent-coloured must reference `sys.color.accent.*`**, never repeat the
+- So: **anything accent-colored must reference `sys.color.accent.*`**, never repeat the
   hex value, or it won't follow the user's accent.
 - Previewing other accents in Penpot (optional): theme group `accent` with sets
   `accent/blue`, `accent/green`, … each setting the four `ref.color.accent.*` values. The
@@ -392,8 +391,8 @@ Avoid the `boolean` and `string` types: Penpot imports them but has no panel to 
 3. Hand the file to a developer, or open a PR with it (§10.3).
 ### 10.2 Designer: add or rename a token
  
-- **New colour need** → is there a `sys.color` role for it? Use it. If not, add the role in
-  **both** `sys/color/light` and `sys/color/dark`. Never add colour tokens to `components`
+- **New color need** → is there a `sys.color` role for it? Use it. If not, add the role in
+  **both** `sys/color/light` and `sys/color/dark`. Never add color tokens to `components`
   unless they alias a mode-free value.
 - **New size or gap** → on a shared scale? Add/choose a `sys` role. Unique to one component?
   Add a component token (§7).
@@ -447,7 +446,7 @@ Text::new("Open").style(sys::r#type::label());  // family, size and weight of a 
  
 - [ ] `tokens.json` came from Penpot and was normalized.
 - [ ] `cargo test` passes (contract checks in §13).
-- [ ] No new literal colours, sizes or gaps in component code.
+- [ ] No new literal colors, sizes or gaps in component code.
 - [ ] New component tokens meet a rule in §7.
 - [ ] `niri-layer-rule.kdl` regenerated if a radius changed.
 ---
@@ -463,7 +462,7 @@ Text::new("Open").style(sys::r#type::label());  // family, size and weight of a 
   tone (Windows does this for every acrylic flyout).
 ### 11.2 One accent, everywhere
  
-Selection, focus, toggles and progress use `sys.color.accent.*`. Status colours never use
+Selection, focus, toggles and progress use `sys.color.accent.*`. Status colors never use
 the accent, and the accent never means "blue".
  
 ### 11.3 States
@@ -477,7 +476,7 @@ only the launcher draws a ring, from its own constants.
  
 Use a role; don't add sizes per component ([typography.md](typography.md#rules)).
  
-### 11.5 Translucent colours that alias primitives
+### 11.5 Translucent colors that alias primitives
  
 `rgba({ref.color.neutral.100}, 0.06)` keeps translucent neutrals tied to the palette. Penpot
 doesn't document references inside `rgba()` (Tokens Studio does), so verify it in a scratch
@@ -493,7 +492,7 @@ Penpot file first. Until verified, write literal `rgba()` values in `sys/color/*
 | `bar.theme.*` subtree per component | each component re-decides dark mode; they drift apart | `sys/color/*` only |
 | Component token renaming a `sys` token | token bloat; two names for one decision | read the `sys` token |
 | Hard-coded hex equal to the accent | doesn't follow the user's accent | reference `sys.color.accent.*` |
-| Mixing pairs (`popover.fg` on `panel.bg`) | unreadable combinations ("colours from different sets should not be combined" — KDE) | use the pair of the surface you draw on |
+| Mixing pairs (`popover.fg` on `panel.bg`) | unreadable combinations ("colors from different sets should not be combined" — KDE) | use the pair of the surface you draw on |
 | A mode theme without `ref` enabled | every reference in that mode breaks in Penpot | enable `ref`, `sys/base`, `components` in every mode theme |
 | `$extensions` or hand edits in the JSON | Penpot drops them on the next import | everything in Penpot |
 | `rem`, `em`, `%` sizes | rejected by Penpot's default resolver and by the shell | px or unitless |
@@ -512,7 +511,7 @@ From the spec's tests; failures name the token and the rule.
    `compact`) exist; every theme has a description.
 2. Every token resolves without error in all four `mode` × `density` combinations.
 3. Tier direction: `ref.*` holds literals; `sys.*` references only `ref`/`sys`; component
-   tokens reference only `sys`, non-colour `ref`, and `sys.density.factor`.
+   tokens reference only `sys`, non-color `ref`, and `sys.density.factor`.
 4. Set contents match §9.1; light and dark define the same `sys.color.*` names.
 5. Code reads only `sys.*` and its own prefix; every read token exists with an accepted type.
 6. `ref.color.neutral.<L>` and `ref.color.<hue>.<L>` names match their lightness within ±2.
@@ -533,23 +532,23 @@ From the spec's tests; failures name the token and the rule.
 - **Surface** — an area the shell draws on (panel, popover, notification, raised), or a material.
 - **State layer** — a translucent overlay showing hover, pressed or selected.
 - **Density factor** — the number spacing and control sizes are multiplied by.
-- **Seed** — the accent colour everything accent-coloured derives from.
+- **Seed** — the accent color everything accent-colored derives from.
 ---
  
 ## Sources
  
-- [Material Design 3: state layers](https://m3.material.io/foundations/interaction/states/state-layers); M3 colour roles and dynamic colour
+- [Material Design 3: state layers](https://m3.material.io/foundations/interaction/states/state-layers); M3 color roles and dynamic color
 - GitHub Primer design tokens (base → functional → component)
 - [Adobe Spectrum: design tokens](https://spectrum.adobe.com/page/design-tokens)
 - [Brad Frost: The many faces of themeable design systems](https://bradfrost.com/blog/post/the-many-faces-of-themeable-design-systems/)
-- [IBM Carbon: themes](https://carbondesignsystem.com/elements/themes/overview/), [colour tokens](https://carbondesignsystem.com/elements/color/tokens/)
+- [IBM Carbon: themes](https://carbondesignsystem.com/elements/themes/overview/), [color tokens](https://carbondesignsystem.com/elements/color/tokens/)
 - [libadwaita: styles and appearance](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/styles-and-appearance.html) (surface pairs, accent derivation)
-- [KDE KColorScheme](https://api.kde.org/kcolorscheme.html) (colour sets and roles)
+- [KDE KColorScheme](https://api.kde.org/kcolorscheme.html) (color sets and roles)
 - [Microsoft: acrylic material](https://learn.microsoft.com/windows/apps/design/style/acrylic) (surface + stroke, solid fallback)
 - [Design Tokens Pills #28: Specific tokens at component level](https://designtokens.substack.com/p/specific-tokens-at-component-level)
 - [Smart Interface Design Patterns: naming design tokens](https://smart-interface-design-patterns.com/articles/naming-design-tokens/); Nathan Curtis, *Naming Tokens in Design Systems* (EightShapes)
 - [Penpot user guide: design tokens](https://help.penpot.app/user-guide/design-systems/design-tokens/) (sets, themes, disabled sets, math)
-- [Tokens Studio: colour tokens](https://docs.tokens.studio/manage-tokens/token-types/color/) (`rgba()` with references)
+- [Tokens Studio: color tokens](https://docs.tokens.studio/manage-tokens/token-types/color/) (`rgba()` with references)
 - Penpot source (2.18.4: `common/src/app/common/types/token.cljc`, `tokens_lib.cljc`,
   `frontend/src/app/main/data/style_dictionary.cljs`)
  

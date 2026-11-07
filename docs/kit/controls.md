@@ -10,7 +10,7 @@ only, so any component can use them.
 | `PushButton` | [Buttons](https://m3.material.io/components/buttons/overview) | "Connect", notification actions, "Clear All", "Show Less", the bar's clock |
 | `IconButton` | [Icon buttons](https://m3.material.io/components/icon-buttons/overview) | mute, Wi-Fi scan, close/clear, Do Not Disturb, the bar's glyph items |
 | `Switch` | [Switch](https://m3.material.io/components/switch/overview) | Wi-Fi and Bluetooth power |
-| `DrawnButton` | — | the bar's workspace shape: content of its own, drawn in the button's colour |
+| `DrawnButton` | — | the bar's workspace shape: content of its own, drawn in the button's color |
 | `SegmentedButton` | [Segmented buttons](https://m3.material.io/components/segmented-buttons/overview) | the power profile, the keyboard light's level, Keep Awake's limit |
 | `Checkbox` | [Checkbox](https://m3.material.io/components/checkbox/overview) | choices confirmed together, like a dialog's; nothing in the shell yet |
 | `Radio` | [Radio button](https://m3.material.io/components/radio-button/overview) | Shell Settings' choices: appearance, density, glass, motion, widget style, the apps' layout |
@@ -42,7 +42,7 @@ unless given `.width(…)`. An `IconButton` is a control-height square. Bar item
 
 `.highlight(bg, fg)` replaces the hover layer: while hovered, or while `.active(true)`, the
 button fades to a `bg` fill with its content in `fg`. The status bar passes
-`bar.indicator.active.*` for its white tiles; the colours come from the caller, so the buttons
+`bar.indicator.active.*` for its white tiles; the colors come from the caller, so the buttons
 still read `sys.*` only.
 
 ## State
@@ -115,7 +115,7 @@ value; an inert slider, a meter, has none.
 ## The form controls
 
 The kit's `Radio`, `Checkbox`, `Dropdown`, `field_box`, `ListItem::leading_tile` and the
-sidebar's tiles draw in one look, ported from an older Quickshell set: its colours, sizes and
+sidebar's tiles draw in one look, ported from an older Quickshell set: its colors, sizes and
 fonts are [`style`](../../crates/kit/src/look/style.rs), and a few controls are their own types.
 `cargo run -p amane-kit --example controls` shows every kit control (app_id `amane-kit-controls`,
 so it runs beside the bar; `CONTROLS_PAGE=<n>` opens on a page).
@@ -123,10 +123,10 @@ so it runs beside the bar; `CONTROLS_PAGE=<n>` opens on a page).
 - `stepper::Stepper` (a number field with up and down halves; hold to repeat, reported on
   release; the wheel steps), used for Shell Settings' whole-number settings.
 - `nav_buttons::NavButtons`, the back/forward pill, before Shell Settings' title in a sub-view.
-- `leading_icon::LeadingIcon`, a 20 px (28 large) tile of an `Accent` (or any colour) with a
+- `leading_icon::LeadingIcon`, a 20 px (28 large) tile of an `Accent` (or any color) with a
   white glyph.
 - `pop_up_button::PopUpButton`, an 18 px circle that opens a menu.
-- `style` maps the original's colours to `sys.*` tokens where the dark values match (labels,
+- `style` maps the original's colors to `sys.*` tokens where the dark values match (labels,
   `fill.secondary`, separator, accent) and keeps the rest as literals with a light twin, each
   marked `TODO(token)`. Sizes are the original's Figma pixels times `sys.density.factor`.
   `color::Accent` holds the 13 system accents the tiles take.

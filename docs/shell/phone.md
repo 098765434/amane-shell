@@ -80,7 +80,7 @@ own window rule that frosts behind it.
 
 - **The inbox** (the sidebar): the phone's conversations, newest first.
   - Each row has the contact's photo from the phone's contacts, or their
-    initials in a colour kept for the name (grey for a bare number). A group
+    initials in a color kept for the name (grey for a bare number). A group
     has the group mark and is named for its people: "Kari, Per and Ola".
   - The row shows the name, the latest message ("You: …" for this side; "Photo"
     or "Video" for an attachment alone) and when it was sent (the time today,

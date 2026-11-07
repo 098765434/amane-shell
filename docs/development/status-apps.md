@@ -8,22 +8,26 @@ touching the user's clipboard, keyring or phone. To use the framework, see
 
 ## The pieces
 
-```
- a status app (amane-drop, a script…)              amane-shell
- ┌──────────────────────────────┐   session bus    ┌────────────────────────────────────────┐
- │ amane_status::StatusItem     │  RegisterItem …  │ services/status_apps.rs                │
- │ amane_status::LiveActivity   │ ───────────────▶ │   org.amane.StatusBar1: items by id,   │
- │  (crates/status/client.rs:   │                  │   owner checks, NameOwnerChanged       │
- │   worker thread, in order;   │ ◀─────────────── │      │                  │              │
- │   re-registers on a new bar) │  ItemEvent /     │      ▼                  ▼              │
- └──────────────────────────────┘  ActivityEvent   │ status_bar/apps.rs   services/desktop/ │
-            ▲   protocol types:    (unicast)       │ (app:<id> items)     activities.rs     │
-            │   crates/status/protocol.rs          │                      (the registry)    │
-            │                                      │        Now Playing, Timer, ▲           │
- amane (library, branch ocbk)                      │        Screen Sharing ────┘           │
-                                                   │      status_bar/activities.rs:        │
-                                                   │      ranking, chips, expanded popup   │
-                                                   └────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph app["a status app (amane-drop, a script, …)"]
+        client["amane_status::StatusItem and LiveActivity<br/>crates/status/client.rs: a worker thread, calls in order,<br/>registers again on a new bar"]
+        protocol["the protocol types<br/>crates/status/protocol.rs"]
+        client --- protocol
+    end
+    subgraph shell["amane-shell"]
+        server["services/status_apps.rs<br/>org.amane.StatusBar1: items by id,<br/>owner checks, NameOwnerChanged"]
+        items["status_bar/apps.rs<br/>the app:&lt;id&gt; items"]
+        registry["services/desktop/activities.rs<br/>the activities registry"]
+        builtin["Now Playing, Timer, Screen Sharing"]
+        chips["status_bar/activities.rs<br/>ranking, chips, the expanded popup"]
+        server --> items
+        server --> registry
+        builtin --> registry
+        registry --> chips
+    end
+    client -->|"RegisterItem, StartActivity, … (session bus)"| server
+    server -->|"ItemEvent, ActivityEvent (to that app alone)"| client
 ```
 
 | Repo | Files | What |
@@ -32,7 +36,7 @@ touching the user's clipboard, keyring or phone. To use the framework, see
 | amane-status | `crates/status/src/client.rs` | `StatusItem` and `LiveActivity`: calls in order on amane's control thread (`run_in_order`), events on their own thread, re-registration |
 | amane | `src/dbus/bus.rs` | `Bus::emit_to`: a signal to one destination |
 | amane | `src/wayland/dropped.rs` | drops read off the event loop (`Drags`, `read_later`, `handle_arrived_drags`), so a slow drag source can't stall the bar |
-| amane | `src/services/kdeconnect/actions.rs` | `share_files_now`, `share_text_now`: KDE Connect sends that wait and report |
+| amane-phone | `crates/phone/src/kdeconnect/actions.rs` | `share_files_now`, `share_text_now`: KDE Connect sends that wait and report |
 | shell | `apps/shell/src/services/status_apps.rs` | the bus server: methods, ownership, introspection, cleanup when a program leaves, the seen list |
 | shell | `apps/shell/src/services/desktop/activities.rs` | the activities registry: handles, owners, ending times, `Dismissed`, the 8-hour end |
 | shell | `apps/shell/src/surfaces/status_bar/activities.rs` | the built-in sources, ranking, compact and minimal chips, the expanded popup, alerts, its IPC |
@@ -95,7 +99,7 @@ beside the user's running bar.
 ### A test bar and Drop, isolated
 
 ```sh
-T=$(mktemp -d /tmp/claude-1000/sbXXXX)
+T=$(mktemp -d)
 mkdir -p $T/config $T/state $T/bin
 cp -r ~/.config/amane-shell $T/config/          # then set auto_hide to "never" in status-bar.json
 printf '#!/bin/sh\ncat > %s/copied.txt\n' $T > $T/bin/wl-copy   # links land in a file
@@ -174,16 +178,5 @@ Make it read a path with `slow` in it slowly, to watch the progress ring and try
 
 ## Shipping
 
-1. Push amane's `ocbk`.
-2. Bump the shell's amane `rev` in `Cargo.toml` and `Cargo.lock`, and update its `outputHashes`
-   entry in `flake.nix` (the first `nix build` prints the hash it expects).
-3. Push the shell.
-4. Update nixos-config's `amane-shell` input and switch.
-
-The flake builds `amane-drop` with the workspace. It wraps it, and Shell Settings, with `curl`,
-`secret-tool` (libsecret) and `wl-copy` (wl-clipboard) after the system's `PATH`, and installs
-`amane-drop.desktop`. nixos-config runs it as its own user unit
-([drop.md](../shell/drop.md#installing)).
-
-Switching before the shell input carries `amane-drop` leaves the unit failing to start (the
-binary isn't there yet). It does no other harm.
+Like any shell change: [release.md](release.md), which also says how the flake builds and wraps
+`amane-drop`.

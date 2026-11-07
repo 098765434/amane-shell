@@ -1,7 +1,7 @@
 # Materials
 
 The shell's glass is a set of materials, one for each role. A piece of glass
-asks for the **material of its role**, never for a colour (`amane_kit::material::Material`). The
+asks for the **material of its role**, never for a color (`amane_kit::material::Material`). The
 material then decides the rest:
 
 - which of niri's materials frosts it;
@@ -81,7 +81,7 @@ A piece of glass is built with its material's methods:
   look changes with the settings.
 - **No glass in content.** Rows, cards and controls on a material are fills
   (`fill_role(..)`), not glass of their own.
-- **One stained control a view.** `Prominent` is for the one primary action. Don't colour
+- **One stained control a view.** `Prominent` is for the one primary action. Don't color
   several controls.
 - **Small glass adapts, large glass is thick.** Only `Control` and `Banner` flip light or dark
   with their backdrop. Large glass that holds text is thicker, so it stays legible over anything.
@@ -102,7 +102,7 @@ A piece of glass is built with its material's methods:
   with no lift (`glass` tone 1), so a module is the wallpaper with a touch of white or black,
   saturated 1.5. Thick glass, the sheets and the launcher, is 55% (light) / 60% (dark) on its
   own `glass-large` niri material: the 30 pt blur (4 passes), saturation 1.8 and a little
-  lift (tone 0.9), so the sheet shows its backdrop's colour. A plain
+  lift (tone 0.9), so the sheet shows its backdrop's color. A plain
   module in the Customize catalog is a translucent fill on the sheet (`fill_role(Secondary)`)
   with no shadow, not a tint over it. The contrast floors let a flipping surface pass with
   either mode's labels over each wallpaper.
@@ -115,7 +115,7 @@ A piece of glass is built with its material's methods:
   The levels are primary, secondary, tertiary and quaternary, plus `fill_role(..)` and
   `separator()`. These are translucent, so the backdrop tints them.
   Quaternary isn't for thin or ultra-thin materials (a debug assertion checks it).
-  A custom colour opts out of vibrancy. Keep colour for status and the primary action.
+  A custom color opts out of vibrancy. Keep color for status and the primary action.
 
 ## Tokens
 
@@ -149,9 +149,9 @@ A piece of glass is built with its material's methods:
   vibrant (`material::vibrant`, amane's `.vibrant(true)`). On niri with `niri-vibrancy-v1`
   ([`effects/vibrancy.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/vibrancy.md)),
   light grey labels, glyphs and fills are then added to the frosted backdrop and dark grey ones
-  subtracted from it (plus-lighter and plus-darker), so they take on its colour.
+  subtracted from it (plus-lighter and plus-darker), so they take on its color.
   Solid glass and higher
-  contrast turn it off. Elsewhere the translucent label colours stand in.
+  contrast turn it off. Elsewhere the translucent label colors stand in.
 - **Adaptive glass** (an experiment, off by default) lets `Control` and `Banner` follow niri's
   readings of their backdrop (amane's `Backdrop`, [`graphics/blur.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md)); see `glass_region` and [components.md](../kit/components.md).
 

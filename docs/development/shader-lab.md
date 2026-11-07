@@ -16,7 +16,7 @@ shows the change straight away. Without it, the built-in effects are written to
 the controls. A broken shader keeps its last good version on screen.
 
 `--effect <folder>`, `--subject <n>`, `--backdrop <n>` and `--config <name>` set what it starts
-on, and `--open <picker>` (like `color.tint` or `shadow.0`) opens a colour picker, which is handy
+on, and `--open <picker>` (like `color.tint` or `shadow.0`) opens a color picker, which is handy
 for screenshots.
 
 ## Saved looks
@@ -31,7 +31,7 @@ The top of the panel lists the saved looks. Clicking one loads it.
 | **Delete** | asks, then removes the file; the look stays in the lab |
 | **Copy loader line** | copies `amane_kit::lab::look("<name>", w, h, radius)` for this subject's size |
 
-A saved file has every param and colour written out, the gradient (a preset or the look's own
+A saved file has every param and color written out, the gradient (a preset or the look's own
 stops), the subject, its position, the backdrop and the shadows. It's plain JSON for git; see
 [kit/lab.md](../kit/lab.md) for the format and the loader. The build embeds every file in
 `configs/`, so a saved look reaches the shell with no copying. Without `--effects`, looks save to
@@ -42,14 +42,14 @@ stops), the subject, its position, the backdrop and the shadows. It's plain JSON
 - **Moving:** drag the subject over the backdrop (glass bends what's under it), nudge it with
   the arrow keys (Shift for 10 px), or double-click to put it back in the middle. A click
   without a drag is still a press, for effects that take presses.
-- **Colours:** click a swatch to open the picker under it: saturation and brightness square,
-  hue strip, alpha strip, hex field, and the colours picked last.
+- **Colors:** click a swatch to open the picker under it: saturation and brightness square,
+  hue strip, alpha strip, hex field, and the colors picked last.
 - **Gradient:** the bar shows the effect's gradient with a handle per stop. Drag a handle to
-  move its stop; click it again (or **Colour**) to pick its colour; double-click the bar, or **+**,
+  move its stop; click it again (or **Color**) to pick its color; double-click the bar, or **+**,
   to add a stop; **−** or Delete removes the selected one (2 to 8 stops). Editing turns a preset
   into the look's own stops.
 - **Shadows** (rectangle, pill and circle): **+ Drop shadow** and **+ Inner shadow**, then each
-  shadow's colour, X, Y, blur, spread and opacity, in order (↑ ↓ ✕). They're layers of their
+  shadow's color, X, Y, blur, spread and opacity, in order (↑ ↓ ✕). They're layers of their
   own, so an effect doesn't take them in, and drop shadows are cut out under the shape, so they
   don't show through glass.
 - **Undo and redo:** Ctrl+Z and Ctrl+Shift+Z (or Ctrl+Y), or the buttons. Dragging one
@@ -71,11 +71,11 @@ The sliders don't take the scroll wheel, so scrolling the panel never changes a 
 | `chrome-window` | the chrome, reflecting what the window drew behind it (`"backdrop"`); try it over the Wallpaper backdrop |
 | `spectral` | the animated spectral background from the Figma Community file "Shader Dash", drawn inside the subject's shape; try the Fill preview subject |
 | `grainy-gradient` | the warped, breathing gradient with film grain from the Figma Community file "Gradient Shader Card"; press on the subject for ripples |
-| `rings` | the stepped, colour-fringed light rings from the Figma Community file "Copy Shader Animation Component"; Glow only makes its black clear |
-| `hatching` | the Figma shader "Hatching": the picture redrawn as lines between two colours, as thick as it's bright; starts on the Photo subject |
+| `rings` | the stepped, color-fringed light rings from the Figma Community file "Copy Shader Animation Component"; Glow only makes its black clear |
+| `hatching` | the Figma shader "Hatching": the picture redrawn as lines between two colors, as thick as it's bright; starts on the Photo subject |
 | `moving-blobs` | the Figma shader "Moving blobs": liquid blobs that refract, displace, bulge, hue-shift or invert the picture under them, with dispersion and a cast shadow; starts on the Photo subject |
 | `glass` | the shell's own glass: `crates/kit/src/look/glass.wgsl` (linked, so editing it reloads here) over a surface drawn like the shell's panels, with Dark and Light presets from the `sys` tokens; Frost stands in for niri's blur, which the lab can't show |
-| `liquid-glass` | glass that refracts: inside a bezel along the edge the backdrop is read from further along the edge's normal, each colour a little apart, under the shell's tint, glow and lit rim; the shell itself can't do this until niri draws it, as a surface can't read what's behind it |
+| `liquid-glass` | glass that refracts: inside a bezel along the edge the backdrop is read from further along the edge's normal, each color a little apart, under the shell's tint, glow and lit rim; the shell itself can't do this until niri draws it, as a surface can't read what's behind it |
 | `chrome-wallpaper` | the chrome, reflecting the wallpaper file, placed by the window's position on the output (Window x/y, Output w/h) |
 
 The reflection reads the surface's slope from the blurred alpha (steepest at the rim) plus the
@@ -110,7 +110,7 @@ effects/chrome/
 | `colors` | `key`, `label`, `default` (`#rrggbb` or `#rrggbbaa`) and the `row` it fills with red, green, blue and alpha; shown as a swatch and a hex field; presets set them under `colors` |
 | `suggest` | the `subject` and `backdrop` the lab switches to when the effect is picked (or started with `--effect`) |
 | `shader` | a rectangle shader drawn over the subject's fill (`Rectangle::shader`), in place of `passes` |
-| `surface` | draws the subject as a translucent surface: the `tint` and `glow` colours, the `frost`, `glow_blur` and `radius` params, its rectangle written to `rect_row` and its radius to `radius_slot` |
+| `surface` | draws the subject as a translucent surface: the `tint` and `glow` colors, the `frost`, `glow_blur` and `radius` params, its rectangle written to `rect_row` and its radius to `radius_slot` |
 | `constants` | values no control changes: `slot` and `value` |
 | `margin` | logical pixels the passes reach past the subject |
 

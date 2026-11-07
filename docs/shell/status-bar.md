@@ -271,7 +271,7 @@ the layouts with a tick on the current one; picking one runs `niri msg action sw
   they and the toasts are built on (`overlay`, `dismissable`, `popover_margin`).
 - `components/battery.rs`: a battery reads low from UPower's warning level, or at 15 % and below
   when nothing gives one (`battery::low`, `battery::LOW`), so the bar and Quick Settings agree.
-  `battery::color` and `battery::tint` give the colour that says so.
+  `battery::color` and `battery::tint` give the color that says so.
 - `services/clock.rs`: the `Clock` service (time and date), also read by the notification center.
 - `dock/window_menu.rs`: a window's and a pinned app's context menus, opened from the dock. Their
   "Move to Workspace" and "Open in Workspace" submenus are the shared
@@ -281,5 +281,5 @@ the layouts with a tick on the current one; picking one runs `niri msg action sw
 
 - Window actions and the `Windows`/`Gestures` services are documented in the library:
   [amane `compositor/services.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md).
-- Sizes and colours are Penpot design tokens: [tokens.md](../design-system/tokens.md).
+- Sizes and colors are Penpot design tokens: [tokens.md](../design-system/tokens.md).
 - Surface namespaces & niri layer-rules: [layer-rules.md](../integration/layer-rules.md).

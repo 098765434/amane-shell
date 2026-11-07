@@ -4,12 +4,13 @@ amane-shell is a Wayland desktop shell for niri: a status bar, a dock, the launc
 notifications, Quick Settings and desktop widgets, plus **amane-kit** (`crates/kit/`), the look as a
 library that the shell and its apps (Shell Settings) share. It sits on two forks:
 
-```
-niri fork  (compositor: materials, blur shapes, vibrancy, the desktop layer, gesture IPC)
-   ▲  Wayland protocols + niri IPC
-amane fork (Rust UI library: layer windows, popups, services, blur regions)
-   ▲  Cargo git dependency
-amane-shell (this repo: src/ the shell, kit/ amane-kit, apps/ the programs beside it)
+```mermaid
+flowchart BT
+    shell["amane-shell (this repo)<br/>apps/shell the shell, crates/kit amane-kit, apps/ the programs beside it"]
+    amane["amane fork<br/>Rust UI library: layer windows, popups, services, blur regions"]
+    niri["niri fork<br/>compositor: materials, blur shapes, vibrancy, the desktop layer, gesture IPC"]
+    shell -->|"Cargo git dependency"| amane
+    amane -->|"Wayland protocols + niri IPC"| niri
 ```
 
 - niri fork: <https://github.com/098765434/niri> (branch `ocbk`); what it adds:
@@ -24,6 +25,28 @@ them.
 Building and running are in the [README](../README.md); contributing in
 [CONTRIBUTING.md](../CONTRIBUTING.md).
 
+## Start here
+
+| Doc | What |
+|---|---|
+| [architecture.md](architecture.md) | the layers, the running shell, how a surface is built, how status apps plug in |
+| [integration/contract.md](integration/contract.md) | what the shell relies on from niri, amane and the kit |
+| [development/release.md](development/release.md) | bumping the forks, the hashes, nixos-config and the switch |
+| [development/testing.md](development/testing.md) | the tests, a second shell beside the live one, measuring |
+
+## Words
+
+The docs use one name for each thing:
+
+- **Shell Settings** is the settings app; its program is `amane-settings`, named once per doc.
+- **Quick Settings** is the panel of controls in the bar.
+- A **status app** is a program that puts something in the bar; its **status item** is what shows
+  there.
+- The **notification center** is written in lowercase.
+- **color**, in American spelling (the code's `Color` too).
+- Features are named for what they are ("the launcher", "glass"), never with another vendor's
+  platform terms; `scripts/lint-terms` checks it.
+
 ## Source layout
 
 A module's folder says what kind of thing it is. A new one goes where its kind is.
@@ -34,15 +57,15 @@ A module's folder says what kind of thing it is. A new one goes where its kind i
 | `apps/shell/src/chrome/` | what several surfaces share and only the shell has (`panel`, `bar`, `per_output`, `battery`, `workspace_menu`); the rest is the kit's |
 | `apps/shell/src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; `vault/` (rbw, for passwords); the assistant's client (`assistant.rs`); the status apps' bus server (`status_apps.rs`); helpers in `process.rs` and `state.rs` |
 | `apps/` | the programs beside the shell (`apps/shell`): Shell Settings, Messages, Phone Screen, Shader Lab (with its effects and saved looks), Drop, the assistant's daemon, and `train-watch`, which follows a training run from the status bar |
-| `crates/` | what they share: the kit (`crates/kit`, with the design tokens in `design-tokens/`), rbw's pinentry and the assistant's library |
+| `crates/` | what they share: the kit (`crates/kit`, with the design tokens in `design-tokens/`), the status-item client (`status`), the phone (`phone`), the NixOS model (`nixos`), a process runner (`process`), logging (`log`), rbw's pinentry and the assistant's library |
 | `apps/shell/tests/fixtures/` | recorded output the shell's parsers are tested on |
 | `xtask/` | the workspace's tasks: `cargo xtask layer-rules`, `tokens`, `lint-terms`, `links` |
 | `apps/shell/src/tokens/` | what the shell generates from the tokens (niri's layer rules) |
-| `crates/kit/src/controls/` | what's pressed, dragged or picked: buttons, slider, dropdown, colour picker, tag, control sizes |
+| `crates/kit/src/controls/` | what's pressed, dragged or picked: buttons, slider, dropdown, color picker, tag, control sizes |
 | `crates/kit/src/containers/` | what content sits in: card, list, divider, app bar, dialog, tooltip, scroll view, flow, arrangement |
 | `crates/kit/src/look/` | the look of glass: materials, the edge shader, glass regions, Shader Lab's looks |
 | `crates/kit/src/animation/` | motion, kinetic, pager, edge reveal |
-| `crates/kit/src/foundation/` | layout primitives, icons, colour arithmetic |
+| `crates/kit/src/foundation/` | layout primitives, icons, color arithmetic |
 | `crates/kit/src/platform/` | an app's window, app icons, the settings files, markers, secrets |
 | `crates/kit/src/tokens/`, `theme.rs` | the design tokens and the theme they resolve with |
 
@@ -76,7 +99,7 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | Buttons, switch, checkbox, radio, dropdown, control sizes | [kit/controls.md](kit/controls.md) |
 | Card, list, slider, dialog, tag, arrangement, scroll view and the other building blocks; the modules under them | [kit/components.md](kit/components.md) |
 | An app's window, text fields and sidebar | [kit/app.md](kit/app.md) |
-| The colour picker, and hex and HSV helpers | [kit/color-picker.md](kit/color-picker.md) |
+| The color picker, and hex and HSV helpers | [kit/color-picker.md](kit/color-picker.md) |
 | Saved Shader Lab looks, and putting one on a rectangle | [kit/lab.md](kit/lab.md) |
 | Springs and fades, keyed list motion, `Kinetic`, `Pager` | [kit/motion.md](kit/motion.md) |
 
@@ -106,10 +129,13 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | Topic | Doc |
 |---|---|
 | Dev shell, checks, the token workflow | [CONTRIBUTING.md](../CONTRIBUTING.md) |
+| How `apps/shell/src` is laid out, and the tests that keep it so | [development/shell-structure.md](development/shell-structure.md) |
+| Bumping amane, vello and niri, `outputHashes`, nixos-config, the switch | [development/release.md](development/release.md) |
+| Fixtures, golden tests, `--ignored` tests, a second shell beside the live one, a fork rebase's checks | [development/testing.md](development/testing.md) |
 | What makes a window draw, and the rules that keep an idle desktop still | [development/performance.md](development/performance.md) |
 | What the desktop holds in GPU memory, how to measure it, and what has been cut (the vello fork) | [development/memory.md](development/memory.md) |
 | Trying shader effects live, and porting Figma shaders | [development/shader-lab.md](development/shader-lab.md) |
-| Status apps, Activities and Drop: the pieces across amane, the shell and nixos-config, their threads, testing beside the desktop, shipping | [development/status-apps.md](development/status-apps.md) |
+| Status apps, Activities and Drop: the pieces across amane, the shell and nixos-config, their threads, testing beside the desktop | [development/status-apps.md](development/status-apps.md) |
 | What the shell costs while idle, measured, to compare later work against | [development/idle-baseline.md](development/idle-baseline.md) |
 | Features the shell doesn't have yet, by how often they'd be missed | [development/backlog.md](development/backlog.md) |
 | The cleanup plan across the shell and its forks | [ROADMAP.md](../ROADMAP.md) |

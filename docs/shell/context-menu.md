@@ -14,7 +14,7 @@ under (the dock, the launcher, Quick Settings, the widgets, the bar, the notific
 | File | Contents |
 |------|----------|
 | `model.rs` | the items: `ContextMenu`, `MenuItem`, `Icon`, `Check`, `Entry` (row, separator, header) |
-| `rows.rs` | the one drawing of a row (tick, icon, label, shortcut, chevron), its width and colours, per host (`Look::Popup`, `Look::Layer`) |
+| `rows.rs` | the one drawing of a row (tick, icon, label, shortcut, chevron), its width and colors, per host (`Look::Popup`, `Look::Layer`) |
 | `keys.rs` | the keyboard, the same for both hosts |
 | `layer.rs` | the shell's host: the anchor surface, the per-level popups, pointer handling, sizing |
 | `stack.rs` | its state: registered menus, the open stack of levels, and the open/close/arm functions |
@@ -145,7 +145,7 @@ accent, density and text scale while open.
 |------|--------|
 | Row | `menu.row.height`, `menu.row.radius`; horizontal padding `sys.space.inset.l` |
 | Label, shortcut, chevron | `sys.type.label` |
-| Text colours | the menu material's vibrant labels: `material::label(Level::Primary)`; disabled `Level::Secondary`; destructive `sys.color.status.critical.text` |
+| Text colors | the menu material's vibrant labels: `material::label(Level::Primary)`; disabled `Level::Secondary`; destructive `sys.color.status.critical.text` |
 | Hover fill | `sys.color.state.hover`; destructive `sys.color.status.critical.hover` |
 | Keyboard selection | fill `sys.color.accent.bg`, text `sys.color.accent.fg` |
 | Shortcut text | `material::label(Level::Secondary)`; on a keyboard-selected row `sys.color.accent.fg`, on any other focused row `Level::Primary`, both at `menu.shortcut.hover-opacity` |

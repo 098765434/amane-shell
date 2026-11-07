@@ -37,7 +37,7 @@ files.
 | `lab::files()`, `lab::file(path)` | every embedded file, by its path under `apps/shader-lab` |
 | `lab::write_effects(root)` | writes the embedded effect folders under `root/effects` |
 | `lab::shadows::{behind, in_front}` | a shadow list as layers, as `apply` and the lab draw them |
-| `lab::manifest` | the `effect.json` model: params, colours, gradient, passes, `pack` into `values` |
+| `lab::manifest` | the `effect.json` model: params, colors, gradient, passes, `pack` into `values` |
 
 ## A config
 
@@ -57,7 +57,7 @@ files.
 }
 ```
 
-- **`values` and `colors`:** keyed by the manifest's param and colour keys. Anything left out
+- **`values` and `colors`:** keyed by the manifest's param and color keys. Anything left out
   is at the manifest's default; the lab writes everything out when it saves.
 - **`gradient.stops`:** `[position, red, green, blue, alpha]` from 0 to 1, and wins over
   `preset`.

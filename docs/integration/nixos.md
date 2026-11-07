@@ -43,16 +43,17 @@ The repo's path and the `nixosConfigurations` attribute come from `nixos.json`
 
 ## Apply
 
-```
-settings.json (worktree ≠ HEAD)   ← what's waiting; Discard = git checkout -- managed/settings.json
-   │ Apply… / Try
-nix build --no-link --print-out-paths --log-format internal-json <repo>#nixosConfigurations.<host>.config.system.build.toplevel
-   │ as the user; progress from nix's `@nix {…}` lines (the `builds` activity's done/expected)
-nix store diff-closures /run/current-system <out>     → Changes; kernel/initrd/modules ≠ booted → "needs a restart"
-   │ Apply Now / Apply at Restart / Try
-pkexec amane-nixos-activate <switch|boot|test> <out>  → the polkit agent asks for the password
-   │ switch or boot (a generation; test records nothing, a restart undoes it)
-git commit -m "settings: Time zone → Europe/Oslo" -- managed/settings.json   never pushed
+```mermaid
+flowchart TB
+    waiting["settings.json, worktree ≠ HEAD<br/>what's waiting; Discard = git checkout -- managed/settings.json"]
+    build["nix build --no-link --print-out-paths --log-format internal-json<br/>repo#nixosConfigurations.host.config.system.build.toplevel"]
+    diff["nix store diff-closures /run/current-system out<br/>Changes; kernel, initrd or modules ≠ booted: 'needs a restart'"]
+    activate["pkexec amane-nixos-activate (switch, boot or test) out<br/>the polkit agent asks for the password"]
+    commit["git commit -m 'settings: Time zone → Europe/Oslo' -- managed/settings.json<br/>never pushed"]
+    waiting -->|"Apply… / Try"| build
+    build -->|"as the user; progress from nix's @nix lines<br/>(the builds activity's done/expected)"| diff
+    diff -->|"Apply Now / Apply at Restart / Try"| activate
+    activate -->|"switch or boot: a generation<br/>(test records nothing; a restart undoes it)"| commit
 ```
 
 `amane-nixos-activate` (from `modules/managed.nix`) takes exactly a mode and a path, resolves
@@ -76,13 +77,15 @@ activates it the same way. It commits nothing.
 
 ## Check for Updates
 
-```
-nix flake update [input…] --flake <repo> --output-lock-file $XDG_STATE_HOME/amane-shell/nixos/update.lock
-   │ the repo's flake.lock is untouched; root inputs whose commit moved → "nixpkgs 26f4107 → 1a2b3c4"; none → "Already up to date"
-nix build … --reference-lock-file <state>/update.lock <repo>#nixosConfigurations.<host>.config.system.build.toplevel
-   │ then diff-closures and activation exactly as above (Try leaves the repo alone)
-cp update.lock <repo>/flake.lock; git add flake.lock
-git commit -m "update: nixpkgs 26f4107 → 1a2b3c4[; settings: …]" -- flake.lock managed/settings.json
+```mermaid
+flowchart TB
+    update["nix flake update [input…] --flake repo<br/>--output-lock-file $XDG_STATE_HOME/amane-shell/nixos/update.lock"]
+    build["nix build … --reference-lock-file state/update.lock<br/>repo#nixosConfigurations.host.config.system.build.toplevel"]
+    place["cp update.lock repo/flake.lock; git add flake.lock"]
+    commit["git commit -m 'update: nixpkgs 26f4107 → 1a2b3c4[; settings: …]'<br/>-- flake.lock managed/settings.json"]
+    update -->|"the repo's flake.lock is untouched; root inputs whose commit moved:<br/>'nixpkgs 26f4107 → 1a2b3c4'; none: 'Already up to date'"| build
+    build -->|"then diff-closures and activation as above<br/>(Try leaves the repo alone)"| place
+    place --> commit
 ```
 
 The lock is written into the repo only after a `switch` or `boot` succeeded, so a failed or

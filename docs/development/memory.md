@@ -3,7 +3,10 @@
 The shell runs all day on an integrated GPU whose "VRAM" is ordinary RAM reserved at boot. This
 guide is the memory side of [Keeping It Cheap](performance.md): what the desktop holds at idle,
 why GPU memory is the number to watch, how to measure it, and what has been done about it. Each
-fix says what it cost, what changed, how to switch it off and how to check it.
+fix says what it cost, what changed, how to switch it off and how to check it. How amane's
+fixes work is written once, in amane's
+[memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md); this
+doc keeps the shell's side: its readings, its switches and its build.
 
 ## Why GPU memory
 
@@ -48,12 +51,13 @@ paid 130–360 MB of GPU memory for vello's bump-allocated scratch buffers, size
 30,000-path map of Paris. The shell pays it once (one renderer per process), as do Shell
 Settings and the Shader Lab while they run.
 
-**What changed.** amane's `vello_encoding` comes from
-[098765434/vello](https://github.com/098765434/vello) (branch `ocbk`, one commit on tag
-`v0.11.0`), with the buffers sized for a shell: about 29 MB a set instead of 165. Because a
-`[patch.crates-io]` only applies from the root manifest, and amane is a git dependency here,
-`Cargo.toml` carries the same patch entry as amane's, and `flake.nix` has the fork's hash in
-`outputHashes`. When amane bumps its vello, both move together.
+**What changed.** amane's vello comes from the fork
+[098765434/vello](https://github.com/098765434/vello) (branch `ocbk`, on upstream `main`), whose
+buffers are sized for a shell: about 29 MB a set instead of 165. How, and the limits, are in
+amane's [memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#vellos-scratch-buffers-fork-of-vello). For the shell's side: the root
+`Cargo.toml` carries the same `[patch.crates-io]` entries as amane's (a patch only applies from
+the root manifest), and `flake.nix` has the fork's hash in `outputHashes`
+([release.md](release.md#bumping-amane-or-vello-in-the-shell)).
 
 **Switching it off.** `AMANE_VELLO_SCRATCH=upstream` in the shell's environment restores upstream's
 sizes without a rebuild. An overflow is silent (the run comes out blank), so if something that
@@ -87,11 +91,9 @@ mechanism and the per-example baseline.
 renderer's lifetime. After Quick Settings closed, the shell kept 96 MB of that on the GPU for
 the rest of the session: most of what the hide release left behind.
 
-**What changed.** The fork's `vello` crate is patched in beside `vello_encoding` (a second
-`[patch.crates-io]` line and a second `outputHashes` entry, the same hash). It drops pooled
-buffers no run took for 60 runs, and amane calls its `release_scratch()` once no window drew
-through vello for 30 s, then polls the device so wgpu frees it. The next vello run allocates
-again; the shaders stay, so there is no visible cost.
+**What changed.** amane lets vello's pool go once no window drew through vello for 30 s; the next
+run allocates again and the shaders stay, so there is no visible cost
+([how](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#vellos-scratch-is-let-go-when-idle-fork-of-vello)).
 
 **Switching it off.** `AMANE_VELLO_IDLE=0` keeps the pool for life; another value is the idle
 seconds.
@@ -111,7 +113,7 @@ frame per shadowed scene, each a scene upload, a dozen compute passes and a scra
 allocated the scratch pool, and left 96 MB behind until the idle release.
 
 **What changed.** amane's quads draw drop shadows with vello's own closed form for a blurred
-rounded rectangle (amane's memory doc has the details), so a window whose only vector content
+rounded rectangle ([how](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#drop-shadows-are-quads)), so a window whose only vector content
 was its shadows is now quads-only. Quick Settings, the launcher, the dock, toasts and dialogs
 all are. The widgets' graphs and the stroke clock still go through vello, as do gradients,
 inner shadows and anything rotated.
@@ -187,7 +189,8 @@ instead of Mailbox with four images. `AMANE_KEEP_HIDDEN=1`, `AMANE_KEEP_SPARES=1
 `AMANE_PRESENT=mailbox` restore each old behaviour. Measured on a second shell (launcher opened
 and closed twice, then Quick Settings): 354 MB before, 128 MB after, and reopening no longer
 grows. What Quick Settings left behind turned out to be mostly vello's pool (the section
-above); its GTT is still open. Details in amane's memory doc.
+above); its GTT is still open. Details in amane's
+[memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#a-hidden-window-holds-nothing-on-the-gpu).
 
 ### The widgets surface is the cards, not the monitor
 

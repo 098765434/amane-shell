@@ -7,7 +7,7 @@
 //!   sorted as it's committed, or checked against the manual's rules.
 //! - `lint-terms`: `scripts/lint-terms`, no other vendor's platform terms.
 //! - `links`: every relative link in the Markdown points at a file that
-//!   exists.
+//!   exists, and every doc under `docs/` is linked from `docs/README.md`.
 //! - `contract`: amane and niri agree at the pinned revisions (contract.rs).
 
 mod contract;
@@ -115,6 +115,32 @@ fn links(root: &Path) -> bool {
         }
     }
 
+    // every doc has a place in the index, so none is found only by luck
+    let index = root.join("docs/README.md");
+    let listed: Vec<PathBuf> = std::fs::read_to_string(&index)
+        .map(|text| {
+            prose_lines(&text)
+                .into_iter()
+                .flat_map(|(_, line)| targets(line))
+                .map(|target| target.split('#').next().unwrap_or("").to_owned())
+                .filter(|path| !path.is_empty() && !path.contains("://"))
+                .map(|path| normalized(&root.join("docs").join(path)))
+                .collect()
+        })
+        .unwrap_or_default();
+    for file in &files {
+        let Ok(inside) = file.strip_prefix(root.join("docs")) else {
+            continue;
+        };
+        if file == &index || listed.contains(&normalized(file)) {
+            continue;
+        }
+        broken.push(format!(
+            "docs/README.md: no link to docs/{}",
+            inside.display()
+        ));
+    }
+
     for line in &broken {
         println!("{line}");
     }
@@ -122,11 +148,26 @@ fn links(root: &Path) -> bool {
         true
     } else {
         eprintln!(
-            "xtask links: {} links name a file that isn't there",
+            "xtask links: {} links name a file that isn't there, or docs no index links to",
             broken.len()
         );
         false
     }
+}
+
+/// `path` with its `.` and `..` parts worked out, without touching the disk.
+fn normalized(path: &Path) -> PathBuf {
+    let mut out = PathBuf::new();
+    for part in path.components() {
+        match part {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                out.pop();
+            }
+            other => out.push(other),
+        }
+    }
+    out
 }
 
 fn markdown(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -203,5 +244,13 @@ mod tests {
         let text = "a\n```\n[x](gone.md)\n```\n[y](here.md)";
         let lines: Vec<usize> = prose_lines(text).iter().map(|(n, _)| *n).collect();
         assert_eq!(lines, [1, 5]);
+    }
+
+    #[test]
+    fn paths_are_normalized_without_the_disk() {
+        assert_eq!(
+            normalized(Path::new("/a/docs/./kit/../shell/x.md")),
+            PathBuf::from("/a/docs/shell/x.md")
+        );
     }
 }

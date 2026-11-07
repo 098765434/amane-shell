@@ -151,13 +151,13 @@ dock's magnification). To remember where the pointer is for a later click or men
 
 - **At exactly 1.0** a container draws inline. Clamp eased values so they really land on 1.
 - **At 0, or with nothing in it**, it draws nothing at all (amane `3f57058`).
-- **A container holding one shape** (a highlight, a dot) takes the opacity in that shape's colour,
+- **A container holding one shape** (a highlight, a dot) takes the opacity in that shape's color,
   with no group. The exception is a white or black that would turn vibrant when translucent; that
   keeps the group, so it looks the same.
 - **Any other faded container** is a full-surface pass on *every* frame, not just while it fades.
-  Don't leave a container at a lasting opacity below 1. Fade a single shape's colour (its alpha)
+  Don't leave a container at a lasting opacity below 1. Fade a single shape's color (its alpha)
   instead, or fade only while something is moving.
-- For a disabled or dimmed look, prefer the dimmed colour tokens to `.opacity()` on the whole
+- For a disabled or dimmed look, prefer the dimmed color tokens to `.opacity()` on the whole
   control.
 
 ### 6. Views: no scans, sorts or clones of big lists per frame

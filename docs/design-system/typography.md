@@ -57,7 +57,7 @@ Every member Penpot gives a typography reaches the drawn text: `Text::new(…).s
 | `lineHeights` | multiplier, `%`, or px (needs `fontSizes` in the same typography) | stored as a multiple of the size; the text's box is then the whole line box, like CSS and Penpot. Left out, lines take the font's own spacing and the box hugs ascent to descent, as before |
 | `letterSpacing` | px (`%` is refused, as in Penpot) | pixels after every letter, scaled with the text size setting |
 | `textCase` | `none`, `uppercase`, `lowercase`, `capitalize` | applied to the string before it is laid out |
-| `textDecoration` | `none`, `underline`, `strike-through` | drawn at the font's own offsets and thickness, in the text's colour |
+| `textDecoration` | `none`, `underline`, `strike-through` | drawn at the font's own offsets and thickness, in the text's color |
 
 Text align (`start`/`center`/`end`/`justify`) and direction (`auto`/`ltr`/`rtl`) are Penpot
 panel settings, not tokens: set them in code with `.align(TextAlign::…)` and

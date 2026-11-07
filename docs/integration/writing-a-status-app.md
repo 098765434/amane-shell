@@ -41,7 +41,7 @@ let item = StatusItem::register(spec);
 | Field | What it does | Advice |
 |---|---|---|
 | `id` | unique on the desktop; the bar keeps its place in `order` as `app:<id>` | a reverse-DNS name; never change it, or the user's ordering and hiding are lost |
-| `icon` | `Glyph` (a bar symbol by name), `Theme` (an icon-theme name), or `File` (png or svg) | prefer a `Glyph`: it takes the bar's colour, size and attention tint. The names are below |
+| `icon` | `Glyph` (a bar symbol by name), `Theme` (an icon-theme name), or `File` (png or svg) | prefer a `Glyph`: it takes the bar's color, size and attention tint. The names are below |
 | `title` | text after the icon, cut at 120 px | leave it empty unless the text *is* the item (a reading, a count) |
 | `tooltip` | the hover text | the app's name |
 | `menu` | the right-click menu: `id`, `label`, `separator`, `enabled`, `checked`, `destructive`, `icon`, `children` (a submenu) | end it with Quit. With no menu, the right-click comes to you as `Activated { button: Right }` |

@@ -217,7 +217,7 @@ undo a display change nobody confirmed ([displays.md](../shell/displays.md)).
 ## Tag
 
 `Tag::new(text)` is a short fact as a capsule, `control.mini` tall: a caption on the secondary
-fill, or `.accent(true)` for the one fact to see first (the accent's colour on its 16 % tint).
+fill, or `.accent(true)` for the one fact to see first (the accent's color on its 16 % tint).
 `size()` gives its width and height before it's built. `tag::tags(width, tags)` lays several out
 in rows that wrap, through [`Flow`](#flow), and says how tall they came out.
 

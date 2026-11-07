@@ -60,7 +60,7 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `sys.motion.coast.decay`, `.duration`, `.min-fling`, `.held`, `.rubber-band` | 0.325 s, 850 ms, 60 px/s, 80 ms, 0.3 | `crates/kit/src/animation/kinetic.rs` (`DECAY`, `COAST`, `MIN_FLING`, `HELD`, `RUBBER_BAND`) |
 | `sys.opacity.disabled` (also) | 0.38 | `quick_settings/tiles/mod.rs` (`DIMMED`: a placeholder for a control without its hardware) |
 | `sys.opacity.disabled` | 0.38 | `crates/kit/src/controls/buttons/mod.rs` (`DISABLED_OPACITY`) |
-| `sys.effect.glass.far`, `sys.effect.glass.bloom` | light 0.3, 0.08; dark 0.1, 0.01 | `crates/kit/src/look/glass.rs` (`Light::now`). These differ by mode but aren't colours, so §1.4 needs them folded into the rim colour or made mode-free first |
+| `sys.effect.glass.far`, `sys.effect.glass.bloom` | light 0.3, 0.08; dark 0.1, 0.01 | `crates/kit/src/look/glass.rs` (`Light::now`). These differ by mode but aren't colors, so §1.4 needs them folded into the rim color or made mode-free first |
 | `sys.effect.glass.rim-width`, `.bloom-width`, `.glow-blur` | 1.5, 14, 5 | `crates/kit/src/look/glass.rs` |
 | `sys.shadow.popover` | `0 8 16 #00000073` | `tokens/layer_rules.rs` (`SHADOW_*`) |
 | `sys.motion.duration.tooltip` | 500 ms | `crates/kit/src/containers/tooltip.rs` (`DELAY`) |
@@ -71,7 +71,7 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 primitives for the durations first.
 
 The glass `far` and `bloom` strengths differ by mode, so they go in the `sys/color/*` sets beside
-the two colours, though they are numbers. `sys.shadow.popover` is read by the niri rule generator,
+the two colors, though they are numbers. `sys.shadow.popover` is read by the niri rule generator,
 whose output is static: it can't follow the mode, so it holds one value for both.
 
 ## Tokens to recreate or delete
@@ -205,7 +205,7 @@ whose output is static: it can't follow the mode, so it holds one value for both
   Nothing draws a pressed fill today; buttons shrink instead (`PRESS_SCALE`).
 - `sys.color.focus.ring`: a shared keyboard focus outline. Only the launcher draws one, from its
   own constants (`launcher.focus-ring.*` above).
-- `sys.color.scrim`, `sys.color.shadow`: dimming behind a modal surface and a shadow colour.
+- `sys.color.scrim`, `sys.color.shadow`: dimming behind a modal surface and a shadow color.
   Nothing dims behind the alert today, and the shadows are niri's.
 - `sys.type.body`: the vocabulary has a `body` type role (§4.2), but no text uses one yet;
   [typography.md](typography.md) lists the roles there are.

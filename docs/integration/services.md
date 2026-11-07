@@ -16,7 +16,7 @@ widgets.
 | Service | Reads | Changes with |
 |---|---|---|
 | `session` | what logind allows (`CanSuspend`, `CanReboot`, `CanPowerOff`), asked once | logind `Suspend`/`Reboot`/`PowerOff`, `Session.Lock`; logging out quits niri (`amane::niri::quit`) |
-| `night_light` | its own state file; a thread waits on the running `wlsunset`, so one that exits turns it off | runs `wlsunset` at one temperature all day or on a schedule; stopping it gives the screens their colours back |
+| `night_light` | its own state file; a thread waits on the running `wlsunset`, so one that exits turns it off | runs `wlsunset` at one temperature all day or on a schedule; stopping it gives the screens their colors back |
 | `power_refresh` | `displays.json`, amane's `Battery` and `Outputs`, checked when one changes | on battery, each display's slowest refresh rate at its resolution, through niri's temporary output mode (`amane::niri::set_output_mode`); the rate it had back on AC ([displays.md](../shell/displays.md#refresh-rate-on-battery)) |
 | `dark_style` | amane's `Appearance` (the Settings portal) | `dconf write /org/gnome/desktop/interface/color-scheme` |
 | `rfkill` | amane's `Rfkill` (`/dev/rfkill` events) | `Rfkill::set_blocked(None, …)`, as `rfkill block all` |
@@ -40,7 +40,7 @@ refuses writes from a user who isn't root or its operator. Grant it once with
 the tile and page show the true state read-only (judged from `OperatorUser` in the prefs, so
 without a probe write), and the page has the command to copy. The shell never escalates.
 
-**Night light owns `wlsunset`.** The compositor gives the colour ramps to one program at a time,
+**Night light owns `wlsunset`.** The compositor gives the color ramps to one program at a time,
 so turning night light on stops any other `wlsunset`. A `spawn-at-startup "wlsunset" …` line in
 the niri config would fight the shell's, so remove it. By default it's on at the chosen
 temperature until turned off; Shell Settings' Displays page can give it a schedule (sunset to

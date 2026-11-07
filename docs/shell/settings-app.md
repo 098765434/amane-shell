@@ -17,7 +17,7 @@ the launcher lists it as *Shell Settings*.
 An `app_window` titled "Shell Settings", 760 × 760 (narrower down to where a 440 px page still
 fits), with a 200 px [`sidebar`](../kit/app.md#sidebar) in two sections, **Shell** (eight pages,
 the shell's own settings and the displays) and **System** (eight, the NixOS configuration), each
-page's glyph on a coloured tile, under a **Search** field. Beside it, a toolbar row holds the
+page's glyph on a colored tile, under a **Search** field. Beside it, a toolbar row holds the
 back and forward pill, the page's title, and a page's own button where it has one (Quick
 Settings' **Customize…**). The settings are grouped rows
 ([`form`](../kit/components.md#form)): rounded cards of rows, each a title (and a grey subtitle)
@@ -84,8 +84,8 @@ Writes `appearance.json` (`apps/settings/src/appearance.rs`).
 | Vibrant labels | switch, off under Solid glass | labels blending with the frosted backdrop, through niri's vibrancy (an experiment) | `vibrancy` |
 | Motion | segmented | Automatic, Reduced, Full | `reduce_motion`: `null`, `true`, `false` |
 
-An accent saved before the design kit's colours shows as its new counterpart; picking it again saves
-the new colour. What each setting does to the look is in
+An accent saved before the design kit's colors shows as its new counterpart; picking it again saves
+the new color. What each setting does to the look is in
 [materials.md](../design-system/materials.md#settings) and [tokens.md](../design-system/tokens.md).
 
 ### Desktop
@@ -406,7 +406,7 @@ tile (Quick Settings, Add Controls → Utilities) names the inputs while somethi
 | Up to date | "Everything is up to date." (a check that found nothing) | **Dismiss** |
 | Applying | "Applying… authenticate when asked." | **Show Log** |
 | Done | "Applied · generation 67 · settings: …", "Tried · Apply to keep it", or "Applied, but not committed: …" | **Show Log**, **Dismiss** |
-| Failed | "Build failed: …" in the critical colour | **Show Log**, **Dismiss** |
+| Failed | "Build failed: …" in the critical color | **Show Log**, **Dismiss** |
 
 **Show Changes** and **Show Log** take the page's place (the settings waiting, then the
 packages that update, are added and removed; the build's last 300 lines, with **Copy Log**),

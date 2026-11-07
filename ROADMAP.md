@@ -19,7 +19,7 @@ These hold for every phase.
 - **The Nix flake is the canonical build.** `cargo` is for development; a phase is done only when `nix build` passes.
 - **Formats change only with a migration.** Settings (`~/.config/amane-shell/*.json`), state files (`$XDG_STATE_HOME/amane-shell/*`) and niri's `displays.kdl` may change shape, but the shell reads the old form once and rewrites it, so nothing is lost on a switch. The `amane.sock` IPC verbs and the `org.amane.StatusBar1` D-Bus interface stay wire-compatible; additions are fine, removals are not.
 - **The forks are never upstreamed. They must stay cheap to rebase.** niri follows upstream **release tags**; amane follows **upstream `main`**; vello follows upstream `main` when a rebase is wanted. "Cheap to rebase" means few hunks in hot upstream files, one group of commits per feature, and fork code in new files where it can be.
-- **No mentions of macOS or other Apple platform terms** in code, identifiers, comments, docs or the README/CONTRIBUTING. Features are named for what they are: "the launcher", "Quick Settings", "glass". Commit history is not rewritten, but new commit messages follow the rule.
+- **No other vendor's platform terms** in code, identifiers, comments, docs or the README/CONTRIBUTING. Features are named for what they are: "the launcher", "Quick Settings", "glass". Commit history is not rewritten, but new commit messages follow the rule.
 - **New UI stays on amane's quad pipeline.** vello only where it can't be avoided.
 
 Sizes: **S** is an evening or two, **M** about a week of part-time work, **L** several weeks. Tasks are labelled by repo: **[shell]**, **[amane]**, **[niri]**, **[vello]**, **[nixos-config]**.
@@ -30,29 +30,22 @@ Sizes: **S** is an evening or two, **M** about a week of part-time work, **L** s
 
 ### Layers and how they talk
 
-```
-niri fork ── IPC socket (JSON events + actions) ───────────────┐
-   │         private protocols: niri-blur-shapes-v1 (v2),      │
-   │         niri-vibrancy-v1, niri-secure-fill-v1             │
-   │         config: materials {}, background-effect {material},│
-   │         desktop layer, mat, gaps, hdr, sdr-brightness      │
-   ▼                                                            │
-~/nixos-config/niri/config.kdl ◄── generated layer rules ───────┤ gen-layer-rules.sh splices
-                                                                │ `amane-shell layer-rules`
-amane fork: Wayland, wgpu quads + vello (vello fork), widgets,  │
-   Services, niri client; also KDE Connect, adb, polkit and     │
-   Bluetooth agents, the status-item protocol                   │
-   ▲                                                            │
-amane-kit (kit/): tokens from design-tokens/tokens.json (build.rs),
-   controls, containers, look, settings schemas                 │
-   ▲                                                            │
-amane-shell (src/): surfaces ◄── services       apps/*: settings, drop, messages, mirror,
-   ├─ D-Bus: serves org.amane.StatusBar1, polkit agent,         shader-lab, train-watch,
-   │         BlueZ agent, rbw pinentry                          assistant, pinentry
-   ├─ line IPC: $XDG_RUNTIME_DIR/amane.sock (15 verbs) ◄── apps, as untyped strings
-   ├─ settings: ~/.config/amane-shell/*.json (amane Config<T>: watched, atomic)
-   ├─ state: $XDG_STATE_HOME/amane-shell/* (three formats, not atomic)
-   └─ niri: amane's socket for some calls, `niri msg` subprocesses for others
+As it was on 2026-11-07, before the phases below:
+
+```mermaid
+flowchart TB
+    niri["niri fork<br/>private protocols: niri-blur-shapes-v1 (v2), niri-vibrancy-v1, niri-secure-fill-v1<br/>config: materials, background-effect material, desktop layer, mat, gaps, hdr, sdr-brightness"]
+    kdl["~/nixos-config/niri/config.kdl"]
+    amane["amane fork<br/>Wayland, wgpu quads + vello (vello fork), widgets, Services, niri client;<br/>also KDE Connect, adb, polkit and Bluetooth agents, the status-item protocol"]
+    kit["amane-kit (kit/)<br/>tokens from design-tokens/tokens.json (build.rs), controls, containers, look, settings schemas"]
+    shell["amane-shell (src/): surfaces and services<br/>D-Bus: serves org.amane.StatusBar1, polkit agent, BlueZ agent, rbw pinentry<br/>settings: ~/.config/amane-shell/*.json (amane Config: watched, atomic)<br/>state: $XDG_STATE_HOME/amane-shell/* (three formats, not atomic)"]
+    apps["apps/*: settings, drop, messages, mirror,<br/>shader-lab, train-watch, assistant, pinentry"]
+    niri -->|"IPC socket: JSON events and actions"| amane
+    niri --> kdl
+    shell -->|"gen-layer-rules.sh splices amane-shell layer-rules"| kdl
+    amane --> kit --> shell
+    apps -->|"line IPC: $XDG_RUNTIME_DIR/amane.sock (15 verbs), as untyped strings"| shell
+    shell -->|"amane's socket for some calls, niri msg subprocesses for others"| niri
 ```
 
 Surfaces are immediate-mode `LayerWindow` builders. Each frame they read services, which records what to redraw on. UI state lives in `thread_local`s. Services start on their first read and never stop.
@@ -68,7 +61,7 @@ Details and file references are in the analysis that preceded this roadmap; each
 5. **Inconsistent patterns.** Errors are swallowed (`let _ =` ×60, `eprintln!` ×31, no logging). There are three process APIs, three state-file formats, and surfaces that reach into each other's internals. Some files are very large: launcher 1,683 lines, dock 1,317, widgets 1,224.
 6. **Fork drift.** amane conflicts in 6 files against upstream `main` today. niri is 263 commits behind upstream `main`, with hot spots in `input/mod.rs`, `niri.rs`, `backend/tty.rs` and `layout/*`, and Smithay's Dispatch2 refactor ahead. Both forks' `maintaining.md` understate conflicts. The cross-repo contract is unversioned: on stock niri the shell can't tell which fork features exist.
 7. **Docs out of sync.** README layout and features, `layer-rules.md`, `ipc.md`, `quick-settings.md` and CONTRIBUTING's CI claims are out of date. There's no architecture, contract, release or testing doc.
-8. **Apple platform terms.** 664 occurrences: shell 621; lines the forks added, amane 18 and niri 25; plus 16 file names and a few nixos-config comments. Every line is listed in `docs/development/macos-references.md` (deleted in Phase 3).
+8. **Another vendor's platform terms.** 664 occurrences: shell 621; lines the forks added, amane 18 and niri 25; plus 16 file names and a few nixos-config comments. Every line is listed in `docs/development/macos-references.md` (deleted in Phase 3).
 
 ### What to keep
 
@@ -90,7 +83,7 @@ Details and file references are in the analysis that preceded this roadmap; each
 
 | Layer | Owns | Never contains |
 |---|---|---|
-| **niri fork** | Compositor rendering and policy: materials, blur shapes, vibrancy, HDR and colour management, the mat, the desktop layer, gaps, the IPC additions, and a `Features` request that says which of these exist. | Names or behaviour specific to amane-shell. |
+| **niri fork** | Compositor rendering and policy: materials, blur shapes, vibrancy, HDR and color management, the mat, the desktop layer, gaps, the IPC additions, and a `Features` request that says which of these exist. | Names or behaviour specific to amane-shell. |
 | **vello fork** | Memory tuning only (scratch sizes, releasing idle buffers). Pinned by `rev`. | Anything else. |
 | **amane fork** | A generic shell library: Wayland, rendering, widgets, text, a complete niri client, generic system services (UPower, BlueZ, NetworkManager, logind, rfkill, tray, polkit agent mechanics, clipboard), an event-loop timer, change subscriptions, services that stop when unwatched, and launching apps in their own systemd scope. Code that needs the niri fork checks `amane::niri::features()` at run time, so one build runs on stock niri and the fork. | UI strings, display timings, `org.amane.*` interfaces, product features (phone, status apps). |
 | **`crates/*`** in the shell repo | Libraries shared by the shell and apps: `amane-kit`, `amane-status`, `amane-phone`, `amane-nixos`, `amane-assistant`, `amane-pinentry`. | Surfaces or windows of their own. |
@@ -189,7 +182,7 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 | 0 | Baseline and green CI | S | no |
 | 1 | Workspace lints and safety-net tests | M | no |
 | 2 | Leftovers and docs that tell the truth | S | no |
-| 3 | Apple platform terms, text pass | M | no |
+| 3 | Other vendors' platform terms, text pass | M | no |
 | 4 | Workspace layout | M | build paths only |
 | 5 | niri fork: tidy history, `Features`, contract checks | M | **yes**, additive |
 | 6 | amane foundations: timer, subscriptions, niri client, system services | L | **yes**, amane API |
@@ -311,7 +304,7 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
   - `kit/src/controls/macform/mod.rs:4` and `kit/src/lib.rs:18`: no longer experimental.
 - [amane] `docs/fork/maintaining.md`:
   - say what a rebase really conflicts on;
-  - fill in the commit map (KDE Connect, tray, status items, polkit, Bluetooth agent, adb, video, input method and secure fill, MimeApps, HDR brightness, colour emoji);
+  - fill in the commit map (KDE Connect, tray, status items, polkit, Bluetooth agent, adb, video, input method and secure fill, MimeApps, HDR brightness, color emoji);
   - sync `origin/main` with `upstream/main`, or drop the claim that it's kept in sync;
   - delete the `power` branch the doc says can go.
 - [amane] Fix `docs/fork/system/polkit.md:50`: the prompt now lives in `shell/src/surfaces/alert/polkit.rs`.
@@ -337,45 +330,45 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 
 ---
 
-### Phase 3: Apple platform terms, text pass (M)
+### Phase 3: Other vendors' platform terms, text pass (M)
 
-**Goal.** Remove every mention of macOS and other Apple platform terms from text that is free to change: comments, docs, descriptions, keywords, search aliases, user-facing strings. Done early because it's independent and touches many files that later phases move. Identifier renames wait for Phase 8, where `macform` is merged anyway.
+**Goal.** Remove every mention of another vendor's platform terms from text that is free to change: comments, docs, descriptions, keywords, search aliases, user-facing strings. Done early because it's independent and touches many files that later phases move. Identifier renames wait for Phase 8, where `macform` is merged anyway.
 
-The list to work from is `docs/development/macos-references.md` (deleted in Phase 3). Terms covered:
-- macOS and its version names, Mac;
-- iOS, iPad, iPhone, Apple;
-- Spotlight, Control Center, Launchpad, AirDrop, Finder;
-- Liquid Glass, SF Pro, SF Symbols;
-- AppKit, Aqua, `NSStatusItem`, Live Activities "as in macOS";
-- Dropzone and Aptonic.
+The list to work from was a references file in `docs/development/` (deleted in Phase 3). Terms covered, all in the pattern of `scripts/lint-terms`:
+- the other platform's name and its version names;
+- its company's name and its devices;
+- the names of its features and apps: the launcher's, the control panel's, the app grid's, file sharing's, the file manager's;
+- its design language, fonts and symbol set;
+- its frameworks and status-item and activity types;
+- a third-party drop-shelf app and its maker.
 
 **Tasks**
 - [shell] Rewrite every occurrence outside identifiers, describing the feature on its own terms. For example:
-  - "Launcher", not "macOS Tahoe's Spotlight";
-  - "Quick Settings" and "the Quick Settings button", not "Control Center";
-  - "a drop shelf: a grid of folders, apps and actions to drop files on", not "Dropzone-style";
-  - "glass", not "Liquid Glass";
-  - "the bar's symbol set", not "SF Symbols".
+  - "Launcher", not the other platform's search;
+  - "Quick Settings" and "the Quick Settings button", not its control panel;
+  - "a drop shelf: a grid of folders, apps and actions to drop files on", not the third-party app's name;
+  - "glass", not the other design language;
+  - "the bar's symbol set", not the other platform's.
 - [shell] Touch these points too:
   - `Cargo.toml` descriptions (root, drop);
   - `apps/drop/amane-drop.desktop` keywords;
-  - the Shell Settings search aliases (`apps/settings/src/search.rs`, e.g. `"control center"`, `"dropzone"`);
+  - the Shell Settings search aliases (`apps/settings/src/search.rs`, e.g. the other platform's names for those pages);
   - the assistant's training phrases in `apps/assistant/train/gen.py`;
   - `niri-layer-rule.kdl` comments, and through it the generated region in the niri config;
   - user-facing strings such as "About".
 - [shell] Rename `docs/archive/spec-macos27-variables.md` (a neutral name like `spec-system-colour-variables.md`) and reword its contents; it's archived, but still committed text.
-- [shell] Replace the macOS peer in `tests/fixtures/tailscale/status.json` with another OS value. Check that the test still covers what it covered.
-- [shell] Design tokens: change the `"SF Pro Text"` font family in Penpot (Inter, or the font actually installed). Re-export `design-tokens/tokens.json`. Update `kit/src/tokens/font.rs:105` and `values.rs:591` tests to the new family.
+- [shell] Replace the other platform's peer in `tests/fixtures/tailscale/status.json` with another OS value. Check that the test still covers what it covered.
+- [shell] Design tokens: change the other vendor's text font family in Penpot (Inter, or the font actually installed). Re-export `design-tokens/tokens.json`. Update `kit/src/tokens/font.rs:105` and `values.rs:591` tests to the new family.
 - [amane] Reword the 18 fork-added lines, including:
-  - `status_item.rs` and `status_item/{client,protocol}.rs` ("a program's item in the bar", "a Live Activity: something going on now"; no `NSStatusItem`, no "macOS 27.3");
-  - the "Apple's vibrant labels" comments in `window.rs`, `popup.rs`, `layer_window.rs`, `graphics/vibrancy.rs`;
+  - `status_item.rs` and `status_item/{client,protocol}.rs` ("a program's item in the bar", "an activity: something going on now"; no other platform's type or version names);
+  - the comments naming another vendor's vibrant labels in `window.rs`, `popup.rs`, `layer_window.rs`, `graphics/vibrancy.rs`;
   - the scrolling comment in `scroll_area/offsets.rs`;
   - `docs/fork/**`;
   - `protocols/niri-vibrancy-v1.xml`.
 
   Keep the XML byte-identical with niri's (change both together).
 - [niri] Reword the 25 fork-added lines:
-  - `docs/fork/**`, including "the recovered macOS 26" in `effects/materials.md:119`;
+  - `docs/fork/**`, including a recovered version name in `effects/materials.md:119`;
   - `niri-config/src/appearance.rs`;
   - `src/render_helpers/shaders/glass.frag`;
   - `resources/niri-vibrancy-v1.xml`.
@@ -399,15 +392,15 @@ The list to work from is `docs/development/macos-references.md` (deleted in Phas
 
 **Status (2026-11-07).** Done. Shell `main` pins amane `292d486`; niri `ocbk` carries the reword as `fixup!` commits.
 - **The lint.** `scripts/lint-terms` runs in the shell's CI on every tracked file. In each fork's CI it runs with `--diff fork-base` (amane) or `--diff v26.04` (niri), so it checks only the lines the fork added.
-  - What it lets through is listed in `scripts/lint-terms.allow`: `ROADMAP.md`, `Cargo.lock`, and the identifiers left for Phase 8 (`macform`, the `mac::` alias, `show_in_spotlight`, the `spotlight` page id and widget ids).
-  - Lines kept for compatibility carry a `lint-terms: allow` marker, such as Shell Settings still accepting `spotlight` as a page name.
+  - What it lets through is listed in `scripts/lint-terms.allow`: `ROADMAP.md`, `Cargo.lock`, and the identifiers left for Phase 8 (the old control set's module and alias, the launcher's password setting, Shell Settings' launcher page id and widget ids), renamed in Phases 8 and 13.
+  - Lines kept for compatibility carry a `lint-terms: allow` marker, such as Shell Settings still accepting the launcher page's old name.
   - `docs/development/macos-references.md` is deleted.
 - **Names.**
-  - Live Activities are **Activities**.
-  - Shell Settings' Spotlight page is the **Launcher** page, and the launcher's placeholder is "Search".
+  - What the bar shows of something going on now is an **Activity**.
+  - Shell Settings' page for the launcher is the **Launcher** page, and the launcher's placeholder is "Search".
   - Drop is "a drop shelf".
 - **The font** was already Atkinson Hyperlegible Next in `tokens.json`. Only two tests still named the old one.
-- **niri.** The reword is in 12 `fixup!` commits on `ocbk` (11 for text, 1 for the CI lint step), which Phase 5's autosquash folds into their feature commits. Two of the commits they fix have Apple terms in their subjects (`ada326f0` and `78620a8c`), so Phase 5 should reword those subjects as it squashes.
+- **niri.** The reword is in 12 `fixup!` commits on `ocbk` (11 for text, 1 for the CI lint step), which Phase 5's autosquash folds into their feature commits. Two of the commits they fix have the other vendor's terms in their subjects (`ada326f0` and `78620a8c`), so Phase 5 should reword those subjects as it squashes.
 - **The assistant's training phrases** are reworded; the shipped model is unchanged until the next retrain.
 
 ---
@@ -629,8 +622,8 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 **Goal.** One implementation of each control, in the kit, with one theme. It comes after the idle pass so the moved code is already event-driven, and before the shell's internal restructure so the shell imports the final kit.
 
 **Tasks**
-- [shell] Merge `macform` into the kit proper, and with it remove the last Apple platform identifiers:
-  - `macform::theme` → `look::theme`, with its literal colours becoming tokens or a `TODO(token)` each;
+- [shell] Merge `macform` into the kit proper, and with it remove the last identifiers named for another vendor's platform:
+  - `macform::theme` → `look::theme`, with its literal colors becoming tokens or a `TODO(token)` each;
   - `hover_fill` and `crossfade` → `look`;
   - `symbol` → `foundation::symbol`;
   - `menu` → `controls::menu`;
@@ -656,7 +649,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 
 **Acceptance**
 - `lint-terms` passes with no exceptions left for `macform`.
-- Each control has one implementation; `rg 'macform|Mac[A-Z]'` finds nothing.
+- Each control has one implementation; `rg` for the old module and type prefixes finds nothing.
 - The shell and all apps look the same in a side-by-side check of the bar, Quick Settings, launcher, Shell Settings, Messages and Drop.
 - Every moved module has rustdoc on its public items.
 
@@ -677,7 +670,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 **Goal.** amane becomes a generic library again, which also shrinks the fork by about 9.5k lines before its rebase in Phase 12. It comes after the kit work so the new crates can use the final kit.
 
 **Tasks**
-- [shell] New crate `crates/status` (`amane-status`): the status-item and Live Activity wire types and client from `amane/src/status_item/`, with their tests. drop, train-watch and the shell's server use it. The bus name, object path, methods and errors stay as they are.
+- [shell] New crate `crates/status` (`amane-status`): the status-item and activity wire types and client from `amane/src/status_item/`, with their tests. drop, train-watch and the shell's server use it. The bus name, object path, methods and errors stay as they are.
 - [shell] New crate `crates/phone` (`amane-phone`): KDE Connect and phone messages from `amane/src/services/kdeconnect/`, adb and its mDNS discovery from `amane/src/services/adb*`. The `caelestia` GUIDs and run-commands become configuration in the shell. The shell, Messages and Mirror depend on it.
 - [amane] Remove `status_item/`, `services/kdeconnect/`, `services/adb*`, the `mdns-sd` dependency, and `pub use serde`.
 - [amane] Bluetooth: move the user-facing strings (`errors.rs:72-100`, `label()`, `description()`) and the 10 s failure timers out to the shell. The service reports a `ServiceError { kind, message }` and the time it happened.
@@ -865,7 +858,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
   - "Quick Settings";
   - a status app is the program, a status item is its thing in the bar;
   - "notification center" lowercase;
-  - one spelling of colour/color in prose.
+  - one spelling of color/color in prose.
 
   Apply across the docs.
 - [shell] `missing_docs` becomes `deny` for amane-kit, `amane-status`, `amane-phone` and `amane-nixos`.

@@ -41,20 +41,8 @@ assistant's library. `cargo xtask` runs the workspace's tasks:
 
 ### Bumping revs
 
-When the published build should pick up library changes, push amane (and vello, if it changed)
-first, then:
-
-1. Set amane's `rev` in `[workspace.dependencies]`. vello is patched in `[patch.crates-io]`
-   (`vello` and `vello_encoding`), and the patch only works from the root manifest, so its `rev`
-   must be the one amane's own `Cargo.toml` uses.
-2. In `Cargo.lock`, change only the `source` line of the bumped crate to the new rev.
-   `cargo update -p amane` re-resolves unrelated crates as well.
-3. In `flake.nix`, `cargoLock.outputHashes` has one entry per git rev, not per crate:
-   `amane-0.1.2` and `vello-0.11.0`. Set the bumped one to `sha256-AAAA…=` (44 characters), run
-   `nix build`, and copy the hash it prints after `got:`.
-4. `scripts/check-pins` is silent when the local checkouts match.
-5. After a niri bump in nixos-config, set `contract.toml` to the same revision; `cargo xtask
-   contract` says when they differ.
+Bumping amane, vello or niri, the hashes Nix needs, nixos-config and the switch are in
+[docs/development/release.md](docs/development/release.md).
 
 `scripts/check-pins` tells you when that local build differs from the Nix build: `../amane` isn't
 at the pinned rev, has uncommitted changes, or pins a different vello rev than the shell does.
@@ -98,7 +86,7 @@ is listed in [docs/README.md](docs/README.md).
   [amane](https://github.com/098765434/amane), not here; compositor changes in
   [niri](https://github.com/098765434/niri). Each fork documents what it adds
   ([amane](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md), [niri](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md)).
-- Design values (sizing/colour/type) are Penpot tokens. Change them in Penpot, export, then
+- Design values (sizing/color/type) are Penpot tokens. Change them in Penpot, export, then
   `cargo xtask tokens normalize export.json > design-tokens/tokens.json` and
   `cargo xtask tokens check design-tokens/tokens.json`; never hand-edit the file or hardcode a
   value. Code reads tokens through functions generated from the file
