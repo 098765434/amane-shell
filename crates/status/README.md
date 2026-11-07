@@ -128,5 +128,5 @@ At `/org/amane/StatusBar`, interface `org.amane.StatusBar1`:
   service. amane-drop is the worked example.
 - amane-shell's [status apps internals](https://github.com/098765434/amane-shell/blob/main/docs/development/status-apps.md):
   how the bar serves this, and testing beside a running desktop.
-- [tray](tray.md): the StatusNotifierItem tray, for programs that already speak it.
-- [notifications](notifications.md): `Notify`, for what is over rather than going on.
+- amane's [tray](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/tray.md): the StatusNotifierItem tray, for programs that already speak it.
+- amane's [notifications](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md): `Notify`, for what is over rather than going on.
