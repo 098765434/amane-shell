@@ -216,10 +216,10 @@ fn follow(args: &[String]) {
 }
 
 fn main() {
-    amane_log::init("amane-messages");
+    amane_log::init(amane_kit::app_ids::MESSAGES);
     let args: Vec<String> = std::env::args().skip(1).collect();
     follow(&args);
-    app("amane-messages")
+    app(amane_kit::app_ids::MESSAGES)
         .normal_window("main", main_window)
         .on_activate(follow)
         .run();

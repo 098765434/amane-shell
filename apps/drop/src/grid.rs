@@ -36,7 +36,7 @@ use crate::state::{self, Changed, Outcome, Prompt, Target};
 use crate::tasks::{self, Job, Payload, name};
 
 /// The grid's layer-surface namespace.
-pub const NS: &str = "amane.drop";
+pub const NS: &str = amane_kit::app_ids::DROP_NS;
 
 /// `folder`, `drive_file_move` and `drive_file_rename_outline`.
 const ICON_FOLDER_FILLED: char = '\u{e2c7}';

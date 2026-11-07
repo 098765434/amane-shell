@@ -12,7 +12,7 @@ use crate::services::installed;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use amane_kit::icons::ICON_UPDATE;
 
-const SETTINGS: &str = "amane-settings";
+const SETTINGS: &str = amane_kit::app_ids::SETTINGS;
 
 pub(crate) fn available() -> bool {
     installed(SETTINGS)

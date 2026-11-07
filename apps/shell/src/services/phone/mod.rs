@@ -19,10 +19,10 @@ use amane_phone::{KdeConnect, RunCommand};
 use crate::services::installed;
 
 /// The app the phone's screen, its apps and its camera open in.
-pub const MIRROR_APP: &str = "amane-mirror";
+pub const MIRROR_APP: &str = amane_kit::app_ids::MIRROR;
 
 /// The app the phone's messages and remote input open in.
-pub const MESSAGES_APP: &str = "amane-messages";
+pub const MESSAGES_APP: &str = amane_kit::app_ids::MESSAGES;
 
 /// What the phone's "Run command" lists while its remote is on. The ids
 /// are the ones the old Quickshell version wrote, so a phone that already

@@ -179,7 +179,7 @@ fn want(phone: &Phone) {
 }
 
 fn main() {
-    amane_log::init("amane-mirror");
+    amane_log::init(amane_kit::app_ids::MIRROR);
     let args: Vec<String> = std::env::args().skip(1).collect();
 
     if args.iter().any(|arg| arg == "--list-apps") {
@@ -206,8 +206,8 @@ fn main() {
 
     // each phone app is a window, and an app, of its own
     let id = match app_target() {
-        Some((package, _)) => format!("amane-mirror.{package}"),
-        None => String::from("amane-mirror"),
+        Some((package, _)) => amane_kit::app_ids::mirror_app(&package),
+        None => String::from(amane_kit::app_ids::MIRROR),
     };
 
     app(&id)

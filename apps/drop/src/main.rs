@@ -23,13 +23,13 @@ use amane_kit::settings::drop_grids;
 use amane_status::StatusItem;
 use amane_status::{Accepts, ItemButton, ItemEvent, ItemIcon, ItemSpec, MenuEntry};
 
-const APP_ID: &str = "amane-drop";
+const APP_ID: &str = amane_kit::app_ids::DROP;
 const ITEM_ID: &str = "org.amane.drop";
 
 static ITEM: OnceLock<StatusItem> = OnceLock::new();
 
 fn main() {
-    amane_log::init("amane-drop");
+    amane_log::init(APP_ID);
     let args: Vec<String> = std::env::args().skip(1).collect();
     // a copy already running takes this launch: `App::run` hands it over
     let running = UnixStream::connect(amane::ipc_socket_for(APP_ID)).is_ok();

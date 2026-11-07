@@ -98,4 +98,4 @@ pub use controls::{
 };
 pub use foundation::{color, fuzzy, icons, layout, paths, symbol};
 pub use look::{glass, glass_region, lab, material, style};
-pub use platform::{app, app_icon, files, marker, process, secrets, settings, shell_ipc};
+pub use platform::{app, app_icon, app_ids, files, marker, process, secrets, settings, shell_ipc};

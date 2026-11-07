@@ -74,8 +74,8 @@ const BANNER_SHADOW_SOFTNESS: f32 = 48.0;
 const ALERT_SHADOW_SOFTNESS: f32 = 48.0;
 const ALERT_SHADOW_Y: f32 = 18.0;
 
-/// amane-drop's grid; its own app, so named here rather than imported.
-const DROP_NS: &str = "amane.drop";
+/// amane-drop's grid; its own app, whose namespace is in the kit.
+const DROP_NS: &str = amane_kit::app_ids::DROP_NS;
 
 /// One rule per frosted surface.
 pub fn rules() -> Vec<LayerRule> {
@@ -260,12 +260,25 @@ pub fn rules() -> Vec<LayerRule> {
 
 /// The amane apps whose windows are frosted behind, in the window
 /// material, their popups in the menu's (`kit::app::app` names them).
-pub const APP_IDS: &[&str] = &["amane-settings", "amane-messages"];
+pub const APP_IDS: &[&str] = &[amane_kit::app_ids::SETTINGS, amane_kit::app_ids::MESSAGES];
+
+/// The apps with no window rule, and why; the test holds every other app to one.
+#[cfg(test)]
+pub const NO_RULE: &[(&str, &str)] = &[
+    (
+        amane_kit::app_ids::SHADER_LAB,
+        "a developer tool, plain on purpose",
+    ),
+    (
+        amane_kit::app_ids::DROP,
+        "its grid is a layer surface, with a layer rule of its own",
+    ),
+];
 
 /// The phone's screen (`apps/mirror`): its own floating window, shaped
 /// like a phone, opaque so nothing frosts behind it; each of the phone's
 /// apps opened alone is `amane-mirror.<package>`.
-pub const PHONE_SCREEN_APP_ID: &str = "amane-mirror";
+pub const PHONE_SCREEN_APP_ID: &str = amane_kit::app_ids::MIRROR;
 
 /// The line `gen-layer-rules.sh` looks for; everything after it goes into
 /// the niri config.
@@ -683,21 +696,38 @@ mod tests {
 
     #[test]
     fn every_amane_app_has_a_window_rule() {
-        let apps = [
-            include_str!("../../../settings/src/main.rs"),
-            include_str!("../../../messages/src/main.rs"),
-            include_str!("../../../mirror/src/main.rs"),
-        ];
-        for app_id in APP_IDS {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        // every app under apps/ that opens a window names itself from the kit
+        for entry in std::fs::read_dir(&root).unwrap().flatten() {
+            let folder = entry.file_name().to_string_lossy().into_owned();
+            let Ok(main) = std::fs::read_to_string(entry.path().join("src/main.rs")) else {
+                continue;
+            };
+            let windowed = main.contains("app(") || main.contains(".app_id(");
+            if folder == "shell" || !windowed {
+                continue;
+            }
+            let Some((_, id)) = amane_kit::app_ids::APPS.iter().find(|(f, _)| *f == folder) else {
+                panic!("apps/{folder} opens a window but has no id in amane_kit::app_ids");
+            };
             assert!(
-                apps.iter()
-                    .any(|app| app.contains(&format!("app(\"{app_id}\")"))),
-                "{app_id} isn't an app id any app uses"
+                !main.contains(&format!("\"{id}\"")),
+                "apps/{folder} types its id by hand; use amane_kit::app_ids"
             );
         }
-        // the phone's screen names its id apart, as its apps add theirs to it
-        assert!(apps[2].contains(&format!("String::from(\"{PHONE_SCREEN_APP_ID}\")")));
-        assert!(apps[2].contains(&format!("format!(\"{PHONE_SCREEN_APP_ID}.{{package}}\")")));
+        // and each id has a rule, or a reason it has none
+        for (folder, id) in amane_kit::app_ids::APPS {
+            let ruled = APP_IDS.contains(&id) || id == PHONE_SCREEN_APP_ID;
+            let excused = NO_RULE.iter().any(|(none, _)| *none == id);
+            assert!(
+                ruled != excused,
+                "apps/{folder} ({id}) needs a window rule or a reason in NO_RULE, not both or neither"
+            );
+            let kdl = render(&rules());
+            if ruled {
+                assert!(kdl.contains(id), "{id} has no rule in the output");
+            }
+        }
     }
 
     #[test]

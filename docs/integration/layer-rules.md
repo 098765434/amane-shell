@@ -72,7 +72,9 @@ window frosted behind in `frost`, its popups in `glass`; and its floating window
 in `glass-large` with the alert's 34 corners and `0 18 48` shadow, which a window floated by hand
 takes too), one for Phone Screen (`amane-mirror`: it opens floating, with the alert's corners and
 shadow, clipped to them, and no blur, since the phone's screen fills it) and, last, a
-`materials {}` block. It defines one
+`materials {}` block. The ids are the apps' own, from `amane_kit::app_ids`; a test finds every
+app under `apps/` that opens a window and checks it has a rule, or a reason in `NO_RULE` (Shader
+Lab: a developer tool, plain on purpose; Drop: its grid is a layer surface with a layer rule). It defines one
 niri material per `material.<name>.*` token group: `glass`, `glass-small`, `glass-large`,
 `glass-clear` and `frost`, each with a `-still` twin (`materialize false`) for reduced motion;
 which the shell asks for where is in [materials.md](../design-system/materials.md). What each

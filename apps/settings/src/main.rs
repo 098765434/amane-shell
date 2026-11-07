@@ -316,7 +316,7 @@ fn package_arg(args: &[String]) {
 }
 
 fn main() {
-    amane_log::init("amane-settings");
+    amane_log::init(amane_kit::app_ids::SETTINGS);
     let args: Vec<String> = std::env::args().skip(1).collect();
     if let Some(place) = page_arg(&args) {
         *Navigation::write() = Navigation {
@@ -326,7 +326,7 @@ fn main() {
         };
     }
     package_arg(&args);
-    app("amane-settings")
+    app(amane_kit::app_ids::SETTINGS)
         .normal_window("main", main_window)
         // launched again (the launcher, a notification) while running: show that page
         .on_activate(|args| {

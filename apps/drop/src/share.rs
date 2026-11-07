@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use amane_kit::settings::{DropSharing, UploadTo};
 
-const APP: &str = "amane-drop";
+const APP: &str = amane_kit::app_ids::DROP;
 
 /// 0x0.st's address; `AMANE_DROP_0X0_URL` points it elsewhere, for tests.
 fn zero_x0() -> String {

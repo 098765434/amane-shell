@@ -293,9 +293,9 @@ mod files {
 }
 
 fn main() {
-    amane_log::init("amane-shader-lab");
+    amane_log::init(amane_kit::app_ids::SHADER_LAB);
     amane_kit::lab::register(files::FILES);
-    app("amane-shader-lab")
+    app(amane_kit::app_ids::SHADER_LAB)
         .normal_window("main", main_window)
         .run();
 }
