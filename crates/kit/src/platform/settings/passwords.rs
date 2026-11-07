@@ -33,7 +33,8 @@ pub struct Passwords {
     pub suggest_on_usernames: bool,
 
     /// Passwords in the launcher.
-    pub show_in_spotlight: bool,
+    #[serde(alias = "show_in_spotlight")] // lint-terms: allow (the old key, still read)
+    pub show_in_launcher: bool,
 
     /// No popup while the screen is being shared or recorded.
     pub hide_while_sharing: bool,
@@ -54,7 +55,7 @@ impl Default for Passwords {
         Self {
             fill_in_apps: true,
             suggest_on_usernames: false,
-            show_in_spotlight: true,
+            show_in_launcher: true,
             hide_while_sharing: true,
             lock_with_screen: true,
             excluded_apps: BROWSERS.map(String::from).to_vec(),
@@ -147,4 +148,20 @@ pub fn passwords() -> RwLockReadGuard<'static, Config<Passwords>> {
 /// Changes the password fill settings and saves them, for input handlers.
 pub fn change_passwords(edit: impl FnOnce(&mut Passwords)) {
     Config::<Passwords>::change(edit);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_launcher_switch_reads_its_old_key_too() {
+        let old: Passwords = serde_json::from_str(r#"{"show_in_spotlight": false}"#) // lint-terms: allow
+            .expect("an old passwords.json");
+        assert!(!old.show_in_launcher);
+
+        let new: Passwords =
+            serde_json::from_str(r#"{"show_in_launcher": false}"#).expect("passwords.json");
+        assert!(!new.show_in_launcher);
+    }
 }

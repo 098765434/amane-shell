@@ -376,8 +376,8 @@ fn fill(status: &VaultStatus) -> amane_kit::form::Group {
         .row(switch_row(
             "settings.passwords.launcher",
             "Passwords in the Launcher",
-            settings.show_in_spotlight,
-            |on| change_passwords(|passwords| passwords.show_in_spotlight = on),
+            settings.show_in_launcher,
+            |on| change_passwords(|passwords| passwords.show_in_launcher = on),
         ))
         .row(switch_row(
             "settings.passwords.sharing",

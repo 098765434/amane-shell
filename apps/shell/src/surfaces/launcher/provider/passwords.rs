@@ -18,7 +18,7 @@ impl Provider for Passwords {
 
         let needle = match query.mode {
             Mode::Vault => query.needle.clone(),
-            Mode::Home if amane_kit::settings::passwords().show_in_spotlight => {
+            Mode::Home if amane_kit::settings::passwords().show_in_launcher => {
                 match query.needle.strip_prefix(PASSWORDS_PREFIX) {
                     Some(needle) => needle.trim().to_string(),
                     None => return,
