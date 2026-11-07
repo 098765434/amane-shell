@@ -19,8 +19,8 @@
 //! the left as it is today, on the right with the glass rim, glow and shadow.
 
 use amane::{
-    App, Center, Color, Column, End, Full, Image, LayerWindow, Mask, Padding, Parent, Rectangle,
-    Row, Shadow, SpaceBetween, Stack, Text, Weight, Widget, children,
+    App, Center, Color, Column, End, Full, Image, LayerWindow, Mask, Parent, Rectangle, Row,
+    Shadow, SpaceBetween, Stack, Text, Weight, Widget, children,
 };
 
 const WIDTH: f32 = 1150.0;
@@ -409,12 +409,7 @@ fn network(palette: &Palette, name: &str, strength: u8, secured: bool, active: b
         .height(40.0)
         .radius(6.0)
         .fill(fill)
-        .padding(Padding {
-            top: 0.0,
-            right: INSET,
-            bottom: 0.0,
-            left: INSET,
-        })
+        .padding(amane_kit::layout::pad_x(INSET, INSET))
         .align_child(Center, Center)
         .child(
             Row::new(children![

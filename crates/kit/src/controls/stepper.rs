@@ -175,12 +175,7 @@ impl Stepper {
         let field = Rectangle::new()
             .width(Size::Fixed(width - column_w - 1.0))
             .height(Size::Fixed(height))
-            .padding(amane::Padding {
-                left: px(8.0),
-                right: px(4.0),
-                top: 0.0,
-                bottom: 0.0,
-            })
+            .padding(crate::layout::pad_x(px(8.0), px(4.0)))
             .align_child(amane::Start, Center)
             .clip()
             .child(input);

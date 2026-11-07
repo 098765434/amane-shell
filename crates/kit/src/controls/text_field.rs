@@ -26,12 +26,7 @@ pub(crate) fn frame(input: TextInput, width: impl Into<Size>, edge: amane::Color
         .radius(style::field_radius())
         .fill(style::field_fill())
         .border(1.0, edge)
-        .padding(amane::Padding {
-            left: px(8.0),
-            right: px(4.0),
-            top: 0.0,
-            bottom: 0.0,
-        })
+        .padding(crate::layout::pad_x(px(8.0), px(4.0)))
         .align_child(amane::Start, Center)
         .clip()
         .child(input)

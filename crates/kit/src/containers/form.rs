@@ -380,12 +380,7 @@ impl FormRow {
             .width(Size::Parent)
             .height(Size::Fixed(height))
             .fill(fill)
-            .padding(Padding {
-                left: pad_h(),
-                right: pad_h(),
-                top: 0.0,
-                bottom: 0.0,
-            })
+            .padding(crate::layout::pad_x(pad_h(), pad_h()))
             .child(Column::new(parts).width(Size::Parent));
 
         match self.on_press {

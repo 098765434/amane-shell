@@ -47,12 +47,7 @@ impl Divider {
             .width(width)
             .height(sys::border::hairline())
             .fill(Color::TRANSPARENT)
-            .padding(amane::Padding {
-                top: 0.0,
-                right: trailing,
-                bottom: 0.0,
-                left: leading,
-            })
+            .padding(crate::layout::pad_x(leading, trailing))
             .child(
                 Rectangle::new()
                     .width(Parent)

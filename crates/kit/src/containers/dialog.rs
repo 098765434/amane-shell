@@ -464,12 +464,7 @@ impl Dialog {
                     .width(Size::Fixed(inner_width()))
                     .height(Size::Fixed(side))
                     .fill(Color::TRANSPARENT)
-                    .padding(Padding {
-                        top: 0.0,
-                        right: inset,
-                        bottom: 0.0,
-                        left: inset,
-                    })
+                    .padding(crate::layout::pad_x(inset, inset))
                     .align_child(Start, Center)
                     .child(glyph),
             ));
@@ -523,12 +518,7 @@ impl Dialog {
                     .width(Size::Fixed(inner_width()))
                     .height(Size::Fixed(sys::size::control::height()))
                     .fill(Color::TRANSPARENT)
-                    .padding(Padding {
-                        top: 0.0,
-                        right: inset,
-                        bottom: 0.0,
-                        left: inset,
-                    })
+                    .padding(crate::layout::pad_x(inset, inset))
                     .child(field_box(field.id, input, inner_width() - inset * 2.0)),
             ));
         }

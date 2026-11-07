@@ -27,6 +27,15 @@ pub fn pad(x: f32, y: f32) -> Padding {
     }
 }
 
+/// Room at the sides only: `left` and `right`.
+pub fn pad_x(left: f32, right: f32) -> Padding {
+    Padding {
+        left,
+        right,
+        ..Padding::default()
+    }
+}
+
 /// Nothing at all, for a slot that shows nothing this frame.
 pub fn nothing() -> Box<dyn Widget> {
     boxed(Row::new(Vec::new()))

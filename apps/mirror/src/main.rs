@@ -447,12 +447,10 @@ fn bar(screen_off: bool) -> Rectangle {
     Rectangle::new()
         .width(Size::Parent)
         .height(Size::Fixed(BAR_HEIGHT))
-        .padding(amane::Padding {
-            top: 0.0,
-            right: sys::space::inset::s(),
-            bottom: 0.0,
-            left: sys::space::inset::s(),
-        })
+        .padding(amane_kit::layout::pad_x(
+            sys::space::inset::s(),
+            sys::space::inset::s(),
+        ))
         .child(
             Row::new(vec![boxed(left), boxed(middle), boxed(right)])
                 .justify(amane::SpaceBetween)

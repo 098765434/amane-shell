@@ -94,12 +94,7 @@ impl ScrollView {
         let max = self.max();
         let (padding, content) = match self.axis {
             Axis::Horizontal => (
-                Padding {
-                    top: 0.0,
-                    right: 0.0,
-                    bottom: 0.0,
-                    left: -self.offset,
-                },
+                crate::layout::pad_x(-self.offset, 0.0),
                 Rectangle::new()
                     .width(self.content.max(self.width))
                     .height(self.height)
