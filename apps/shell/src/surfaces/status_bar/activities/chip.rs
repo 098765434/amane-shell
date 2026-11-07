@@ -74,7 +74,6 @@ pub(super) fn chip(activity: Shown, compact: bool) -> Rectangle {
             Rectangle::new()
                 .width(width)
                 .height(Parent)
-                .fill(Color::TRANSPARENT)
                 .align_child(Center, Center)
                 .child(Row::new(parts).gap(6.0).align(Center))
         },

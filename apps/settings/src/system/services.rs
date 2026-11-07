@@ -11,7 +11,7 @@ use amane::{Column, Row, Service};
 use amane_kit::app::Dialog;
 use amane_kit::buttons::PushButton;
 use amane_kit::form::FormRow;
-use amane_kit::layout::boxed;
+use amane_kit::layout::{boxed, frame};
 use amane_kit::style;
 
 use super::controls::{self, Feedback};
@@ -154,10 +154,7 @@ fn status_dot(state: Option<&UnitState>) -> amane::Rectangle {
         Some("failed") => Color::from("#ff4245"),
         _ => style::label_tertiary(),
     };
-    Rectangle::new()
-        .width(DOT)
-        .height(DOT)
-        .fill(Color::TRANSPARENT)
+    frame(DOT, DOT)
         .align_child(amane::Center, amane::Center)
         .child(
             Rectangle::new()

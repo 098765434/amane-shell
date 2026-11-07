@@ -1,6 +1,7 @@
 //! How the launcher draws: its panel, the glass behind it, the scrollbar, and which apps show.
 
 use super::*;
+use amane_kit::layout::frame;
 
 /// Where `rows` start a new section: a heading goes over each.
 pub(super) fn headings(rows: &[Entry]) -> Vec<usize> {
@@ -85,10 +86,7 @@ pub(super) fn ease(anim: &'static std::thread::LocalKey<RefCell<Animation>>, to:
 /// rather than squeezing them.
 pub(super) fn glass(view: &View, geometry: Geometry) -> Rectangle {
     let (sheet, radius) = geometry.drawn();
-    let content = Rectangle::new()
-        .width(view.width())
-        .height(view.height().max(sheet.height))
-        .fill(Color::TRANSPARENT)
+    let content = frame(view.width(), view.height().max(sheet.height))
         .align_child(Start, Start)
         .child(panel(view));
     let glass = Rectangle::new()
@@ -277,10 +275,7 @@ pub(super) fn panel(view: &View) -> Column {
         Kind::Idle => {}
     }
     parts.push(boxed(
-        Rectangle::new()
-            .width(view.width())
-            .height(view.height() - PILL_H - Divider::height())
-            .fill(Color::TRANSPARENT)
+        frame(view.width(), view.height() - PILL_H - Divider::height())
             .padding(pad(INSET, INSET))
             .align_child(Start, Start)
             .child(Column::new(body).gap(GAP)),

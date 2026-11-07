@@ -16,7 +16,7 @@ use amane::{Center, Color, Point, Pointer, Radius, Rectangle, Row, Scroll, Stack
 
 use crate::buttons::{Actions, interactive, state_fill};
 use crate::control_size;
-use crate::layout::{boxed, icon, slot};
+use crate::layout::{boxed, frame, icon, slot};
 use crate::material::{self, FillLevel, Level};
 use crate::tokens::sys;
 
@@ -186,11 +186,7 @@ impl Slider {
             );
 
         let scroll = set.clone();
-        let input = Rectangle::new()
-            .width(width)
-            .height(height)
-            .fill(Color::TRANSPARENT)
-            .align_child(Start, Center);
+        let input = frame(width, height).align_child(Start, Center);
         if inert {
             return input.child(track);
         }
@@ -263,10 +259,7 @@ impl Slider {
         };
 
         let drag_set = set.clone();
-        let rest = Rectangle::new()
-            .width((width - drag_from).max(1.0))
-            .height(height)
-            .fill(Color::TRANSPARENT);
+        let rest = frame((width - drag_from).max(1.0), height);
         let rest = if inert {
             rest
         } else {

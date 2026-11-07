@@ -1,6 +1,7 @@
 //! The cards among the results: an answer, the scope chips, and what shows when nothing does.
 
 use super::*;
+use amane_kit::layout::frame;
 
 /// The answer to a sum or a conversion, or the assistant's command, in a
 /// card over the list, `width` wide; `selected` rings it as what Enter
@@ -61,21 +62,15 @@ pub(crate) fn answer_card(answer: &Entry, width: f32, selected: bool, query: &st
         .child(
             Row::new(vec![
                 boxed(
-                    Rectangle::new()
-                        .width(
-                            (width - inset * 2.0 - text_width(hint, sys::r#type::caption()))
-                                .max(0.0),
-                        )
-                        .height(ANSWER_H)
-                        .fill(Color::TRANSPARENT)
-                        .align_child(Start, Center)
-                        .child(Column::new(lines).gap(sys::space::gap::_2xs())),
+                    frame(
+                        (width - inset * 2.0 - text_width(hint, sys::r#type::caption())).max(0.0),
+                        ANSWER_H,
+                    )
+                    .align_child(Start, Center)
+                    .child(Column::new(lines).gap(sys::space::gap::_2xs())),
                 ),
                 boxed(
-                    Rectangle::new()
-                        .width(text_width(hint, sys::r#type::caption()))
-                        .height(ANSWER_H)
-                        .fill(Color::TRANSPARENT)
+                    frame(text_width(hint, sys::r#type::caption()), ANSWER_H)
                         .align_child(End, Center)
                         .child(copy_hint),
                 ),
@@ -108,29 +103,24 @@ pub(crate) fn scope_chips(scopes: &[Scope], width: f32) -> Rectangle {
                     // elided text fills its box, so the box is only as wide
                     // as the name: the chip centres it
                     .child(
-                        Rectangle::new()
-                            .width(
-                                text_width(scope.name(), sys::r#type::caption())
-                                    .min(chip_w - sys::space::inset::m() * 2.0),
-                            )
-                            .height(CHIP_H)
-                            .fill(Color::TRANSPARENT)
-                            .align_child(Center, Center)
-                            .clip()
-                            .child(
-                                Text::new(scope.name())
-                                    .style(sys::r#type::caption())
-                                    .color(material::label(Level::Secondary))
-                                    .elide(),
-                            ),
+                        frame(
+                            text_width(scope.name(), sys::r#type::caption())
+                                .min(chip_w - sys::space::inset::m() * 2.0),
+                            CHIP_H,
+                        )
+                        .align_child(Center, Center)
+                        .clip()
+                        .child(
+                            Text::new(scope.name())
+                                .style(sys::r#type::caption())
+                                .color(material::label(Level::Secondary))
+                                .elide(),
+                        ),
                     ),
             )
         })
         .collect();
-    Rectangle::new()
-        .width(width)
-        .height(CHIP_H)
-        .fill(Color::TRANSPARENT)
+    frame(width, CHIP_H)
         .align_child(Start, Center)
         .child(Row::new(chips).gap(gap))
 }
@@ -146,17 +136,12 @@ pub(crate) fn empty(why: Empty, width: f32, height: f32) -> Rectangle {
         Empty::NoFiles => (ICON_FOLDER, "No files found"),
     };
     let secondary = material::label(Level::Secondary);
-    Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
-        .align_child(Center, Center)
-        .child(
-            Column::new(vec![
-                boxed(icon(glyph, EMPTY_ICON, secondary)),
-                boxed(Text::new(note).style(sys::r#type::label()).color(secondary)),
-            ])
-            .gap(sys::space::gap::m())
-            .align(Center),
-        )
+    frame(width, height).align_child(Center, Center).child(
+        Column::new(vec![
+            boxed(icon(glyph, EMPTY_ICON, secondary)),
+            boxed(Text::new(note).style(sys::r#type::label()).color(secondary)),
+        ])
+        .gap(sys::space::gap::m())
+        .align(Center),
+    )
 }

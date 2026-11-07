@@ -65,7 +65,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use amane::{
-    Animation, Apps, Blend, Button, Color, Column, DesktopApp, Easing, Horizontal, Key, Keyboard,
+    Animation, Apps, Blend, Button, Column, DesktopApp, Easing, Horizontal, Key, Keyboard,
     LayerWindow, Parent, Rectangle, Row, Scroll, ScrollSource, Service, Stack, Start, Vertical,
     Widget, WindowSize, modifiers, window_size,
 };
@@ -395,7 +395,6 @@ pub fn surface() -> LayerWindow {
     let group = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .child(Stack::new(layers).width(Parent).height(Parent))
         .opacity(opacity)
         .scale(scale)
@@ -405,7 +404,6 @@ pub fn surface() -> LayerWindow {
     let outside = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .on_click(|_| close())
         .child(group);
 

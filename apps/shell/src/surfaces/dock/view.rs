@@ -163,7 +163,6 @@ pub(super) fn build(
             Rectangle::new()
                 .width(Parent)
                 .height((top + at.card).max(1.0))
-                .fill(Color::TRANSPARENT)
                 .align_child(Start, Start)
                 .clip()
                 .child(Stack::new(icons).width(Parent).height(Parent)),

@@ -242,7 +242,6 @@ pub fn sidebar_with(
                         Rectangle::new()
                             .width(Size::Parent)
                             .height(height)
-                            .fill(Color::TRANSPARENT)
                             .padding(pad(sys::space::inset::s(), 0.0))
                             .align_child(amane::Start, amane::End)
                             .child(caption(page.name.clone())),

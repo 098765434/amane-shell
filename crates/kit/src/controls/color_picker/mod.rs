@@ -21,7 +21,7 @@ use amane::{
 };
 
 use crate::app::{field_box, text_field};
-use crate::layout::boxed;
+use crate::layout::{boxed, frame};
 use crate::material;
 use crate::tokens::sys;
 
@@ -141,10 +141,7 @@ fn square(width: f32, hsv: [f32; 3], alpha: f32, set: Rc<dyn Fn([f32; 3], f32)>)
         (1.0 - value) * height - HANDLE / 2.0,
     );
 
-    Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    frame(width, height)
         .cursor(amane::Crosshair)
         .on_drag(move |point: Point| {
             let saturation = (point.x / width).clamp(0.0, 1.0);
@@ -217,10 +214,7 @@ fn strip_input(width: f32, strip: Rectangle, at: f32, set: impl Fn(f32) + 'stati
 
     let handle = ring().translate(at * (width - HANDLE), (height - HANDLE) / 2.0);
 
-    Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    frame(width, height)
         .cursor(amane::Pointer)
         .on_drag(move |point: Point| set((point.x / width).clamp(0.0, 1.0)))
         .child(Stack::new(vec![

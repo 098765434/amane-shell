@@ -2,6 +2,7 @@
 //! the sheet behind them, and the surface that holds it.
 
 use super::*;
+use amane_kit::layout::frame;
 
 /// Steps the card's opening towards `open` and gives how far it is, a
 /// little past 1 on the spring. Closing is quicker than opening, and a
@@ -161,10 +162,7 @@ pub fn surface() -> LayerWindow {
                 (inset, inset + grid_top + shift),
             ));
             boxed(
-                Rectangle::new()
-                    .width(grid.width)
-                    .height(inner)
-                    .fill(Color::TRANSPARENT)
+                frame(grid.width, inner)
                     .align_child(Start, End)
                     .translate(0.0, shift)
                     .child(Stack::new(vec![grid.widget])),
@@ -188,7 +186,6 @@ pub fn surface() -> LayerWindow {
             Rectangle::new()
                 .width(Parent)
                 .height(outer)
-                .fill(Color::TRANSPARENT)
                 .padding(pad(inset, inset))
                 .align_child(Start, End)
                 .clip()
@@ -216,7 +213,6 @@ pub fn surface() -> LayerWindow {
     let content = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .clip()
         .child(Stack::new(layers).width(Parent).height(Parent));
 
@@ -274,10 +270,7 @@ pub fn surface() -> LayerWindow {
     customize::set_canvas_origin(canvas_at.0, canvas_at.1);
 
     frost = glass_region::transformed(frost, 1.0, (0.0, 0.0), card_at);
-    let card = Rectangle::new()
-        .width(width)
-        .height(outer)
-        .fill(Color::TRANSPARENT)
+    let card = frame(width, outer)
         .translate(card_at.0, card_at.1)
         .child(card);
     let card_area = customize::Area {
@@ -314,14 +307,10 @@ pub fn surface() -> LayerWindow {
                 Rectangle::new()
                     .width(Parent)
                     .height(Parent)
-                    .fill(Color::TRANSPARENT)
                     .on_click(|_| close()),
             ),
             boxed(
-                Rectangle::new()
-                    .width(width)
-                    .height(outer)
-                    .fill(Color::TRANSPARENT)
+                frame(width, outer)
                     .translate(card_at.0, card_at.1)
                     .on_click(|_| {}),
             ),
@@ -333,7 +322,6 @@ pub fn surface() -> LayerWindow {
     let surface = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .child(Stack::new(root).width(Parent).height(Parent));
     let mut layer = full_window().visible(true).blur_shapes(frost);
     if let Some(input) = input {
@@ -368,17 +356,13 @@ pub(in crate::surfaces) fn ramp(value: f32, from: f32, to: f32) -> f32 {
 pub(super) fn sheet_layer(page: Page, sheet: Sheet, height: f32, reveal: f32) -> Rectangle {
     let pad_in = quick::tile::pad();
     let grid_w = grid::Metrics::tokens().extent(grid::Canvas::tokens().cols);
-    let content = Rectangle::new()
-        .width(grid_w)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    let content = frame(grid_w, height)
         .padding(pad(pad_in, pad_in))
         .align_child(Start, Start)
         .child(pages::page(page).build((height - pad_in * 2.0).max(1.0), reveal));
     Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .align_child(Start, Start)
         .child(
             tile::sheet(

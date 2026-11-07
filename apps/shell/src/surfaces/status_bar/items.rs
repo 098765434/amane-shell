@@ -3,6 +3,7 @@
 //! keyboard layout and the weather.
 
 use super::*;
+use amane_kit::layout::frame;
 
 pub(super) fn volume() -> Option<Box<dyn Widget>> {
     let audio = Audio::read();
@@ -339,10 +340,7 @@ pub(super) fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
     let hand = |length: f32, thickness: f32, degrees: f32| -> Box<dyn Widget> {
         // a hand from the middle up, in a frame the size of the face that turns
         boxed(
-            Rectangle::new()
-                .width(face)
-                .height(face)
-                .fill(Color::TRANSPARENT)
+            frame(face, face)
                 .rotate(degrees)
                 .align_child(Center, Start)
                 .padding(amane::Padding {
@@ -363,7 +361,6 @@ pub(super) fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
     Rectangle::new()
         .width(metrics().item_width)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .align_child(Center, Center)
         .child(
             Rectangle::new()

@@ -166,7 +166,6 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
     let panel = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .on_hover(move |over| with_reveal(&hovered, |reveal| reveal.hover(over)))
         // a pointer that arrived without an enter still counts
         .on_move(move |_| with_reveal(&moved, |reveal| reveal.hover(true)))

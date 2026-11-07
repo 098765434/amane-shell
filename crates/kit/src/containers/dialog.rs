@@ -38,7 +38,7 @@ use amane::{
 
 use crate::app::{field_box, frosted, standard_shortcut, text_field, window_bg};
 use crate::buttons::{PushButton, Shape, Style};
-use crate::layout::{boxed, icon, text_width};
+use crate::layout::{boxed, frame, icon, text_width};
 use crate::material::{self, Level, Material};
 use crate::tokens::{Styled, dialog, sys};
 
@@ -458,10 +458,7 @@ impl Dialog {
                     .child(icon(*glyph, side, fg)),
             };
             rows.push(boxed(
-                Rectangle::new()
-                    .width(inner_width())
-                    .height(side)
-                    .fill(Color::TRANSPARENT)
+                frame(inner_width(), side)
                     .padding(crate::layout::pad_x(inset, inset))
                     .align_child(Start, Center)
                     .child(glyph),
@@ -484,10 +481,7 @@ impl Dialog {
             text.push(boxed(message(&line, material::label(Level::Secondary))));
         }
         rows.push(boxed(
-            Rectangle::new()
-                .width(inner_width())
-                .height(self.text_height())
-                .fill(Color::TRANSPARENT)
+            frame(inner_width(), self.text_height())
                 .padding(Padding {
                     top: 0.0,
                     right: inset,
@@ -512,10 +506,7 @@ impl Dialog {
                 });
             }
             rows.push(boxed(
-                Rectangle::new()
-                    .width(inner_width())
-                    .height(sys::size::control::height())
-                    .fill(Color::TRANSPARENT)
+                frame(inner_width(), sys::size::control::height())
                     .padding(crate::layout::pad_x(inset, inset))
                     .child(field_box(field.id, input, inner_width() - inset * 2.0)),
             ));
@@ -525,10 +516,7 @@ impl Dialog {
             rows.push(self.buttons(close));
         }
 
-        Rectangle::new()
-            .width(Self::width())
-            .height(self.height())
-            .fill(Color::TRANSPARENT)
+        frame(Self::width(), self.height())
             .padding(Padding {
                 top: dialog::padding_top(),
                 right: dialog::padding_x(),

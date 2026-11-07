@@ -20,7 +20,7 @@ use crate::tokens::{Styled, TextStyle, sys};
 use amane_kit::color::with_alpha;
 use amane_kit::icons::{ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MIC, ICON_MORE_HORIZ, ICON_SEARCH};
 use amane_kit::kinetic::Axis;
-use amane_kit::layout::{boxed, cursor, icon, pad, slot, text_width};
+use amane_kit::layout::{boxed, cursor, frame, icon, pad, slot, text_width};
 use amane_kit::material::{self, FillLevel, Level, Material};
 use amane_kit::menu::layer as context_menu;
 use amane_kit::menu::{ContextMenu, MenuItem};
@@ -157,10 +157,7 @@ pub(super) fn search_row(
     if let Some(trailing) = trailing {
         parts.push(trailing);
     }
-    Rectangle::new()
-        .width(view.width())
-        .height(PILL_H)
-        .fill(Color::TRANSPARENT)
+    frame(view.width(), PILL_H)
         .padding(pad(ROW_INSET, 0.0))
         .align_child(Start, Center)
         .child(Row::new(parts).gap(gap).align(Center))
@@ -353,10 +350,7 @@ fn search_field(field: &Field, focused: bool, placeholder: &str, width: f32) -> 
         }
     }
 
-    Rectangle::new()
-        .width(width)
-        .height(PILL_H)
-        .fill(Color::TRANSPARENT)
+    frame(width, PILL_H)
         .clip()
         .align_child(Start, Center)
         .child(Row::new(parts).gap(sys::space::gap::_2xs()).align(Center))
@@ -497,10 +491,7 @@ pub(super) fn pill_bar(buckets: &[usize], offset: f32, focused: bool, width: f32
                 near,
             );
             boxed(
-                Rectangle::new()
-                    .width(widths[page])
-                    .height(height)
-                    .fill(Color::TRANSPARENT)
+                frame(widths[page], height)
                     .align_child(Center, Center)
                     .child(
                         Text::new(model::CATEGORIES[bucket])
@@ -528,7 +519,6 @@ pub(super) fn pill_bar(buckets: &[usize], offset: f32, focused: bool, width: f32
                     .width(fill_w + out * 2.0)
                     .height(height + out * 2.0)
                     .radius(sys::radius::raised() + out)
-                    .fill(Color::TRANSPARENT)
                     .border(RING, with_alpha(sys::color::accent::bg(), RING_ALPHA))
                     .translate(fill_x - out, -out),
             ));

@@ -13,9 +13,7 @@ mod preview;
 pub(super) use cards::{answer_card, empty, scope_chips};
 pub(super) use preview::{ask_clipboard, preview};
 
-use amane::{
-    Button, Center, Color, Column, End, Image, Rectangle, Row, Stack, Start, Text, Widget,
-};
+use amane::{Button, Center, Column, End, Image, Rectangle, Row, Stack, Start, Text, Widget};
 use amane_kit::settings::change_launcher;
 
 use crate::tokens::{Styled, TextStyle, sys};
@@ -24,7 +22,7 @@ use amane_kit::buttons::{PushButton, Style};
 use amane_kit::color::with_alpha;
 use amane_kit::icons::{ICON_APPS, ICON_CONTENT_PASTE, ICON_DESCRIPTION, ICON_FOLDER, ICON_SEARCH};
 use amane_kit::kinetic::Axis;
-use amane_kit::layout::{boxed, icon, pad, slot, text_height, text_width, wrapped_lines};
+use amane_kit::layout::{boxed, frame, icon, pad, slot, text_height, text_width, wrapped_lines};
 use amane_kit::material::{self, FillLevel, Level};
 use amane_kit::scroll_view::ScrollView;
 
@@ -121,10 +119,7 @@ fn heading(name: &str, width: f32) -> Rectangle {
         ..sys::r#type::label()
     };
     let inset = sys::space::inset::l();
-    Rectangle::new()
-        .width(width)
-        .height(HEADING - ROW_GAP)
-        .fill(Color::TRANSPARENT)
+    frame(width, HEADING - ROW_GAP)
         .padding(pad(inset, 0.0))
         .align_child(Start, End)
         .child(
@@ -172,10 +167,7 @@ fn trailing(
         let action = entry.key.clone();
         let (title, keys) = (title.clone(), keys.clone());
         // a click on them changes them
-        let caps = Rectangle::new()
-            .width(width)
-            .height(ROW)
-            .fill(Color::TRANSPARENT)
+        let caps = frame(width, ROW)
             .align_child(Start, Center)
             .on_click(move |_| start_capture(&action, &title, &keys))
             .child(Row::new(caps).gap(gap).align(Center));
@@ -195,7 +187,6 @@ fn trailing(
                     .width(width)
                     .height(OFFER_H)
                     .radius(sys::radius::raised() / 2.0)
-                    .fill(Color::TRANSPARENT)
                     .border(sys::border::hairline(), material::separator())
                     .align_child(Center, Center)
                     .on_click(move |_| start_capture(&action, &title, ""))
@@ -236,7 +227,6 @@ fn capture_box(capture: &Capture) -> Rectangle {
         .width(CAPTURE_W)
         .height(OFFER_H)
         .radius(sys::radius::raised() / 2.0)
-        .fill(Color::TRANSPARENT)
         .border(2.0, sys::color::accent::bg())
         .padding(pad(sys::space::inset::s(), 0.0))
         .align_child(Center, Center)
@@ -317,10 +307,7 @@ fn row(
     let mut parts: Vec<Box<dyn Widget>> = vec![boxed(leading(entry))];
     let text_w = (width - inset * 2.0 - RESULT_ICON - gap - trailing_w).max(0.0);
     parts.push(boxed(
-        Rectangle::new()
-            .width(text_w)
-            .height(ROW)
-            .fill(Color::TRANSPARENT)
+        frame(text_w, ROW)
             .clip()
             .align_child(Start, Center)
             .child(text),
@@ -329,10 +316,7 @@ fn row(
         parts.push(trailing);
     }
 
-    Rectangle::new()
-        .width(width)
-        .height(ROW)
-        .fill(Color::TRANSPARENT)
+    frame(width, ROW)
         .radius(sys::radius::popover())
         .padding(pad(inset, 0.0))
         .align_child(Start, Center)

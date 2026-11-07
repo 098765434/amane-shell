@@ -10,7 +10,7 @@ use amane::{Center, Color, Rectangle, Row, Widget};
 
 use crate::buttons::hovered;
 use crate::buttons::interactive;
-use crate::layout::boxed;
+use crate::layout::{boxed, frame};
 use crate::style::{self, px};
 
 /// One dot: its name and its color, or none for the system's.
@@ -130,10 +130,7 @@ impl ColorWells {
                     .child(amane::Stack::new(vec![
                         face,
                         boxed(
-                            Rectangle::new()
-                                .width(side())
-                                .height(side())
-                                .fill(Color::TRANSPARENT)
+                            frame(side(), side())
                                 .align_child(Center, Center)
                                 .child(amane::Column::new(vec![mark])),
                         ),

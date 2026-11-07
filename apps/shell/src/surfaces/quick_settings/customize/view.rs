@@ -2,6 +2,7 @@
 //! its footer.
 
 use super::*;
+use amane_kit::layout::frame;
 
 /// Steps the window's opening and gives how far it is, a little past 1 on
 /// the spring; `None` once it has gone.
@@ -51,7 +52,6 @@ pub(crate) fn view(screen: (f32, f32), card: Area) -> Option<Built> {
     let widget = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .align_child(Start, Start)
         .child(
             sheet
@@ -96,10 +96,7 @@ pub(super) fn content(area: &Area) -> Rectangle {
     ])
     .width(pane_w);
 
-    Rectangle::new()
-        .width(area.width)
-        .height(area.height)
-        .fill(Color::TRANSPARENT)
+    frame(area.width, area.height)
         .align_child(Start, Start)
         .child(
             Row::new(vec![
@@ -150,10 +147,7 @@ pub(super) fn sidebar(field: &Field, picked: Category, height: f32) -> Rectangle
         .on_scroll(on_side_scroll)
         .build(list);
 
-    Rectangle::new()
-        .width(SIDEBAR)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    frame(SIDEBAR, height)
         .padding(pad(INSET, INSET))
         .align_child(Start, Start)
         .child(
@@ -183,10 +177,7 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
     let count = sections.len();
     for (i, section) in sections.into_iter().enumerate() {
         layers.push(boxed(
-            Rectangle::new()
-                .width(inner_w)
-                .height(title_h)
-                .fill(Color::TRANSPARENT)
+            frame(inner_w, title_h)
                 .align_child(Start, Center)
                 .translate(INSET, y)
                 .child(
@@ -205,10 +196,7 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
             };
             let note_h = text_height(sys::r#type::caption());
             layers.push(boxed(
-                Rectangle::new()
-                    .width(inner_w)
-                    .height(note_h)
-                    .fill(Color::TRANSPARENT)
+                frame(inner_w, note_h)
                     .align_child(Start, Center)
                     .translate(INSET, y)
                     .child(caption(note)),
@@ -241,10 +229,7 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
         if i + 1 < count {
             y += gap_l;
             layers.push(boxed(
-                Rectangle::new()
-                    .width(inner_w)
-                    .height(Divider::height())
-                    .fill(Color::TRANSPARENT)
+                frame(inner_w, Divider::height())
                     .translate(INSET, y)
                     .child(Divider::build()),
             ));
@@ -277,11 +262,7 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
             .collect();
     });
 
-    let content = Rectangle::new()
-        .width(viewport.width)
-        .height(content_h.max(viewport.height))
-        .fill(Color::TRANSPARENT)
-        .child(Stack::new(layers));
+    let content = frame(viewport.width, content_h.max(viewport.height)).child(Stack::new(layers));
     ScrollView::new(Axis::Vertical, viewport.width, viewport.height)
         .content(content_h)
         .offset(scroll)
@@ -315,42 +296,27 @@ pub(super) fn catalog_item(id: ControlId, px: &Metrics) -> (Rectangle, f32, f32,
         .into_iter()
         .map(|line| {
             boxed(
-                Rectangle::new()
-                    .width(item_w)
-                    .height(line_h)
-                    .fill(Color::TRANSPARENT)
-                    .align_child(Center, Center)
-                    .child(
-                        Text::new(line)
-                            .style(style)
-                            .color(material::label(Level::Primary)),
-                    ),
+                frame(item_w, line_h).align_child(Center, Center).child(
+                    Text::new(line)
+                        .style(style)
+                        .color(material::label(Level::Primary)),
+                ),
             )
         })
         .collect();
 
-    let item = Rectangle::new()
-        .width(item_w)
-        .height(item_h)
-        .fill(Color::TRANSPARENT)
-        .child(Stack::new(vec![
-            boxed(
-                Rectangle::new()
-                    .width(slot.width)
-                    .height(slot.height)
-                    .fill(Color::TRANSPARENT)
-                    .translate((item_w - slot.width) / 2.0, 0.0)
-                    .child(Stack::new(vec![control])),
-            ),
-            boxed(
-                Rectangle::new()
-                    .width(item_w)
-                    .height(caption_h)
-                    .fill(Color::TRANSPARENT)
-                    .translate(0.0, slot.height + gap)
-                    .child(amane::Column::new(name)),
-            ),
-        ]));
+    let item = frame(item_w, item_h).child(Stack::new(vec![
+        boxed(
+            frame(slot.width, slot.height)
+                .translate((item_w - slot.width) / 2.0, 0.0)
+                .child(Stack::new(vec![control])),
+        ),
+        boxed(
+            frame(item_w, caption_h)
+                .translate(0.0, slot.height + gap)
+                .child(amane::Column::new(name)),
+        ),
+    ]));
     (item, item_w, item_h, slot)
 }
 
@@ -383,10 +349,7 @@ pub(super) fn footer(width: f32, height: f32) -> Rectangle {
             .build(),
     ));
     let hint = caption("Drag a control to place it in Quick Settings.");
-    Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    frame(width, height)
         .padding(pad(INSET, 0.0))
         .align_child(Start, Center)
         .child(split_row(hint, actions))

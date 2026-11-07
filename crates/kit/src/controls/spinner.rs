@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 use amane::{Color, Rectangle, Stack, Widget};
 
 use crate::color::with_alpha;
-use crate::layout::boxed;
+use crate::layout::{boxed, frame};
 use crate::style;
 
 /// How many spokes there are, and so how many steps a turn has.
@@ -98,10 +98,7 @@ impl Spinner {
                 };
                 // a spoke from the rim inwards, in a frame that turns
                 boxed(
-                    Rectangle::new()
-                        .width(size)
-                        .height(size)
-                        .fill(Color::TRANSPARENT)
+                    frame(size, size)
                         .rotate(index as f32 * 360.0 / SPOKES as f32)
                         .align_child(amane::Center, amane::Start)
                         .child(
@@ -116,12 +113,7 @@ impl Spinner {
             .collect();
 
         let opacity = if reduced { breath(step) } else { 1.0 };
-        Rectangle::new()
-            .width(size)
-            .height(size)
-            .fill(Color::TRANSPARENT)
-            .opacity(opacity)
-            .child(Stack::new(spokes))
+        frame(size, size).opacity(opacity).child(Stack::new(spokes))
     }
 }
 

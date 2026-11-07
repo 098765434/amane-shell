@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 use amane::{Animation, Center, Color, Padding, Rectangle, Scroll, Service, Stack, Start, Widget};
 
 use crate::kinetic::Axis;
-use crate::layout::boxed;
+use crate::layout::{boxed, frame};
 use crate::material::{self, Level};
 use crate::motion;
 
@@ -114,10 +114,7 @@ impl ScrollView {
             ),
         };
 
-        let mut viewport = Rectangle::new()
-            .width(self.width)
-            .height(self.height)
-            .fill(Color::TRANSPARENT)
+        let mut viewport = frame(self.width, self.height)
             .clip()
             .padding(padding)
             .align_child(Start, Start)
@@ -139,10 +136,7 @@ impl ScrollView {
             .fill(material::label(Level::Secondary))
             .opacity(opacity)
             .translate(self.width - SCROLLBAR, along * (self.height - thumb_height));
-        Rectangle::new()
-            .width(self.width)
-            .height(self.height)
-            .fill(Color::TRANSPARENT)
+        frame(self.width, self.height)
             .align_child(Start, Start)
             .child(Stack::new(vec![boxed(viewport), boxed(thumb)]))
     }

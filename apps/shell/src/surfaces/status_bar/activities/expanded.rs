@@ -1,6 +1,7 @@
 //! An activity opened: the popup under its chip, with its buttons.
 
 use super::*;
+use amane_kit::layout::frame;
 
 /// Opens the expanded view of `key` under the pointer, or closes it.
 pub(super) fn toggle(key: &str) {
@@ -157,10 +158,7 @@ pub(super) fn expanded(activity: &Shown) -> (Rectangle, f32) {
         }),
     };
     header.extend(big);
-    let header = Rectangle::new()
-        .width(inner)
-        .height(HEADER)
-        .fill(Color::TRANSPARENT)
+    let header = frame(inner, HEADER)
         .align_child(Start, Center)
         .child(Row::new(header).gap(12.0).align(Center));
 

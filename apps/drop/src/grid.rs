@@ -23,7 +23,7 @@ use amane_kit::icons::{
     ICON_CLOUD_UPLOAD, ICON_CONTENT_COPY, ICON_DESCRIPTION, ICON_DNS, ICON_ERROR, ICON_IMAGE,
     ICON_PHONE, ICON_TRAY,
 };
-use amane_kit::layout::{boxed, icon, text_width};
+use amane_kit::layout::{boxed, frame, icon, text_width};
 use amane_kit::material::{self, FillLevel, Level, Material};
 use amane_kit::settings::{
     DropTile, FolderMode, UploadTo, change_drop_grids, drop_grids, drop_sharing, status_bar,
@@ -148,7 +148,6 @@ pub fn window() -> LayerWindow {
     let backdrop = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .on_click(|_| state::close())
         .padding(Padding {
             left,
@@ -336,20 +335,16 @@ fn header(
             .build(),
     ));
 
-    Rectangle::new()
-        .width(width)
-        .height(HEADER)
-        .fill(Color::TRANSPARENT)
-        .child(
-            Row::new(vec![
-                boxed(Row::new(left).gap(2.0).align(Center)),
-                boxed(Row::new(right).gap(4.0).align(Center)),
-            ])
-            .width(Parent)
-            .height(Parent)
-            .justify(amane::SpaceBetween)
-            .align(Center),
-        )
+    frame(width, HEADER).child(
+        Row::new(vec![
+            boxed(Row::new(left).gap(2.0).align(Center)),
+            boxed(Row::new(right).gap(4.0).align(Center)),
+        ])
+        .width(Parent)
+        .height(Parent)
+        .justify(amane::SpaceBetween)
+        .align(Center),
+    )
 }
 
 // ───── tiles ─────────────────────────────────────────────────────────────────
@@ -603,21 +598,16 @@ fn tile_cell(index: usize, tile: &DropTile, editing: bool) -> Rectangle {
         .align_child(Center, Center)
         .on_click(move |_| remove_tile(index))
         .child(icon(ICON_CLOSE, 14.0, primary));
-    Rectangle::new()
-        .width(TILE_W)
-        .height(TILE_H)
-        .fill(Color::TRANSPARENT)
-        .child(Stack::new(vec![
-            boxed(cell),
-            boxed(
-                Rectangle::new()
-                    .width(TILE_W)
-                    .height(Size::Fixed(24.0))
-                    .fill(Color::TRANSPARENT)
-                    .align_child(amane::End, Start)
-                    .child(remove),
-            ),
-        ]))
+    frame(TILE_W, TILE_H).child(Stack::new(vec![
+        boxed(cell),
+        boxed(
+            Rectangle::new()
+                .width(TILE_W)
+                .height(Size::Fixed(24.0))
+                .align_child(amane::End, Start)
+                .child(remove),
+        ),
+    ]))
 }
 
 fn with_alpha(color: Color, alpha: f32) -> Color {
@@ -1072,20 +1062,13 @@ fn edit_row(tiles: &[DropTile], width: f32) -> Rectangle {
         .into_iter()
         .map(|line| {
             boxed(
-                Rectangle::new()
-                    .width(width)
-                    .height(EDIT_ROW)
-                    .fill(Color::TRANSPARENT)
+                frame(width, EDIT_ROW)
                     .align_child(Start, Center)
                     .child(Row::new(line).gap(4.0).align(Center)),
             )
         })
         .collect();
-    Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
-        .child(Column::new(rows).gap(4.0))
+    frame(width, height).child(Column::new(rows).gap(4.0))
 }
 
 fn same_kind(a: &DropTile, b: &DropTile) -> bool {
@@ -1234,10 +1217,7 @@ fn ask(prompt: Prompt, width: f32) -> Rectangle {
     ];
     rows.extend(field);
     rows.push(boxed(Row::new(buttons).gap(6.0).align(Center)));
-    Rectangle::new()
-        .width(width)
-        .height(PROMPT)
-        .fill(Color::TRANSPARENT)
+    frame(width, PROMPT)
         .align_child(Start, Center)
         .child(Column::new(rows).gap(8.0))
 }
@@ -1346,7 +1326,6 @@ fn stack_chip(grid: &str, index: usize, files: Vec<PathBuf>) -> Rectangle {
         Rectangle::new()
             .width(Size::Fixed(48.0))
             .height(Size::Fixed(48.0))
-            .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
             .child(Row::new(vec![picture])),
     )];
@@ -1355,7 +1334,6 @@ fn stack_chip(grid: &str, index: usize, files: Vec<PathBuf>) -> Rectangle {
             Rectangle::new()
                 .width(Size::Fixed(48.0))
                 .height(Size::Fixed(18.0))
-                .fill(Color::TRANSPARENT)
                 .align_child(amane::End, Start)
                 .child(
                     Rectangle::new()
@@ -1377,7 +1355,6 @@ fn stack_chip(grid: &str, index: usize, files: Vec<PathBuf>) -> Rectangle {
     let chip = Rectangle::new()
         .width(Size::Fixed(48.0))
         .height(Size::Fixed(48.0))
-        .fill(Color::TRANSPARENT)
         .drag_out(move || {
             DragData::Files(
                 dragged

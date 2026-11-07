@@ -33,8 +33,8 @@ pub(super) use view::view;
 use std::cell::{Cell, RefCell};
 
 use amane::{
-    Animation, Blend, BlurShape, Center, Color, Cursor, Key, Parent, Point, Rectangle, Row, Scroll,
-    Stack, Start, Text, Widget, modifiers,
+    Animation, Blend, BlurShape, Center, Cursor, Key, Parent, Point, Rectangle, Row, Scroll, Stack,
+    Start, Text, Widget, modifiers,
 };
 
 use super::controls::{self, ControlId, Ctx};

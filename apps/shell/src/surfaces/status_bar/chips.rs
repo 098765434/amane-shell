@@ -68,7 +68,6 @@ fn dot(id: &'static str, glyph: char, color: Color, tip: String) -> Rectangle {
         Rectangle::new()
             .width(metrics.item_width)
             .height(Size::Parent)
-            .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
             .child(icon(glyph, metrics.small_icon, color))
     }))

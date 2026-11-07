@@ -44,19 +44,18 @@ pub fn nothing() -> Box<dyn Widget> {
 /// A transparent rectangle filling its parent: an empty surface's child, or
 /// a frame to align something in.
 pub fn blank() -> Rectangle {
-    Rectangle::new()
-        .width(Parent)
-        .height(Parent)
-        .fill(Color::TRANSPARENT)
+    Rectangle::new().width(Parent).height(Parent)
+}
+
+/// A transparent box `width` by `height`: room to leave, or a frame to
+/// place something in.
+pub fn frame(width: f32, height: f32) -> Rectangle {
+    Rectangle::new().width(width).height(height)
 }
 
 /// A transparent `side`-square slot that centers its child.
 pub fn slot(side: f32) -> Rectangle {
-    Rectangle::new()
-        .width(side)
-        .height(side)
-        .fill(Color::TRANSPARENT)
-        .align_child(Center, Center)
+    crate::layout::frame(side, side).align_child(Center, Center)
 }
 
 /// A Material-Symbols glyph as a `Text` widget (centered on its ink).
@@ -102,7 +101,6 @@ pub fn clipped_label(
     Rectangle::new()
         .width(width)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .align_child(align, Center)
         .clip()
         .child(Text::new(text.into()).style(style).color(color).elide())

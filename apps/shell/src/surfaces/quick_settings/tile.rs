@@ -34,7 +34,7 @@ use amane_kit::buttons::{
     Actions, Pending, hovered, interactive, press_scale, state_fill, with_existing, with_state,
 };
 use amane_kit::icons::{Glyph, glyph};
-use amane_kit::layout::{boxed, icon, pad, text_height, text_width};
+use amane_kit::layout::{boxed, frame, icon, pad, text_height, text_width};
 use amane_kit::material::{self, FillLevel, Level, Material};
 use amane_kit::motion;
 use amane_kit::tooltip;
@@ -496,10 +496,7 @@ fn clicked(id: &str, on: bool) {
 /// One elided line of text, `width` wide, on the reference's line height
 /// (`quick.type.line`; amane's text has no leading of its own).
 pub(super) fn line(text: String, style: TextStyle, color: Color, width: f32) -> Rectangle {
-    Rectangle::new()
-        .width(width)
-        .height(quick::r#type::line().max(text_height(style)))
-        .fill(Color::TRANSPARENT)
+    frame(width, quick::r#type::line().max(text_height(style)))
         .align_child(Start, Center)
         .clip()
         .child(Text::new(text).style(style).color(color).elide())

@@ -5,9 +5,9 @@
 //! with it. amane has no wrapping layout, so the items are a stack of
 //! translated rectangles.
 
-use amane::{Color, Rectangle, Stack, Widget};
+use amane::{Rectangle, Stack, Widget};
 
-use crate::layout::boxed;
+use crate::layout::{boxed, frame};
 
 /// Where an item was put, in the flow's own coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -62,20 +62,13 @@ impl Flow {
             .zip(placed.iter())
             .map(|((w, h, widget), at)| {
                 boxed(
-                    Rectangle::new()
-                        .width(w)
-                        .height(h)
-                        .fill(Color::TRANSPARENT)
+                    frame(w, h)
                         .translate(at.x, at.y)
                         .child(Stack::new(vec![widget])),
                 )
             })
             .collect();
-        let flow = Rectangle::new()
-            .width(self.width)
-            .height(height.max(1.0))
-            .fill(Color::TRANSPARENT)
-            .child(Stack::new(layers));
+        let flow = frame(self.width, height.max(1.0)).child(Stack::new(layers));
         (flow, height, placed)
     }
 }

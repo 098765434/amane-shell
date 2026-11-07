@@ -39,7 +39,7 @@ use amane_kit::buttons::{IconButton, Shape, Style};
 use amane_kit::control_size::ControlSize;
 use amane_kit::grid::drag::{self, Hit, Origin, Session, follow, hit, off_canvas};
 use amane_kit::icons::{ICON_REMOVE, ICON_RESIZE};
-use amane_kit::layout::{boxed, icon};
+use amane_kit::layout::{boxed, frame, icon};
 use amane_kit::material::{self, FillLevel, Level};
 use amane_kit::motion::{self, Pose};
 
@@ -345,11 +345,7 @@ pub(super) fn reset() {
 /// `control` as edit mode shows it: inert, under a surface that only names
 /// the grab cursor (the drag layer beneath takes the drag).
 pub(super) fn body(control: Box<dyn Widget>, slot: Slot) -> Box<dyn Widget> {
-    let surface = Rectangle::new()
-        .width(slot.width)
-        .height(slot.height)
-        .fill(Color::TRANSPARENT)
-        .cursor(Cursor::Grab);
+    let surface = frame(slot.width, slot.height).cursor(Cursor::Grab);
     boxed(Stack::new(vec![control, boxed(surface)]))
 }
 
@@ -368,10 +364,7 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
         .color(material::label(Level::Primary))
         .on_press(move || hide(id))
         .build();
-    let badge = Rectangle::new()
-        .width(slot.width)
-        .height(slot.height)
-        .fill(Color::TRANSPARENT)
+    let badge = frame(slot.width, slot.height)
         .align_child(amane::Start, amane::Start)
         .child(badge);
 
@@ -394,13 +387,9 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
                     },
                     Slot { height: h, ..slot },
                 ))
-                .fill(Color::TRANSPARENT)
                 .border(sys::border::hairline(), sys::color::accent::bg());
             layers.push(boxed(
-                Rectangle::new()
-                    .width(slot.width)
-                    .height(slot.height)
-                    .fill(Color::TRANSPARENT)
+                frame(slot.width, slot.height)
                     .align_child(amane::Start, amane::Start)
                     .child(ghost),
             ));
@@ -418,10 +407,7 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
                 material::label(Level::Primary),
             ));
         layers.push(boxed(
-            Rectangle::new()
-                .width(slot.width)
-                .height(slot.height)
-                .fill(Color::TRANSPARENT)
+            frame(slot.width, slot.height)
                 .align_child(amane::End, amane::End)
                 .child(handle),
         ));
@@ -429,10 +415,7 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
     layers.push(boxed(badge));
 
     boxed(
-        Rectangle::new()
-            .width(slot.width)
-            .height(slot.height)
-            .fill(Color::TRANSPARENT)
+        frame(slot.width, slot.height)
             .translate(pose.x, pose.y)
             .scale(pose.scale)
             .opacity(chrome())
@@ -471,7 +454,6 @@ pub(super) fn ghost_grid(
         Rectangle::new()
             .width(Parent)
             .height(Parent)
-            .fill(Color::TRANSPARENT)
             .opacity(chrome())
             .child(Stack::new(circles)),
     )
@@ -493,7 +475,6 @@ pub(super) fn drop_outline(px: &Metrics, layout: &Layout) -> Box<dyn Widget> {
             .width(slot.width)
             .height(slot.height)
             .radius(radius_of(id, rect.span, slot))
-            .fill(Color::TRANSPARENT)
             .border(sys::border::hairline(), sys::color::accent::bg())
             .translate(slot.x, slot.y),
     )

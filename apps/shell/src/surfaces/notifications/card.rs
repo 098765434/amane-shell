@@ -33,7 +33,7 @@ use crate::tokens::{Styled, notification, sys};
 use amane_kit::app_icon::{icon_for, tile as app_icon_tile};
 use amane_kit::buttons::{IconButton, PushButton, Style};
 use amane_kit::icons::ICON_CLOSE;
-use amane_kit::layout::{blank, boxed, inner_width, text_width};
+use amane_kit::layout::{blank, boxed, frame, inner_width, text_width};
 use amane_kit::material::{self, FillLevel, Level, Material};
 
 /// The body is cut after this many lines, like a banner's.
@@ -259,13 +259,7 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
     let hovered = HOVERED.with(Cell::get) == Some(id);
     let padding = padding();
 
-    let fixed = |w: f32, h: f32| {
-        Rectangle::new()
-            .width(w)
-            .height(h)
-            .fill(Color::TRANSPARENT)
-            .clip()
-    };
+    let fixed = |w: f32, h: f32| frame(w, h).clip();
 
     // the middle: the app's name, the summary, and the body
     let app = fixed(parts.text_width, parts.line)
@@ -310,10 +304,7 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
         // grow (and the card measured without it doesn't shift); the button
         // spills evenly above and below
         boxed(
-            Rectangle::new()
-                .width(side)
-                .height(parts.time_line)
-                .fill(Color::TRANSPARENT)
+            frame(side, parts.time_line)
                 .align_child(Center, Center)
                 .child(close),
         )

@@ -8,7 +8,7 @@
 use std::cell::Cell;
 use std::time::{Duration, Instant};
 
-use amane::{Center, Color, Column, Image, Media, Rectangle, Row, Service, Stack, Start, Widget};
+use amane::{Center, Column, Image, Media, Rectangle, Row, Service, Stack, Start, Widget};
 
 use super::super::grid::{Metrics, Span};
 use super::super::tile::{line, module};
@@ -17,7 +17,7 @@ use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{quick, sys};
 use amane_kit::buttons::{IconButton, expect, optimistic};
 use amane_kit::icons::{ICON_MUSIC, ICON_PAUSE, ICON_PLAY, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS};
-use amane_kit::layout::{boxed, icon, pad};
+use amane_kit::layout::{boxed, frame, icon, pad};
 use amane_kit::material::{self, FillLevel, Level};
 
 amane_kit::marker! {
@@ -209,10 +209,7 @@ pub(crate) fn cell(span: Span, inert: bool) -> Box<dyn Widget> {
         )
     };
 
-    let inner = Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    let inner = frame(width, height)
         .padding(pad(inset, inset))
         .align_child(Start, Center)
         .child(Stack::new(vec![content]));

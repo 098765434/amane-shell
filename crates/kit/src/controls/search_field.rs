@@ -12,7 +12,7 @@ use amane::{Center, Color, Radius, Rectangle, Row, Start, Text, Widget};
 
 use crate::buttons::{Actions, interactive};
 use crate::icons::{ICON_CLOSE, ICON_SEARCH};
-use crate::layout::{boxed, icon, pad, slot, text_width};
+use crate::layout::{boxed, frame, icon, pad, slot, text_width};
 use crate::material::{self, FillLevel, Level};
 use crate::text_edit::Field;
 use crate::tokens::{Styled, TextStyle, sys};
@@ -187,10 +187,7 @@ fn query(
         }
     }
 
-    Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    frame(width, height)
         .clip()
         .align_child(Start, Center)
         .child(Row::new(parts).gap(sys::space::gap::_2xs()).align(Center))

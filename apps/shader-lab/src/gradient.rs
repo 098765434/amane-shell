@@ -11,7 +11,7 @@ use amane_kit::color_picker::{ColorPicker, to_color};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::lab::config::Config;
 use amane_kit::lab::manifest::Manifest;
-use amane_kit::layout::boxed;
+use amane_kit::layout::{boxed, frame};
 use amane_kit::material;
 use amane_kit::tokens::sys;
 
@@ -136,10 +136,7 @@ fn bar(stops: &[[f32; 5]], selected: usize, width: f32) -> Rectangle {
 
     let positions: Vec<f32> = stops.iter().map(|stop| stop[0]).collect();
 
-    Rectangle::new()
-        .width(width)
-        .height(BAR + HANDLE + 4.0)
-        .fill(Color::TRANSPARENT)
+    frame(width, BAR + HANDLE + 4.0)
         .cursor(amane::Pointer)
         .on_drag(move |point| pressed(point, &positions, width))
         .on_release(|_| HELD.set(None))

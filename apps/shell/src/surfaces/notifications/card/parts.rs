@@ -1,14 +1,12 @@
 //! What a notification card is made of: its icon or image, the app's name, its text and its age.
 
 use super::*;
+use amane_kit::layout::frame;
 
 /// The app's icon, centered in its frame as tall as the card's content.
 pub(super) fn leading(n: &Notification, height: f32) -> Box<dyn Widget> {
     boxed(
-        Rectangle::new()
-            .width(notification::card::icon_frame())
-            .height(height)
-            .fill(Color::TRANSPARENT)
+        frame(notification::card::icon_frame(), height)
             .align_child(Center, Center)
             .child(app_icon(n, notification::card::icon_size())),
     )

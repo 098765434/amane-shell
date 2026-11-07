@@ -43,7 +43,6 @@ pub(super) fn workspaces(output: &str) -> Rectangle {
     Rectangle::new()
         .width(width)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .align_child(Start, Center)
         .on_scroll(move |scroll| {
             if status_bar().scroll_workspaces {

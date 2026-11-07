@@ -11,8 +11,8 @@
 use std::cell::{Cell, RefCell};
 
 use amane::{
-    Animation, Blend, BlurShape, Center, Color, Key, Rectangle, Row, Stack, Start, Text, Vertical,
-    Widget, modifiers,
+    Animation, Blend, BlurShape, Center, Key, Rectangle, Row, Stack, Start, Text, Vertical, Widget,
+    modifiers,
 };
 
 use super::catalog;
@@ -25,7 +25,7 @@ use crate::tokens::{Styled, sys};
 use amane_kit::buttons::{PushButton, Shape, Style};
 use amane_kit::divider::Divider;
 use amane_kit::flow::Flow;
-use amane_kit::layout::{boxed, caption, pad, split_row, text_height, wrapped_lines};
+use amane_kit::layout::{boxed, caption, frame, pad, split_row, text_height, wrapped_lines};
 use amane_kit::list::{self, List, ListItem};
 use amane_kit::material::{self, FillLevel, Level, Material};
 use amane_kit::motion;
@@ -259,7 +259,6 @@ pub(super) fn sheet(_output: &str, geometry: &Geometry) -> (Box<dyn Widget>, Vec
     let widget = Rectangle::new()
         .width(amane::Parent)
         .height(amane::Parent)
-        .fill(Color::TRANSPARENT)
         .align_child(Start, Start)
         .child(
             surface
@@ -300,10 +299,7 @@ pub(super) fn ghost(
         catalog::build(key, size, width, height, &Settings::default()),
     );
     let frost = Material::Control.shape(x, y, width, height, RADIUS, 1.0);
-    let widget = Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    let widget = frame(width, height)
         .translate(x, y)
         .scale(super::DRAG_SCALE)
         .child(card);
@@ -337,10 +333,7 @@ fn content(area: &Area) -> Rectangle {
     ])
     .width(pane_w);
 
-    Rectangle::new()
-        .width(area.width)
-        .height(area.height)
-        .fill(Color::TRANSPARENT)
+    frame(area.width, area.height)
         .align_child(Start, Start)
         .child(
             Row::new(vec![
@@ -376,10 +369,7 @@ fn sidebar(field: &Field, picked: Section, height: f32) -> Rectangle {
         })
         .collect();
     let list = list::with_row_width(inner_w, || List::new(items).build());
-    Rectangle::new()
-        .width(SIDEBAR)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    frame(SIDEBAR, height)
         .padding(pad(INSET, INSET))
         .align_child(Start, Start)
         .child(
@@ -419,44 +409,29 @@ fn pane(kinds: &[WidgetKind], viewport: Area, searching: bool) -> Rectangle {
             .into_iter()
             .map(|line| {
                 boxed(
-                    Rectangle::new()
-                        .width(item_w)
-                        .height(line_h)
-                        .fill(Color::TRANSPARENT)
-                        .align_child(Center, Center)
-                        .child(
-                            Text::new(line)
-                                .style(style)
-                                .color(material::label(Level::Primary)),
-                        ),
+                    frame(item_w, line_h).align_child(Center, Center).child(
+                        Text::new(line)
+                            .style(style)
+                            .color(material::label(Level::Primary)),
+                    ),
                 )
             })
             .collect();
         // the card scales about its centre, so it's placed centred in the box
-        let item = Rectangle::new()
-            .width(item_w)
-            .height(PREVIEW + gap + name_h)
-            .fill(Color::TRANSPARENT)
-            .child(Stack::new(vec![
-                boxed(
-                    Rectangle::new()
-                        .width(width)
-                        .height(height)
-                        .fill(Color::TRANSPARENT)
-                        .translate((item_w - width) / 2.0, (PREVIEW - height) / 2.0)
-                        .scale(scale)
-                        .cursor(amane::Cursor::Grab)
-                        .child(card),
-                ),
-                boxed(
-                    Rectangle::new()
-                        .width(item_w)
-                        .height(name_h)
-                        .fill(Color::TRANSPARENT)
-                        .translate(0.0, PREVIEW + gap)
-                        .child(amane::Column::new(names)),
-                ),
-            ]));
+        let item = frame(item_w, PREVIEW + gap + name_h).child(Stack::new(vec![
+            boxed(
+                frame(width, height)
+                    .translate((item_w - width) / 2.0, (PREVIEW - height) / 2.0)
+                    .scale(scale)
+                    .cursor(amane::Cursor::Grab)
+                    .child(card),
+            ),
+            boxed(
+                frame(item_w, name_h)
+                    .translate(0.0, PREVIEW + gap)
+                    .child(amane::Column::new(names)),
+            ),
+        ]));
         flow = flow.item(item_w, PREVIEW + gap + name_h, item);
         cells.push((*kind, drawn, scale));
     }
@@ -485,10 +460,7 @@ fn pane(kinds: &[WidgetKind], viewport: Area, searching: bool) -> Rectangle {
     } else {
         boxed(flow)
     };
-    Rectangle::new()
-        .width(viewport.width)
-        .height(viewport.height)
-        .fill(Color::TRANSPARENT)
+    frame(viewport.width, viewport.height)
         .padding(pad(INSET, INSET))
         .align_child(Start, Start)
         .clip()
@@ -522,10 +494,7 @@ fn footer(width: f32, height: f32) -> Rectangle {
             .build(),
     ));
     let hint = caption("Drag a widget onto the desktop, or click it to add it.");
-    Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    frame(width, height)
         .padding(pad(INSET, 0.0))
         .align_child(Start, Center)
         .child(split_row(hint, actions))

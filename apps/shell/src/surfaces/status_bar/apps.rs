@@ -97,7 +97,6 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
         Rectangle::new()
             .width(width)
             .height(Parent)
-            .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
             .child(Row::new(parts).gap(4.0).align(Center))
     };

@@ -2,6 +2,7 @@
 //! clipboard history on.
 
 use super::*;
+use amane_kit::layout::frame;
 
 /// The copy picked in Clipboard, `width` by `height` beside the list: its
 /// text wrapped, or its image fitted.
@@ -73,14 +74,7 @@ pub(crate) fn preview(preview: Option<&Preview>, width: f32, height: f32) -> Rec
                                 )));
                                 text_w -= line_h + gap;
                             }
-                            parts.push(boxed(
-                                Rectangle::new()
-                                    .width(text_w.max(0.0))
-                                    .height(line_h)
-                                    .fill(Color::TRANSPARENT)
-                                    .clip()
-                                    .child(text),
-                            ));
+                            parts.push(boxed(frame(text_w.max(0.0), line_h).clip().child(text)));
                             boxed(Row::new(parts).gap(gap).align(Center))
                         })
                         .collect();
@@ -180,12 +174,7 @@ pub(crate) fn ask_clipboard(width: f32, height: f32) -> Rectangle {
         })
         .collect();
     // a little more room over the buttons than between the lines
-    lines.push(boxed(
-        Rectangle::new()
-            .width(1.0)
-            .height(sys::space::gap::s())
-            .fill(Color::TRANSPARENT),
-    ));
+    lines.push(boxed(frame(1.0, sys::space::gap::s())));
     lines.push(boxed(
         Row::new(vec![
             boxed(
@@ -207,10 +196,7 @@ pub(crate) fn ask_clipboard(width: f32, height: f32) -> Rectangle {
         .gap(sys::space::gap::m())
         .align(Center),
     ));
-    Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    frame(width, height)
         .align_child(Center, Center)
         .child(Column::new(lines).gap(sys::space::gap::s()).align(Center))
 }

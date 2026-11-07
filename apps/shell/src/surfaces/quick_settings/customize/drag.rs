@@ -2,6 +2,7 @@
 //! and where it lands.
 
 use super::*;
+use amane_kit::layout::frame;
 
 /// The surface says where the canvas is this frame.
 pub(crate) fn set_canvas_origin(x: f32, y: f32) {
@@ -68,7 +69,6 @@ pub(crate) fn drag_layer() -> Box<dyn Widget> {
     let layer = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .on_drag(drag_at)
         .on_release(|_| edit::release());
     let layer = match edit::drag() {
@@ -100,10 +100,7 @@ pub(crate) fn ghost(origin: (f32, f32)) -> Option<(Box<dyn Widget>, BlurShape)> 
         radius * scale,
         1.0,
     );
-    let widget = Rectangle::new()
-        .width(slot.width)
-        .height(slot.height)
-        .fill(Color::TRANSPARENT)
+    let widget = frame(slot.width, slot.height)
         .translate(x, y)
         .scale(scale)
         .child(Stack::new(vec![control]));

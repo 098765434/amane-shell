@@ -330,7 +330,6 @@ pub fn indicator(output: &str, workspaces: &[&Workspace], width: f32) -> Rectang
         Rectangle::new()
             .width(width)
             .height(Size::Parent)
-            .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
             .child(
                 Canvas::new()

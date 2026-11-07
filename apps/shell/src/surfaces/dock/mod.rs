@@ -48,9 +48,9 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use amane::{
-    Animation, BlurShape, Button, Color, Cursor, Full, InputArea, Keyboard, Layer, LayerWindow,
-    Monitor, Overview, Parent, Point, Rectangle, Row, Service, Stack, Start, Vertical, Widget,
-    Windows, Workspaces, Zone,
+    Animation, BlurShape, Button, Cursor, Full, InputArea, Keyboard, Layer, LayerWindow, Monitor,
+    Overview, Parent, Point, Rectangle, Row, Service, Stack, Start, Vertical, Widget, Windows,
+    Workspaces, Zone,
 };
 
 use amane_kit::settings::dock as dock_settings;

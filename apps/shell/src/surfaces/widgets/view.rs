@@ -2,6 +2,7 @@
 //! shadows, the one held.
 
 use super::*;
+use amane_kit::layout::frame;
 
 /// Whether the cards fade back now, as the widget style says: by default
 /// while a window is open on the monitor's workspace, and part way through
@@ -188,10 +189,7 @@ pub(super) fn view(
         );
         let in_hand = held.is_some_and(|(k, _)| k == key) && !item.leaving;
         let drawn_card = boxed(
-            Rectangle::new()
-                .width(slot.width)
-                .height(slot.height)
-                .fill(Color::TRANSPARENT)
+            frame(slot.width, slot.height)
                 .translate(x, y)
                 .scale(pose.scale)
                 .opacity(opacity)

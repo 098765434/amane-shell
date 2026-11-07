@@ -7,14 +7,12 @@
 //! turning to is drawn beside it, both sliding under the fingers. All
 //! Applications leads with the apps used most, a hairline under them.
 
-use amane::{
-    Center, Color, Column, DesktopApp, Padding, Rectangle, Row, Stack, Start, Text, Widget,
-};
+use amane::{Center, Column, DesktopApp, Padding, Rectangle, Row, Stack, Start, Text, Widget};
 
 use crate::tokens::{Styled, sys};
 use amane_kit::app_icon;
 use amane_kit::kinetic::Axis;
-use amane_kit::layout::{boxed, text_height, text_width};
+use amane_kit::layout::{boxed, frame, text_height, text_width};
 use amane_kit::scroll_view::ScrollView;
 
 use super::results::{self, Empty};
@@ -70,10 +68,7 @@ pub(super) fn pages(view: &View, offset: f32, at: At) -> Rectangle {
         })
         .collect();
 
-    Rectangle::new()
-        .width(GRID_W)
-        .height(BODY)
-        .fill(Color::TRANSPARENT)
+    frame(GRID_W, BODY)
         .clip()
         // the strip takes the scrolls, not a page: a page sliding out from
         // under the fingers mustn't take the gesture with it
@@ -146,32 +141,26 @@ fn page_of(apps: &[&DesktopApp], at: Option<At>, suggested: bool) -> Rectangle {
 /// its menu.
 fn cell(app: &DesktopApp, index: usize, live: bool) -> Rectangle {
     let gap = sys::space::gap::s();
-    let icon = Rectangle::new()
-        .width(ICON_BOX)
-        .height(ICON_BOX)
-        .fill(Color::TRANSPARENT)
+    let icon = frame(ICON_BOX, ICON_BOX)
         .align_child(Center, Center)
         .child(app_icon::entry_tile(app, ICON));
     let style = sys::r#type::label();
     // elided text fills its box, so the box is only as wide as the name:
     // the column centres it
-    let name = Rectangle::new()
-        .width(text_width(app.name(), style).min(CELL - gap * 2.0))
-        .height(text_height(style))
-        .fill(Color::TRANSPARENT)
-        .align_child(Center, Center)
-        .clip()
-        .child(
-            Text::new(app.name())
-                .style(style)
-                .color(material::label(Level::Primary))
-                .elide(),
-        );
+    let name = frame(
+        text_width(app.name(), style).min(CELL - gap * 2.0),
+        text_height(style),
+    )
+    .align_child(Center, Center)
+    .clip()
+    .child(
+        Text::new(app.name())
+            .style(style)
+            .color(material::label(Level::Primary))
+            .elide(),
+    );
 
-    let cell = Rectangle::new()
-        .width(CELL)
-        .height(CELL)
-        .fill(Color::TRANSPARENT)
+    let cell = frame(CELL, CELL)
         .padding(Padding {
             top: super::BOX_Y,
             right: gap,

@@ -102,10 +102,7 @@ pub struct Rim {
 /// at once, to draw over them. More than [`RIMS_PER_PASS`] pieces take a
 /// layer each; see [`rim_layers`].
 pub fn rims(rims: &[Rim]) -> Rectangle {
-    let layer = Rectangle::new()
-        .width(amane::Parent)
-        .height(amane::Parent)
-        .fill(Color::TRANSPARENT);
+    let layer = Rectangle::new().width(amane::Parent).height(amane::Parent);
     let Some(shader) = shader() else {
         return layer;
     };

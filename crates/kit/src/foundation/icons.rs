@@ -9,7 +9,7 @@ use amane::{
     Row, Size,
 };
 
-use crate::layout::{boxed, fixed_width, icon};
+use crate::layout::{boxed, fixed_width, frame, icon};
 
 /// A grid of squares (`apps`): the app launcher.
 pub const ICON_APPS: char = '\u{e5c3}';
@@ -396,11 +396,7 @@ pub fn glyph(glyph: Glyph, size: f32, color: Color) -> Rectangle {
                 Size::Fixed(height) => height,
                 Size::Parent => size,
             };
-            Rectangle::new()
-                .width(fixed_width(&text))
-                .height(height)
-                .fill(Color::TRANSPARENT)
-                .child(text)
+            frame(fixed_width(&text), height).child(text)
         }
         Glyph::Tailscale => tailscale_mark(size, color),
     }
@@ -437,10 +433,7 @@ fn tailscale_mark(size: f32, color: Color) -> Rectangle {
             boxed(Row::new(dots).gap(gap))
         })
         .collect();
-    Rectangle::new()
-        .width(size)
-        .height(size)
-        .fill(Color::TRANSPARENT)
+    frame(size, size)
         .align_child(Center, Center)
         .child(Column::new(rows).gap(gap))
 }

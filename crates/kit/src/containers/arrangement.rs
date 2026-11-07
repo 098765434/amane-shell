@@ -15,7 +15,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use amane::{Center, Color, Cursor, Parent, Point, Rectangle, Stack, Text, Widget};
+use amane::{Center, Cursor, Parent, Point, Rectangle, Stack, Text, Widget};
 
 use crate::color::with_alpha;
 use crate::layout::boxed;
@@ -219,7 +219,6 @@ impl Arrangement {
         let layer = Rectangle::new()
             .width(Parent)
             .height(Parent)
-            .fill(Color::TRANSPARENT)
             .on_drag(drag)
             .on_release(release);
         match held {

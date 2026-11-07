@@ -5,7 +5,7 @@
 //! subject's shape out of itself, so they don't show through a see-through
 //! surface; inner shadows go over it.
 
-use amane::{Color, Mask, Rectangle, Shadow, Stack, Widget};
+use amane::{Mask, Rectangle, Shadow, Stack, Widget};
 
 use super::config::ShadowSpec;
 use crate::color_picker::to_color;
@@ -79,5 +79,4 @@ fn shape(width: f32, height: f32, radius: f32) -> Rectangle {
         .width(width)
         .height(height)
         .radius(radius.max(0.0))
-        .fill(Color::TRANSPARENT)
 }

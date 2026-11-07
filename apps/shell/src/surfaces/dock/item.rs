@@ -4,7 +4,7 @@
 //! inert: the dock's still layer takes the pointer for every icon (see
 //! [`super`]), so nothing here moves a hit area as the icons swell.
 
-use amane::{Center, Color, Rectangle, Row, Service, Text, Widget, Windows};
+use amane::{Center, Rectangle, Row, Service, Text, Widget, Windows};
 use amane_kit::settings::dock;
 
 use super::model::Icon;
@@ -105,8 +105,5 @@ pub fn label_height() -> f32 {
 
 /// A clear `width` by `height` frame for absolute placement.
 pub fn frame(width: f32, height: f32) -> Rectangle {
-    Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    amane_kit::layout::frame(width, height)
 }

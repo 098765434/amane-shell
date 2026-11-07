@@ -15,7 +15,7 @@
 
 use std::cell::RefCell;
 
-use amane::{Color, Cursor, Key, Point, Radius, Rectangle, Size, Stack, Widget};
+use amane::{Cursor, Key, Point, Radius, Rectangle, Size, Stack, Widget};
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use super::store::{self, Settings};
@@ -30,7 +30,7 @@ use amane_kit::grid::drag::{Drag, Origin, Session, follow};
 use amane_kit::grid::geometry::{Metrics, Slot};
 use amane_kit::grid::{Entry, GridKey};
 use amane_kit::icons::{ICON_REMOVE, ICON_RESIZE};
-use amane_kit::layout::{boxed, icon};
+use amane_kit::layout::{boxed, frame, icon};
 use amane_kit::material::{self, FillLevel, Level};
 use amane_kit::menu::layer as context_menu;
 use amane_kit::motion::Pose;
@@ -289,7 +289,6 @@ pub(super) fn drop_outline(
             .width(slot.width)
             .height(slot.height)
             .radius(RADIUS)
-            .fill(Color::TRANSPARENT)
             .border(sys::border::hairline(), sys::color::accent::bg())
             .translate(geometry.origin.0 + slot.x, geometry.origin.1 + slot.y),
     )
@@ -315,10 +314,7 @@ pub(super) fn dressing(output: &str, key: WidgetKey, slot: Slot, pose: Pose) -> 
                 material::label(Level::Primary),
             ));
         layers.push(boxed(
-            Rectangle::new()
-                .width(slot.width)
-                .height(slot.height)
-                .fill(Color::TRANSPARENT)
+            frame(slot.width, slot.height)
                 .align_child(amane::End, amane::End)
                 .child(handle),
         ));
@@ -335,19 +331,13 @@ pub(super) fn dressing(output: &str, key: WidgetKey, slot: Slot, pose: Pose) -> 
             .on_press(move || remove(&on, key))
             .build();
         layers.push(boxed(
-            Rectangle::new()
-                .width(slot.width)
-                .height(slot.height)
-                .fill(Color::TRANSPARENT)
+            frame(slot.width, slot.height)
                 .align_child(amane::Start, amane::Start)
                 .child(badge),
         ));
     }
     boxed(
-        Rectangle::new()
-            .width(slot.width)
-            .height(slot.height)
-            .fill(Color::TRANSPARENT)
+        frame(slot.width, slot.height)
             .translate(pose.x, pose.y)
             .scale(pose.scale)
             .opacity(pose.opacity.clamp(0.0, 1.0))

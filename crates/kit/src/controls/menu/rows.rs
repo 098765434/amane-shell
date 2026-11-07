@@ -246,7 +246,6 @@ impl Look {
         Rectangle::new()
             .width(Parent)
             .height(self.row_height())
-            .fill(Color::TRANSPARENT)
             .padding(crate::layout::pad(self.row_padding(), 0.0))
             .align_child(amane::Start, Center)
             .child(

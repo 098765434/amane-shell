@@ -237,7 +237,6 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
                     + sys::space::gap::s()
                     + 2.0 * sys::space::inset::m(),
             )
-            .fill(amane::Color::TRANSPARENT)
             .child(
                 Card::new(vec![
                     text,

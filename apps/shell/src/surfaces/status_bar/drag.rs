@@ -11,7 +11,7 @@
 use crate::chrome::per_output::PerOutput;
 use std::cell::RefCell;
 
-use amane::{Center, Color, Parent, Point, Rectangle, Row, Stack, Widget};
+use amane::{Center, Parent, Point, Rectangle, Row, Stack, Widget};
 
 use crate::tokens::sys;
 use amane_kit::buttons::swallow_click;
@@ -94,7 +94,6 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
         let mut cell = Rectangle::new()
             .width(width)
             .height(Parent)
-            .fill(Color::TRANSPARENT)
             .align_child(Center, Center);
         if let Some(held) = held.filter(|held| held.item == item) {
             cell = cell.translate(held.at.x - held.grab - left, 0.0);
@@ -124,7 +123,6 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
     let layer = Rectangle::new()
         .width(Parent)
         .height(Parent)
-        .fill(Color::TRANSPARENT)
         .on_drag(move |at| drag(&dragged, at))
         .on_release(move |at| release(&released, at));
 

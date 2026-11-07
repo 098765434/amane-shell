@@ -14,9 +14,9 @@ use std::collections::HashSet;
 use std::time::SystemTime;
 
 use amane::{
-    Animation, Center, Color, Column, Full, Horizontal, Keyboard, LayerWindow, Margin,
-    Notification, Notifications, Parent, Rectangle, ScrollArea, Service, Stack, Text, Vertical,
-    Widget, window_size,
+    Animation, Center, Column, Full, Horizontal, Keyboard, LayerWindow, Margin, Notification,
+    Notifications, Parent, Rectangle, ScrollArea, Service, Stack, Text, Vertical, Widget,
+    window_size,
 };
 
 use super::card::{self, Measured, Place};
@@ -28,7 +28,7 @@ use amane_kit::app_bar::TopAppBar;
 use amane_kit::buttons::{IconButton, PushButton, Shape, Style};
 use amane_kit::card::Card;
 use amane_kit::icons::ICON_DND;
-use amane_kit::layout::{blank, boxed, cursor, split_row};
+use amane_kit::layout::{blank, boxed, cursor, frame, split_row};
 use amane_kit::material::{self, Level, Material};
 use amane_kit::motion::{self, Arrive, Item, Pose};
 
@@ -410,10 +410,7 @@ fn group_view(
         .collect();
 
     Some(boxed(
-        Rectangle::new()
-            .width(width)
-            .height(height.max(1.0))
-            .fill(Color::TRANSPARENT)
+        frame(width, height.max(1.0))
             .clip()
             .child(Stack::new(layers)),
     ))
@@ -485,19 +482,15 @@ fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32)
         },
     );
 
-    Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
-        .child(
-            split_row(
-                Text::new(name.to_string())
-                    .style(sys::r#type::title())
-                    .color(material::label(Level::Primary)),
-                vec![boxed(less), boxed(clear)],
-            )
-            .height(Parent),
+    frame(width, height).child(
+        split_row(
+            Text::new(name.to_string())
+                .style(sys::r#type::title())
+                .color(material::label(Level::Primary)),
+            vec![boxed(less), boxed(clear)],
         )
+        .height(Parent),
+    )
 }
 
 #[cfg(test)]

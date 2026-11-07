@@ -17,7 +17,7 @@
 
 use std::rc::Rc;
 
-use amane::{Center, Color, Column, Parent, Rectangle, Stack, Start, Widget};
+use amane::{Center, Column, Parent, Rectangle, Stack, Start, Widget};
 
 use super::grid::{Canvas, Metrics};
 use super::{ALONE, back, ramp};
@@ -56,7 +56,6 @@ fn revealed(widget: impl Widget + 'static, shown: f32) -> Rectangle {
     Rectangle::new()
         .width(Parent)
         .height(height)
-        .fill(Color::TRANSPARENT)
         .opacity(shown)
         .translate(0.0, (1.0 - shown) * REVEAL_RISE)
         .child(widget)
@@ -175,7 +174,6 @@ impl DetailPage {
         let header = Rectangle::new()
             .width(Parent)
             .height(row)
-            .fill(Color::TRANSPARENT)
             .align_child(Start, Center)
             .child(bar.build());
 
@@ -193,7 +191,6 @@ impl DetailPage {
         let body = Rectangle::new()
             .width(Parent)
             .height(body_h)
-            .fill(Color::TRANSPARENT)
             .align_child(Start, Start)
             .clip()
             .child(Column::new(body).gap(sys::space::gap::l()).width(Parent));

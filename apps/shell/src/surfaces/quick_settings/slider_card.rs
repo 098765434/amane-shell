@@ -6,14 +6,14 @@
 
 use std::rc::Rc;
 
-use amane::{Button, Center, Color, Column, Rectangle, Row, Stack, Start, Text, Widget};
+use amane::{Button, Center, Column, Rectangle, Row, Stack, Start, Text, Widget};
 
 use super::grid::{Metrics, Span};
 use super::tile::module;
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{Styled, quick, sys};
 use amane_kit::color::with_alpha;
-use amane_kit::layout::{boxed, icon, pad};
+use amane_kit::layout::{boxed, frame, icon, pad};
 use amane_kit::material::{self, Level};
 use amane_kit::slider::Slider;
 
@@ -103,10 +103,7 @@ pub(super) fn card(row: SliderRow, span: Span) -> Card {
         .fill(material::label(Level::Primary))
         .thickness(quick::slider::track())
         .build();
-    let leading = Rectangle::new()
-        .width(control)
-        .height(control)
-        .fill(Color::TRANSPARENT)
+    let leading = frame(control, control)
         .align_child(Center, Center)
         .child(Stack::new(vec![row.leading]));
     let large = icon(
@@ -119,10 +116,7 @@ pub(super) fn card(row: SliderRow, span: Span) -> Card {
     let line = Row::new(line).gap(gap).align(Center);
     let content = Column::new(vec![boxed(title), boxed(line)]).width(inner);
 
-    let inner_rect = Rectangle::new()
-        .width(width)
-        .height(height)
-        .fill(Color::TRANSPARENT)
+    let inner_rect = frame(width, height)
         .padding(pad(inset, 0.0))
         .align_child(Start, Center)
         .child(content);

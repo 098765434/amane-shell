@@ -10,12 +10,12 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::thread;
 
-use amane::{Apps, Color, Column, Rectangle, Service, Size, Text, Widget};
+use amane::{Apps, Column, Rectangle, Service, Size, Text, Widget};
 use amane_kit::app_icon::entry_tile;
 use amane_kit::buttons::{PushButton, Style};
 use amane_kit::form::FormRow;
 use amane_kit::icons::{ICON_PACKAGE, ICON_TERMINAL};
-use amane_kit::layout::{boxed, icon};
+use amane_kit::layout::{boxed, frame, icon};
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
 use serde::Deserialize;
@@ -272,11 +272,7 @@ pub fn title() -> String {
 fn paragraph(text: Text) -> Rectangle {
     let text = text.wrap();
     let height = text.height_in(page_width());
-    Rectangle::new()
-        .width(page_width())
-        .height(height)
-        .fill(Color::TRANSPARENT)
-        .child(text)
+    frame(page_width(), height).child(text)
 }
 
 fn fact(id: &str, name: &str) -> FormRow {

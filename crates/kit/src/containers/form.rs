@@ -317,8 +317,7 @@ impl FormRow {
                     boxed(
                         Rectangle::new()
                             .width(child_indent())
-                            .height(Size::Fixed(1.0))
-                            .fill(Color::TRANSPARENT),
+                            .height(Size::Fixed(1.0)),
                     ),
                     boxed(leading),
                 ])

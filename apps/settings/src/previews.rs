@@ -4,7 +4,7 @@
 
 use amane::{Color, Column, Rectangle, Stack, Widget};
 use amane_kit::color::with_alpha;
-use amane_kit::layout::boxed;
+use amane_kit::layout::{boxed, frame};
 use amane_kit::settings::{BarSize, BarStyle, WidgetStyle};
 use amane_kit::theme::{Glass, Mode};
 
@@ -20,10 +20,7 @@ const FAR_HILLS: &str = "#4675a9";
 /// Something at `x`, `y`, `w` × `h` in a picture.
 fn at(x: f32, y: f32, shape: Rectangle) -> Box<dyn Widget> {
     boxed(
-        Rectangle::new()
-            .width(WIDTH)
-            .height(HEIGHT)
-            .fill(Color::TRANSPARENT)
+        frame(WIDTH, HEIGHT)
             .padding(amane::Padding {
                 left: x,
                 top: y,
@@ -314,10 +311,7 @@ pub fn clock(analog: bool) -> Rectangle {
             at(
                 x,
                 y,
-                Rectangle::new()
-                    .width(FACE)
-                    .height(FACE)
-                    .fill(Color::TRANSPARENT)
+                frame(FACE, FACE)
                     .rotate(degrees)
                     .align_child(amane::Center, amane::Start)
                     .padding(amane::Padding {
@@ -331,10 +325,7 @@ pub fn clock(analog: bool) -> Rectangle {
         layers.push(hand(13.0, 60.0));
     } else {
         layers.push(boxed(
-            Rectangle::new()
-                .width(WIDTH)
-                .height(HEIGHT)
-                .fill(Color::TRANSPARENT)
+            frame(WIDTH, HEIGHT)
                 .align_child(amane::Center, amane::Center)
                 .child(Column::new(vec![boxed({
                     use amane_kit::tokens::Styled;

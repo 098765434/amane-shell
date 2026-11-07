@@ -25,9 +25,7 @@ pub mod tailscale;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
-use amane::{
-    Blend, BlurShape, Button, Center, Color, Column, Parent, Rectangle, Stack, Start, Text, Widget,
-};
+use amane::{Blend, BlurShape, Button, Center, Column, Parent, Stack, Start, Text, Widget};
 
 use super::controls::{self, ControlId, Ctx};
 use super::detail::DetailPage;
@@ -40,7 +38,7 @@ use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{Styled, quick, sys};
 use amane_kit::glass::{self, Rim};
 use amane_kit::glass_region;
-use amane_kit::layout::boxed;
+use amane_kit::layout::{boxed, frame};
 use amane_kit::material::{self, Level, Material};
 use amane_kit::motion::{self, Arrive, Item, Pose};
 
@@ -276,10 +274,7 @@ pub(super) fn grid(look: Motion) -> Grid {
             rims.push(drawn);
         }
         layers.push(boxed(
-            Rectangle::new()
-                .width(slot.width)
-                .height(slot.height)
-                .fill(Color::TRANSPARENT)
+            frame(slot.width, slot.height)
                 .translate(pose.x, pose.y)
                 .scale(pose.scale)
                 .opacity(pose.opacity.clamp(0.0, 1.0))
@@ -289,11 +284,7 @@ pub(super) fn grid(look: Motion) -> Grid {
     // the badges and handles sit over everything, the held control's last
     layers.extend(dressings);
 
-    let cells = Rectangle::new()
-        .width(width)
-        .height(grid_h)
-        .fill(Color::TRANSPARENT)
-        .child(Stack::new(layers).width(Parent).height(Parent));
+    let cells = frame(width, grid_h).child(Stack::new(layers).width(Parent).height(Parent));
     // a right click on the canvas's empty space edits it
     let cells = if editing {
         cells
@@ -328,27 +319,19 @@ pub(super) fn grid(look: Motion) -> Grid {
     };
     shapes.push(frost_in(&capsule, capsule_glass));
     rims.push(capsule);
-    let button = Rectangle::new()
-        .width(width)
-        .height(button_h)
-        .fill(Color::TRANSPARENT)
-        .align_child(Center, Center)
-        .child(
-            Rectangle::new()
-                .width(button_w)
-                .height(button_h)
-                .fill(Color::TRANSPARENT)
-                .translate(0.0, pose.y)
-                .scale(pose.scale)
-                .opacity(pose.opacity)
-                .child(capsule_button(
-                    "amane.qs.edit",
-                    None,
-                    label,
-                    editing,
-                    edit::toggle,
-                )),
-        );
+    let button = frame(width, button_h).align_child(Center, Center).child(
+        frame(button_w, button_h)
+            .translate(0.0, pose.y)
+            .scale(pose.scale)
+            .opacity(pose.opacity)
+            .child(capsule_button(
+                "amane.qs.edit",
+                None,
+                label,
+                editing,
+                edit::toggle,
+            )),
+    );
 
     let height = grid_h + gap + button_h;
     let column = Column::new(vec![boxed(cells), boxed(button)])
@@ -364,10 +347,7 @@ pub(super) fn grid(look: Motion) -> Grid {
         lit.extend(glass::rim_layers(&rims).into_iter().map(boxed));
     }
     let widget = boxed(
-        Rectangle::new()
-            .width(total_w)
-            .height(height)
-            .fill(Color::TRANSPARENT)
+        frame(total_w, height)
             .align_child(Start, Start)
             .child(Stack::new(lit).width(Parent).height(Parent)),
     );
@@ -420,10 +400,7 @@ pub(super) fn placeholder(id: ControlId, slot: Slot) -> Box<dyn Widget> {
             1
         },
     };
-    let inner = Rectangle::new()
-        .width(slot.width)
-        .height(slot.height)
-        .fill(Color::TRANSPARENT)
+    let inner = frame(slot.width, slot.height)
         .align_child(Center, Center)
         .child(
             Text::new(id.title())

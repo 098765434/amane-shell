@@ -313,7 +313,6 @@ fn drag_layer(filled: bool) -> Rectangle {
     Rectangle::new()
         .width(Size::Parent)
         .height(Size::Parent)
-        .fill(Color::TRANSPARENT)
         .cursor(if filled { amane::Pointer } else { amane::Grab })
         .on_drag(move |point| dragged(point, filled))
         .on_release(released)

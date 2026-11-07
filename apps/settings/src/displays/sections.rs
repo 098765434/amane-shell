@@ -4,7 +4,7 @@
 
 use std::thread;
 
-use amane::{Battery, Brightness, Center, Color, Rectangle, Row, Service, Size, Text, TextInput};
+use amane::{Battery, Brightness, Center, Rectangle, Row, Service, Size, Text, TextInput};
 use amane_kit::app::{Dialog, field_box, text_field};
 use amane_kit::arrangement::{Arrangement, Screen};
 use amane_kit::buttons::{IconButton, PushButton, Switch};
@@ -12,7 +12,7 @@ use amane_kit::color::Accent;
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::{FormRow, Group, SliderRow};
 use amane_kit::icons::{ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_DISPLAY, ICON_INFO};
-use amane_kit::layout::boxed;
+use amane_kit::layout::{boxed, frame};
 use amane_kit::leading_icon::LeadingIcon;
 use amane_kit::settings::{
     appearance, change_appearance, change_displays, change_dock, change_status_bar, displays, dock,
@@ -356,14 +356,7 @@ pub fn header(ctx: &Ctx) -> Group {
         )
         .subtitle(details.join(" · "));
     let row = if facts_h > 0.0 {
-        row.detail(
-            Rectangle::new()
-                .width(inner)
-                .height(facts_h)
-                .fill(Color::TRANSPARENT)
-                .child(facts),
-            facts_h,
-        )
+        row.detail(frame(inner, facts_h).child(facts), facts_h)
     } else {
         row
     };

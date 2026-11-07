@@ -14,7 +14,7 @@ use amane::{Arc, Canvas, Cap, Color, Path, Rectangle, Shape, Stack, Start, Text,
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use super::store::Settings;
 use crate::tokens::{Styled, TextStyle, sys};
-use amane_kit::layout::{boxed, icon, text_height, text_width};
+use amane_kit::layout::{boxed, frame, icon, text_height, text_width};
 use amane_kit::material::{self, FillLevel, Level};
 
 pub use battery::devices;
@@ -61,19 +61,11 @@ pub fn build(
         WidgetKind::Clock => clock::face(key.id, &face),
     };
     boxed(
-        Rectangle::new()
-            .width(width)
-            .height(height)
-            .fill(Color::TRANSPARENT)
-            .align_child(Start, Start)
-            .child(
-                Rectangle::new()
-                    .width(face.width)
-                    .height(face.height)
-                    .fill(Color::TRANSPARENT)
-                    .translate(PAD, PAD)
-                    .child(Stack::new(content)),
-            ),
+        frame(width, height).align_child(Start, Start).child(
+            frame(face.width, face.height)
+                .translate(PAD, PAD)
+                .child(Stack::new(content)),
+        ),
     )
 }
 
@@ -89,10 +81,7 @@ pub fn place(
     height: f32,
 ) -> Box<dyn Widget> {
     boxed(
-        Rectangle::new()
-            .width(width.max(0.0))
-            .height(height.max(0.0))
-            .fill(Color::TRANSPARENT)
+        frame(width.max(0.0), height.max(0.0))
             .align_child(Start, Start)
             .translate(x, y)
             .child(widget),
@@ -119,10 +108,7 @@ pub fn line(
         (x, width)
     };
     boxed(
-        Rectangle::new()
-            .width(width.max(0.0))
-            .height(height)
-            .fill(Color::TRANSPARENT)
+        frame(width.max(0.0), height)
             .align_child(Start, Start)
             .translate(x, y)
             .child(Text::new(text).style(style).color(color).elide()),

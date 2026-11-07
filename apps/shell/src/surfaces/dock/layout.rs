@@ -241,7 +241,6 @@ pub(super) fn place(widget: Rectangle, x: f32, y: f32, opacity: f32) -> Box<dyn 
         Rectangle::new()
             .width(Parent)
             .height(Parent)
-            .fill(Color::TRANSPARENT)
             .align_child(Start, Start)
             .child(widget.translate(x, y).opacity(opacity.clamp(0.0, 1.0))),
     )

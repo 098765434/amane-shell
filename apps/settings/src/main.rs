@@ -638,7 +638,6 @@ fn search_field() -> Box<dyn Widget> {
         Rectangle::new()
             .width(Size::Parent)
             .height(style::control_height() + sys::space::gap::s())
-            .fill(amane::Color::TRANSPARENT)
             .align_child(amane::Start, amane::Start)
             .child(field_box(
                 search::FIELD,
@@ -730,7 +729,6 @@ fn header(
     Rectangle::new()
         .width(Size::Parent)
         .height(TOOLBAR)
-        .fill(amane::Color::TRANSPARENT)
         .align_child(amane::Start, Center)
         .child(
             Row::new(parts)

@@ -6,7 +6,7 @@
 
 use amane::{Color, Parent, Rectangle};
 
-use crate::layout::pad;
+use crate::layout::{frame, pad};
 use crate::material;
 use crate::tokens::sys;
 
@@ -24,7 +24,6 @@ impl Divider {
         Rectangle::new()
             .width(Parent)
             .height(Self::height())
-            .fill(Color::TRANSPARENT)
             .padding(pad(0.0, sys::space::gap::xs()))
             .child(
                 Rectangle::new()
@@ -46,7 +45,6 @@ impl Divider {
         Rectangle::new()
             .width(width)
             .height(sys::border::hairline())
-            .fill(Color::TRANSPARENT)
             .padding(crate::layout::pad_x(leading, trailing))
             .child(
                 Rectangle::new()
@@ -63,10 +61,7 @@ impl Divider {
 
     /// A vertical hairline `height` tall, with `gap.xs` of room either side.
     pub fn vertical(height: f32) -> Rectangle {
-        Rectangle::new()
-            .width(Self::width())
-            .height(height)
-            .fill(Color::TRANSPARENT)
+        frame(Self::width(), height)
             .padding(pad(sys::space::gap::xs(), 0.0))
             .child(
                 Rectangle::new()
