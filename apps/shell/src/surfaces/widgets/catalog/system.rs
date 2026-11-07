@@ -27,19 +27,31 @@ fn recent(series: &Series) -> Vec<f32> {
     series.recent(SPARK_POINTS).collect()
 }
 
-/// A figure over a caption at the top, and a graph of `series` under them
-/// filling the rest: the shape every Small and Medium system widget takes.
-#[allow(clippy::too_many_arguments)]
-fn reading(
-    face: &Face,
+/// What a reading shows: a figure over a caption, and a graph of `series`
+/// (up to `max`), in the warning colour when `warn`.
+struct Reading<'a> {
     kind: WidgetKind,
-    title: &str,
+    title: &'a str,
     figure: String,
     caption: String,
-    series: &[f32],
+    series: &'a [f32],
     max: f32,
     warn: bool,
-) -> Vec<Box<dyn Widget>> {
+}
+
+/// A figure over a caption at the top, and a graph of the series under
+/// them filling the rest: the shape every Small and Medium system widget
+/// takes.
+fn reading(face: &Face, reading: Reading) -> Vec<Box<dyn Widget>> {
+    let Reading {
+        kind,
+        title,
+        figure,
+        caption,
+        series,
+        max,
+        warn,
+    } = reading;
     let mut out = header(kind, title, face.width);
     let large = face.size != WidgetSize::Small;
     let figure_style = figure_style(large);
@@ -86,13 +98,15 @@ pub(super) fn cpu(face: &Face) -> Vec<Box<dyn Widget>> {
     };
     let mut out = reading(
         face,
-        WidgetKind::Cpu,
-        "CPU",
-        percent(now),
-        caption,
-        &recent(&stats.cpu),
-        1.0,
-        now >= BUSY,
+        Reading {
+            kind: WidgetKind::Cpu,
+            title: "CPU",
+            figure: percent(now),
+            caption,
+            series: &recent(&stats.cpu),
+            max: 1.0,
+            warn: now >= BUSY,
+        },
     );
     if face.size == WidgetSize::Large && cores > 0 {
         // each core as a thin bar along the bottom
@@ -146,13 +160,15 @@ pub(super) fn memory(face: &Face) -> Vec<Box<dyn Widget>> {
     );
     let mut out = reading(
         face,
-        WidgetKind::Memory,
-        "Memory",
-        percent(memory.fraction()),
-        caption,
-        &recent(&stats.memory_history),
-        1.0,
-        memory.fraction() >= BUSY,
+        Reading {
+            kind: WidgetKind::Memory,
+            title: "Memory",
+            figure: percent(memory.fraction()),
+            caption,
+            series: &recent(&stats.memory_history),
+            max: 1.0,
+            warn: memory.fraction() >= BUSY,
+        },
     );
     if face.size == WidgetSize::Large && memory.swap_total > 0 {
         let caption = caption_style();
@@ -185,13 +201,15 @@ pub(super) fn temperature(face: &Face) -> Vec<Box<dyn Widget>> {
     let Some(sensor) = stats.sensor(face.settings.sensor.as_deref()) else {
         return reading(
             face,
-            WidgetKind::Temperature,
-            "Temperature",
-            String::from("—"),
-            String::from("No sensor"),
-            &[],
-            1.0,
-            false,
+            Reading {
+                kind: WidgetKind::Temperature,
+                title: "Temperature",
+                figure: String::from("—"),
+                caption: String::from("No sensor"),
+                series: &[],
+                max: 1.0,
+                warn: false,
+            },
         );
     };
     let history = stats
@@ -201,13 +219,15 @@ pub(super) fn temperature(face: &Face) -> Vec<Box<dyn Widget>> {
     let max = history.iter().copied().fold(HOT, f32::max) + 5.0;
     let mut out = reading(
         face,
-        WidgetKind::Temperature,
-        "Temperature",
-        format!("{:.0}°", sensor.celsius),
-        sensor.label.clone(),
-        &history,
-        max,
-        sensor.celsius >= HOT,
+        Reading {
+            kind: WidgetKind::Temperature,
+            title: "Temperature",
+            figure: format!("{:.0}°", sensor.celsius),
+            caption: sensor.label.clone(),
+            series: &history,
+            max,
+            warn: sensor.celsius >= HOT,
+        },
     );
     if face.size == WidgetSize::Large {
         // the other sensors under the graph, hottest first
@@ -267,13 +287,15 @@ pub(super) fn network(face: &Face) -> Vec<Box<dyn Widget>> {
     let Some((name, traffic)) = stats.interface(face.settings.interface.as_deref()) else {
         return reading(
             face,
-            WidgetKind::Network,
-            "Network",
-            String::from("—"),
-            String::from("Not connected"),
-            &[],
-            1.0,
-            false,
+            Reading {
+                kind: WidgetKind::Network,
+                title: "Network",
+                figure: String::from("—"),
+                caption: String::from("Not connected"),
+                series: &[],
+                max: 1.0,
+                warn: false,
+            },
         );
     };
     let down: Vec<f32> = recent(&traffic.down);

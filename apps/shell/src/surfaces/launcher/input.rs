@@ -357,7 +357,6 @@ pub(super) fn on_app_click(app: DesktopApp) -> impl Fn(Button) + 'static {
     move |button| match button {
         Button::Left => entries::run(&Entry::app(&app), ""),
         Button::Right => app_menu::open(&app),
-        #[allow(unreachable_patterns)]
         _ => {}
     }
 }

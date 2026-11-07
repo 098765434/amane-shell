@@ -594,9 +594,8 @@ pub fn interactive(base: Rectangle, id: String, disabled: bool, actions: Actions
                 Button::Left => &press,
                 Button::Right => &secondary,
                 Button::Middle => &middle,
-                // side buttons, once amane reports them
-                #[allow(unreachable_patterns)]
-                _ => return,
+                // the side buttons have no action of a button's own
+                Button::Back | Button::Forward => return,
             };
             tooltip::suppress(&clicked);
             if let Some(action) = action {

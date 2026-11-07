@@ -91,7 +91,7 @@ impl Anim {
     }
 
     /// The same, switched off: for turning one animation off in [`DOCK`].
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub const fn off(self) -> Self {
         Self { on: false, ..self }
     }
