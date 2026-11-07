@@ -18,4 +18,4 @@
 | niri | 30 |
 | rbw | 4 |
 
-This is the baseline for Phase 7 of [ROADMAP.md](../../ROADMAP.md) (no programs started while idle, under 2 wakeups a second). Measure again with `sudo scripts/idle-report 60` after any change to idle behaviour. The programs: `nmcli` from the connections service (about two calls every 3 s), `niri msg` from the shell's own niri calls, `rbw` from the vault's lock check (every 15 s).
+This is the baseline for Phase 7 of [the roadmap](../archive/ROADMAP.md) (no programs started while idle, under 2 wakeups a second). Measure again with `sudo scripts/idle-report 60` after any change to idle behaviour. The programs: `nmcli` from the connections service (about two calls every 3 s), `niri msg` from the shell's own niri calls, `rbw` from the vault's lock check (every 15 s).

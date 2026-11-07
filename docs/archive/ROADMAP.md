@@ -55,7 +55,7 @@ Surfaces are immediate-mode `LayerWindow` builders. Each frame they read service
 Details and file references are in the analysis that preceded this roadmap; each phase below names the files it touches.
 
 1. **CI is red and covers too little.** Shell CI has failed on all 30 recent runs: magic-nix-cache gets throttled and FlakeHub refuses access before the toolchain is fetched. Behind that, clippy fails at `kit/src/platform/app_icon.rs:122`. `cargo clippy` and `cargo test` run without `--workspace`. amane's CI doesn't run on `ocbk`. The local `.cargo` override builds against `../amane`'s working tree, not the pinned rev.
-2. **Idle cost.** 74 process spawns a minute and 116 wakeups a second with nothing happening, as measured in [docs/development/idle-baseline.md](docs/development/idle-baseline.md): Toasts polls every 100 ms, `nmcli` runs every 3 s, `niri msg` every 2–5 s, `rbw` every 15 s, sysfs every 250 ms to 1 s. `motion::redraw_after` spawns an OS thread per call. In the kit, every token read takes four locks and a string-keyed lookup.
+2. **Idle cost.** 74 process spawns a minute and 116 wakeups a second with nothing happening, as measured in [docs/development/idle-baseline.md](../development/idle-baseline.md): Toasts polls every 100 ms, `nmcli` runs every 3 s, `niri msg` every 2–5 s, `rbw` every 15 s, sysfs every 250 ms to 1 s. `motion::redraw_after` spawns an OS thread per call. In the kit, every token read takes four locks and a string-keyed lookup.
 3. **Code in the wrong layer.** About 9.5k lines of product code in amane: KDE Connect, phone messages, adb, the `org.amane.StatusBar1` protocol, UI strings and timings. The shell runs `niri msg`, `nmcli`, `gdbus` and `rfkill` subprocesses for data amane has or should have. Generic UI lives in the shell (context menu, search field, text editing, grid, fade and reveal helpers). The apps have a third niri client and their own process runners. `displays.kdl` has two writers.
 4. **Duplication and leftovers.** XDG paths copied 8 times, logind code 3 times, child-stream loops 4 times. The kit's `macform` set has become the real theme, but four of its controls duplicate unused twins. M3 `lists` has no users. There's the `components/mod.rs` shim, a demo context menu in `main.rs`, empty folders, migration shims and a broken example.
 5. **Inconsistent patterns.** Errors are swallowed (`let _ =` ×60, `eprintln!` ×31, no logging). There are three process APIs, three state-file formats, and surfaces that reach into each other's internals. Some files are very large: launcher 1,683 lines, dock 1,317, widgets 1,224.
@@ -226,7 +226,7 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 
 **Risks.** Low. A cache change can slow CI; acceptable.
 
-**Status (2026-11-07).** Done. The idle baseline is in [docs/development/idle-baseline.md](docs/development/idle-baseline.md): 116 wakeups a second, 74 programs started a minute (40 `nmcli`, 30 `niri`, 4 `rbw`), 72 MiB PSS.
+**Status (2026-11-07).** Done. The idle baseline is in [docs/development/idle-baseline.md](../development/idle-baseline.md): 116 wakeups a second, 74 programs started a minute (40 `nmcli`, 30 `niri`, 4 `rbw`), 72 MiB PSS.
 - **Clippy** over the whole workspace found errors in the apps too; all are fixed.
 - **Shell CI** is green.
 - **amane** has its CI in a new `.github/workflows/fork.yml`, so upstream's `test.yml` is untouched. Upstream's image filters trip `needless_range_loop`, so CI allows that one lint.

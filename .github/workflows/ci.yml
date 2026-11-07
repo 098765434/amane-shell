@@ -40,7 +40,7 @@ jobs:
       - name: shellcheck
         run: nix run nixpkgs#shellcheck -- gen-layer-rules.sh scripts/check-pins scripts/idle-report scripts/lint-terms
 
-      # no other vendor's platform terms in the text (ROADMAP.md, ground rules)
+      # no other vendor's platform terms in the text (docs/archive/ROADMAP.md, ground rules)
       - name: lint-terms
         run: scripts/lint-terms
 

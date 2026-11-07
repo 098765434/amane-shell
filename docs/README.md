@@ -138,7 +138,6 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | Status apps, Activities and Drop: the pieces across amane, the shell and nixos-config, their threads, testing beside the desktop | [development/status-apps.md](development/status-apps.md) |
 | What the shell costs while idle, measured, to compare later work against | [development/idle-baseline.md](development/idle-baseline.md) |
 | Features the shell doesn't have yet, by how often they'd be missed | [development/backlog.md](development/backlog.md) |
-| The cleanup plan across the shell and its forks | [ROADMAP.md](../ROADMAP.md) |
 
 ## Archive
 
@@ -146,5 +145,6 @@ Implemented specs, kept as history and not kept up to date.
 
 | Spec | Superseded by |
 |---|---|
+| [archive/ROADMAP.md](archive/ROADMAP.md): the 14-phase cleanup of the shell and its forks, finished 2026-11-07 | [architecture.md](architecture.md), [development/release.md](development/release.md), and each fork's `maintaining.md` |
 | [archive/spec-design-tokens-v2.md](archive/spec-design-tokens-v2.md): Penpot tokens, the resolver, CI checks | [design-system/tokens.md](design-system/tokens.md) |
 | [archive/spec-system-colour-variables.md](archive/spec-system-colour-variables.md): the design kit's labels, fills, materials and control sizes | [design-system/materials.md](design-system/materials.md), [kit/controls.md](kit/controls.md) |

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fails on Apple platform terms in text: macOS and its versions, Mac, iOS,
 # Spotlight, Control Center, Liquid Glass and the like. Features are named
-# for what they are (ROADMAP.md, ground rules).
+# for what they are (docs/archive/ROADMAP.md, ground rules).
 #
 # Usage: scripts/lint-terms [path…]          the shell's tracked files
 #        scripts/lint-terms --diff <base>     lines added since <base>, in the
@@ -76,6 +76,6 @@ fi
 
 if [[ -n $hits ]]; then
     echo "$hits"
-    echo "lint-terms: $(wc -l <<<"$hits") lines name Apple platform terms; say what the feature is instead (ROADMAP.md, Phase 3)" >&2
+    echo "lint-terms: $(wc -l <<<"$hits") lines name Apple platform terms; say what the feature is instead (docs/archive/ROADMAP.md, Phase 3)" >&2
     exit 1
 fi

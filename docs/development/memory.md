@@ -225,7 +225,7 @@ rebuilt the whole chain every frame), and a swiped tile's offscreen cleared.
 
 The open items, in order of payoff, from the 2026-10-26 research and plan (the numbers are the
 plan's, kept so its notes can be found). Pollers to events is part of the cleanup roadmap
-([ROADMAP.md](../../ROADMAP.md), Phases 6 and 7); the rest isn't scheduled yet.
+([the roadmap](../archive/ROADMAP.md), Phases 6 and 7); the rest isn't scheduled yet.
 
 - **8.2 The GTT Quick Settings leaves behind.** About 68 MB survive `hide()`. Next, a
   driver-level view (`RADV_DEBUG=info` or `VK_EXT_device_memory_report`) of what outlives the
