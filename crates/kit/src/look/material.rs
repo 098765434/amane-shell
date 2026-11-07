@@ -17,7 +17,7 @@
 //! The thicker a material, the more opaque its tint: small glass is thin,
 //! large glass that holds text is thick. The vibrant labels are one set for
 //! every material; the contrast floors check each against
-//! each tint (`tokens::rules`). See `docs/design-system/materials.md`.
+//! each tint (`tokens::lint`). See `docs/design-system/materials.md`.
 
 #![allow(missing_docs)]
 

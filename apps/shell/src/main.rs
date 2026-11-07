@@ -16,46 +16,22 @@ use surfaces::{
     alert, dock, fill, launcher, notifications, osd, quick_settings, status_bar, widgets,
 };
 
-/// `amane-shell tokens …` runs a token tool and exits instead of the shell.
+/// `amane-shell layer-rules` prints the niri layer rules and exits instead of the shell, for
+/// `cargo xtask layer-rules`. The token tools are `cargo xtask tokens …` only.
 fn cli(args: &[String]) -> Option<ExitCode> {
-    let read = |path: &str| {
-        std::fs::read_to_string(path).map_err(|e| eprintln!("amane-shell: {path}: {e}"))
-    };
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
 
-    // the workspace's tasks moved to `cargo xtask`; these stay for a while
-    if matches!(args.first(), Some(&("tokens" | "layer-rules")))
-        && std::env::var_os("AMANE_FROM_XTASK").is_none()
-    {
-        eprintln!(
-            "amane-shell: run it as `cargo xtask {}` from the repository",
-            args.join(" ")
-        );
-    }
-
-    let ok = match args.as_slice() {
-        ["tokens", "normalize", path] => read(path).and_then(|json| {
-            tokens::check::normalize(&json)
-                .map(|out| print!("{out}"))
-                .map_err(|e| eprintln!("amane-shell: {path}: {e}"))
-        }),
-        ["tokens", "check", path] => read(path).and_then(|json| {
-            if tokens::check::check(&json) {
-                Ok(())
-            } else {
-                Err(())
-            }
-        }),
-        ["tokens", ..] => {
-            eprintln!("usage: amane-shell tokens normalize <file> | tokens check <file>");
-            Err(())
-        }
+    let ok: Result<(), ()> = match args.as_slice() {
         ["layer-rules"] => {
             print!(
                 "{}",
                 tokens::layer_rules::render(&tokens::layer_rules::rules())
             );
             Ok(())
+        }
+        ["tokens", ..] => {
+            eprintln!("amane-shell: the token tools are `cargo xtask tokens …` now");
+            Err(())
         }
         _ => return None,
     };

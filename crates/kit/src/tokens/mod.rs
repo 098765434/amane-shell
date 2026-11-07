@@ -19,6 +19,9 @@
 #![allow(missing_docs)]
 
 pub mod accent;
+/// The manual's rules over a token file, and the `tokens check` / `tokens normalize` tools
+/// (`cargo xtask`); only built with the `tools` feature, which the shell leaves out.
+#[cfg(any(test, feature = "tools"))]
 pub mod check;
 #[cfg(test)]
 mod codegen;
@@ -28,7 +31,8 @@ pub mod error;
 pub mod expr;
 pub mod font;
 pub mod resolve;
-pub mod rules;
+#[cfg(any(test, feature = "tools"))]
+pub mod lint;
 pub mod values;
 
 use std::cell::Cell;
@@ -428,7 +432,7 @@ mod tests {
     fn a_system_accent_changes_exactly_the_accent_dependents() {
         let base = dark(None, 100);
         let yellow = dark(Some([0xc8, 0x88, 0x00]), 100);
-        let dependents = rules::dependents(
+        let dependents = lint::dependents(
             library(),
             &[accent::SEED, accent::ON_SEED, accent::DIM, accent::BRIGHT],
         );

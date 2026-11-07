@@ -10,7 +10,7 @@ authors.workspace = true
 publish = false
 
 [dependencies]
-amane-kit = { workspace = true }
+amane-kit = { workspace = true, features = ["tools"] }
 
 [lints]
 workspace = true

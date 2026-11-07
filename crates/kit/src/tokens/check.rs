@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use serde_json::Value as Json;
 
 use super::envelope::Library;
-use super::{SOURCE, rules};
+use super::{SOURCE, lint};
 
 /// Keys sorted, two-space indent, trailing newline: Penpot builds its export
 /// from hash maps, so this keeps diffs to the tokens that changed. Arrays keep
@@ -30,7 +30,7 @@ pub fn check(json: &str) -> bool {
         }
     };
 
-    let violations = rules::check(&lib, json);
+    let violations = lint::check(&lib, json);
     for v in &violations {
         println!("✗ {v}");
     }
@@ -48,7 +48,7 @@ pub fn check(json: &str) -> bool {
         println!("- {name}");
     }
 
-    for (tier, count, budget) in rules::tier_counts(&lib) {
+    for (tier, count, budget) in lint::tier_counts(&lib) {
         println!("{tier}: {count} tokens (budget about {budget})");
     }
 

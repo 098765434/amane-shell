@@ -127,7 +127,7 @@ A piece of glass is built with its material's methods:
   (solid glass, `Material::Content`) labels and fills come from `sys.color.label.*` and
   `sys.color.fill.*` instead, a little weaker, as the kit's content area is. The vibrant set is
   one set for every material, and the contrast floors check primary and secondary
-  labels on every tint over black and white wallpaper (`tokens::rules`): toned by the niri
+  labels on every tint over black and white wallpaper (`tokens::lint`): toned by the niri
   material that draws the tint, and again untoned and thickened by `UNTONED`, the tint the kit
   uses without niri's material.
 - `material.<name>.*` (component tokens) are niri's material settings (niri's

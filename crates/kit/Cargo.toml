@@ -14,6 +14,11 @@ amane = { workspace = true }
 serde_json = { workspace = true }
 fontconfig = "0.11"
 
+[features]
+# the token tools (tokens::lint, tokens::check) for `cargo xtask tokens …`; the shell and the
+# apps leave them out
+tools = []
+
 [build-dependencies]
 serde_json = { workspace = true }
 

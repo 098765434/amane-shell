@@ -14,10 +14,9 @@ tasks now, run from the repository:
 | `cargo xtask tokens check <file>` | runs the manual's rules on a token file and prints how it differs from the committed tokens; fails when a rule does ([tokens.md](../design-system/tokens.md#103-developer-bring-an-export-in)) |
 | `cargo xtask layer-rules` | prints the niri layer rules generated from the tokens ([layer-rules.md](layer-rules.md)) |
 
-`amane-shell tokens …` and `amane-shell layer-rules` still work for now, and say to use `cargo
-xtask` instead.
-
-`tokens` with anything else prints its usage and fails. Any other arguments run the shell.
+`cargo xtask layer-rules` runs `amane-shell layer-rules`, which prints them; `amane-shell tokens …`
+only says to use `cargo xtask tokens …`, since the token tools are in the kit's `tools` feature,
+which the shell is built without. Any other arguments run the shell.
 
 Only one shell runs: amane hands a second launch to the one already running (it says
 `amane: amane is already running, it takes this launch`) and exits.
