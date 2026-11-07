@@ -246,6 +246,16 @@ Each table becomes the single source; parsers, lists, usage text and search are 
   - `services::power::batteries()` as the one device list; today three places build it with different coverage.
   - A `PowerProfile` enum instead of strings (`tiles/power.rs:28`).
 
+**Status (2026-11-07).** Done for what paid (shell `d3c23f6`, `e1b589d`).
+- **The idle bug:** the weather, background-apps, Tailscale, Do Not Disturb, night-light, keep-awake and adb listeners read themselves through `peek()`.
+- **`ServiceExt::replace`:** the listener's "keep it if it changed", in place of eleven copies.
+- **`Busy<K>`:** Shell Settings' uninstalls and service actions.
+- **Left, on a second look:**
+  - **`state_service!`:** the empty-listener services build their `new()` by hand and don't all derive `Default`, so a macro would save three lines each and impose `Default`.
+  - **`alert::sync_request`:** the four alerts each differ in the middle (the Phone page asks first, polkit clears its field on a new request and rebuilds on a new version).
+  - **`Mirror`, `Wake::follow` and `Debounced`:** each was two or three copies of a few lines with different types and wake-ups; a generic version reads worse than the copies.
+  - **`DevicePage`, `batteries()` and `PowerProfile`:** each still waits for a change that touches them.
+
 ## Phase 6: Apps (M)
 
 **Shell Settings:**
