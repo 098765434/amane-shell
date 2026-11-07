@@ -9,7 +9,7 @@ This plan turns amane-shell and its forks (amane, niri, vello) into one delibera
 | niri (`niri/`) | ocbk | `16384e00` | 2 commits ahead of origin, not pushed |
 | vello (`vello/`) | ocbk | `46585523` | |
 
-After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`.
+After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`. Phase 2 changed docs only in amane (`77b63cc`) and niri (`ac07c307`).
 
 ## Ground rules
 
@@ -328,6 +328,12 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 - The shell runs without the demo menu.
 
 **Risks.** None to behaviour.
+
+**Status (2026-11-07).** Done. Shell `main` still pins amane `db47c38`, since amane's change was docs only (`77b63cc`); niri `ac07c307` is docs only too.
+- **Demo menu and `alert-test`.** The demo menu wasn't removed outright. It was the only named menu, and `arm` and `open` can't go under the IPC rule. So the menu and `alert-test` are now registered only in debug builds, and in a release build `arm`/`open` answer `error: no menu <name>`. The niri bind that armed the menu (Mod+Shift+M) is gone from nixos-config.
+- **Dead code.** Neither module-wide `dead_code` allow hid anything dead, so both are simply gone.
+- **amane branches.** amane's `main` now mirrors upstream's (`544cbfc`). Deleting the merged `power` and `origin/gesture-services` branches is left to do by hand.
+- **Plans moved.** The idle plan's open items are in `docs/development/memory.md` under Planned. The feature survey is `docs/development/backlog.md`, with the four shipped items marked.
 
 ---
 
