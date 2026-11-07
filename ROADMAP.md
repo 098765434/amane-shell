@@ -745,6 +745,16 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 
 **Risks.** Medium–high: **file formats change**, guarded by the migration. Back up `~/.config/amane-shell` and `~/.local/state/amane-shell` before the switch.
 
+**Status (2026-11-07).** Done in seven steps, each pushed with CI green (shell `4e58599` logging, `914d6c4` state files, `06a5e04` boundaries, `b65c722` the menu, `265a0d1` typed IPC, `e009f8d` logind and child streams, `2e56cea` the splits). No amane or niri change.
+- **Sizes.** Twelve surface files were over 600 lines, not four: the launcher's `provider.rs` and `results.rs`, the bar's `mod.rs` and `activities.rs`, Customize, the Bluetooth tile and the notification card as well. Each was split by moving its functions into child modules (`use super::*;`), its types and state staying; the largest surface file is now 587 lines. Long functions (`on_key`, `build`, Quick Settings' `surface()`) moved whole; splitting their bodies is left for when they're next changed.
+- **Logging.** A small crate, `amane-log`, rather than a module in the kit: train-watch, the pinentry and the assistant's daemon don't use the kit. Every program sets it up; the shell's and the kit's `eprintln!` and `let _ =` are done, the other apps' are Phase 11's.
+- **State.** `services/state.rs`: `{"version", "data"}`, written through a part file and a rename. Six files moved to new `.json` names and read their old file when there's none; launcher usage and the clipboard index kept their names. Fixtures are copies of the live old files. `phone-screen.json` kept its shape (Messages reads it), written whole now.
+- **One menu.** One item model (with real ticks, radio dots and headers, replacing five callers' ✓ and • glyphs), one row drawing with a `Look` per host, one keyboard; the popup host for apps and the layer host for the shell. The layer rules stay in the shell, not the kit's `tools`: they name the shell's surfaces. So `amane-shell layer-rules` stays, for `cargo xtask layer-rules`; `amane-shell tokens` is gone.
+- **IPC.** `amane_kit::shell_ipc::ShellCommand` and `apps/shell/src/ipc.rs`. A test pins every verb's lines as scripts send them today.
+- **Boundaries.** Panels register their hooks; the bar's place is `chrome/bar.rs`; per-monitor state is `chrome/per_output.rs`, which forgets an unplugged monitor. The phone, Do Not Disturb, media art and the clock are services. Bar's Now Playing now redraws when its art arrives.
+- **Found along the way.** `pw-dump` was never restarted, so the microphone and camera indicator died with PipeWire; it's supervised now. A `subscribe` doesn't start a service, so the clock's Logind subscription heard nothing unless something else had started Logind; the logind client starts it.
+- **Not done:** `spawn_activated(&str)` callers stay, as the activation token only comes through that path; Phase 12 may give `Launch` the token.
+
 ---
 
 ### Phase 11: Apps cleanup (M)
@@ -858,4 +868,5 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 
 - **niri releases:** follow `maintaining.md`'s routine for each tag. The first one will likely include Smithay's Dispatch2 refactor; budget an M for porting the four fork protocols.
 - **amane upstream:** rebase when `upstream/main` moves; with the fork restructured, a rebase should be an S.
+- **State files' old readers:** each `State::legacy()` (dock pins, night light, Do Not Disturb, the VPN, widgets, Quick Settings' layout, and the unversioned launcher usage and clipboard index) can go after 2027-01, with its fixture in `apps/shell/tests/fixtures/state/`.
 - **Watch the idle numbers:** re-run `idle-report` after any change to services and keep the result in `docs/development/idle-baseline.md`.
