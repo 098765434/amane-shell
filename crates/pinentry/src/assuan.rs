@@ -12,49 +12,70 @@ pub const LINE_LIMIT: usize = 1000;
 /// The longest text kept from one SET command; the shell clips what it shows further.
 pub const TEXT_LIMIT: usize = 900;
 
+/// The first line a pinentry says, before any command.
 pub const GREETING: &str = "OK Pleased to meet you";
 
-// gpg-error codes pinentries answer with: GPG_ERR_CANCELED and GPG_ERR_NOT_IMPLEMENTED,
-// from the pinentry source (source 5, pinentry)
+/// The answer when the pin isn't given: GPG_ERR_CANCELED, one of the gpg-error codes
+/// pinentries answer with, from the pinentry source (source 5, pinentry).
 pub const CANCELLED: &str = "ERR 83886179 Operation cancelled <Pinentry>";
+/// The answer to a dialog this pinentry doesn't show: GPG_ERR_NOT_IMPLEMENTED.
 pub const NOT_IMPLEMENTED: &str = "ERR 83886149 Not implemented <Pinentry>";
+/// The answer to a line over [`LINE_LIMIT`].
 pub const TOO_LONG: &str = "ERR 83886157 Line too long <Pinentry>";
+/// The answer to a SET command whose percent escapes don't read.
 pub const BAD_ESCAPE: &str = "ERR 83886155 Invalid value <Pinentry>";
 
 /// What the prompt says, from the SET commands so far.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Prompt {
+    /// From SETTITLE: the dialog's title.
     pub title: String,
+    /// From SETDESC: what's being asked for, and why.
     pub description: String,
+    /// From SETPROMPT: the label beside the field.
     pub prompt: String,
+    /// From SETERROR: why the last try failed, empty on the first.
     pub error: String,
 }
 
 /// One command, read off a line.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Command {
+    /// A SET command: a field of the prompt, unescaped and clipped to [`TEXT_LIMIT`].
     Set(Field, String),
+    /// GETPIN: ask for the pin.
     GetPin,
+    /// GETINFO, with what's asked about, lowercased: "pid", "flavor", "version".
     GetInfo(String),
+    /// RESET: forget the prompt so far.
     Reset,
+    /// BYE: the end of the conversation.
     Bye,
-    // a dialog this pinentry doesn't show
+    /// A dialog this pinentry doesn't show.
     Unsupported,
-    // a setting there's nothing to do for
+    /// A setting there's nothing to do for.
     Ignored,
 }
 
+/// The field of a [`Prompt`] a SET command sets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Field {
+    /// SETTITLE.
     Title,
+    /// SETDESC.
     Description,
+    /// SETPROMPT.
     Prompt,
+    /// SETERROR.
     Error,
 }
 
+/// Why a line didn't read as a command.
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParseError {
+    /// It's [`LINE_LIMIT`] bytes or longer.
     TooLong,
+    /// Its argument has a bad percent escape or isn't UTF-8.
     BadEscape,
 }
 
@@ -156,6 +177,7 @@ pub fn clip(text: &mut String, limit: usize) {
 }
 
 impl Prompt {
+    /// Sets one field to `text`, in place of what it said.
     pub fn set(&mut self, field: Field, text: String) {
         match field {
             Field::Title => self.title = text,

@@ -24,12 +24,16 @@ pub fn socket_path() -> Option<PathBuf> {
 
 /// The process at the other end, held by a pidfd while it's looked at.
 pub struct Peer {
+    /// Its process id, from SO_PEERCRED.
     pub pid: u32,
+    /// Its user id, from SO_PEERCRED.
     pub uid: u32,
     pidfd: Option<OwnedFd>,
 }
 
 impl Peer {
+    /// The process at the other end of `stream`, with a pidfd for it when the kernel has
+    /// SO_PEERPIDFD (6.5 and later). Fails when the socket has no peer process.
     pub fn of(stream: &UnixStream) -> io::Result<Self> {
         let mut credentials = libc::ucred {
             pid: 0,
@@ -137,11 +141,9 @@ pub fn environment(pid: u32, name: &str) -> Option<Option<String>> {
     Some(found)
 }
 
-/*
- * whether an executable is one of `names`, where only root can put files: the Nix store, or
- * the system profile it's linked from. A debug build also takes its own target directory, so
- * the shell and pinentry can be tried from a checkout
- */
+/// Whether an executable is one of `names`, where only root can put files: the Nix store, or
+/// the system profile it's linked from. A debug build also takes its own target directory, so
+/// the shell and pinentry can be tried from a checkout.
 pub fn is_program(exe: &Path, names: &[&str]) -> bool {
     let Some(name) = exe.file_name().and_then(|name| name.to_str()) else {
         return false;
@@ -164,6 +166,7 @@ pub fn is_program(exe: &Path, names: &[&str]) -> bool {
     cfg!(debug_assertions) && exe.components().any(|part| part.as_os_str() == "target")
 }
 
+/// This process's user id.
 pub fn current_uid() -> u32 {
     // SAFETY: getuid can't fail
     unsafe { libc::getuid() }

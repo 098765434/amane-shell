@@ -16,11 +16,14 @@ pub const FIELD_LIMIT: usize = 1024;
 /// The longest pin, in bytes.
 pub const PIN_LIMIT: usize = 1024;
 
+/// The shell's answer to a request.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Answer {
+    /// The pin, at most [`PIN_LIMIT`] bytes; its buffer wipes itself.
     Pin(Zeroizing<String>),
+    /// The person cancelled the dialog.
     Cancelled,
-    // the shell wouldn't ask: the caller failed its checks, or nothing of the shell's asked
+    /// The shell wouldn't ask: the caller failed its checks, or nothing of the shell's asked.
     Refused,
 }
 
@@ -32,6 +35,7 @@ pub fn write_hello(to: &mut impl Write) -> io::Result<()> {
     to.flush()
 }
 
+/// The shell's side of [`write_hello`]: fails unless the pinentry's hello is what's read.
 pub fn read_hello(from: &mut impl Read) -> io::Result<()> {
     let mut hello = [0; 6];
     from.read_exact(&mut hello)?;
@@ -49,6 +53,7 @@ pub fn write_welcome(to: &mut impl Write, welcome: bool) -> io::Result<()> {
     to.flush()
 }
 
+/// The pinentry's side of [`write_welcome`]: whether the shell will ask.
 pub fn read_welcome(from: &mut impl Read) -> io::Result<bool> {
     let mut welcome = [0; 1];
     from.read_exact(&mut welcome)?;
@@ -56,6 +61,8 @@ pub fn read_welcome(from: &mut impl Read) -> io::Result<bool> {
     Ok(welcome[0] == 1)
 }
 
+/// Sends what the prompt says, each field at most [`FIELD_LIMIT`] bytes; a longer one is an
+/// error and nothing after it is sent.
 pub fn write_request(to: &mut impl Write, prompt: &Prompt) -> io::Result<()> {
     to.write_all(MAGIC)?;
 
@@ -71,6 +78,7 @@ pub fn write_request(to: &mut impl Write, prompt: &Prompt) -> io::Result<()> {
     to.flush()
 }
 
+/// Reads a [`write_request`], checking each field's length before reading it.
 pub fn read_request(from: &mut impl Read) -> io::Result<Prompt> {
     let mut magic = [0; 6];
     from.read_exact(&mut magic)?;
@@ -97,6 +105,7 @@ pub fn read_request(from: &mut impl Read) -> io::Result<Prompt> {
     })
 }
 
+/// Sends the shell's answer: a pin, cancelled, or refused.
 pub fn write_answer(to: &mut impl Write, answer: &Answer) -> io::Result<()> {
     match answer {
         Answer::Pin(pin) => {
@@ -110,6 +119,7 @@ pub fn write_answer(to: &mut impl Write, answer: &Answer) -> io::Result<()> {
     to.flush()
 }
 
+/// Reads a [`write_answer`], checking a pin's length against [`PIN_LIMIT`] before reading it.
 pub fn read_answer(from: &mut impl Read) -> io::Result<Answer> {
     let mut status = [0; 1];
     from.read_exact(&mut status)?;

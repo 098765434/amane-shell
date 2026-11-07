@@ -14,6 +14,8 @@
 //! When the shell isn't there or won't ask, the pinentry runs the fallback (pinentry-gnome3)
 //! in its place, before it has said a word to rbw.
 
+#![warn(missing_docs)]
+
 pub mod assuan;
 pub mod peer;
 pub mod wire;
