@@ -3,6 +3,7 @@
 //! needed" for the ones that are installed but not started at boot, and
 //! Start/Stop for right now (systemd asks through polkit).
 
+use super::busy::Busy;
 use amane_kit::service::ServiceExt as _;
 use std::collections::BTreeMap;
 use std::thread;
@@ -195,49 +196,23 @@ pub fn status_text(state: Option<&UnitState>) -> String {
     }
 }
 
-/// A Start or Stop under way, and what the last one said when it failed.
-pub struct Actions {
-    pub busy: Option<String>,
-    pub error: Option<(String, String)>,
-}
+/// The start, stop or restart under way, and how the last one failed.
+pub type Actions = Busy<UnitAction>;
 
-impl Service for Actions {
-    fn new() -> Self {
-        Self {
-            busy: None,
-            error: None,
-        }
-    }
-
-    fn listen() {}
-}
+/// What [`Actions`] runs.
+pub enum UnitAction {}
 
 fn act(unit: String, user: bool, verb: &'static str) {
-    {
-        let mut now = Actions::write();
-        if now.busy.is_some() {
-            now.quiet();
-            return;
-        }
-        now.busy = Some(unit.clone());
-        now.error = None;
-    }
-    thread::spawn(move || {
+    let name = unit.clone();
+    let job = move || {
         let mut args: Vec<&str> = Vec::new();
         if user {
             args.push("--user");
         }
-        args.extend([verb, unit.as_str()]);
-        let result = run("systemctl", &args, None);
-        {
-            let mut now = Actions::write();
-            now.busy = None;
-            if let Err(why) = result {
-                now.error = Some((unit.clone(), why));
-            }
-        }
-        Units::refresh();
-    });
+        args.extend([verb, name.as_str()]);
+        run("systemctl", &args, None).map(drop)
+    };
+    Actions::run(unit, job, Units::refresh);
 }
 
 pub fn page() -> Column {
@@ -314,7 +289,7 @@ pub fn page() -> Column {
             } else {
                 ("start", "Start")
             };
-            let busy = actions.busy.as_deref() == Some(unit.as_str());
+            let busy = actions.is_busy(&unit);
             if busy {
                 lines.push(String::from("Working…"));
             }

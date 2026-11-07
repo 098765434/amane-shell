@@ -5,6 +5,7 @@
 //! installed, from Settings, the repo's `.nix` files and Flatpak, is one
 //! list ([`super::inventory`]).
 
+use super::busy::Busy;
 use amane_kit::service::ServiceExt as _;
 use amane_kit::sync::Locked as _;
 use std::sync::Mutex;
@@ -354,49 +355,24 @@ impl Flatpaks {
     }
 }
 
-/// An uninstall under way, and what the last one said when it failed.
-pub struct Removal {
-    pub busy: Option<String>,
-    pub error: Option<String>,
-}
+/// The uninstall under way, and how the last one failed.
+pub type Removal = Busy<Uninstall>;
 
-impl Service for Removal {
-    fn new() -> Self {
-        Self {
-            busy: None,
-            error: None,
-        }
-    }
-
-    fn listen() {}
-}
+/// What [`Removal`] runs.
+pub enum Uninstall {}
 
 pub fn uninstall(id: String) {
-    {
-        let mut now = Removal::write();
-        if now.busy.is_some() {
-            now.quiet();
-            return;
-        }
-        now.busy = Some(id.clone());
-        now.error = None;
-    }
-    thread::spawn(move || {
-        // flatpak asks through polkit itself for a system-wide app
-        let result = run(
+    let app = id.clone();
+    // flatpak asks through polkit itself for a system-wide app
+    let job = move || {
+        run(
             "flatpak",
-            &["uninstall", "-y", "--noninteractive", &id],
+            &["uninstall", "-y", "--noninteractive", &app],
             None,
-        );
-        {
-            let mut now = Removal::write();
-            now.busy = None;
-            if let Err(why) = result {
-                now.error = Some(format!("{id}: {why}"));
-            }
-        }
-        Flatpaks::refresh();
-    });
+        )
+        .map(drop)
+    };
+    Removal::run(id, job, Flatpaks::refresh);
 }
 
 // ───── the page ──────────────────────────────────────────────────────────────

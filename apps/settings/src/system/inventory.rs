@@ -393,7 +393,7 @@ fn row(item: &Item, entry: Option<&Entry>, managed: &Managed, removal: &Removal)
                 .build()
         }),
         (Source::Flatpak { id: app, .. }, _) => {
-            let busy = removal.busy.as_deref() == Some(app.as_str());
+            let busy = removal.is_busy(app);
             let (app, name) = (app.clone(), item.name.clone());
             Some(
                 PushButton::new(
@@ -509,8 +509,12 @@ pub fn section(
             notes.push(format!("{}.", summary.trim_end_matches('.')));
         }
     }
-    if let Some(error) = removal.error.as_ref().or(flatpaks.error.as_ref()) {
-        notes.push(error.clone());
+    let removal_error = removal
+        .error
+        .as_ref()
+        .map(|(app, why)| format!("{app}: {why}"));
+    if let Some(error) = removal_error.or_else(|| flatpaks.error.clone()) {
+        notes.push(error);
     }
     notes.push(String::from(
         "Press an app for its details. Move… hands an app listed in one of your own \
