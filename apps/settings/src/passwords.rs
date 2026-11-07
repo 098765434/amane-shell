@@ -374,7 +374,7 @@ fn fill(status: &VaultStatus) -> amane_kit::form::Group {
             |on| change_passwords(|passwords| passwords.suggest_on_usernames = on),
         ))
         .row(switch_row(
-            "settings.passwords.spotlight",
+            "settings.passwords.launcher",
             "Passwords in the Launcher",
             settings.show_in_spotlight,
             |on| change_passwords(|passwords| passwords.show_in_spotlight = on),

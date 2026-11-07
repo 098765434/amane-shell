@@ -375,24 +375,24 @@ pub const INDEX: &[Entry] = &[
     ),
     // Launcher
     page(
-        "spotlight",
+        "launcher",
         "Launcher",
         &["search", "app launcher", "run", "apps"],
     ),
     row(
-        "spotlight",
+        "launcher",
         "Show applications as",
         "settings.launcher.layout",
         &["grid", "list"],
     ),
     row(
-        "spotlight",
+        "launcher",
         "Clipboard history",
         "settings.launcher.clipboard",
         &["copy", "paste"],
     ),
     row(
-        "spotlight",
+        "launcher",
         "Quick keys",
         "settings.launcher.keys.none",
         &["shortcuts", "hotkeys"],

@@ -177,7 +177,7 @@ const DISPLAYS: usize = 3;
 const STATUS_BAR: usize = 4;
 const DOCK: usize = 5;
 const QUICK_SETTINGS: usize = 6;
-const SPOTLIGHT: usize = 7;
+const LAUNCHER: usize = 7;
 const DROP: usize = 8;
 const PASSWORDS: usize = 9;
 const ABOUT_SHELL: usize = 10;
@@ -201,7 +201,7 @@ pub fn page_named(name: &str) -> Option<usize> {
         "status-bar" | "bar" => STATUS_BAR,
         "dock" => DOCK,
         "quick-settings" => QUICK_SETTINGS,
-        "spotlight" | "launcher" => SPOTLIGHT, // lint-terms: allow (an old name, for keybinds)
+        "launcher" | "spotlight" => LAUNCHER, // lint-terms: allow (the old name, for keybinds)
         "drop" | "amane-drop" => DROP,
         "passwords" | "bitwarden" => PASSWORDS,
         "about-shell" => ABOUT_SHELL,
@@ -227,7 +227,7 @@ pub const PAGE_NAMES: [(&str, usize); 19] = [
     ("status-bar", STATUS_BAR),
     ("dock", DOCK),
     ("quick-settings", QUICK_SETTINGS),
-    ("spotlight", SPOTLIGHT), // lint-terms: allow (an old name, for keybinds)
+    ("launcher", LAUNCHER),
     ("drop", DROP),
     ("passwords", PASSWORDS),
     ("about-shell", ABOUT_SHELL),
@@ -481,9 +481,9 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
                     "settings.scroll.quick-settings",
                     boxed(quick_settings::page()),
                 ),
-                SPOTLIGHT => (
+                LAUNCHER => (
                     "Launcher",
-                    "settings.scroll.spotlight",
+                    "settings.scroll.launcher",
                     boxed(launcher::page()),
                 ),
                 DROP => ("Drop", "settings.scroll.drop", boxed(drop::page())),
@@ -856,6 +856,13 @@ pub fn radios_height(count: usize) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_launcher_page_opens_by_its_old_name_too() {
+        assert_eq!(page_named("launcher"), Some(LAUNCHER));
+        // the old name, which keybinds may still use
+        assert_eq!(page_named("spotlight"), Some(LAUNCHER)); // lint-terms: allow
+    }
 
     #[test]
     fn back_and_forward_walk_the_places() {
