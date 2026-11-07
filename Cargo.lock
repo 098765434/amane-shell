@@ -72,6 +72,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "amane-base"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "amane-drop"
 version = "0.1.0"
 dependencies = [
@@ -90,6 +98,7 @@ name = "amane-kit"
 version = "0.1.0"
 dependencies = [
  "amane",
+ "amane-base",
  "amane-process",
  "fontconfig",
  "log",

@@ -10,6 +10,7 @@ authors.workspace = true
 
 [dependencies]
 log = { workspace = true }
+amane-base = { workspace = true }
 amane-process = { workspace = true }
 # the same pinned amane as the shell, overridden the same way during co-development
 amane = { workspace = true }

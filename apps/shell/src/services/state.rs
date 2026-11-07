@@ -106,7 +106,7 @@ fn save_to<T: State>(file: &Path, value: &T) {
     };
     let result = serde_json::to_string_pretty(&written)
         .map_err(std::io::Error::other)
-        .and_then(|text| amane_kit::files::write_whole(file, text + "\n"));
+        .and_then(|text| amane_kit::fs::write_whole(file, text + "\n"));
     if let Err(error) = result {
         log::warn!("couldn't save {}: {error}", file.display());
     }

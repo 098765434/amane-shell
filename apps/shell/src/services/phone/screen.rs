@@ -66,7 +66,7 @@ pub fn remember(device: &str) {
     };
     // Messages reads this file too, looking for the id in quotes
     if let Ok(text) = serde_json::to_string_pretty(&known)
-        && let Err(error) = amane_kit::files::write_whole(&path, text)
+        && let Err(error) = amane_kit::fs::write_whole(&path, text)
     {
         log::warn!("couldn't save {}: {error}", path.display());
     }

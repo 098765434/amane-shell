@@ -211,7 +211,9 @@ fn written() -> Option<&'static Path> {
     static ROOT: OnceLock<Option<PathBuf>> = OnceLock::new();
 
     ROOT.get_or_init(|| {
-        let root = crate::paths::runtime().join("amane-shell").join("lab");
+        let root = crate::paths::runtime()
+            .join(crate::app_ids::SHELL)
+            .join("lab");
 
         write_effects(&root)
             .map_err(|error| log::warn!("{}: {error}", root.display()))

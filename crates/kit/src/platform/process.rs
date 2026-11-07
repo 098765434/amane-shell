@@ -2,6 +2,7 @@
 //! applied on a worker. The runner itself is [`amane_process`], whose
 //! [`Cmd`] is here too.
 
+use crate::sync::Locked as _;
 pub use amane_process::{Cmd, Failure, Output, Running, Stopper};
 
 use std::cell::RefCell;
@@ -73,25 +74,21 @@ impl<T: Send + 'static> Latest<T> {
     /// Applies `value` with `apply` on a worker thread, unless a newer value comes before the
     /// worker gets to it.
     pub fn send(&'static self, value: T, apply: fn(T)) {
-        *self.next.lock().unwrap_or_else(|e| e.into_inner()) = Some(value);
+        *self.next.locked() = Some(value);
         if self.busy.swap(true, Ordering::AcqRel) {
             // the running worker picks it up
             return;
         }
         std::thread::spawn(move || {
             loop {
-                let next = self.next.lock().unwrap_or_else(|e| e.into_inner()).take();
+                let next = self.next.locked().take();
                 if let Some(value) = next {
                     apply(value);
                     continue;
                 }
                 self.busy.store(false, Ordering::Release);
                 // a value sent between the take and the store would be left behind
-                let more = self
-                    .next
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner())
-                    .is_some();
+                let more = self.next.locked().is_some();
                 if !more || self.busy.swap(true, Ordering::AcqRel) {
                     return;
                 }

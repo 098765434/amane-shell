@@ -230,7 +230,7 @@ fn take(settings: &Settings, types: &[String]) {
     let path = clip.path();
     if !path.exists() {
         // written whole: named by what it holds, a half-written one would never be redone
-        if let Err(e) = amane_kit::files::write_whole(&path, &bytes) {
+        if let Err(e) = amane_kit::fs::write_whole(&path, &bytes) {
             log::warn!("clipboard history: {}: {e}", path.display());
             return;
         }

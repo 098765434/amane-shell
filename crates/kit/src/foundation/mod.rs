@@ -4,5 +4,4 @@ pub mod color;
 pub mod fuzzy;
 pub mod icons;
 pub mod layout;
-pub mod paths;
 pub mod symbol;

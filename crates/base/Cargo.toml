@@ -1,0 +1,16 @@
+[package]
+name = "amane-base"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "What every amane-shell program needs below its UI: folders, whole-file writes, times and sizes in words, locks, flags, file types, ids."
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

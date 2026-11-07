@@ -33,6 +33,7 @@ members = [
     "apps/assistant",
     "apps/drop",
     "apps/train-watch",
+    "crates/base",
     "crates/kit",
     "crates/pinentry",
     "crates/phone",
@@ -55,6 +56,7 @@ repository = "https://github.com/098765434/amane-shell"
 authors = ["ocbk"]
 
 [workspace.dependencies]
+amane-base = { path = "crates/base" }
 amane-kit = { path = "crates/kit" }
 amane-pinentry = { path = "crates/pinentry" }
 amane-phone = { path = "crates/phone" }

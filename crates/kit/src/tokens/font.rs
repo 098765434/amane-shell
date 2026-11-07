@@ -2,6 +2,7 @@
 //! fontconfig always answers with *some* font, so the shell picks the first
 //! family in a token's stack that is really installed.
 
+use crate::sync::Locked as _;
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::{Mutex, OnceLock};
@@ -42,10 +43,7 @@ pub fn first_installed(stack: &[String]) -> &'static str {
 
 fn first_installed_by_name(stack: &[String]) -> &'static str {
     static CHOSEN: OnceLock<Mutex<HashMap<Vec<String>, &'static str>>> = OnceLock::new();
-    let mut chosen = CHOSEN
-        .get_or_init(Default::default)
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
+    let mut chosen = CHOSEN.get_or_init(Default::default).locked();
 
     if let Some(family) = chosen.get(stack) {
         return family;
@@ -58,7 +56,7 @@ fn first_installed_by_name(stack: &[String]) -> &'static str {
     if std::env::var_os("AMANE_DEBUG").is_some() {
         log::debug!("font stack {stack:?} → {family}");
     }
-    let family: &'static str = Box::leak(family.into_boxed_str());
+    let family = crate::intern::intern(&family);
     chosen.insert(stack.to_vec(), family);
     family
 }

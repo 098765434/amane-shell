@@ -8,11 +8,12 @@
 //! of their own. [`known`] is for drawing: it answers from what was last
 //! found, and looks again on a thread when it doesn't know yet.
 
+use crate::sync::Locked as _;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::sync::{LazyLock, Mutex, PoisonError};
+use std::sync::{LazyLock, Mutex};
 
 crate::marker! {
     /// A secret was found, kept or forgotten: what shows whether one is
@@ -35,8 +36,7 @@ static KNOWN: LazyLock<Mutex<HashMap<(String, String), bool>>> =
 
 fn remember(app: &str, name: &str, kept: bool) {
     KNOWN
-        .lock()
-        .unwrap_or_else(PoisonError::into_inner)
+        .locked()
         .insert((app.to_string(), name.to_string()), kept);
     SecretsChanged::changed();
 }
@@ -121,7 +121,7 @@ pub fn forget(app: &str, name: &str) {
 pub fn known(app: &str, name: &str) -> Option<bool> {
     SecretsChanged::watch();
     let key = (app.to_string(), name.to_string());
-    let mut known = KNOWN.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut known = KNOWN.locked();
     if let Some(kept) = known.get(&key) {
         return Some(*kept);
     }
@@ -155,7 +155,6 @@ fn file_secrets(app: &str) -> BTreeMap<String, String> {
 }
 
 fn write_file_secrets(app: &str, secrets: &BTreeMap<String, String>) {
-    use std::os::unix::fs::OpenOptionsExt;
     let Some(file) = secrets_file(app) else {
         return;
     };
@@ -164,25 +163,10 @@ fn write_file_secrets(app: &str, secrets: &BTreeMap<String, String>) {
         let _ = std::fs::remove_file(file);
         return;
     }
-    let Ok(text) = serde_json::to_string_pretty(secrets) else {
-        return;
-    };
-    let write = || {
-        if let Some(folder) = file.parent() {
-            std::fs::create_dir_all(folder)?;
-        }
-        let partial = file.with_extension("part");
-        // a part file left by a failed save; create_new below needs it gone
-        let _ = std::fs::remove_file(&partial);
-        std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .mode(0o600)
-            .open(&partial)
-            .and_then(|mut out| out.write_all(text.as_bytes()))?;
-        std::fs::rename(partial, &file)
-    };
-    if let Err(e) = write() {
+    let written = serde_json::to_string_pretty(secrets)
+        .map_err(std::io::Error::other)
+        .and_then(|text| crate::fs::Whole::new().private().write(&file, text));
+    if let Err(e) = written {
         log::warn!("couldn't save {}: {e}", file.display());
     }
 }

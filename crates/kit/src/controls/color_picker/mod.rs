@@ -281,7 +281,7 @@ fn checkerboard(width: f32, height: f32) -> Column {
 }
 
 fn hex_row(id: &str, color: [f32; 4], width: f32, set: Rc<dyn Fn([f32; 3], f32)>) -> Row {
-    let field_id = static_id(format!("{id}.hex"));
+    let field_id = crate::intern::intern(&format!("{id}.hex"));
     let hex = to_hex(color);
 
     if !TextInput::has_focus(field_id) && TextInput::text(field_id) != hex {
@@ -377,18 +377,6 @@ fn remembered_hsv(id: &str, color: [f32; 4]) -> [f32; 3] {
         Some(hsv) if to_hex_rgb(hsv_to_rgb(hsv)) == to_hex_rgb([red, green, blue]) => hsv,
         _ => rgb_to_hsv([red, green, blue]),
     }
-}
-
-/// A text field's id has to be `'static`; there's one per picker, made once.
-fn static_id(id: String) -> &'static str {
-    thread_local! {
-        static IDS: RefCell<HashMap<String, &'static str>> = RefCell::new(HashMap::new());
-    }
-
-    IDS.with_borrow_mut(|ids| {
-        *ids.entry(id.clone())
-            .or_insert_with(|| Box::leak(id.into_boxed_str()))
-    })
 }
 
 /// Red, green, blue and alpha from 0 to 1 as an amane color, clamped into range.

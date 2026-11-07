@@ -33,6 +33,7 @@ pub mod lint;
 pub mod resolve;
 pub mod values;
 
+use crate::sync::Locked as _;
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
@@ -194,10 +195,7 @@ fn current() -> &'static Resolved {
 /// Resolve the bundled tokens for `key`, once per key; the table lives for the rest of the run.
 pub fn resolved(key: Key) -> &'static Resolved {
     static CACHE: OnceLock<Mutex<HashMap<Key, &'static Resolved>>> = OnceLock::new();
-    let mut cache = CACHE
-        .get_or_init(Default::default)
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
+    let mut cache = CACHE.get_or_init(Default::default).locked();
 
     cache.entry(key).or_insert_with(|| {
         let resolved = resolve_key(library(), key).unwrap_or_else(|errors| {

@@ -159,7 +159,7 @@ fn shader() -> Option<&'static Path> {
     static PATH: OnceLock<Option<PathBuf>> = OnceLock::new();
 
     PATH.get_or_init(|| {
-        let dir = crate::paths::runtime().join("amane-shell");
+        let dir = crate::paths::runtime().join(crate::app_ids::SHELL);
         // named for its text, so the shell and Shell Settings of different builds don't
         // overwrite each other's, and written to a part file first, so neither ever loads
         // half of one
@@ -169,11 +169,7 @@ fn shader() -> Option<&'static Path> {
             "glass-{:016x}.wgsl",
             std::hash::Hasher::finish(&hasher)
         ));
-        let part = path.with_extension(format!("part{}", std::process::id()));
-
-        let written = std::fs::create_dir_all(&dir)
-            .and_then(|()| std::fs::write(&part, SOURCE))
-            .and_then(|()| std::fs::rename(&part, &path));
+        let written = crate::fs::write_whole(&path, SOURCE);
         match written {
             Ok(()) => Some(path),
             Err(e) => {

@@ -23,11 +23,12 @@
 //! the seconds down, and at zero the dialog closes and runs its action, as
 //! a display change that's kept only when confirmed.
 
+use crate::sync::Locked as _;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::sync::{Mutex, PoisonError};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use amane::{
@@ -153,7 +154,7 @@ thread_local! {
 static COUNTING: Mutex<Option<HashSet<String>>> = Mutex::new(None);
 
 fn counting(name: &str, on: bool) {
-    let mut names = COUNTING.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut names = COUNTING.locked();
     let names = names.get_or_insert_with(HashSet::new);
     if on {
         names.insert(name.to_string());
@@ -182,8 +183,7 @@ impl Service for Tick {
 
     fn update(&mut self) -> bool {
         COUNTING
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
+            .locked()
             .as_ref()
             .is_some_and(|names| !names.is_empty())
     }

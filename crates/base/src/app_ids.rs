@@ -1,6 +1,15 @@
-//! The apps' ids, written once: each app names itself with its own, and
-//! the shell finds them by it (the niri window rules, the phone's apps,
-//! Software Update's link).
+//! The programs' ids, written once: each names itself with its own (its
+//! log, its window, its files), and the shell finds them by it (the niri
+//! window rules, the phone's apps, Software Update's link).
+
+/// The shell; also the folder its settings and state live in.
+pub const SHELL: &str = "amane-shell";
+/// The assistant's daemon.
+pub const ASSISTANT: &str = "amane-assistant";
+/// The pinentry the shell answers for.
+pub const PINENTRY: &str = "amane-pinentry";
+/// The train watcher.
+pub const TRAIN_WATCH: &str = "amane-train-watch";
 
 /// Shell Settings.
 pub const SETTINGS: &str = "amane-settings";
