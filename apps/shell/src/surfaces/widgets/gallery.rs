@@ -8,10 +8,11 @@
 //! It's drawn on the desktop's own surface (see `edit.rs`), which records
 //! where each widget in the pane is for a press to find what's under it.
 
+use amane_kit::reveal::Swell;
 use std::cell::{Cell, RefCell};
 
 use amane::{
-    Animation, Blend, BlurShape, Center, Key, Rectangle, Row, Stack, Start, Text, Vertical, Widget,
+    Animation, BlurShape, Center, Key, Rectangle, Row, Stack, Start, Text, Vertical, Widget,
     modifiers,
 };
 
@@ -233,12 +234,8 @@ pub(super) fn sheet(_output: &str, geometry: &Geometry) -> (Box<dyn Widget>, Vec
     let area = place(geometry);
     let radius = sys::radius::popover().max(RADIUS);
     let opened = OPEN.with_borrow_mut(|open| open.value());
-    let scale = f32::blend(motion::scale(OPEN_SCALE), 1.0, opened);
-    let opacity = if amane::blur_fades() {
-        opened.clamp(0.0, 1.0)
-    } else {
-        1.0
-    };
+    // its frost always shows: the surface goes once it has closed
+    let swell = Swell::new(true, opened, OPEN_SCALE);
     let content = content(&area);
     with(|state| state.area = Some(area));
 
@@ -252,10 +249,7 @@ pub(super) fn sheet(_output: &str, geometry: &Geometry) -> (Box<dyn Widget>, Vec
     let surface = Material::Sheet.lit(surface, radius);
     let centre = (area.x + area.width / 2.0, area.y + area.height / 2.0);
     let glass = Material::Sheet.shape(area.x, area.y, area.width, area.height, radius, 1.0);
-    let frost = amane_kit::glass_region::faded(
-        amane_kit::glass_region::transformed(vec![glass], scale, centre, (0.0, 0.0)),
-        opacity,
-    );
+    let frost = swell.frost(vec![glass], centre);
     let widget = Rectangle::new()
         .width(amane::Parent)
         .height(amane::Parent)
@@ -263,7 +257,7 @@ pub(super) fn sheet(_output: &str, geometry: &Geometry) -> (Box<dyn Widget>, Vec
         .child(
             surface
                 .opacity(opened.clamp(0.0, 1.0))
-                .scale(scale)
+                .scale(swell.scale)
                 .translate(area.x, area.y),
         );
     (boxed(widget), frost)

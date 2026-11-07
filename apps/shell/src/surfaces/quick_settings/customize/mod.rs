@@ -26,6 +26,7 @@ mod drag;
 mod tests;
 mod view;
 
+use amane_kit::reveal;
 use drag::*;
 pub(super) use drag::{drag_layer, ghost, place, set_canvas_origin};
 pub(super) use view::view;
@@ -33,8 +34,8 @@ pub(super) use view::view;
 use std::cell::{Cell, RefCell};
 
 use amane::{
-    Animation, Blend, BlurShape, Center, Cursor, Key, Parent, Point, Rectangle, Row, Scroll, Stack,
-    Start, Text, Widget, modifiers,
+    Animation, BlurShape, Center, Cursor, Key, Parent, Point, Rectangle, Row, Scroll, Stack, Start,
+    Text, Widget, modifiers,
 };
 
 use super::controls::{self, ControlId, Ctx};
@@ -45,7 +46,6 @@ use crate::tokens::{Styled, quick, sys};
 use amane_kit::buttons::{PushButton, Shape, Style};
 use amane_kit::divider::Divider;
 use amane_kit::flow::Flow;
-use amane_kit::glass_region;
 use amane_kit::kinetic::{Axis, Kinetic};
 use amane_kit::layout::{boxed, caption, pad, split_row, text_height, wrapped_lines};
 use amane_kit::list::{self, List, ListItem};
@@ -167,7 +167,7 @@ pub(super) fn close() {
 
 /// Whether the window is on the surface: open, or still fading out.
 pub(super) fn visible() -> bool {
-    OPENING.get() || OPEN.with_borrow(|open| open.value() > 0.001)
+    reveal::showing(OPENING.get(), OPEN.with_borrow(|open| open.value()))
 }
 
 /// Gone from the screen: the next opening starts afresh, on All Controls

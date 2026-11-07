@@ -65,9 +65,9 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use amane::{
-    Animation, Apps, Blend, Button, Column, DesktopApp, Easing, Horizontal, Key, Keyboard,
-    LayerWindow, Parent, Rectangle, Row, Scroll, ScrollSource, Service, Stack, Start, Vertical,
-    Widget, WindowSize, modifiers, window_size,
+    Animation, Apps, Button, Column, DesktopApp, Easing, Horizontal, Key, Keyboard, LayerWindow,
+    Parent, Rectangle, Row, Scroll, ScrollSource, Service, Stack, Start, Vertical, Widget,
+    WindowSize, modifiers, window_size,
 };
 
 use crate::chrome::panel::{self, Panel, close, is_open, overlay};
@@ -75,13 +75,12 @@ use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history;
 use crate::services::launcher::file_search::{self, FileKind};
 use amane_kit::divider::Divider;
-use amane_kit::glass_region;
 use amane_kit::kinetic::{Axis, AxisLock, Kinetic};
 use amane_kit::layout::{blank, boxed, pad, track_cursor};
 use amane_kit::material::Material;
 use amane_kit::motion;
 use amane_kit::pager::{Pager, PagerMotion};
-use amane_kit::reveal::Reveal;
+use amane_kit::reveal::{self, Reveal, Swell};
 use amane_kit::scroll_view::ScrollbarFade;
 use amane_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
 use amane_kit::text_edit::{self, Field};
@@ -329,7 +328,7 @@ pub fn surface() -> LayerWindow {
     let open = is_open(Panel::Launcher);
     let unfolded = unfold(open);
 
-    if !open && unfolded <= 0.001 {
+    if !reveal::showing(open, unfolded) {
         hidden();
         return window()
             .visible(false)
@@ -357,26 +356,11 @@ pub fn surface() -> LayerWindow {
         anim.value()
     });
 
-    // The glass swells in about the pill's centre, the frost with it. A
-    // compositor that can't fade frost only shows or hides it, so there the
-    // glass arrives whole rather than fading in over frost at full strength.
-    let fades = amane::blur_fades();
-    let scale = f32::blend(motion::scale(OPEN_SCALE), 1.0, unfolded);
-    let opacity = if open && !fades {
-        1.0
-    } else {
-        unfolded.clamp(0.0, 1.0)
-    };
+    // the glass swells in about the pill's centre, the frost with it
+    let swell = Swell::new(open, unfolded, OPEN_SCALE);
     let (sheet, _) = geometry.drawn();
     let centre = (sheet.x + sheet.width / 2.0, sheet.y + PILL_H / 2.0);
-    let frost = if open || fades {
-        glass_region::faded(
-            glass_region::transformed(geometry.frost(), scale, centre, (0.0, 0.0)),
-            opacity,
-        )
-    } else {
-        Vec::new()
-    };
+    let frost = swell.frost(geometry.frost(), centre);
 
     let mut layers: Vec<Box<dyn Widget>> = vec![boxed(glass(&view, geometry))];
     if geometry.shown() > 0.01 {
@@ -389,15 +373,15 @@ pub fn surface() -> LayerWindow {
     // that is from the pill's, scaled down, it swells from the pill
     let (screen_w, screen_h) = screen;
     let shift = (
-        (centre.0 - screen_w / 2.0) * (1.0 - scale),
-        (centre.1 - screen_h / 2.0) * (1.0 - scale),
+        (centre.0 - screen_w / 2.0) * (1.0 - swell.scale),
+        (centre.1 - screen_h / 2.0) * (1.0 - swell.scale),
     );
     let group = Rectangle::new()
         .width(Parent)
         .height(Parent)
         .child(Stack::new(layers).width(Parent).height(Parent))
-        .opacity(opacity)
-        .scale(scale)
+        .opacity(swell.opacity)
+        .scale(swell.scale)
         .translate(shift.0, shift.1);
 
     // a click outside the glass closes it; the glass keeps its own clicks

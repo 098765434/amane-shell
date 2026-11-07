@@ -3,13 +3,14 @@
 
 use super::*;
 use amane_kit::layout::frame;
+use amane_kit::reveal::{self, Swell};
 
 /// Steps the window's opening and gives how far it is, a little past 1 on
 /// the spring; `None` once it has gone.
 pub(super) fn unfold() -> Option<f32> {
     let opening = OPENING.get();
     let value = OPEN.with_borrow_mut(|open| open.value());
-    if !opening && value <= 0.001 {
+    if !reveal::showing(opening, value) {
         return None;
     }
     Some(value)
@@ -31,32 +32,19 @@ pub(crate) fn view(screen: (f32, f32), card: Area) -> Option<Built> {
         content(&area),
     );
 
-    // it swells in about its centre, the frost with it (see the launcher)
-    let fades = amane::blur_fades();
-    let scale = f32::blend(motion::scale(OPEN_SCALE), 1.0, unfolded);
-    let opacity = if OPENING.get() && !fades {
-        1.0
-    } else {
-        unfolded.clamp(0.0, 1.0)
-    };
-    let frost = if OPENING.get() || fades {
-        let glass = Material::Sheet.shape(area.x, area.y, area.width, area.height, radius, 1.0);
-        let centre = (area.x + area.width / 2.0, area.y + area.height / 2.0);
-        glass_region::faded(
-            glass_region::transformed(vec![glass], scale, centre, (0.0, 0.0)),
-            opacity,
-        )
-    } else {
-        Vec::new()
-    };
+    // it swells in about its centre, the frost with it
+    let swell = Swell::new(OPENING.get(), unfolded, OPEN_SCALE);
+    let glass = Material::Sheet.shape(area.x, area.y, area.width, area.height, radius, 1.0);
+    let centre = (area.x + area.width / 2.0, area.y + area.height / 2.0);
+    let frost = swell.frost(vec![glass], centre);
     let widget = Rectangle::new()
         .width(Parent)
         .height(Parent)
         .align_child(Start, Start)
         .child(
             sheet
-                .opacity(opacity)
-                .scale(scale)
+                .opacity(swell.opacity)
+                .scale(swell.scale)
                 .translate(area.x, area.y),
         );
     Some(Built {

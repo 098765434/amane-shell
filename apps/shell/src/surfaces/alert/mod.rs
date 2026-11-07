@@ -15,7 +15,7 @@ pub mod vault_unlock;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use amane::{Blend, Horizontal, Keyboard, LayerWindow, Rectangle, Vertical};
+use amane::{Horizontal, Keyboard, LayerWindow, Rectangle, Vertical};
 
 use crate::chrome::panel::overlay;
 use crate::tokens::dialog;
@@ -23,8 +23,7 @@ use amane_kit::dialog::Dialog;
 use amane_kit::glass_region;
 use amane_kit::layout::blank;
 use amane_kit::material::Material;
-use amane_kit::motion;
-use amane_kit::reveal::Reveal;
+use amane_kit::reveal::{self, Reveal, Swell};
 
 amane_kit::marker! {
     /// The alert showed or closed: only its window draws again.
@@ -90,7 +89,7 @@ pub fn surface() -> LayerWindow {
     let unfolded = unfold(open);
 
     let shown = SHOWN.with_borrow(Clone::clone);
-    let Some(alert) = shown.filter(|_| open || unfolded > 0.001) else {
+    let Some(alert) = shown.filter(|_| reveal::showing(open, unfolded)) else {
         if !open {
             SHOWN.set(None);
         }
@@ -104,15 +103,7 @@ pub fn surface() -> LayerWindow {
     let height = alert.height();
     let radius = dialog::radius();
 
-    // a compositor that can't fade frost only shows or hides it, so there
-    // the card arrives whole rather than fading in over frost at full strength
-    let fades = amane::blur_fades();
-    let scale = f32::blend(motion::scale(OPEN_SCALE), 1.0, unfolded);
-    let opacity = if open && !fades {
-        1.0
-    } else {
-        unfolded.clamp(0.0, 1.0)
-    };
+    let swell = Swell::new(open, unfolded, OPEN_SCALE);
 
     let close: Rc<dyn Fn()> = Rc::new(close);
     let card = Rectangle::new()
@@ -123,27 +114,14 @@ pub fn surface() -> LayerWindow {
         .child(alert.content(close));
     let card = Material::Sheet
         .lit(card, radius)
-        .opacity(opacity)
-        .scale(scale);
+        .opacity(swell.opacity)
+        .scale(swell.scale);
 
     // the frost shrinks with the card, about the surface's centre
-    let frost = if open || fades {
-        let (shown_w, shown_h) = (width * scale, height * scale);
-        vec![
-            Material::Sheet
-                .shape(
-                    (width - shown_w) / 2.0,
-                    (height - shown_h) / 2.0,
-                    shown_w,
-                    shown_h,
-                    radius * scale,
-                    opacity,
-                )
-                .id(glass_region::shape_id(ALERT_NS)),
-        ]
-    } else {
-        Vec::new()
-    };
+    let glass = Material::Sheet
+        .shape(0.0, 0.0, width, height, radius, 1.0)
+        .id(glass_region::shape_id(ALERT_NS));
+    let frost = swell.frost(vec![glass], (width / 2.0, height / 2.0));
 
     window(height).visible(true).blur_shapes(frost).child(card)
 }

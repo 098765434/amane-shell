@@ -1,6 +1,7 @@
 //! How the dock draws: the card, the highlights, the icons and their tooltip, the frost.
 
 use super::*;
+use amane_kit::reveal;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn build(
@@ -22,7 +23,7 @@ pub(super) fn build(
         menu_open || dock.drag.is_some() || dock.files.is_some() || !dock_settings().auto_hide,
     );
     let progress = dock.reveal.progress(hold);
-    let out = progress > 0.001 || dock.reveal.wanted();
+    let out = reveal::showing(dock.reveal.wanted(), progress);
     if out && !dock.out {
         dock.swell = anim(&swell_anim(motion), 0.0);
     }

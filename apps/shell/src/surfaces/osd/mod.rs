@@ -16,6 +16,7 @@
 mod keys;
 mod watch;
 
+use amane_kit::reveal::{self, Swell};
 use std::cell::{Cell, RefCell};
 use std::time::{Duration, Instant};
 
@@ -125,7 +126,7 @@ pub fn surface() -> LayerWindow {
     let shown = faded_in(open);
 
     let readout = SHOWN.with_borrow(Clone::clone);
-    let Some(readout) = readout.filter(|_| open || shown > 0.001) else {
+    let Some(readout) = readout.filter(|_| reveal::showing(open, shown)) else {
         if !open {
             SHOWN.set(None);
             UNTIL.set(None);
@@ -138,14 +139,8 @@ pub fn surface() -> LayerWindow {
 
     let (width, height, radius) = (osd::width(), osd::height(), osd::radius());
 
-    // a compositor that can't fade frost only shows or hides it, so there
-    // the capsule arrives whole rather than fading in over frost at full strength
-    let fades = amane::blur_fades();
-    let opacity = if open && !fades {
-        1.0
-    } else {
-        shown.clamp(0.0, 1.0)
-    };
+    // it fades in where it is, without swelling
+    let swell = Swell::new(open, shown, 1.0);
 
     // small glass, light or dark with its backdrop
     let glass = glass_region::shape_id(OSD_NS);
@@ -161,11 +156,11 @@ pub fn surface() -> LayerWindow {
                 .child(content(&readout, width - osd::pad() * 2.0));
             Material::Control.lit(face, radius)
         })
-        .opacity(opacity);
+        .opacity(swell.opacity);
 
-    let frost = if open || fades {
+    let frost = if swell.frost {
         let shape = Material::Control.adapted(glass, || {
-            Material::Control.shape(0.0, 0.0, width, height, radius, opacity)
+            Material::Control.shape(0.0, 0.0, width, height, radius, swell.opacity)
         });
         vec![shape.id(glass)]
     } else {

@@ -3,9 +3,73 @@
 //! it around at the speed it had. The alert, the launcher and Quick Settings
 //! open this way.
 
-use amane::Animation;
+use amane::{Animation, Blend, BlurShape};
 
-use crate::motion;
+use crate::{glass_region, motion};
+
+/// How far open a surface has to be to be drawn at all.
+const SHOWING: f32 = 0.001;
+
+/// Whether a surface heading `open`, `shown` far open, is drawn at all:
+/// while it opens, and until it has closed.
+pub fn showing(open: bool, shown: f32) -> bool {
+    open || shown > SHOWING
+}
+
+/// How a surface swelling open is drawn this frame: growing from a little
+/// smaller about its centre, fading in, its frost following.
+///
+/// A compositor that can't fade frost only shows or hides it, so there the
+/// surface arrives whole while it opens, rather than fading in over frost
+/// at full strength, and its frost goes at once as it closes.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Swell {
+    /// How big it's drawn, from `from_scale` closed to 1 open.
+    pub scale: f32,
+    /// How strongly it's drawn.
+    pub opacity: f32,
+    /// Whether its frost shows.
+    pub frost: bool,
+}
+
+impl Swell {
+    /// A surface heading `open`, `shown` far open (a little past 1 on the
+    /// spring), that grows from `from_scale`.
+    pub fn new(open: bool, shown: f32, from_scale: f32) -> Self {
+        let fades = amane::blur_fades();
+        Self {
+            scale: f32::blend(motion::scale(from_scale), 1.0, shown),
+            opacity: if open && !fades {
+                1.0
+            } else {
+                shown.clamp(0.0, 1.0)
+            },
+            frost: open || fades,
+        }
+    }
+
+    /// `shapes`, the surface's frost at its full size, scaled about
+    /// `centre` and faded with it; none while its frost doesn't show.
+    pub fn frost(&self, shapes: Vec<BlurShape>, centre: (f32, f32)) -> Vec<BlurShape> {
+        self.frost_moved(shapes, centre, (0.0, 0.0))
+    }
+
+    /// As [`frost`](Self::frost), moved by `offset` after scaling.
+    pub fn frost_moved(
+        &self,
+        shapes: Vec<BlurShape>,
+        centre: (f32, f32),
+        offset: (f32, f32),
+    ) -> Vec<BlurShape> {
+        if !self.frost {
+            return Vec::new();
+        }
+        glass_region::faded(
+            glass_region::transformed(shapes, self.scale, centre, offset),
+            self.opacity,
+        )
+    }
+}
 
 /// How far a surface has opened, 0 closed to 1 open (a little past 1 on the spring).
 pub struct Reveal {

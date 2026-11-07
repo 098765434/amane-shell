@@ -3,6 +3,7 @@
 
 use super::*;
 use amane_kit::layout::frame;
+use amane_kit::reveal::{self, Swell};
 
 /// Steps the card's opening towards `open` and gives how far it is, a
 /// little past 1 on the spring. Closing is quicker than opening, and a
@@ -30,7 +31,7 @@ pub fn surface() -> LayerWindow {
     QuickSettings::watch();
     let open = is_open(Panel::QuickSettings);
     let unfolded = unfold(open);
-    let shown = open || unfolded > 0.001;
+    let shown = reveal::showing(open, unfolded);
 
     if !shown {
         hidden();
@@ -224,9 +225,8 @@ pub fn surface() -> LayerWindow {
     // same frame) rather than fading in over frost already at full
     // strength; going, the frost goes at once and the modules fade out over
     // the sharp desktop.
-    let fades = amane::blur_fades();
-    let unfolded_shown = unfolded.clamp(0.0, 1.0);
-    let scale = f32::blend(motion::scale(quick::open::scale()), 1.0, unfolded);
+    let swell = Swell::new(open, unfolded, quick::open::scale());
+    let scale = swell.scale;
     // under a bar along the top it drops out of the bar instead, its
     // top-right corner staying put
     let down = if bar::edge() == Vertical::Top {
@@ -235,20 +235,12 @@ pub fn surface() -> LayerWindow {
         1.0
     };
     let lift = down * (1.0 - unfolded) * motion::travel(OPEN_LIFT);
-    let opacity = if open && !fades { 1.0 } else { unfolded_shown };
-    let card = content.opacity(opacity).scale(scale).translate(
+    let card = content.opacity(swell.opacity).scale(scale).translate(
         (1.0 - scale) * width / 2.0,
         down * (1.0 - scale) * outer / 2.0 + lift,
     );
     let pinned = if down > 0.0 { outer } else { 0.0 };
-    let mut frost = if open || fades {
-        glass_region::faded(
-            glass_region::transformed(shapes, scale, (width, pinned), (0.0, lift)),
-            opacity,
-        )
-    } else {
-        Vec::new()
-    };
+    let mut frost = swell.frost_moved(shapes, (width, pinned), (0.0, lift));
 
     // Where the card is on the surface. The surface covers the output while
     // the card shows, and the card keeps its place at the bar's right-hand
