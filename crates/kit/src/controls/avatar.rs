@@ -1,10 +1,9 @@
 //! Avatar — a person or thing as a circle: their photo, or their initials
 //! on a colour.
 //!
-//! Material 3's list avatar is a 40 dp circle of `primaryContainer` with
-//! the initials in title-medium; the shell's (Messages' inbox) picks a
-//! colour for the name from the accents that take white text. Both build
-//! from [`Avatar`].
+//! The circle's colour is kept for the name, from the accents that take
+//! white text, so a person reads the same everywhere (Messages' inbox and
+//! threads).
 
 use std::path::PathBuf;
 
@@ -51,7 +50,7 @@ impl Avatar {
         self
     }
 
-    /// A photo in place of the initials, once it has loaded.
+    /// A photo in place of the initials, decoded at the circle's size.
     pub fn photo(mut self, photo: Option<PathBuf>) -> Self {
         self.photo = photo;
         self
@@ -63,7 +62,7 @@ impl Avatar {
             .width(Size::Fixed(self.side))
             .height(Size::Fixed(self.side))
             .radius(Radius::Full);
-        if let Some(photo) = self.photo.filter(|p| Image::loaded(p)) {
+        if let Some(photo) = self.photo {
             let px = (self.side * 2.0) as u32;
             return circle.fill(Image::cover(photo).thumbnail(px, px)).clip();
         }

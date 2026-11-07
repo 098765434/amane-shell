@@ -1,7 +1,6 @@
 //! Icon button — a lone glyph.
 //!
-//! Modelled on Material 3's icon buttons: standard (plain), filled and tonal
-//! variants, round or square shape, an optional toggle whose selected state
+//! Plain, filled and tonal, round or square shape, an optional toggle whose selected state
 //! turns the glyph accent, a hover state layer and a disabled state. It is
 //! square at control height unless told otherwise; bar items stretch it to
 //! the bar's height.

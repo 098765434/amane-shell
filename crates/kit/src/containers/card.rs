@@ -1,12 +1,11 @@
 //! Card — a surface that holds one subject's content.
 //!
-//! Modelled on Material 3's cards: filled and outlined variants on a
-//! [`Material`], content stacked inside an inset; what's on it takes the
-//! vibrant labels and fills ([`material::label`]). Drawn in the shell's look: `sys.radius.popover` corners,
-//! and frosted when the compositor can blur what's below (a departure from
-//! M3, which has no translucent material), its edge lit like
-//! [`glass`](crate::glass) when asked. M3's elevated card is left out:
-//! there's no `sys.shadow` role yet.
+//! Filled and outlined, on a [`Material`], with its content stacked inside
+//! an inset; what's on it takes the vibrant labels and fills
+//! ([`material::label`]). It has `sys.radius.popover` corners, is frosted
+//! when the compositor can blur what's below, and has its edge lit like
+//! [`glass`](crate::glass) when asked. There's no raised card: there's no
+//! `sys.shadow` role yet.
 //!
 //! A card records where the pointer is over it ([`layout::cursor`](crate::layout::cursor)), so a
 //! right-click on its content can anchor a menu.
@@ -17,7 +16,7 @@ use crate::layout::{pad, track_cursor};
 use crate::material::{self, Material};
 use crate::tokens::sys;
 
-/// M3's card variants that the shell draws.
+/// How a card sets itself apart from what's behind it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Variant {
     /// The material's fill alone.

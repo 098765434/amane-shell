@@ -2,24 +2,24 @@
 
 amane-kit's building blocks (`crates/kit/src/`, `amane_kit::*`), which Quick Settings, the notification
 center, the context menu, the dock, the launcher and Shell Settings are made of. Like the
-[buttons](controls.md), each is named and structured after its Material 3 counterpart and drawn in
-the shell's glass look. They read `sys.*` tokens only, so any component can use them.
+[buttons](controls.md), each is drawn in the shell's glass look. They read `sys.*` tokens only, so
+any component can use them.
 
-| Component | `crates/kit/src/` | M3 counterpart | Used for |
-|---|---|---|---|
-| `Card` | `containers/card.rs` | [Cards](https://m3.material.io/components/cards/overview) | the notification center's sheet, context menus, tooltips |
-| `TopAppBar` | `containers/app_bar.rs` | [Top app bar](https://m3.material.io/components/app-bars/overview) (small) | the title row of each Quick Settings page and of the center |
-| `List`, `ListItem` | `containers/list.rs` | [Lists](https://m3.material.io/components/lists/overview) | networks, Bluetooth devices, audio devices, peripherals |
-| `Divider` | `containers/divider.rs` | [Divider](https://m3.material.io/components/divider/overview) | context-menu separators, the dock's rules between workspaces (`Divider::vertical`) |
-| `Slider` | `controls/slider.rs` | [Sliders](https://m3.material.io/components/sliders/overview) | output and microphone volume, Quick Settings' sliders |
-| `tooltip` | `containers/tooltip.rs` | [Tooltips](https://m3.material.io/components/tooltips/overview) (plain) | the bar's volume level and battery charge |
-| `app_icon` | `platform/app_icon.rs` | none | the dock's icons, notification cards' app icons, the launcher's apps |
-| `EdgeReveal` | `animation/edge_reveal.rs` | none | the dock hiding at the bottom edge, the status bar at either |
-| `ScrollView` | `containers/scroll_view.rs` | none | the launcher's grid, results and pill bar, the Customize window's panes |
-| `Flow` | `containers/flow.rs` | none | the Customize window's controls, flowing into rows |
-| `Dialog` | `containers/dialog.rs` | [Dialogs](https://m3.material.io/components/dialogs/overview) (basic) | the shell's alert, an app's modal dialog |
-| `Tag` | `controls/tag.rs` | [Chips](https://m3.material.io/components/chips/overview) (assist, without the action) | the Displays page's facts about a screen |
-| `Arrangement` | `containers/arrangement.rs` | none | the Displays page's screens, dragged into place |
+| Component | `crates/kit/src/` | Used for |
+|---|---|---|
+| `Card` | `containers/card.rs` | the notification center's sheet, context menus, tooltips |
+| `TopAppBar` | `containers/app_bar.rs` | the title row of each Quick Settings page and of the center |
+| `List`, `ListItem` | `containers/list.rs` | networks, Bluetooth devices, audio devices, peripherals |
+| `Divider` | `containers/divider.rs` | context-menu separators, the dock's rules between workspaces (`Divider::vertical`) |
+| `Slider` | `controls/slider.rs` | output and microphone volume, Quick Settings' sliders |
+| `tooltip` | `containers/tooltip.rs` | the bar's volume level and battery charge |
+| `app_icon` | `platform/app_icon.rs` | the dock's icons, notification cards' app icons, the launcher's apps |
+| `EdgeReveal` | `animation/edge_reveal.rs` | the dock hiding at the bottom edge, the status bar at either |
+| `ScrollView` | `containers/scroll_view.rs` | the launcher's grid, results and pill bar, the Customize window's panes |
+| `Flow` | `containers/flow.rs` | the Customize window's controls, flowing into rows |
+| `Dialog` | `containers/dialog.rs` | the shell's alert, an app's modal dialog |
+| `Tag` | `controls/tag.rs` | the Displays page's facts about a screen |
+| `Arrangement` | `containers/arrangement.rs` | the Displays page's screens, dragged into place |
 
 ## Card
 
@@ -29,8 +29,8 @@ the shell's glass look. They read `sys.*` tokens only, so any component can use 
 it. What sits on it takes the vibrant labels and fills (`material::label`, `fill_role`).
 
 `Variant::Filled` is the fill alone, and `Variant::Outlined` adds a `sys.border.hairline` in the
-material's separator. M3's elevated card is left out because there's no `sys.shadow` role yet.
-`.blur(true)` frosts what's below with `sys.effect.backdrop-blur`, a departure from M3. It
+material's separator. There's no raised card, as there's no `sys.shadow` role yet.
+`.blur(true)` frosts what's below with `sys.effect.backdrop-blur`. It
 blurs only what the window has drawn under the card, so a card that is its surface's root (the
 panels, tooltips, dropdowns) leaves it off: niri frosts those through a layer rule. `.radius(..)`
 sets the corners, `sys.radius.popover` by default. A
@@ -39,14 +39,13 @@ content can anchor a menu.
 
 ## TopAppBar
 
-`TopAppBar::new(title)` has M3's slots: `.back(id, action)` (a back chevron, for a page drilled
+`TopAppBar::new(title)` takes `.back(id, action)` (a back chevron, for a page drilled
 into, like Quick Settings'), `.subtitle(…)`, and `.actions(…)` at the trailing end. It uses its
-primary and secondary vibrant labels. Unlike M3's, it has no fill and is no
-taller than its content.
+primary and secondary vibrant labels. It has no fill and is no taller than its content.
 
 ## List
 
-`ListItem::new(id, headline)` is a one-line M3 list item, or two-line with `.supporting(text)`
+`ListItem::new(id, headline)` is a one-line list item, or two-line with `.supporting(text)`
 (a caption under the headline, elided too; the row is `sys.size.row.two-line-height`). It has a `.leading(glyph)` (or
 `.leading_tile(glyph)`, the glyph on a `LeadingIcon` tile of the accent, as a sidebar names its
 sections, or `.leading_tile_accent(glyph, Accent)` on a tile of one of the system accents, or
@@ -58,8 +57,7 @@ headline is full-strength. The rest read the secondary label, and `.color(…)`
 overrides that. With `.on_press` or `.on_secondary` it's clickable and shows the
 `sys.color.state.hover` layer, keyed by `id` like a button's. `.bare(true)` leaves out the
 secondary fill, for rows on a surface that reads as one piece (the Customize window's
-sidebar): only the selected and hover fills show. Overline text is the next M3 slot to add when
-a list needs it.
+sidebar): only the selected and hover fills show.
 
 `List::new(items)` stacks items `sys.space.gap.xs` apart, under an optional `.header(…)`
 caption, with an `.empty(…)` note while there are none.

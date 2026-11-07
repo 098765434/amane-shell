@@ -1,8 +1,8 @@
 //! Divider — a hairline between groups of content.
 //!
-//! Modelled on Material 3's full-width divider: a `sys.border.hairline`
-//! line in `sys.color.separator`, with `gap.xs` of room above and below it,
-//! or M3's vertical divider between groups in a row ([`Divider::vertical`]).
+//! A `sys.border.hairline` line in `sys.color.separator`, with `gap.xs` of
+//! room above and below it, or between groups in a row
+//! ([`Divider::vertical`]).
 
 use amane::{Color, Parent, Rectangle};
 
@@ -35,8 +35,8 @@ impl Divider {
     }
 
     /// A hairline `width` wide with no room above or below it, `leading`
-    /// in from the start and `trailing` from the end, in `color`: M3's
-    /// inset and middle-inset dividers between list items.
+    /// in from the start and `trailing` from the end, in `color`: between
+    /// list items.
     pub fn inset(
         width: impl Into<amane::Size>,
         leading: f32,

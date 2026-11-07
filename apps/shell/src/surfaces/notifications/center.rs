@@ -124,8 +124,7 @@ fn groups(list: &[Notification]) -> Vec<Group> {
 
 // ───── view ──────────────────────────────────────────────────────────────────
 
-/// The center's surface: M3's modal side sheet, sliding in from the right
-/// edge.
+/// The center's surface: a sheet sliding in from the right edge.
 pub fn side_sheet() -> LayerWindow {
     let open = is_open(Panel::Notifications);
     let progress = SLIDE_IN.with_borrow_mut(|slide| {

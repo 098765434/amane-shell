@@ -1,9 +1,8 @@
 //! Switch — an on/off setting as a track and a knob.
 //!
-//! Modelled on Material 3's switch (a whole-track hit area, a hover state
-//! layer, a disabled state), but drawn as a phone's: a capsule track that
-//! fills with the accent as it turns on, and a round `accent.fg` knob that
-//! springs from one end to the other. Off, the track is the
+//! A capsule track that fills with the accent as it turns on, and a round
+//! `accent.fg` knob that springs from one end to the other; the whole track
+//! takes the press, with a hover layer and a disabled state. Off, the track is the
 //! `state.selected` overlay, so it reads on any surface.
 //!
 //! Like the other controls it reflects state: a click moves the knob at

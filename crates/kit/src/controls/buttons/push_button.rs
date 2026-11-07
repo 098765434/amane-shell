@@ -1,9 +1,8 @@
 //! Push button — a label, optionally led by an icon.
 //!
-//! Modelled on Material 3's buttons: filled, tonal and text variants, round
-//! or square shape, a leading icon, a hover state layer and a disabled
-//! state. It is sized like the shell's controls rather than M3's: control
-//! height, and as wide as its content plus the inset unless told otherwise.
+//! Filled, tonal and text, round or square, with a leading icon, a hover
+//! layer and a disabled state. It's a control tall, and as wide as its
+//! content plus the inset unless told otherwise.
 
 use amane::Rectangle;
 

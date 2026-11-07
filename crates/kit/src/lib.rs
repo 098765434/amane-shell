@@ -10,11 +10,11 @@
 //!
 //! - [`buttons`] — push, icon and segmented buttons, a switch, a checkbox
 //!   and radio buttons.
-//! - [`slider`] — M3's slider: a 0–100 level along a track.
+//! - [`slider`] — a 0–100 level along a track.
 //! - [`dropdown`] — one choice out of a list, behind a button that shows it.
 //! - [`color_picker`] — a colour, from a square, a hue strip or hex.
 //! - [`control_size`] — the control sizes, and the one in use.
-//! - [`tag`] — a small fact about something, like M3's assist chip.
+//! - [`tag`] — a small fact about something, as a capsule label.
 //! - [`menu`] — a pop-up menu of items, under a control or the pointer.
 //! - [`leading_icon`] — the glyph on a coloured tile that leads a row.
 //! - [`stepper`] — a number nudged up and down.
@@ -26,12 +26,12 @@
 //!
 //! Containers (`containers/`):
 //!
-//! - [`card`] — M3's card: a filled or outlined surface, optionally frosted.
-//! - [`app_bar`] — M3's small top app bar: a panel's or sheet's title row.
-//! - [`list`] — M3's list: one-line items with leading and trailing slots.
-//! - [`divider`] — M3's divider: a hairline between groups.
-//! - [`dialog`] — M3's basic dialog: the shell's alert, an app's modal.
-//! - [`tooltip`] — M3's plain tooltip: a hovered control's label.
+//! - [`card`] — a filled or outlined surface, optionally frosted.
+//! - [`app_bar`] — a panel's or sheet's title row.
+//! - [`list`] — one- or two-line items with leading and trailing slots.
+//! - [`divider`] — a hairline between groups.
+//! - [`dialog`] — the shell's alert, an app's modal.
+//! - [`tooltip`] — a hovered control's label.
 //! - [`scroll_view`] — a clipped viewport scrolled along one axis, with a
 //!   scrollbar.
 //! - [`flow`] — fixed-size items flowing into rows, wrapping at a width.

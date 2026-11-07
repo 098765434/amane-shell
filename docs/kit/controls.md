@@ -1,19 +1,19 @@
 # Controls
 
-amane-kit's buttons and controls (`crates/kit/src/controls/buttons/`, `amane_kit::buttons`). Each follows its Material 3
-counterpart in structure (variants, shapes, a hover state layer, a disabled state), but is drawn
-in the shell's glass look and sized like its other controls. They read `sys.*` tokens
-only, so any component can use them.
+amane-kit's buttons and controls (`crates/kit/src/controls/buttons/`, `amane_kit::buttons`): the
+shell's own, in its glass look, each with its variants, shapes, a hover layer and a disabled
+state, and sized like its other controls. They read `sys.*` tokens only, so any component can
+use them.
 
-| Component | M3 counterpart | Used for |
-|---|---|---|
-| `PushButton` | [Buttons](https://m3.material.io/components/buttons/overview) | "Connect", notification actions, "Clear All", "Show Less", the bar's clock |
-| `IconButton` | [Icon buttons](https://m3.material.io/components/icon-buttons/overview) | mute, Wi-Fi scan, close/clear, Do Not Disturb, the bar's glyph items |
-| `Switch` | [Switch](https://m3.material.io/components/switch/overview) | Wi-Fi and Bluetooth power |
-| `DrawnButton` | — | the bar's workspace shape: content of its own, drawn in the button's color |
-| `SegmentedButton` | [Segmented buttons](https://m3.material.io/components/segmented-buttons/overview) | the power profile, the keyboard light's level, Keep Awake's limit |
-| `Checkbox` | [Checkbox](https://m3.material.io/components/checkbox/overview) | choices confirmed together, like a dialog's; nothing in the shell yet |
-| `Radio` | [Radio button](https://m3.material.io/components/radio-button/overview) | Shell Settings' choices: appearance, density, glass, motion, widget style, the apps' layout |
+| Component | Used for |
+|---|---|
+| `PushButton` | "Connect", notification actions, "Clear All", "Show Less", the bar's clock |
+| `IconButton` | mute, Wi-Fi scan, close/clear, Do Not Disturb, the bar's glyph items |
+| `Switch` | Wi-Fi and Bluetooth power |
+| `DrawnButton` | the bar's workspace shape: content of its own, drawn in the button's color |
+| `SegmentedButton` | the power profile, the keyboard light's level, Keep Awake's limit |
+| `Checkbox` | choices confirmed together, like a dialog's; nothing in the shell yet |
+| `Radio` | Shell Settings' choices: appearance, density, glass, motion, widget style, the apps' layout |
 
 ## Style and shape
 
@@ -22,12 +22,12 @@ they share every builder method (`style`, `shape`, `color`, `height`, `disabled`
 `on_secondary`, `on_middle`, `on_scroll`, `tooltip`, `highlight`, `active`). They
 take a `Style` and a `Shape`:
 
-| `Style` | M3 | Fill | Content by default |
-|---|---|---|---|
-| `Filled` | filled | `sys.color.accent.bg` | `sys.color.accent.fg` |
-| `Tonal` | tonal | `sys.color.vibrant.fill.secondary` | `sys.color.vibrant.label.primary` |
-| `Plain` | text / standard | none | `sys.color.vibrant.label.primary` |
-| `Destructive` | — | `sys.color.status.critical.hover` | `sys.color.status.critical.text` (an alert's "Don't Save" or "Log Out") |
+| `Style` | Fill | Content by default |
+|---|---|---|
+| `Filled` | `sys.color.accent.bg` | `sys.color.accent.fg` |
+| `Tonal` | `sys.color.vibrant.fill.secondary` | `sys.color.vibrant.label.primary` |
+| `Plain` | none | `sys.color.vibrant.label.primary` |
+| `Destructive` | `sys.color.status.critical.hover` | `sys.color.status.critical.text` (an alert's "Don't Save" or "Log Out") |
 
 `Shape::Round` is a capsule (a circle when square). `Shape::Square` is the rounded rectangle
 of the current control size (`sys.radius.control.<size>`, 6 at Medium), and a capsule from Large

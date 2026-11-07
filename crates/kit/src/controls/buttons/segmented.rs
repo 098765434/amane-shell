@@ -1,10 +1,9 @@
 //! Segmented button — a set of related options on one track.
 //!
-//! Modelled on Material 3's segmented buttons (2–5 equal segments, a label
-//! and optional leading icon each, single- or multi-select, disabled
-//! segments), but drawn in the shell's language rather than M3's outlined
-//! one: a `surface.raised` track with the caller's corner radius, and an
-//! inset accent thumb whose corners stay concentric with the track's.
+//! 2–5 equal segments, a label and optional leading icon each, single- or
+//! multi-select, some disabled if need be: a `surface.raised` track with the
+//! caller's corner radius, and an inset accent thumb whose corners stay
+//! concentric with the track's.
 //!
 //! It moves like a phone's segmented control: in single-select one thumb springs
 //! across to the new segment, each label brightening as the thumb passes

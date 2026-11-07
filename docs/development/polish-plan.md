@@ -289,6 +289,15 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 - Add `amane-base` to `docs/architecture.md` with the mermaid graph above.
 - Archive this plan with a status per phase.
 
+## Phase 9: Where things live (research, S)
+
+After the phases above, with the code in its final shape: should
+`apps/shell/src/services` be a crate of its own, and should anything else move?
+Weigh what each move buys (build times, tests without a window, reuse by the apps,
+a boundary the compiler checks) against what it costs (a public API to keep, `pub`
+items that were private, the cycle of a service that names a surface). Write down
+the finding and the moves it recommends, with their order.
+
 ---
 
 ## Visible changes (to check live)

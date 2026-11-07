@@ -4,11 +4,12 @@
 //! name, number or message, and New Message starts one. Phone Input sits
 //! under them.
 
+use amane_kit::avatar::Avatar;
 use std::rc::Rc;
 
 use amane::{
-    Center, Color, Column, Image, Radius, Rectangle, Row, ScrollArea, Service, Size, Text,
-    TextInput, Widget,
+    Center, Color, Column, Radius, Rectangle, Row, ScrollArea, Service, Size, Text, TextInput,
+    Widget,
 };
 use amane_kit::app::{field_box, sidebar_label, text_field};
 use amane_kit::buttons::{Actions, IconButton, interactive, state_fill};
@@ -23,9 +24,8 @@ use amane_phone::{PhoneDevice, PhoneMessages, SmsState, SmsThread};
 
 use crate::{Navigation, View, read, thread, time};
 
-/// `refresh`, `person`, `group` and `edit_square`.
+/// `refresh`, `group` and `edit_square`.
 const ICON_REFRESH: char = '\u{e5d5}';
-const ICON_PERSON: char = '\u{e7fd}';
 const ICON_GROUP: char = '\u{e7ef}';
 const ICON_NEW: char = '\u{f88d}';
 
@@ -392,7 +392,7 @@ pub fn avatar_for(thread: &SmsThread, size: f32) -> Rectangle {
     }
     match thread.addresses().first() {
         Some(address) => avatar_of(address, size),
-        None => avatar(thread.title(), size),
+        None => Avatar::new(thread.title(), size).build(),
     }
 }
 
@@ -400,70 +400,9 @@ pub fn avatar_for(thread: &SmsThread, size: f32) -> Rectangle {
 pub fn avatar_of(address: &str, size: f32) -> Rectangle {
     let messages = PhoneMessages::read();
     let photo = messages.photo(address).map(std::path::Path::to_path_buf);
-    let name = messages.name(address).to_string();
-    drop(messages);
-    match photo {
-        Some(photo) => Rectangle::new()
-            .width(Size::Fixed(size))
-            .height(Size::Fixed(size))
-            .radius(Radius::Full)
-            .fill(Image::cover(photo).thumbnail(size as u32 * 2, size as u32 * 2))
-            .clip(),
-        None => avatar(&name, size),
-    }
-}
-
-/// A contact's initials in a circle of a colour kept for their name; a
-/// person for a bare number.
-pub fn avatar(name: &str, size: f32) -> Rectangle {
-    let initials: String = name
-        .split_whitespace()
-        .filter_map(|word| word.chars().next())
-        .filter(|c| c.is_alphabetic())
-        .take(2)
-        .flat_map(char::to_uppercase)
-        .collect();
-
-    let mark: Box<dyn Widget> = if initials.is_empty() {
-        boxed(icon(ICON_PERSON, size * 0.55, Color::WHITE))
-    } else {
-        boxed(
-            Text::new(initials)
-                .size((size * 0.39).round())
-                .weight(600)
-                .color(Color::WHITE),
-        )
-    };
-
-    Rectangle::new()
-        .width(Size::Fixed(size))
-        .height(Size::Fixed(size))
-        .radius(Radius::Full)
-        .fill(colour_for(name))
-        .align_child(Center, Center)
-        .child(Column::new(vec![mark]).align(Center))
-}
-
-/// The same colour for the same name, from the accents that take white text.
-fn colour_for(name: &str) -> Color {
-    const COLOURS: [Accent; 8] = [
-        Accent::Blue,
-        Accent::Green,
-        Accent::Orange,
-        Accent::Purple,
-        Accent::Pink,
-        Accent::Teal,
-        Accent::Indigo,
-        Accent::Brown,
-    ];
-    let hash = name.bytes().fold(0u32, |hash, byte| {
-        hash.wrapping_mul(31).wrapping_add(u32::from(byte))
-    });
-    if name.chars().any(char::is_alphabetic) {
-        COLOURS[hash as usize % COLOURS.len()].color()
-    } else {
-        Accent::Gray.color()
-    }
+    Avatar::new(messages.name(address), size)
+        .photo(photo)
+        .build()
 }
 
 /// Phone Input, under the conversations.
@@ -503,12 +442,6 @@ fn input_row(chosen: bool) -> Rectangle {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn a_name_keeps_its_colour() {
-        assert_eq!(colour_for("Ola Nordmann"), colour_for("Ola Nordmann"));
-        assert_eq!(colour_for("+4795723015"), Accent::Gray.color());
-    }
 
     #[test]
     fn a_message_fits_one_line() {

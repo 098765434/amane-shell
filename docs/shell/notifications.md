@@ -65,8 +65,8 @@ the set that shows changes, and keeps what the list can't say: swiped toasts, ho
 
 ## Notification center (`center.rs`)
 
-A full-height sidebar of thick glass at the right edge (namespace `amane.notifications.center`),
-M3's modal side sheet (`side_sheet()`). The surface frosts itself as one blur shape, a
+A full-height sidebar of thick glass at the right edge (namespace `amane.notifications.center`,
+`side_sheet()`). The surface frosts itself as one blur shape, a
 `Material::Sheet`: thick glass, as it holds the most text of any glass. It
 springs in when the **clock** is clicked and closes with Escape, the clock, or the IPC call. It
 shares Quick Settings' one-open-at-a-time state (`Panel::Notifications`). Its header shows Do Not

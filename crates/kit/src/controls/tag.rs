@@ -1,7 +1,6 @@
 //! Tag — a short fact as a small capsule label: "OLED", "HDR · 1107 nits".
 //!
-//! Modelled on Material 3's assist chip, without its action: it only
-//! labels. Drawn as a capsule of the secondary fill with a caption in it,
+//! It only labels; nothing happens on a press. A capsule of the secondary fill with a caption in it,
 //! or the accent's tint and colour for the fact that matters most.
 //! [`tags`] lays several out in rows that wrap, through [`Flow`].
 

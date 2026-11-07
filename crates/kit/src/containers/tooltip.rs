@@ -1,7 +1,6 @@
 //! Tooltip — a short label shown above a hovered control.
 //!
-//! Modelled on Material 3's plain tooltip: one line of text on a small
-//! card, frosted and tinted like the bar's panels, shown after the pointer rests on its control for half a second
+//! One line of text on a small card, frosted and tinted like the bar's panels, shown after the pointer rests on its control for half a second
 //! and hidden when it leaves or clicks. It's an xdg-popup without a grab, so
 //! it never takes input or focus, hung under the surface the control is on
 //! and centred above the pointer.

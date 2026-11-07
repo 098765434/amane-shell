@@ -1,16 +1,14 @@
 //! Reusable buttons, drawn from `sys.*` tokens only so any component can use
-//! them. Each follows its Material 3 counterpart in structure (variants,
-//! shapes, state layers) but is drawn in the shell's own look:
+//! them:
 //!
-//! - [`PushButton`] — a label, optionally led by an icon (M3's buttons).
-//! - [`IconButton`] — a lone glyph, optionally a toggle (M3's icon buttons).
-//! - [`Switch`] — a capsule track and knob for an on/off setting (M3's
-//!   switch).
+//! - [`PushButton`] — a label, optionally led by an icon.
+//! - [`IconButton`] — a lone glyph, optionally a toggle.
+//! - [`Switch`] — a capsule track and knob for an on/off setting.
 //! - [`SegmentedButton`] — a row of 2–5 related options on one track, single-
-//!   or multi-select (M3's segmented buttons).
+//!   or multi-select.
 //! - [`DrawnButton`] — content of its own, drawn in the button's colour.
-//! - [`Checkbox`] — an on/off choice among independent ones (M3's checkbox).
-//! - [`Radio`] — one choice out of a few, all in sight (M3's radio button).
+//! - [`Checkbox`] — an on/off choice among independent ones.
+//! - [`Radio`] — one choice out of a few, all in sight.
 //!
 //! The push, icon and drawn buttons are one [`ButtonBuilder`] with a different
 //! kind: they share a [`Style`] and a [`Shape`], and show a
@@ -53,7 +51,7 @@ use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, TextStyle, sys};
 use crate::{motion, tooltip};
 
-/// M3's disabled-content opacity. TODO(token): `sys.opacity.disabled` once
+/// How faint a disabled control's content is. TODO(token): `sys.opacity.disabled` once
 /// Penpot has it (manual §1.1).
 const DISABLED_OPACITY: f32 = 0.38;
 
@@ -65,14 +63,14 @@ const PENDING_TIMEOUT: Duration = Duration::from_millis(1500);
 /// Settings' `quick.press.scale` holds the same value for its tiles.
 const PRESS_SCALE: f32 = 0.96;
 
-/// How much a button stands out, after M3's filled, tonal and text buttons.
+/// How much a button stands out: filled, tonal or text.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Style {
     /// The accent fill: the one main action of a surface ("Connect").
     Filled,
     /// A `surface.raised` fill, like the bar's pills: most buttons.
     Tonal,
-    /// No fill until hovered: bar items, and M3's "standard" icon buttons.
+    /// No fill until hovered: bar items, and plain icon buttons.
     Plain,
     /// A faint red fill under a red label: an action that destroys or
     /// can't be undone ("Delete", "Log Out"), as in the shell's alerts.
@@ -100,7 +98,7 @@ impl Style {
     }
 }
 
-/// M3's two button shapes, in the shell's radii.
+/// The two button shapes, in the shell's radii.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Shape {
     /// A capsule, or a circle when square.

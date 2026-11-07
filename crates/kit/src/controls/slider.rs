@@ -1,10 +1,9 @@
 //! Slider — picks a level from 0 to 100 along a track.
 //!
-//! Modelled on Material 3's slider: an active track filled up to the value
-//! over an inactive one, set by pressing or dragging anywhere along it, and
-//! discrete [`STEP`]s for the scroll wheel. Drawn in the shell's look:
-//! a thin capsule track with no handle, the accent filling it; a hit area a
-//! full control tall, so the thin track is easy to grab.
+//! A thin capsule track with no handle, the accent filling it up to the
+//! value, set by pressing or dragging anywhere along it, and in discrete
+//! [`STEP`]s by the scroll wheel. Its hit area is a full control tall, so
+//! the thin track is easy to grab.
 //!
 //! [`Slider::large`] is the Quick Settings slider instead: a track a
 //! full control tall with the glyph inside it, at the start of a fill that

@@ -199,7 +199,7 @@ whose output is static: it can't follow the mode, so it holds one value for both
 - `sys.color.surface.panel.stroke`: the panel surface has no stroke, though its cards are
   translucent. §1.7 says every surface has `bg`, `fg` and `stroke`, and §11.1 pairs every
   translucent surface with a stroke. The panels draw no edge until it exists.
-- `sys.shadow.*`: there's no shadow role yet, so the shared `Card` has no M3 elevated variant.
+- `sys.shadow.*`: there's no shadow role yet, so the shared `Card` has no raised variant.
   The frosted surfaces' shadow is niri's, from `sys.shadow.popover` above.
 - `sys.color.state.pressed`: the manual's state rule (§6.1) gives it the surface's `fg` at 10 %.
   Nothing draws a pressed fill today; buttons shrink instead (`PRESS_SCALE`).

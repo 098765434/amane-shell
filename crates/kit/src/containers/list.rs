@@ -1,15 +1,13 @@
 //! List — rows of the same kind of thing: networks, devices, outputs.
 //!
-//! Modelled on Material 3's lists. A [`ListItem`] has M3's slots — a leading
-//! icon, the headline, and trailing items (a check, a lock, a percentage) —
-//! and its states: selected, and a `sys.color.state.hover` layer while
-//! hovered, when it can be clicked. A [`List`] stacks items under an
-//! optional section header. Drawn in the shell's look: each item is a
+//! A [`ListItem`] has a leading icon, the headline, and trailing items (a
+//! check, a lock, a percentage), and its states: selected, and a
+//! `sys.color.state.hover` layer while hovered, when it can be clicked. A
+//! [`List`] stacks items under an optional section header. Each item is a
 //! rounded `surface.raised` row, filled `state.selected` when selected.
 //!
 //! An item is one line, or two with supporting text under the headline
-//! (`sys.size.row.two-line-height`); M3's overline is the next slot to add
-//! when a list needs it.
+//! (`sys.size.row.two-line-height`).
 
 use std::cell::Cell;
 use std::rc::Rc;
