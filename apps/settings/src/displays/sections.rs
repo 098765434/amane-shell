@@ -25,8 +25,8 @@ use amane_kit::theme::Mode as Scheme;
 use amane_kit::tokens::{Styled, sys};
 
 use super::caps::Caps;
-use super::config::{self, Displays as Saved, Setup, Vrr};
 use super::ddc::{self, Ddc, Feature, Monitor};
+use super::kdl::{self, Displays as Saved, Setup, Vrr};
 use super::outputs::{self, Change, Mode, Output, OutputExt, Transform, TransformExt};
 use super::trial::try_change;
 use super::{Screens, block_name, save, save_all, saved_block};
@@ -122,7 +122,7 @@ pub fn setup_banner(setup: &Setup) -> Option<Group> {
 }
 
 fn confirm_move() {
-    let file = config::displays_file();
+    let file = kdl::displays_file();
     Dialog::new(
         "settings.displays.move-dialog",
         "Move display settings to Settings?",
@@ -130,13 +130,13 @@ fn confirm_move() {
     .message(format!(
         "The output blocks in {} become comments, and an include of {} takes their \
              place with the same settings, as a commit of its own.",
-        config::niri_config().display(),
+        kdl::niri_config().display(),
         file.display()
     ))
     .button("Cancel", || {})
     .main_button("Move", || {
         thread::spawn(|| {
-            if let Err(error) = config::migrate() {
+            if let Err(error) = kdl::migrate() {
                 Screens::fail(error);
             }
             Screens::refresh();

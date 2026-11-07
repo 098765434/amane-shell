@@ -116,6 +116,7 @@ again. The old readers go after 2027-01.
 | `widgets.json` | each monitor's widgets and their settings | `widgets/store.rs` | `widgets` (version 1) |
 | `night-light.json` | whether night light is on, how warm and when | `services/display/night_light.rs` | `night-light` (`on 4000 manual`) |
 | `vpn.json` | the last VPN used | `services/network/connections.rs` | `vpn` |
+| `hdr-white.json` | each panel's SDR white in HDR, in nits, set in niri again after a config read | `services/display/hdr_white.rs` | nothing: it was the `sdr-brightness` line of `displays.kdl` |
 | `launcher-usage.json` | how much each result was used, and the last searches | `launcher/usage.rs` | the same file without a version |
 | `clipboard/index.json` | the clipboard history; each copy is a file of its own beside it | `services/launcher/clipboard_history.rs` | the same file without a version |
 

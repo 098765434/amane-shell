@@ -13,10 +13,10 @@
 //! how a monitor plugged in turns up: niri announces no such change.
 
 mod caps;
-mod config;
 mod ddc;
 mod drm;
 mod edid;
+mod kdl;
 mod night;
 mod outputs;
 mod sections;
@@ -34,7 +34,7 @@ use amane_kit::tokens::sys;
 
 use crate::{group, groups};
 use caps::Caps;
-use config::{Displays as Saved, OutputConfig, Setup};
+use kdl::{Displays as Saved, OutputConfig, Setup};
 use outputs::{Output, OutputExt};
 
 // whether the page shows, so the poll can rest while it doesn't
@@ -127,7 +127,7 @@ fn look(known: &[(String, Caps)]) -> Look {
     Look {
         outputs,
         caps,
-        setup: config::setup(),
+        setup: kdl::setup(),
     }
 }
 
@@ -260,7 +260,7 @@ pub fn save(output: &Output, what: String, edit: impl FnOnce(&mut OutputConfig) 
             other.name != block.name && other.name != output.name && other.name != output.identity()
         });
         saved.outputs.push(block);
-        if let Err(error) = config::save(&saved, &what) {
+        if let Err(error) = kdl::save(&saved, &what) {
             Screens::fail(error);
         }
         Screens::refresh();
@@ -275,7 +275,7 @@ pub fn save_all(what: String, edit: impl FnOnce(&mut Saved) + Send + 'static) {
             return;
         };
         edit(&mut saved);
-        if let Err(error) = config::save(&saved, &what) {
+        if let Err(error) = kdl::save(&saved, &what) {
             Screens::fail(error);
         }
         Screens::refresh();

@@ -1,7 +1,9 @@
 //! The displays' lasting settings: `displays.kdl`, beside niri's
-//! `config.kdl`, which includes it. Settings owns the file outright, so it
-//! is written whole each time and read back with a reader for what it
-//! writes, never a KDL parser.
+//! `config.kdl`, which includes it. This module is the file's one writer
+//! (a test holds every other file to that): it's written whole each time
+//! and read back with a reader for what it writes, never a KDL parser.
+//! Lines it doesn't know, in a block or between them, are kept as they
+//! were and written back, so an edit by hand isn't lost.
 //!
 //! niri uses the first `output` block that matches, so the blocks
 //! `config.kdl` had of its own are moved here once ([`migrate`]): they
@@ -47,6 +49,9 @@ pub struct OutputConfig {
     pub sdr_brightness: Option<f64>,
     /// `#rrggbb` behind the workspaces in the overview.
     pub backdrop: Option<String>,
+    /// Lines in the block this reader doesn't know, as they were (a nested
+    /// block whole), written back after the ones it does.
+    pub extra: Vec<String>,
 }
 
 /// The whole file.
@@ -55,7 +60,21 @@ pub struct Displays {
     pub outputs: Vec<OutputConfig>,
     /// Apps whose windows turn on-demand variable refresh on.
     pub vrr_apps: Vec<String>,
+    /// Everything else between the blocks (comments, other nodes), as it
+    /// was, written back after them.
+    pub extra: Vec<String>,
 }
+
+const HEADER: &str = "// Written by Shell Settings (Displays), which reads it back; lines it\n\
+                      // doesn't know are kept. niri's config.kdl includes it.\n";
+
+/// The header an older Settings wrote, read as the header too.
+const OLD_HEADER: [&str; 2] = [
+    "// Written by Shell Settings (Displays), which reads it back: edits by",
+    "// hand may be lost. niri's config.kdl includes it.",
+];
+
+const VRR_COMMENT: &str = "// on-demand variable refresh turns on for these apps' windows";
 
 impl Displays {
     pub fn output(&self, name: &str) -> Option<&OutputConfig> {
@@ -78,10 +97,7 @@ impl Displays {
     }
 
     pub fn write_kdl(&self) -> String {
-        let mut out = String::from(
-            "// Written by Shell Settings (Displays), which reads it back: edits by\n\
-             // hand may be lost. niri's config.kdl includes it.\n",
-        );
+        let mut out = String::from(HEADER);
         for output in &self.outputs {
             out.push('\n');
             out.push_str(&format!("output {} {{\n", quote(&output.name)));
@@ -117,6 +133,10 @@ impl Displays {
             if let Some(color) = &output.backdrop {
                 line(format!("backdrop-color {}", quote(color)));
             }
+            for raw in &output.extra {
+                out.push_str(raw);
+                out.push('\n');
+            }
             out.push_str("}\n");
         }
         if !self.vrr_apps.is_empty() {
@@ -130,93 +150,179 @@ impl Displays {
             }
             out.push_str("    variable-refresh-rate true\n}\n");
         }
+        if !self.extra.is_empty() {
+            out.push('\n');
+            for raw in &self.extra {
+                out.push_str(raw);
+                out.push('\n');
+            }
+        }
         out
     }
 
-    /// What [`write_kdl`](Self::write_kdl) wrote, and the subset of a
-    /// hand-written `output` block it shares; other lines are skipped.
+    /// What [`write_kdl`](Self::write_kdl) wrote, with every line it
+    /// doesn't know kept in [`extra`](Self::extra) or the block's own.
     pub fn read_kdl(text: &str) -> Self {
         let mut displays = Displays::default();
-        let mut current: Option<OutputConfig> = None;
-        let mut in_rule = false;
-        for raw in text.lines() {
+        let lines: Vec<&str> = text.lines().collect();
+        let mut at = 0;
+        while at < lines.len() {
+            let raw = lines[at].trim_end();
             let line = raw.trim();
-            if line.is_empty() || line.starts_with("//") {
+            if line.is_empty()
+                || line == VRR_COMMENT
+                || OLD_HEADER.contains(&line)
+                || HEADER.lines().any(|header| header == line)
+            {
+                at += 1;
                 continue;
             }
-            if let Some(rest) = line.strip_prefix("output ") {
-                let name = rest.trim_end_matches('{').trim();
-                current = Some(OutputConfig {
-                    name: unquote(name).unwrap_or_default(),
-                    ..OutputConfig::default()
+            // a node and the lines its braces span
+            let end = node_end(&lines, at);
+            let node = &lines[at..=end];
+            if line.starts_with("output ") && line.ends_with('{') {
+                displays.outputs.push(read_output(node));
+            } else if let Some(apps) = vrr_rule(node) {
+                displays.vrr_apps.extend(apps);
+            } else {
+                // nodes apart as they were; a comment stays on its node
+                let after_comment = displays.extra.last().is_some_and(|last| {
+                    last.trim_start().starts_with("//") && lines[at - 1].trim().starts_with("//")
                 });
-                continue;
+                if !displays.extra.is_empty() && !after_comment {
+                    displays.extra.push(String::new());
+                }
+                displays
+                    .extra
+                    .extend(node.iter().map(|raw| raw.trim_end().to_string()));
             }
-            if line.starts_with("window-rule") {
-                in_rule = true;
-                continue;
-            }
-            if line == "}" {
-                if let Some(output) = current.take() {
-                    displays.outputs.push(output);
-                }
-                in_rule = false;
-                continue;
-            }
-            if in_rule {
-                if let Some(app) =
-                    line.strip_prefix("match app-id=")
-                        .and_then(unquote)
-                        .map(|regex| {
-                            regex_unescape(regex.trim_start_matches('^').trim_end_matches('$'))
-                        })
-                {
-                    displays.vrr_apps.push(app);
-                }
-                continue;
-            }
-            let Some(output) = current.as_mut() else {
-                continue;
-            };
-            let (key, value) = line.split_once(' ').unwrap_or((line, ""));
-            match key {
-                "off" => output.off = true,
-                "mode" => {
-                    output.custom = value.contains("custom=true");
-                    let quoted = value.rsplit_once(' ').map_or(value, |(_, last)| last);
-                    output.mode = unquote(quoted).and_then(|mode| parse_mode(&mode));
-                }
-                "scale" => output.scale = value.parse().ok(),
-                "transform" => {
-                    output.transform = unquote(value)
-                        .and_then(|name| Transform::ALL.into_iter().find(|t| t.config() == name))
-                        .unwrap_or_default();
-                }
-                "position" => {
-                    let field = |name: &str| {
-                        value
-                            .split_whitespace()
-                            .find_map(|part| part.strip_prefix(name))
-                            .and_then(|v| v.parse().ok())
-                    };
-                    output.position = field("x=").zip(field("y="));
-                }
-                "variable-refresh-rate" => {
-                    output.vrr = if value.contains("on-demand=true") {
-                        Vrr::OnDemand
-                    } else {
-                        Vrr::Always
-                    };
-                }
-                "focus-at-startup" => output.focus_at_startup = true,
-                "hdr" => output.hdr = true,
-                "sdr-brightness" => output.sdr_brightness = value.parse().ok(),
-                "backdrop-color" => output.backdrop = unquote(value),
-                _ => {}
-            }
+            at = end + 1;
         }
         displays
     }
+}
+
+/// The last line of the node that starts at `start`: where its braces close.
+fn node_end(lines: &[&str], start: usize) -> usize {
+    let mut depth = 0;
+    for (index, line) in lines.iter().enumerate().skip(start) {
+        depth += braces(line.split("//").next().unwrap_or(""));
+        if depth <= 0 {
+            return index;
+        }
+    }
+    lines.len() - 1
+}
+
+/// The apps of a rule this file writes: only `match app-id=` lines and the
+/// one setting. Any other rule is someone else's and kept as it is.
+fn vrr_rule(node: &[&str]) -> Option<Vec<String>> {
+    let (first, rest) = node.split_first()?;
+    let (last, inner) = rest.split_last()?;
+    if first.trim() != "window-rule {" || last.trim() != "}" {
+        return None;
+    }
+    let mut apps = Vec::new();
+    let mut set = false;
+    for line in inner {
+        let line = line.trim();
+        if line == "variable-refresh-rate true" {
+            set = true;
+        } else {
+            let regex = unquote(line.strip_prefix("match app-id=")?)?;
+            apps.push(regex_unescape(
+                regex.trim_start_matches('^').trim_end_matches('$'),
+            ));
+        }
+    }
+    set.then_some(apps)
+}
+
+/// One `output` block, from its first line to its last.
+fn read_output(node: &[&str]) -> OutputConfig {
+    let name = node[0].trim().trim_start_matches("output ");
+    let mut output = OutputConfig {
+        name: unquote(name.trim_end_matches('{').trim()).unwrap_or_default(),
+        ..OutputConfig::default()
+    };
+    let inner = &node[1..node.len().saturating_sub(1)];
+    let mut at = 0;
+    while at < inner.len() {
+        let raw = inner[at].trim_end();
+        let line = raw.trim();
+        // a nested block (a layout, hot corners): kept whole
+        if braces(line.split("//").next().unwrap_or("")) > 0 {
+            let end = node_end(inner, at);
+            output
+                .extra
+                .extend(inner[at..=end].iter().map(|raw| raw.trim_end().to_string()));
+            at = end + 1;
+            continue;
+        }
+        at += 1;
+        if line.is_empty() {
+            continue;
+        }
+        if !read_setting(&mut output, line) {
+            output.extra.push(raw.to_string());
+        }
+    }
+    output
+}
+
+/// Reads one line of an `output` block into it; false when it's no
+/// setting this file writes.
+fn read_setting(output: &mut OutputConfig, line: &str) -> bool {
+    let (key, value) = line.split_once(' ').unwrap_or((line, ""));
+    match key {
+        "off" if value.is_empty() => output.off = true,
+        "mode" => {
+            let quoted = value.rsplit_once(' ').map_or(value, |(_, last)| last);
+            let Some(mode) = unquote(quoted).and_then(|mode| parse_mode(&mode)) else {
+                return false;
+            };
+            output.custom = value.contains("custom=true");
+            output.mode = Some(mode);
+        }
+        "scale" => match value.parse() {
+            Ok(scale) => output.scale = Some(scale),
+            Err(_) => return false,
+        },
+        "transform" => {
+            let Some(transform) = unquote(value)
+                .and_then(|name| Transform::ALL.into_iter().find(|t| t.config() == name))
+            else {
+                return false;
+            };
+            output.transform = transform;
+        }
+        "position" => {
+            let field = |name: &str| {
+                value
+                    .split_whitespace()
+                    .find_map(|part| part.strip_prefix(name))
+                    .and_then(|v| v.parse().ok())
+            };
+            let Some(position) = field("x=").zip(field("y=")) else {
+                return false;
+            };
+            output.position = Some(position);
+        }
+        "variable-refresh-rate" if value.is_empty() => output.vrr = Vrr::Always,
+        "variable-refresh-rate" if value == "on-demand=true" => output.vrr = Vrr::OnDemand,
+        "focus-at-startup" if value.is_empty() => output.focus_at_startup = true,
+        "hdr" if value.is_empty() => output.hdr = true,
+        "sdr-brightness" => match value.parse() {
+            Ok(nits) => output.sdr_brightness = Some(nits),
+            Err(_) => return false,
+        },
+        "backdrop-color" => match unquote(value) {
+            Some(color) => output.backdrop = Some(color),
+            None => return false,
+        },
+        _ => return false,
+    }
+    true
 }
 
 /// `2880x1800@120.000`, the refresh optional.
@@ -432,7 +538,7 @@ pub fn migrate() -> Result<Displays, String> {
     let found = blocks(&config);
     let displays = Displays {
         outputs: found.iter().map(|block| block.output.clone()).collect(),
-        vrr_apps: Vec::new(),
+        ..Displays::default()
     };
     // the new file first, so the include never names a missing one
     write_atomic(&file, &displays.write_kdl())?;
@@ -580,12 +686,14 @@ layout {
                     backdrop: Some(String::from("#101010")),
                     hdr: true,
                     sdr_brightness: Some(300.),
+                    extra: Vec::new(),
                 },
             ],
             vrr_apps: vec![
                 String::from("steam_app_1091500"),
                 String::from("org.mpv.mpv"),
             ],
+            extra: Vec::new(),
         };
         let text = displays.write_kdl();
         assert!(
@@ -606,6 +714,120 @@ layout {
         assert!(blocks(&text).is_empty());
         assert!(includes(&text, file));
         assert!(text.ends_with("gaps 8\n}\n"));
+    }
+
+    // the live file as the older Settings and the shell's HDR level left it
+    const LIVE: &str = "// Written by Shell Settings (Displays), which reads it back: edits by
+// hand may be lost. niri's config.kdl includes it.
+
+output \"eDP-1\" {
+    mode \"2880x1800@120.000\"
+    scale 1.75
+    transform \"normal\"
+    variable-refresh-rate on-demand=true
+    sdr-brightness 80
+}
+";
+
+    const BY_HAND: &str = r#"// Written by Shell Settings (Displays), which reads it back; lines it
+// doesn't know are kept. niri's config.kdl includes it.
+
+output "eDP-1" {
+    mode "2880x1800@120.000"
+    scale 1.75
+    // the panel's own note
+    transform "normal"
+    some-new-setting 3
+    layout {
+        gaps 4
+    }
+}
+
+/-output "HDMI-A-1" {
+    off
+}
+
+// my rule
+window-rule {
+    match app-id="^foot$"
+    opacity 0.9
+}
+"#;
+
+    #[test]
+    fn the_live_file_reads_and_writes_back_the_same() {
+        let displays = Displays::read_kdl(LIVE);
+        assert_eq!(displays.outputs.len(), 1);
+        assert_eq!(displays.outputs[0].sdr_brightness, Some(80.0));
+        assert!(displays.outputs[0].extra.is_empty() && displays.extra.is_empty());
+        // only the header says something new
+        let written = displays.write_kdl();
+        assert_eq!(
+            written.lines().skip(2).collect::<Vec<_>>(),
+            LIVE.lines().skip(2).collect::<Vec<_>>()
+        );
+        assert_eq!(Displays::read_kdl(&written).write_kdl(), written);
+    }
+
+    #[test]
+    fn lines_it_doesnt_know_are_kept() {
+        let displays = Displays::read_kdl(BY_HAND);
+        let panel = &displays.outputs[0];
+        assert_eq!(panel.scale, Some(1.75));
+        assert_eq!(
+            panel.extra,
+            [
+                "    // the panel's own note",
+                "    some-new-setting 3",
+                "    layout {",
+                "        gaps 4",
+                "    }",
+            ]
+        );
+        assert!(
+            displays.vrr_apps.is_empty(),
+            "the foot rule is someone else's"
+        );
+        let written = displays.write_kdl();
+        for line in BY_HAND.lines().filter(|line| !line.is_empty()) {
+            assert!(written.contains(line), "lost {line:?} from:\n{written}");
+        }
+        // known settings first, then the rest as it was
+        assert!(written.contains("    transform \"normal\"\n    // the panel's own note\n"));
+        assert!(written.contains("    off\n}\n\n// my rule\nwindow-rule {"));
+        // and what this writes, it reads back the same
+        assert_eq!(Displays::read_kdl(&written), displays);
+        assert_eq!(Displays::read_kdl(&written).write_kdl(), written);
+    }
+
+    #[test]
+    fn this_is_the_files_one_writer() {
+        fn files(dir: &Path, out: &mut Vec<PathBuf>) {
+            for entry in fs::read_dir(dir).into_iter().flatten().flatten() {
+                let path = entry.path();
+                if path.is_dir() && path.file_name().is_some_and(|name| name != "target") {
+                    files(&path, out);
+                } else if path.extension().is_some_and(|ext| ext == "rs") {
+                    out.push(path);
+                }
+            }
+        }
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut all = Vec::new();
+        files(&root.join("apps"), &mut all);
+        files(&root.join("crates"), &mut all);
+        let me = Path::new(file!()).file_name();
+        let named: Vec<_> = all
+            .iter()
+            .filter(|file| file.file_name() != me)
+            .filter(|file| {
+                fs::read_to_string(file)
+                    .unwrap()
+                    .lines()
+                    .any(|line| !line.trim_start().starts_with("//") && line.contains(FILE))
+            })
+            .collect();
+        assert!(named.is_empty(), "only kdl.rs names {FILE}: {named:#?}");
     }
 
     #[test]

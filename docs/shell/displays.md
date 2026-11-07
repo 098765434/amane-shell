@@ -42,8 +42,12 @@ include optional=true "/home/ocbk/nixos-config/niri/displays.kdl"
 ```
 
 The path is absolute because niri looks for an include beside the config's symlink, not beside
-the file it points to. Settings owns `displays.kdl` and writes it whole each time, through a
-temporary file and a rename, so niri never reads half of it. niri reloads it by itself. When the
+the file it points to. Settings owns `displays.kdl` and is its one writer (`displays/kdl.rs`; a
+test fails if any other file names it). It writes the file whole each time, through a temporary
+file and a rename, so niri never reads half of it. Lines it doesn't know, in a block (a nested
+`layout`, a setting it has no control for, a comment) or between blocks (another rule, a
+`/-output`), are kept as they were and written back after the ones it does. niri reloads the
+file by itself. When the
 folder is in a git repo, each change is committed alone (`displays: eDP-1 scale 1.5`), never
 pushed.
 
@@ -119,10 +123,11 @@ and:
   HDR and, while it is, maps its 1–100 % onto 25–500 nits (or the panel's peak, if lower) in even
   steps of the eye, each percent the same factor brighter. So the keys, Quick Settings, this page
   and hypridle's dimming all work the same in and out of HDR. niri holds that change only until
-  its config is read again, so the shell (`services/display/hdr_white.rs`) writes the
-  `sdr-brightness` line into the panel's block in `displays.kdl` once a level has rested for a
-  second. It changes only that line and commits nothing; the next change made on this page
-  commits it.
+  its config is read again, so the shell (`services/display/hdr_white.rs`) keeps a level that
+  has rested for a second in its own `$XDG_STATE_HOME/amane-shell/hdr-white.json`, and sets it in
+  niri again when it starts and after each config read (amane's `niri::follow_config_loads`).
+  It never writes `displays.kdl`. This page saves the level niri shows into the panel's
+  `sdr-brightness` with its next change, so niri starts a new session close to it.
 - The note names what shows HDR: mpv with `--vo=gpu-next`, Firefox with `gfx.wayland.hdr`, and
   Vulkan games that ask for HDR. These describe their colour through `wp-color-management-v1`,
   and niri shows their highlights up to the panel's peak.

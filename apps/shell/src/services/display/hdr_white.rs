@@ -1,24 +1,23 @@
 //! Keeps the screen's brightness in HDR across a config reload and a new
 //! session. In HDR, amane's `Brightness` moves niri's SDR white (the
 //! panel no longer follows its backlight), which is niri's temporary kind
-//! of change: `displays.kdl` would put the old level back on the next
-//! reload. So once a level has rested for a moment, its `sdr-brightness`
-//! line is written into the panel's block there.
-//!
-//! Only that line changes, and nothing is committed: a key held down
-//! would otherwise be a commit a step. Shell Settings commits the file
-//! with its next change to Displays. A level idle dimmed to
-//! ([`dimmed`]) is never written.
+//! of change: the next config read puts back what `displays.kdl` says. So
+//! once a level has rested for a moment it's kept in the shell's own
+//! `hdr-white.json`, and set in niri again at the start and after each
+//! config read. Shell Settings alone writes `displays.kdl`. A level idle
+//! dimmed to ([`dimmed`]) is never kept.
 
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, Once, PoisonError};
 use std::time::{Duration, SystemTime};
 
+use amane::niri::{self, OutputChange};
+use amane::serde::{Deserialize, Serialize};
 use amane::{Brightness, Service};
 
 use crate::services::Wake;
+use crate::services::state::{self, State};
 
 // how long a level stays put before it counts as rested
 const REST: Duration = Duration::from_secs(1);
@@ -57,8 +56,18 @@ pub fn watch() {
         })
         .forever();
 
+        // niri starts from displays.kdl's level, and goes back to it at each config read
         std::thread::spawn(|| {
-            // what's in the file: the first reading is what it already says
+            put_back();
+            niri::follow_config_loads(|failed| {
+                if !failed {
+                    put_back();
+                }
+            });
+        });
+
+        std::thread::spawn(|| {
+            // the level as it is now is the one kept
             let mut kept = hdr_white(&Brightness::read());
             loop {
                 let latest = LATEST
@@ -75,12 +84,11 @@ pub fn watch() {
                     WAKE.wait(Some(rested));
                     continue;
                 }
-                if now.is_some()
-                    && now != kept
+                if now != kept
                     && !DIMMED.load(Ordering::Relaxed)
                     && let Some((output, nits)) = &now
-                    && keep(&displays_file(), output, *nits).is_ok()
                 {
+                    keep(output, *nits);
                     kept.clone_from(&now);
                 }
                 WAKE.wait(None);
@@ -89,68 +97,42 @@ pub fn watch() {
     });
 }
 
-/// `displays.kdl`, beside the file `~/.config/niri/config.kdl` leads to.
-fn displays_file() -> PathBuf {
-    let config = amane_kit::paths::config().join("niri/config.kdl");
-    fs::canonicalize(&config)
-        .unwrap_or(config)
-        .with_file_name("displays.kdl")
+/// The SDR white each panel was last left at, by connector.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(crate = "amane::serde")]
+struct Kept {
+    nits: BTreeMap<String, f64>,
 }
 
-fn keep(file: &Path, output: &str, nits: f64) -> Result<(), String> {
-    let text = fs::read_to_string(file).map_err(|e| e.to_string())?;
-    let Some(changed) = with_sdr_white(&text, output, nits) else {
-        return Ok(());
-    };
-    // into place by a rename, so niri never reads half a file
-    let temp = file.with_extension("kdl.brightness");
-    fs::write(&temp, changed).map_err(|e| e.to_string())?;
-    fs::rename(&temp, file).map_err(|e| e.to_string())
+impl State for Kept {
+    const FILE: &'static str = "hdr-white.json";
+    const VERSION: u32 = 1;
 }
 
-/// `text` with `sdr-brightness` set in `output`'s block, or none when it
-/// already says so or has no block for it (Settings writes the blocks).
-fn with_sdr_white(text: &str, output: &str, nits: f64) -> Option<String> {
-    let opening = format!("output \"{output}\" {{");
-    let mut lines: Vec<String> = text.lines().map(String::from).collect();
-    let start = lines.iter().position(|line| line.trim() == opening)?;
-    let end = start + lines[start..].iter().position(|line| line.trim() == "}")?;
-    let setting = format!("    sdr-brightness {nits}");
-    match (start..end).find(|&at| lines[at].trim_start().starts_with("sdr-brightness ")) {
-        Some(at) if lines[at] == setting => return None,
-        Some(at) => lines[at] = setting,
-        None => lines.insert(end, setting),
-    }
-    let mut changed = lines.join("\n");
-    if text.ends_with('\n') {
-        changed.push('\n');
-    }
-    Some(changed)
+static KEPT: Mutex<Option<Kept>> = Mutex::new(None);
+
+fn with_kept<R>(f: impl FnOnce(&mut Kept) -> R) -> R {
+    let mut kept = KEPT.lock().unwrap_or_else(PoisonError::into_inner);
+    f(kept.get_or_insert_with(|| state::load().unwrap_or_default()))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+fn keep(output: &str, nits: f64) {
+    let kept = with_kept(|kept| {
+        kept.nits.insert(output.to_string(), nits);
+        kept.clone()
+    });
+    state::save(&kept);
+}
 
-    const FILE: &str = "// Written by Shell Settings\n\noutput \"eDP-1\" {\n    scale 1.75\n    sdr-brightness 80\n}\n\noutput \"DP-1\" {\n    scale 1\n}\n";
-
-    #[test]
-    fn changes_the_line_in_its_block() {
-        let changed = with_sdr_white(FILE, "eDP-1", 140.0).unwrap();
-        assert!(changed.contains("    sdr-brightness 140\n}"));
-        assert!(!changed.contains("sdr-brightness 80"));
-        assert!(changed.ends_with("scale 1\n}\n"));
+/// Sets each kept level in niri again: niri's own is `displays.kdl`'s.
+fn put_back() {
+    if !niri::features().has("hdr") {
+        return;
     }
-
-    #[test]
-    fn adds_the_line_when_missing() {
-        let changed = with_sdr_white(FILE, "DP-1", 203.0).unwrap();
-        assert!(changed.contains("    scale 1\n    sdr-brightness 203\n}"));
-    }
-
-    #[test]
-    fn leaves_the_file_alone_when_it_agrees_or_has_no_block() {
-        assert_eq!(with_sdr_white(FILE, "eDP-1", 80.0), None);
-        assert_eq!(with_sdr_white(FILE, "HDMI-A-1", 80.0), None);
+    for (output, nits) in with_kept(|kept| kept.nits.clone()) {
+        // an output that's gone or out of HDR has no SDR white to set
+        if let Err(error) = niri::set_output(&output, OutputChange::SdrBrightness(nits)) {
+            log::debug!("SDR white of {output}: {error}");
+        }
     }
 }
