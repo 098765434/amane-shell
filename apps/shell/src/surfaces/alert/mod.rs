@@ -17,11 +17,10 @@ use std::rc::Rc;
 
 use amane::{Horizontal, Keyboard, LayerWindow, Rectangle, Vertical};
 
-use crate::chrome::panel::overlay;
+use crate::chrome::panel::{self, overlay};
 use crate::tokens::dialog;
 use amane_kit::dialog::Dialog;
 use amane_kit::glass_region;
-use amane_kit::layout::blank;
 use amane_kit::material::Material;
 use amane_kit::reveal::{self, Reveal, Swell};
 
@@ -93,10 +92,7 @@ pub fn surface() -> LayerWindow {
         if !open {
             SHOWN.set(None);
         }
-        return window(1.0)
-            .visible(false)
-            .blur_shapes(Vec::new())
-            .child(blank());
+        return panel::empty(window(1.0));
     };
 
     let width = Dialog::width();

@@ -136,6 +136,14 @@ pub(crate) fn overlay(
         .vibrant(material::vibrant())
 }
 
+/// `window` with nothing to show this frame: hidden, with no frost.
+pub(crate) fn empty(window: LayerWindow) -> LayerWindow {
+    window
+        .visible(false)
+        .blur_shapes(Vec::new())
+        .child(amane_kit::layout::blank())
+}
+
 /// Takes keys as `keyboard` says, and closes the open panel on Escape.
 pub(crate) fn dismissable(base: LayerWindow, keyboard: Keyboard) -> LayerWindow {
     base.keyboard(keyboard).on_key(|key| {

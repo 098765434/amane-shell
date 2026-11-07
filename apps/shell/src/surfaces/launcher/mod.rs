@@ -76,7 +76,7 @@ use crate::services::launcher::clipboard_history;
 use crate::services::launcher::file_search::{self, FileKind};
 use amane_kit::divider::Divider;
 use amane_kit::kinetic::{Axis, AxisLock, Kinetic};
-use amane_kit::layout::{blank, boxed, pad, track_cursor};
+use amane_kit::layout::{boxed, pad, track_cursor};
 use amane_kit::material::Material;
 use amane_kit::motion;
 use amane_kit::pager::{Pager, PagerMotion};
@@ -330,10 +330,7 @@ pub fn surface() -> LayerWindow {
 
     if !reveal::showing(open, unfolded) {
         hidden();
-        return window()
-            .visible(false)
-            .blur_shapes(Vec::new())
-            .child(blank());
+        return panel::empty(window());
     }
 
     let apps = Apps::read();

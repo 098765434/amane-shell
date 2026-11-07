@@ -25,14 +25,14 @@ use amane::{
     Vertical, Widget,
 };
 
-use crate::chrome::panel::overlay;
+use crate::chrome::panel::{self, overlay};
 use crate::tokens::{Styled, osd, sys};
 use amane_kit::glass_region;
 use amane_kit::icons::{
     ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_KEYBOARD_LIGHT, ICON_MIC, ICON_MIC_OFF,
     volume_glyph,
 };
-use amane_kit::layout::{blank, boxed, icon, pad, slot};
+use amane_kit::layout::{boxed, icon, pad, slot};
 use amane_kit::material::{self, FillLevel, Level, Material};
 use amane_kit::motion;
 use amane_kit::slider::Slider;
@@ -131,10 +131,7 @@ pub fn surface() -> LayerWindow {
             SHOWN.set(None);
             UNTIL.set(None);
         }
-        return window()
-            .visible(false)
-            .blur_shapes(Vec::new())
-            .child(blank());
+        return panel::empty(window());
     };
 
     let (width, height, radius) = (osd::width(), osd::height(), osd::radius());

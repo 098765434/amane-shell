@@ -35,10 +35,7 @@ pub fn surface() -> LayerWindow {
 
     if !shown {
         hidden();
-        return window(surface_width(), 1.0)
-            .visible(false)
-            .blur_shapes(Vec::new())
-            .child(blank());
+        return panel::empty(window(surface_width(), 1.0));
     }
 
     // a page whose setting has gone gives way to the grid, or closes when

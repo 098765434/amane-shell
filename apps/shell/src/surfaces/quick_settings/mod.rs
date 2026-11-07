@@ -77,7 +77,7 @@ use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::surfaces::quick_settings::layout::Stored as _;
 use crate::tokens::quick;
 use amane_kit::glass_region;
-use amane_kit::layout::{blank, boxed, pad, track_cursor};
+use amane_kit::layout::{boxed, pad, track_cursor};
 use amane_kit::material::Material;
 use amane_kit::motion;
 use amane_kit::reveal::Reveal;
