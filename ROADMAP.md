@@ -550,7 +550,10 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 
 **Risks.** High, in amane's core loop: a timer or subscription bug freezes redraws. Land behind tests, try the shell for a day before Phase 7. Contract: amane's API grows; nothing removed.
 
-**Status (2026-11-07).** 6a done: amane `af52270`, pinned by shell `main`; the new services (6b) are next. Done in two steps, so the core gets a day on the machine first.
+**Status (2026-11-07).** Done, in two steps. 6a: amane `af52270`. 6b: amane `808b695` (services `9d953dc`, `Outputs` with Phase 7) and niri `f8c4e94e` (`989d475e`: the `KeyboardLockKeysChanged` and `OutputsChanged` events, features `lock-keys 1` and `outputs-changed 1`).
+- **6b in place of the list above:** `Leds` became `LockKeys` (from niri's event; the sysfs LEDs only on stock niri) and `Backlight` folded into `Brightness`, which reads the kernel's uevents (`services/uevent.rs`) and niri's `OutputsChanged` instead of polling. The keyboard light stays a shell service polled once a second: an LED sends no event, and this ThinkPad's has no `brightness_hw_changed`. `Outputs` (niri's outputs, read again on `OutputsChanged`) was added for the refresh rate on battery.
+- **`ClipboardWatcher`** uses `ext-data-control-v1` only; niri has it, so the wlr fallback wasn't written.
+- **NetworkManager bursts** settle on the listener's own channel (250 ms quiet, a second at most) rather than a `Timer`.
 - **No `niri-fork` cargo feature.** The fork's parts check `amane::niri::features()` at run time; one build runs on stock niri and the fork.
 - **Watched, not just read.** An idle bar draws no frames, so reads alone would stop a service the bar shows. A service is watched while an open window's last frame read it, or something read it within its idle time. `Brightness` keeps polling: the OSD reads it once per key press.
 - **Subscriptions run on their own thread,** one at a time, so a callback never runs inside a writer's lock, and a burst of writes costs one call.
@@ -610,6 +613,15 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 
 **Risks.** Medium: missed updates where a poll used to paper over a missing signal. The fixture tests and a day of daily use catch most. No contract changes.
 
+**Status (2026-11-07).** Done in code (shell `2f959b4`, docs `68ec7c7`); the `idle-report` after the switch is the user's, against the baseline.
+- **Every row of the table** follows an amane service, a subscription or its own deadline; the shell starts no `nmcli`, `niri msg`, `rfkill`, `gdbus` or `wl-paste` of its own. The one clock left while idle is the keyboard light, once a second.
+- **Waits:** a small `services::Wake` (a deadline or a nudge, no ticks) serves toasts, Do Not Disturb, the clock (which also wakes on `Logind`'s wake-ups), weather, Keep Awake, power refresh, HDR white and Bluetooth batteries.
+- **The vault** is looked at after each command, when a fill or the launcher's passwords want it, and once the agent's lock timeout could have run out; an outside `rbw lock` shows at the next look.
+- **Found along the way:** the bar's paused Now Playing spawned a `redraw_after` thread every frame; `text_edit::paste` could deadlock after the vault copied a password (the shell owned the selection that `wl-paste` waited on), now an asynchronous `amane::Clipboard::paste`; reads from background threads kept services watched, now subscriptions.
+- **Kit tokens:** the resolved table is cached per thread until the appearance changes (subscriptions bump a generation and redraw every window); `build.rs` still emits functions that look up by name, so the per-token index is left for later.
+- **Launching:** `amane::spawn` and `spawn_activated` already put each program in its own scope (`Launch`), so the call sites stayed.
+- `scripts/idle-report` now counts threads that end inside the window (looked at every 0.2 s).
+
 ---
 
 ### Phase 8: Kit consolidation (L)
@@ -650,6 +662,14 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 
 **Risks.** Medium. Visual regressions while folding controls: compare screenshots before and after. Kit API breaks only inside this workspace. No cross-repo contract change.
 
+**Status (2026-11-07).** Done, but for the one menu, which moves to Phase 10 (shell `1c21202`…`1d13689`). The counts were 63 `mac::` uses (not 109), about 275 imports through the shim (not 200), and about 25 XDG copies (not 8).
+- **Lists:** the M3 `lists` module and its example are gone; Quick Settings keeps `list`, Settings `form`.
+- **`macform`:** `look::style` (not `look::theme`, which would clash with the kit's root `theme`), `look::hover`, `controls::parts`, `foundation::symbol`, and the controls as ordinary kit modules. `MacSegmentedNav` and `MacPopUpButton` became `NavButtons` and `PopUpButton` rather than folding into `SegmentedButton` and `Dropdown`: they're different controls (a back/forward pair; an icon-only menu button), and folding them would change how Settings looks. Shell Settings' pages drew pixel for pixel the same before and after.
+- **One menu: moved to Phase 10.** The shell's context menu is a layer surface with submenus and its own item type used by 15 callers; the kit's is an xdg popup. Giving them one model and two hosts is a rewrite of the shell's menu, which belongs with the shell's restructure.
+- **Moved into the kit:** `search_field`, `text_edit` (on `amane::Clipboard`, kept as the `Field` model rather than rebuilt on amane's text field), `grid`, `process`, `scroll_view::ScrollbarFade`, `reveal::Reveal` and `paths`. The launcher's header and Shell Settings' sidebar still draw their own search fields, which look different from `SearchField`; unifying them is a design change. `train-watch`, `amane-assistant` and `amane-pinentry` don't depend on the kit and keep their own XDG lookups.
+- **Settings** are `platform/settings/<file>.rs` and `seen.rs`; `bar_item_icon` lives in Shell Settings' Status Bar page.
+- **Tokens:** `tokens::rules` is `tokens::lint`, behind a `tools` feature that `xtask` turns on; `amane-shell tokens …` only points at `cargo xtask`.
+
 ---
 
 ### Phase 9: Product code out of amane (L)
@@ -688,7 +708,8 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
   - Quick Settings' 320-line `surface()`;
   - `fill.rs` becomes a folder like its peers.
 - [shell] Boundaries:
-  - `components/` becomes `chrome/` (panel exclusivity, edges), and `chrome/panel.rs` stops importing the surfaces; surfaces register with it;
+  - `chrome/panel.rs` (already `chrome/`, since Phase 8) stops importing the surfaces; surfaces register with it;
+- [shell] One menu, carried over from Phase 8: `controls::menu` holds one item model (icons, submenus, separators) and one drawing, with two hosts: the xdg popup app windows use, and the shell's layer surface from `surfaces/context_menu`, whose 15 callers move onto the kit's types;
   - phone code spread over 5 surfaces moves into `services/phone`;
   - do-not-disturb (`surfaces/notifications/dnd.rs`) and media art (`tiles/media.rs`) move to `services/`;
   - the clock moves from `services/launcher/` to `services/`;

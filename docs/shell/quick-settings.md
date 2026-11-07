@@ -346,7 +346,7 @@ It reuses the shared components:
 
 ### SearchField and text_edit
 
-The shell's own (`apps/shell/src/components/search_field.rs`, `text_edit.rs`), not the kit's.
+The kit's `search_field` and `text_edit`, which the launcher's field shares.
 
 `SearchField::new(id, &field, focused)` is a `surface.raised` capsule a control tall: a magnifier,
 the query (or a `.placeholder(…)`, "Search" by default) in `sys.type.label` with its caret (accent,

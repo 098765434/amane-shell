@@ -38,7 +38,7 @@ touching the user's clipboard, keyring or phone. To use the framework, see
 | shell | `apps/shell/src/surfaces/status_bar/activities.rs` | the built-in sources, ranking, compact and minimal chips, the expanded popup, alerts, its IPC |
 | shell | `apps/shell/src/surfaces/status_bar/apps.rs` | programs' items: picture, title, badge, clicks, menus, drops |
 | shell | `apps/shell/src/surfaces/status_bar/indicators.rs`, `drag.rs` | `Item::Activities` and `Item::App`, ordering (`items_with`), hiding, and the `media`/`timer` migration |
-| kit | `src/platform/settings.rs` | `StatusBar` (`activities_*`), `DropGrids`, `DropTile`, `UploadTo`, `DropSharing`, and the seen lists |
+| kit | `src/platform/settings/` | `StatusBar` (`activities_*`, `status_bar.rs`), `DropGrids`, `DropTile`, `UploadTo`, `DropSharing` (`drop.rs`), and the seen lists (`seen.rs`) |
 | kit | `src/platform/secrets.rs` | secrets through `secret-tool`, with a 0600 file as a fallback |
 | kit | `src/foundation/icons.rs` | `NAMED` and `named()`: the glyph names an `ItemIcon::Glyph` may use |
 | apps | `apps/drop/` | amane-drop: `main.rs`, `state.rs`, `grid.rs`, `tasks.rs`, `files.rs`, `share.rs`, `shared.rs` |
