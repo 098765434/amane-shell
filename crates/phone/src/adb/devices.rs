@@ -1,36 +1,42 @@
 use std::net::{IpAddr, SocketAddr};
 
+/// Where a phone stands with adb, as `adb devices` words it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AdbState {
-    // ready to use
+    /// Ready to use.
     Device,
 
-    // the phone hasn't allowed this computer's key yet
+    /// The phone hasn't allowed this computer's key yet.
     Unauthorized,
 
+    /// Known to adb but not answering, like while it reconnects.
     Offline,
 
-    // anything else adb says, like "authorizing" or "no permissions"
+    /// Anything else adb says, like "authorizing" or "no permissions".
     Other(String),
 }
 
+/// A phone adb has, over USB or the network.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdbDevice {
-    // what adb calls it: a USB serial number, or address:port over the network
+    /// What adb calls it: a USB serial number, or address:port over the network.
     pub serial: String,
+    /// Whether it can be used now.
     pub state: AdbState,
 
-    // "SM_S921B"; adb puts underscores for spaces
+    /// "SM_S921B"; adb puts underscores for spaces.
     pub model: Option<String>,
+    /// The product name adb reports, like the build's code name.
     pub product: Option<String>,
 }
 
 impl AdbDevice {
+    /// It's authorized and online, so adb can use it.
     pub fn ready(&self) -> bool {
         self.state == AdbState::Device
     }
 
-    // the network address of one connected over Wireless debugging, none over USB
+    /// The network address of one connected over Wireless debugging, none over USB.
     pub fn address(&self) -> Option<IpAddr> {
         self.serial
             .parse::<SocketAddr>()
@@ -38,7 +44,7 @@ impl AdbDevice {
             .map(|socket| socket.ip())
     }
 
-    // the model as people write it
+    /// The model as people write it.
     pub fn model_name(&self) -> Option<String> {
         self.model.as_ref().map(|model| model.replace('_', " "))
     }

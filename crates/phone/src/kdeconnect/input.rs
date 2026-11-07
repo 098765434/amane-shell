@@ -14,14 +14,20 @@ use super::actions::input_call;
 const REMOTE_CONTROL: &str = "org.kde.kdeconnect.device.remotecontrol";
 const REMOTE_KEYBOARD: &str = "org.kde.kdeconnect.device.remotekeyboard";
 
+/// A click on the phone's screen, where its pointer is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhoneClick {
+    /// A single tap.
     Left,
+    /// A double tap.
     Double,
+    /// A middle click.
     Middle,
+    /// A right click, a long press on most phones.
     Right,
-    // a press held for dragging, until Release
+    /// A press held for dragging, until Release.
     Hold,
+    /// Lets go of a Hold.
     Release,
 }
 
@@ -38,21 +44,34 @@ impl PhoneClick {
     }
 }
 
-// the keys that aren't text, which the phone's keyboard plugin knows by qt's numbers
+/// The keys that aren't text, which the phone's keyboard plugin knows by qt's numbers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhoneKey {
+    /// Deletes before the cursor.
     Backspace,
+    /// Tab.
     Tab,
+    /// Enter, or the field's send or go action.
     Enter,
+    /// Escape, often going back.
     Escape,
+    /// Deletes after the cursor.
     Delete,
+    /// The left arrow.
     Left,
+    /// The right arrow.
     Right,
+    /// The up arrow.
     Up,
+    /// The down arrow.
     Down,
+    /// To the start of the line.
     Home,
+    /// To the end of the line.
     End,
+    /// A page up.
     PageUp,
+    /// A page down.
     PageDown,
 }
 
@@ -76,11 +95,14 @@ impl PhoneKey {
     }
 }
 
-// held keys, as qt's modifier bits
+/// Held keys, as qt's modifier bits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PhoneModifiers {
+    /// Shift is held.
     pub shift: bool,
+    /// Ctrl is held.
     pub ctrl: bool,
+    /// Alt is held.
     pub alt: bool,
 }
 
@@ -105,7 +127,7 @@ impl PhoneModifiers {
 }
 
 impl KdeConnect {
-    // moves the phone's pointer by this much, in the phone's pixels
+    /// Moves the phone's pointer by this much, in the phone's pixels.
     pub fn move_pointer(device: &str, dx: i32, dy: i32) {
         if dx == 0 && dy == 0 {
             return;
@@ -123,12 +145,15 @@ impl KdeConnect {
         );
     }
 
+    /// Clicks where the phone's pointer is.
     pub fn click(device: &str, click: PhoneClick) {
         let command = BTreeMap::from([(click.command().to_string(), Argument::from(true))]);
 
         send_command(device, command);
     }
 
+    /// Scrolls the phone by this much, in the remote control plugin's own steps;
+    /// nothing is sent for zero.
     pub fn scroll(device: &str, dx: i32, dy: i32) {
         if dx == 0 && dy == 0 {
             return;
@@ -143,7 +168,7 @@ impl KdeConnect {
         send_command(device, command);
     }
 
-    // typed text, into the field focused on the phone
+    /// Typed text, into the field focused on the phone.
     pub fn type_text(device: &str, text: &str, modifiers: PhoneModifiers) {
         if text.is_empty() {
             return;
@@ -152,6 +177,7 @@ impl KdeConnect {
         send_key_event(device, 0, text, modifiers);
     }
 
+    /// Presses a key that isn't text, with these keys held, in the field focused on the phone.
     pub fn press_key(device: &str, key: PhoneKey, modifiers: PhoneModifiers) {
         send_key_event(device, key.qt(), "", modifiers);
     }

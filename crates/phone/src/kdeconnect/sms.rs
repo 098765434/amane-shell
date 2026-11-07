@@ -26,7 +26,7 @@ use super::{KDECONNECT, device_path, files, owner};
 const CONVERSATIONS: &str = "org.kde.kdeconnect.device.conversations";
 const CONTACTS: &str = "org.kde.kdeconnect.device.contacts";
 
-// how many messages of a thread are asked for at a time
+/// How many messages of a thread are asked for at a time.
 pub const PAGE: i32 = 50;
 
 // a message sent from here that the phone hasn't sent back by then didn't go
@@ -46,15 +46,20 @@ fn next_pending() -> i64 {
     PENDING.fetch_sub(1, Ordering::Relaxed) - 1
 }
 
-// what a message is, as android numbers them
+/// What a message is, as android numbers them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SmsKind {
+    /// Came in from someone else.
     Received,
+    /// Went out.
     Sent,
+    /// Written on the phone and not sent.
     Draft,
-    // sending, or waiting to be sent
+    /// Sending, or waiting to be sent.
     Outbox,
+    /// Couldn't be sent.
     Failed,
+    /// Waiting to be sent later, like until the phone has a signal.
     Queued,
 }
 
@@ -70,30 +75,30 @@ impl SmsKind {
         }
     }
 
-    // written on this side of the conversation
+    /// Written on this side of the conversation.
     pub fn outgoing(self) -> bool {
         !matches!(self, Self::Received)
     }
 }
 
-// how far the phone has answered
+/// How far the phone has answered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SmsState {
-    // nothing asked yet
+    /// Nothing asked yet.
     #[default]
     Idle,
 
-    // asked, and nothing has come yet
+    /// Asked, and nothing has come yet.
     Syncing,
 
-    // conversations came
+    /// Conversations came.
     Ready,
 
-    // asked, and nothing came in time: asleep, locked, or nothing to send
+    /// Asked, and nothing came in time: asleep, locked, or nothing to send.
     NoAnswer,
 }
 
-// a picture, video or file in a message
+/// A picture, video or file in a message.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SmsAttachment {
     // the phone's ids for it, which fetch the whole file; -1 for one sent from here
@@ -110,30 +115,37 @@ pub struct SmsAttachment {
 }
 
 impl SmsAttachment {
+    /// The phone's part id for it, which fetches the whole file; -1 for one sent from here.
     pub fn part(&self) -> i64 {
         self.part
     }
 
+    /// The phone's unique id for it, or the file's path for one sent from here.
     pub fn unique(&self) -> &str {
         &self.unique
     }
 
+    /// Its MIME type, like "image/jpeg".
     pub fn mime(&self) -> &str {
         &self.mime
     }
 
+    /// The small picture the phone sends with the message, written out.
     pub fn thumbnail(&self) -> Option<&Path> {
         self.thumbnail.as_deref()
     }
 
+    /// The file on this computer, for one sent from here.
     pub fn local(&self) -> Option<&Path> {
         self.local.as_deref()
     }
 
+    /// It's a picture, by its MIME type.
     pub fn image(&self) -> bool {
         self.mime.starts_with("image/")
     }
 
+    /// It's a video, by its MIME type.
     pub fn video(&self) -> bool {
         self.mime.starts_with("video/")
     }
@@ -206,6 +218,7 @@ impl SmsAttachment {
     }
 }
 
+/// One text message, as the phone sends it, or one sent from here.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SmsMessage {
     // the phone's id for it, negative while it's one sent from here and not echoed yet
@@ -233,34 +246,40 @@ pub struct SmsMessage {
 }
 
 impl SmsMessage {
+    /// The phone's id for it, negative while it's one sent from here and not echoed yet.
     pub fn uid(&self) -> i64 {
         self.uid
     }
 
+    /// The id of the conversation it's in.
     pub fn thread(&self) -> i64 {
         self.thread
     }
 
+    /// Its text.
     pub fn body(&self) -> &str {
         &self.body
     }
 
+    /// The other people in the conversation, as numbers; for one received
+    /// in a group, the one who sent it comes first.
     pub fn addresses(&self) -> &[String] {
         &self.addresses
     }
 
-    // who sent it: the first address of one received
+    /// Who sent it: the first address of one received.
     pub fn sender(&self) -> Option<&str> {
         (!self.outgoing())
             .then(|| self.addresses.first().map(String::as_str))
             .flatten()
     }
 
+    /// When it was sent or received, in milliseconds since 1970.
     pub fn date(&self) -> i64 {
         self.date
     }
 
-    // a message sent from here that never came back reads as failed
+    /// A message sent from here that never came back reads as failed.
     pub fn kind(&self) -> SmsKind {
         if self.lost {
             SmsKind::Failed
@@ -269,24 +288,27 @@ impl SmsMessage {
         }
     }
 
+    /// Written on this side of the conversation.
     pub fn outgoing(&self) -> bool {
         self.kind.outgoing()
     }
 
+    /// Read on the phone.
     pub fn read(&self) -> bool {
         self.read
     }
 
+    /// The pictures, videos and files in it.
     pub fn attachments(&self) -> &[SmsAttachment] {
         &self.attachments
     }
 
-    // sent from here and not seen on the phone yet
+    /// Sent from here and not seen on the phone yet.
     pub fn pending(&self) -> bool {
         self.uid < 0 && !self.lost
     }
 
-    // sent from here: still waiting, or given up on
+    /// Sent from here: still waiting, or given up on.
     pub fn local(&self) -> bool {
         self.uid < 0
     }
@@ -337,7 +359,7 @@ impl SmsMessage {
     }
 }
 
-// one conversation, by its latest message
+/// One conversation, by its latest message.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SmsThread {
     pub(crate) latest: SmsMessage,
@@ -347,33 +369,37 @@ pub struct SmsThread {
 }
 
 impl SmsThread {
+    /// The conversation's id, negative for one started here the phone hasn't made yet.
     pub fn id(&self) -> i64 {
         self.latest.thread
     }
 
+    /// The contacts' names where the phone knows them, else the numbers.
     pub fn title(&self) -> &str {
         &self.title
     }
 
+    /// Its newest message.
     pub fn latest(&self) -> &SmsMessage {
         &self.latest
     }
 
-    // the latest message came in and hasn't been read on the phone
+    /// The latest message came in and hasn't been read on the phone.
     pub fn unread(&self) -> bool {
         !self.latest.read && !self.latest.outgoing()
     }
 
+    /// The other people in it, as numbers.
     pub fn addresses(&self) -> &[String] {
         &self.latest.addresses
     }
 
-    // more than one other person in it
+    /// More than one other person in it.
     pub fn group(&self) -> bool {
         self.latest.addresses.len() > 1
     }
 
-    // started here, and the phone hasn't made it a conversation yet
+    /// Started here, and the phone hasn't made it a conversation yet.
     pub fn started_here(&self) -> bool {
         self.id() < 0
     }
@@ -386,6 +412,8 @@ enum Download {
     Done(PathBuf),
 }
 
+/// One phone's text messages and contacts, read over KDE Connect once
+/// [`PhoneMessages::open`] names the phone.
 #[derive(Default)]
 pub struct PhoneMessages {
     // the phone whose messages these are
@@ -486,48 +514,52 @@ impl Service for PhoneMessages {
 }
 
 impl PhoneMessages {
-    // the phone whose messages are read, if one was opened
+    /// The phone whose messages are read, if one was opened.
     pub fn device(&self) -> Option<&str> {
         self.device.as_deref()
     }
 
+    /// How far the phone has answered.
     pub fn state(&self) -> SmsState {
         self.state
     }
 
+    /// The latest message of each thread, newest first.
     pub fn threads(&self) -> &[SmsThread] {
         &self.threads
     }
 
+    /// One thread, by its id.
     pub fn thread(&self, id: i64) -> Option<&SmsThread> {
         self.threads.iter().find(|thread| thread.id() == id)
     }
 
-    // a thread's messages, oldest first, as far as they've come
+    /// A thread's messages, oldest first, as far as they've come.
     pub fn messages(&self, thread: i64) -> &[SmsMessage] {
         self.history.get(&thread).map_or(&[], Vec::as_slice)
     }
 
+    /// The thread's history was asked for and hasn't all come yet.
     pub fn loading(&self, thread: i64) -> bool {
         self.loading.contains(&thread)
     }
 
-    // the phone's thread a conversation started here became, once it has
+    /// The phone's thread a conversation started here became, once it has.
     pub fn moved(&self, from: i64) -> Option<i64> {
         self.moved.get(&from).copied()
     }
 
-    // the contact's name for a number, or the number
+    /// The contact's name for a number, or the number.
     pub fn name<'a>(&'a self, address: &'a str) -> &'a str {
         self.contacts.name(address).unwrap_or(address)
     }
 
-    // the contact's photo for a number, where the phone has one
+    /// The contact's photo for a number, where the phone has one.
     pub fn photo(&self, address: &str) -> Option<&Path> {
         self.contacts.photo(address)
     }
 
-    // every contact's name and number, one pair per number, for picking whom to write to
+    /// Every contact's name and number, one pair per number, for picking whom to write to.
     pub fn contacts(&self) -> Vec<(String, String)> {
         self.contacts
             .people()
@@ -541,7 +573,7 @@ impl PhoneMessages {
             .collect()
     }
 
-    // the conversation with exactly these people, if there is one
+    /// The conversation with exactly these people, if there is one.
     pub fn thread_with(&self, addresses: &[String]) -> Option<i64> {
         self.threads
             .iter()
@@ -549,11 +581,12 @@ impl PhoneMessages {
             .map(SmsThread::id)
     }
 
-    // whether the whole attachment is being fetched
+    /// Whether the whole attachment is being fetched.
     pub fn downloading(&self, unique: &str) -> bool {
         matches!(self.downloads.get(unique), Some(Download::Waiting))
     }
 
+    /// Where the whole attachment was saved, once it's come.
     pub fn downloaded(&self, unique: &str) -> Option<&Path> {
         match self.downloads.get(unique) {
             Some(Download::Done(path)) => Some(path),
@@ -561,10 +594,8 @@ impl PhoneMessages {
         }
     }
 
-    /*
-     * reads `device`'s messages: what the daemon has at once, then the
-     * phone's latest of every thread as it sends them
-     */
+    /// Reads `device`'s messages: what the daemon has at once, then the
+    /// phone's latest of every thread as it sends them.
     pub fn open(device: &str) {
         let device = device.to_string();
 
@@ -644,7 +675,7 @@ impl PhoneMessages {
         });
     }
 
-    // asks the phone for every thread's latest message again
+    /// Asks the phone for every thread's latest message again.
     pub fn refresh() {
         let Some(device) = PhoneMessages::read().device.clone() else {
             return;
@@ -653,7 +684,7 @@ impl PhoneMessages {
         Self::open(&device);
     }
 
-    // asks for the newest `count` messages of `thread`
+    /// Asks for the newest `count` messages of `thread`.
     pub fn load_thread(thread: i64, count: i32) {
         if thread < 0 {
             return;
@@ -683,11 +714,9 @@ impl PhoneMessages {
         });
     }
 
-    /*
-     * sends `text` and `files` in `thread`; it shows at once as pending,
-     * until the phone sends it back as sent (usually within a minute), or
-     * as failed when it doesn't
-     */
+    /// Sends `text` and `files` in `thread`; it shows at once as pending,
+    /// until the phone sends it back as sent (usually within a minute), or
+    /// as failed when it doesn't.
     pub fn reply(thread: i64, text: &str, files: &[PathBuf]) {
         let text = text.trim().to_string();
 
@@ -715,11 +744,9 @@ impl PhoneMessages {
         send(device, Some(thread), addresses, text, files.to_vec());
     }
 
-    /*
-     * writes to `addresses`: in their conversation if there's one, else in
-     * a new one, which shows at once and becomes the phone's when it sends
-     * the message back (`moved`); the thread to show
-     */
+    /// Writes to `addresses`: in their conversation if there's one, else in
+    /// a new one, which shows at once and becomes the phone's when it sends
+    /// the message back (`moved`); the thread to show.
     pub fn new_conversation(addresses: &[String], text: &str, files: &[PathBuf]) -> Option<i64> {
         let text = text.trim().to_string();
 
@@ -752,7 +779,7 @@ impl PhoneMessages {
         Some(thread)
     }
 
-    // sends a failed message again
+    /// Sends a failed message again.
     pub fn retry(uid: i64) {
         let Some(message) = PhoneMessages::write().take_local(uid) else {
             return;
@@ -772,16 +799,14 @@ impl PhoneMessages {
         }
     }
 
-    // forgets a failed message
+    /// Forgets a failed message.
     pub fn discard(uid: i64) {
         // nothing to forget is fine
         let _ = PhoneMessages::write().take_local(uid);
     }
 
-    /*
-     * fetches an attachment's whole file from the phone and opens it once
-     * it's here; the daemon keeps it, so the second time it opens at once
-     */
+    /// Fetches an attachment's whole file from the phone and opens it once
+    /// it's here; the daemon keeps it, so the second time it opens at once.
     pub fn download(attachment: &SmsAttachment) {
         if let Some(local) = &attachment.local {
             open_file(local);

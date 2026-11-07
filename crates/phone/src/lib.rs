@@ -6,6 +6,8 @@
 //! Each is an amane [`Service`](amane::Service): read it in a view, and it
 //! follows its source on a thread of its own.
 
+#![deny(missing_docs)]
+
 mod adb;
 mod kdeconnect;
 

@@ -15,19 +15,26 @@ use mdns_sd::{ServiceDaemon, ServiceEvent};
 const PAIRING: &str = "_adb-tls-pairing._tcp.local.";
 const CONNECT: &str = "_adb-tls-connect._tcp.local.";
 
+/// Which of Wireless debugging's two services was found.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum WirelessKind {
+    /// Offering pairing, while a code or QR code shows on the phone.
     Pairing,
+    /// Taking connections from paired computers.
     Connect,
 }
 
+/// One Wireless debugging service found over mDNS.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WirelessService {
+    /// Pairing or connecting.
     pub kind: WirelessKind,
 
-    // the instance's name; a QR code's pairing service carries the name the code gave
+    /// The instance's name; a QR code's pairing service carries the name the code gave.
     pub name: String,
+    /// The phone's network address.
     pub address: IpAddr,
+    /// The service's port, new each time Wireless debugging is turned on.
     pub port: u16,
 }
 

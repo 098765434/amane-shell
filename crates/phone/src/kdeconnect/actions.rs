@@ -12,10 +12,8 @@ use super::{CLIPBOARD, DAEMON, DAEMON_PATH, DEVICE, KDECONNECT, KdeConnect, conf
  * own signal can come before the change is visible
  */
 impl KdeConnect {
-    /*
-     * starts the daemon when it isn't running (d-bus starts it on the
-     * first call), for a page offering to turn the phone on
-     */
+    /// Starts the daemon when it isn't running (d-bus starts it on the
+    /// first call), for a page offering to turn the phone on.
     pub fn start() {
         run_in_order(|| {
             if let Err(error) = Bus::session().try_call(
@@ -32,7 +30,7 @@ impl KdeConnect {
         });
     }
 
-    // looks for phones on the network again
+    /// Looks for phones on the network again.
     pub fn refresh() {
         run_in_order(|| {
             if let Err(error) = Bus::session().try_call(
@@ -49,27 +47,27 @@ impl KdeConnect {
         });
     }
 
-    // the phone shows a request to accept
+    /// The phone shows a request to accept.
     pub fn request_pair(device: &str) {
         device_call(device, "", DEVICE, "requestPairing", Vec::new());
     }
 
-    // answers a request the phone sent
+    /// Answers a request the phone sent.
     pub fn accept_pairing(device: &str) {
         device_call(device, "", DEVICE, "acceptPairing", Vec::new());
     }
 
-    // declines the phone's request, or stops waiting for it to accept ours
+    /// Declines the phone's request, or stops waiting for it to accept ours.
     pub fn cancel_pairing(device: &str) {
         device_call(device, "", DEVICE, "cancelPairing", Vec::new());
     }
 
-    // forgets the phone; it has to pair again to connect
+    /// Forgets the phone; it has to pair again to connect.
     pub fn unpair(device: &str) {
         device_call(device, "", DEVICE, "unpair", Vec::new());
     }
 
-    // rings at full volume, even on silent, until stopped on the phone
+    /// Rings at full volume, even on silent, until stopped on the phone.
     pub fn ring(device: &str) {
         device_call(
             device,
@@ -80,7 +78,7 @@ impl KdeConnect {
         );
     }
 
-    // each file lands in the phone's downloads
+    /// Each file lands in the phone's downloads.
     pub fn send_files(device: &str, files: Vec<PathBuf>) {
         let device = device.to_string();
 
@@ -92,11 +90,9 @@ impl KdeConnect {
         });
     }
 
-    /*
-     * the same, waiting for the daemon to take each file, for a caller on a
-     * thread of its own that tells how it went; the files go on to the phone
-     * after it answers
-     */
+    /// The same, waiting for the daemon to take each file, for a caller on a
+    /// thread of its own that tells how it went; the files go on to the phone
+    /// after it answers.
     pub fn share_files_now(device: &str, files: &[PathBuf]) -> Result<(), ServiceError> {
         let bus = Bus::session();
 
@@ -116,7 +112,7 @@ impl KdeConnect {
         Ok(())
     }
 
-    // text for the phone to show, or a link for it to open, waiting as above
+    /// Text for the phone to show, or a link for it to open, waiting as above.
     pub fn share_text_now(device: &str, text: &str) -> Result<(), ServiceError> {
         let path = format!("{}/share", device_path(device));
 
@@ -132,15 +128,13 @@ impl KdeConnect {
             .map_err(ServiceError::from)
     }
 
-    // this computer's clipboard now, to the phone's
+    /// This computer's clipboard now, to the phone's.
     pub fn send_clipboard(device: &str) {
         device_call(device, "/clipboard", CLIPBOARD, "sendClipboard", Vec::new());
     }
 
-    /*
-     * kdeconnect only reads this when the plugin starts, so the plugin is
-     * turned off and on again after the file is written
-     */
+    /// KDE Connect only reads this when the plugin starts, so the plugin is
+    /// turned off and on again after the file is written.
     pub fn set_clipboard_auto_sync(device: &str, on: bool) {
         let device = device.to_string();
 
@@ -158,10 +152,8 @@ impl KdeConnect {
         });
     }
 
-    /*
-     * the phone's remote: lock, suspend and screenshot this computer from
-     * the phone's "Run command"; reloading sends the list to the phone
-     */
+    /// The phone's remote: lock, suspend and screenshot this computer from
+    /// the phone's "Run command"; reloading sends the list to the phone.
     pub fn set_run_commands(device: &str, on: bool) {
         let device = device.to_string();
 

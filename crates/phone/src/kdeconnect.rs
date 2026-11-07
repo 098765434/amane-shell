@@ -50,6 +50,8 @@ static OWNER: Mutex<String> = Mutex::new(String::new());
 // one read at a time, so two reads never publish out of order
 static READING: Mutex<()> = Mutex::new(());
 
+/// The KDE Connect devices `kdeconnectd` knows, read again on each of its
+/// signals; its actions take a device by its id.
 #[derive(Default)]
 pub struct KdeConnect {
     // kdeconnectd is on the bus; nothing else is filled in when it isn't
@@ -133,40 +135,42 @@ fn matters(interface: &str, name: &str) -> bool {
 }
 
 impl KdeConnect {
+    /// `kdeconnectd` is on the bus; nothing else is filled in when it isn't.
     pub fn running(&self) -> bool {
         self.running
     }
 
+    /// Paired devices first, then the ones that could pair, each by name.
     pub fn devices(&self) -> &[PhoneDevice] {
         &self.devices
     }
 
+    /// One device, by its id.
     pub fn device(&self, id: &str) -> Option<&PhoneDevice> {
         self.devices.iter().find(|device| device.id() == id)
     }
 
+    /// The paired devices, reachable or not.
     pub fn paired(&self) -> impl Iterator<Item = &PhoneDevice> {
         self.devices.iter().filter(|device| device.paired())
     }
 
-    // found on the network and not paired, so they can be asked
+    /// Found on the network and not paired, so they can be asked.
     pub fn available(&self) -> impl Iterator<Item = &PhoneDevice> {
         self.devices
             .iter()
             .filter(|device| !device.paired() && device.reachable())
     }
 
-    // a phone asking to pair, waiting for an answer here
+    /// A phone asking to pair, waiting for an answer here.
     pub fn pairing_request(&self) -> Option<&PhoneDevice> {
         self.devices
             .iter()
             .find(|device| device.pair_state() == PairState::RequestedByPeer)
     }
 
-    /*
-     * the phone the bar shows: the first connected one with a battery,
-     * so a tablet left at home doesn't take the place of the phone at hand
-     */
+    /// The phone the bar shows: the first connected one with a battery,
+    /// so a tablet left at home doesn't take the place of the phone at hand.
     pub fn primary(&self) -> Option<&PhoneDevice> {
         self.devices
             .iter()

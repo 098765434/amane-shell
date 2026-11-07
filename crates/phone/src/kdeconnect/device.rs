@@ -19,33 +19,37 @@ pub(crate) const NOTIFICATIONS_PLUGIN: &str = "kdeconnect_notifications";
 
 const NOTIFICATION: &str = "org.kde.kdeconnect.device.notifications.notification";
 
-// one of the phone's notifications, as KDE Connect mirrors it
+/// One of the phone's notifications, as KDE Connect mirrors it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhoneNotification {
-    // KDE Connect's number for it, under the device's notifications object
+    /// KDE Connect's number for it, under the device's notifications object.
     pub id: String,
 
-    // the app's name as the phone shows it, like "Signal"
+    /// The app's name as the phone shows it, like "Signal".
     pub app: String,
 
-    // the app's package, like "org.thoughtcrime.securesms", when the phone says
+    /// The app's package, like "org.thoughtcrime.securesms", when the phone says.
     pub package: Option<String>,
 
+    /// The notification's heading, often the sender.
     pub title: String,
+    /// The notification's body.
     pub text: String,
 }
 
-// where a device and this computer stand on pairing, as kdeconnect numbers it
+/// Where a device and this computer stand on pairing, as kdeconnect numbers it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PairState {
+    /// Not paired, and nothing asked.
     NotPaired,
 
-    // asked from here, waiting for the phone to accept
+    /// Asked from here, waiting for the phone to accept.
     Requested,
 
-    // the phone asked, waiting for an answer here
+    /// The phone asked, waiting for an answer here.
     RequestedByPeer,
 
+    /// Paired, so it can connect whenever it's on the network.
     Paired,
 }
 
@@ -60,15 +64,17 @@ impl PairState {
     }
 }
 
+/// A device's battery, as its battery plugin reports it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhoneBattery {
-    // 0 to 100
+    /// 0 to 100.
     pub percent: u8,
 
+    /// Plugged in and charging.
     pub charging: bool,
 }
 
-// a phone, tablet or computer kdeconnect has found or paired with
+/// A phone, tablet or computer kdeconnect has found or paired with.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PhoneDevice {
     // kdeconnect's own id, which every action takes
@@ -109,85 +115,103 @@ pub struct PhoneDevice {
 }
 
 impl PhoneDevice {
+    /// KDE Connect's own id, which every action takes.
     pub fn id(&self) -> &str {
         &self.id
     }
 
+    /// The name the device goes by, as its owner set it.
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// "phone" (older daemons say "smartphone"), "tablet", "desktop", "laptop" or "tv".
     pub fn kind(&self) -> &str {
         &self.kind
     }
 
+    /// Where it and this computer stand on pairing.
     pub fn pair_state(&self) -> PairState {
         self.pair
     }
 
+    /// Paired with this computer, reachable or not.
     pub fn paired(&self) -> bool {
         self.pair == PairState::Paired
     }
 
+    /// On the same network right now; a paired phone stays listed when it isn't.
     pub fn reachable(&self) -> bool {
         self.reachable
     }
 
-    // paired and on the network, so its plugins can be used
+    /// Paired and on the network, so its plugins can be used.
     pub fn connected(&self) -> bool {
         self.paired() && self.reachable
     }
 
+    /// The code both screens show while pairing, empty otherwise.
     pub fn verification_key(&self) -> &str {
         &self.verification_key
     }
 
+    /// Its battery, while the battery plugin is loaded.
     pub fn battery(&self) -> Option<PhoneBattery> {
         self.battery
     }
 
+    /// Whether this KDE Connect plugin, like "kdeconnect_share", is loaded for it;
+    /// plugins load only while it's paired and reachable.
     pub fn has_plugin(&self, plugin: &str) -> bool {
         self.plugins.iter().any(|loaded| loaded == plugin)
     }
 
+    /// It can be rung, to find it.
     pub fn can_ring(&self) -> bool {
         self.has_plugin(RING_PLUGIN)
     }
 
+    /// Files and text can be sent to it.
     pub fn can_share(&self) -> bool {
         self.has_plugin(SHARE_PLUGIN)
     }
 
+    /// Its text messages can be read and sent from here.
     pub fn can_message(&self) -> bool {
         self.has_plugin(SMS_PLUGIN)
     }
 
-    // both halves, the pointer and the keyboard, are there
+    /// Both halves, the pointer and the keyboard, are there.
     pub fn can_remote_input(&self) -> bool {
         self.has_plugin(REMOTE_CONTROL_PLUGIN) && self.has_plugin(REMOTE_KEYBOARD_PLUGIN)
     }
 
+    /// It can run this computer's commands, once they're turned on.
     pub fn can_run_commands(&self) -> bool {
         self.has_plugin(RUN_COMMAND_PLUGIN)
     }
 
+    /// Whether this computer's clipboard goes to the phone by itself, only while the plugin is loaded.
     pub fn clipboard_auto_sync(&self) -> Option<bool> {
         self.clipboard_auto_sync
     }
 
+    /// The phone can run this computer's commands (lock, suspend, ...).
     pub fn run_commands(&self) -> bool {
         self.run_commands
     }
 
+    /// A text field is focused on the phone, so typing here lands in it.
     pub fn keyboard_ready(&self) -> bool {
         self.keyboard_ready
     }
 
-    // its network addresses, IPv4 first; empty when it isn't on this network
+    /// Its network addresses, IPv4 first; empty when it isn't on this network.
     pub fn addresses(&self) -> &[IpAddr] {
         &self.addresses
     }
 
+    /// The phone's notifications, only while the plugin is loaded.
     pub fn notifications(&self) -> &[PhoneNotification] {
         &self.notifications
     }

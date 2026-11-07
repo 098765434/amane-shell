@@ -44,22 +44,24 @@ fn call(method: &str, arguments: &[Argument]) -> Result<amane::Value, BusError> 
     Bus::session().try_call(BUS_NAME, PATH, INTERFACE, method, arguments)
 }
 
-/*
- * a program's own item in the bar:
- *
- * let item = StatusItem::register(ItemSpec::new("org.amane.drop", icon));
- * item.on_event(|event| ...);
- *
- * calls go out on amane's worker in order, and events come in on a thread of
- * their own, so a handler that touches a window writes a Service and lets
- * that redraw. When the bar restarts, every item is registered again
- */
+/// A program's own item in the bar:
+///
+/// ```ignore
+/// let item = StatusItem::register(ItemSpec::new("org.amane.drop", icon));
+/// item.on_event(|event| ...);
+/// ```
+///
+/// Calls go out on amane's worker in order, and events come in on a thread of
+/// their own, so a handler that touches a window writes a Service and lets
+/// that redraw. When the bar restarts, every item is registered again.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatusItem {
     id: String,
 }
 
 impl StatusItem {
+    /// Puts the item in the bar and keeps it there, registering it again whenever the
+    /// bar restarts; with no bar running yet, it shows once one starts.
     pub fn register(spec: ItemSpec) -> Self {
         listen();
 
@@ -75,11 +77,12 @@ impl StatusItem {
         Self { id }
     }
 
+    /// The id it was registered with.
     pub fn id(&self) -> &str {
         &self.id
     }
 
-    // the whole item again; its id stays the one it was registered with
+    /// The whole item again; its id stays the one it was registered with.
     pub fn update(&self, mut spec: ItemSpec) {
         spec.id = self.id.clone();
 
@@ -91,17 +94,20 @@ impl StatusItem {
         });
     }
 
-    // what it shows now, to change a part of it
+    /// What it shows now, to change a part of it.
     pub fn spec(&self) -> Option<ItemSpec> {
         client().items.get(&self.id).cloned()
     }
 
+    /// Calls `handler` on the client's listening thread for each of the item's events,
+    /// replacing any handler set before.
     pub fn on_event(&self, handler: impl Fn(ItemEvent) + Send + Sync + 'static) {
         client()
             .item_handlers
             .insert(self.id.clone(), Arc::new(handler));
     }
 
+    /// Takes the item out of the bar for good, and its handler with it.
     pub fn remove(self) {
         {
             let mut client = client();
@@ -119,16 +125,16 @@ impl StatusItem {
     }
 }
 
-/*
- * an activity in the bar, something going on now: started, updated as it goes,
- * and ended. An update that alerts briefly shows the expanded view
- */
+/// An activity in the bar, something going on now: started, updated as it goes,
+/// and ended. An update that alerts briefly shows the expanded view.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LiveActivity {
     local: u64,
 }
 
 impl LiveActivity {
+    /// Shows a new activity in the bar, started again whenever the bar restarts until
+    /// it's ended.
     pub fn start(content: ActivityContent) -> Self {
         listen();
 
@@ -157,6 +163,8 @@ impl LiveActivity {
         Self { local }
     }
 
+    /// Replaces what the activity shows; with `alert`, the bar briefly shows its
+    /// expanded view. Does nothing once it has ended.
     pub fn update(&self, content: ActivityContent, alert: bool) {
         {
             let mut client = client();
@@ -192,7 +200,7 @@ impl LiveActivity {
         });
     }
 
-    // what it shows now, to change a part of it; none once it's gone
+    /// What it shows now, to change a part of it; none once it's gone.
     pub fn content(&self) -> Option<ActivityContent> {
         let client = client();
 
@@ -201,13 +209,15 @@ impl LiveActivity {
         (!activity.ended).then(|| activity.content.clone())
     }
 
+    /// Calls `handler` on the client's listening thread for each of the activity's
+    /// events, replacing any handler set before.
     pub fn on_event(&self, handler: impl Fn(ActivityEvent) + Send + Sync + 'static) {
         if let Some(activity) = client().activities.get_mut(&self.local) {
             activity.on_event = Some(Arc::new(handler));
         }
     }
 
-    // its Dismissed event still comes, once it has left the bar
+    /// Its Dismissed event still comes, once it has left the bar.
     pub fn end(self, dismiss: Dismiss) {
         {
             let mut client = client();

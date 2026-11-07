@@ -8,6 +8,8 @@
 //! [`LiveActivity::start`], which register again whenever the bar restarts.
 //! See `docs/integration/writing-a-status-app.md`.
 
+#![deny(missing_docs)]
+
 mod client;
 mod protocol;
 

@@ -23,6 +23,8 @@ pub use discovery::{WirelessKind, WirelessService};
 // what `adb` is run as; the shell's PATH has it when android-tools is installed
 const ADB: &str = "adb";
 
+/// The phones adb has and the ones offering Wireless debugging on the network,
+/// followed while something reads it; nothing is filled in without adb installed.
 #[derive(Default, PartialEq)]
 pub struct Adb {
     installed: bool,
@@ -44,15 +46,20 @@ pub struct Adb {
 /// What adb is busy with.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AdbAction {
+    /// Pairing with a code.
     Pairing,
+    /// Connecting over Wireless debugging.
     Connecting,
+    /// Dropping a network connection.
     Disconnecting,
 }
 
 /// A pairing or connection under way, and with what: `host:port`, or a serial to disconnect.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AdbOperation {
+    /// What's being done.
     pub action: AdbAction,
+    /// The `host:port` paired or connected with, or the serial disconnected.
     pub target: String,
 }
 
@@ -80,28 +87,31 @@ impl Service for Adb {
 }
 
 impl Adb {
+    /// Whether `adb` runs from the shell's PATH.
     pub fn installed(&self) -> bool {
         self.installed
     }
 
+    /// Every phone adb has, over USB or the network, in any state.
     pub fn devices(&self) -> &[AdbDevice] {
         &self.devices
     }
 
-    // a phone adb can use now, at this network address
+    /// A phone adb can use now, at this network address.
     pub fn ready_at(&self, address: IpAddr) -> Option<&AdbDevice> {
         self.devices
             .iter()
             .find(|device| device.ready() && device.address() == Some(address))
     }
 
-    // phones adb can use now, over USB
+    /// Phones adb can use now, over USB.
     pub fn ready_usb(&self) -> impl Iterator<Item = &AdbDevice> {
         self.devices
             .iter()
             .filter(|device| device.ready() && device.address().is_none())
     }
 
+    /// What Wireless debugging announces on the network, while something looks.
     pub fn found(&self) -> &[WirelessService] {
         &self.found
     }
@@ -117,11 +127,9 @@ impl Adb {
         self.failure.as_ref()
     }
 
-    /*
-     * keeps a phone at `address` connected: whenever its Wireless debugging
-     * shows on the network and adb doesn't have it, it's connected; the port
-     * changes each time Wireless debugging is turned on, so it's found anew
-     */
+    /// Keeps a phone at `address` connected: whenever its Wireless debugging
+    /// shows on the network and adb doesn't have it, it's connected; the port
+    /// changes each time Wireless debugging is turned on, so it's found anew.
     pub fn want(address: IpAddr) {
         let mut adb = Self::write();
 
@@ -134,6 +142,8 @@ impl Adb {
         discovery::start();
     }
 
+    /// Stops keeping the phone at `address` connected; looking stops when no other
+    /// phone is wanted.
     pub fn unwant(address: IpAddr) {
         let mut adb = Self::write();
 
@@ -148,7 +158,7 @@ impl Adb {
         }
     }
 
-    // looks for phones offering pairing too, like while a pairing code is shown
+    /// Looks for phones offering pairing too, like while a pairing code is shown.
     pub fn look(on: bool) {
         if on {
             discovery::start();
@@ -157,7 +167,7 @@ impl Adb {
         }
     }
 
-    // pairs with the code Wireless debugging shows, or the one a QR code carried
+    /// Pairs with the code Wireless debugging shows, or the one a QR code carried.
     pub fn pair(address: IpAddr, port: u16, code: &str) {
         let target = host(address, port);
         let code = String::from(code);
@@ -174,6 +184,7 @@ impl Adb {
         });
     }
 
+    /// Connects to a phone's Wireless debugging at `address` and `port`, in the background.
     pub fn connect(address: IpAddr, port: u16) {
         let target = host(address, port);
 
@@ -182,6 +193,7 @@ impl Adb {
         });
     }
 
+    /// Drops the network connection to the phone with this serial, in the background.
     pub fn disconnect(serial: &str) {
         let serial = String::from(serial);
 
@@ -191,10 +203,8 @@ impl Adb {
     }
 }
 
-/*
- * runs adb for one phone (by serial) or for adb itself, waiting for it;
- * what it printed, or why it failed
- */
+/// Runs adb for one phone (by serial) or for adb itself, waiting for it;
+/// what it printed, or why it failed.
 pub fn run(serial: Option<&str>, arguments: &[&str]) -> Result<String, ServiceError> {
     let mut command = Command::new(ADB);
 
