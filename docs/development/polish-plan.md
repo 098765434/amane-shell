@@ -296,6 +296,26 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 
 **train-watch:** `mod log` is renamed to `run_log`, so `::log::` isn't needed.
 
+**Status (2026-11-07).** Done for the larger items (shell `27d2797` … the caption commit).
+- **Shell Settings:**
+  - `app::fill_once` replaces the six ways of filling a field from its setting, and fixes the fields that refilled themselves when emptied.
+  - Seven dropdowns are on `Dropdown::choice` (Phase 4b).
+  - The literal colours are accents.
+  - `note` is the kit's `caption`.
+- **Drop:** `grid.rs` is a folder (`mod`, `tiles`, `actions`, `prompt`, `shelf`); its prompt has one `dismiss()`; its copies of `with_alpha` and `fixed_width` are gone.
+- **Phone, Messages and Mirror:**
+  - `amane_phone::shared::{apps, screen}` own the two shared files.
+  - `same_phone_number` and `digits` are public, and Messages uses them.
+- **train-watch:** `run_log`.
+- **Not done yet:**
+  - Shader Lab's `ScrollArea` change, and its own interning (Phase 1 took the interning).
+  - `picker_row`, `content_width` and the one `parse_mode`.
+  - `kc::call` and the getters in `crates/phone`.
+  - `nixos/settings.rs` on serde derives.
+  - The status crate's `Payload` trait.
+  - Mirror's `app_window`.
+  - `PhoneKey::from_key`.
+
 ## Phase 7: Long functions and finish (M)
 
 **Split each function over 120 lines along what it does.** Today's list:
