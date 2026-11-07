@@ -4,6 +4,7 @@ use std::path::Path;
 
 use amane::{Center, Color, Column, Config, Rectangle, Row, Size, Text, Widget};
 use amane_kit::buttons::PushButton;
+use amane_kit::color::Accent;
 use amane_kit::form::FormRow;
 use amane_kit::icons::ICON_TUNE;
 use amane_kit::layout::{boxed, icon};
@@ -31,7 +32,7 @@ pub const HERO: f32 = 112.0;
 /// The app's icon, name and version.
 fn hero() -> Rectangle {
     card(
-        Color::from("#8e8e93"),
+        Accent::Gray.color(),
         ICON_TUNE,
         String::from("Shell Settings"),
         boxed(

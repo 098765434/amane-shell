@@ -181,7 +181,7 @@ fn settings_repo() -> String {
 
 /// The computer's card: its glyph, its name and the NixOS it runs.
 fn hero(version: Option<&str>) -> amane::Rectangle {
-    use amane::{Color, Text};
+    use amane::Text;
     use amane_kit::style;
     use amane_kit::tokens::Styled;
     let name = host_name();
@@ -194,7 +194,7 @@ fn hero(version: Option<&str>) -> amane::Rectangle {
         None => boxed(amane_kit::spinner::Spinner::new(14.0).build()),
     };
     card(
-        Color::from("#0091ff"),
+        Accent::Blue.color(),
         amane_kit::icons::ICON_COMPUTER,
         if name.is_empty() {
             String::from("This computer")

@@ -4,6 +4,7 @@
 //! Start/Stop for right now (systemd asks through polkit).
 
 use super::busy::Busy;
+use amane_kit::color::Accent;
 use amane_kit::service::ServiceExt as _;
 use std::collections::BTreeMap;
 use std::thread;
@@ -143,11 +144,11 @@ const DOT: f32 = 10.0;
 
 /// Green while running, red when it failed, grey otherwise.
 fn status_dot(state: Option<&UnitState>) -> amane::Rectangle {
-    use amane::{Color, Rectangle, Size};
+    use amane::{Rectangle, Size};
     let color = match state.map(|state| state.active.as_str()) {
-        Some("active") => Color::from("#30d158"),
-        Some("activating" | "deactivating") => Color::from("#ffd600"),
-        Some("failed") => Color::from("#ff4245"),
+        Some("active") => Accent::Green.color(),
+        Some("activating" | "deactivating") => Accent::Yellow.color(),
+        Some("failed") => Accent::Red.color(),
         _ => style::label_tertiary(),
     };
     frame(DOT, DOT)
