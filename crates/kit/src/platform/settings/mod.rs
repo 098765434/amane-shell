@@ -4,8 +4,6 @@
 //! through amane's `Config`. [`theme`](crate::theme) reads the appearance,
 //! between the `AMANE_*` overrides and what the system says.
 
-#![allow(missing_docs)]
-
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::RwLockReadGuard;

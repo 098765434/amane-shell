@@ -1,16 +1,16 @@
 //! `status-bar.json`: where the bar is, how it looks, its items, clock, activities and
 //! Quick Settings' controls.
 
-#![allow(missing_docs)]
-
 use super::*;
 
 /// Which edge of the screen the status bar runs along.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum BarPosition {
+    /// Along the bottom of the screen.
     #[default]
     Bottom,
+    /// Along the top.
     Top,
 }
 
@@ -34,8 +34,10 @@ pub enum BarStyle {
 #[derive(Serialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum AutoHide {
+    /// It always shows.
     #[default]
     Never,
+    /// It hides until the pointer meets its edge.
     Always,
     /// While no window is on the bar's monitor's workspace.
     Desktop,
@@ -44,6 +46,7 @@ pub enum AutoHide {
 }
 
 impl AutoHide {
+    /// Every choice, in the order Settings lists them.
     pub const ALL: [AutoHide; 4] = [Self::Never, Self::Always, Self::Desktop, Self::Fullscreen];
 }
 
@@ -83,6 +86,7 @@ pub enum BarSize {
 }
 
 impl BarSize {
+    /// Every size, smallest first.
     pub const ALL: [BarSize; 3] = [Self::Compact, Self::Regular, Self::Comfortable];
 
     /// How tall the bar is: `sys.size.panel.height` compact.
@@ -109,6 +113,7 @@ impl BarSize {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum ClockStyle {
+    /// The time in figures.
     #[default]
     Digital,
     /// A small drawn clock face, its time in the tooltip.
@@ -121,12 +126,15 @@ pub enum ClockStyle {
 pub enum ShowDate {
     /// Unless the bar is short of room.
     WhenSpace,
+    /// Always.
     Always,
+    /// Never.
     #[default]
     Never,
 }
 
 impl ShowDate {
+    /// Every choice, in the order Settings lists them.
     pub const ALL: [ShowDate; 3] = [Self::WhenSpace, Self::Always, Self::Never];
 }
 
@@ -144,6 +152,7 @@ pub enum DateFormat {
 }
 
 impl DateFormat {
+    /// Every format, longest first.
     pub const ALL: [DateFormat; 3] = [Self::Long, Self::Short, Self::Numeric];
 
     /// The `strftime` pattern for it.
@@ -161,13 +170,18 @@ impl DateFormat {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct StatusBar {
+    /// Which edge it's on.
     pub position: BarPosition,
+    /// What it's made of.
     pub style: BarStyle,
+    /// How tall it is.
     pub size: BarSize,
 
     /// 24-hour time, else 12-hour with AM and PM.
     pub clock_24h: bool,
+    /// Whether the clock shows seconds.
     pub clock_seconds: bool,
+    /// How the date reads.
     pub date_format: DateFormat,
 
     /// Whether the workspace pips show on the left.
@@ -194,7 +208,9 @@ pub struct StatusBar {
     /// as the dock can; hidden, it keeps no room from windows.
     pub auto_hide: AutoHide,
 
+    /// Figures or a clock face.
     pub clock_style: ClockStyle,
+    /// When the date shows.
     pub show_date: ShowDate,
     /// The day of the week before the time.
     pub show_weekday: bool,
@@ -536,6 +552,7 @@ impl StatusBar {
         !self.tray_denied.iter().any(|denied| denied == id)
     }
 
+    /// Lets the app with this tray item id show in the bar, or keeps it out.
     pub fn set_allowed(&mut self, id: &str, allowed: bool) {
         self.tray_denied.retain(|denied| denied != id);
 
@@ -551,6 +568,7 @@ impl StatusBar {
         !self.activities_denied.iter().any(|denied| denied == app)
     }
 
+    /// Lets the app by this name show activities, or keeps them out.
     pub fn set_activity_allowed(&mut self, app: &str, allowed: bool) {
         self.activities_denied.retain(|denied| denied != app);
 

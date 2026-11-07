@@ -1,7 +1,5 @@
 //! `displays.json`: what the shell does with the displays beyond niri's own config.
 
-#![allow(missing_docs)]
-
 use super::*;
 
 /// The displays: what the shell does to them, beside what niri's own

@@ -1,7 +1,5 @@
 //! `passwords.json`: the vault, which apps it fills, and the browsers it knows.
 
-#![allow(missing_docs)]
-
 use super::*;
 
 /// An app the user filled from a vault entry and chose to remember, known by what the
@@ -18,6 +16,7 @@ pub struct AppLink {
 
     /// The vault entry, by its id, and its name then, for the settings page.
     pub entry_id: String,
+    /// The vault entry's name.
     pub entry_name: String,
 }
 
@@ -46,6 +45,7 @@ pub struct Passwords {
     /// checks the website itself.
     pub excluded_apps: Vec<String>,
 
+    /// Apps tied to vault entries, for filling them.
     pub app_links: Vec<AppLink>,
 }
 

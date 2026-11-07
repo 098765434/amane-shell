@@ -7,8 +7,6 @@
 //! original's literal values, each marked `TODO(token)`, with a light twin
 //! chosen to read the same on a light window.
 
-#![allow(missing_docs)]
-
 use amane::Color;
 
 use crate::color::with_alpha;
@@ -100,10 +98,12 @@ pub fn label_primary() -> Color {
     material::label(Level::Primary)
 }
 
+/// `labelSecondary`: text that says less, like a subtitle.
 pub fn label_secondary() -> Color {
     material::label(Level::Secondary)
 }
 
+/// `labelTertiary`: text that says least, like a placeholder.
 pub fn label_tertiary() -> Color {
     material::label(Level::Tertiary)
 }
@@ -134,26 +134,32 @@ pub fn px(v: f32) -> f32 {
     v * sys::density::factor()
 }
 
+/// How tall a control is: 24 Figma pixels.
 pub fn control_height() -> f32 {
     px(24.0)
 }
 
+/// A field's or button's corner radius: 6.
 pub fn field_radius() -> f32 {
     px(6.0)
 }
 
+/// A settings group's corner radius.
 pub fn group_radius() -> f32 {
     px(12.0)
 }
 
+/// The least a settings row is tall.
 pub fn row_min_height() -> f32 {
     px(42.0)
 }
 
+/// A settings row's padding at its sides.
 pub fn row_pad_h() -> f32 {
     px(12.0)
 }
 
+/// How tall a menu row is.
 pub fn menu_item_height() -> f32 {
     px(24.0)
 }

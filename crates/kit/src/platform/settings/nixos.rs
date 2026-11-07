@@ -1,7 +1,5 @@
 //! `nixos.json`: the NixOS configuration the System pages manage.
 
-#![allow(missing_docs)]
-
 use super::*;
 
 /// Where the NixOS configuration Shell Settings manages lives: its flake

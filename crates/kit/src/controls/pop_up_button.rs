@@ -2,8 +2,6 @@
 //! chevrons. The original only reported the click; given items, this one
 //! opens the [menu](super::menu) under itself.
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 
 use amane::{Center, Radius, Rectangle, Size};
@@ -14,6 +12,7 @@ use crate::menu::{self, MenuItem};
 use crate::style::{self, px};
 use crate::symbol::{Symbol, symbol};
 
+/// A small round button with up-and-down chevrons that opens a menu under itself.
 pub struct PopUpButton {
     id: String,
     items: Vec<MenuItem>,
@@ -24,6 +23,7 @@ pub struct PopUpButton {
 }
 
 impl PopUpButton {
+    /// A button with no menu yet; `id` keys its hover and its menu.
     pub fn new(id: impl Into<String>) -> Self {
         Self {
             id: id.into(),
@@ -42,6 +42,7 @@ impl PopUpButton {
         self
     }
 
+    /// What picking a menu item does, by its index.
     pub fn on_select(mut self, select: impl Fn(usize) + 'static) -> Self {
         self.on_select = Rc::new(select);
         self
@@ -53,11 +54,13 @@ impl PopUpButton {
         self
     }
 
+    /// Shown at half strength, taking no clicks.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// The button.
     pub fn build(self) -> Rectangle {
         let side = px(18.0);
         let fg = style::label_primary();

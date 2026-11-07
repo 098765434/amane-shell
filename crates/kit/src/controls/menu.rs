@@ -13,8 +13,6 @@
 //! reports the pointer on the control and on the window, and the
 //! difference is the control's corner.
 
-#![allow(missing_docs)]
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -36,12 +34,16 @@ use crate::tokens::Styled;
 /// after it (Material Symbols).
 #[derive(Clone, Debug, PartialEq)]
 pub struct MenuItem {
+    /// What the row says.
     pub text: String,
+    /// A glyph before the text.
     pub icon: Option<char>,
+    /// A glyph at the row's end, like a chevron for a submenu.
     pub trailing: Option<char>,
 }
 
 impl MenuItem {
+    /// A row with `text` and no glyphs.
     pub fn new(text: impl Into<String>) -> Self {
         Self {
             text: text.into(),
@@ -50,11 +52,13 @@ impl MenuItem {
         }
     }
 
+    /// Puts `glyph` before the text.
     pub fn icon(mut self, glyph: char) -> Self {
         self.icon = Some(glyph);
         self
     }
 
+    /// Puts `glyph` at the row's end.
     pub fn trailing(mut self, glyph: char) -> Self {
         self.trailing = Some(glyph);
         self
@@ -90,7 +94,9 @@ struct Menu {
 /// window by namespace.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Parent {
+    /// Over a normal window, by its app id.
     Window(String),
+    /// Over a layer window, by its namespace.
     Layer(&'static str),
 }
 

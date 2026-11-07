@@ -1,21 +1,24 @@
 //! `dock.json`: the dock's size, magnification, pins and where it is.
 
-#![allow(missing_docs)]
-
 use super::*;
 
 /// How much the dock's icons grow under the pointer.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum Magnify {
+    /// Icons stay their size.
     Off,
+    /// A little.
     Small,
     #[default]
+    /// Somewhat.
     Medium,
+    /// A lot.
     Large,
 }
 
 impl Magnify {
+    /// Every choice, smallest first.
     pub const ALL: [Magnify; 4] = [Self::Off, Self::Small, Self::Medium, Self::Large];
 
     /// How much more than Medium it grows: 0 for none.
@@ -38,6 +41,7 @@ pub const DOCK_ICON_SIZES: (u8, u8) = (32, 64);
 pub struct Dock {
     /// The icons' resting size, within `DOCK_ICON_SIZES`.
     pub icon_size: u8,
+    /// How much an icon grows under the pointer.
     pub magnification: Magnify,
 
     /// Whether it slides away until the pointer meets the screen's edge.
@@ -52,6 +56,7 @@ pub struct Dock {
     /// Whether an app's name shows over its icon on hover.
     pub tooltips: bool,
 
+    /// Whether an app's icon bounces while it starts.
     pub animations: bool,
 }
 

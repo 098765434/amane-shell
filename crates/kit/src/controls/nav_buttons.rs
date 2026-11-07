@@ -3,8 +3,6 @@
 //! `controlFill` capsule with a soft shadow. A disabled side greys its
 //! chevron and takes no click.
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 
 use amane::{Center, Color, Radius, Rectangle, Row, Shadow, Size};
@@ -16,6 +14,7 @@ use crate::look::hover::{crossfade, hover_fill};
 use crate::style::{self, px};
 use crate::symbol::{Symbol, symbol};
 
+/// The back and forward pair of a window's toolbar, in one pill.
 pub struct NavButtons {
     id: String,
     back_enabled: bool,
@@ -25,6 +24,7 @@ pub struct NavButtons {
 }
 
 impl NavButtons {
+    /// Both halves disabled until said otherwise; `id` keys their hover.
     pub fn new(id: impl Into<String>) -> Self {
         Self {
             id: id.into(),
@@ -35,26 +35,31 @@ impl NavButtons {
         }
     }
 
+    /// Whether there's somewhere to go back to.
     pub fn back_enabled(mut self, enabled: bool) -> Self {
         self.back_enabled = enabled;
         self
     }
 
+    /// Whether there's somewhere to go forward to.
     pub fn forward_enabled(mut self, enabled: bool) -> Self {
         self.forward_enabled = enabled;
         self
     }
 
+    /// What the back half does.
     pub fn on_back(mut self, back: impl Fn() + 'static) -> Self {
         self.on_back = Rc::new(back);
         self
     }
 
+    /// What the forward half does.
     pub fn on_forward(mut self, forward: impl Fn() + 'static) -> Self {
         self.on_forward = Rc::new(forward);
         self
     }
 
+    /// The pill.
     pub fn build(self) -> Rectangle {
         let side = px(28.0);
         let button = |key: String, glyph: Symbol, enabled: bool, press: Rc<dyn Fn()>| {

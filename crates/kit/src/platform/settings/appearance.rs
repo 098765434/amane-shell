@@ -1,7 +1,5 @@
 //! `appearance.json`: light or dark, the accent, the glass, text size and motion.
 
-#![allow(missing_docs)]
-
 use super::*;
 
 /// The accents to pick from, the system colours in their dark
@@ -29,6 +27,7 @@ pub struct Appearance {
     /// The accent as `#rrggbb`, or none for the system's (else the tokens').
     pub accent: Option<String>,
 
+    /// How tightly the shell is laid out.
     pub density: Density,
 
     /// Multiplies every font size, kept within 0.5–3.

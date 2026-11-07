@@ -1,7 +1,5 @@
 //! `launcher.json`: the launcher's apps layout, quick keys and clipboard history.
 
-#![allow(missing_docs)]
-
 use super::*;
 
 /// How the launcher shows the apps in its Apps mode.
@@ -9,7 +7,9 @@ use super::*;
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum AppsLayout {
     #[default]
+    /// Icons in a grid.
     Grid,
+    /// Rows, one an app.
     List,
 }
 
@@ -18,7 +18,9 @@ pub enum AppsLayout {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 #[serde(crate = "amane::serde", default)]
 pub struct QuickKey {
+    /// The action, by its id.
     pub action: String,
+    /// What the action is called, as it was when the keys were set.
     pub title: String,
 }
 
@@ -27,6 +29,7 @@ pub struct QuickKey {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct ClipboardHistory {
+    /// Whether the launcher keeps what's copied.
     pub enabled: bool,
 
     /// How many copies it keeps, newest first.
@@ -65,6 +68,7 @@ impl Default for ClipboardHistory {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct Launcher {
+    /// How the launcher's apps are laid out.
     pub apps_layout: AppsLayout,
 
     /// The sources the search leaves out, by their ids, like "web".
@@ -73,6 +77,7 @@ pub struct Launcher {
     /// Keys typed in the launcher, like "nl", and the action each runs.
     pub quick_keys: BTreeMap<String, QuickKey>,
 
+    /// The clipboard history's settings.
     pub clipboard: ClipboardHistory,
 }
 

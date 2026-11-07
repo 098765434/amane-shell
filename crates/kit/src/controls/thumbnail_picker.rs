@@ -4,8 +4,6 @@
 //! anyone's widgets, drawn at the picker's size; they wrap to the width
 //! given.
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 
 use amane::{Center, Color, Column, Rectangle, Row, Size, Text, Widget};
@@ -76,11 +74,13 @@ impl ThumbnailPicker {
         self
     }
 
+    /// Shown at half strength, taking no clicks.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// What picking a picture does, by its index.
     pub fn on_select(mut self, select: impl Fn(usize) + 'static) -> Self {
         self.on_select = Some(Rc::new(select));
         self
@@ -107,6 +107,7 @@ impl ThumbnailPicker {
         rows as f32 * self.cell_height() + (rows - 1) as f32 * gap()
     }
 
+    /// The pictures and their labels, wrapped to the width.
     pub fn build(self) -> Column {
         let per_row = self.per_row();
         let (width, height) = self.size;

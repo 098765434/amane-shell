@@ -2,14 +2,13 @@
 //! or a sidebar page: 20 px (28 large), radius 6, an accent fill and a
 //! white Material Symbols glyph (or a drawn mark, such as Tailscale's).
 
-#![allow(missing_docs)]
-
 use amane::{Center, Color, Rectangle, Size};
 
 use crate::icons::{Glyph, glyph};
 use crate::layout::icon;
 use crate::style::{self, Accent, px};
 
+/// The glyph on a coloured tile that leads a row: 20 px, or 28 large, white on an accent.
 pub struct LeadingIcon {
     glyph: Glyph,
     fill: Color,
@@ -18,6 +17,7 @@ pub struct LeadingIcon {
 }
 
 impl LeadingIcon {
+    /// A tile of the default accent around `glyph`.
     pub fn new(glyph: impl Into<Glyph>) -> Self {
         Self {
             glyph: glyph.into(),
@@ -27,6 +27,7 @@ impl LeadingIcon {
         }
     }
 
+    /// The tile's colour, one of the system accents.
     pub fn accent(mut self, accent: Accent) -> Self {
         self.fill = accent.color();
         self
@@ -38,6 +39,7 @@ impl LeadingIcon {
         self
     }
 
+    /// The 28 px tile, for a row with a subtitle.
     pub fn large(mut self, large: bool) -> Self {
         self.large = large;
         self
@@ -49,6 +51,7 @@ impl LeadingIcon {
         self
     }
 
+    /// The tile.
     pub fn build(self) -> Rectangle {
         let side = self
             .side

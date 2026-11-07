@@ -2,8 +2,6 @@
 //! isn't there: tray apps, programs with their own item, and apps that showed an activity.
 //! Each file is read again only when it changed, and written only when something is new.
 
-#![allow(missing_docs)]
-
 use super::*;
 
 /// A file in the shell's cache folder.

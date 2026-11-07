@@ -1,7 +1,5 @@
 //! `desktop.json`: the desktop's widgets and how they look.
 
-#![allow(missing_docs)]
-
 use super::*;
 
 /// How the desktop's widgets look while windows are open over the desktop.
@@ -21,7 +19,9 @@ pub enum WidgetStyle {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct Desktop {
+    /// Whether the desktop shows its widgets.
     pub show_widgets: bool,
+    /// How the widgets look.
     pub widget_style: WidgetStyle,
 }
 

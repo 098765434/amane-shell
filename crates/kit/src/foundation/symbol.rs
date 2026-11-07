@@ -5,8 +5,6 @@
 //! draws on its quad pipeline (round-joined polylines), or plain
 //! rectangles for the round ones.
 
-#![allow(missing_docs)]
-
 use amane::{Canvas, Cap, Center, Color, Join, Path, Radius, Rectangle, Row, Shape, Size, Stack};
 
 use crate::layout::boxed;
@@ -14,14 +12,21 @@ use crate::layout::boxed;
 /// The symbols the controls use, named as in the bar's symbol set.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Symbol {
+    /// A chevron pointing down.
     ChevronDown,
+    /// A chevron pointing up.
     ChevronUp,
+    /// A chevron pointing left.
     ChevronLeft,
+    /// A chevron pointing right.
     ChevronRight,
     /// `chevron.up.chevron.down`: a pop-up button's mark.
     ChevronUpDown,
+    /// A check mark.
     Checkmark,
+    /// Three dots.
     Ellipsis,
+    /// An i in a circle.
     InfoCircle,
 }
 

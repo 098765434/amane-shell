@@ -1,15 +1,15 @@
 //! `amane-drop`'s `grids.json` and `sharing.json`: Drop's tiles and where it uploads.
 
-#![allow(missing_docs)]
-
 use super::*;
 
 /// What a folder tile does with what's let go on it.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[serde(crate = "amane::serde", rename_all = "lowercase")]
 pub enum FolderMode {
+    /// Copied there.
     #[default]
     Copy,
+    /// Moved there.
     Move,
 }
 
@@ -20,40 +20,53 @@ pub enum FolderMode {
 pub enum DropTile {
     /// Copies (or moves) what's let go into the folder; a click opens it.
     Folder {
+        /// The folder.
         path: PathBuf,
+        /// Whether files are copied or moved there.
         #[serde(default)]
         mode: FolderMode,
     },
     /// Opens what's let go with the app, by its desktop file id.
-    App { id: String },
+    App {
+        /// The app's desktop file id.
+        id: String,
+    },
     /// Copies into a folder chosen once.
     CopyTo {
+        /// The folder, once chosen.
         #[serde(default)]
         folder: Option<PathBuf>,
     },
     /// Moves into a folder chosen once.
     MoveTo {
+        /// The folder, once chosen.
         #[serde(default)]
         folder: Option<PathBuf>,
     },
     /// Asks for a name, then moves the file there.
     RenameMove {
+        /// The folder, once chosen.
         #[serde(default)]
         folder: Option<PathBuf>,
     },
     /// Saves text let go as a file there.
     SaveText {
+        /// The folder, once chosen.
         #[serde(default)]
         folder: Option<PathBuf>,
     },
     /// Sends what's let go to a phone over KDE Connect: the one paired, or
     /// the one asked for when there are more.
     Phone {
+        /// The phone, by its KDE Connect id, when one was asked for.
         #[serde(default)]
         device: Option<String>,
     },
     /// Uploads what's let go and copies its link.
-    Upload { to: UploadTo },
+    Upload {
+        /// Where it uploads to.
+        to: UploadTo,
+    },
 }
 
 /// Where an upload tile sends files.
@@ -63,12 +76,16 @@ pub enum UploadTo {
     /// 0x0.st, the null pointer: no account, kept a while, then gone.
     #[serde(rename = "0x0")]
     ZeroX0,
+    /// Imgur, anonymously.
     Imgur,
+    /// The SFTP server in the sharing settings.
     Sftp,
+    /// The S3 bucket in the sharing settings.
     S3,
 }
 
 impl UploadTo {
+    /// Every place to upload to.
     pub const ALL: [Self; 4] = [Self::ZeroX0, Self::Imgur, Self::Sftp, Self::S3];
 
     /// Its name on a tile and in Settings.
@@ -86,7 +103,9 @@ impl UploadTo {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct DropGrid {
+    /// Its name, on its Drop Bar.
     pub name: String,
+    /// Its tiles, in order.
     pub tiles: Vec<DropTile>,
 }
 
@@ -123,6 +142,7 @@ impl Default for DropGrid {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct DropGrids {
+    /// The grids, in order.
     pub grids: Vec<DropGrid>,
     /// Tiles a row.
     pub columns: u8,
@@ -164,8 +184,11 @@ pub fn change_drop_grids(edit: impl FnOnce(&mut DropGrids)) {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct SftpAccount {
+    /// The server.
     pub host: String,
+    /// Its SSH port: 22 unless set.
     pub port: u16,
+    /// Who to log in as.
     pub user: String,
     /// The folder files go in, on the server.
     pub folder: String,
@@ -199,9 +222,11 @@ pub struct S3Account {
     pub endpoint: String,
     /// `us-east-1` when none; R2's is `auto`.
     pub region: String,
+    /// The bucket.
     pub bucket: String,
     /// Put before each file's name: a folder in the bucket.
     pub prefix: String,
+    /// The access key's id.
     pub key_id: String,
     /// Where the bucket can be read on the web, for links; none, and the
     /// bucket's own address is given.
@@ -215,7 +240,9 @@ pub struct S3Account {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct DropSharing {
+    /// The SFTP server.
     pub sftp: SftpAccount,
+    /// The S3 bucket.
     pub s3: S3Account,
     /// Imgur's client id for an app registered there (anonymous uploads).
     pub imgur_client_id: String,

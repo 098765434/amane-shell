@@ -10,8 +10,6 @@
 //! view redraws). Values are clamped to `from..=to` and rounded to the
 //! step.
 
-#![allow(missing_docs)]
-
 use std::rc::Rc;
 use std::time::Instant;
 
@@ -63,6 +61,8 @@ fn decimals(step: f64) -> usize {
     }
 }
 
+/// A number field with up and down halves: a click steps, holding repeats, the wheel steps,
+/// and typing a number and Enter sets it. The change is reported once the press ends.
 pub struct Stepper {
     id: &'static str,
     value: f64,
@@ -75,6 +75,7 @@ pub struct Stepper {
 }
 
 impl Stepper {
+    /// A stepper showing `value`; `id` keys its field and its hold.
     pub fn new(id: &'static str, value: f64) -> Self {
         Self {
             id,
@@ -88,32 +89,38 @@ impl Stepper {
         }
     }
 
+    /// The lowest and highest it goes.
     pub fn range(mut self, from: f64, to: f64) -> Self {
         self.from = from;
         self.to = to;
         self
     }
 
+    /// How much one step changes it; 1 unless set.
     pub fn step(mut self, step: f64) -> Self {
         self.step = step;
         self
     }
 
+    /// How wide the field is.
     pub fn width(mut self, width: f32) -> Self {
         self.width = width;
         self
     }
 
+    /// Shown at half strength, taking no input.
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
         self
     }
 
+    /// What a new value does.
     pub fn on_change(mut self, change: impl Fn(f64) + 'static) -> Self {
         self.on_change = Rc::new(change);
         self
     }
 
+    /// The field and its halves.
     pub fn build(self) -> Rectangle {
         let Self {
             id,
