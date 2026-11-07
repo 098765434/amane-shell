@@ -43,6 +43,38 @@ The rules, each a test in `surfaces/mod.rs`:
   functions move to a child module (`use super::*;` sees the parent's private items), the types
   and state stay.
 
+## What a surface builds with
+
+Before writing a helper, look for it here; the hygiene test (`xtask/src/hygiene.rs`) fails on some
+of them written again.
+
+| Need | Use |
+|---|---|
+| a box of a size, room to leave | `layout::frame(width, height)` (a `Rectangle` starts transparent) |
+| a rectangle on the surface, for hit tests and frost | `amane_kit::area::Area` |
+| opening and closing | `reveal::Reveal` for the motion, `reveal::Swell` for the scale, opacity and frost it draws at, `reveal::showing` for whether to draw at all, `panel::empty` while there's nothing |
+| motion timed to something outside the kit | `motion::eased` (still for reduced motion) |
+| a click | `buttons::Actions::press(f)` |
+| a choice among values | `Dropdown::choice(id, [(label, value)], now, pick)` |
+| a field showing its setting | `app::fill_once(id, value)` |
+| a sheet things are added from | `chrome::catalog::Sheet` (Customize, the widget gallery) |
+| edit mode's marks on a grid item | `chrome::edit_marks` |
+| a row that opens more | `list::chevron()` |
+| a listener keeping what it read | `service::ServiceExt::replace(fresh)`; a listener reads its own service with `peek()`, never `read()` |
+| times, sizes, counts in words | `format::{ago, span, span_exact, bytes, count}` |
+| folders, whole files, now, locks, flags, file types, `%` escapes, `'static` ids | `amane_base::{paths, fs, time, sync, args, mime, percent, intern}`, through the kit |
+
+## Tables
+
+A fact written in several places is written once, as a table the rest is derived from:
+
+- **Quick Settings' controls:** `quick_settings/controls.rs` `SPECS`, one `Spec` per control (name,
+  title, sizes, how it's drawn, whether this machine has it), in `ControlId`'s order.
+- **Shell Settings' pages:** `apps/settings/src/pages.rs` `SIDEBAR` (the `--page` names, titles,
+  search words, bodies, sub-pages, toolbar buttons).
+- **Settings files:** `settings_file!` in `crates/kit/src/platform/settings/mod.rs`.
+- **The IPC's keywords:** `words!` in `shell_ipc.rs`, and `handlers![…]` in `ipc.rs`.
+
 ## State, settings and logs
 
 - **Settings** are the kit's `Config<T>` files in `~/.config/amane-shell/`, which Shell Settings
