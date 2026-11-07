@@ -70,7 +70,7 @@ pub(crate) use indicators::{Indicator, Item};
 use crate::chrome::bar::{edge, height};
 use crate::chrome::per_output::PerOutput;
 pub use activities::popup as activity_popup;
-pub use indicators::{ipc, migrate};
+pub use indicators::run;
 pub use size::metrics;
 pub use workspace_shape::switch_position;
 

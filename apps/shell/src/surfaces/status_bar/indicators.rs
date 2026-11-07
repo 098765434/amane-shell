@@ -4,22 +4,14 @@
 //! so are the privacy icons, the icons for what's switched on, and the
 //! notification bell. Kept as the hidden ones' names in
 //! `~/.config/amane-shell/status-bar.json` (`StatusBar::hidden`), which the
-//! bar follows live; they were once a state file, read in once.
+//! bar follows live.
 
+use amane_kit::shell_ipc::{StatusBar as Command, Switch};
 use std::sync::{Mutex, PoisonError};
 
-use amane::Config;
-use amane_kit::settings::{StatusBar, change_status_bar, status_bar};
+use amane_kit::settings::{change_status_bar, status_bar};
 
-use crate::services::state_file;
 use crate::services::status_apps::{self, AppItem};
-
-/// Where they were kept before the settings file, read in once when there
-/// is no settings file yet.
-const STATE_FILE: &str = "status-bar";
-
-/// Where they were kept while the bar was the taskbar.
-const OLD_FILE: &str = "taskbar";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Indicator {
@@ -259,110 +251,36 @@ pub fn reset_order() {
     change_status_bar(|now| now.order.clear());
 }
 
-/// Brings the hidden icons over from the old state file, once: when there
-/// is no settings file yet. Called at start, before any window. Now
-/// Playing hidden before it became an activity is kept out as one.
-pub fn migrate() {
-    if status_bar().hidden.iter().any(|name| name == "media") {
-        change_status_bar(|now| {
-            now.hidden.retain(|name| name != "media");
-            now.set_activity_allowed(super::activities::NOW_PLAYING, false);
-        });
-    }
-
-    if Config::<StatusBar>::path().exists() {
-        return;
-    }
-
-    let hidden = load(|file| std::fs::read_to_string(state_file(file)).ok());
-
-    if !hidden.is_empty() {
-        change_status_bar(|now| now.hidden = hidden);
-    }
-}
-
-/// The hidden ones' names, from the state file or else the old one.
-fn load(read: impl Fn(&str) -> Option<String>) -> Vec<String> {
-    read(STATE_FILE)
-        .or_else(|| read(OLD_FILE))
-        .map(|text| parse(&text))
-        .unwrap_or_default()
-}
-
-fn parse(text: &str) -> Vec<String> {
-    text.lines()
-        .filter_map(|line| Indicator::named(line.trim()))
-        .map(|indicator| String::from(indicator.name()))
-        .collect()
-}
-
 /// `amane-shell` IPC: `status-bar (show | hide | toggle) <indicator>`,
-/// `status-bar move <item> <index>` and `status-bar reset-order`, also
-/// still answering to `taskbar`.
-pub fn ipc(args: &[String]) -> String {
-    let names = Indicator::ALL.map(Indicator::name).join(" | ");
-
-    let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    let (action, name) = match args.as_slice() {
-        ["move", name, index] => {
-            let Some(item) = Item::named(name) else {
+/// `status-bar move <item> <index>`, `status-bar reset-order`, and the
+/// tray's, programs' items' and activities' own.
+pub fn run(command: Command) -> String {
+    let (name, shown) = match command {
+        Command::Move { item: name, index } => {
+            let Some(item) = Item::named(&name) else {
                 let items = Item::ALL.map(Item::name).join(" | ");
                 return format!("unknown item {name}; one of {items}");
-            };
-            let Ok(index) = index.parse::<usize>() else {
-                return format!("not an index: {index}");
             };
             move_item(item, index);
             return String::from("ok");
         }
-        ["tray", rest @ ..] => return super::tray::ipc(rest),
-        ["apps", rest @ ..] => return super::apps::ipc(rest),
-        ["activities", rest @ ..] => return super::activities::ipc(rest),
-        ["reset-order"] => {
+        Command::Tray(listed) => return super::tray::run(listed),
+        Command::Apps(listed) => return super::apps::run(listed),
+        Command::Activities(activities) => return super::activities::run(activities),
+        Command::ResetOrder => {
             reset_order();
             return String::from("ok");
         }
-        [action @ ("show" | "hide" | "toggle"), name] => (*action, *name),
-        _ => {
-            return format!(
-                "usage: status-bar (show | hide | toggle) ({names}) | move <item> <index> | reset-order | tray … | apps … | activities …"
-            );
-        }
+        Command::Indicator { indicator, shown } => (indicator, shown),
     };
-    let Some(indicator) = Indicator::named(name) else {
+    let Some(indicator) = Indicator::named(&name) else {
+        let names = Indicator::ALL.map(Indicator::name).join(" | ");
         return format!("unknown indicator {name}; one of {names}");
     };
-    indicator.set_shown(match action {
-        "show" => true,
-        "hide" => false,
-        _ => !indicator.shown(),
+    indicator.set_shown(match shown {
+        Switch::On => true,
+        Switch::Off => false,
+        Switch::Toggle => !indicator.shown(),
     });
     String::from("ok")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_state_file_is_read_ignoring_what_it_doesnt_know() {
-        assert_eq!(parse("wifi\n network \nbattery\n"), ["network", "battery"]);
-    }
-
-    #[test]
-    fn the_old_file_is_read_until_there_is_a_new_one() {
-        let old = |file: &str| (file == OLD_FILE).then(|| String::from("battery\n"));
-        assert_eq!(load(old), ["battery"]);
-
-        let both = |file: &str| {
-            Some(String::from(if file == STATE_FILE {
-                "volume\n"
-            } else {
-                "battery\n"
-            }))
-        };
-        assert_eq!(load(both), ["volume"]);
-
-        assert!(load(|_| None).is_empty());
-    }
 }

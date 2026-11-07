@@ -463,7 +463,7 @@ pub(super) fn settings_link(
     }
     page.footer(label, move || {
         close();
-        amane::spawn(program);
+        crate::services::launch(&[program]);
     })
 }
 

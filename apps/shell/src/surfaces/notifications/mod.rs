@@ -27,17 +27,16 @@ pub use toasts::{TOAST_NS, TOASTS};
 
 use crate::chrome::panel::{Panel, toggle};
 use crate::services::do_not_disturb::{DoNotDisturb, Until};
+use amane_kit::shell_ipc::{Notifications as Command, Switch};
 
 /// `amane-shell` IPC: `notifications [toggle | clear | dnd [on|off|toggle]]`.
-pub fn ipc(args: &[String]) -> String {
-    let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    match args.as_slice() {
-        [] | ["toggle"] => toggle(Panel::Notifications),
-        ["clear"] => Notifications::clear(),
-        ["dnd"] | ["dnd", "toggle"] => DoNotDisturb::toggle(),
-        ["dnd", "on"] => DoNotDisturb::set(Some(Until::Forever)),
-        ["dnd", "off"] => DoNotDisturb::set(None),
-        _ => return String::from("usage: notifications [toggle | clear | dnd [on|off|toggle]]"),
+pub fn run(command: Command) -> String {
+    match command {
+        Command::Toggle => toggle(Panel::Notifications),
+        Command::Clear => Notifications::clear(),
+        Command::DoNotDisturb(Switch::Toggle) => DoNotDisturb::toggle(),
+        Command::DoNotDisturb(Switch::On) => DoNotDisturb::set(Some(Until::Forever)),
+        Command::DoNotDisturb(Switch::Off) => DoNotDisturb::set(None),
     }
     // each writes its own service, and toggling the panel marks the panels
     String::from("ok")

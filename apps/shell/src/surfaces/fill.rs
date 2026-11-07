@@ -16,6 +16,7 @@
 //!
 //! [`identity`]: crate::services::vault::identity
 
+use amane_kit::shell_ipc::Passwords as Command;
 use std::sync::Mutex;
 
 use amane::{
@@ -101,11 +102,9 @@ fn with<T>(edit: impl FnOnce(&mut State) -> T) -> T {
 /// - `passwords configure <server> <email> [forget]`, `passwords lock-timeout <seconds>`.
 ///
 /// Unlocking from here is still the shell's own rbw command, so its dialog may ask.
-pub fn ipc(args: &[String]) -> String {
-    let args: Vec<&str> = args.iter().map(String::as_str).collect();
-
-    match args.as_slice() {
-        ["suggest"] => {
+pub fn run(command: Command) -> String {
+    match command {
+        Command::Suggest => {
             let generation = FocusedField::read().generation();
 
             with(|state| {
@@ -116,34 +115,26 @@ pub fn ipc(args: &[String]) -> String {
 
             Vault::look_now();
         }
-        ["status"] => return status(),
-        ["unlock"] => Vault::unlock(),
-        ["sign-in"] => Vault::sign_in(),
-        ["register"] => Vault::register(),
-        ["sync"] => Vault::sync(),
-        ["lock"] => Vault::lock(),
-        ["configure", server, email, rest @ ..] => {
-            if !valid_server(server) || !valid_email(email) {
+        Command::Status => return status(),
+        Command::Unlock => Vault::unlock(),
+        Command::SignIn => Vault::sign_in(),
+        Command::Register => Vault::register(),
+        Command::Sync => Vault::sync(),
+        Command::Lock => Vault::lock(),
+        Command::Configure {
+            server,
+            email,
+            forget,
+        } => {
+            if !valid_server(&server) || !valid_email(&email) {
                 return String::from(
                     "error: the server must be https:// (or http://localhost), and the email an address",
                 );
             }
 
-            Vault::configure(
-                server.to_string(),
-                email.to_string(),
-                rest.first() == Some(&"forget"),
-            );
+            Vault::configure(server, email, forget);
         }
-        ["lock-timeout", seconds] => match seconds.parse() {
-            Ok(seconds) => Vault::set_lock_timeout(seconds),
-            Err(_) => return String::from("error: seconds"),
-        },
-        _ => {
-            return String::from(
-                "usage: passwords [suggest | status | unlock | sign-in | register | sync | lock | configure <server> <email> [forget] | lock-timeout <seconds>]",
-            );
-        }
+        Command::LockTimeout(seconds) => Vault::set_lock_timeout(seconds),
     }
 
     String::from("ok")

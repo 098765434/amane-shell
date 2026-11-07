@@ -10,6 +10,7 @@
 //! three buttons. An update that alerts brings that view up for a few
 //! seconds, but not under Do Not Disturb.
 
+use amane_kit::shell_ipc::Activities;
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -812,9 +813,9 @@ fn activity_button(activity: &Shown, button: &ActivityButton, width: f32) -> Rec
 /// `status-bar activities list | end <key>`: each going on, most relevant
 /// first, as `key<TAB>app<TAB>title`; ending one is the user's, as an
 /// activity can be dismissed.
-pub fn ipc(args: &[&str]) -> String {
-    match args {
-        ["list"] => gather()
+pub fn run(command: Activities) -> String {
+    match command {
+        Activities::List => gather()
             .iter()
             .map(|activity| {
                 format!(
@@ -824,7 +825,7 @@ pub fn ipc(args: &[&str]) -> String {
             })
             .collect::<Vec<_>>()
             .join("\n"),
-        ["end", key] => match key.strip_prefix("bus.").and_then(|h| h.parse().ok()) {
+        Activities::End(key) => match key.strip_prefix("bus.").and_then(|h| h.parse().ok()) {
             Some(handle) => {
                 registry::dismiss(handle);
                 String::from("ok")
@@ -832,16 +833,15 @@ pub fn ipc(args: &[&str]) -> String {
             None => format!("only other programs' activities end here, as bus.<handle>; not {key}"),
         },
         // what a click on one of its buttons does
-        ["press", key, button] => match key.strip_prefix("bus.").and_then(|h| h.parse().ok()) {
-            Some(handle) => {
-                registry::act(handle, button);
-                String::from("ok")
+        Activities::Press { key, button } => {
+            match key.strip_prefix("bus.").and_then(|h| h.parse().ok()) {
+                Some(handle) => {
+                    registry::act(handle, &button);
+                    String::from("ok")
+                }
+                None => format!("only other programs' activities are pressed here; not {key}"),
             }
-            None => format!("only other programs' activities are pressed here; not {key}"),
-        },
-        _ => String::from(
-            "usage: status-bar activities (list | end bus.<handle> | press bus.<handle> <button>)",
-        ),
+        }
     }
 }
 

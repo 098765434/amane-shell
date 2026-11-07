@@ -5,6 +5,7 @@
 //! tell it at once, so it can open a window to drop them on. They're kept
 //! in the bar's order, dragged and hidden like its own.
 
+use amane_kit::shell_ipc::Listed;
 use std::cell::RefCell;
 use std::collections::HashSet;
 
@@ -227,10 +228,10 @@ fn menu_item(id: &str, entry: &MenuEntry) -> MenuItem {
     row.on_select(move || status_apps::send(&item_id, ItemEvent::MenuSelected(entry_id.clone())))
 }
 
-/// `status-bar apps list | activate <id> | menu <id>`.
-pub fn ipc(args: &[&str]) -> String {
-    match args {
-        ["list"] => status_apps::items()
+/// `status-bar apps list | activate <id>`.
+pub fn run(command: Listed) -> String {
+    match command {
+        Listed::List => status_apps::items()
             .iter()
             .map(|app| {
                 let shown = if amane_kit::settings::status_bar().shows(&app.name()) {
@@ -247,17 +248,17 @@ pub fn ipc(args: &[&str]) -> String {
             })
             .collect::<Vec<_>>()
             .join("\n"),
-        ["activate", id] => match status_apps::item(id) {
+        Listed::Activate(id) => match status_apps::item(&id) {
             Some(_) => {
                 let item = Item::named(&format!("app:{id}"));
                 let output = amane::pointer_monitor()
                     .or_else(|| item.and_then(drag::output_with))
                     .unwrap_or_default();
-                activated(id, ItemButton::Left, item.map_or("", Item::name), &output);
+                activated(&id, ItemButton::Left, item.map_or("", Item::name), &output);
                 String::from("ok")
             }
             None => format!("no item {id}"),
         },
-        _ => String::from("usage: status-bar apps (list | activate <id>)"),
+        Listed::Menu(id) => format!("{id}: a program's item has no menu to open from here"),
     }
 }

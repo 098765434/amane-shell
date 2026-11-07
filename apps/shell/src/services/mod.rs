@@ -71,3 +71,11 @@ mod wake;
 pub use amane_kit::process::{Latest, installed, run, run_now};
 pub use state::state_file;
 pub use wake::Wake;
+
+/// Starts `argv` (a program and its arguments, as they are) without waiting, in a scope of
+/// its own; one that can't start is logged.
+pub fn launch<S: AsRef<str>>(argv: &[S]) {
+    if let Err(error) = amane::Launch::argv(argv).spawn() {
+        log::warn!("{error}");
+    }
+}

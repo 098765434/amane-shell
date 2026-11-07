@@ -79,23 +79,34 @@ fn camera() -> Option<Facing> {
     })
 }
 
+/// Runs the webcam with the `facing` camera of `device`, or stops it.
 pub fn set_camera(device: &str, facing: Option<Facing>) {
-    let stop = format!("systemctl --user stop {CAMERA_UNIT}.service");
-    let command = match facing {
-        None => stop,
-        Some(facing) => {
+    let device = device.to_string();
+    std::thread::spawn(move || {
+        // the one running stops first, so the new one can have the camera
+        let unit = format!("{CAMERA_UNIT}.service");
+        // a failure is logged, and one that was never running is stopped already
+        let _ = crate::services::run_now("systemctl", &["--user".into(), "stop".into(), unit]);
+        if let Some(facing) = facing {
             let which = if facing == Facing::Back {
                 "back"
             } else {
                 "front"
             };
-            format!(
-                "{stop}; systemd-run --user --unit={CAMERA_UNIT} --collect --quiet \
-                 {MIRROR_APP} --camera {which} --device '{device}'"
-            )
+            crate::services::launch(&[
+                "systemd-run",
+                "--user",
+                &format!("--unit={CAMERA_UNIT}"),
+                "--collect",
+                "--quiet",
+                MIRROR_APP,
+                "--camera",
+                which,
+                "--device",
+                &device,
+            ]);
         }
-    };
-    amane::spawn(&command);
+    });
     // shown at once; the next reading confirms it
     Webcam::write().running = facing;
 }

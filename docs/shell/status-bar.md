@@ -225,13 +225,11 @@ Every piece is rectangles, glyphs and arcs (the quad pipeline): `AMANE_FRAMES=1`
 
 Volume, Bluetooth, network, Tailscale, Keep Awake, the phone and battery are optional, and so are four
 groups: `activities` (the activities), `privacy` (camera, microphone), `status-icons` (Night
-Light, VPN, power mode, Airplane Mode) and `notifications` (the bell or the moon). A `media`
-hidden before Now Playing became an activity is kept out as one (`indicators::migrate`). Each Quick Settings page that has
+Light, VPN, power mode, Airplane Mode) and `notifications` (the bell or the moon). Each Quick Settings page that has
 one ends in a **Show in Status Bar** switch; Shell Settings' Status Bar page has a switch for
 each, and the `status-bar` IPC command does the same ([ipc.md](../integration/ipc.md#status-bar)).
 The hidden ones' names are `hidden` in `status-bar.json` (`indicators.rs`), which the bar follows
-live. At start, a shell with no `status-bar.json` yet brings them over once from the state file
-they were kept in before (`$XDG_STATE_HOME/amane-shell/status-bar`, else the older `taskbar`).
+live.
 
 ## Settings
 

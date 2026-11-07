@@ -2,17 +2,15 @@
 //! are open over them. Each control changes `desktop.json`, which the
 //! shell follows at once.
 
-use amane::{Column, ipc_call};
+use amane::Column;
 use amane_kit::buttons::PushButton;
 use amane_kit::form::FormRow;
 use amane_kit::settings::{WidgetStyle, change_desktop, desktop};
+use amane_kit::shell_ipc::{ShellCommand, Widgets};
 use amane_kit::style;
 use amane_kit::thumbnail_picker::ThumbnailPicker;
 
 use crate::{group, groups, previews, switch_row};
-
-/// The shell's IPC name.
-const SHELL: &str = "amane";
 
 pub fn page() -> Column {
     let (show, style) = {
@@ -42,11 +40,7 @@ pub fn page() -> Column {
 
     let edit = PushButton::new("settings.widgets.edit", "Edit Widgets…")
         .disabled(!show)
-        .on_press(|| {
-            std::thread::spawn(|| {
-                let _ = ipc_call(SHELL, "widgets", &[String::from("edit")]);
-            });
-        })
+        .on_press(|| ShellCommand::Widgets(Widgets::Edit(None)).tell())
         .build();
 
     groups(vec![

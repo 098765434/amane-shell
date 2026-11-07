@@ -11,19 +11,18 @@ use std::fs;
 use std::path::PathBuf;
 use std::thread;
 
-use amane::{Center, Row, Service, TextInput, ipc_call, watch_file};
+use amane::{Center, Row, Service, TextInput, watch_file};
 use amane_kit::app::{field_box, text_field};
 use amane_kit::buttons::PushButton;
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::{FormRow, Group, SliderRow};
 use amane_kit::layout::boxed;
+use amane_kit::shell_ipc::{NightLight as Ask, ShellCommand};
 use amane_kit::slider::Slider;
 use amane_kit::style;
 use amane_kit::tokens::sys;
 
 use crate::{group, switch_row};
-
-const SHELL: &str = "amane";
 
 /// The slider's ends, as the shell clamps them.
 const WARMEST: u32 = 2500;
@@ -94,7 +93,7 @@ fn state_file() -> PathBuf {
 }
 
 fn ask() -> Option<Light> {
-    let answer = ipc_call(SHELL, "night-light", &[String::from("state")]).ok()?;
+    let answer = ShellCommand::NightLight(Ask::State).send().ok()?;
     parse(&answer)
 }
 
@@ -120,10 +119,11 @@ fn parse(text: &str) -> Option<Light> {
     })
 }
 
-/// Asks the shell to run `args`, off the UI thread, then reads it again.
-fn tell(args: Vec<String>) {
+/// Asks the shell for `ask`, off the UI thread, then reads it again.
+fn tell(asked: Ask) {
     thread::spawn(move || {
-        let error = ipc_call(SHELL, "night-light", &args)
+        let error = ShellCommand::NightLight(asked)
+            .send()
             .err()
             .map(|why| format!("The shell didn't take it: {why}"));
         let light = ask();
@@ -243,7 +243,7 @@ pub fn section() -> Group {
             .dimmed(!on)
             .on_value_change(|value| {
                 let kelvin = COOLEST - (COOLEST - WARMEST) * u32::from(value) / 100;
-                tell(vec![String::from("temperature"), kelvin.to_string()]);
+                tell(Ask::Temperature(kelvin));
             })
             .build()
     })
@@ -265,17 +265,16 @@ pub fn section() -> Group {
     .width(200.0)
     .on_select(move |index| match index {
         _ if index == at => {}
-        0 => tell(words(&["schedule", "manual"])),
+        0 => tell(Ask::Schedule(words(&["manual"]))),
         1 => {
             let (lat, lon) = zone_place().unwrap_or((0.0, 0.0));
-            tell(words(&[
-                "schedule",
+            tell(Ask::Schedule(words(&[
                 "sun",
                 &lat.to_string(),
                 &lon.to_string(),
-            ]));
+            ])));
         }
-        _ => tell(words(&["schedule", "hours", "21:00", "07:00"])),
+        _ => tell(Ask::Schedule(words(&["hours", "21:00", "07:00"]))),
     })
     .build();
 
@@ -285,7 +284,7 @@ pub fn section() -> Group {
             "settings.displays.night.on",
             "Warm the screen's colors",
             light.on,
-            |on| tell(words(&[if on { "on" } else { "off" }])),
+            |on| tell(if on { Ask::On } else { Ask::Off }),
         ))
         .slider(temperature)
         .row(FormRow::new("settings.displays.night.schedule-row", "Schedule").trailing(schedule));
@@ -301,7 +300,7 @@ pub fn section() -> Group {
                         |lat, lon| match place(lat, lon) {
                             Some((lat, lon)) => {
                                 refuse(None);
-                                tell(words(&["schedule", "sun", &lat.to_string(), &lon.to_string()]));
+                                tell(Ask::Schedule(words(&["sun", &lat.to_string(), &lon.to_string()])));
                             }
                             None => refuse(Some(String::from(
                                 "A latitude is between -90 and 90, a longitude between -180 and 180.",
@@ -322,7 +321,7 @@ pub fn section() -> Group {
                         match (time(from), time(to)) {
                             (Some(from), Some(to)) => {
                                 refuse(None);
-                                tell(words(&["schedule", "hours", &from, &to]));
+                                tell(Ask::Schedule(words(&["hours", &from, &to])));
                             }
                             _ => refuse(Some(String::from("Times read like 21:00 or 07:30."))),
                         }

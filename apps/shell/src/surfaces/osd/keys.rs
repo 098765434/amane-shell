@@ -8,6 +8,7 @@
 //! printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
 //! ```
 
+use amane_kit::shell_ipc::{self, Osd};
 use std::cell::Cell;
 use std::time::{Duration, Instant};
 
@@ -63,30 +64,24 @@ fn pressed() {
     PRESSED.set(Some(Instant::now()));
 }
 
-pub fn ipc(args: &[String]) -> String {
-    let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    let fine = args.last() == Some(&"fine");
-    let step = if fine { 1 } else { STEP };
-
-    match args.as_slice() {
-        ["volume", "up", ..] => volume(i16::from(step)),
-        ["volume", "down", ..] => volume(-i16::from(step)),
-        ["volume", "mute", ..] => mute(),
-        ["mic", "mute"] => mic_mute(),
-        ["brightness", "up", ..] => brightness(i16::from(step)),
-        ["brightness", "down", ..] => brightness(-i16::from(step)),
-        ["brightness", "dim", percent] => match percent.parse() {
-            Ok(percent) => dim(percent),
-            Err(_) => return String::from(USAGE),
-        },
-        ["brightness", "restore"] => restore(),
-        ["kbd-light", "up"] => light(Light::Up),
-        ["kbd-light", "down"] => light(Light::Down),
-        ["kbd-light", "cycle"] => light(Light::Cycle),
-        ["airplane", "toggle"] => airplane(),
-        ["profile", "cycle"] => profile(),
-        ["show", what] => return show_current(what),
-        _ => return String::from(USAGE),
+pub fn run(command: Osd) -> String {
+    let step = |up: bool, fine: bool| {
+        let step = i16::from(if fine { 1 } else { STEP });
+        if up { step } else { -step }
+    };
+    match command {
+        Osd::Volume { up, fine } => volume(step(up, fine)),
+        Osd::Mute => mute(),
+        Osd::MicMute => mic_mute(),
+        Osd::Brightness { up, fine } => brightness(step(up, fine)),
+        Osd::Dim(percent) => dim(percent),
+        Osd::Restore => restore(),
+        Osd::KeyboardLight(shell_ipc::Light::Up) => light(Light::Up),
+        Osd::KeyboardLight(shell_ipc::Light::Down) => light(Light::Down),
+        Osd::KeyboardLight(shell_ipc::Light::Cycle) => light(Light::Cycle),
+        Osd::Airplane => airplane(),
+        Osd::Profile => profile(),
+        Osd::Show(what) => return show_current(&what),
     }
     String::from("ok")
 }

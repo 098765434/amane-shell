@@ -73,6 +73,7 @@ use amane_kit::scroll_view::ScrollbarFade;
 use amane_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
 use amane_kit::text_edit::{self, Field};
 
+use amane_kit::shell_ipc::{self, LauncherAction as Action};
 use entries::{Entry, Scope};
 pub use mode::Mode;
 use provider::{Found, Query};
@@ -646,41 +647,35 @@ pub fn open(mode: Mode) {
     Launcher::changed();
 }
 
-pub fn ipc(args: &[String]) -> String {
+pub fn run(command: shell_ipc::Launcher) -> String {
     const USAGE: &str =
         "usage: launcher [toggle | open | close] [apps | files | actions | clipboard | passwords]";
-    let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    let (verb, mode) = match args.as_slice() {
-        [] => ("toggle", None),
-        [verb] => (*verb, None),
-        [verb, name] => match Mode::named(name) {
-            Some(mode) => (*verb, Some(mode)),
-            None => return String::from(USAGE),
-        },
-        _ => return String::from(USAGE),
+    let mode = match command.mode.as_deref().map(Mode::named) {
+        None => None,
+        Some(Some(mode)) => Some(mode),
+        Some(None) => return String::from(USAGE),
     };
     let open = is_open(Panel::Launcher);
-    match (verb, mode) {
-        ("toggle", None) => panel::toggle(Panel::Launcher),
+    match (command.action, mode) {
+        (Action::Toggle, None) => panel::toggle(Panel::Launcher),
         // the mode showing closes; another switches to it
-        ("toggle", Some(mode)) if open && with(|state| state.mode) == mode => close(),
-        ("toggle" | "open", Some(mode)) => {
+        (Action::Toggle, Some(mode)) if open && with(|state| state.mode) == mode => close(),
+        (Action::Toggle | Action::Open, Some(mode)) => {
             switch_mode(mode);
             if !open {
                 panel::toggle(Panel::Launcher);
             }
         }
-        ("open", None) => {
+        (Action::Open, None) => {
             if !open {
                 panel::toggle(Panel::Launcher);
             }
         }
-        ("close", None) => {
+        (Action::Close, _) => {
             if open {
                 close();
             }
         }
-        _ => return String::from(USAGE),
     }
     Launcher::changed();
     String::from("ok")
@@ -689,21 +684,19 @@ pub fn ipc(args: &[String]) -> String {
 /// `amane-shell` IPC: `assistant listen [start | stop | toggle | cancel]`
 /// (niri binds a key to it: held, or pressed to start and again to stop)
 /// and `assistant status`.
-pub fn assistant_ipc(args: &[String]) -> String {
-    const USAGE: &str = "usage: assistant listen start|stop|toggle|cancel | assistant status";
-    let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    match args.as_slice() {
-        ["listen", "start"] => listen(),
-        ["listen", "stop"] => assistant_service::listen_stop(),
-        ["listen", "toggle"] if assistant_service::listening().on => {
+pub fn run_assistant(command: shell_ipc::Assistant) -> String {
+    use shell_ipc::{Assistant, Listen};
+    match command {
+        Assistant::Listen(Listen::Start) => listen(),
+        Assistant::Listen(Listen::Stop) => assistant_service::listen_stop(),
+        Assistant::Listen(Listen::Toggle) if assistant_service::listening().on => {
             assistant_service::listen_stop();
         }
-        ["listen", "toggle"] => listen(),
-        ["listen", "cancel"] => assistant_service::listen_cancel(),
-        ["status"] => {
+        Assistant::Listen(Listen::Toggle) => listen(),
+        Assistant::Listen(Listen::Cancel) => assistant_service::listen_cancel(),
+        Assistant::Status => {
             return assistant_service::status().unwrap_or_else(|| String::from("not connected"));
         }
-        _ => return String::from(USAGE),
     }
     Launcher::changed();
     String::from("ok")

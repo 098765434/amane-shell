@@ -27,6 +27,7 @@ use amane::Service;
 
 use crate::services::state::{self, State};
 use crate::services::{Latest, run_now};
+use amane_kit::shell_ipc::NightLight as Ask;
 
 /// The file from before the state files, one line.
 const OLD_FILE: &str = "night-light";
@@ -229,30 +230,25 @@ impl NightLight {
 /// `night-light state | on | off | toggle | temperature <K> | schedule
 /// manual | schedule sun <lat> <lon> | schedule hours <HH:MM> <HH:MM>`:
 /// Shell Settings' Displays page. `state` answers like the state file.
-pub fn ipc(args: &[String]) -> String {
-    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+pub fn run(command: Ask) -> String {
     let light = NightLight::read();
     if !light.present() {
         return String::from("wlsunset isn't installed");
     }
     let (on, kelvin, schedule) = (light.on, light.temperature, light.schedule);
     drop(light);
-    match args.as_slice() {
-        [] | ["state"] => return format(on, kelvin, schedule),
-        ["on"] => NightLight::set(true),
-        ["off"] => NightLight::set(false),
-        ["toggle"] => NightLight::set(!on),
-        ["temperature", kelvin] => match kelvin.parse() {
-            Ok(kelvin) => NightLight::set_temperature(kelvin),
-            Err(_) => return format!("not a temperature: {kelvin}"),
-        },
-        ["schedule", rest @ ..] => match Schedule::parse(rest.iter().copied()) {
+    match command {
+        Ask::State => return format(on, kelvin, schedule),
+        Ask::On => NightLight::set(true),
+        Ask::Off => NightLight::set(false),
+        Ask::Toggle => NightLight::set(!on),
+        Ask::Temperature(kelvin) => NightLight::set_temperature(kelvin),
+        Ask::Schedule(words) => match Schedule::parse(words.iter().map(String::as_str)) {
             Some(schedule) => NightLight::set_schedule(schedule),
             None => {
                 return String::from("schedule manual | sun <lat> <lon> | hours <HH:MM> <HH:MM>");
             }
         },
-        _ => return String::from("night-light state | on | off | toggle | temperature | schedule"),
     }
     String::from("ok")
 }

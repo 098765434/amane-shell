@@ -33,7 +33,11 @@ answers `no handler named <name>`.
 printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
 ```
 
-From Rust, `amane::ipc_call("amane", "launcher", &["toggle".into()])` does the same. Shell
+From Rust, send the kit's typed command, which writes the same lines:
+`ShellCommand::Launcher(Launcher { action: LauncherAction::Toggle, mode: None }).send()`
+(`amane_kit::shell_ipc`; `.tell()` sends it off the UI thread and logs a failure). The shell reads
+every verb into that type, in its one verb table (`apps/shell/src/ipc.rs`), so the two can't
+drift. Shell
 Settings (`amane-settings`) listens on `$XDG_RUNTIME_DIR/amane-settings.sock` and takes no
 commands of its own; launching it again brings the open window forward.
 
@@ -147,10 +151,6 @@ shows or hides one of the optional status icons, `activities`, `tray`, `volume`,
   (key, app, title). `status-bar activities end bus.<handle>` ends another program's activity as
   the user would, and `status-bar activities press bus.<handle> <button>` presses one of its
   buttons (`cancel` on a Drop upload).
-
-### `taskbar`
-
-The same command as `status-bar`, under the bar's old name.
 
 ### `night-light`
 

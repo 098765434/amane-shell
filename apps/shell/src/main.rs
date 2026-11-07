@@ -1,4 +1,5 @@
 mod chrome;
+mod ipc;
 mod services;
 mod surfaces;
 mod tokens;
@@ -29,24 +30,6 @@ fn cli(args: &[String]) -> Option<ExitCode> {
         tokens::layer_rules::render(&tokens::layer_rules::rules())
     );
     Some(ExitCode::SUCCESS)
-}
-
-/// Shows a sample alert, side by side or `stacked`, whose answers do
-/// nothing: for seeing the alert without ending the session. Debug builds
-/// only.
-fn alert_test(args: &[String]) -> String {
-    let sample = amane_kit::dialog::Dialog::new("amane.alert.test", "Discard changes?")
-        .message("Your changes to this document will be lost if you don't save them.")
-        .button("Cancel", || log::info!("alert-test: cancel"));
-    let sample = if args.first().map(String::as_str) == Some("stacked") {
-        sample
-            .destructive("Don't Save", || log::info!("alert-test: don't save"))
-            .main_button("Save", || log::info!("alert-test: save"))
-    } else {
-        sample.main_button("Discard", || log::info!("alert-test: discard"))
-    };
-    alert::show(sample);
-    String::from("ok")
 }
 
 /// No core dumps of this process: it holds a password for a moment while filling a field.
@@ -172,9 +155,6 @@ fn main() -> ExitCode {
         context_menu::register("file", sample_menu());
     }
 
-    // the bar's hidden icons, from the state file they were kept in before
-    status_bar::migrate();
-
     // what the panels do as they open and close; a menu belongs to the surface it was
     // opened from, so it closes as the panel changes
     chrome::per_output::follow_outputs();
@@ -207,125 +187,7 @@ fn main() -> ExitCode {
         app = app.input_method(fill::popup);
     }
 
-    let app = app
-        .ipc("arm", |args| {
-            // Expand the anchor fullscreen so the next right-click captures a
-            // fresh input serial and opens the menu with a working grab.
-            // Call: `printf 'arm\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-            let name = args.first().map(String::as_str).unwrap_or("file");
-            if context_menu::arm(name) {
-                String::from("ok")
-            } else {
-                format!("error: no menu {name}")
-            }
-        })
-        .ipc("open", |args| {
-            let name = args.first().map(String::as_str).unwrap_or("file");
-            let x = args
-                .get(1)
-                .and_then(|s| s.parse::<i32>().ok())
-                .unwrap_or(240);
-            let y = args
-                .get(2)
-                .and_then(|s| s.parse::<i32>().ok())
-                .unwrap_or(180);
-            if context_menu::open_named(name, x, y) {
-                String::from("ok")
-            } else {
-                format!("error: no menu {name}")
-            }
-        })
-        // One argument per line, e.g. Do Not Disturb from a keybind:
-        // `printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-        .ipc("notifications", notifications::ipc)
-        // `printf 'quick-settings\nopen\nwifi\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-        .ipc("quick-settings", quick_settings::ipc)
-        // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-        .ipc("launcher", launcher::ipc)
-        .ipc("assistant", launcher::assistant_ipc)
-        // the media and brightness keys, each acting and showing the new level:
-        // `printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-        .ipc("osd", osd::ipc)
-        // `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-        .ipc("widgets", widgets::ipc)
-        // `printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-        .ipc("status-bar", status_bar::ipc)
-        // Shell Settings' Displays page:
-        // `printf 'night-light\nschedule\nhours\n21:00\n07:00\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-        .ipc("night-light", services::display::night_light::ipc)
-        // its name while it was the taskbar, for scripts and keybinds
-        .ipc("taskbar", status_bar::ipc)
-        // a niri keybind: `printf 'passwords\nsuggest\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-        .ipc("passwords", fill::ipc)
-        .ipc("close", |_| {
-            context_menu::close();
-            String::from("ok")
-        });
-    // a sample alert for trying it out, in debug builds:
-    // `printf 'alert-test\nstacked\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    let app = if cfg!(debug_assertions) {
-        app.ipc("alert-test", alert_test)
-    } else {
-        app
-    };
-    app.run();
+    ipc::register(app).run();
 
     ExitCode::SUCCESS
-}
-
-#[cfg(test)]
-mod tests {
-    use std::collections::BTreeSet;
-
-    /// The verbs `main` registers, from its `.ipc("…"` calls.
-    fn registered() -> BTreeSet<String> {
-        include_str!("main.rs")
-            .split(".ipc(\"")
-            .skip(1)
-            .filter_map(|rest| rest.split('"').next())
-            // a verb's shape, so this module's own mentions don't count
-            .filter(|verb| {
-                !verb.is_empty() && verb.chars().all(|c| c.is_ascii_lowercase() || c == '-')
-            })
-            .map(String::from)
-            .collect()
-    }
-
-    /// The verbs `docs/integration/ipc.md` documents: its `` ### `verb` ``
-    /// headings under Commands, and the calls in the Context menus table.
-    fn documented() -> BTreeSet<String> {
-        let doc = include_str!("../../../docs/integration/ipc.md");
-        let commands = doc
-            .split_once("\n## Commands\n")
-            .map(|(_, rest)| rest.split("\n## ").next().unwrap_or(rest))
-            .expect("ipc.md has a Commands section");
-        let mut verbs = BTreeSet::new();
-        let mut in_menus = false;
-        for line in commands.lines() {
-            if let Some(heading) = line.strip_prefix("### ") {
-                in_menus = heading == "Context menus";
-                if let Some(verb) = heading.strip_prefix('`').and_then(|h| h.strip_suffix('`')) {
-                    verbs.insert(verb.to_string());
-                }
-            } else if in_menus
-                && let Some(cell) = line.strip_prefix("| `")
-                && let Some(verb) = cell.split([' ', '`']).next()
-            {
-                verbs.insert(verb.to_string());
-            }
-        }
-        verbs
-    }
-
-    #[test]
-    fn every_ipc_verb_is_documented_and_every_documented_verb_exists() {
-        let (code, doc) = (registered(), documented());
-        assert!(code.len() > 10, "found too few .ipc calls: {code:?}");
-        let undocumented: Vec<_> = code.difference(&doc).collect();
-        let missing: Vec<_> = doc.difference(&code).collect();
-        assert!(
-            undocumented.is_empty() && missing.is_empty(),
-            "not in docs/integration/ipc.md: {undocumented:?}; documented but not registered: {missing:?}"
-        );
-    }
 }

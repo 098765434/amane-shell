@@ -53,6 +53,7 @@ use amane_kit::menu::layer as context_menu;
 use amane_kit::menu::{ContextMenu, MenuItem};
 use amane_kit::motion::{self, Arrive, Item, Pose};
 use amane_kit::settings::{ACCENTS, WidgetStyle, desktop};
+use amane_kit::shell_ipc::Widgets as Command;
 
 use kind::{Category, WidgetKey, WidgetKind, WidgetSize};
 use store::Settings;
@@ -1107,10 +1108,9 @@ fn output_for(name: Option<&String>) -> Option<String> {
 /// `widgets list`, `add <kind> [size] [output]`, `remove <id>`,
 /// `reset-layout [output]`, `edit [output]` and `done`, one argument a line:
 /// `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`.
-pub fn ipc(args: &[String]) -> String {
-    let arg = |i: usize| args.get(i);
-    match arg(0).map(String::as_str) {
-        Some("list") => store::with(|store| {
+pub fn run(command: Command) -> String {
+    match command {
+        Command::List => store::with(|store| {
             store
                 .all()
                 .map(|(output, entry)| {
@@ -1128,25 +1128,23 @@ pub fn ipc(args: &[String]) -> String {
                 .collect::<Vec<_>>()
                 .join("\n")
         }),
-        Some("add") => {
-            let Some(kind) = arg(1).and_then(|k| WidgetKind::named(k)) else {
+        Command::Add { kind, size, output } => {
+            let Some(kind) = WidgetKind::named(&kind) else {
                 let kinds: Vec<&str> = WidgetKind::ALL.iter().map(|k| k.name()).collect();
                 return format!("error: widgets add <{}> [size] [output]", kinds.join("|"));
             };
-            let (size, output) = match arg(2).and_then(|s| WidgetSize::named(s)) {
-                Some(size) => (size, arg(3)),
-                None => (kind.default_size(), arg(2)),
+            // a word that's no size is the monitor, as `widgets add cpu eDP-1`
+            let (size, output) = match size.as_deref().and_then(WidgetSize::named) {
+                Some(size) => (size, output),
+                None => (kind.default_size(), size.or(output)),
             };
-            match output_for(output) {
+            match output_for(output.as_ref()) {
                 Some(output) if add(&output, kind, size, None) => String::from("ok"),
                 Some(_) => String::from("error: no room for it"),
                 None => String::from("error: no monitor"),
             }
         }
-        Some("remove") => {
-            let Some(id) = arg(1).and_then(|id| id.parse::<u32>().ok()) else {
-                return String::from("error: widgets remove <id>");
-            };
+        Command::Remove(id) => {
             let found = store::with(|store| {
                 store
                     .all()
@@ -1161,7 +1159,7 @@ pub fn ipc(args: &[String]) -> String {
                 None => format!("error: no widget {id}"),
             }
         }
-        Some("reset-layout") => match output_for(arg(1)) {
+        Command::ResetLayout(output) => match output_for(output.as_ref()) {
             Some(output) => {
                 store::with(|store| store.clear(&output));
                 changed();
@@ -1169,21 +1167,17 @@ pub fn ipc(args: &[String]) -> String {
             }
             None => String::from("error: no monitor"),
         },
-        Some("edit") => match output_for(arg(1)) {
+        Command::Edit(output) => match output_for(output.as_ref()) {
             Some(output) => {
                 edit::enter(&output);
                 String::from("ok")
             }
             None => String::from("error: no monitor"),
         },
-        Some("done") => {
+        Command::Done => {
             edit::leave_all();
             String::from("ok")
         }
-        _ => String::from(
-            "usage: widgets list | add <kind> [size] [output] | remove <id> | \
-             reset-layout [output] | edit [output] | done",
-        ),
     }
 }
 

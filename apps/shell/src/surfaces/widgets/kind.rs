@@ -239,19 +239,19 @@ impl WidgetKind {
             Self::Clock => {}
             Self::Network => {
                 if let Some(program) = first(&["nm-connection-editor"]) {
-                    amane::spawn(program);
+                    crate::services::launch(&[program]);
                 }
             }
             Self::Disk => {
                 if let Some(program) = first(&["baobab", "gnome-disks"]) {
-                    amane::spawn(program);
+                    crate::services::launch(&[program]);
                 }
             }
             _ => {
                 if let Some(program) =
                     first(&["missioncenter", "gnome-system-monitor", "resources"])
                 {
-                    amane::spawn(program);
+                    crate::services::launch(&[program]);
                 }
             }
         }

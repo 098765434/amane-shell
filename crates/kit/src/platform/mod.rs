@@ -8,3 +8,4 @@ pub mod marker;
 pub mod process;
 pub mod secrets;
 pub mod settings;
+pub mod shell_ipc;

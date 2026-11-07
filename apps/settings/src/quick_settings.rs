@@ -7,18 +7,16 @@
 use std::fs;
 use std::path::PathBuf;
 
-use amane::{Column, Service, ipc_call, watch_file};
+use amane::{Column, Service, watch_file};
 use amane_kit::app::Dialog;
 use amane_kit::buttons::PushButton;
 use amane_kit::color::Accent;
 use amane_kit::form::FormRow;
 use amane_kit::icons::{Glyph, ICON_TUNE};
 use amane_kit::settings::QS_CONTROLS;
+use amane_kit::shell_ipc::{QuickSettings as Ask, ShellCommand};
 
 use crate::{group, groups, switch_row};
-
-/// The shell's app id, whose IPC socket this page calls.
-const SHELL: &str = "amane";
 
 /// The controls this machine has and whether each is on the canvas, as the
 /// running shell says; none while the shell doesn't answer.
@@ -77,7 +75,7 @@ fn layout_file() -> PathBuf {
 }
 
 fn ask() -> Option<Vec<(String, bool)>> {
-    let answer = ipc_call(SHELL, "quick-settings", &[String::from("controls")]).ok()?;
+    let answer = ShellCommand::QuickSettings(Ask::Controls).send().ok()?;
 
     Some(
         answer
@@ -91,10 +89,11 @@ fn ask() -> Option<Vec<(String, bool)>> {
 /// Asks the shell to run `args`, then reads the controls again: a change
 /// that leaves the file as it was (or a shell that just started) still
 /// shows.
-fn tell(args: &[&str]) {
-    let args: Vec<String> = args.iter().map(|arg| String::from(*arg)).collect();
+fn tell(asked: Ask) {
     std::thread::spawn(move || {
-        let _ = ipc_call(SHELL, "quick-settings", &args);
+        if let Err(error) = ShellCommand::QuickSettings(asked).send() {
+            log::warn!("quick-settings: {error}");
+        }
         let controls = ask();
         QuickControls::write().controls = controls;
     });
@@ -150,7 +149,7 @@ pub fn page() -> Column {
             )
             .message("Every control goes back to its place and size as shipped.")
             .button("Cancel", || {})
-            .destructive("Reset", || tell(&["reset-layout"]))
+            .destructive("Reset", || tell(Ask::ResetLayout))
             .open("main");
         })
         .build();
@@ -162,7 +161,13 @@ pub fn page() -> Column {
             &format!("settings.quick.control.{name}"),
             &label,
             shown,
-            move |on| tell(&[if on { "show" } else { "hide" }, &name]),
+            move |on| {
+                tell(if on {
+                    Ask::Show(name.clone())
+                } else {
+                    Ask::Hide(name.clone())
+                })
+            },
         )
         .icon(glyph, accent)
     });
@@ -187,7 +192,7 @@ pub fn toolbar() -> Option<Box<dyn amane::Widget>> {
     QuickControls::read().controls.as_ref()?;
     Some(Box::new(
         PushButton::new("settings.quick.customize", "Customize…")
-            .on_press(|| tell(&["customize"]))
+            .on_press(|| tell(Ask::Customize))
             .build(),
     ))
 }

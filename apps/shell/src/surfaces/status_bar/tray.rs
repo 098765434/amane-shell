@@ -6,6 +6,7 @@
 //! bar ("Allow in the Status Bar", `StatusBar::tray_denied`), and items
 //! that don't fit go behind a » button.
 
+use amane_kit::shell_ipc::Listed;
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 
@@ -276,7 +277,7 @@ fn screen_point() -> (i32, i32) {
 
 /// `status-bar tray list | activate <id> | menu <id>`: the apps in the
 /// tray, or one app's action or menu, as from a keybind.
-pub fn ipc(args: &[&str]) -> String {
+pub fn run(command: Listed) -> String {
     let find = |id: &str| {
         Tray::read()
             .items()
@@ -284,14 +285,14 @@ pub fn ipc(args: &[&str]) -> String {
             .find(|item| item.id() == id)
             .map(|item| (item.key(), item.has_menu()))
     };
-    match args {
-        ["list"] | [] => Tray::read()
+    match command {
+        Listed::List => Tray::read()
             .items()
             .iter()
             .map(|item| format!("{}\t{:?}\t{}", item.id(), item.status(), item.title()))
             .collect::<Vec<_>>()
             .join("\n"),
-        ["activate", id] => match find(id) {
+        Listed::Activate(id) => match find(&id) {
             Some((key, _)) => {
                 let (x, y) = screen_point();
                 Tray::activate(&key, x, y);
@@ -299,7 +300,7 @@ pub fn ipc(args: &[&str]) -> String {
             }
             None => format!("no tray app {id}"),
         },
-        ["menu", id] => match find(id) {
+        Listed::Menu(id) => match find(&id) {
             Some((key, true)) => {
                 ask_menu(&key);
                 amane::mark_all();
@@ -308,6 +309,5 @@ pub fn ipc(args: &[&str]) -> String {
             Some((_, false)) => format!("{id} has no menu"),
             None => format!("no tray app {id}"),
         },
-        _ => String::from("usage: status-bar tray (list | activate <id> | menu <id>)"),
     }
 }

@@ -5,6 +5,7 @@
 //! reads what the shell says, never a secret. The fill settings are
 //! `~/.config/amane-shell/passwords.json`, readable only by you.
 
+use amane_kit::shell_ipc::{Passwords as Ask, ShellCommand};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::thread;
@@ -43,7 +44,7 @@ impl Service for VaultStatus {
 
     fn listen() {
         loop {
-            let answer = shell(&["status"]);
+            let answer = shell(Ask::Status);
 
             let next = match answer {
                 Some(text) => VaultStatus {
@@ -77,16 +78,20 @@ impl VaultStatus {
 }
 
 // one call to the shell's passwords IPC
-fn shell(args: &[&str]) -> Option<String> {
-    let args: Vec<String> = args.iter().map(|arg| arg.to_string()).collect();
-
-    amane::ipc_call("amane", "passwords", &args).ok()
+fn shell(ask: Ask) -> Option<String> {
+    match ShellCommand::Passwords(ask).send() {
+        Ok(answer) => Some(answer),
+        Err(error) => {
+            log::warn!("passwords: {error}");
+            None
+        }
+    }
 }
 
 // a command, off the UI thread, then a fresh look
-fn run(args: &'static [&'static str]) {
+fn run(ask: Ask) {
     thread::spawn(move || {
-        shell(args);
+        shell(ask);
     });
 }
 
@@ -146,25 +151,25 @@ fn vault(status: &VaultStatus) -> amane_kit::form::Group {
     };
 
     let mut buttons: Vec<Box<dyn Widget>> = Vec::new();
-    let mut button = |id: &str, label: &str, args: &'static [&'static str]| {
+    let mut button = |id: &str, label: &str, ask: Ask| {
         buttons.push(boxed(
             PushButton::new(format!("settings.passwords.{id}"), label)
                 .disabled(!busy.is_empty())
-                .on_press(move || run(args))
+                .on_press(move || run(ask.clone()))
                 .build(),
         ));
     };
 
     match state {
         "Unlocked" => {
-            button("sync", "Sync Now", &["sync"]);
-            button("lock", "Lock", &["lock"]);
+            button("sync", "Sync Now", Ask::Sync);
+            button("lock", "Lock", Ask::Lock);
         }
         "Locked" => {
-            button("sync", "Sync", &["sync"]);
-            button("unlock", "Unlock…", &["unlock"]);
+            button("sync", "Sync", Ask::Sync);
+            button("unlock", "Unlock…", Ask::Unlock);
         }
-        "LoggedOut" => button("sign-in", "Sign In…", &["sign-in"]),
+        "LoggedOut" => button("sign-in", "Sign In…", Ask::SignIn),
         _ => {}
     }
 
@@ -186,7 +191,7 @@ fn vault(status: &VaultStatus) -> amane_kit::form::Group {
         if error.contains("registering") {
             row = row.trailing(
                 PushButton::new("settings.passwords.register", "Register…")
-                    .on_press(|| run(&["register"]))
+                    .on_press(|| run(Ask::Register))
                     .build(),
             );
         }
@@ -275,15 +280,15 @@ fn save(had_account: bool) {
         let (server, email) = (server.clone(), email.clone());
 
         thread::spawn(move || {
-            let mut args = vec!["configure", server.as_str(), email.as_str()];
-            if forget {
-                args.push("forget");
-            }
-
-            let answer = shell(&args).unwrap_or_default();
+            let answer = shell(Ask::Configure {
+                server,
+                email,
+                forget,
+            })
+            .unwrap_or_default();
 
             if answer.starts_with("error") {
-                eprintln!("amane-settings: passwords: {answer}");
+                log::warn!("passwords: {answer}");
             }
         });
     };
@@ -326,10 +331,10 @@ fn security(status: &VaultStatus) -> amane_kit::form::Group {
     )
     .width(130.0)
     .on_select(|index| {
-        let seconds = (LOCK_MINUTES[index] * 60).to_string();
+        let seconds = LOCK_MINUTES[index] * 60;
 
         thread::spawn(move || {
-            shell(&["lock-timeout", seconds.as_str()]);
+            shell(Ask::LockTimeout(seconds));
         });
     });
 

@@ -75,6 +75,7 @@ use amane_kit::layout::{blank, boxed, pad, track_cursor};
 use amane_kit::material::Material;
 use amane_kit::motion;
 use amane_kit::reveal::Reveal;
+use amane_kit::shell_ipc::QuickSettings as Command;
 
 amane_kit::marker! {
     /// Quick Settings' own state changed (its page, editing, Customize):
@@ -270,16 +271,16 @@ fn hidden() {
 /// page too little room for its list.
 const MIN_PAGE_ROWS: u8 = 5;
 
-/// `amane-shell` IPC: `quick-settings [toggle [<page>] | open [<page>] | close]`.
-pub fn ipc(args: &[String]) -> String {
-    let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    match args.as_slice() {
-        [] | ["toggle"] => panel::toggle(Panel::QuickSettings),
-        ["open"] => open(Page::Grid),
+/// `amane-shell` IPC: `quick-settings [toggle [<page>] | open [<page>] | close]`, and what
+/// Shell Settings asks.
+pub fn run(command: Command) -> String {
+    match command {
+        Command::Toggle => panel::toggle(Panel::QuickSettings),
+        Command::Open => open(Page::Grid),
         // a page by name opens on its own, as from its status icon
-        [action @ ("open" | "toggle"), name] => match Page::named(name) {
+        Command::OpenPage(ref name) | Command::TogglePage(ref name) => match Page::named(name) {
             Some(page) if pages::available(page) => {
-                if *action == "open" {
+                if matches!(command, Command::OpenPage(_)) {
                     open_alone(page);
                 } else {
                     toggle_alone(page);
@@ -288,19 +289,19 @@ pub fn ipc(args: &[String]) -> String {
             Some(_) => return format!("page {name} has nothing to show on this machine"),
             None => return format!("unknown page {name}; pages: {}", Page::NAMES.join(", ")),
         },
-        ["close"] => {
+        Command::Close => {
             if is_open(Panel::QuickSettings) {
                 close();
             }
         }
         // the Customize window opens with edit mode
-        ["edit"] | ["customize"] => {
+        Command::Edit | Command::Customize => {
             open(Page::Grid);
             edit::enter();
         }
         // what Shell Settings' Quick Settings page lists: each control
         // this machine has, and whether it's on the canvas
-        ["controls"] => {
+        Command::Controls => {
             load_layout();
             return ControlId::ALL
                 .into_iter()
@@ -315,14 +316,15 @@ pub fn ipc(args: &[String]) -> String {
                 })
                 .collect();
         }
-        [action @ ("show" | "hide"), name] => {
+        Command::Show(ref name) | Command::Hide(ref name) => {
+            let show = matches!(command, Command::Show(_));
             let Some(id) = ControlId::named(name) else {
                 let names: Vec<&str> = ControlId::ALL.into_iter().map(ControlId::name).collect();
                 return format!("unknown control {name}; controls: {}", names.join(", "));
             };
             load_layout();
             let placed = layout::with(|layout| {
-                let placed = if *action == "show" {
+                let placed = if show {
                     layout.show(id)
                 } else {
                     layout.hide(id);
@@ -336,16 +338,11 @@ pub fn ipc(args: &[String]) -> String {
                 return format!("no room for {name}: hide another control first");
             }
         }
-        ["reset-layout"] => {
+        Command::ResetLayout => {
             let ctx = controls::Ctx::new(false);
             layout::replace(layout::Layout::default_for(grid::Canvas::tokens(), &|id| {
                 controls::present(id, &ctx)
             }));
-        }
-        _ => {
-            return String::from(
-                "usage: quick-settings [toggle [<page>] | open [<page>] | close | edit | customize | reset-layout | controls | (show | hide) <control>]",
-            );
         }
     }
     QuickSettings::changed();
