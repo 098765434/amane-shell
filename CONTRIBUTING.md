@@ -65,8 +65,10 @@ CI runs the same in the devShell (`fmt --check`, and clippy and the tests with `
 shellcheck on `gen-layer-rules.sh` and the scripts, then `nix build`, which runs the tests again.
 
 The workspace lints are in the root `Cargo.toml` (`[workspace.lints]`); `unwrap` is allowed only in
-tests (`clippy.toml`). In the kit, a file that starts with `#![allow(missing_docs)]` still has
-undocumented items: document them and remove the line. Some tests check the code against the
+tests (`clippy.toml`). A public item without a doc comment is an error in the kit, `amane-status`,
+`amane-phone` and `amane-nixos` (`missing_docs` is `deny`), and a warning that clippy's
+`-D warnings` turns into one in `amane-process`, `amane-log`, `amane-assistant` and
+`amane-pinentry`. Rustdoc's own warnings fail CI too. Some tests check the code against the
 docs and the compositor: every IPC verb is in `docs/integration/ipc.md`, every layer namespace
 has a niri rule, every material setting is in niri's range, and the service parsers read the
 recorded output in `apps/shell/tests/fixtures/`. When one fails, the message says which side to fix.
