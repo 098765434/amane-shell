@@ -93,6 +93,17 @@ graph TD
 3. The non-kit crates move onto it.
 4. The shell and apps move onto it, and every copy is deleted.
 
+**Status (2026-11-07).** Done (shell `a35a1ab`, `0cb5186`, `bf655e4`, `b11708a`).
+- **Changes from the plan:**
+  - `fs::part_of` names a part file per process (`<file>.part<pid>`), as the glass shader's did, so two programs writing one file never share a part.
+  - `paths::private_runtime` is new: the pinentry's socket goes without rather than fall back to the shared temporary folder.
+  - `sync` is two traits, `Locked` (`locked()`) and `Shared` (`reading()`, `writing()`). Condvar waits keep `PoisonError::into_inner`: there's no guard to wrap.
+  - `format::span` rounds to the nearest minute and shows seconds under one, so keep-awake no longer needs to round up.
+  - `kit::launch::open` takes the eight UI-side `xdg-open`s. The rest stay: the service threads run off the event loop, and the phone crate and train-watch don't use the kit.
+  - The media-art download (a `curl` into a part file) and the nixpkgs catalog (streamed) still write their own part files.
+- **Found along the way:** `amane-nixos`'s `the_steps_of_an_apply_run_in_order` failed about one run in three ("text file busy": a fake rewritten while another test forked). Its fakes are now links to one stub (`86b759f`).
+- **Asked for during the phase:** the last Material 3 traces (component docs written as departures from Material's, the counterpart columns in `docs/kit`) and Messages' copy of the kit's `Avatar` (`16ee963`).
+
 ## Phase 2: Kit interaction core (M)
 
 - **`Actions`:**
