@@ -9,7 +9,7 @@ This plan turns amane-shell and its forks (amane, niri, vello) into one delibera
 | niri (`niri/`) | ocbk | `16384e00` | 2 commits ahead of origin, not pushed |
 | vello (`vello/`) | ocbk | `46585523` | |
 
-After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`.
+After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`. After Phase 1 (2026-11-07), shell `main` pins amane `db47c38`.
 
 ## Ground rules
 
@@ -274,6 +274,19 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 - The new tests fail when their subject is deliberately broken (try once by hand).
 
 **Risks.** Low. The clippy list may surface many warnings; fix them or allow them per module, never globally.
+
+**Status (2026-11-07).** Done: shell `main` pins amane `db47c38`.
+- **Lints.**
+  - `let_underscore_must_use` was left out on purpose: 144 hits, nearly all deliberate discards (`let _ = writeln!` into a `String`, cleanup removes, a child's `kill`). Instead, the writers that save settings, secrets and the Drop Bar's state now log a failed save.
+  - Only two unwraps outside tests needed fixing.
+- **Missing docs.** `missing_docs` is on in the kit, and 69 files start with `#![allow(missing_docs)]`. That list is Phase 13's backlog.
+- **amane** doesn't put allows at the root of upstream modules. 14 of its top-level modules mix upstream and fork code, so those allows would conflict on rebases. Instead:
+  - `Cargo.toml` holds only the lints the whole crate passes;
+  - every module file the fork added opts into `unwrap_used`, `dbg_macro` and `todo` at its top;
+  - see amane's `docs/fork/maintaining.md`.
+- **Token tier budgets.** The manual's budgets (sys about 70, component about 15) are far below today's counts (133 and 163). The test caps each tier at today's size, so a tier can shrink but not grow, until Phase 8 brings them down.
+- **Fixtures.** They live in `tests/fixtures/{nmcli,niri,sysfs}`, with made-up names. The niri material ranges are copied from niri-config at `72d679c5`, into `tests/fixtures/niri/material-ranges.json`.
+- **`amane.fill`** is an input-method popup, not a layer surface, so it needs no rule. It's in the namespace test's `POPUPS` list.
 
 ---
 
