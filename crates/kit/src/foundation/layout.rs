@@ -213,7 +213,7 @@ pub fn text_height(style: TextStyle) -> f32 {
 }
 
 /// A widget's fixed width; 0 for one that takes its parent's.
-pub fn fixed_width(widget: &impl Widget) -> f32 {
+pub fn fixed_width(widget: &(impl Widget + ?Sized)) -> f32 {
     match widget.width() {
         Size::Fixed(width) => width,
         Size::Parent => 0.0,
