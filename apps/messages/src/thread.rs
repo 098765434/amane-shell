@@ -202,7 +202,7 @@ fn new_below() -> Rectangle {
     let width = text_width(label, style) + 16.0 + 6.0 + 24.0;
     let pill = interactive(
         Rectangle::new()
-            .width(Size::Fixed(width))
+            .width(width)
             .height(Size::Fixed(28.0))
             .radius(Radius::Full)
             .fill(state_fill(&key, sys::color::accent::bg(), true))
@@ -337,7 +337,7 @@ fn bubbles(history: &[SmsMessage], group: bool) -> Vec<Box<dyn Widget>> {
             items.push(boxed(
                 Rectangle::new()
                     .width(Size::Parent)
-                    .height(Size::Fixed(text_height(sys::r#type::caption()) + 2.0))
+                    .height(text_height(sys::r#type::caption()) + 2.0)
                     .padding(pad(SMALL_AVATAR + sys::space::gap::s() + 12.0, 0.0))
                     .align_child(Start, Center)
                     .child(
@@ -496,9 +496,7 @@ fn side(outgoing: bool, beside: Option<Option<&String>>, child: Rectangle) -> Re
         Size::Fixed(height) => height,
         Size::Parent => 0.0,
     };
-    let row = Rectangle::new()
-        .width(Size::Parent)
-        .height(Size::Fixed(height));
+    let row = Rectangle::new().width(Size::Parent).height(height);
     if outgoing {
         return row.align_child(End, Center).child(child);
     }
@@ -509,7 +507,7 @@ fn side(outgoing: bool, beside: Option<Option<&String>>, child: Rectangle) -> Re
         Some(address) => boxed(inbox::avatar_of(address, SMALL_AVATAR)),
         None => boxed(
             Rectangle::new()
-                .width(Size::Fixed(SMALL_AVATAR))
+                .width(SMALL_AVATAR)
                 .height(Size::Fixed(1.0)),
         ),
     };
@@ -563,8 +561,8 @@ fn attachment(part: &SmsAttachment) -> Rectangle {
                 .align_child(Center, Center)
                 .child(
                     Rectangle::new()
-                        .width(Size::Fixed(if fetching { 84.0 } else { 48.0 }))
-                        .height(Size::Fixed(if fetching { 28.0 } else { 48.0 }))
+                        .width(if fetching { 84.0 } else { 48.0 })
+                        .height(if fetching { 28.0 } else { 48.0 })
                         .radius(Radius::Full)
                         .fill(with_alpha(Color::BLACK, 0.45))
                         .align_child(Center, Center)
@@ -574,8 +572,8 @@ fn attachment(part: &SmsAttachment) -> Rectangle {
     }
 
     let image = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .radius(Radius::Fixed(16.0))
         .fill(Image::cover(path))
         .clip()
@@ -607,7 +605,7 @@ fn file_chip(part: &SmsAttachment, key: &str, fetching: bool) -> Rectangle {
     let style = sys::r#type::label();
     let width = 12.0 + 20.0 + 8.0 + text_width(&label, style) + 14.0;
     Rectangle::new()
-        .width(Size::Fixed(width))
+        .width(width)
         .height(Size::Fixed(40.0))
         .radius(Radius::Fixed(20.0))
         .fill(state_fill(key, style::bubble_received(), false))
@@ -641,7 +639,7 @@ fn link_chip(link: &str) -> Rectangle {
     let url = links::url(link);
     interactive(
         Rectangle::new()
-            .width(Size::Fixed(width))
+            .width(width)
             .height(Size::Fixed(26.0))
             .radius(Radius::Full)
             .fill(state_fill(
@@ -686,7 +684,7 @@ fn stamp(message: &SmsMessage, beside_avatar: bool) -> Rectangle {
     };
     let row = Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(height))
+        .height(height)
         .padding(pad(inset, 0.0));
     let row = if message.outgoing() {
         row.align_child(End, Center)
@@ -701,8 +699,8 @@ fn stamp(message: &SmsMessage, beside_avatar: bool) -> Rectangle {
         let failed = message.clone();
         return row.child(interactive(
             Rectangle::new()
-                .width(Size::Fixed(text_width(label, style) + 8.0))
-                .height(Size::Fixed(height))
+                .width(text_width(label, style) + 8.0)
+                .height(height)
                 .radius(Radius::Fixed(4.0))
                 .fill(state_fill(&key, Color::TRANSPARENT, false))
                 .align_child(Center, Center)

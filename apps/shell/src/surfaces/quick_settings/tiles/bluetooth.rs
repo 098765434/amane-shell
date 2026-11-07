@@ -23,8 +23,8 @@ use std::cell::{Cell, RefCell};
 
 use amane::{
     Bluetooth, BluetoothDevice, BluetoothOperation as Operation, Center, Column, PairingAnswer,
-    PairingKind, PairingRequest, Parent, PowerState, Row, ScrollArea, Service, Size, Text,
-    TextInput, Widget,
+    PairingKind, PairingRequest, Parent, PowerState, Row, ScrollArea, Service, Text, TextInput,
+    Widget,
 };
 
 use super::super::{Page, QS_NS, open};
@@ -313,7 +313,7 @@ fn device_list(
         .gap(sys::space::gap::xl())
         .width(Parent);
 
-    boxed(ScrollArea::new("amane.qs.bluetooth.devices", column).height(Size::Fixed(height)))
+    boxed(ScrollArea::new("amane.qs.bluetooth.devices", column).height(height))
 }
 
 /// The devices worth offering to pair: named ones (a bare address means

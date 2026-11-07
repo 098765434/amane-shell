@@ -143,7 +143,7 @@ impl Dropdown {
 
         let label = Rectangle::new()
             .width(Size::Parent)
-            .height(Size::Fixed(height))
+            .height(height)
             .align_child(amane::Start, Center)
             .child(Row::new(parts).gap(gap).align(Center).width(Size::Parent));
 
@@ -156,8 +156,8 @@ impl Dropdown {
         .width(Size::Parent);
 
         let base = Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(height))
+            .width(width)
+            .height(height)
             .radius(style::field_radius())
             .fill(hover_fill(
                 &self.id,

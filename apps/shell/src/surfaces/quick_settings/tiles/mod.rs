@@ -26,8 +26,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use amane::{
-    Blend, BlurShape, Button, Center, Color, Column, Parent, Rectangle, Size, Stack, Start, Text,
-    Widget,
+    Blend, BlurShape, Button, Center, Color, Column, Parent, Rectangle, Stack, Start, Text, Widget,
 };
 
 use super::controls::{self, ControlId, Ctx};
@@ -278,8 +277,8 @@ pub(super) fn grid(look: Motion) -> Grid {
         }
         layers.push(boxed(
             Rectangle::new()
-                .width(Size::Fixed(slot.width))
-                .height(Size::Fixed(slot.height))
+                .width(slot.width)
+                .height(slot.height)
                 .fill(Color::TRANSPARENT)
                 .translate(pose.x, pose.y)
                 .scale(pose.scale)
@@ -291,8 +290,8 @@ pub(super) fn grid(look: Motion) -> Grid {
     layers.extend(dressings);
 
     let cells = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(grid_h))
+        .width(width)
+        .height(grid_h)
         .fill(Color::TRANSPARENT)
         .child(Stack::new(layers).width(Parent).height(Parent));
     // a right click on the canvas's empty space edits it
@@ -330,14 +329,14 @@ pub(super) fn grid(look: Motion) -> Grid {
     shapes.push(frost_in(&capsule, capsule_glass));
     rims.push(capsule);
     let button = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(button_h))
+        .width(width)
+        .height(button_h)
         .fill(Color::TRANSPARENT)
         .align_child(Center, Center)
         .child(
             Rectangle::new()
-                .width(Size::Fixed(button_w))
-                .height(Size::Fixed(button_h))
+                .width(button_w)
+                .height(button_h)
                 .fill(Color::TRANSPARENT)
                 .translate(0.0, pose.y)
                 .scale(pose.scale)
@@ -354,7 +353,7 @@ pub(super) fn grid(look: Motion) -> Grid {
     let height = grid_h + gap + button_h;
     let column = Column::new(vec![boxed(cells), boxed(button)])
         .gap(gap)
-        .width(Size::Fixed(width));
+        .width(width);
 
     let widget: Box<dyn Widget> = boxed(column);
 
@@ -366,8 +365,8 @@ pub(super) fn grid(look: Motion) -> Grid {
     }
     let widget = boxed(
         Rectangle::new()
-            .width(Size::Fixed(total_w))
-            .height(Size::Fixed(height))
+            .width(total_w)
+            .height(height)
             .fill(Color::TRANSPARENT)
             .align_child(Start, Start)
             .child(Stack::new(lit).width(Parent).height(Parent)),
@@ -422,8 +421,8 @@ pub(super) fn placeholder(id: ControlId, slot: Slot) -> Box<dyn Widget> {
         },
     };
     let inner = Rectangle::new()
-        .width(Size::Fixed(slot.width))
-        .height(Size::Fixed(slot.height))
+        .width(slot.width)
+        .height(slot.height)
         .fill(Color::TRANSPARENT)
         .align_child(Center, Center)
         .child(

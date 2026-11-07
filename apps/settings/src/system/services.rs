@@ -155,8 +155,8 @@ fn status_dot(state: Option<&UnitState>) -> amane::Rectangle {
         _ => style::label_tertiary(),
     };
     Rectangle::new()
-        .width(Size::Fixed(DOT))
-        .height(Size::Fixed(DOT))
+        .width(DOT)
+        .height(DOT)
         .fill(Color::TRANSPARENT)
         .align_child(amane::Center, amane::Center)
         .child(

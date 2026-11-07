@@ -150,8 +150,8 @@ fn caption(text: impl Into<String>) -> Text {
 fn cell(width: f32, height: f32, child: impl Widget + 'static) -> Box<dyn Widget> {
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(height))
+            .width(width)
+            .height(height)
             .align_child(Start, Center)
             .child(child),
     )

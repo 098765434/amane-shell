@@ -174,10 +174,7 @@ pub(super) fn face(id: u32, face: &Face) -> Vec<Box<dyn Widget>> {
     }
 
     let mut content = vec![place(
-        Canvas::new()
-            .width(Size::Fixed(room.0))
-            .height(Size::Fixed(room.1))
-            .shapes(shapes),
+        Canvas::new().width(room.0).height(room.1).shapes(shapes),
         0.0,
         0.0,
         room.0,

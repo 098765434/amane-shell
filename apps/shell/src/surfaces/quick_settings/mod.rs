@@ -68,7 +68,7 @@ use std::time::Instant;
 
 use amane::{
     Animation, Blend, BlurShape, Color, End, Horizontal, InputArea, Key, Keyboard, LayerWindow,
-    Parent, Rectangle, Size, Stack, Start, Vertical, Widget, WindowSize, window_size,
+    Parent, Rectangle, Stack, Start, Vertical, Widget, WindowSize, window_size,
 };
 
 use crate::chrome::bar;

@@ -9,7 +9,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
-use amane::{Color, Rectangle, Size, Stack, Widget};
+use amane::{Color, Rectangle, Stack, Widget};
 
 use crate::color::with_alpha;
 use crate::layout::boxed;
@@ -99,15 +99,15 @@ impl Spinner {
                 // a spoke from the rim inwards, in a frame that turns
                 boxed(
                     Rectangle::new()
-                        .width(Size::Fixed(size))
-                        .height(Size::Fixed(size))
+                        .width(size)
+                        .height(size)
                         .fill(Color::TRANSPARENT)
                         .rotate(index as f32 * 360.0 / SPOKES as f32)
                         .align_child(amane::Center, amane::Start)
                         .child(
                             Rectangle::new()
-                                .width(Size::Fixed(thickness))
-                                .height(Size::Fixed(length))
+                                .width(thickness)
+                                .height(length)
                                 .radius(thickness / 2.0)
                                 .fill(with_alpha(color, alpha)),
                         ),
@@ -117,8 +117,8 @@ impl Spinner {
 
         let opacity = if reduced { breath(step) } else { 1.0 };
         Rectangle::new()
-            .width(Size::Fixed(size))
-            .height(Size::Fixed(size))
+            .width(size)
+            .height(size)
             .fill(Color::TRANSPARENT)
             .opacity(opacity)
             .child(Stack::new(spokes))
@@ -147,15 +147,15 @@ impl ProgressBar {
         let filled =
             (self.width * self.fraction).max(if self.fraction > 0.0 { HEIGHT } else { 0.0 });
         Rectangle::new()
-            .width(Size::Fixed(self.width))
-            .height(Size::Fixed(HEIGHT))
+            .width(self.width)
+            .height(HEIGHT)
             .radius(HEIGHT / 2.0)
             .fill(style::divider())
             .align_child(amane::Start, amane::Center)
             .child(
                 Rectangle::new()
-                    .width(Size::Fixed(filled))
-                    .height(Size::Fixed(HEIGHT))
+                    .width(filled)
+                    .height(HEIGHT)
                     .radius(HEIGHT / 2.0)
                     .fill(style::tint()),
             )

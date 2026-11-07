@@ -9,7 +9,7 @@ mod clock;
 mod digits;
 mod system;
 
-use amane::{Arc, Canvas, Cap, Color, Path, Rectangle, Shape, Size, Stack, Start, Text, Widget};
+use amane::{Arc, Canvas, Cap, Color, Path, Rectangle, Shape, Stack, Start, Text, Widget};
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use super::store::Settings;
@@ -62,14 +62,14 @@ pub fn build(
     };
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(height))
+            .width(width)
+            .height(height)
             .fill(Color::TRANSPARENT)
             .align_child(Start, Start)
             .child(
                 Rectangle::new()
-                    .width(Size::Fixed(face.width))
-                    .height(Size::Fixed(face.height))
+                    .width(face.width)
+                    .height(face.height)
                     .fill(Color::TRANSPARENT)
                     .translate(PAD, PAD)
                     .child(Stack::new(content)),
@@ -90,8 +90,8 @@ pub fn place(
 ) -> Box<dyn Widget> {
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(width.max(0.0)))
-            .height(Size::Fixed(height.max(0.0)))
+            .width(width.max(0.0))
+            .height(height.max(0.0))
             .fill(Color::TRANSPARENT)
             .align_child(Start, Start)
             .translate(x, y)
@@ -120,8 +120,8 @@ pub fn line(
     };
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(width.max(0.0)))
-            .height(Size::Fixed(height))
+            .width(width.max(0.0))
+            .height(height)
             .fill(Color::TRANSPARENT)
             .align_child(Start, Start)
             .translate(x, y)
@@ -205,8 +205,8 @@ pub fn ring(fraction: f32, diameter: f32, thickness: f32, color: Color) -> Canva
         ));
     }
     Canvas::new()
-        .width(Size::Fixed(diameter))
-        .height(Size::Fixed(diameter))
+        .width(diameter)
+        .height(diameter)
         .shapes(shapes)
 }
 
@@ -229,9 +229,7 @@ pub fn ring_with(fraction: f32, diameter: f32, thickness: f32, color: Color, gly
 /// top, with a faint fill under it; the newest at the right edge. Fewer
 /// readings than there's room for start further right.
 pub fn sparkline(values: &[f32], max: f32, width: f32, height: f32, color: Color) -> Canvas {
-    let canvas = Canvas::new()
-        .width(Size::Fixed(width.max(1.0)))
-        .height(Size::Fixed(height.max(1.0)));
+    let canvas = Canvas::new().width(width.max(1.0)).height(height.max(1.0));
     if values.len() < 2 || max <= 0.0 {
         return canvas.shapes(Vec::new());
     }
@@ -269,15 +267,15 @@ pub fn bar(fraction: f32, width: f32, height: f32, color: Color) -> Stack {
     Stack::new(vec![
         boxed(
             Rectangle::new()
-                .width(Size::Fixed(width))
-                .height(Size::Fixed(height))
+                .width(width)
+                .height(height)
                 .radius(height / 2.0)
                 .fill(track()),
         ),
         boxed(
             Rectangle::new()
-                .width(Size::Fixed(filled.min(width)))
-                .height(Size::Fixed(height))
+                .width(filled.min(width))
+                .height(height)
                 .radius(height / 2.0)
                 .fill(color),
         ),

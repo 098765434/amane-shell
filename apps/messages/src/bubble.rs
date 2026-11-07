@@ -10,7 +10,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use amane::{Canvas, Color, Gradient, Path, Rectangle, Shape, Size, Stack, Text};
+use amane::{Canvas, Color, Gradient, Path, Rectangle, Shape, Stack, Text};
 use amane_kit::color::{over, with_alpha};
 use amane_kit::layout::{boxed, pad, text_height, text_width};
 use amane_kit::style;
@@ -239,8 +239,8 @@ pub fn bubble(key: i64, text: &str, look: Look, tail: bool, widest: f32) -> Rect
     };
     let pad_y = (LINE_HEIGHT * s - text_height(text_style())) / 2.0;
     let words = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .padding(pad(PAD_X * s, pad_y))
         .child(
             Text::new(text.to_string())
@@ -250,15 +250,10 @@ pub fn bubble(key: i64, text: &str, look: Look, tail: bool, widest: f32) -> Rect
         );
 
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(total))
+        .width(width)
+        .height(total)
         .child(Stack::new(vec![
-            boxed(
-                Canvas::new()
-                    .width(Size::Fixed(width))
-                    .height(Size::Fixed(total))
-                    .shapes(vec![shape]),
-            ),
+            boxed(Canvas::new().width(width).height(total).shapes(vec![shape])),
             boxed(words),
         ]))
 }
@@ -275,8 +270,8 @@ pub fn emoji(text: &str) -> Rectangle {
     let width = text_width(text.trim(), style) + 4.0;
     let height = text_height(style) + 4.0;
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .child(Text::new(text.trim().to_string()).style(style))
 }
 

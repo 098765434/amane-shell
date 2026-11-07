@@ -9,7 +9,7 @@ use amane_kit::shell_ipc::Listed;
 use std::cell::RefCell;
 use std::collections::HashSet;
 
-use amane::{Center, Color, Parent, Rectangle, Row, Size, Text, Vertical, Widget};
+use amane::{Center, Color, Parent, Rectangle, Row, Text, Vertical, Widget};
 use amane_status::{BarEdge, ItemButton, ItemEvent, ItemSpec, MenuEntry};
 
 use crate::services::status_apps;
@@ -95,7 +95,7 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
             ));
         }
         Rectangle::new()
-            .width(Size::Fixed(width))
+            .width(width)
             .height(Parent)
             .fill(Color::TRANSPARENT)
             .align_child(Center, Center)

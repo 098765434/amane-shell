@@ -4,7 +4,7 @@
 
 use std::fmt::Write;
 
-use amane::{Clipboard, Color, Column, Rectangle, Row, Service, Size, Text, TextInput, Widget};
+use amane::{Clipboard, Color, Column, Rectangle, Row, Service, Text, TextInput, Widget};
 use amane_kit::app::{field_box, text_field};
 use amane_kit::buttons::{PushButton, Switch};
 use amane_kit::color_picker::{ColorPicker, parse_hex, to_color, to_hex};
@@ -168,7 +168,7 @@ pub fn panel(effects: &Effects, lab: &Lab) -> Rectangle {
     let viewport = (amane::window_size().1 - sys::space::inset::l() * 2.0).max(1.0);
     let furthest = (length - viewport).max(0.0);
 
-    let column = Column::new(rows.widgets).gap(gap).width(Size::Fixed(WIDTH));
+    let column = Column::new(rows.widgets).gap(gap).width(WIDTH);
 
     ScrollView::new(Axis::Vertical, WIDTH, viewport)
         .content(length)
@@ -217,7 +217,7 @@ fn saved_looks(lab: &Lab) -> (Column, f32) {
 
         let row = Rectangle::new()
             .width(WIDTH)
-            .height(Size::Fixed(control))
+            .height(control)
             .radius(sys::radius::raised())
             .fill(if chosen {
                 sys::color::state::selected()
@@ -239,7 +239,7 @@ fn saved_looks(lab: &Lab) -> (Column, f32) {
                             .width(
                                 WIDTH * 0.4 - sys::space::inset::s() * 2.0 - sys::space::gap::s(),
                             )
-                            .height(Size::Fixed(control))
+                            .height(control)
                             .align_child(amane::End, amane::Center)
                             .child(caption(&effect).elide()),
                     ),
@@ -491,7 +491,7 @@ fn number_pair(name: &str, x: f32, y: f32) -> Row {
         boxed(
             Rectangle::new()
                 .width(SLIDER_WIDTH)
-                .height(Size::Fixed(sys::size::control::height()))
+                .height(sys::size::control::height())
                 .align_child(amane::Start, amane::Center)
                 .child(caption(&format!("{x:.0}, {y:.0} px"))),
         ),
@@ -694,7 +694,7 @@ pub fn swatch(id: &str, color: [f32; 4], open: bool) -> Rectangle {
 
     let chip = Rectangle::new()
         .width(SLIDER_WIDTH - 40.0)
-        .height(Size::Fixed(height * 0.7))
+        .height(height * 0.7)
         .radius(sys::radius::raised())
         .fill(to_color(color))
         .border(
@@ -708,7 +708,7 @@ pub fn swatch(id: &str, color: [f32; 4], open: bool) -> Rectangle {
 
     Rectangle::new()
         .width(SLIDER_WIDTH - 40.0)
-        .height(Size::Fixed(height))
+        .height(height)
         .align_child(amane::Start, amane::Center)
         .cursor(amane::Pointer)
         .on_click(move |_| {
@@ -925,10 +925,7 @@ fn errors(manifest: Option<&String>) -> Option<(Column, usize)> {
 
     let count = lines.len();
 
-    Some((
-        Column::new(lines).gap(ERROR_GAP).width(Size::Fixed(WIDTH)),
-        count,
-    ))
+    Some((Column::new(lines).gap(ERROR_GAP).width(WIDTH), count))
 }
 
 fn button(id: &str, text: &str, enabled: bool, press: impl Fn() + 'static) -> Rectangle {
@@ -957,7 +954,7 @@ pub fn caption_height() -> f32 {
 pub fn note(text: &str) -> Rectangle {
     Rectangle::new()
         .width(WIDTH)
-        .height(Size::Fixed(sys::size::control::height() * 1.5))
+        .height(sys::size::control::height() * 1.5)
         .align_child(amane::Start, amane::Center)
         .child(caption(text).wrap().max_lines(2).elide())
 }
@@ -966,7 +963,7 @@ pub fn note(text: &str) -> Rectangle {
 fn centered(text: Text) -> Rectangle {
     Rectangle::new()
         .width(56.0)
-        .height(Size::Fixed(sys::size::control::height()))
+        .height(sys::size::control::height())
         .align_child(amane::Start, amane::Center)
         .child(text)
 }
@@ -978,7 +975,7 @@ pub fn label(text: &str) -> Rectangle {
 fn label_width(text: &str, width: f32) -> Rectangle {
     Rectangle::new()
         .width(width)
-        .height(Size::Fixed(sys::size::control::height()))
+        .height(sys::size::control::height())
         .align_child(amane::Start, amane::Center)
         .child(
             Text::new(text)

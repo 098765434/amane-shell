@@ -34,7 +34,7 @@ use std::cell::{Cell, RefCell};
 
 use amane::{
     Animation, Blend, BlurShape, Center, Color, Cursor, Key, Parent, Point, Rectangle, Row, Scroll,
-    Size, Stack, Start, Text, Widget, modifiers,
+    Stack, Start, Text, Widget, modifiers,
 };
 
 use super::controls::{self, ControlId, Ctx};

@@ -4,7 +4,7 @@
 //! Hidden without the `tailscale` binary; read-only, and saying how to fix
 //! it, without the operator grant. See [`crate::services::network::tailscale`].
 
-use amane::{Column, Parent, ScrollArea, Service, Size, Widget};
+use amane::{Column, Parent, ScrollArea, Service, Widget};
 
 use super::super::{Page, open};
 use crate::chrome::panel::close;
@@ -73,7 +73,7 @@ pub(crate) fn page() -> DetailPage {
                         .gap(sys::space::gap::xl())
                         .width(Parent),
                 )
-                .height(Size::Fixed(height)),
+                .height(height),
             )]
         })
         .footer("Admin Console…", || {

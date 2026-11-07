@@ -232,11 +232,11 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
     Some(boxed(
         amane::Rectangle::new()
             .width(Size::Parent)
-            .height(Size::Fixed(
+            .height(
                 2.0 * sys::size::row::height()
                     + sys::space::gap::s()
                     + 2.0 * sys::space::inset::m(),
-            ))
+            )
             .fill(amane::Color::TRANSPARENT)
             .child(
                 Card::new(vec![

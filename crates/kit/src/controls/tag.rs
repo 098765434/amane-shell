@@ -4,7 +4,7 @@
 //! or the accent's tint and colour for the fact that matters most.
 //! [`tags`] lays several out in rows that wrap, through [`Flow`].
 
-use amane::{Center, Radius, Rectangle, Size, Text};
+use amane::{Center, Radius, Rectangle, Text};
 
 use crate::color::with_alpha;
 use crate::flow::Flow;
@@ -55,8 +55,8 @@ impl Tag {
             )
         };
         Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(height))
+            .width(width)
+            .height(height)
             .radius(Radius::Full)
             .fill(fill)
             .align_child(Center, Center)

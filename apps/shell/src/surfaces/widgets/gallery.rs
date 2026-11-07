@@ -11,8 +11,8 @@
 use std::cell::{Cell, RefCell};
 
 use amane::{
-    Animation, Blend, BlurShape, Center, Color, Key, Rectangle, Row, Size, Stack, Start, Text,
-    Vertical, Widget, modifiers,
+    Animation, Blend, BlurShape, Center, Color, Key, Rectangle, Row, Stack, Start, Text, Vertical,
+    Widget, modifiers,
 };
 
 use super::catalog;
@@ -243,8 +243,8 @@ pub(super) fn sheet(_output: &str, geometry: &Geometry) -> (Box<dyn Widget>, Vec
     with(|state| state.area = Some(area));
 
     let surface = Rectangle::new()
-        .width(Size::Fixed(area.width))
-        .height(Size::Fixed(area.height))
+        .width(area.width)
+        .height(area.height)
         .radius(radius)
         .fill(Material::Sheet.fill())
         .clip()
@@ -301,8 +301,8 @@ pub(super) fn ghost(
     );
     let frost = Material::Control.shape(x, y, width, height, RADIUS, 1.0);
     let widget = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .translate(x, y)
         .scale(super::DRAG_SCALE)
@@ -335,11 +335,11 @@ fn content(area: &Area) -> Rectangle {
         boxed(Divider::build()),
         boxed(footer(pane_w, footer_h)),
     ])
-    .width(Size::Fixed(pane_w));
+    .width(pane_w);
 
     Rectangle::new()
-        .width(Size::Fixed(area.width))
-        .height(Size::Fixed(area.height))
+        .width(area.width)
+        .height(area.height)
         .fill(Color::TRANSPARENT)
         .align_child(Start, Start)
         .child(
@@ -377,15 +377,15 @@ fn sidebar(field: &Field, picked: Section, height: f32) -> Rectangle {
         .collect();
     let list = list::with_row_width(inner_w, || List::new(items).build());
     Rectangle::new()
-        .width(Size::Fixed(SIDEBAR))
-        .height(Size::Fixed(height))
+        .width(SIDEBAR)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .padding(pad(INSET, INSET))
         .align_child(Start, Start)
         .child(
             amane::Column::new(vec![boxed(search), boxed(list)])
                 .gap(sys::space::gap::m())
-                .width(Size::Fixed(inner_w)),
+                .width(inner_w),
         )
 }
 
@@ -420,8 +420,8 @@ fn pane(kinds: &[WidgetKind], viewport: Area, searching: bool) -> Rectangle {
             .map(|line| {
                 boxed(
                     Rectangle::new()
-                        .width(Size::Fixed(item_w))
-                        .height(Size::Fixed(line_h))
+                        .width(item_w)
+                        .height(line_h)
                         .fill(Color::TRANSPARENT)
                         .align_child(Center, Center)
                         .child(
@@ -434,14 +434,14 @@ fn pane(kinds: &[WidgetKind], viewport: Area, searching: bool) -> Rectangle {
             .collect();
         // the card scales about its centre, so it's placed centred in the box
         let item = Rectangle::new()
-            .width(Size::Fixed(item_w))
-            .height(Size::Fixed(PREVIEW + gap + name_h))
+            .width(item_w)
+            .height(PREVIEW + gap + name_h)
             .fill(Color::TRANSPARENT)
             .child(Stack::new(vec![
                 boxed(
                     Rectangle::new()
-                        .width(Size::Fixed(width))
-                        .height(Size::Fixed(height))
+                        .width(width)
+                        .height(height)
                         .fill(Color::TRANSPARENT)
                         .translate((item_w - width) / 2.0, (PREVIEW - height) / 2.0)
                         .scale(scale)
@@ -450,8 +450,8 @@ fn pane(kinds: &[WidgetKind], viewport: Area, searching: bool) -> Rectangle {
                 ),
                 boxed(
                     Rectangle::new()
-                        .width(Size::Fixed(item_w))
-                        .height(Size::Fixed(name_h))
+                        .width(item_w)
+                        .height(name_h)
                         .fill(Color::TRANSPARENT)
                         .translate(0.0, PREVIEW + gap)
                         .child(amane::Column::new(names)),
@@ -486,8 +486,8 @@ fn pane(kinds: &[WidgetKind], viewport: Area, searching: bool) -> Rectangle {
         boxed(flow)
     };
     Rectangle::new()
-        .width(Size::Fixed(viewport.width))
-        .height(Size::Fixed(viewport.height))
+        .width(viewport.width)
+        .height(viewport.height)
         .fill(Color::TRANSPARENT)
         .padding(pad(INSET, INSET))
         .align_child(Start, Start)
@@ -523,8 +523,8 @@ fn footer(width: f32, height: f32) -> Rectangle {
     ));
     let hint = caption("Drag a widget onto the desktop, or click it to add it.");
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .padding(pad(INSET, 0.0))
         .align_child(Start, Center)

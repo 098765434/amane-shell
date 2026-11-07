@@ -7,7 +7,7 @@
 use crate::buttons::Actions;
 use std::rc::Rc;
 
-use amane::{Center, Color, Column, Rectangle, Row, Size, Text, Widget};
+use amane::{Center, Color, Column, Rectangle, Row, Text, Widget};
 
 use crate::buttons::interactive;
 use crate::layout::{boxed, text_height};
@@ -125,15 +125,15 @@ impl ThumbnailPicker {
                 Color::TRANSPARENT
             };
             let picture = Rectangle::new()
-                .width(Size::Fixed(width))
-                .height(Size::Fixed(height))
+                .width(width)
+                .height(height)
                 .radius(px(7.0))
                 .border(1.0, style::divider())
                 .clip()
                 .child(Column::new(vec![choice.picture]));
             let framed = Rectangle::new()
-                .width(Size::Fixed(width + 2.0 * ring()))
-                .height(Size::Fixed(height + 2.0 * ring()))
+                .width(width + 2.0 * ring())
+                .height(height + 2.0 * ring())
                 .radius(px(7.0) + ring())
                 .border(ring(), ring_color)
                 .align_child(Center, Center)
@@ -146,8 +146,8 @@ impl ThumbnailPicker {
                     style::label_secondary()
                 });
             let cell = Rectangle::new()
-                .width(Size::Fixed(cell_width))
-                .height(Size::Fixed(cell_height))
+                .width(cell_width)
+                .height(cell_height)
                 .fill(Color::TRANSPARENT)
                 .align_child(Center, amane::Start)
                 .child(

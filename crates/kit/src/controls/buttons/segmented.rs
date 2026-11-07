@@ -17,7 +17,7 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use amane::{
-    Animation, Blend, Center, Color, Radius, Rectangle, Row, Size, Stack, Widget, request_frame,
+    Animation, Blend, Center, Color, Radius, Rectangle, Row, Stack, Widget, request_frame,
 };
 
 use super::{Actions, Pending, interactive, label_row, state_fill, with_existing, with_state};
@@ -202,8 +202,8 @@ impl SegmentedButton {
         if let Some(x) = thumb {
             layers.push(boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(segment_w))
-                    .height(Size::Fixed(segment_h))
+                    .width(segment_w)
+                    .height(segment_h)
                     .radius(thumb_radius)
                     .fill(sys::color::accent::bg())
                     .translate(x * segment_w, 0.0),
@@ -213,8 +213,8 @@ impl SegmentedButton {
         layers.push(boxed(Row::new(segments).align(Center)));
 
         Rectangle::new()
-            .width(Size::Fixed(self.width))
-            .height(Size::Fixed(height))
+            .width(self.width)
+            .height(height)
             .radius(self.radius)
             .fill(material::fill_role(FillLevel::Secondary))
             .padding(pad(inset, inset))
@@ -305,8 +305,8 @@ fn segment_view(
 
     // the hover layer sits on the segment, over the thumb when it's there
     let base = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .radius(radius)
         .fill(state_fill(&id, fill, segment.disabled))
         .align_child(Center, Center)

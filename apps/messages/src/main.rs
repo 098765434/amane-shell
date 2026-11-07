@@ -266,7 +266,7 @@ fn main_window() -> Window {
                 device.as_ref(),
                 view,
             )))])
-            .width(Size::Fixed(SIDEBAR_WIDTH))
+            .width(SIDEBAR_WIDTH)
             .height(Size::Parent),
         ),
         boxed(

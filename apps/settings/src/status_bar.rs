@@ -448,7 +448,7 @@ fn item_row(name: &'static str, index: usize, last: usize, shown: bool) -> FormR
         // the arrows line up with the rows that have a switch
         trailing.push(boxed(
             Rectangle::new()
-                .width(Size::Fixed(fixed_width(&switch)))
+                .width(fixed_width(&switch))
                 .height(Size::Fixed(1.0)),
         ));
     }

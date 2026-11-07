@@ -41,7 +41,7 @@ pub(super) fn workspaces(output: &str) -> Rectangle {
     let scrolled_on = output.to_string();
 
     Rectangle::new()
-        .width(Size::Fixed(width))
+        .width(width)
         .height(Parent)
         .fill(Color::TRANSPARENT)
         .align_child(Start, Center)

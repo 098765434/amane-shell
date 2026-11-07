@@ -22,7 +22,7 @@ pub(crate) fn edge(id: &'static str) -> amane::Color {
 pub(crate) fn frame(input: TextInput, width: impl Into<Size>, edge: amane::Color) -> Rectangle {
     Rectangle::new()
         .width(width)
-        .height(Size::Fixed(style::control_height()))
+        .height(style::control_height())
         .radius(style::field_radius())
         .fill(style::field_fill())
         .border(1.0, edge)

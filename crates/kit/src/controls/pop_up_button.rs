@@ -5,7 +5,7 @@
 use crate::buttons::Actions;
 use std::rc::Rc;
 
-use amane::{Center, Radius, Rectangle, Size};
+use amane::{Center, Radius, Rectangle};
 
 use crate::buttons::interactive;
 use crate::look::hover::hover_fill;
@@ -79,8 +79,8 @@ impl PopUpButton {
         }
 
         let base = Rectangle::new()
-            .width(Size::Fixed(side))
-            .height(Size::Fixed(side))
+            .width(side)
+            .height(side)
             .radius(Radius::Full)
             .fill(hover_fill(
                 &self.id,

@@ -22,8 +22,8 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use amane::{
-    Animation, Blend, Center, Color, Column, Radius, Rectangle, Row, Shadow, Size, Start, Text,
-    Widget, request_frame,
+    Animation, Blend, Center, Color, Column, Radius, Rectangle, Row, Shadow, Start, Text, Widget,
+    request_frame,
 };
 
 use super::QS_NS;
@@ -74,8 +74,8 @@ pub(super) fn module(
     content: impl Widget + 'static,
 ) -> Rectangle {
     let module = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .radius(radius)
         .fill(fill(Material::Control, Material::Control.tint()))
         .clip()
@@ -98,8 +98,8 @@ pub(super) fn sheet(
     content: impl Widget + 'static,
 ) -> Rectangle {
     let surface = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .radius(radius)
         .fill(fill(material, tint))
         .clip()
@@ -369,8 +369,8 @@ impl QuickToggle {
 
         let disc_id = format!("{}.disc", self.id);
         let disc = Rectangle::new()
-            .width(Size::Fixed(disc_side))
-            .height(Size::Fixed(disc_side))
+            .width(disc_side)
+            .height(disc_side)
             .radius(Radius::Full)
             .fill(state_fill(&disc_id, disc_fill, quiet))
             .scale(press_scale(&disc_id, quick::press::scale()))
@@ -408,8 +408,8 @@ impl QuickToggle {
             .align(Center);
 
         let inner = Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(height))
+            .width(width)
+            .height(height)
             .radius(Radius::Full)
             .fill(state_fill(&self.id, Color::TRANSPARENT, quiet))
             .padding(pad(inset, 0.0))
@@ -450,8 +450,8 @@ impl QuickToggle {
         let side = Self::round_size();
         let tint = Color::blend(Color::TRANSPARENT, sys::color::state::on::bg(), progress);
         let inner = Rectangle::new()
-            .width(Size::Fixed(side))
-            .height(Size::Fixed(side))
+            .width(side)
+            .height(side)
             .radius(Radius::Full)
             .fill(state_fill(&self.id, tint, quiet))
             .align_child(Center, Center)
@@ -497,8 +497,8 @@ fn clicked(id: &str, on: bool) {
 /// (`quick.type.line`; amane's text has no leading of its own).
 pub(super) fn line(text: String, style: TextStyle, color: Color, width: f32) -> Rectangle {
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(quick::r#type::line().max(text_height(style))))
+        .width(width)
+        .height(quick::r#type::line().max(text_height(style)))
         .fill(Color::TRANSPARENT)
         .align_child(Start, Center)
         .clip()
@@ -544,8 +544,8 @@ pub(super) fn capsule_button(
     }
     content.push(boxed(Text::new(label).style(style).color(fg)));
     let inner = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .radius(Radius::Full)
         .fill(state_fill(id, fill, false))
         .align_child(Center, Center)

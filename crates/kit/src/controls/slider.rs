@@ -12,9 +12,7 @@
 
 use std::rc::Rc;
 
-use amane::{
-    Center, Color, Point, Pointer, Radius, Rectangle, Row, Scroll, Size, Stack, Start, Widget,
-};
+use amane::{Center, Color, Point, Pointer, Radius, Rectangle, Row, Scroll, Stack, Start, Widget};
 
 use crate::buttons::{Actions, interactive, state_fill};
 use crate::control_size;
@@ -155,8 +153,8 @@ impl Slider {
         };
 
         let track = Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(track_h))
+            .width(width)
+            .height(track_h)
             .radius(track_h / 2.0)
             .fill(material::fill_role(FillLevel::Secondary))
             .border(
@@ -166,8 +164,8 @@ impl Slider {
             .clip()
             .child(
                 Rectangle::new()
-                    .width(Size::Fixed(width * f32::from(value) / 100.0))
-                    .height(Size::Fixed(track_h))
+                    .width(width * f32::from(value) / 100.0)
+                    .height(track_h)
                     .radius(track_h / 2.0)
                     .fill(active),
             );
@@ -177,8 +175,8 @@ impl Slider {
         let height = sys::size::control::height();
         let (knob_w, knob_h) = control_size::current().slider_knob();
         let knob = Rectangle::new()
-            .width(Size::Fixed(knob_w))
-            .height(Size::Fixed(knob_h))
+            .width(knob_w)
+            .height(knob_h)
             .radius(Radius::Full)
             .fill(sys::color::accent::fg())
             .border(sys::border::hairline(), material::separator())
@@ -189,8 +187,8 @@ impl Slider {
 
         let scroll = set.clone();
         let input = Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(height))
+            .width(width)
+            .height(height)
             .fill(Color::TRANSPARENT)
             .align_child(Start, Center);
         if inert {
@@ -199,8 +197,8 @@ impl Slider {
         let track = Stack::new(vec![
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(width))
-                    .height(Size::Fixed(height))
+                    .width(width)
+                    .height(height)
                     .align_child(Start, Center)
                     .child(track),
             ),
@@ -240,8 +238,8 @@ impl Slider {
         };
 
         let fill = Rectangle::new()
-            .width(Size::Fixed(large_fill(value, width, height)))
-            .height(Size::Fixed(height))
+            .width(large_fill(value, width, height))
+            .height(height)
             .radius(Radius::Full)
             .fill(active);
 
@@ -266,8 +264,8 @@ impl Slider {
 
         let drag_set = set.clone();
         let rest = Rectangle::new()
-            .width(Size::Fixed((width - drag_from).max(1.0)))
-            .height(Size::Fixed(height))
+            .width((width - drag_from).max(1.0))
+            .height(height)
             .fill(Color::TRANSPARENT);
         let rest = if inert {
             rest
@@ -285,8 +283,8 @@ impl Slider {
         };
 
         let slider = Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(height))
+            .width(width)
+            .height(height)
             .radius(Radius::Full)
             .fill(track)
             .clip()

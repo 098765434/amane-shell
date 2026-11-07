@@ -5,7 +5,7 @@
 //! draws on its quad pipeline (round-joined polylines), or plain
 //! rectangles for the round ones.
 
-use amane::{Canvas, Cap, Center, Color, Join, Path, Radius, Rectangle, Row, Shape, Size, Stack};
+use amane::{Canvas, Cap, Center, Color, Join, Path, Radius, Rectangle, Row, Shape, Stack};
 
 use crate::layout::boxed;
 
@@ -56,8 +56,8 @@ pub fn stroke_width(size: f32) -> f32 {
 /// `symbol` in a `size` square, drawn in `color`.
 pub fn symbol(symbol: Symbol, size: f32, color: Color) -> Rectangle {
     let frame = Rectangle::new()
-        .width(Size::Fixed(size))
-        .height(Size::Fixed(size))
+        .width(size)
+        .height(size)
         .align_child(Center, Center);
     let stroke = stroke_width(size);
 
@@ -69,8 +69,8 @@ pub fn symbol(symbol: Symbol, size: f32, color: Color) -> Rectangle {
                 .map(|_| {
                     boxed(
                         Rectangle::new()
-                            .width(Size::Fixed(dot))
-                            .height(Size::Fixed(dot))
+                            .width(dot)
+                            .height(dot)
                             .radius(Radius::Full)
                             .fill(color),
                     )
@@ -82,30 +82,30 @@ pub fn symbol(symbol: Symbol, size: f32, color: Color) -> Rectangle {
             let ring = size * 0.92;
             let stem_w = stroke * 1.1;
             let dot = Rectangle::new()
-                .width(Size::Fixed(stem_w))
-                .height(Size::Fixed(stem_w))
+                .width(stem_w)
+                .height(stem_w)
                 .radius(Radius::Full)
                 .fill(color)
                 .translate(0.0, size * 0.28 - (size - ring) / 2.0);
             let stem = Rectangle::new()
-                .width(Size::Fixed(stem_w))
-                .height(Size::Fixed(size * 0.26))
+                .width(stem_w)
+                .height(size * 0.26)
                 .radius(Radius::Full)
                 .fill(color)
                 .translate(0.0, size * 0.44 - (size - ring) / 2.0);
             let column = |part: Rectangle| {
                 boxed(
                     Rectangle::new()
-                        .width(Size::Fixed(ring))
-                        .height(Size::Fixed(ring))
+                        .width(ring)
+                        .height(ring)
                         .align_child(Center, amane::Start)
                         .child(part),
                 )
             };
             frame.child(
                 Rectangle::new()
-                    .width(Size::Fixed(ring))
-                    .height(Size::Fixed(ring))
+                    .width(ring)
+                    .height(ring)
                     .radius(Radius::Full)
                     .border(stroke, color)
                     .child(Stack::new(vec![column(dot), column(stem)])),
@@ -128,12 +128,7 @@ pub fn symbol(symbol: Symbol, size: f32, color: Color) -> Rectangle {
                         as Box<dyn Shape>
                 })
                 .collect();
-            frame.child(
-                Canvas::new()
-                    .width(Size::Fixed(size))
-                    .height(Size::Fixed(size))
-                    .shapes(shapes),
-            )
+            frame.child(Canvas::new().width(size).height(size).shapes(shapes))
         }
     }
 }

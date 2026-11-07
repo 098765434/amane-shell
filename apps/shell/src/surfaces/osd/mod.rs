@@ -20,8 +20,8 @@ use std::cell::{Cell, RefCell};
 use std::time::{Duration, Instant};
 
 use amane::{
-    AudioKind, Center, Horizontal, Keyboard, LayerWindow, Margin, Rectangle, Row, Size, Start,
-    Text, Vertical, Widget,
+    AudioKind, Center, Horizontal, Keyboard, LayerWindow, Margin, Rectangle, Row, Start, Text,
+    Vertical, Widget,
 };
 
 use crate::chrome::panel::overlay;
@@ -220,7 +220,7 @@ fn content(readout: &Readout, width: f32) -> Row {
 
     let glyph = slot(side).child(icon(glyph, sys::size::icon::m(), label));
     Row::new(vec![boxed(glyph), after])
-        .width(Size::Fixed(width))
+        .width(width)
         .gap(gap)
         .align(Center)
 }
@@ -249,8 +249,8 @@ fn pips(level: u32, max: u32, width: f32) -> Row {
             };
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(each))
-                    .height(Size::Fixed(track))
+                    .width(each)
+                    .height(track)
                     .radius(track / 2.0)
                     .fill(fill),
             )

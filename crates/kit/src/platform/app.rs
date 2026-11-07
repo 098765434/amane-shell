@@ -241,7 +241,7 @@ pub fn sidebar_with(
                     return boxed(
                         Rectangle::new()
                             .width(Size::Parent)
-                            .height(Size::Fixed(height))
+                            .height(height)
                             .fill(Color::TRANSPARENT)
                             .padding(pad(sys::space::inset::s(), 0.0))
                             .align_child(amane::Start, amane::End)
@@ -261,7 +261,7 @@ pub fn sidebar_with(
 
                 let base = Rectangle::new()
                     .width(Size::Parent)
-                    .height(Size::Fixed(sys::size::row::height()))
+                    .height(sys::size::row::height())
                     .radius(Radius::Fixed(sys::radius::raised()))
                     .fill(state_fill(&key, fill, false))
                     .padding(pad(sys::space::inset::s(), 0.0))

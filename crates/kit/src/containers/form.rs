@@ -285,8 +285,8 @@ impl FormRow {
         let title: Box<dyn Widget> = if text_width(&self.title, title_font()) > room {
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(room))
-                    .height(Size::Fixed(text_height(title_font())))
+                    .width(room)
+                    .height(text_height(title_font()))
                     .clip()
                     .child(title.elide()),
             )
@@ -316,7 +316,7 @@ impl FormRow {
                 Row::new(vec![
                     boxed(
                         Rectangle::new()
-                            .width(Size::Fixed(child_indent()))
+                            .width(child_indent())
                             .height(Size::Fixed(1.0))
                             .fill(Color::TRANSPARENT),
                     ),
@@ -340,7 +340,7 @@ impl FormRow {
 
         let top = Rectangle::new()
             .width(Size::Parent)
-            .height(Size::Fixed(head))
+            .height(head)
             .align_child(amane::Start, Center)
             .child(
                 Row::new(vec![leading, boxed(trailing)])
@@ -354,7 +354,7 @@ impl FormRow {
             parts.push(boxed(
                 Rectangle::new()
                     .width(Size::Parent)
-                    .height(Size::Fixed(detail_h))
+                    .height(detail_h)
                     .padding(Padding {
                         left: start - pad_h(),
                         ..Padding::default()
@@ -378,7 +378,7 @@ impl FormRow {
 
         let base = Rectangle::new()
             .width(Size::Parent)
-            .height(Size::Fixed(height))
+            .height(height)
             .fill(fill)
             .padding(crate::layout::pad_x(pad_h(), pad_h()))
             .child(Column::new(parts).width(Size::Parent));
@@ -465,8 +465,8 @@ impl SliderRow {
         } else if let Some(glyph) = self.glyph {
             parts.push(boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(tile_side()))
-                    .height(Size::Fixed(tile_side()))
+                    .width(tile_side())
+                    .height(tile_side())
                     .align_child(Center, Center)
                     .child(icon(glyph, px(18.0), style::label_secondary())),
             ));
@@ -484,7 +484,7 @@ impl SliderRow {
                     .color(style::label_secondary()),
             ),
         ])
-        .width(Size::Fixed(slider_w))
+        .width(slider_w)
         .justify(amane::SpaceBetween)
         .align(Center);
 
@@ -494,7 +494,7 @@ impl SliderRow {
 
         Rectangle::new()
             .width(Size::Parent)
-            .height(Size::Fixed(height))
+            .height(height)
             .padding(Padding {
                 left: pad_h(),
                 right: pad_h(),
@@ -656,7 +656,7 @@ impl Group {
                 Item::Custom(widget, height) => boxed(
                     Rectangle::new()
                         .width(Size::Parent)
-                        .height(Size::Fixed(height))
+                        .height(height)
                         .child(Column::new(vec![widget])),
                 ),
             });
@@ -681,8 +681,8 @@ impl Group {
         }
 
         let card = Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(card_height))
+            .width(width)
+            .height(card_height)
             .radius(style::group_radius())
             .fill(style::group_fill())
             .clip()
@@ -692,8 +692,8 @@ impl Group {
         if let Some(header) = self.header {
             parts.push(boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(width))
-                    .height(Size::Fixed(text_height(note_font())))
+                    .width(width)
+                    .height(text_height(note_font()))
                     .padding(Padding {
                         left: pad_h(),
                         ..Padding::default()
@@ -723,8 +723,8 @@ impl Group {
                 .collect();
             parts.push(boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(width))
-                    .height(Size::Fixed(footer_height))
+                    .width(width)
+                    .height(footer_height)
                     .padding(Padding {
                         left: pad_h(),
                         right: pad_h(),
@@ -757,9 +757,7 @@ mod tests {
             .row(switch_row("a"))
             .row(switch_row("b").subtitle("A second line"))
             .slider(SliderRow::new("Level", |w| {
-                Rectangle::new()
-                    .width(Size::Fixed(w))
-                    .height(Size::Fixed(24.0))
+                Rectangle::new().width(w).height(Size::Fixed(24.0))
             }))
             .custom(
                 Rectangle::new()
@@ -773,9 +771,7 @@ mod tests {
         assert_eq!(one, style::row_min_height());
         assert!(two > one);
         let slider = SliderRow::new("Level", |w| {
-            Rectangle::new()
-                .width(Size::Fixed(w))
-                .height(Size::Fixed(24.0))
+            Rectangle::new().width(w).height(Size::Fixed(24.0))
         })
         .height();
         assert_eq!(group.card_height(), one + two + slider + 30.0 + 3.0);

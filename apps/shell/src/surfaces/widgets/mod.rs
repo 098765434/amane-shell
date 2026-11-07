@@ -45,7 +45,7 @@ use std::collections::HashSet;
 
 use amane::{
     Animation, BlurShape, Button, Color, Cursor, Desktop, Full, Horizontal, InputArea, Keyboard,
-    Layer, LayerWindow, Margin, Monitor, Point, Rectangle, Service, Shadow, Size, Stack, Vertical,
+    Layer, LayerWindow, Margin, Monitor, Point, Rectangle, Service, Shadow, Stack, Vertical,
     Widget, WindowSize, WorkspaceSwitch, Workspaces, Zone,
 };
 

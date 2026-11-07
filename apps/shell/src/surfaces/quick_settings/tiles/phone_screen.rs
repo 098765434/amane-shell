@@ -12,7 +12,7 @@
 use std::cell::RefCell;
 use std::net::IpAddr;
 
-use amane::{Center, Column, Parent, Rectangle, Row, Service, Size, Text, TextInput, Widget};
+use amane::{Center, Column, Parent, Rectangle, Row, Service, Text, TextInput, Widget};
 use amane_phone::{Adb, AdbAction, AdbOperation, PhoneDevice, WirelessKind};
 use qrcode::{Color as Module, EcLevel, QrCode};
 
@@ -314,7 +314,7 @@ fn body(device: &PhoneDevice) -> Vec<Box<dyn Widget>> {
     body.push(boxed(
         Rectangle::new()
             .width(Parent)
-            .height(Size::Fixed(QR_SIZE + 24.0))
+            .height(QR_SIZE + 24.0)
             .align_child(Center, Center)
             .child(qr(&format!("WIFI:T:ADB;S:{name};P:{password};;"))),
     ));
@@ -350,7 +350,7 @@ fn body(device: &PhoneDevice) -> Vec<Box<dyn Widget>> {
         .placeholder("Or the pairing code it shows")
         .size(sys::r#type::label().size)
         .color(material::label(Level::Primary))
-        .width(Size::Fixed(field_width))
+        .width(field_width)
         .on_change(|text| {
             PAIRING.with_borrow_mut(|pairing| {
                 if let Some(pairing) = pairing {
@@ -379,9 +379,7 @@ fn body(device: &PhoneDevice) -> Vec<Box<dyn Widget>> {
 /// quiet zone, so a phone's camera reads it in either theme.
 fn qr(text: &str) -> Rectangle {
     let Ok(code) = QrCode::with_error_correction_level(text, EcLevel::M) else {
-        return Rectangle::new()
-            .width(Size::Fixed(QR_SIZE))
-            .height(Size::Fixed(QR_SIZE));
+        return Rectangle::new().width(QR_SIZE).height(QR_SIZE);
     };
     let width = code.width();
     let colors = code.to_colors();
@@ -400,9 +398,7 @@ fn qr(text: &str) -> Rectangle {
                     .iter()
                     .take_while(|cell| (**cell == Module::Dark) == dark)
                     .count();
-                let cell = Rectangle::new()
-                    .width(Size::Fixed(module * run as f32))
-                    .height(Size::Fixed(module));
+                let cell = Rectangle::new().width(module * run as f32).height(module);
                 cells.push(boxed(if dark {
                     cell.fill(amane::Color::BLACK)
                 } else {
@@ -410,13 +406,13 @@ fn qr(text: &str) -> Rectangle {
                 }));
                 index += run;
             }
-            boxed(Row::new(cells).height(Size::Fixed(module)))
+            boxed(Row::new(cells).height(module))
         })
         .collect();
 
     Rectangle::new()
-        .width(Size::Fixed(side))
-        .height(Size::Fixed(side))
+        .width(side)
+        .height(side)
         .fill(amane::Color::WHITE)
         .radius(sys::radius::raised())
         .padding(amane::Padding {

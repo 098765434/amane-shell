@@ -247,8 +247,8 @@ fn card(
     rows.push(boxed(shelf(&grid.name, inner)));
 
     Rectangle::new()
-        .width(Size::Fixed(size.0))
-        .height(Size::Fixed(size.1))
+        .width(size.0)
+        .height(size.1)
         .radius(RADIUS)
         .fill(Material::Menu.tint())
         .border(sys::border::hairline(), material::separator())
@@ -337,8 +337,8 @@ fn header(
     ));
 
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(HEADER))
+        .width(width)
+        .height(HEADER)
         .fill(Color::TRANSPARENT)
         .child(
             Row::new(vec![
@@ -373,7 +373,7 @@ fn tiles(tiles: &[DropTile], columns: usize, editing: bool) -> Rectangle {
     // the gap between tiles takes folders and apps as new tiles
     Rectangle::new()
         .width(Parent)
-        .height(Size::Fixed(rows_count * TILE_H + (rows_count - 1.0) * GAP))
+        .height(rows_count * TILE_H + (rows_count - 1.0) * GAP)
         .radius(12.0)
         .fill(if hovered {
             material::fill_role(FillLevel::Tertiary)
@@ -560,8 +560,8 @@ fn tile_cell(index: usize, tile: &DropTile, editing: bool) -> Rectangle {
     }
 
     let body = Rectangle::new()
-        .width(Size::Fixed(TILE_W))
-        .height(Size::Fixed(TILE_H))
+        .width(TILE_W)
+        .height(TILE_H)
         .radius(12.0)
         .fill(if hovered {
             with_alpha(accent, 0.25)
@@ -604,14 +604,14 @@ fn tile_cell(index: usize, tile: &DropTile, editing: bool) -> Rectangle {
         .on_click(move |_| remove_tile(index))
         .child(icon(ICON_CLOSE, 14.0, primary));
     Rectangle::new()
-        .width(Size::Fixed(TILE_W))
-        .height(Size::Fixed(TILE_H))
+        .width(TILE_W)
+        .height(TILE_H)
         .fill(Color::TRANSPARENT)
         .child(Stack::new(vec![
             boxed(cell),
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(TILE_W))
+                    .width(TILE_W)
                     .height(Size::Fixed(24.0))
                     .fill(Color::TRANSPARENT)
                     .align_child(amane::End, Start)
@@ -638,8 +638,8 @@ fn ring(done: f32, diameter: f32, color: Color) -> Canvas {
         ));
     }
     Canvas::new()
-        .width(Size::Fixed(diameter))
-        .height(Size::Fixed(diameter))
+        .width(diameter)
+        .height(diameter)
         .shapes(shapes)
 }
 
@@ -1073,8 +1073,8 @@ fn edit_row(tiles: &[DropTile], width: f32) -> Rectangle {
         .map(|line| {
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(width))
-                    .height(Size::Fixed(EDIT_ROW))
+                    .width(width)
+                    .height(EDIT_ROW)
                     .fill(Color::TRANSPARENT)
                     .align_child(Start, Center)
                     .child(Row::new(line).gap(4.0).align(Center)),
@@ -1082,8 +1082,8 @@ fn edit_row(tiles: &[DropTile], width: f32) -> Rectangle {
         })
         .collect();
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .child(Column::new(rows).gap(4.0))
 }
@@ -1235,8 +1235,8 @@ fn ask(prompt: Prompt, width: f32) -> Rectangle {
     rows.extend(field);
     rows.push(boxed(Row::new(buttons).gap(6.0).align(Center)));
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(PROMPT))
+        .width(width)
+        .height(PROMPT)
         .fill(Color::TRANSPARENT)
         .align_child(Start, Center)
         .child(Column::new(rows).gap(8.0))
@@ -1294,8 +1294,8 @@ fn shelf(grid: &str, width: f32) -> Rectangle {
     };
     let held = grid.to_string();
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(SHELF))
+        .width(width)
+        .height(SHELF)
         .radius(12.0)
         .fill(if hovered {
             with_alpha(accent, 0.2)

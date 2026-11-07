@@ -26,7 +26,7 @@ use std::time::{Duration, SystemTime};
 use crate::services::clock::local;
 use amane::{
     Button, Center, Color, Column, End, Image, Notification, Notifications, Padding, Pointer,
-    Rectangle, Row, Size, Start, Text, Urgency, Widget,
+    Rectangle, Row, Start, Text, Urgency, Widget,
 };
 
 use crate::tokens::{Styled, notification, sys};
@@ -261,8 +261,8 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
 
     let fixed = |w: f32, h: f32| {
         Rectangle::new()
-            .width(Size::Fixed(w))
-            .height(Size::Fixed(h))
+            .width(w)
+            .height(h)
             .fill(Color::TRANSPARENT)
             .clip()
     };
@@ -311,8 +311,8 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
         // spills evenly above and below
         boxed(
             Rectangle::new()
-                .width(Size::Fixed(side))
-                .height(Size::Fixed(parts.time_line))
+                .width(side)
+                .height(parts.time_line)
                 .fill(Color::TRANSPARENT)
                 .align_child(Center, Center)
                 .child(close),
@@ -329,8 +329,8 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
         let side = notification::card::thumbnail_size();
         trailing.push(boxed(
             Rectangle::new()
-                .width(Size::Fixed(side))
-                .height(Size::Fixed(side))
+                .width(side)
+                .height(side)
                 .radius(notification::card::thumbnail_radius())
                 .fill(Image::cover(image)),
         ));
@@ -372,8 +372,8 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
     };
 
     let card = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(parts.height))
+        .width(width)
+        .height(parts.height)
         .radius(notification::card::radius())
         .fill(look.fill)
         .border(sys::border::hairline(), stroke)

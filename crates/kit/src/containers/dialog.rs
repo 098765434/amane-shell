@@ -447,9 +447,7 @@ impl Dialog {
 
         if let Some(shown) = &self.icon {
             let side = dialog::icon_size();
-            let slot = Rectangle::new()
-                .width(Size::Fixed(side))
-                .height(Size::Fixed(side));
+            let slot = Rectangle::new().width(side).height(side);
             let glyph = match shown {
                 Icon::App(path) if Image::loaded(path) => slot.fill(Image::contain(path.clone())),
                 // an icon still loading leaves its room
@@ -461,8 +459,8 @@ impl Dialog {
             };
             rows.push(boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(inner_width()))
-                    .height(Size::Fixed(side))
+                    .width(inner_width())
+                    .height(side)
                     .fill(Color::TRANSPARENT)
                     .padding(crate::layout::pad_x(inset, inset))
                     .align_child(Start, Center)
@@ -487,8 +485,8 @@ impl Dialog {
         }
         rows.push(boxed(
             Rectangle::new()
-                .width(Size::Fixed(inner_width()))
-                .height(Size::Fixed(self.text_height()))
+                .width(inner_width())
+                .height(self.text_height())
                 .fill(Color::TRANSPARENT)
                 .padding(Padding {
                     top: 0.0,
@@ -515,8 +513,8 @@ impl Dialog {
             }
             rows.push(boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(inner_width()))
-                    .height(Size::Fixed(sys::size::control::height()))
+                    .width(inner_width())
+                    .height(sys::size::control::height())
                     .fill(Color::TRANSPARENT)
                     .padding(crate::layout::pad_x(inset, inset))
                     .child(field_box(field.id, input, inner_width() - inset * 2.0)),
@@ -528,8 +526,8 @@ impl Dialog {
         }
 
         Rectangle::new()
-            .width(Size::Fixed(Self::width()))
-            .height(Size::Fixed(self.height()))
+            .width(Self::width())
+            .height(self.height())
             .fill(Color::TRANSPARENT)
             .padding(Padding {
                 top: dialog::padding_top(),

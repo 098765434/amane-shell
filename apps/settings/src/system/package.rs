@@ -273,8 +273,8 @@ fn paragraph(text: Text) -> Rectangle {
     let text = text.wrap();
     let height = text.height_in(page_width());
     Rectangle::new()
-        .width(Size::Fixed(page_width()))
-        .height(Size::Fixed(height))
+        .width(page_width())
+        .height(height)
         .fill(Color::TRANSPARENT)
         .child(text)
 }

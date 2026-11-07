@@ -8,9 +8,7 @@
 use std::cell::Cell;
 use std::time::{Duration, Instant};
 
-use amane::{
-    Center, Color, Column, Image, Media, Rectangle, Row, Service, Size, Stack, Start, Widget,
-};
+use amane::{Center, Color, Column, Image, Media, Rectangle, Row, Service, Stack, Start, Widget};
 
 use super::super::grid::{Metrics, Span};
 use super::super::tile::{line, module};
@@ -92,13 +90,13 @@ pub(crate) fn cell(span: Span, inert: bool) -> Box<dyn Widget> {
 
     let art = match now.as_ref().and_then(|now| now.art.as_deref()) {
         Some(path) if Image::loaded(path) => Rectangle::new()
-            .width(Size::Fixed(side))
-            .height(Size::Fixed(side))
+            .width(side)
+            .height(side)
             .radius(quick::media::art_radius())
             .fill(Image::cover(path)),
         _ => Rectangle::new()
-            .width(Size::Fixed(side))
-            .height(Size::Fixed(side))
+            .width(side)
+            .height(side)
             .radius(quick::media::art_radius())
             .fill(sys::color::state::selected())
             .align_child(Center, Center)
@@ -186,43 +184,34 @@ pub(crate) fn cell(span: Span, inert: bool) -> Box<dyn Widget> {
             let track_h = sys::size::slider::height() / 2.0;
             rows.push(boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(inner_w))
-                    .height(Size::Fixed(track_h))
+                    .width(inner_w)
+                    .height(track_h)
                     .radius(track_h / 2.0)
                     .fill(material::fill_role(FillLevel::Secondary))
                     .align_child(Start, Center)
                     .child(
                         Rectangle::new()
-                            .width(Size::Fixed((inner_w * progress).max(track_h)))
-                            .height(Size::Fixed(track_h))
+                            .width((inner_w * progress).max(track_h))
+                            .height(track_h)
                             .radius(track_h / 2.0)
                             .fill(material::label(Level::Secondary)),
                     ),
             ));
         }
-        rows.push(boxed(
-            controls
-                .width(Size::Fixed(inner_w))
-                .justify(amane::SpaceBetween),
-        ));
-        boxed(
-            Column::new(rows)
-                .gap(gap)
-                .width(Size::Fixed(inner_w))
-                .align(Start),
-        )
+        rows.push(boxed(controls.width(inner_w).justify(amane::SpaceBetween)));
+        boxed(Column::new(rows).gap(gap).width(inner_w).align(Start))
     } else {
         boxed(
             Row::new(vec![boxed(art), boxed(labels), boxed(controls)])
                 .gap(gap)
-                .width(Size::Fixed(inner_w))
+                .width(inner_w)
                 .align(Center),
         )
     };
 
     let inner = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .padding(pad(inset, inset))
         .align_child(Start, Center)

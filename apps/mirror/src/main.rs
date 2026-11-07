@@ -254,7 +254,7 @@ fn main_window() -> Window {
 
     let video = Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(area.height))
+        .height(area.height)
         .child(
             Column::new(vec![screen])
                 .width(Size::Parent)
@@ -388,7 +388,7 @@ fn display_size() -> (u16, u16) {
 fn app_bar() -> Rectangle {
     Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(BAR_HEIGHT))
+        .height(BAR_HEIGHT)
         .align_child(Center, Center)
         .child(
             IconButton::new("amane.mirror.back", ICON_BACK)
@@ -446,7 +446,7 @@ fn bar(screen_off: bool) -> Rectangle {
 
     Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(BAR_HEIGHT))
+        .height(BAR_HEIGHT)
         .padding(amane_kit::layout::pad_x(
             sys::space::inset::s(),
             sys::space::inset::s(),

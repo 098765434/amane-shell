@@ -167,8 +167,8 @@ pub(super) fn header(shown: &Shown, generation: u64) -> Rectangle {
 
     let close = interactive(
         Rectangle::new()
-            .width(Size::Fixed(px(20.0)))
-            .height(Size::Fixed(px(20.0)))
+            .width(px(20.0))
+            .height(px(20.0))
             .radius(px(10.0))
             .fill(hover("fill.close"))
             .align_child(Center, Center)
@@ -184,7 +184,7 @@ pub(super) fn header(shown: &Shown, generation: u64) -> Rectangle {
 
     Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(theme::menu_item_height()))
+        .height(theme::menu_item_height())
         .padding(pad(px(8.0), 0.0))
         .align_child(amane::Start, Center)
         .child(
@@ -243,7 +243,7 @@ pub(super) fn entry_row(
     interactive(
         Rectangle::new()
             .width(Size::Parent)
-            .height(Size::Fixed(theme::menu_item_height()))
+            .height(theme::menu_item_height())
             .radius(px(6.0))
             .fill(hover(&key))
             .padding(pad(px(10.0), 0.0))
@@ -277,7 +277,7 @@ pub(super) fn action_row(key: &'static str, glyph: char, text: &str, run: fn()) 
     interactive(
         Rectangle::new()
             .width(Size::Parent)
-            .height(Size::Fixed(theme::menu_item_height()))
+            .height(theme::menu_item_height())
             .radius(px(6.0))
             .fill(hover(key))
             .padding(pad(px(10.0), 0.0))
@@ -303,7 +303,7 @@ pub(super) fn action_row(key: &'static str, glyph: char, text: &str, run: fn()) 
 pub(super) fn note_row(note: &str) -> Rectangle {
     Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(theme::menu_item_height()))
+        .height(theme::menu_item_height())
         .padding(pad(px(10.0), 0.0))
         .align_child(amane::Start, Center)
         .child(
@@ -327,7 +327,7 @@ pub(super) fn remember_row(app: Option<&Verified>) -> Rectangle {
     interactive(
         Rectangle::new()
             .width(Size::Parent)
-            .height(Size::Fixed(theme::menu_item_height()))
+            .height(theme::menu_item_height())
             .radius(px(6.0))
             .fill(hover("fill.remember"))
             .padding(pad(px(10.0), 0.0))

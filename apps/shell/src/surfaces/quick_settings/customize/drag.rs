@@ -101,8 +101,8 @@ pub(crate) fn ghost(origin: (f32, f32)) -> Option<(Box<dyn Widget>, BlurShape)> 
         1.0,
     );
     let widget = Rectangle::new()
-        .width(Size::Fixed(slot.width))
-        .height(Size::Fixed(slot.height))
+        .width(slot.width)
+        .height(slot.height)
         .fill(Color::TRANSPARENT)
         .translate(x, y)
         .scale(scale)

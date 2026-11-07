@@ -173,8 +173,8 @@ impl Stepper {
             });
 
         let field = Rectangle::new()
-            .width(Size::Fixed(width - column_w - 1.0))
-            .height(Size::Fixed(height))
+            .width(width - column_w - 1.0)
+            .height(height)
             .padding(crate::layout::pad_x(px(8.0), px(4.0)))
             .align_child(amane::Start, Center)
             .clip()
@@ -183,8 +183,8 @@ impl Stepper {
         let half = |dir: f64, glyph: Symbol| {
             let half_id = format!("{id}.{}", if dir > 0.0 { "up" } else { "down" });
             let base = Rectangle::new()
-                .width(Size::Fixed(column_w))
-                .height(Size::Fixed(height / 2.0))
+                .width(column_w)
+                .height(height / 2.0)
                 .fill(hover_fill(&half_id, Color::TRANSPARENT, fg, disabled))
                 .align_child(Center, Center)
                 .child(symbol(glyph, px(10.0), fg));
@@ -229,12 +229,12 @@ impl Stepper {
 
         let line = Rectangle::new()
             .width(Size::Fixed(1.0))
-            .height(Size::Fixed(height - px(6.0)))
+            .height(height - px(6.0))
             .fill(style::field_border());
 
         let base = Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(height))
+            .width(width)
+            .height(height)
             .radius(radius)
             .fill(style::field_fill())
             .border(1.0, style::field_border())

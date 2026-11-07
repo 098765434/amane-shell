@@ -263,7 +263,7 @@ impl<K> ButtonBuilder<K> {
         }
 
         let base = Rectangle::new()
-            .width(Size::Fixed(width))
+            .width(width)
             .height(self.height)
             .radius(self.shape.radius())
             .fill(self.fill())

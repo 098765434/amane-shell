@@ -12,7 +12,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use amane::{Center, Color, Column, Parent, Rectangle, Row, Size, Start, Text, Widget};
+use amane::{Center, Color, Column, Parent, Rectangle, Row, Start, Text, Widget};
 
 use crate::buttons::{Actions, interactive, state_fill};
 use crate::icons::ICON_CHECK;
@@ -178,7 +178,7 @@ impl ListItem {
             Some(supporting) => {
                 let line = sys::size::row::two_line_height() / 2.0 - sys::space::gap::xs();
                 leading.push(boxed(Column::new(vec![
-                    boxed(Row::new(vec![boxed(headline)]).height(Size::Fixed(line))),
+                    boxed(Row::new(vec![boxed(headline)]).height(line)),
                     boxed(
                         Row::new(vec![boxed(clipped_label(
                             supporting,
@@ -187,7 +187,7 @@ impl ListItem {
                             headline_w,
                             Start,
                         ))])
-                        .height(Size::Fixed(line)),
+                        .height(line),
                     ),
                 ])));
                 sys::size::row::two_line_height()
@@ -214,7 +214,7 @@ impl ListItem {
 
         let row = Rectangle::new()
             .width(Parent)
-            .height(Size::Fixed(height))
+            .height(height)
             .radius(sys::radius::raised())
             .fill(fill)
             .padding(pad(sys::space::inset::l(), 0.0))

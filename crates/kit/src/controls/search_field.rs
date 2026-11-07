@@ -8,7 +8,7 @@
 //! tall, the query in `sys.type.label`, the placeholder secondary, the
 //! selection washed `state.selected`, the caret in the accent.
 
-use amane::{Center, Color, Radius, Rectangle, Row, Size, Start, Text, Widget};
+use amane::{Center, Color, Radius, Rectangle, Row, Start, Text, Widget};
 
 use crate::buttons::{Actions, interactive};
 use crate::icons::{ICON_CLOSE, ICON_SEARCH};
@@ -113,8 +113,8 @@ impl<'a> SearchField<'a> {
         }
 
         Rectangle::new()
-            .width(Size::Fixed(self.width))
-            .height(Size::Fixed(height))
+            .width(self.width)
+            .height(height)
             .radius(Radius::Full)
             .fill(material::fill_role(FillLevel::Secondary))
             .padding(pad(inset, 0.0))
@@ -188,8 +188,8 @@ fn query(
     }
 
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .clip()
         .align_child(Start, Center)

@@ -138,7 +138,7 @@ fn badge(count: usize) -> Rectangle {
     let style = sys::r#type::caption();
     let width = (amane_kit::layout::text_width(&text, style) + 12.0).max(20.0);
     Rectangle::new()
-        .width(Size::Fixed(width))
+        .width(width)
         .height(Size::Fixed(20.0))
         .radius(Radius::Full)
         .fill(sys::color::accent::bg())
@@ -332,7 +332,7 @@ fn row(thread: &SmsThread, chosen: bool) -> Rectangle {
     };
     let base = Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(row_height()))
+        .height(row_height())
         .radius(Radius::Fixed(sys::radius::raised()))
         .fill(fill)
         .padding(pad(sys::space::inset::s(), 0.0))
@@ -379,8 +379,8 @@ fn unread_dot(shown: bool) -> Rectangle {
 pub fn avatar_for(thread: &SmsThread, size: f32) -> Rectangle {
     if thread.group() {
         return Rectangle::new()
-            .width(Size::Fixed(size))
-            .height(Size::Fixed(size))
+            .width(size)
+            .height(size)
             .radius(Radius::Full)
             .fill(Accent::Gray.color())
             .align_child(Center, Center)
@@ -411,7 +411,7 @@ fn input_row(chosen: bool) -> Rectangle {
     };
     let base = Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(sys::size::row::height()))
+        .height(sys::size::row::height())
         .radius(Radius::Fixed(sys::radius::raised()))
         .fill(fill)
         .padding(pad(sys::space::inset::s(), 0.0))

@@ -235,9 +235,7 @@ fn token(name: &str, number: &str) -> Rectangle {
         Actions::press(move || unpick(&removed)),
     );
     Rectangle::new()
-        .width(Size::Fixed(
-            10.0 + text_width(name, style) + 4.0 + 18.0 + 6.0,
-        ))
+        .width(10.0 + text_width(name, style) + 4.0 + 18.0 + 6.0)
         .height(Size::Fixed(26.0))
         .radius(Radius::Full)
         .fill(sys::color::accent::bg())

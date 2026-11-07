@@ -162,8 +162,8 @@ pub fn surface() -> LayerWindow {
             ));
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(grid.width))
-                    .height(Size::Fixed(inner))
+                    .width(grid.width)
+                    .height(inner)
                     .fill(Color::TRANSPARENT)
                     .align_child(Start, End)
                     .translate(0.0, shift)
@@ -187,7 +187,7 @@ pub fn surface() -> LayerWindow {
         layers.push(boxed(
             Rectangle::new()
                 .width(Parent)
-                .height(Size::Fixed(outer))
+                .height(outer)
                 .fill(Color::TRANSPARENT)
                 .padding(pad(inset, inset))
                 .align_child(Start, End)
@@ -275,8 +275,8 @@ pub fn surface() -> LayerWindow {
 
     frost = glass_region::transformed(frost, 1.0, (0.0, 0.0), card_at);
     let card = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(outer))
+        .width(width)
+        .height(outer)
         .fill(Color::TRANSPARENT)
         .translate(card_at.0, card_at.1)
         .child(card);
@@ -319,8 +319,8 @@ pub fn surface() -> LayerWindow {
             ),
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(width))
-                    .height(Size::Fixed(outer))
+                    .width(width)
+                    .height(outer)
                     .fill(Color::TRANSPARENT)
                     .translate(card_at.0, card_at.1)
                     .on_click(|_| {}),
@@ -369,8 +369,8 @@ pub(super) fn sheet_layer(page: Page, sheet: Sheet, height: f32, reveal: f32) ->
     let pad_in = quick::tile::pad();
     let grid_w = grid::Metrics::tokens().extent(grid::Canvas::tokens().cols);
     let content = Rectangle::new()
-        .width(Size::Fixed(grid_w))
-        .height(Size::Fixed(height))
+        .width(grid_w)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .padding(pad(pad_in, pad_in))
         .align_child(Start, Start)

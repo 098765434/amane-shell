@@ -78,8 +78,8 @@ pub(super) fn shadow() -> Shadow {
 /// A card's glass, `width` by `height`, holding `content`.
 pub(super) fn card(width: f32, height: f32, content: Box<dyn Widget>) -> Rectangle {
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .radius(RADIUS)
         .fill(Material::Control.fill())
         .shadow(shadow())
@@ -189,8 +189,8 @@ pub(super) fn view(
         let in_hand = held.is_some_and(|(k, _)| k == key) && !item.leaving;
         let drawn_card = boxed(
             Rectangle::new()
-                .width(Size::Fixed(slot.width))
-                .height(Size::Fixed(slot.height))
+                .width(slot.width)
+                .height(slot.height)
                 .fill(Color::TRANSPARENT)
                 .translate(x, y)
                 .scale(pose.scale)

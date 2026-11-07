@@ -57,7 +57,7 @@ pub fn card(fill: Color, glyph: char, title: String, under: Box<dyn Widget>) -> 
         .color(style::label_primary());
     Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(HERO))
+        .height(HERO)
         .fill(Color::TRANSPARENT)
         .padding(amane::Padding {
             left: style::row_pad_h(),

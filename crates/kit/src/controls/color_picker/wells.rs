@@ -6,7 +6,7 @@
 use crate::buttons::Actions;
 use std::rc::Rc;
 
-use amane::{Center, Color, Rectangle, Row, Size, Widget};
+use amane::{Center, Color, Rectangle, Row, Widget};
 
 use crate::buttons::hovered;
 use crate::buttons::interactive;
@@ -76,16 +76,16 @@ impl ColorWells {
                 let face: Box<dyn Widget> = match color {
                     Some(color) => boxed(
                         Rectangle::new()
-                            .width(Size::Fixed(side()))
-                            .height(Size::Fixed(side()))
+                            .width(side())
+                            .height(side())
                             .radius(side() / 2.0)
                             .fill(*color),
                     ),
                     // four quarters of color in a round clip
                     None => boxed(
                         Rectangle::new()
-                            .width(Size::Fixed(side()))
-                            .height(Size::Fixed(side()))
+                            .width(side())
+                            .height(side())
                             .radius(side() / 2.0)
                             .clip()
                             .child(amane::Column::new(
@@ -97,8 +97,8 @@ impl ColorWells {
                                                 .map(|at| {
                                                     boxed(
                                                         Rectangle::new()
-                                                            .width(Size::Fixed(side() / 2.0))
-                                                            .height(Size::Fixed(side() / 2.0))
+                                                            .width(side() / 2.0)
+                                                            .height(side() / 2.0)
                                                             .fill(Color::from(SYSTEM[at])),
                                                     )
                                                 })
@@ -113,8 +113,8 @@ impl ColorWells {
                 let mark: Box<dyn Widget> = if chosen {
                     boxed(
                         Rectangle::new()
-                            .width(Size::Fixed(px(6.0)))
-                            .height(Size::Fixed(px(6.0)))
+                            .width(px(6.0))
+                            .height(px(6.0))
                             .radius(px(3.0))
                             .fill(Color::WHITE),
                     )
@@ -122,8 +122,8 @@ impl ColorWells {
                     boxed(Row::new(Vec::new()))
                 };
                 let dot = Rectangle::new()
-                    .width(Size::Fixed(side()))
-                    .height(Size::Fixed(side()))
+                    .width(side())
+                    .height(side())
                     .radius(side() / 2.0)
                     .border(1.0, style::divider())
                     .align_child(Center, Center)
@@ -131,8 +131,8 @@ impl ColorWells {
                         face,
                         boxed(
                             Rectangle::new()
-                                .width(Size::Fixed(side()))
-                                .height(Size::Fixed(side()))
+                                .width(side())
+                                .height(side())
                                 .fill(Color::TRANSPARENT)
                                 .align_child(Center, Center)
                                 .child(amane::Column::new(vec![mark])),

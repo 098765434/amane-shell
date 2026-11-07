@@ -17,7 +17,7 @@
 
 use std::rc::Rc;
 
-use amane::{Center, Color, Column, Parent, Rectangle, Size, Stack, Start, Widget};
+use amane::{Center, Color, Column, Parent, Rectangle, Stack, Start, Widget};
 
 use super::grid::{Canvas, Metrics};
 use super::{ALONE, back, ramp};
@@ -174,7 +174,7 @@ impl DetailPage {
         }
         let header = Rectangle::new()
             .width(Parent)
-            .height(Size::Fixed(row))
+            .height(row)
             .fill(Color::TRANSPARENT)
             .align_child(Start, Center)
             .child(bar.build());
@@ -192,7 +192,7 @@ impl DetailPage {
         let rows_in = body.len();
         let body = Rectangle::new()
             .width(Parent)
-            .height(Size::Fixed(body_h))
+            .height(body_h)
             .fill(Color::TRANSPARENT)
             .align_child(Start, Start)
             .clip()
@@ -238,6 +238,6 @@ impl DetailPage {
         Column::new(rows)
             .gap(gap / 3.0)
             .width(Parent)
-            .height(Size::Fixed(height))
+            .height(height)
     }
 }

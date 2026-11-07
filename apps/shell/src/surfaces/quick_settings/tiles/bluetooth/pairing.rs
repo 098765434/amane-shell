@@ -71,7 +71,7 @@ pub(super) fn confirm_row(request: &PairingRequest, code: &str, yes: &str) -> Bo
 
     boxed(
         Row::new(vec![
-            boxed(code_text(code, 0).width(Size::Fixed(code_w))),
+            boxed(code_text(code, 0).width(code_w)),
             boxed(cancel),
             boxed(accept),
         ])
@@ -102,7 +102,7 @@ pub(super) fn code_row(request: &PairingRequest, placeholder: &str, max: usize) 
         .placeholder(placeholder)
         .size(sys::r#type::label().size)
         .color(material::label(Level::Primary))
-        .width(Size::Fixed(input_w))
+        .width(input_w)
         .on_change(move |text| {
             let text: String = text.chars().take(max).collect();
             CODE.set(text);
@@ -129,7 +129,7 @@ pub(super) fn shown_row(request: &PairingRequest, code: &str, entered: usize) ->
 
     boxed(
         Row::new(vec![
-            boxed(code_text(code, entered).width(Size::Fixed(code_w))),
+            boxed(code_text(code, entered).width(code_w)),
             boxed(cancel),
         ])
         .gap(sys::space::gap::s())

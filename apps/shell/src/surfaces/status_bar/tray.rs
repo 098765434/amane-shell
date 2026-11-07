@@ -11,7 +11,7 @@ use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 
 use amane::{
-    Center, Color, Image, Radius, Rectangle, Scroll, Service, Size, Tray, TrayMenuItem, TrayStatus,
+    Center, Color, Image, Radius, Rectangle, Scroll, Service, Tray, TrayMenuItem, TrayStatus,
     TrayToggle, Widget,
 };
 use amane_kit::settings::{remember_tray, status_bar};
@@ -139,12 +139,12 @@ fn picture_of(picture: Option<PathBuf>, attention: bool, color: Color) -> Rectan
     let size = super::metrics().icon;
     let inner = match picture {
         Some(path) => Rectangle::new()
-            .width(Size::Fixed(size))
-            .height(Size::Fixed(size))
+            .width(size)
+            .height(size)
             .fill(Image::contain(path)),
         None => Rectangle::new()
-            .width(Size::Fixed(size / 2.0))
-            .height(Size::Fixed(size / 2.0))
+            .width(size / 2.0)
+            .height(size / 2.0)
             .radius(Radius::Full)
             .fill(color),
     };
@@ -154,8 +154,8 @@ fn picture_of(picture: Option<PathBuf>, attention: bool, color: Color) -> Rectan
         Color::TRANSPARENT
     };
     Rectangle::new()
-        .width(Size::Fixed(size + 6.0))
-        .height(Size::Fixed(size + 6.0))
+        .width(size + 6.0)
+        .height(size + 6.0)
         .radius(Radius::Full)
         .border(1.5, ring)
         .align_child(Center, Center)

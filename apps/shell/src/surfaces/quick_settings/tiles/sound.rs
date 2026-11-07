@@ -4,7 +4,7 @@
 //! checked. Read from the fork's `Audio` service, which follows the sound
 //! server live.
 
-use amane::{Audio, AudioDevice, Column, Parent, ScrollArea, Service, Size, Text, Widget};
+use amane::{Audio, AudioDevice, Column, Parent, ScrollArea, Service, Text, Widget};
 
 use super::super::grid::Span;
 use super::super::slider_card::{self, SliderRow};
@@ -178,7 +178,7 @@ pub(in crate::surfaces::quick_settings) fn page() -> DetailPage {
                         .gap(sys::space::gap::xl())
                         .width(Parent),
                 )
-                .height(Size::Fixed(height)),
+                .height(height),
             )]
         });
     settings_link(page, "Sound Settings…", "pavucontrol")

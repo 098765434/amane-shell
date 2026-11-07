@@ -2,7 +2,7 @@
 //! wallpaper, the bar, a window, the dock) drawn the way each choice would
 //! draw it. Flat shapes only, so they stay on amane's quads.
 
-use amane::{Color, Column, Rectangle, Size, Stack, Widget};
+use amane::{Color, Column, Rectangle, Stack, Widget};
 use amane_kit::color::with_alpha;
 use amane_kit::layout::boxed;
 use amane_kit::settings::{BarSize, BarStyle, WidgetStyle};
@@ -21,8 +21,8 @@ const FAR_HILLS: &str = "#4675a9";
 fn at(x: f32, y: f32, shape: Rectangle) -> Box<dyn Widget> {
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(WIDTH))
-            .height(Size::Fixed(HEIGHT))
+            .width(WIDTH)
+            .height(HEIGHT)
             .fill(Color::TRANSPARENT)
             .padding(amane::Padding {
                 left: x,
@@ -36,8 +36,8 @@ fn at(x: f32, y: f32, shape: Rectangle) -> Box<dyn Widget> {
 
 fn shape(w: f32, h: f32, radius: f32, fill: Color) -> Rectangle {
     Rectangle::new()
-        .width(Size::Fixed(w))
-        .height(Size::Fixed(h))
+        .width(w)
+        .height(h)
         .radius(radius)
         .fill(fill)
 }
@@ -53,8 +53,8 @@ fn wallpaper() -> Vec<Box<dyn Widget>> {
 
 fn picture(layers: Vec<Box<dyn Widget>>) -> Rectangle {
     Rectangle::new()
-        .width(Size::Fixed(WIDTH))
-        .height(Size::Fixed(HEIGHT))
+        .width(WIDTH)
+        .height(HEIGHT)
         .clip()
         .child(Stack::new(layers))
 }
@@ -105,16 +105,16 @@ pub fn appearance(mode: Option<Mode>) -> Rectangle {
             let half = |dark: bool, side: amane::Align| -> Box<dyn Widget> {
                 boxed(
                     Rectangle::new()
-                        .width(Size::Fixed(WIDTH / 2.0))
-                        .height(Size::Fixed(HEIGHT))
+                        .width(WIDTH / 2.0)
+                        .height(HEIGHT)
                         .clip()
                         .align_child(side, amane::Start)
                         .child(desktop(dark)),
                 )
             };
             Rectangle::new()
-                .width(Size::Fixed(WIDTH))
-                .height(Size::Fixed(HEIGHT))
+                .width(WIDTH)
+                .height(HEIGHT)
                 .clip()
                 .child(amane::Row::new(vec![
                     half(false, amane::Start.into()),
@@ -315,8 +315,8 @@ pub fn clock(analog: bool) -> Rectangle {
                 x,
                 y,
                 Rectangle::new()
-                    .width(Size::Fixed(FACE))
-                    .height(Size::Fixed(FACE))
+                    .width(FACE)
+                    .height(FACE)
                     .fill(Color::TRANSPARENT)
                     .rotate(degrees)
                     .align_child(amane::Center, amane::Start)
@@ -332,8 +332,8 @@ pub fn clock(analog: bool) -> Rectangle {
     } else {
         layers.push(boxed(
             Rectangle::new()
-                .width(Size::Fixed(WIDTH))
-                .height(Size::Fixed(HEIGHT))
+                .width(WIDTH)
+                .height(HEIGHT)
                 .fill(Color::TRANSPARENT)
                 .align_child(amane::Center, amane::Center)
                 .child(Column::new(vec![boxed({

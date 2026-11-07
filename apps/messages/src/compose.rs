@@ -205,7 +205,7 @@ fn frame(input: TextInput, width: f32) -> Rectangle {
         boxed(
             ScrollArea::new("messages.compose.scroll", input)
                 .width(Size::Parent)
-                .height(Size::Fixed(shown)),
+                .height(shown),
         )
     } else {
         boxed(input)
@@ -218,8 +218,8 @@ fn frame(input: TextInput, width: f32) -> Rectangle {
     };
 
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(shown + 2.0 * inset))
+        .width(width)
+        .height(shown + 2.0 * inset)
         .radius(Radius::Fixed((line / 2.0 + inset).min(18.0)))
         .fill(style::field_fill())
         .border(1.0, edge)
@@ -288,7 +288,7 @@ fn chip(draft: Draft, path: &PathBuf) -> Rectangle {
 
     let width = 8.0 + 16.0 + 6.0 + label_width + 4.0 + 18.0 + 6.0;
     Rectangle::new()
-        .width(Size::Fixed(width))
+        .width(width)
         .height(Size::Fixed(28.0))
         .radius(Radius::Full)
         .fill(with_alpha(style::label_primary(), 0.07))

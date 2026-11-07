@@ -397,8 +397,8 @@ pub fn glyph(glyph: Glyph, size: f32, color: Color) -> Rectangle {
                 Size::Parent => size,
             };
             Rectangle::new()
-                .width(Size::Fixed(fixed_width(&text)))
-                .height(Size::Fixed(height))
+                .width(fixed_width(&text))
+                .height(height)
                 .fill(Color::TRANSPARENT)
                 .child(text)
         }
@@ -426,8 +426,8 @@ fn tailscale_mark(size: f32, color: Color) -> Rectangle {
                 .map(|solid| {
                     boxed(
                         Rectangle::new()
-                            .width(Size::Fixed(dot))
-                            .height(Size::Fixed(dot))
+                            .width(dot)
+                            .height(dot)
                             .radius(Radius::Full)
                             .fill(color)
                             .opacity(if *solid { 1.0 } else { 0.4 }),
@@ -438,8 +438,8 @@ fn tailscale_mark(size: f32, color: Color) -> Rectangle {
         })
         .collect();
     Rectangle::new()
-        .width(Size::Fixed(size))
-        .height(Size::Fixed(size))
+        .width(size)
+        .height(size)
         .fill(Color::TRANSPARENT)
         .align_child(Center, Center)
         .child(Column::new(rows).gap(gap))

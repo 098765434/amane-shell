@@ -1,7 +1,7 @@
 //! What the form controls share: the checkbox's and the radio button's
 //! mark, and a mark with its label.
 
-use amane::{Center, Radius, Rectangle, Row, Size, Text, Widget};
+use amane::{Center, Radius, Rectangle, Row, Text, Widget};
 
 use crate::control_size;
 use crate::layout::{boxed, text_width};
@@ -31,8 +31,8 @@ pub(crate) fn mark(id: &str, on: bool, kind: Mark) -> Rectangle {
         style::tint(),
     );
     let base = Rectangle::new()
-        .width(Size::Fixed(side))
-        .height(Size::Fixed(side))
+        .width(side)
+        .height(side)
         .radius(match kind {
             Mark::Check => Radius::from(corner),
             Mark::Dot => Radius::Full,
@@ -52,8 +52,8 @@ pub(crate) fn mark(id: &str, on: bool, kind: Mark) -> Rectangle {
             let dot = size.radio_dot();
             base.child(
                 Rectangle::new()
-                    .width(Size::Fixed(dot))
-                    .height(Size::Fixed(dot))
+                    .width(dot)
+                    .height(dot)
                     .radius(Radius::Full)
                     .fill(style::glyph_on_tint()),
             )
@@ -76,8 +76,8 @@ pub(crate) fn labelled(mark: Rectangle, label: Option<String>) -> Rectangle {
         ));
     }
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(style::control_height()))
+        .width(width)
+        .height(style::control_height())
         .align_child(amane::Start, Center)
         .child(Row::new(parts).gap(gap).align(Center))
 }

@@ -9,8 +9,8 @@
 use std::cell::RefCell;
 
 use amane::{
-    Battery, BatteryState, Column, Parent, PowerDevice, PowerProfile, ScrollArea, Service, Size,
-    Text, Widget,
+    Battery, BatteryState, Column, Parent, PowerDevice, PowerProfile, ScrollArea, Service, Text,
+    Widget,
 };
 
 use super::super::{Page, open};
@@ -203,7 +203,7 @@ fn peripheral_section(height: f32) -> Box<dyn Widget> {
                 .empty("No devices with a battery")
                 .build(),
         )
-        .height(Size::Fixed(height.max(1.0))),
+        .height(height.max(1.0)),
     )
 }
 

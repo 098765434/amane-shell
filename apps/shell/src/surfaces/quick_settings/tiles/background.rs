@@ -2,7 +2,7 @@
 //! without a window, opening a page that lists them, each with a button to
 //! close it.
 
-use amane::{ScrollArea, Service, Size, Widget};
+use amane::{ScrollArea, Service, Widget};
 
 use super::super::{Page, open};
 use crate::services::desktop::background_apps::BackgroundApps;
@@ -81,7 +81,7 @@ pub(crate) fn page() -> DetailPage {
                         "amane.qs.background.list",
                         List::new(items).header("Running without a window").build(),
                     )
-                    .height(Size::Fixed(height)),
+                    .height(height),
                 )]
             };
             body

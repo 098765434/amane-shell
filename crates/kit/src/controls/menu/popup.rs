@@ -313,8 +313,8 @@ fn popup(id: &str) -> Popup {
     let eased = 1.0 - (1.0 - t).powi(3);
 
     let panel = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .radius(px(8.0))
         .fill(style::menu_fill())
         .border(1.0, style::field_border())
@@ -332,8 +332,8 @@ fn popup(id: &str) -> Popup {
         .child(Column::new(rows).width(Size::Parent));
 
     let surface = Rectangle::new()
-        .width(Size::Fixed(width + MARGIN * 2.0))
-        .height(Size::Fixed(height + MARGIN * 2.0))
+        .width(width + MARGIN * 2.0)
+        .height(height + MARGIN * 2.0)
         .padding(pad(MARGIN, MARGIN))
         .child(panel);
 
@@ -411,7 +411,7 @@ fn menu_row(
 
     let base = Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(Look::Popup.row_height()))
+        .height(Look::Popup.row_height())
         .radius_top_left(corner(first))
         .radius_top_right(corner(first))
         .radius_bottom_left(corner(last))

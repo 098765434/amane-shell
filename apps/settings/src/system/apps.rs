@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use amane::{Apps, Center, Column, DesktopApp, Rectangle, Service, Size, TextInput};
+use amane::{Apps, Center, Column, DesktopApp, Rectangle, Service, TextInput};
 use amane_kit::app::{field_box, text_field};
 use amane_kit::app_icon::entry_tile;
 use amane_kit::buttons::PushButton;
@@ -502,8 +502,8 @@ pub fn leading(app: Option<&DesktopApp>) -> Rectangle {
     match app {
         Some(app) => entry_tile(app, side),
         None => Rectangle::new()
-            .width(Size::Fixed(side))
-            .height(Size::Fixed(side))
+            .width(side)
+            .height(side)
             .align_child(Center, Center)
             .child(icon(
                 ICON_PACKAGE,

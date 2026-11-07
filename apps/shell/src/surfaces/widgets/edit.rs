@@ -286,8 +286,8 @@ pub(super) fn drop_outline(
     let slot = px.slot(rect);
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(slot.width))
-            .height(Size::Fixed(slot.height))
+            .width(slot.width)
+            .height(slot.height)
             .radius(RADIUS)
             .fill(Color::TRANSPARENT)
             .border(sys::border::hairline(), sys::color::accent::bg())
@@ -303,8 +303,8 @@ pub(super) fn dressing(output: &str, key: WidgetKey, slot: Slot, pose: Pose) -> 
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
     if key.supported().len() > 1 {
         let handle = Rectangle::new()
-            .width(Size::Fixed(side))
-            .height(Size::Fixed(side))
+            .width(side)
+            .height(side)
             .radius(Radius::Full)
             .fill(material::fill_role(FillLevel::Secondary))
             .align_child(amane::Center, amane::Center)
@@ -316,8 +316,8 @@ pub(super) fn dressing(output: &str, key: WidgetKey, slot: Slot, pose: Pose) -> 
             ));
         layers.push(boxed(
             Rectangle::new()
-                .width(Size::Fixed(slot.width))
-                .height(Size::Fixed(slot.height))
+                .width(slot.width)
+                .height(slot.height)
                 .fill(Color::TRANSPARENT)
                 .align_child(amane::End, amane::End)
                 .child(handle),
@@ -336,8 +336,8 @@ pub(super) fn dressing(output: &str, key: WidgetKey, slot: Slot, pose: Pose) -> 
             .build();
         layers.push(boxed(
             Rectangle::new()
-                .width(Size::Fixed(slot.width))
-                .height(Size::Fixed(slot.height))
+                .width(slot.width)
+                .height(slot.height)
                 .fill(Color::TRANSPARENT)
                 .align_child(amane::Start, amane::Start)
                 .child(badge),
@@ -345,8 +345,8 @@ pub(super) fn dressing(output: &str, key: WidgetKey, slot: Slot, pose: Pose) -> 
     }
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(slot.width))
-            .height(Size::Fixed(slot.height))
+            .width(slot.width)
+            .height(slot.height)
             .fill(Color::TRANSPARENT)
             .translate(pose.x, pose.y)
             .scale(pose.scale)

@@ -144,7 +144,7 @@ pub(super) fn expanded(activity: &Shown) -> (Rectangle, f32) {
         boxed(
             amane::Column::new(text)
                 .gap(2.0)
-                .width(Size::Fixed(inner - LEADING_BIG - 12.0 - 72.0)),
+                .width(inner - LEADING_BIG - 12.0 - 72.0),
         ),
     ];
     let big = match &content.trailing {
@@ -158,8 +158,8 @@ pub(super) fn expanded(activity: &Shown) -> (Rectangle, f32) {
     };
     header.extend(big);
     let header = Rectangle::new()
-        .width(Size::Fixed(inner))
-        .height(Size::Fixed(HEADER))
+        .width(inner)
+        .height(HEADER)
         .fill(Color::TRANSPARENT)
         .align_child(Start, Center)
         .child(Row::new(header).gap(12.0).align(Center));
@@ -169,15 +169,15 @@ pub(super) fn expanded(activity: &Shown) -> (Rectangle, f32) {
 
     if let Some(done) = content.progress {
         let track = Rectangle::new()
-            .width(Size::Fixed(inner))
-            .height(Size::Fixed(BAR))
+            .width(inner)
+            .height(BAR)
             .radius(BAR / 2.0)
             .fill(material::fill_role(FillLevel::Secondary))
             .align_child(Start, Center)
             .child(
                 Rectangle::new()
-                    .width(Size::Fixed((inner * done).max(BAR)))
-                    .height(Size::Fixed(BAR))
+                    .width((inner * done).max(BAR))
+                    .height(BAR)
                     .radius(BAR / 2.0)
                     .fill(tint.unwrap_or_else(sys::color::accent::bg)),
             );
@@ -194,10 +194,7 @@ pub(super) fn expanded(activity: &Shown) -> (Rectangle, f32) {
             .map(|button| boxed(activity_button(activity, button, each)))
             .collect();
         rows.push(boxed(
-            Row::new(row)
-                .gap(row_gap)
-                .height(Size::Fixed(BUTTONS))
-                .align(Center),
+            Row::new(row).gap(row_gap).height(BUTTONS).align(Center),
         ));
         height += gap + BUTTONS;
     }
@@ -237,14 +234,14 @@ pub(super) fn activity_button(activity: &Shown, button: &ActivityButton, width: 
         (Some(glyph), true) => IconButton::new(key, glyph)
             .style(style)
             .width(width)
-            .height(Size::Fixed(BUTTONS))
+            .height(BUTTONS)
             .on_press(press)
             .build(),
         (glyph, _) => {
             let mut push = PushButton::new(key, button.label.clone())
                 .style(style)
                 .width(width)
-                .height(Size::Fixed(BUTTONS))
+                .height(BUTTONS)
                 .on_press(press);
             if let Some(glyph) = glyph {
                 push = push.icon(glyph);

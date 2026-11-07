@@ -340,8 +340,8 @@ pub(super) fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
         // a hand from the middle up, in a frame the size of the face that turns
         boxed(
             Rectangle::new()
-                .width(Size::Fixed(face))
-                .height(Size::Fixed(face))
+                .width(face)
+                .height(face)
                 .fill(Color::TRANSPARENT)
                 .rotate(degrees)
                 .align_child(Center, Start)
@@ -351,8 +351,8 @@ pub(super) fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
                 })
                 .child(
                     Rectangle::new()
-                        .width(Size::Fixed(thickness))
-                        .height(Size::Fixed(length))
+                        .width(thickness)
+                        .height(length)
                         .radius(thickness / 2.0)
                         .fill(color),
                 ),
@@ -361,14 +361,14 @@ pub(super) fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
     let minutes = minute as f32 * 6.0;
     let hours = (hour % 12) as f32 * 30.0 + minute as f32 * 0.5;
     Rectangle::new()
-        .width(Size::Fixed(metrics().item_width))
+        .width(metrics().item_width)
         .height(Parent)
         .fill(Color::TRANSPARENT)
         .align_child(Center, Center)
         .child(
             Rectangle::new()
-                .width(Size::Fixed(face))
-                .height(Size::Fixed(face))
+                .width(face)
+                .height(face)
                 .radius(face / 2.0)
                 .border(1.5, color)
                 .child(amane::Stack::new(vec![

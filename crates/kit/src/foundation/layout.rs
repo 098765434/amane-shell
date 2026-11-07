@@ -100,7 +100,7 @@ pub fn clipped_label(
     align: impl Into<Align>,
 ) -> Rectangle {
     Rectangle::new()
-        .width(Size::Fixed(width))
+        .width(width)
         .height(Parent)
         .fill(Color::TRANSPARENT)
         .align_child(align, Center)

@@ -7,7 +7,7 @@
 
 use std::path::PathBuf;
 
-use amane::{Center, Color, Column, Image, Radius, Rectangle, Size, Text, Widget};
+use amane::{Center, Color, Column, Image, Radius, Rectangle, Text, Widget};
 
 use crate::color::Accent;
 use crate::icons::ICON_PERSON;
@@ -59,8 +59,8 @@ impl Avatar {
     /// The circle, `side` across.
     pub fn build(self) -> Rectangle {
         let circle = Rectangle::new()
-            .width(Size::Fixed(self.side))
-            .height(Size::Fixed(self.side))
+            .width(self.side)
+            .height(self.side)
             .radius(Radius::Full);
         if let Some(photo) = self.photo {
             let px = (self.side * 2.0) as u32;

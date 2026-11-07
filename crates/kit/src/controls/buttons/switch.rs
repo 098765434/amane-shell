@@ -14,7 +14,7 @@
 use std::rc::Rc;
 use std::time::Instant;
 
-use amane::{Animation, Blend, Center, Color, Radius, Rectangle, Size, Start, request_frame};
+use amane::{Animation, Blend, Center, Color, Radius, Rectangle, Start, request_frame};
 
 use super::{Actions, Pending, interactive, state_fill, with_existing, with_state};
 use crate::control_size;
@@ -75,15 +75,15 @@ impl Switch {
             progress.clamp(0.0, 1.0),
         );
         let knob = Rectangle::new()
-            .width(Size::Fixed(knob_w))
-            .height(Size::Fixed(knob_h))
+            .width(knob_w)
+            .height(knob_h)
             .radius(Radius::Full)
             .fill(sys::color::accent::fg())
             .translate(progress * (size.width - knob_w - inset * 2.0), 0.0);
 
         let base = Rectangle::new()
-            .width(Size::Fixed(size.width))
-            .height(Size::Fixed(size.height))
+            .width(size.width)
+            .height(size.height)
             .radius(Radius::Full)
             .fill(state_fill(&self.id, track, self.disabled))
             .padding(pad(inset, inset))

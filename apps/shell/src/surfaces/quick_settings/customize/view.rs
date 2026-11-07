@@ -94,11 +94,11 @@ pub(super) fn content(area: &Area) -> Rectangle {
         boxed(Divider::build()),
         boxed(footer(pane_w, footer_h)),
     ])
-    .width(Size::Fixed(pane_w));
+    .width(pane_w);
 
     Rectangle::new()
-        .width(Size::Fixed(area.width))
-        .height(Size::Fixed(area.height))
+        .width(area.width)
+        .height(area.height)
         .fill(Color::TRANSPARENT)
         .align_child(Start, Start)
         .child(
@@ -151,15 +151,15 @@ pub(super) fn sidebar(field: &Field, picked: Category, height: f32) -> Rectangle
         .build(list);
 
     Rectangle::new()
-        .width(Size::Fixed(SIDEBAR))
-        .height(Size::Fixed(height))
+        .width(SIDEBAR)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .padding(pad(INSET, INSET))
         .align_child(Start, Start)
         .child(
             amane::Column::new(vec![boxed(search), boxed(list)])
                 .gap(gap)
-                .width(Size::Fixed(inner_w)),
+                .width(inner_w),
         )
 }
 
@@ -184,8 +184,8 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
     for (i, section) in sections.into_iter().enumerate() {
         layers.push(boxed(
             Rectangle::new()
-                .width(Size::Fixed(inner_w))
-                .height(Size::Fixed(title_h))
+                .width(inner_w)
+                .height(title_h)
                 .fill(Color::TRANSPARENT)
                 .align_child(Start, Center)
                 .translate(INSET, y)
@@ -206,8 +206,8 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
             let note_h = text_height(sys::r#type::caption());
             layers.push(boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(inner_w))
-                    .height(Size::Fixed(note_h))
+                    .width(inner_w)
+                    .height(note_h)
                     .fill(Color::TRANSPARENT)
                     .align_child(Start, Center)
                     .translate(INSET, y)
@@ -242,8 +242,8 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
             y += gap_l;
             layers.push(boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(inner_w))
-                    .height(Size::Fixed(Divider::height()))
+                    .width(inner_w)
+                    .height(Divider::height())
                     .fill(Color::TRANSPARENT)
                     .translate(INSET, y)
                     .child(Divider::build()),
@@ -278,8 +278,8 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
     });
 
     let content = Rectangle::new()
-        .width(Size::Fixed(viewport.width))
-        .height(Size::Fixed(content_h.max(viewport.height)))
+        .width(viewport.width)
+        .height(content_h.max(viewport.height))
         .fill(Color::TRANSPARENT)
         .child(Stack::new(layers));
     ScrollView::new(Axis::Vertical, viewport.width, viewport.height)
@@ -316,8 +316,8 @@ pub(super) fn catalog_item(id: ControlId, px: &Metrics) -> (Rectangle, f32, f32,
         .map(|line| {
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(item_w))
-                    .height(Size::Fixed(line_h))
+                    .width(item_w)
+                    .height(line_h)
                     .fill(Color::TRANSPARENT)
                     .align_child(Center, Center)
                     .child(
@@ -330,22 +330,22 @@ pub(super) fn catalog_item(id: ControlId, px: &Metrics) -> (Rectangle, f32, f32,
         .collect();
 
     let item = Rectangle::new()
-        .width(Size::Fixed(item_w))
-        .height(Size::Fixed(item_h))
+        .width(item_w)
+        .height(item_h)
         .fill(Color::TRANSPARENT)
         .child(Stack::new(vec![
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(slot.width))
-                    .height(Size::Fixed(slot.height))
+                    .width(slot.width)
+                    .height(slot.height)
                     .fill(Color::TRANSPARENT)
                     .translate((item_w - slot.width) / 2.0, 0.0)
                     .child(Stack::new(vec![control])),
             ),
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(item_w))
-                    .height(Size::Fixed(caption_h))
+                    .width(item_w)
+                    .height(caption_h)
                     .fill(Color::TRANSPARENT)
                     .translate(0.0, slot.height + gap)
                     .child(amane::Column::new(name)),
@@ -384,8 +384,8 @@ pub(super) fn footer(width: f32, height: f32) -> Rectangle {
     ));
     let hint = caption("Drag a control to place it in Quick Settings.");
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .padding(pad(INSET, 0.0))
         .align_child(Start, Center)

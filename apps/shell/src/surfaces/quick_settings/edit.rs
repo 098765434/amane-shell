@@ -346,8 +346,8 @@ pub(super) fn reset() {
 /// the grab cursor (the drag layer beneath takes the drag).
 pub(super) fn body(control: Box<dyn Widget>, slot: Slot) -> Box<dyn Widget> {
     let surface = Rectangle::new()
-        .width(Size::Fixed(slot.width))
-        .height(Size::Fixed(slot.height))
+        .width(slot.width)
+        .height(slot.height)
         .fill(Color::TRANSPARENT)
         .cursor(Cursor::Grab);
     boxed(Stack::new(vec![control, boxed(surface)]))
@@ -369,8 +369,8 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
         .on_press(move || hide(id))
         .build();
     let badge = Rectangle::new()
-        .width(Size::Fixed(slot.width))
-        .height(Size::Fixed(slot.height))
+        .width(slot.width)
+        .height(slot.height)
         .fill(Color::TRANSPARENT)
         .align_child(amane::Start, amane::Start)
         .child(badge);
@@ -384,8 +384,8 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
             let px = Metrics::tokens();
             let (w, h) = (w.max(px.cell), h.max(px.cell));
             let ghost = Rectangle::new()
-                .width(Size::Fixed(w))
-                .height(Size::Fixed(h))
+                .width(w)
+                .height(h)
                 .radius(radius_of(
                     id,
                     Span {
@@ -398,16 +398,16 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
                 .border(sys::border::hairline(), sys::color::accent::bg());
             layers.push(boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(slot.width))
-                    .height(Size::Fixed(slot.height))
+                    .width(slot.width)
+                    .height(slot.height)
                     .fill(Color::TRANSPARENT)
                     .align_child(amane::Start, amane::Start)
                     .child(ghost),
             ));
         }
         let handle = Rectangle::new()
-            .width(Size::Fixed(side))
-            .height(Size::Fixed(side))
+            .width(side)
+            .height(side)
             .radius(Radius::Full)
             .fill(material::fill_role(FillLevel::Secondary))
             .align_child(amane::Center, amane::Center)
@@ -419,8 +419,8 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
             ));
         layers.push(boxed(
             Rectangle::new()
-                .width(Size::Fixed(slot.width))
-                .height(Size::Fixed(slot.height))
+                .width(slot.width)
+                .height(slot.height)
                 .fill(Color::TRANSPARENT)
                 .align_child(amane::End, amane::End)
                 .child(handle),
@@ -430,8 +430,8 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
 
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(slot.width))
-            .height(Size::Fixed(slot.height))
+            .width(slot.width)
+            .height(slot.height)
             .fill(Color::TRANSPARENT)
             .translate(pose.x, pose.y)
             .scale(pose.scale)
@@ -459,8 +459,8 @@ pub(super) fn ghost_grid(
             };
             boxed(
                 Rectangle::new()
-                    .width(Size::Fixed(slot.width))
-                    .height(Size::Fixed(slot.height))
+                    .width(slot.width)
+                    .height(slot.height)
                     .radius(Radius::Full)
                     .fill(fill)
                     .translate(slot.x, slot.y),
@@ -490,8 +490,8 @@ pub(super) fn drop_outline(px: &Metrics, layout: &Layout) -> Box<dyn Widget> {
     let slot = px.slot(rect);
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(slot.width))
-            .height(Size::Fixed(slot.height))
+            .width(slot.width)
+            .height(slot.height)
             .radius(radius_of(id, rect.span, slot))
             .fill(Color::TRANSPARENT)
             .border(sys::border::hairline(), sys::color::accent::bg())

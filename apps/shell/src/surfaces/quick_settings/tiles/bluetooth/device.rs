@@ -89,8 +89,7 @@ pub(super) fn device_body(
 
     let column = Column::new(body).gap(sys::space::gap::l()).width(Parent);
     vec![boxed(
-        ScrollArea::new("amane.qs.bluetooth.device.page", column)
-            .height(Size::Fixed(height.max(1.0))),
+        ScrollArea::new("amane.qs.bluetooth.device.page", column).height(height.max(1.0)),
     )]
 }
 
@@ -101,7 +100,7 @@ pub(super) fn rename_row(device: &BluetoothDevice) -> Box<dyn Widget> {
         .placeholder(device.name())
         .size(sys::r#type::label().size)
         .color(material::label(Level::Primary))
-        .width(Size::Fixed(page_width()))
+        .width(page_width())
         .on_submit(move |name| {
             if !name.trim().is_empty() {
                 Bluetooth::rename(&path, &name);

@@ -66,7 +66,7 @@ fn dot(id: &'static str, glyph: char, color: Color, tip: String) -> Rectangle {
     let metrics = super::metrics();
     item(DrawnButton::new(id, move |_| {
         Rectangle::new()
-            .width(Size::Fixed(metrics.item_width))
+            .width(metrics.item_width)
             .height(Size::Parent)
             .fill(Color::TRANSPARENT)
             .align_child(Center, Center)

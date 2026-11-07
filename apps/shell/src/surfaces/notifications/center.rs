@@ -15,8 +15,8 @@ use std::time::SystemTime;
 
 use amane::{
     Animation, Center, Color, Column, Full, Horizontal, Keyboard, LayerWindow, Margin,
-    Notification, Notifications, Parent, Rectangle, ScrollArea, Service, Size, Stack, Text,
-    Vertical, Widget, window_size,
+    Notification, Notifications, Parent, Rectangle, ScrollArea, Service, Stack, Text, Vertical,
+    Widget, window_size,
 };
 
 use super::card::{self, Measured, Place};
@@ -411,8 +411,8 @@ fn group_view(
 
     Some(boxed(
         Rectangle::new()
-            .width(Size::Fixed(width))
-            .height(Size::Fixed(height.max(1.0)))
+            .width(width)
+            .height(height.max(1.0))
             .fill(Color::TRANSPARENT)
             .clip()
             .child(Stack::new(layers)),
@@ -486,8 +486,8 @@ fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32)
     );
 
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .child(
             split_row(

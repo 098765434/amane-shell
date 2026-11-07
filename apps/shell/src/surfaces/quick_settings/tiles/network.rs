@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 use amane::{
     AccessPoint, Center, Column, ErrorKind, Link, Network, NetworkOperation, Parent, Row,
-    ScrollArea, Service, ServiceError, Size, TextInput, Widget,
+    ScrollArea, Service, ServiceError, TextInput, Widget,
 };
 
 use super::super::{Page, open};
@@ -227,8 +227,7 @@ fn ap_list(height: f32) -> ScrollArea {
     } else {
         "Wi‑Fi is off"
     };
-    ScrollArea::new("amane.qs.wifi.aps", List::new(items).empty(note).build())
-        .height(Size::Fixed(height))
+    ScrollArea::new("amane.qs.wifi.aps", List::new(items).empty(note).build()).height(height)
 }
 
 /// Where joining a network stands, as its row shows it.
@@ -307,7 +306,7 @@ fn password_section() -> Box<dyn Widget> {
         .placeholder("Password")
         .size(sys::r#type::label().size)
         .color(material::label(Level::Primary))
-        .width(Size::Fixed(input_w))
+        .width(input_w)
         .on_change(|text| PASSWORD.with_borrow_mut(|p| p.typed = text))
         .on_submit(move |pw| join_with_password(&submit_ssid, &pw));
 
@@ -405,7 +404,7 @@ pub(crate) fn vpn_page() -> DetailPage {
                         .empty("No VPN connections")
                         .build(),
                 )
-                .height(Size::Fixed(height)),
+                .height(height),
             )]
         });
     settings_link(page, "VPN Settings…", NETWORK_SETTINGS)

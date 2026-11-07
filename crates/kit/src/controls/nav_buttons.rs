@@ -70,8 +70,8 @@ impl NavButtons {
                 style::label_primary(),
             );
             let base = Rectangle::new()
-                .width(Size::Fixed(side))
-                .height(Size::Fixed(side))
+                .width(side)
+                .height(side)
                 .radius(Radius::Full)
                 .fill(hover_fill(&key, Color::TRANSPARENT, fg, !enabled))
                 .align_child(Center, Center)
@@ -86,7 +86,7 @@ impl NavButtons {
 
         let line = Rectangle::new()
             .width(Size::Fixed(1.0))
-            .height(Size::Fixed(px(20.0)))
+            .height(px(20.0))
             .fill(style::field_border());
 
         let row = Row::new(vec![
@@ -108,8 +108,8 @@ impl NavButtons {
         .align(Center);
 
         Rectangle::new()
-            .width(Size::Fixed(side * 2.0 + 3.0 + px(8.0)))
-            .height(Size::Fixed(px(36.0)))
+            .width(side * 2.0 + 3.0 + px(8.0))
+            .height(px(36.0))
             .radius(Radius::Full)
             // opaque, so the shadow under it doesn't show through and grey it
             .fill(crate::color::over(

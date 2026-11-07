@@ -131,8 +131,8 @@ pub fn popup() -> Popup {
         .visible(true)
         .child(
             Rectangle::new()
-                .width(Size::Fixed(WIDTH))
-                .height(Size::Fixed(height))
+                .width(WIDTH)
+                .height(height)
                 .radius(px(8.0))
                 .fill(theme::menu_fill())
                 .border(1.0, theme::field_border())

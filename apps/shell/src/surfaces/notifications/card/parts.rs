@@ -6,8 +6,8 @@ use super::*;
 pub(super) fn leading(n: &Notification, height: f32) -> Box<dyn Widget> {
     boxed(
         Rectangle::new()
-            .width(Size::Fixed(notification::card::icon_frame()))
-            .height(Size::Fixed(height))
+            .width(notification::card::icon_frame())
+            .height(height)
             .fill(Color::TRANSPARENT)
             .align_child(Center, Center)
             .child(app_icon(n, notification::card::icon_size())),
@@ -79,8 +79,8 @@ pub(super) fn app_icon(n: &Notification, side: f32) -> Rectangle {
         && Image::loaded(&path)
     {
         return Rectangle::new()
-            .width(Size::Fixed(side))
-            .height(Size::Fixed(side))
+            .width(side)
+            .height(side)
             .fill(Image::contain(path));
     }
     app_icon_tile(app_name(n), n.summary(), side)

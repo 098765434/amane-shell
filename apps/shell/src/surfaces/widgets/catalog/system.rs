@@ -122,8 +122,8 @@ pub(super) fn cpu(face: &Face) -> Vec<Box<dyn Widget>> {
             let height = (bars_h * load).max(2.0);
             out.push(place(
                 amane::Rectangle::new()
-                    .width(amane::Size::Fixed(width))
-                    .height(amane::Size::Fixed(height))
+                    .width(width)
+                    .height(height)
                     .radius(width.min(3.0) / 2.0)
                     .fill(accent(*load >= BUSY)),
                 i as f32 * (width + gap),

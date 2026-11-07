@@ -17,7 +17,7 @@
 
 use std::cell::{Cell, RefCell};
 
-use amane::{Center, Column, FileDialog, Parent, Row, ScrollArea, Service, Size, Text, Widget};
+use amane::{Center, Column, FileDialog, Parent, Row, ScrollArea, Service, Text, Widget};
 use amane_phone::{KdeConnect, PhoneDevice, PhonePairState as PairState};
 
 use super::super::{Page, open};
@@ -206,7 +206,7 @@ fn devices(height: f32) -> Vec<Box<dyn Widget>> {
         .gap(sys::space::gap::xl())
         .width(Parent);
     let mut body = vec![boxed(
-        ScrollArea::new("amane.qs.phone.devices", column).height(Size::Fixed(list_h)),
+        ScrollArea::new("amane.qs.phone.devices", column).height(list_h),
     )];
     body.extend(sheet);
     body
@@ -326,11 +326,7 @@ fn pairing_sheet(device: &PhoneDevice) -> Box<dyn Widget> {
         .style(sys::r#type::title())
         .color(material::label(Level::Primary));
     let controls = Row::new(vec![
-        boxed(
-            Row::new(vec![boxed(code)])
-                .width(Size::Fixed(code_w))
-                .align(Center),
-        ),
+        boxed(Row::new(vec![boxed(code)]).width(code_w).align(Center)),
         boxed(decline),
         boxed(accept),
     ])
@@ -442,7 +438,7 @@ fn device_body(device: &PhoneDevice, height: f32) -> Vec<Box<dyn Widget>> {
 
     let column = Column::new(body).gap(sys::space::gap::l()).width(Parent);
     vec![boxed(
-        ScrollArea::new("amane.qs.phone.device.page", column).height(Size::Fixed(height.max(1.0))),
+        ScrollArea::new("amane.qs.phone.device.page", column).height(height.max(1.0)),
     )]
 }
 

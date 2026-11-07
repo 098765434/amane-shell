@@ -157,7 +157,7 @@ pub fn error_line(error: String) -> Row {
                     .color(sys::color::status::critical::text())
                     .wrap(),
             )])
-            .width(Size::Fixed(width)),
+            .width(width),
         ),
         boxed(
             amane_kit::buttons::IconButton::new(
@@ -266,7 +266,7 @@ pub fn arrangement(ctx: &Ctx) -> Option<Group> {
             .custom(
                 Rectangle::new()
                     .width(Size::Parent)
-                    .height(Size::Fixed(area_height + inset * 2.0))
+                    .height(area_height + inset * 2.0)
                     .padding(inset)
                     .child(area),
                 area_height + inset * 2.0,
@@ -358,8 +358,8 @@ pub fn header(ctx: &Ctx) -> Group {
     let row = if facts_h > 0.0 {
         row.detail(
             Rectangle::new()
-                .width(Size::Fixed(inner))
-                .height(Size::Fixed(facts_h))
+                .width(inner)
+                .height(facts_h)
                 .fill(Color::TRANSPARENT)
                 .child(facts),
             facts_h,

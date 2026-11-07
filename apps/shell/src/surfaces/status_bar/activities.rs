@@ -29,7 +29,7 @@ use std::time::{Duration, Instant, SystemTime};
 
 use amane::{
     Apps, Arc, Canvas, Cap, Center, Color, ConstraintAdjustment, Gravity, Image, Media, Parent,
-    Popup, Rectangle, Row, Service, Shape, Size, Start, Text, Widget, window_size,
+    Popup, Rectangle, Row, Service, Shape, Start, Text, Widget, window_size,
 };
 use amane_kit::color::Accent;
 use amane_kit::icons::{

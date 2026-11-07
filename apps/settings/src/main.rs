@@ -597,7 +597,7 @@ fn main_window() -> Window {
     let content = Row::new(vec![
         boxed(
             Column::new(vec![boxed(nav)])
-                .width(Size::Fixed(SIDEBAR))
+                .width(SIDEBAR)
                 .height(Size::Parent),
         ),
         boxed(
@@ -637,7 +637,7 @@ fn search_field() -> Box<dyn Widget> {
     boxed(
         Rectangle::new()
             .width(Size::Parent)
-            .height(Size::Fixed(style::control_height() + sys::space::gap::s()))
+            .height(style::control_height() + sys::space::gap::s())
             .fill(amane::Color::TRANSPARENT)
             .align_child(amane::Start, amane::Start)
             .child(field_box(
@@ -729,7 +729,7 @@ fn header(
     }
     Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(TOOLBAR))
+        .height(TOOLBAR)
         .fill(amane::Color::TRANSPARENT)
         .align_child(amane::Start, Center)
         .child(

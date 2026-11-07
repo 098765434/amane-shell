@@ -72,7 +72,7 @@ pub(super) fn chip(activity: Shown, compact: bool) -> Rectangle {
                 )));
             }
             Rectangle::new()
-                .width(Size::Fixed(width))
+                .width(width)
                 .height(Parent)
                 .fill(Color::TRANSPARENT)
                 .align_child(Center, Center)
@@ -166,8 +166,8 @@ pub(in crate::surfaces::status_bar) fn picture(
 
 pub(super) fn image(path: PathBuf, size: f32, dim: bool) -> Rectangle {
     let picture = Rectangle::new()
-        .width(Size::Fixed(size))
-        .height(Size::Fixed(size))
+        .width(size)
+        .height(size)
         .radius((size / 4.5).round())
         .fill(Image::cover(path));
     if dim { picture.opacity(0.6) } else { picture }
@@ -188,8 +188,8 @@ pub(super) fn progress_ring(done: f32, diameter: f32, color: Color) -> Canvas {
         ));
     }
     Canvas::new()
-        .width(Size::Fixed(diameter))
-        .height(Size::Fixed(diameter))
+        .width(diameter)
+        .height(diameter)
         .shapes(shapes)
 }
 

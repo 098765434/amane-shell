@@ -15,7 +15,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use amane::{Center, Color, Cursor, Parent, Point, Rectangle, Size, Stack, Text, Widget};
+use amane::{Center, Color, Cursor, Parent, Point, Rectangle, Stack, Text, Widget};
 
 use crate::color::with_alpha;
 use crate::layout::boxed;
@@ -143,8 +143,8 @@ impl Arrangement {
         }
 
         Rectangle::new()
-            .width(Size::Fixed(self.width))
-            .height(Size::Fixed(self.height))
+            .width(self.width)
+            .height(self.height)
             .radius(sys::radius::raised())
             .fill(material::fill_role(FillLevel::Tertiary))
             .clip()
@@ -245,8 +245,8 @@ fn tile(screen: &Screen, width: f32, height: f32, selected: bool) -> Rectangle {
         )
     };
     Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .radius(sys::radius::raised() / 2.0)
         .fill(fill)
         .border(

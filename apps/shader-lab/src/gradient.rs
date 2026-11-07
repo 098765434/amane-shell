@@ -5,7 +5,7 @@
 
 use std::cell::Cell;
 
-use amane::{Color, Column, Gradient, Point, Radius, Rectangle, Row, Service, Size, Stack, Widget};
+use amane::{Color, Column, Gradient, Point, Radius, Rectangle, Row, Service, Stack, Widget};
 use amane_kit::buttons::PushButton;
 use amane_kit::color_picker::{ColorPicker, to_color};
 use amane_kit::dropdown::Dropdown;
@@ -217,7 +217,7 @@ fn stop_row(stops: &[[f32; 5]], selected: usize) -> Row {
         boxed(
             Rectangle::new()
                 .width(panel::WIDTH - 3.0 * 54.0)
-                .height(Size::Fixed(sys::size::control::height()))
+                .height(sys::size::control::height())
                 .align_child(amane::Start, amane::Center)
                 .child(label),
         ),

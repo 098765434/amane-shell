@@ -10,7 +10,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use amane::{Apps, Center, DesktopApp, Image, Rectangle, Service, Size, Text};
+use amane::{Apps, Center, DesktopApp, Image, Rectangle, Service, Text};
 
 use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, sys};
@@ -33,15 +33,15 @@ fn drawn(path: Option<PathBuf>, letter: String, side: f32) -> Rectangle {
         // then fall through to the placeholder for this frame
         if Image::loaded(&path) {
             return Rectangle::new()
-                .width(Size::Fixed(side))
-                .height(Size::Fixed(side))
+                .width(side)
+                .height(side)
                 .fill(Image::contain(path));
         }
     }
 
     Rectangle::new()
-        .width(Size::Fixed(side))
-        .height(Size::Fixed(side))
+        .width(side)
+        .height(side)
         .radius(sys::radius::raised())
         .fill(material::fill_role(FillLevel::Secondary))
         .align_child(Center, Center)

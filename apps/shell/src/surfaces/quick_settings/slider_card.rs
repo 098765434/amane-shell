@@ -6,7 +6,7 @@
 
 use std::rc::Rc;
 
-use amane::{Button, Center, Color, Column, Rectangle, Row, Size, Stack, Start, Text, Widget};
+use amane::{Button, Center, Color, Column, Rectangle, Row, Stack, Start, Text, Widget};
 
 use super::grid::{Metrics, Span};
 use super::tile::module;
@@ -104,8 +104,8 @@ pub(super) fn card(row: SliderRow, span: Span) -> Card {
         .thickness(quick::slider::track())
         .build();
     let leading = Rectangle::new()
-        .width(Size::Fixed(control))
-        .height(Size::Fixed(control))
+        .width(control)
+        .height(control)
         .fill(Color::TRANSPARENT)
         .align_child(Center, Center)
         .child(Stack::new(vec![row.leading]));
@@ -117,11 +117,11 @@ pub(super) fn card(row: SliderRow, span: Span) -> Card {
     let mut line: Vec<Box<dyn Widget>> = vec![boxed(leading), boxed(slider), boxed(large)];
     line.extend(row.trailing);
     let line = Row::new(line).gap(gap).align(Center);
-    let content = Column::new(vec![boxed(title), boxed(line)]).width(Size::Fixed(inner));
+    let content = Column::new(vec![boxed(title), boxed(line)]).width(inner);
 
     let inner_rect = Rectangle::new()
-        .width(Size::Fixed(width))
-        .height(Size::Fixed(height))
+        .width(width)
+        .height(height)
         .fill(Color::TRANSPARENT)
         .padding(pad(inset, 0.0))
         .align_child(Start, Center)
