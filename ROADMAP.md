@@ -328,7 +328,7 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 - **New docs:** `docs/architecture.md`, `docs/development/release.md` (from CONTRIBUTING's "Bumping revs" and the status-app doc's "Shipping") and `docs/development/testing.md`. The diagrams in the docs are Mermaid now, the ASCII ones converted.
 - **No duplicates.** The status-app method table is only in `docs/integration/status-apps.md`; the shell's memory doc points to amane's for how its fixes work. `lists-m3.md` was already gone.
 - **Words.** `docs/README.md` names them (Shell Settings, Quick Settings, status app and status item, notification center, color), and "color" is the spelling across the shell's and the forks' docs. `cargo xtask links` also fails on a doc that `docs/README.md` doesn't link to.
-- **Terms.** This roadmap describes the rule without the names. `show_in_spotlight` became `show_in_launcher`, still read from the old key, and Shell Settings' Launcher page is `launcher`, with `--page spotlight` still accepted. The allowlist keeps only `Cargo.lock` and the lint's own files.
+- **Terms.** This roadmap describes the rule without the names. The launcher's password setting is `show_in_launcher`, still read from its old key, and Shell Settings' Launcher page is `launcher`, with the old page name still accepted. The allowlist keeps only `Cargo.lock` and the lint's own files.
 - **niri.** `docs/fork/README.md` gained the Phase 6b events and the secure-fill protocol it had missed.
 
 **Status (2026-11-07).** Done. Shell `main` still pins amane `db47c38`, since amane's change was docs only (`77b63cc`); niri `ac07c307` is docs only too.
