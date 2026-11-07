@@ -5,11 +5,12 @@
 use amane::{Center, Color, Rectangle, Service, Size, Widget};
 
 use crate::services::desktop::privacy::{Privacy, User};
-use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::surfaces::quick_settings::{self, Page};
 use amane_kit::buttons::DrawnButton;
 use amane_kit::icons::{ICON_CAMERA, ICON_MIC};
 use amane_kit::layout::{boxed, cursor, icon};
+use amane_kit::menu::layer as context_menu;
+use amane_kit::menu::{ContextMenu, Icon, MenuItem};
 
 use super::{BAR_NS, item, menu_edge};
 
@@ -87,7 +88,7 @@ fn privacy_menu() {
 
     let mut menu = ContextMenu::new();
     let section = |menu: ContextMenu, title: &str, users: &[User], glyph: char| {
-        let mut menu = menu.item(MenuItem::label(title).disabled());
+        let mut menu = menu.header(title);
         if users.is_empty() {
             menu = menu.item(MenuItem::label("An app").icon(Icon::glyph(glyph.to_string())));
         }

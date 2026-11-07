@@ -105,7 +105,7 @@ impl Dropdown {
         let widest = self
             .items
             .iter()
-            .map(|item| text_width(&item.text, style))
+            .map(|item| text_width(&item.label, style))
             .chain(std::iter::once(text_width(&self.fallback, style)))
             .fold(0.0, f32::max);
         let lead = if has_glyph {
@@ -131,11 +131,14 @@ impl Dropdown {
 
         let fg = style::label_primary();
         let mut parts: Vec<Box<dyn Widget>> = Vec::new();
-        let current_glyph = current.as_ref().and_then(|item| item.icon);
+        let current_glyph = current
+            .as_ref()
+            .and_then(|item| item.icon.as_ref())
+            .and_then(crate::menu::Icon::glyph_char);
         if let Some(g) = current_glyph {
             parts.push(boxed(icon(g, glyph, fg)));
         }
-        let text = current.map(|item| item.text).unwrap_or(self.fallback);
+        let text = current.map(|item| item.label).unwrap_or(self.fallback);
         parts.push(boxed(Text::new(text).style(style).color(fg).elide()));
 
         let label = Rectangle::new()

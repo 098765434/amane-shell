@@ -16,15 +16,14 @@ use amane_kit::settings::{AppsLayout, change_launcher};
 
 use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history;
-use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::tokens::{Styled, TextStyle, sys};
 use amane_kit::color::with_alpha;
-use amane_kit::icons::{
-    ICON_CHECK, ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MIC, ICON_MORE_HORIZ, ICON_SEARCH,
-};
+use amane_kit::icons::{ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MIC, ICON_MORE_HORIZ, ICON_SEARCH};
 use amane_kit::kinetic::Axis;
 use amane_kit::layout::{boxed, cursor, icon, pad, slot, text_width};
 use amane_kit::material::{self, FillLevel, Level, Material};
+use amane_kit::menu::layer as context_menu;
+use amane_kit::menu::{ContextMenu, MenuItem};
 use amane_kit::motion;
 use amane_kit::scroll_view::ScrollView;
 use amane_kit::text_edit::Field;
@@ -267,20 +266,15 @@ fn round_button(glyph: char, on_click: fn()) -> Rectangle {
 fn more_menu() {
     let picked = amane_kit::settings::launcher().apps_layout;
     let item = |name: &str, layout: AppsLayout| {
-        let mut item = MenuItem::label(name).on_select(move || {
-            change_launcher(|settings| settings.apps_layout = layout);
-            super::Launcher::changed();
-        });
-        if picked == layout {
-            item = item.icon(Icon::glyph_with_font(
-                ICON_CHECK.to_string(),
-                sys::r#type::icon(),
-            ));
-        }
-        item
+        MenuItem::label(name)
+            .checked(picked == layout)
+            .on_select(move || {
+                change_launcher(|settings| settings.apps_layout = layout);
+                super::Launcher::changed();
+            })
     };
     let menu = ContextMenu::new()
-        .item(MenuItem::label("View Content As").disabled())
+        .header("View Content As")
         .item(item("Grid", AppsLayout::Grid))
         .item(item("List", AppsLayout::List));
     context_menu::show_under(MORE_MENU_KEY, menu, LAUNCHER_NS, cursor());

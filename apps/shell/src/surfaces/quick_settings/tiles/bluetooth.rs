@@ -26,7 +26,6 @@ use super::connected_count;
 use crate::chrome::battery;
 use crate::services::network::rfkill::Rfkill;
 use crate::surfaces::alert;
-use crate::surfaces::context_menu::{self, ContextMenu, MenuItem};
 use crate::surfaces::quick_settings::QuickSettings;
 use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::surfaces::quick_settings::tile::QuickToggle;
@@ -41,6 +40,8 @@ use amane_kit::icons::{
 use amane_kit::layout::{boxed, caption, cursor, fixed_width, text_height};
 use amane_kit::list::{self, List, ListItem};
 use amane_kit::material::{self, Level};
+use amane_kit::menu::layer as context_menu;
+use amane_kit::menu::{ContextMenu, MenuItem};
 
 /// Registry key for the rebuilt-per-device right-click menu.
 const DEVICE_MENU_KEY: &str = "amane.qs.bluetooth.device-menu";

@@ -840,17 +840,15 @@ fn keyboard() -> Option<Box<dyn Widget>> {
             .on_press(|| {
                 let layouts = KeyboardLayout::read();
                 let current = layouts.current_index();
-                let mut menu = crate::surfaces::context_menu::ContextMenu::new();
+                let mut menu = amane_kit::menu::ContextMenu::new();
                 for (index, name) in layouts.names().iter().enumerate() {
-                    let mut row = crate::surfaces::context_menu::MenuItem::label(name.clone())
+                    let row = amane_kit::menu::MenuItem::label(name.clone())
+                        .check(amane_kit::menu::Check::Radio(index == current))
                         .on_select(move || keyboard_layout::switch(index));
-                    if index == current {
-                        row = row.icon(crate::surfaces::context_menu::Icon::glyph("\u{2713}"));
-                    }
                     menu = menu.item(row);
                 }
                 drop(layouts);
-                crate::surfaces::context_menu::show_under(
+                amane_kit::menu::layer::show_under(
                     "amane.bar.keyboard",
                     menu,
                     BAR_NS,

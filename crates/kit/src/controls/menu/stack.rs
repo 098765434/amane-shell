@@ -1,9 +1,13 @@
+//! What's open in the shell's menu: the menus registered by name, and the
+//! stack of levels open now, each a submenu of the focused row above it.
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 
 use amane::request_frame;
 
-use super::{ContextMenu, Entry, row_offset, size_for};
+use super::layer::{row_offset, size_for};
+use super::model::{ContextMenu, Entry};
 use crate::tokens::menu;
 
 #[derive(Clone, Copy, PartialEq, Eq)]

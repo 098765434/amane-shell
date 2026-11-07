@@ -15,11 +15,12 @@ use amane::{
 };
 use amane_kit::settings::{remember_tray, status_bar};
 
-use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::tokens::sys;
 use amane_kit::buttons::DrawnButton;
 use amane_kit::layout::{boxed, cursor};
 use amane_kit::material::{self, Level};
+use amane_kit::menu::layer as context_menu;
+use amane_kit::menu::{Check, ContextMenu, Icon, MenuItem};
 
 use super::{BAR_NS, bar_icon, item, menu_edge};
 
@@ -201,7 +202,7 @@ fn open_asked_menu() {
     context_menu::show_under(MENU_KEY, menu, BAR_NS, (x, menu_edge()));
 }
 
-/// The app's menu as the shell's own, ticks as leading marks.
+/// The app's menu as the shell's own.
 fn menu_of(key: &str, items: &[TrayMenuItem]) -> ContextMenu {
     let mut menu = ContextMenu::new();
     let mut last_separator = true;
@@ -215,13 +216,14 @@ fn menu_of(key: &str, items: &[TrayMenuItem]) -> ContextMenu {
         }
         last_separator = false;
         let mut row = MenuItem::label(entry.label.clone());
-        row = match (entry.toggle, &entry.icon) {
-            (TrayToggle::Check(true), _) => row.icon(Icon::glyph("\u{2713}")),
-            (TrayToggle::Radio(true), _) => row.icon(Icon::glyph("\u{2022}")),
-            (TrayToggle::Check(false) | TrayToggle::Radio(false), _) => row,
-            (TrayToggle::None, Some(path)) => row.icon(Icon::image(path.clone())),
-            (TrayToggle::None, None) => row,
+        row = match entry.toggle {
+            TrayToggle::Check(on) => row.checked(on),
+            TrayToggle::Radio(on) => row.check(Check::Radio(on)),
+            TrayToggle::None => row,
         };
+        if let Some(path) = &entry.icon {
+            row = row.icon(Icon::image(path.clone()));
+        }
         if !entry.enabled {
             row = row.disabled();
         }

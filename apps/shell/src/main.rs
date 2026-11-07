@@ -10,37 +10,25 @@ use std::process::ExitCode;
 
 use amane::App;
 
+use amane_kit::menu::layer as context_menu;
+use amane_kit::menu::{ContextMenu, Icon, MenuItem};
 use amane_kit::tooltip;
-use surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use surfaces::{
     alert, dock, fill, launcher, notifications, osd, quick_settings, status_bar, widgets,
 };
 
 /// `amane-shell layer-rules` prints the niri layer rules and exits instead of the shell, for
-/// `cargo xtask layer-rules`. The token tools are `cargo xtask tokens …` only.
+/// `cargo xtask layer-rules`: the rules name the shell's own surfaces, so the shell builds them.
 fn cli(args: &[String]) -> Option<ExitCode> {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
-
-    let ok: Result<(), ()> = match args.as_slice() {
-        ["layer-rules"] => {
-            print!(
-                "{}",
-                tokens::layer_rules::render(&tokens::layer_rules::rules())
-            );
-            Ok(())
-        }
-        ["tokens", ..] => {
-            log::warn!("the token tools are `cargo xtask tokens …` now");
-            Err(())
-        }
-        _ => return None,
-    };
-
-    Some(if ok.is_ok() {
-        ExitCode::SUCCESS
-    } else {
-        ExitCode::FAILURE
-    })
+    if args != ["layer-rules"] {
+        return None;
+    }
+    print!(
+        "{}",
+        tokens::layer_rules::render(&tokens::layer_rules::rules())
+    );
+    Some(ExitCode::SUCCESS)
 }
 
 /// Shows a sample alert, side by side or `stacked`, whose answers do

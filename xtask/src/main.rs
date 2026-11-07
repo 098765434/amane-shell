@@ -21,10 +21,14 @@ fn main() -> ExitCode {
     let root = root();
 
     let ok = match args.as_slice() {
-        ["layer-rules"] => run(Command::new(cargo())
-            .current_dir(&root)
-            .args(["run", "-q", "-p", "amane-shell", "--", "layer-rules"])
-            .env("AMANE_FROM_XTASK", "1")),
+        ["layer-rules"] => run(Command::new(cargo()).current_dir(&root).args([
+            "run",
+            "-q",
+            "-p",
+            "amane-shell",
+            "--",
+            "layer-rules",
+        ])),
         ["tokens", "normalize", path] => {
             read(path).is_some_and(|json| match amane_kit::tokens::check::normalize(&json) {
                 Ok(out) => {

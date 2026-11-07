@@ -413,7 +413,7 @@ fn selectors(s: &Lab) -> Vec<Box<dyn Widget>> {
                 .build(),
             format!(
                 "sort by {} (Up, Down, Enter and Escape work while open)",
-                sorts[s.sort].text
+                sorts[s.sort].label
             ),
         ),
         show(
@@ -421,7 +421,7 @@ fn selectors(s: &Lab) -> Vec<Box<dyn Widget>> {
             ROW_H,
             row(vec![
                 boxed(
-                    Text::new(sorts[s.sort].text.clone())
+                    Text::new(sorts[s.sort].label.clone())
                         .style(style::control_font())
                         .color(style::label_primary()),
                 ),

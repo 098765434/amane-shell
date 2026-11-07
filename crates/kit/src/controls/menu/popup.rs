@@ -1,6 +1,7 @@
-//! The menu the pull-down, pop-up button and combo box open: a `menuFill`
-//! panel, radius 8, 4 px in, 24 px rows, the active one filled with the
-//! accent.
+//! The app-window host: the menu a dropdown and a pop-up button open, and an
+//! app's right-click menu. A `menuFill` panel, radius 8, 4 px in, 24 px rows
+//! (drawn by [`rows`](super::rows), [`Look::Popup`]), the chosen one filled
+//! with the tint. One level: a row's submenu shows its chevron only.
 //!
 //! It's an xdg-popup lined up under the control that opened it: its right
 //! edge on the control's, 4 px below (flipped above when there's no room
@@ -19,57 +20,18 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use amane::{
-    Center, Color, Column, ConstraintAdjustment, Gravity, Key, Point, Popup, PopupAnchor,
-    Rectangle, Row, Shadow, Size, Text, Widget, current_window, pointer_position, request_frame,
+    Center, Column, ConstraintAdjustment, Gravity, Key, Point, Popup, PopupAnchor, Rectangle,
+    Shadow, Size, Widget, current_window, pointer_position, request_frame,
 };
 
+use super::keys::{self, Move};
+use super::model::MenuItem;
+use super::rows::{Columns, Look, RowState};
 use crate::buttons::interactive;
 use crate::controls::parts::on_press;
-use crate::layout::{boxed, icon, pad, text_width};
+use crate::layout::{boxed, pad};
 use crate::look::hover::hover_fill;
 use crate::style::{self, px};
-use crate::tokens::Styled;
-
-/// One row of a menu: its text, and optionally a glyph before it and one
-/// after it (Material Symbols).
-#[derive(Clone, Debug, PartialEq)]
-pub struct MenuItem {
-    /// What the row says.
-    pub text: String,
-    /// A glyph before the text.
-    pub icon: Option<char>,
-    /// A glyph at the row's end, like a chevron for a submenu.
-    pub trailing: Option<char>,
-}
-
-impl MenuItem {
-    /// A row with `text` and no glyphs.
-    pub fn new(text: impl Into<String>) -> Self {
-        Self {
-            text: text.into(),
-            icon: None,
-            trailing: None,
-        }
-    }
-
-    /// Puts `glyph` before the text.
-    pub fn icon(mut self, glyph: char) -> Self {
-        self.icon = Some(glyph);
-        self
-    }
-
-    /// Puts `glyph` at the row's end.
-    pub fn trailing(mut self, glyph: char) -> Self {
-        self.trailing = Some(glyph);
-        self
-    }
-}
-
-impl<S: Into<String>> From<S> for MenuItem {
-    fn from(text: S) -> Self {
-        Self::new(text)
-    }
-}
 
 /// What an open menu needs after its control has been rebuilt away.
 struct Menu {
@@ -240,29 +202,29 @@ pub(crate) fn close(id: &str) {
     amane::mark_all();
 }
 
-/// Moves the keyboard row by `step`, from the active row if none yet.
+/// What `key` does in `id`'s open menu; whether it was the menu's.
 pub(crate) fn key(id: &str, key: Key) -> bool {
     let chosen = MENUS.with_borrow_mut(|menus| {
         let menu = menus.get_mut(id)?;
-        let rows = menu.shown.len();
-        if rows == 0 {
-            return None;
-        }
-        let at = menu
-            .keyed
-            .or_else(|| menu.shown.iter().position(|&i| Some(i) == menu.active));
-        match key {
-            Key::Down => {
-                menu.keyed = Some(at.map_or(0, |at| (at + 1).min(rows - 1)));
+        let selectable: Vec<bool> = menu
+            .shown
+            .iter()
+            .map(|&i| menu.items.get(i).is_some_and(|item| item.enabled))
+            .collect();
+        let start = menu.shown.iter().position(|&i| Some(i) == menu.active);
+        match keys::press(key, &selectable, menu.keyed, start) {
+            Move::To(row) => {
+                menu.keyed = Some(row);
                 None
             }
-            Key::Up => {
-                menu.keyed = Some(at.map_or(rows - 1, |at| at.saturating_sub(1)));
-                None
-            }
-            Key::Enter => menu
-                .keyed
-                .map(|row| (menu.shown[row], menu.on_select.clone())),
+            Move::Pick => menu.keyed.map(|row| {
+                let index = menu.shown[row];
+                let own = menu
+                    .items
+                    .get(index)
+                    .and_then(|item| item.on_select.clone());
+                (index, menu.on_select.clone(), own)
+            }),
             _ => None,
         }
     });
@@ -270,7 +232,10 @@ pub(crate) fn key(id: &str, key: Key) -> bool {
     match key {
         Key::Enter => {
             close(id);
-            if let Some((index, select)) = chosen {
+            if let Some((index, select, own)) = chosen {
+                if let Some(own) = own {
+                    own();
+                }
                 select(index);
             }
             true
@@ -284,26 +249,13 @@ pub(crate) fn key(id: &str, key: Key) -> bool {
     }
 }
 
-fn row_style() -> crate::tokens::TextStyle {
-    crate::tokens::sys::r#type::label()
-}
-
 /// How wide the panel is for `items`.
 fn panel_width(items: &[MenuItem], shown: &[usize]) -> f32 {
-    let glyph = px(15.0);
+    let columns = Columns::of(shown.iter().filter_map(|&i| items.get(i)));
     let widest = shown
         .iter()
         .filter_map(|&i| items.get(i))
-        .map(|item| {
-            let mut w = text_width(&item.text, row_style()) + px(24.0);
-            if item.icon.is_some() {
-                w += glyph + px(8.0);
-            }
-            if item.trailing.is_some() {
-                w += glyph + px(8.0);
-            }
-            w
-        })
+        .map(|item| Look::Popup.row_width(item, columns))
         .fold(0.0, f32::max);
     (widest + px(8.0)).max(px(130.0)).ceil()
 }
@@ -337,6 +289,7 @@ fn popup(id: &str) -> Popup {
     let width = panel_width(&items, &shown);
     let height = shown.len().max(1) as f32 * style::menu_item_height() + pad_in * 2.0;
 
+    let columns = Columns::of(shown.iter().filter_map(|&i| items.get(i)));
     let rows: Vec<Box<dyn Widget>> = shown
         .iter()
         .enumerate()
@@ -345,10 +298,10 @@ fn popup(id: &str) -> Popup {
                 id,
                 &items[index],
                 index,
+                columns,
                 Some(index) == active,
                 keyed == Some(row),
-                row == 0,
-                row + 1 == shown.len(),
+                (row == 0, row + 1 == shown.len()),
             ))
         })
         .collect();
@@ -437,41 +390,21 @@ fn menu_row(
     id: &str,
     item: &MenuItem,
     index: usize,
+    columns: Columns,
     active: bool,
     keyed: bool,
-    first: bool,
-    last: bool,
+    (first, last): (bool, bool),
 ) -> Rectangle {
     let key = format!("{id}.row.{index}");
-    let glyph = px(15.0);
-    let (fg, glyph_color) = if active {
-        (style::glyph_on_tint(), style::glyph_on_tint())
-    } else {
-        (style::label_primary(), style::label_secondary())
+    let state = RowState {
+        focused: keyed,
+        keyboard: false,
+        active,
     };
-
-    let mut parts: Vec<Box<dyn Widget>> = Vec::new();
-    if let Some(g) = item.icon {
-        parts.push(boxed(icon(g, glyph, glyph_color)));
-    }
-    parts.push(boxed(
-        Text::new(item.text.clone())
-            .style(row_style())
-            .color(fg)
-            .elide(),
-    ));
-    if let Some(g) = item.trailing {
-        parts.push(boxed(icon(g, glyph, glyph_color)));
-    }
-
-    let base_fill = if active {
-        style::tint()
-    } else {
-        Color::TRANSPARENT
-    };
-    let mut fill = hover_fill(&key, base_fill, fg, false);
+    let colors = Look::Popup.colors(item, state);
+    let mut fill = hover_fill(&key, colors.fill, colors.label, false);
     if keyed {
-        fill = crate::color::over(style::hover_of(fg), fill);
+        fill = crate::color::over(style::hover_of(colors.label), fill);
     }
 
     let (small, round) = (px(4.0), px(6.0));
@@ -479,22 +412,25 @@ fn menu_row(
 
     let base = Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(style::menu_item_height()))
+        .height(Size::Fixed(Look::Popup.row_height()))
         .radius_top_left(corner(first))
         .radius_top_right(corner(first))
         .radius_bottom_left(corner(last))
         .radius_bottom_right(corner(last))
         .fill(fill)
-        .padding(pad(px(12.0), 0.0))
+        .padding(pad(Look::Popup.row_padding(), 0.0))
         .align_child(amane::Start, Center)
         .child(
-            Row::new(parts)
-                .gap(px(8.0))
-                .align(Center)
+            Look::Popup
+                .content(item, columns, colors)
                 .width(Size::Parent),
         );
 
+    if !item.enabled {
+        return base;
+    }
     let id = id.to_string();
+    let picked = item.on_select.clone();
     interactive(
         base,
         key,
@@ -502,6 +438,9 @@ fn menu_row(
         on_press(move || {
             let select = MENUS.with_borrow(|menus| menus.get(&id).map(|m| m.on_select.clone()));
             close(&id);
+            if let Some(picked) = &picked {
+                picked();
+            }
             if let Some(select) = select {
                 select(index);
             }

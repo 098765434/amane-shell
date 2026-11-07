@@ -6,7 +6,8 @@ use amane::Service;
 use chrono::Local;
 
 use crate::services::do_not_disturb::{DoNotDisturb, Until, choices};
-use crate::surfaces::context_menu::{self, ContextMenu, MenuItem};
+use amane_kit::menu::layer as context_menu;
+use amane_kit::menu::{ContextMenu, MenuItem};
 
 const MENU_KEY: &str = "amane.notifications.dnd";
 

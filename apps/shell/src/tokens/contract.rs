@@ -12,7 +12,7 @@ use crate::tokens::{COMPONENTS, GENERATED};
 /// `sys` only (manual §10.4).
 const OWNERS: &[(&str, &str)] = &[
     ("status_bar/", "bar"),
-    ("context_menu/", "menu"),
+    ("controls/menu/", "menu"),
     ("notifications/", "notification"),
     ("quick_settings/", "quick"),
     // the kit's dialog, and the shell's alert that shows it

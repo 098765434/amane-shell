@@ -6,7 +6,6 @@
 //! the kit's.
 
 pub mod alert;
-pub mod context_menu;
 pub mod dock;
 pub mod fill;
 pub mod launcher;

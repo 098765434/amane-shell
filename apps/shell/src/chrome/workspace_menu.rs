@@ -4,7 +4,7 @@
 
 use amane::{Service, Windows, Workspace, Workspaces};
 
-use crate::surfaces::context_menu::{ContextMenu, MenuItem};
+use amane_kit::menu::{ContextMenu, MenuItem};
 
 /// What a workspace is called in a menu.
 fn label(workspace: &Workspace) -> String {

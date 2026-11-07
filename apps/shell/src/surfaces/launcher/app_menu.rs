@@ -9,12 +9,13 @@ use std::path::Path;
 use amane::{Apps, DesktopApp, Service, Windows, Workspaces};
 
 use crate::chrome::panel::close;
+use crate::chrome::workspace_menu;
 use crate::services::launcher::file_search;
-use crate::surfaces::context_menu::workspace_menu;
-use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::tokens::sys;
 use amane_kit::icons::{ICON_ADD, ICON_OPEN_IN_NEW};
 use amane_kit::layout::cursor;
+use amane_kit::menu::layer as context_menu;
+use amane_kit::menu::{ContextMenu, Icon, MenuItem};
 
 use super::LAUNCHER_NS;
 use super::entries::{self, Entry};

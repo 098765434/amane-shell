@@ -48,7 +48,6 @@ use amane_kit::settings::dock as dock_settings;
 
 use crate::chrome::bar;
 use crate::chrome::per_output::PerOutput;
-use crate::surfaces::context_menu;
 use crate::tokens::sys;
 use amane_kit::app_icon;
 use amane_kit::divider::Divider;
@@ -56,6 +55,7 @@ use amane_kit::edge_reveal::EdgeReveal;
 use amane_kit::glass_region;
 use amane_kit::layout::{blank, boxed};
 use amane_kit::material::{self, Material};
+use amane_kit::menu::layer as context_menu;
 use amane_kit::motion::redraw_after;
 
 use drag::{Drag, Drop, Settle};
@@ -587,7 +587,7 @@ fn build(
     at: Measures,
     motion: &DockMotion,
 ) -> View {
-    let menu_open = context_menu::runtime::is_open_under(DOCK_NS)
+    let menu_open = context_menu::is_open_under(DOCK_NS)
         && MENU_ON.with_borrow(|on| on.as_deref() == Some(output));
     // a menu open, an icon held or files held keep it up wherever the
     // pointer goes

@@ -41,16 +41,16 @@ use amane::{
 use crate::chrome::bar;
 use crate::chrome::per_output::PerOutput;
 use crate::services::desktop::system_stats::SystemStats;
-use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::surfaces::status_bar;
 use amane_kit::glass::{self, Rim};
 use amane_kit::glass_region;
 use amane_kit::grid::Layout;
 use amane_kit::grid::drag::{Drag, Hit, Origin, Session, hit};
 use amane_kit::grid::geometry::{Canvas, Metrics, Place, Rect, Slot, Span};
-use amane_kit::icons::ICON_CHECK;
 use amane_kit::layout::{blank, boxed};
 use amane_kit::material::{self, Material};
+use amane_kit::menu::layer as context_menu;
+use amane_kit::menu::{ContextMenu, MenuItem};
 use amane_kit::motion::{self, Arrive, Item, Pose};
 use amane_kit::settings::{ACCENTS, WidgetStyle, desktop};
 
@@ -887,11 +887,7 @@ const WIDGET_MENU_KEY: &str = "amane.widgets.widget-menu";
 const DESKTOP_MENU_KEY: &str = "amane.widgets.desktop-menu";
 
 fn checked(item: MenuItem, on: bool) -> MenuItem {
-    if on {
-        item.icon(Icon::glyph(ICON_CHECK.to_string()))
-    } else {
-        item
-    }
+    item.checked(on)
 }
 
 /// A card's menu: the sizes it comes in, what it shows, Edit Widgets… and

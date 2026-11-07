@@ -1,7 +1,9 @@
 # Context menu
 
-A reusable glass context menu with arbitrarily nested submenus
-(`apps/shell/src/surfaces/context_menu/`). Each menu level is an **xdg-popup**, so the compositor positions
+A reusable glass context menu with arbitrarily nested submenus: the kit's menu
+(`crates/kit/src/controls/menu/`) on its layer host, `amane_kit::menu::layer`. App windows' menus
+(a dropdown's, Messages' right click) take the same items on the popup host, with their own
+panel. Each menu level is an **xdg-popup**, so the compositor positions
 it, keeps it on screen, grabs input for it and dismisses it on an outside click. The cards are
 `Material::Menu` glass. xdg-popups can't send blur shapes, so niri frosts them through the
 `popups {}` block of their parent surface's layer rule: the anchor's
@@ -11,8 +13,12 @@ under (the dock, the launcher, Quick Settings, the widgets, the bar, the notific
 
 | File | Contents |
 |------|----------|
-| `mod.rs` | public types (`ContextMenu`, `MenuItem`, `Icon`), the anchor surface, the per-level popups, row rendering, pointer and keyboard handling, sizing |
-| `runtime.rs` | the state: registered menus, the open stack of levels, and the open/close/arm functions |
+| `model.rs` | the items: `ContextMenu`, `MenuItem`, `Icon`, `Check`, `Entry` (row, separator, header) |
+| `rows.rs` | the one drawing of a row (tick, icon, label, shortcut, chevron), its width and colours, per host (`Look::Popup`, `Look::Layer`) |
+| `keys.rs` | the keyboard, the same for both hosts |
+| `layer.rs` | the shell's host: the anchor surface, the per-level popups, pointer handling, sizing |
+| `stack.rs` | its state: registered menus, the open stack of levels, and the open/close/arm functions |
+| `popup.rs` | the app-window host: one level under a control or the pointer |
 
 ## Using it
 
@@ -21,23 +27,24 @@ under (the dock, the launcher, Quick Settings, the widgets, the bar, the notific
 Menus are built once with a builder and registered under a name:
 
 ```rust
-use components::context_menu::{self, ContextMenu, Icon, MenuItem};
+use amane_kit::menu::layer as context_menu;
+use amane_kit::menu::{ContextMenu, Icon, MenuItem};
 
 let open_with = ContextMenu::new()
-    .item(MenuItem::label("Firefox").on_select(|| eprintln!("firefox")))
-    .item(MenuItem::label("Preview").on_select(|| eprintln!("preview")));
+    .item(MenuItem::label("Firefox").on_select(|| log::info!("firefox")))
+    .item(MenuItem::label("Preview").on_select(|| log::info!("preview")));
 
 let menu = ContextMenu::new()
     .item(
         MenuItem::label("Open")
             .icon(Icon::glyph("\u{1F4C2}"))
             .shortcut("\u{2318}O")
-            .on_select(|| eprintln!("open")),
+            .on_select(|| log::info!("open")),
     )
     .item(MenuItem::label("Open With").submenu(open_with))
     .separator()
     .item(MenuItem::label("Duplicate").disabled())
-    .item(MenuItem::label("Move to Trash").destructive().on_select(|| eprintln!("trash")));
+    .item(MenuItem::label("Move to Trash").destructive().on_select(|| log::info!("trash")));
 
 context_menu::register("file", menu);
 ```
@@ -50,10 +57,13 @@ context_menu::register("file", menu);
 | `.submenu(ContextMenu)` | the row opens a nested menu and shows a chevron (`›`) |
 | `.destructive()` | red text and a red hover fill |
 | `.disabled()` | dimmed; not hoverable, clickable or keyboard-focusable |
+| `.checked(on)`, `.check(Check::Radio(on))` | a tick, or a choice's dot, in a column of its own that every row of the menu keeps |
 | `.on_select(fn)` | runs when the row is chosen; the menu then closes |
 | `ContextMenu::separator()` | a hairline divider |
+| `ContextMenu::header(title)` | a small grey title over the rows after it; it can't be picked |
 
-When no row in a menu has an icon, the icon column is dropped so labels hug the left padding.
+When no row in a menu has an icon (or a tick), that column is dropped so labels hug the left
+padding.
 
 ### 2. Register the surfaces on the `App`
 

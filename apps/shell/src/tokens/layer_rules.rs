@@ -7,7 +7,6 @@
 use std::fmt::Write;
 
 use crate::surfaces::alert::ALERT_NS;
-use crate::surfaces::context_menu::{ANCHOR_NS, MAX_DEPTH, level_ns};
 use crate::surfaces::dock::DOCK_NS;
 use crate::surfaces::launcher::LAUNCHER_NS;
 use crate::surfaces::notifications::{CENTER_NS, TOAST_NS};
@@ -17,6 +16,7 @@ use crate::surfaces::status_bar::BAR_NS;
 use crate::surfaces::widgets::WIDGETS_NS;
 use crate::theme::{Density, Mode};
 use amane_kit::material::Material;
+use amane_kit::menu::layer::{ANCHOR_NS, MAX_DEPTH, level_ns};
 
 use crate::tokens::{Key, Value, bar, dialog, library, notification, osd, resolved, sys, with_key};
 

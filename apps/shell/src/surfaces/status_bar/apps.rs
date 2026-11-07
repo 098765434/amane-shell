@@ -12,11 +12,12 @@ use amane::{Center, Color, Parent, Rectangle, Row, Size, Text, Vertical, Widget}
 use amane_status::{BarEdge, ItemButton, ItemEvent, ItemSpec, MenuEntry};
 
 use crate::services::status_apps;
-use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::tokens::{Styled, sys};
 use amane_kit::buttons::DrawnButton;
 use amane_kit::layout::{boxed, cursor, text_width};
 use amane_kit::material::{self, Level};
+use amane_kit::menu::layer as context_menu;
+use amane_kit::menu::{ContextMenu, MenuItem};
 
 use super::activities::picture;
 use super::indicators::Item;
@@ -206,10 +207,8 @@ fn add(menu: ContextMenu, id: &str, entry: &MenuEntry) -> ContextMenu {
 
 fn menu_item(id: &str, entry: &MenuEntry) -> MenuItem {
     let mut row = MenuItem::label(entry.label.clone());
-    match entry.checked {
-        Some(true) => row = row.icon(Icon::glyph("\u{2713}")),
-        Some(false) => row = row.icon(Icon::glyph(" ")),
-        None => {}
+    if let Some(on) = entry.checked {
+        row = row.checked(on);
     }
     if !entry.enabled {
         row = row.disabled();

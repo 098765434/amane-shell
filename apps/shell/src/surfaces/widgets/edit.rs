@@ -22,7 +22,6 @@ use super::store::{self, Settings};
 use super::{
     BAND, Geometry, RADIUS, THRESHOLD, changed, commit, current, gallery, shown, with_desk,
 };
-use crate::surfaces::context_menu;
 use crate::tokens::sys;
 use amane_kit::buttons::{IconButton, Shape, Style};
 use amane_kit::control_size::ControlSize;
@@ -33,6 +32,7 @@ use amane_kit::grid::{Entry, GridKey};
 use amane_kit::icons::{ICON_REMOVE, ICON_RESIZE};
 use amane_kit::layout::{boxed, icon};
 use amane_kit::material::{self, FillLevel, Level};
+use amane_kit::menu::layer as context_menu;
 use amane_kit::motion::Pose;
 
 /// The key a widget lifted from the gallery has until it lands.
