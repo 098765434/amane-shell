@@ -25,10 +25,11 @@ use amane::{
     Rectangle, Row, Shadow, Size, Text, Widget, current_window, pointer_position, request_frame,
 };
 
-use super::theme::{self, px};
-use super::{hover_fill, on_press};
 use crate::buttons::interactive;
+use crate::controls::parts::on_press;
 use crate::layout::{boxed, icon, pad, text_width};
+use crate::look::hover::hover_fill;
+use crate::style::{self, px};
 use crate::tokens::Styled;
 
 /// One row of a menu: its text, and optionally a glyph before it and one
@@ -320,7 +321,7 @@ fn popup(id: &str) -> Popup {
     });
     let Some((items, shown, active, open, opened, keyed, origin, size, parent, at_pointer)) = state
     else {
-        return Popup::new("amane.macform.menu")
+        return Popup::new("amane.menu")
             .size(1, 1)
             .anchor_rect(0, 0, 1, 1)
             .visible(false);
@@ -328,7 +329,7 @@ fn popup(id: &str) -> Popup {
 
     let pad_in = px(4.0);
     let width = panel_width(&items, &shown);
-    let height = shown.len().max(1) as f32 * theme::menu_item_height() + pad_in * 2.0;
+    let height = shown.len().max(1) as f32 * style::menu_item_height() + pad_in * 2.0;
 
     let rows: Vec<Box<dyn Widget>> = shown
         .iter()
@@ -357,11 +358,11 @@ fn popup(id: &str) -> Popup {
         .width(Size::Fixed(width))
         .height(Size::Fixed(height))
         .radius(px(8.0))
-        .fill(theme::menu_fill())
-        .border(1.0, theme::field_border())
+        .fill(style::menu_fill())
+        .border(1.0, style::field_border())
         .shadow(
             // the original's elevation 2
-            Shadow::drop(theme::shadow_color())
+            Shadow::drop(style::shadow_color())
                 .blur(6.66)
                 .spread(-0.81)
                 .offset(0.0, 1.5),
@@ -381,7 +382,7 @@ fn popup(id: &str) -> Popup {
     let escaped = id.to_string();
     let dismissed = id.to_string();
 
-    let popup = Popup::new("amane.macform.menu")
+    let popup = Popup::new("amane.menu")
         .size(
             (width + MARGIN * 2.0).ceil() as u32,
             (height + MARGIN * 2.0).ceil() as u32,
@@ -438,9 +439,9 @@ fn menu_row(
     let key = format!("{id}.row.{index}");
     let glyph = px(15.0);
     let (fg, glyph_color) = if active {
-        (theme::glyph_on_tint(), theme::glyph_on_tint())
+        (style::glyph_on_tint(), style::glyph_on_tint())
     } else {
-        (theme::label_primary(), theme::label_secondary())
+        (style::label_primary(), style::label_secondary())
     };
 
     let mut parts: Vec<Box<dyn Widget>> = Vec::new();
@@ -458,13 +459,13 @@ fn menu_row(
     }
 
     let base_fill = if active {
-        theme::tint()
+        style::tint()
     } else {
         Color::TRANSPARENT
     };
     let mut fill = hover_fill(&key, base_fill, fg, false);
     if keyed {
-        fill = crate::color::over(theme::hover_of(fg), fill);
+        fill = crate::color::over(style::hover_of(fg), fill);
     }
 
     let (small, round) = (px(4.0), px(6.0));
@@ -472,7 +473,7 @@ fn menu_row(
 
     let base = Rectangle::new()
         .width(Size::Parent)
-        .height(Size::Fixed(theme::menu_item_height()))
+        .height(Size::Fixed(style::menu_item_height()))
         .radius_top_left(corner(first))
         .radius_top_right(corner(first))
         .radius_bottom_left(corner(last))

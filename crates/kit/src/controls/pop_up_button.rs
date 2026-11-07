@@ -1,4 +1,4 @@
-//! MacPopUpButton — an 18 px `controlFill` circle with the up-and-down
+//! PopUpButton — an 18 px `controlFill` circle with the up-and-down
 //! chevrons. The original only reported the click; given items, this one
 //! opens the [menu](super::menu) under itself.
 
@@ -8,12 +8,13 @@ use std::rc::Rc;
 
 use amane::{Center, Radius, Rectangle, Size};
 
-use super::menu::{self, MenuItem};
-use super::symbol::{Symbol, symbol};
-use super::theme::{self, px};
-use super::{hover_fill, interactive, on_press};
+use crate::controls::parts::{interactive, on_press};
+use crate::look::hover::hover_fill;
+use crate::menu::{self, MenuItem};
+use crate::style::{self, px};
+use crate::symbol::{Symbol, symbol};
 
-pub struct MacPopUpButton {
+pub struct PopUpButton {
     id: String,
     items: Vec<MenuItem>,
     active: Option<usize>,
@@ -22,7 +23,7 @@ pub struct MacPopUpButton {
     on_press: Option<Rc<dyn Fn()>>,
 }
 
-impl MacPopUpButton {
+impl PopUpButton {
     pub fn new(id: impl Into<String>) -> Self {
         Self {
             id: id.into(),
@@ -59,7 +60,7 @@ impl MacPopUpButton {
 
     pub fn build(self) -> Rectangle {
         let side = px(18.0);
-        let fg = theme::label_primary();
+        let fg = style::label_primary();
         let has_menu = !self.items.is_empty();
         if has_menu {
             let shown = (0..self.items.len()).collect();
@@ -79,7 +80,7 @@ impl MacPopUpButton {
             .radius(Radius::Full)
             .fill(hover_fill(
                 &self.id,
-                theme::control_fill(),
+                style::control_fill(),
                 fg,
                 self.disabled,
             ))

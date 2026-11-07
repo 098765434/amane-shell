@@ -15,7 +15,7 @@
 //! - [`SliderRow`]: a title and its value over a slider across the row.
 //! - [`Group::custom`]: anything else, at a height of its own.
 //!
-//! Sizes are the macform look's (`macform::theme`): rows 42 tall (52 with a
+//! Sizes are the form controls' ([`style`](crate::style)): rows 42 tall (52 with a
 //! subtitle), 12 px in, cards radius 12 in `groupFill`.
 
 #![allow(missing_docs)]
@@ -25,11 +25,13 @@ use std::rc::Rc;
 use amane::{Center, Color, Column, Padding, Rectangle, Row, Size, Text, Widget};
 
 use crate::color::Accent;
+use crate::controls::parts::on_press;
 use crate::icons::Glyph;
 use crate::layout::{boxed, icon, text_height, text_width, wrapped_lines};
-use crate::macform::symbol::{Symbol, symbol};
-use crate::macform::theme::{self, px};
-use crate::macform::{MacLeadingIcon, hover_fill, on_press};
+use crate::leading_icon::LeadingIcon;
+use crate::look::hover::hover_fill;
+use crate::style::{self, px};
+use crate::symbol::{Symbol, symbol};
 use crate::tokens::{Styled, TextStyle, sys};
 
 /// How wide a group is unless told: Shell Settings' page.
@@ -64,15 +66,15 @@ fn tile_gap() -> f32 {
 }
 
 fn pad_h() -> f32 {
-    theme::row_pad_h()
+    style::row_pad_h()
 }
 
 fn title_font() -> TextStyle {
-    theme::control_font()
+    style::control_font()
 }
 
 fn subtitle_font() -> TextStyle {
-    theme::subtitle_font()
+    style::subtitle_font()
 }
 
 /// A note's style: a group's footer, a row's subtitle.
@@ -182,7 +184,7 @@ impl FormRow {
         self.trailing(
             Text::new(text.into())
                 .style(title_font())
-                .color(theme::label_secondary()),
+                .color(style::label_secondary()),
         )
     }
 
@@ -253,7 +255,7 @@ impl FormRow {
             .leading
             .as_ref()
             .map_or(0.0, |(_, side)| side + px(12.0));
-        (text + px(16.0)).max(theme::row_min_height()).max(leading)
+        (text + px(16.0)).max(style::row_min_height()).max(leading)
     }
 
     /// How tall the row is in a group `width` wide.
@@ -277,9 +279,9 @@ impl FormRow {
         let title = Text::new(self.title.clone())
             .style(title_font())
             .color(if self.loading {
-                theme::label_secondary()
+                style::label_secondary()
             } else {
-                theme::label_primary()
+                style::label_primary()
             });
         let title: Box<dyn Widget> = if text_width(&self.title, title_font()) > room {
             boxed(
@@ -297,7 +299,7 @@ impl FormRow {
             text.push(boxed(
                 Text::new(line)
                     .style(subtitle_font())
-                    .color(theme::label_secondary()),
+                    .color(style::label_secondary()),
             ));
         }
         let text = Column::new(text);
@@ -306,7 +308,7 @@ impl FormRow {
         if let Some((widget, _)) = self.leading {
             leading.push(widget);
         } else if let Some((glyph, accent)) = self.icon {
-            leading.push(boxed(MacLeadingIcon::new(glyph).accent(accent).build()));
+            leading.push(boxed(LeadingIcon::new(glyph).accent(accent).build()));
         }
         leading.push(boxed(text));
         let leading = Row::new(leading).gap(tile_gap()).align(Center);
@@ -332,7 +334,7 @@ impl FormRow {
             trailing.push(boxed(symbol(
                 Symbol::ChevronRight,
                 px(12.0),
-                theme::label_tertiary(),
+                style::label_tertiary(),
             )));
         }
         let trailing = Row::new(trailing).gap(sys::space::gap::s()).align(Center);
@@ -364,14 +366,14 @@ impl FormRow {
         }
 
         let base_fill = if self.highlight || highlighted(&self.id) {
-            crate::color::with_alpha(theme::tint(), 0.22)
+            crate::color::with_alpha(style::tint(), 0.22)
         } else if self.selected {
             sys::color::state::selected()
         } else {
             Color::TRANSPARENT
         };
         let fill = match &self.on_press {
-            Some(_) => hover_fill(&self.id, base_fill, theme::label_primary(), self.disabled),
+            Some(_) => hover_fill(&self.id, base_fill, style::label_primary(), self.disabled),
             None => base_fill,
         };
 
@@ -388,9 +390,12 @@ impl FormRow {
             .child(Column::new(parts).width(Size::Parent));
 
         match self.on_press {
-            Some(press) => {
-                crate::macform::interactive(base, self.id, self.disabled, on_press(move || press()))
-            }
+            Some(press) => crate::controls::parts::interactive(
+                base,
+                self.id,
+                self.disabled,
+                on_press(move || press()),
+            ),
             None if self.disabled => base.opacity(0.5),
             None => base,
         }
@@ -460,14 +465,14 @@ impl SliderRow {
 
         let mut parts: Vec<Box<dyn Widget>> = Vec::new();
         if let Some((glyph, accent)) = self.icon {
-            parts.push(boxed(MacLeadingIcon::new(glyph).accent(accent).build()));
+            parts.push(boxed(LeadingIcon::new(glyph).accent(accent).build()));
         } else if let Some(glyph) = self.glyph {
             parts.push(boxed(
                 Rectangle::new()
                     .width(Size::Fixed(tile_side()))
                     .height(Size::Fixed(tile_side()))
                     .align_child(Center, Center)
-                    .child(icon(glyph, px(18.0), theme::label_secondary())),
+                    .child(icon(glyph, px(18.0), style::label_secondary())),
             ));
         }
 
@@ -475,12 +480,12 @@ impl SliderRow {
             boxed(
                 Text::new(self.title)
                     .style(title_font())
-                    .color(theme::label_primary()),
+                    .color(style::label_primary()),
             ),
             boxed(
                 Text::new(self.value)
                     .style(title_font())
-                    .color(theme::label_secondary()),
+                    .color(style::label_secondary()),
             ),
         ])
         .width(Size::Fixed(slider_w))
@@ -669,7 +674,7 @@ impl Group {
                             Rectangle::new()
                                 .width(Size::Parent)
                                 .height(Size::Fixed(1.0))
-                                .fill(theme::divider()),
+                                .fill(style::divider()),
                         ),
                 ));
             }
@@ -678,8 +683,8 @@ impl Group {
         let card = Rectangle::new()
             .width(Size::Fixed(width))
             .height(Size::Fixed(card_height))
-            .radius(theme::group_radius())
-            .fill(theme::group_fill())
+            .radius(style::group_radius())
+            .fill(style::group_fill())
             .clip()
             .child(Column::new(rows).width(Size::Parent));
 
@@ -696,7 +701,7 @@ impl Group {
                     .child(
                         Text::new(header)
                             .style(note_font())
-                            .color(theme::label_secondary()),
+                            .color(style::label_secondary()),
                     ),
             ));
         }
@@ -712,7 +717,7 @@ impl Group {
                     boxed(
                         Text::new(line)
                             .style(note_font())
-                            .color(theme::label_secondary()),
+                            .color(style::label_secondary()),
                     )
                 })
                 .collect();
@@ -765,7 +770,7 @@ mod tests {
         let width = group.width;
         let one = switch_row("a").height(width);
         let two = switch_row("b").subtitle("A second line").height(width);
-        assert_eq!(one, theme::row_min_height());
+        assert_eq!(one, style::row_min_height());
         assert!(two > one);
         let slider = SliderRow::new("Level", |w| {
             Rectangle::new()
@@ -804,7 +809,7 @@ mod tests {
         );
         assert_eq!(
             row.height(DEFAULT_WIDTH),
-            theme::row_min_height() + 40.0 + px(10.0)
+            style::row_min_height() + 40.0 + px(10.0)
         );
         let _ = row.disabled(true).build(DEFAULT_WIDTH);
     }

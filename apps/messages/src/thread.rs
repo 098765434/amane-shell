@@ -23,8 +23,9 @@ use amane::{
 use amane_kit::buttons::{Actions, PushButton, Style, interactive, state_fill};
 use amane_kit::color::with_alpha;
 use amane_kit::layout::{boxed, caption, pad, text_height, text_width};
-use amane_kit::macform::{self, MenuItem, theme as mac};
 use amane_kit::material::{self, Level};
+use amane_kit::menu::{self, MenuItem};
+use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
 
 use crate::bubble::{self, Look};
@@ -457,7 +458,7 @@ fn context_menu(message: &SmsMessage) {
     }
 
     let message = message.clone();
-    macform::context_menu("messages.thread.menu", items, move |index| {
+    menu::context_menu("messages.thread.menu", items, move |index| {
         match picks.get(index).cloned() {
             Some(Pick::Copy(text)) => Clipboard::copy(text),
             Some(Pick::Open(target)) => {
@@ -613,7 +614,7 @@ fn file_chip(part: &SmsAttachment, key: &str, fetching: bool) -> Rectangle {
         .width(Size::Fixed(width))
         .height(Size::Fixed(40.0))
         .radius(Radius::Fixed(20.0))
-        .fill(state_fill(key, mac::bubble_received(), false))
+        .fill(state_fill(key, style::bubble_received(), false))
         .padding(pad(12.0, 0.0))
         .align_child(Start, Center)
         .child(
@@ -621,9 +622,9 @@ fn file_chip(part: &SmsAttachment, key: &str, fetching: bool) -> Rectangle {
                 boxed(amane_kit::layout::icon(
                     ICON_FILE,
                     20.0,
-                    mac::label_primary(),
+                    style::label_primary(),
                 )),
-                boxed(Text::new(label).style(style).color(mac::label_primary())),
+                boxed(Text::new(label).style(style).color(style::label_primary())),
             ])
             .gap(8.0)
             .align(Center),
@@ -649,7 +650,7 @@ fn link_chip(link: &str) -> Rectangle {
             .radius(Radius::Full)
             .fill(state_fill(
                 &key,
-                with_alpha(mac::label_primary(), 0.06),
+                with_alpha(style::label_primary(), 0.06),
                 false,
             ))
             .padding(pad(10.0, 0.0))

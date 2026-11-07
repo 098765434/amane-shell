@@ -9,10 +9,10 @@ use std::rc::Rc;
 
 use amane::{Center, Color, Rectangle, Row, Size, Widget};
 
-use super::theme::{self, px};
-use super::{interactive, on_press};
 use crate::buttons::hovered;
+use crate::controls::parts::{interactive, on_press};
 use crate::layout::boxed;
+use crate::style::{self, px};
 
 /// One dot: its name and its color, or none for the system's.
 pub struct ColorWells {
@@ -30,7 +30,7 @@ fn gap() -> f32 {
     px(8.0)
 }
 
-/// The colors a "multicolor" dot is made of, a quarter each.
+/// The colors a "multicolor" dot is made of, a quarter each. TODO(token): ref.color.system.*
 const SYSTEM: [&str; 4] = ["#0091ff", "#ff4245", "#ffd600", "#30d158"];
 
 impl ColorWells {
@@ -121,7 +121,7 @@ impl ColorWells {
                     .width(Size::Fixed(side()))
                     .height(Size::Fixed(side()))
                     .radius(side() / 2.0)
-                    .border(1.0, theme::divider())
+                    .border(1.0, style::divider())
                     .align_child(Center, Center)
                     .child(amane::Stack::new(vec![
                         face,

@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use amane::{Canvas, Color, Gradient, Path, Rectangle, Shape, Size, Stack, Text};
 use amane_kit::color::{over, with_alpha};
 use amane_kit::layout::{boxed, pad, text_height, text_width};
-use amane_kit::macform::theme as mac;
+use amane_kit::style;
 use amane_kit::tokens::{Styled, TextStyle, sys};
 
 /// The text size the SVG was drawn for: its geometry is in these units.
@@ -229,12 +229,12 @@ pub fn bubble(key: i64, text: &str, look: Look, tail: bool, widest: f32) -> Rect
                 (1.0, with_alpha(accent, 0.55)),
             ],
         ))),
-        Look::Received => Box::new(path.fill(mac::bubble_received())),
+        Look::Received => Box::new(path.fill(style::bubble_received())),
         Look::Failed => Box::new(path.fill(sys::color::status::critical::bg())),
     };
 
     let ink = match look {
-        Look::Received => mac::label_primary(),
+        Look::Received => style::label_primary(),
         _ => sys::color::accent::fg(),
     };
     let pad_y = (LINE_HEIGHT * s - text_height(text_style())) / 2.0;

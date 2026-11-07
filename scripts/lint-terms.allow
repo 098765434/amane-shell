@@ -12,10 +12,7 @@ path Cargo.lock
 path scripts/lint-terms
 path scripts/lint-terms.allow
 
-# identifiers waiting for the kit consolidation (Phase 8)
-match macform
-match \bmac::
-match as mac;
+# identifiers waiting for the shell's file formats (Phase 10)
 match show_in_spotlight
 match settings\.[a-z.]*spotlight
 # Shell Settings' page id for the Launcher page, in its routing and search

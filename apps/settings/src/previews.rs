@@ -339,7 +339,7 @@ pub fn clock(analog: bool) -> Rectangle {
                 .child(Column::new(vec![boxed({
                     use amane_kit::tokens::Styled;
                     amane::Text::new("9:41")
-                        .style(amane_kit::macform::theme::page_title_font())
+                        .style(amane_kit::style::page_title_font())
                         .color(ink)
                 })])),
         ));

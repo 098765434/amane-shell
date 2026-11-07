@@ -35,7 +35,7 @@ use amane_kit::app::{app, standard_shortcut};
 use amane_kit::buttons::IconButton;
 use amane_kit::color::with_alpha;
 use amane_kit::layout::boxed;
-use amane_kit::macform::theme as mac;
+use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
 
 use crate::session::{Mirror, Phase};
@@ -358,7 +358,7 @@ fn webcam(args: &[String], facing: &str) -> Result<(), String> {
 fn status(title: &str, detail: &str, retry: bool) -> Rectangle {
     let mut lines: Vec<Box<dyn Widget>> = vec![boxed(
         Text::new(title)
-            .style(mac::page_title_font())
+            .style(style::page_title_font())
             .color(amane::Color::WHITE),
     )];
     if !detail.is_empty() {
@@ -376,7 +376,7 @@ fn status(title: &str, detail: &str, retry: bool) -> Rectangle {
     }
     if retry {
         lines.push(boxed(
-            amane_kit::macform::MacPushButton::new("amane.mirror.retry", "Try Again")
+            amane_kit::buttons::PushButton::new("amane.mirror.retry", "Try Again")
                 .on_press(|| Mirror::write().phase = Phase::Idle)
                 .build(),
         ));

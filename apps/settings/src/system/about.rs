@@ -194,7 +194,7 @@ fn tidy(path: &str) -> String {
 /// The computer's card: its glyph, its name and the NixOS it runs.
 fn hero(version: Option<&str>) -> amane::Rectangle {
     use amane::{Color, Rectangle, Size, Text};
-    use amane_kit::macform::theme as mac;
+    use amane_kit::style;
     use amane_kit::tokens::Styled;
     let tile = Rectangle::new()
         .width(Size::Fixed(60.0))
@@ -214,14 +214,14 @@ fn hero(version: Option<&str>) -> amane::Rectangle {
         } else {
             name
         })
-        .style(mac::page_title_font())
-        .color(mac::label_primary()),
+        .style(style::page_title_font())
+        .color(style::label_primary()),
     )];
     lines.push(match version {
         Some(version) => boxed(
             Text::new(format!("NixOS {version}"))
-                .style(mac::subtitle_font())
-                .color(mac::label_secondary()),
+                .style(style::subtitle_font())
+                .color(style::label_secondary()),
         ),
         None => boxed(amane_kit::spinner::Spinner::new(14.0).build()),
     });
@@ -230,7 +230,7 @@ fn hero(version: Option<&str>) -> amane::Rectangle {
         .height(Size::Fixed(HERO))
         .fill(Color::TRANSPARENT)
         .padding(amane::Padding {
-            left: mac::row_pad_h(),
+            left: style::row_pad_h(),
             ..amane::Padding::default()
         })
         .align_child(amane::Start, Center)

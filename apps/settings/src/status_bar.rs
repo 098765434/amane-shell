@@ -9,13 +9,13 @@ use amane_kit::buttons::{IconButton, PushButton, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
 use amane_kit::layout::{boxed, fixed_width};
-use amane_kit::macform::ThumbnailPicker;
-use amane_kit::macform::theme as mac;
 use amane_kit::settings::{
     AutoHide, BAR_ITEMS, BUILTIN_ACTIVITIES, BarPosition, BarSize, BarStyle, ClockStyle,
     DateFormat, ShowDate, StatusBar, activities_seen, bar_item_icon, change_status_bar,
     status_apps_seen, status_bar, tray_seen,
 };
+use amane_kit::style;
+use amane_kit::thumbnail_picker::ThumbnailPicker;
 
 use crate::{View, group, groups, previews, switch_row};
 
@@ -85,7 +85,7 @@ pub fn page() -> Column {
     .width(200.0)
     .on_select(|index| change_status_bar(|now| now.auto_hide = AutoHide::ALL[index]));
 
-    let width = crate::page_width() - 2.0 * mac::row_pad_h();
+    let width = crate::page_width() - 2.0 * style::row_pad_h();
     let mut styles = ThumbnailPicker::new("settings.bar.style", previews::WIDTH, previews::HEIGHT)
         .width(width)
         .chosen(STYLES.iter().position(|(_, style)| *style == now.style))
@@ -221,7 +221,7 @@ fn clock() -> Column {
     let now = status_bar().clone();
     let analog = now.clock_style == ClockStyle::Analog;
 
-    let width = crate::page_width() - 2.0 * mac::row_pad_h();
+    let width = crate::page_width() - 2.0 * style::row_pad_h();
     let styles = ThumbnailPicker::new(
         "settings.bar.clock-style",
         previews::WIDTH,

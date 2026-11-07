@@ -1,11 +1,11 @@
 //! Dropdown — one choice out of a list, behind a button that shows it.
 //!
-//! Drawn as a pop-up button in the macform look: a control-fill
+//! Drawn as a pop-up button in the form controls' look: a control-fill
 //! button, radius 6, showing the chosen option (its glyph, if it has one,
 //! then its text) and a drawn chevron. A click opens the menu of options
 //! lined up under it, the chosen one filled with the accent; the pointer,
 //! or Up, Down and Enter, picks one, and Escape or a click outside closes
-//! it (see [`macform::menu`](crate::macform)).
+//! it (see [`menu`](crate::menu)).
 //!
 //! The menu is an xdg-popup over the surface the dropdown is on: a normal
 //! window's (found by itself, from `current_window`), or a layer window's
@@ -18,11 +18,12 @@ use std::rc::Rc;
 use amane::{Center, Padding, Rectangle, Row, Size, Text, Widget};
 
 use crate::buttons::interactive;
+use crate::controls::parts::on_press;
 use crate::layout::{boxed, icon, text_width};
-use crate::macform::menu::{self, MenuItem};
-use crate::macform::symbol::{Symbol, symbol};
-use crate::macform::theme::{self, px};
-use crate::macform::{hover_fill, on_press};
+use crate::look::hover::hover_fill;
+use crate::menu::{self, MenuItem};
+use crate::style::{self, px};
+use crate::symbol::{Symbol, symbol};
 use crate::tokens::Styled;
 
 /// A dropdown. `id` keys its hover and its menu, so it must be unique and
@@ -94,8 +95,8 @@ impl Dropdown {
     }
 
     pub fn build(self) -> Rectangle {
-        let style = theme::control_font();
-        let height = theme::control_height();
+        let style = style::control_font();
+        let height = style::control_height();
         let glyph = px(12.0);
         let chevron = px(11.0);
         let (lead_icon, lead_text, trail, gap) = (px(8.0), px(12.0), px(8.0), px(6.0));
@@ -128,7 +129,7 @@ impl Dropdown {
             self.layer,
         );
 
-        let fg = theme::label_primary();
+        let fg = style::label_primary();
         let mut parts: Vec<Box<dyn Widget>> = Vec::new();
         let current_glyph = current.as_ref().and_then(|item| item.icon);
         if let Some(g) = current_glyph {
@@ -154,10 +155,10 @@ impl Dropdown {
         let base = Rectangle::new()
             .width(Size::Fixed(width))
             .height(Size::Fixed(height))
-            .radius(theme::field_radius())
+            .radius(style::field_radius())
             .fill(hover_fill(
                 &self.id,
-                theme::control_fill(),
+                style::control_fill(),
                 fg,
                 self.disabled,
             ))

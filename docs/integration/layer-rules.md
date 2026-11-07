@@ -59,7 +59,7 @@ generated from (2), not hand-edited, so neither can drift.
 
 Some namespaces have no rule of their own, and need none: the context-menu levels, the
 activities' expanded view (`amane.status-bar.activity`), tooltips (`amane.tooltip`) and the form
-controls' menu (`amane.macform.menu`) are popups, frosted by the `popups {}` block of the surface
+controls' menu (`amane.menu`) are popups, frosted by the `popups {}` block of the surface
 they hang from; and `amane.fill`, the password-fill popup, is an input-method popup over another
 app's window, not a layer surface. A test in `layer_rules.rs` checks that every namespace in the
 code has a rule or is on that list.

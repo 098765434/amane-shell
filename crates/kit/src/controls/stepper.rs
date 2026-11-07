@@ -1,4 +1,4 @@
-//! MacStepper — a number field with up and down halves: 64×24, radius 6,
+//! Stepper — a number field with up and down halves: 64×24, radius 6,
 //! `fieldFill` in a 1 px `fieldBorder`, the halves in a 20 px column
 //! behind a 1 px line. Enter takes a typed number; the wheel over it
 //! steps.
@@ -19,11 +19,12 @@ use amane::{
     Center, Color, Column, Point, Pointer, Rectangle, Row, Scroll, Size, TextInput, request_frame,
 };
 
-use super::symbol::{Symbol, symbol};
-use super::theme::{self, px};
-use super::{DISABLED_OPACITY, hover_fill};
 use crate::buttons::{hover, with_state};
+use crate::controls::parts::DISABLED_OPACITY;
 use crate::layout::boxed;
+use crate::look::hover::hover_fill;
+use crate::style::{self, px};
+use crate::symbol::{Symbol, symbol};
 
 /// A half held down: which way, since when, and the value it started at.
 #[derive(Clone, Copy)]
@@ -62,7 +63,7 @@ fn decimals(step: f64) -> usize {
     }
 }
 
-pub struct MacStepper {
+pub struct Stepper {
     id: &'static str,
     value: f64,
     from: f64,
@@ -73,7 +74,7 @@ pub struct MacStepper {
     on_change: Rc<dyn Fn(f64)>,
 }
 
-impl MacStepper {
+impl Stepper {
     pub fn new(id: &'static str, value: f64) -> Self {
         Self {
             id,
@@ -145,16 +146,16 @@ impl MacStepper {
             shown
         });
 
-        let height = theme::control_height();
-        let radius = theme::field_radius();
-        let fg = theme::label_primary();
+        let height = style::control_height();
+        let radius = style::field_radius();
+        let fg = style::label_primary();
         let column_w = px(20.0);
 
         let submit = on_change.clone();
         let input = TextInput::new(id)
-            .size(theme::control_font().size)
+            .size(style::control_font().size)
             .color(fg)
-            .selection_color(crate::color::with_alpha(theme::tint(), 0.4))
+            .selection_color(crate::color::with_alpha(style::tint(), 0.4))
             .on_submit(move |text| {
                 let next = text.trim().parse::<f64>().map_or(value, fix);
                 // the field shows the clamped value even if it didn't change
@@ -227,14 +228,14 @@ impl MacStepper {
         let line = Rectangle::new()
             .width(Size::Fixed(1.0))
             .height(Size::Fixed(height - px(6.0)))
-            .fill(theme::field_border());
+            .fill(style::field_border());
 
         let base = Rectangle::new()
             .width(Size::Fixed(width))
             .height(Size::Fixed(height))
             .radius(radius)
-            .fill(theme::field_fill())
-            .border(1.0, theme::field_border())
+            .fill(style::field_fill())
+            .border(1.0, style::field_border())
             .clip()
             .child(Row::new(vec![boxed(field), boxed(line), boxed(column)]).align(Center));
 

@@ -3,5 +3,7 @@
 
 pub mod glass;
 pub mod glass_region;
+pub(crate) mod hover;
 pub mod lab;
 pub mod material;
+pub mod style;

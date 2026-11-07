@@ -1,10 +1,7 @@
-//! The macform controls next to the kit's own, to compare and try:
-//! `cargo run -p amane-kit --example macform`.
+//! Every kit control, to look at and try: `cargo run -p amane-kit --example controls`.
 //!
-//! Each row shows one kind of control twice: the kit's on the left,
-//! the macform port on the right, sharing the same state, with what it
-//! holds written after it. `AMANE_THEME=light|dark` and
-//! `AMANE_DENSITY=compact` show the other looks.
+//! Each row shows one kind of control, with what it holds written after it.
+//! `AMANE_THEME=light|dark` and `AMANE_DENSITY=compact` show the other looks.
 
 use amane::{
     Center, Column, Rectangle, Row, ScrollArea, Service, Size, Start, Text, Widget, Window,
@@ -20,13 +17,15 @@ use amane_kit::icons::{
     ICON_SETTINGS, ICON_TUNE, ICON_VOLUME_UP, ICON_WIFI,
 };
 use amane_kit::layout::boxed;
-use amane_kit::macform::theme::{self as mac, Accent};
-use amane_kit::macform::{
-    MacComboBox, MacLeadingIcon, MacPopUpButton, MacPushButton, MacSegmentedNav, MacSlider,
-    MacStepper, MacSwitch, MacTextField, MenuItem, Symbol, symbol,
-};
+use amane_kit::leading_icon::LeadingIcon;
 use amane_kit::material::{self, Level};
+use amane_kit::menu::MenuItem;
+use amane_kit::nav_buttons::NavButtons;
+use amane_kit::pop_up_button::PopUpButton;
 use amane_kit::slider::Slider;
+use amane_kit::stepper::Stepper;
+use amane_kit::style::{self, Accent};
+use amane_kit::symbol::{Symbol, symbol};
 use amane_kit::tokens::{Styled, sys};
 
 struct Lab {
@@ -39,20 +38,18 @@ struct Lab {
     level: f32,
     accent: usize,
     sort: usize,
-    font: String,
     port: f64,
     scale: f64,
     pages_back: usize,
     pressed: String,
     name: String,
-    port_text: String,
 }
 
 impl Service for Lab {
     fn new() -> Self {
         Self {
-            // MACFORM_PAGE=5 opens on a page, for screenshots
-            page: std::env::var("MACFORM_PAGE")
+            // CONTROLS_PAGE=5 opens on a page, for screenshots
+            page: std::env::var("CONTROLS_PAGE")
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(0),
@@ -64,13 +61,11 @@ impl Service for Lab {
             level: 0.4,
             accent: 0,
             sort: 0,
-            font: String::new(),
             port: 8080.0,
             scale: 1.5,
             pages_back: 2,
             pressed: String::from("nothing yet"),
             name: String::new(),
-            port_text: String::new(),
         }
     }
 
@@ -79,18 +74,11 @@ impl Service for Lab {
 
 const SIZES: [&str; 3] = ["Small", "Medium", "Large"];
 const ACCENTS: [&str; 4] = ["Blue", "Purple", "Green", "Orange"];
-const FONTS: [&str; 5] = [
-    "Atkinson Hyperlegible",
-    "Inter",
-    "Iosevka",
-    "JetBrains Mono",
-    "Noto Sans",
-];
 
 fn main() {
-    app("amane-macform-gallery")
+    app("amane-kit-controls")
         .popup(amane_kit::tooltip::popup)
-        .normal_window("macform", window)
+        .normal_window("controls", window)
         .run();
 }
 
@@ -106,7 +94,7 @@ fn window() -> Window {
         Page::new(ICON_SETTINGS, "Settings rows"),
     ];
 
-    let nav = sidebar("macform.nav", &pages, state.page, |page| {
+    let nav = sidebar("controls.nav", &pages, state.page, |page| {
         Lab::write().page = page
     });
 
@@ -122,18 +110,15 @@ fn window() -> Window {
     let title = pages[state.page.min(pages.len() - 1)].name.clone();
     let mut body: Vec<Box<dyn Widget>> = vec![boxed(
         Text::new(title)
-            .style(mac::page_title_font())
-            .color(mac::label_primary()),
+            .style(style::page_title_font())
+            .color(style::label_primary()),
     )];
-    if state.page < 5 {
-        body.push(boxed(header()));
-    }
     body.extend(page);
 
     let content = Row::new(vec![
         boxed(Column::new(vec![boxed(nav)]).width(Size::Fixed(180.0))),
         boxed(ScrollArea::new(
-            "macform.page",
+            "controls.page",
             Column::new(body)
                 .gap(sys::space::gap::m())
                 .width(Size::Parent),
@@ -144,7 +129,7 @@ fn window() -> Window {
     .height(Size::Parent);
 
     app_window(content)
-        .title("macform gallery")
+        .title("Controls")
         .size(960.0, 640.0)
         .min_size(820.0, 520.0)
         .on_shortcut(standard_shortcut)
@@ -172,26 +157,16 @@ fn cell(width: f32, height: f32, child: impl Widget + 'static) -> Box<dyn Widget
     )
 }
 
-fn header() -> Row {
-    Row::new(vec![
-        cell(LABEL_W, 20.0, caption("")),
-        cell(CELL_W, 20.0, caption("KIT TODAY")),
-        cell(CELL_W, 20.0, caption("MACFORM")),
-    ])
-}
-
-/// One comparison: a name, the kit's control and the port, and a readout.
-fn compare(
+/// One kind of control: its name, the control, and a readout.
+fn show(
     name: &str,
     height: f32,
-    kit: impl Widget + 'static,
-    port: impl Widget + 'static,
+    control: impl Widget + 'static,
     readout: String,
 ) -> Box<dyn Widget> {
     let line = Row::new(vec![
         cell(LABEL_W, height, caption(name)),
-        cell(CELL_W, height, kit),
-        cell(CELL_W, height, port),
+        cell(CELL_W * 2.0, height, control),
     ]);
     if readout.is_empty() {
         return boxed(line);
@@ -209,32 +184,24 @@ fn row(parts: Vec<Box<dyn Widget>>) -> Row {
     Row::new(parts).gap(sys::space::gap::m()).align(Center)
 }
 
-fn column(parts: Vec<Box<dyn Widget>>) -> Column {
-    Column::new(parts).gap(sys::space::gap::xs())
-}
-
 // ---- pages ----
 
 fn toggles(s: &Lab) -> Vec<Box<dyn Widget>> {
-    let mut kit_radios = Vec::new();
-    let mut mac_radios = Vec::new();
-    for (i, size) in SIZES.iter().enumerate() {
-        kit_radios.push(boxed(
-            Radio::new(format!("kit.size.{i}"), s.size == i)
-                .label(*size)
-                .on_select(move || Lab::write().size = i)
-                .build(),
-        ));
-        mac_radios.push(boxed(
-            Radio::new(format!("mac.size.{i}"), s.size == i)
-                .label(*size)
-                .on_select(move || Lab::write().size = i)
-                .build(),
-        ));
-    }
+    let radios = SIZES
+        .iter()
+        .enumerate()
+        .map(|(i, size)| {
+            boxed(
+                Radio::new(format!("kit.size.{i}"), s.size == i)
+                    .label(*size)
+                    .on_select(move || Lab::write().size = i)
+                    .build(),
+            )
+        })
+        .collect();
 
     vec![
-        compare(
+        show(
             "Switch",
             ROW_H,
             row(vec![
@@ -250,96 +217,53 @@ fn toggles(s: &Lab) -> Vec<Box<dyn Widget>> {
                 ),
                 boxed(Switch::new("kit.off", true).disabled(true).build()),
             ]),
+            format!("Wi-Fi {}, Bluetooth {}", s.wifi, s.bluetooth),
+        ),
+        show(
+            "Checkbox",
+            ROW_H,
             row(vec![
                 boxed(
-                    MacSwitch::new("mac.wifi", s.wifi)
-                        .on_toggle(|on| Lab::write().wifi = on)
-                        .build(),
-                ),
-                boxed(
-                    MacSwitch::new("mac.bt", s.bluetooth)
-                        .on_toggle(|on| Lab::write().bluetooth = on)
-                        .build(),
-                ),
-                boxed(MacSwitch::new("mac.off", true).disabled(true).build()),
-            ]),
-            format!(
-                "wifi {}, bluetooth {} (third is disabled)",
-                s.wifi, s.bluetooth
-            ),
-        ),
-        compare(
-            "Checkbox",
-            ROW_H * 2.0,
-            column(vec![
-                boxed(
                     Checkbox::new("kit.sounds", s.sounds)
-                        .label("Play sounds")
+                        .label("Sounds")
                         .on_toggle(|on| Lab::write().sounds = on)
                         .build(),
                 ),
                 boxed(
                     Checkbox::new("kit.badges", s.badges)
-                        .label("Show badges")
-                        .on_toggle(|on| Lab::write().badges = on)
-                        .build(),
-                ),
-            ]),
-            column(vec![
-                boxed(
-                    Checkbox::new("mac.sounds", s.sounds)
-                        .label("Play sounds")
-                        .on_toggle(|on| Lab::write().sounds = on)
-                        .build(),
-                ),
-                boxed(
-                    Checkbox::new("mac.badges", s.badges)
-                        .label("Show badges")
+                        .label("Badges")
                         .on_toggle(|on| Lab::write().badges = on)
                         .build(),
                 ),
             ]),
             format!("sounds {}, badges {}", s.sounds, s.badges),
         ),
-        compare(
+        show(
             "Radio",
-            ROW_H * 3.0,
-            column(kit_radios),
-            column(mac_radios),
+            ROW_H,
+            row(radios),
             format!("size {}", SIZES[s.size]),
         ),
     ]
 }
 
 fn sliders(s: &Lab) -> Vec<Box<dyn Widget>> {
-    let percent = (s.level * 100.0).round() as u8;
     vec![
-        compare(
+        show(
             "Slider",
             ROW_H,
-            Slider::new(percent, 200.0)
+            Slider::new((s.level * 100.0).round() as u8, 200.0)
                 .on_value_change(|v| Lab::write().level = f32::from(v) / 100.0)
                 .build(),
-            MacSlider::new(s.level, 200.0)
-                .on_change(|v| Lab::write().level = v)
-                .build(),
-            format!("level {:.3} (drag, click or scroll either)", s.level),
+            format!("{:.0}%", s.level * 100.0),
         ),
-        compare(
-            "Disabled",
+        show(
+            "Dimmed",
             ROW_H,
-            Slider::new(percent, 200.0).inert(true).dimmed(true).build(),
-            MacSlider::new(s.level, 200.0).disabled(true).build(),
-            String::new(),
-        ),
-        compare(
-            "Large (kit)",
-            ROW_H,
-            Slider::new(percent, 200.0)
-                .large(ICON_VOLUME_UP)
-                .on_value_change(|v| Lab::write().level = f32::from(v) / 100.0)
+            Slider::new((s.level * 100.0).round() as u8, 200.0)
+                .dimmed(true)
+                .inert(true)
                 .build(),
-            caption("(no macform counterpart)"),
             String::new(),
         ),
     ]
@@ -360,7 +284,7 @@ fn buttons(s: &Lab) -> Vec<Box<dyn Widget>> {
         .map(|(i, accent)| {
             let glyphs = [ICON_WIFI, ICON_BLUETOOTH, ICON_DISPLAY, ICON_VOLUME_UP];
             boxed(
-                MacLeadingIcon::new(glyphs[i % glyphs.len()])
+                LeadingIcon::new(glyphs[i % glyphs.len()])
                     .accent(*accent)
                     .build(),
             )
@@ -378,24 +302,24 @@ fn buttons(s: &Lab) -> Vec<Box<dyn Widget>> {
         Symbol::InfoCircle,
     ]
     .into_iter()
-    .map(|sym| boxed(symbol(sym, 16.0, mac::label_primary())))
+    .map(|sym| boxed(symbol(sym, 16.0, style::label_primary())))
     .collect();
 
     vec![
-        compare(
+        show(
             "Push",
             ROW_H,
             row(vec![
                 boxed(
                     PushButton::new("kit.ok", "OK")
                         .style(Style::Filled)
-                        .on_press(press("kit OK"))
+                        .on_press(press("OK"))
                         .build(),
                 ),
                 boxed(
                     PushButton::new("kit.cancel", "Cancel")
                         .style(Style::Tonal)
-                        .on_press(press("kit Cancel"))
+                        .on_press(press("Cancel"))
                         .build(),
                 ),
                 boxed(
@@ -403,32 +327,13 @@ fn buttons(s: &Lab) -> Vec<Box<dyn Widget>> {
                         .icon(ICON_SEARCH)
                         .style(Style::Tonal)
                         .shape(Shape::Round)
-                        .on_press(press("kit Search"))
-                        .build(),
-                ),
-            ]),
-            row(vec![
-                boxed(
-                    MacPushButton::new("mac.ok", "OK")
-                        .prominent(true)
-                        .on_press(press("macform OK"))
-                        .build(),
-                ),
-                boxed(
-                    MacPushButton::new("mac.cancel", "Cancel")
-                        .on_press(press("macform Cancel"))
-                        .build(),
-                ),
-                boxed(
-                    MacPushButton::new("mac.search", "Search")
-                        .icon(ICON_SEARCH)
-                        .on_press(press("macform Search"))
+                        .on_press(press("Search"))
                         .build(),
                 ),
             ]),
             format!("last pressed: {}", s.pressed),
         ),
-        compare(
+        show(
             "Disabled",
             ROW_H,
             row(vec![
@@ -440,28 +345,20 @@ fn buttons(s: &Lab) -> Vec<Box<dyn Widget>> {
                         .build(),
                 ),
             ]),
-            row(vec![
-                boxed(
-                    MacPushButton::new("mac.dis", "Apply")
-                        .disabled(true)
-                        .build(),
-                ),
-                boxed(
-                    MacPushButton::new("mac.dis2", "Apply")
-                        .prominent(true)
-                        .disabled(true)
-                        .build(),
-                ),
-            ]),
             String::new(),
         ),
-        compare(
-            "Navigation",
+        show(
+            "Segmented",
             ROW_H + 4.0,
             SegmentedButton::new("kit.range", segments, Some(s.pages_back.min(2)))
                 .on_select(|i, _| Lab::write().pages_back = i)
                 .build(),
-            MacSegmentedNav::new("mac.nav")
+            format!("position {} of 3", s.pages_back + 1),
+        ),
+        show(
+            "Back and forward",
+            ROW_H + 4.0,
+            NavButtons::new("kit.nav")
                 .back_enabled(s.pages_back > 0)
                 .forward_enabled(s.pages_back < 2)
                 .on_back(|| {
@@ -473,22 +370,17 @@ fn buttons(s: &Lab) -> Vec<Box<dyn Widget>> {
                     lab.pages_back = (lab.pages_back + 1).min(2);
                 })
                 .build(),
-            format!(
-                "position {} of 3 (segmented button on the kit side, back/forward pill on macform)",
-                s.pages_back + 1
-            ),
+            String::from("the same position as the segmented button"),
         ),
-        compare(
+        show(
             "Leading icons",
             ROW_H,
-            caption("(no kit counterpart)"),
             Row::new(tiles).gap(4.0).align(Center),
             String::new(),
         ),
-        compare(
+        show(
             "Symbols",
             ROW_H,
-            caption("(Material Symbols font)"),
             Row::new(symbols).gap(10.0).align(Center),
             String::from("drawn as round-joined strokes, no font"),
         ),
@@ -502,32 +394,20 @@ fn selectors(s: &Lab) -> Vec<Box<dyn Widget>> {
         MenuItem::new("Date modified").icon(ICON_FOLDER),
         MenuItem::new("Size").icon(ICON_DISPLAY),
     ];
-    let fonts: Vec<MenuItem> = FONTS.iter().map(|f| MenuItem::from(*f)).collect();
 
     vec![
-        compare(
-            "Pop-up / pull-down",
+        show(
+            "Dropdown",
             ROW_H,
-            Dropdown::new(
-                "kit.accent",
-                ACCENTS.iter().map(|a| a.to_string()).collect(),
-                s.accent,
-            )
-            .on_select(|i| Lab::write().accent = i)
-            .build(),
-            Dropdown::items("mac.accent", accents, Some(s.accent))
+            Dropdown::items("kit.accent", accents, Some(s.accent))
                 .on_select(|i| Lab::write().accent = i)
                 .build(),
-            format!(
-                "accent {} (both are the kit's Dropdown now)",
-                ACCENTS[s.accent]
-            ),
+            format!("accent {}", ACCENTS[s.accent]),
         ),
-        compare(
+        show(
             "With icons",
             ROW_H,
-            caption(""),
-            Dropdown::items("mac.sort", sorts.clone(), Some(s.sort))
+            Dropdown::items("kit.sort", sorts.clone(), Some(s.sort))
                 .width(150.0)
                 .on_select(|i| Lab::write().sort = i)
                 .build(),
@@ -536,18 +416,17 @@ fn selectors(s: &Lab) -> Vec<Box<dyn Widget>> {
                 sorts[s.sort].text
             ),
         ),
-        compare(
+        show(
             "Pop-up button",
             ROW_H,
-            caption(""),
             row(vec![
                 boxed(
                     Text::new(sorts[s.sort].text.clone())
-                        .style(mac::control_font())
-                        .color(mac::label_primary()),
+                        .style(style::control_font())
+                        .color(style::label_primary()),
                 ),
                 boxed(
-                    MacPopUpButton::new("mac.popup")
+                    PopUpButton::new("kit.popup")
                         .items(sorts, Some(s.sort))
                         .on_select(|i| Lab::write().sort = i)
                         .build(),
@@ -555,26 +434,12 @@ fn selectors(s: &Lab) -> Vec<Box<dyn Widget>> {
             ]),
             String::new(),
         ),
-        compare(
-            "Combo box",
-            ROW_H,
-            caption("(none)"),
-            MacComboBox::new("mac.font", fonts)
-                .width(200.0)
-                .placeholder("Font")
-                .on_change(|f| Lab::write().font = f)
-                .build(),
-            format!(
-                "font {:?} (type to narrow the menu, or pick from the chevron)",
-                s.font
-            ),
-        ),
     ]
 }
 
 fn text(s: &Lab) -> Vec<Box<dyn Widget>> {
     vec![
-        compare(
+        show(
             "Text field",
             ROW_H,
             field_box(
@@ -582,59 +447,33 @@ fn text(s: &Lab) -> Vec<Box<dyn Widget>> {
                 text_field("kit.name", "Your name").on_change(|t| Lab::write().name = t),
                 200.0,
             ),
-            MacTextField::new("mac.name")
-                .placeholder("Your name")
-                .width(200.0)
-                .on_change(|t| Lab::write().name = t)
-                .build(),
-            format!("kit field holds {:?}", s.name),
+            format!("holds {:?}", s.name),
         ),
-        compare(
-            "Validated",
-            ROW_H,
-            caption("(no check in the kit)"),
-            MacTextField::new("mac.port")
-                .placeholder("Port, digits only")
-                .width(200.0)
-                .validate(|t| t.chars().all(|c| c.is_ascii_digit()))
-                .on_submit(|t| Lab::write().port_text = t)
-                .build(),
-            format!(
-                "press Enter: letters turn the edge red; last accepted {:?}",
-                s.port_text
-            ),
-        ),
-        compare(
+        show(
             "Password",
             ROW_H,
             field_box("kit.pw", text_field("kit.pw", "Password").password(), 200.0),
-            MacTextField::new("mac.pw")
-                .placeholder("Password")
-                .password()
-                .width(200.0)
-                .build(),
             String::new(),
         ),
-        compare(
+        show(
             "Stepper",
             ROW_H,
-            caption("(none)"),
             row(vec![
                 boxed(
-                    MacStepper::new("mac.port.step", s.port)
+                    Stepper::new("kit.port.step", s.port)
                         .range(1.0, 65535.0)
                         .width(90.0)
                         .on_change(|v| Lab::write().port = v)
                         .build(),
                 ),
                 boxed(
-                    MacStepper::new("mac.scale.step", s.scale)
+                    Stepper::new("kit.scale.step", s.scale)
                         .range(0.5, 3.0)
                         .step(0.25)
                         .on_change(|v| Lab::write().scale = v)
                         .build(),
                 ),
-                boxed(MacStepper::new("mac.dis.step", 3.0).disabled(true).build()),
+                boxed(Stepper::new("kit.dis.step", 3.0).disabled(true).build()),
             ]),
             format!(
                 "port {}, scale {} (hold a half to repeat, scroll, or type and Enter)",
@@ -657,7 +496,7 @@ fn settings_rows(s: &Lab) -> Vec<Box<dyn Widget>> {
                 .icon(ICON_WIFI, Accent::Blue)
                 .subtitle(if s.wifi { "Connected to Home" } else { "Off" })
                 .trailing(
-                    MacSwitch::new("rows.wifi.switch", s.wifi)
+                    Switch::new("rows.wifi.switch", s.wifi)
                         .on_toggle(|on| Lab::write().wifi = on)
                         .build(),
                 ),
@@ -666,7 +505,7 @@ fn settings_rows(s: &Lab) -> Vec<Box<dyn Widget>> {
             FormRow::new("rows.bt", "Bluetooth")
                 .icon(ICON_BLUETOOTH, Accent::Indigo)
                 .trailing(
-                    MacSwitch::new("rows.bt.switch", s.bluetooth)
+                    Switch::new("rows.bt.switch", s.bluetooth)
                         .on_toggle(|on| Lab::write().bluetooth = on)
                         .build(),
                 ),
@@ -704,7 +543,7 @@ fn settings_rows(s: &Lab) -> Vec<Box<dyn Widget>> {
             FormRow::new("rows.scale", "Display scale")
                 .icon(ICON_DISPLAY, Accent::Teal)
                 .trailing(
-                    MacStepper::new("rows.scale.step", s.scale)
+                    Stepper::new("rows.scale.step", s.scale)
                         .range(0.5, 3.0)
                         .step(0.25)
                         .on_change(|v| Lab::write().scale = v)
@@ -722,8 +561,8 @@ fn settings_rows(s: &Lab) -> Vec<Box<dyn Widget>> {
         .width(width)
         .slider(
             SliderRow::new("Output volume", move |w| {
-                MacSlider::new(level, w)
-                    .on_change(|v| Lab::write().level = v)
+                Slider::new((level * 100.0).round() as u8, w)
+                    .on_value_change(|v| Lab::write().level = f32::from(v) / 100.0)
                     .build()
             })
             .glyph(ICON_VOLUME_UP)
@@ -734,7 +573,7 @@ fn settings_rows(s: &Lab) -> Vec<Box<dyn Widget>> {
                 .icon(ICON_NOTIFICATIONS, Accent::Red)
                 .subtitle("Shows every app's first notification again")
                 .trailing(
-                    MacPushButton::new("rows.reset.button", "Reset…")
+                    PushButton::new("rows.reset.button", "Reset…")
                         .on_press(|| Lab::write().pressed = String::from("Reset"))
                         .build(),
                 ),
@@ -742,7 +581,7 @@ fn settings_rows(s: &Lab) -> Vec<Box<dyn Widget>> {
 
     vec![
         boxed(
-            MacSegmentedNav::new("rows.nav")
+            NavButtons::new("rows.nav")
                 .back_enabled(true)
                 .forward_enabled(false)
                 .build(),

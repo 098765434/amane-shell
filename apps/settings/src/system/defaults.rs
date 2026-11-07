@@ -20,7 +20,7 @@ use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
 use amane_kit::icons::{ICON_MUSIC, ICON_TERMINAL};
 use amane_kit::layout::boxed;
-use amane_kit::macform::MenuItem;
+use amane_kit::menu::MenuItem;
 
 use crate::{View, group, groups};
 

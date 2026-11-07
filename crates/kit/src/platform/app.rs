@@ -28,10 +28,11 @@ use amane::{
 
 use crate::buttons::{Actions, interactive, state_fill};
 use crate::color::{Accent, with_alpha};
+use crate::controls::text_field;
 use crate::layout::{boxed, caption, icon, pad, text_height};
-use crate::macform::theme as mac;
-use crate::macform::{MacLeadingIcon, text_field};
+use crate::leading_icon::LeadingIcon;
 use crate::material::{self, Level, Material};
+use crate::style;
 use crate::tokens::{Styled, sys};
 
 pub use crate::dialog::Dialog;
@@ -98,9 +99,9 @@ pub fn standard_shortcut(key: Key) -> bool {
 pub fn text_field(id: &'static str, placeholder: &str) -> TextInput {
     TextInput::new(id)
         .placeholder(placeholder)
-        .size(mac::control_font().size)
-        .color(mac::label_primary())
-        .selection_color(with_alpha(mac::tint(), 0.4))
+        .size(style::control_font().size)
+        .color(style::label_primary())
+        .selection_color(with_alpha(style::tint(), 0.4))
 }
 
 /// Runs `commit` with the field's text when the field `id` has just lost
@@ -126,7 +127,7 @@ pub fn commit_on_blur(id: &'static str, commit: impl FnOnce(String)) {
     }
 }
 
-/// The box a [`text_field`] sits in, drawn in the macform look:
+/// The box a [`text_field`] sits in, drawn in the form controls' look:
 /// radius 6, `fieldFill` in a hairline that takes the accent while
 /// the field has the keys.
 pub fn field_box(id: &'static str, input: TextInput, width: impl Into<Size>) -> Rectangle {
@@ -268,7 +269,7 @@ pub fn sidebar_with(
                         Row::new(vec![
                             match page.accent {
                                 Some(accent) => boxed(
-                                    MacLeadingIcon::new(page.glyph.unwrap_or(' '))
+                                    LeadingIcon::new(page.glyph.unwrap_or(' '))
                                         .accent(accent)
                                         .build(),
                                 ),

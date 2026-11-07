@@ -15,7 +15,7 @@ use amane::{Color, Rectangle, Size, Stack, Widget};
 
 use crate::color::with_alpha;
 use crate::layout::boxed;
-use crate::macform::theme;
+use crate::style;
 
 /// How many spokes there are, and so how many steps a turn has.
 const SPOKES: usize = 8;
@@ -84,7 +84,7 @@ impl Spinner {
         next_step();
         let step = step();
         let reduced = crate::theme::reduced_motion();
-        let color = self.color.unwrap_or_else(theme::label_secondary);
+        let color = self.color.unwrap_or_else(style::label_secondary);
         let size = self.size;
         let length = size * 0.28;
         let thickness = (size * 0.1).max(1.5);
@@ -148,14 +148,14 @@ impl ProgressBar {
             .width(Size::Fixed(self.width))
             .height(Size::Fixed(HEIGHT))
             .radius(HEIGHT / 2.0)
-            .fill(theme::divider())
+            .fill(style::divider())
             .align_child(amane::Start, amane::Center)
             .child(
                 Rectangle::new()
                     .width(Size::Fixed(filled))
                     .height(Size::Fixed(HEIGHT))
                     .radius(HEIGHT / 2.0)
-                    .fill(theme::tint()),
+                    .fill(style::tint()),
             )
     }
 }

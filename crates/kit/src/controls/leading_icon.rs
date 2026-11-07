@@ -1,4 +1,4 @@
-//! MacLeadingIcon — the coloured tile before a settings row, a list item
+//! LeadingIcon — the coloured tile before a settings row, a list item
 //! or a sidebar page: 20 px (28 large), radius 6, an accent fill and a
 //! white Material Symbols glyph (or a drawn mark, such as Tailscale's).
 
@@ -6,18 +6,18 @@
 
 use amane::{Center, Color, Rectangle, Size};
 
-use super::theme::{self, Accent, px};
 use crate::icons::{Glyph, glyph};
 use crate::layout::icon;
+use crate::style::{self, Accent, px};
 
-pub struct MacLeadingIcon {
+pub struct LeadingIcon {
     glyph: Glyph,
     fill: Color,
     side: Option<f32>,
     large: bool,
 }
 
-impl MacLeadingIcon {
+impl LeadingIcon {
     pub fn new(glyph: impl Into<Glyph>) -> Self {
         Self {
             glyph: glyph.into(),
@@ -53,7 +53,7 @@ impl MacLeadingIcon {
         let side = self
             .side
             .unwrap_or(if self.large { px(28.0) } else { px(20.0) });
-        let radius = theme::field_radius() * (side / px(20.0)).clamp(1.0, 1.4);
+        let radius = style::field_radius() * (side / px(20.0)).clamp(1.0, 1.4);
         let tile = Rectangle::new()
             .width(Size::Fixed(side))
             .height(Size::Fixed(side))

@@ -7,8 +7,8 @@ use amane_kit::buttons::PushButton;
 use amane_kit::form::FormRow;
 use amane_kit::icons::ICON_TUNE;
 use amane_kit::layout::{boxed, icon};
-use amane_kit::macform::theme as mac;
 use amane_kit::settings::{Appearance, Desktop, Dock, Launcher, StatusBar};
+use amane_kit::style;
 use amane_kit::tokens::Styled;
 
 use crate::{View, group, groups};
@@ -42,7 +42,7 @@ fn hero() -> Rectangle {
         .height(Size::Fixed(HERO))
         .fill(Color::TRANSPARENT)
         .padding(amane::Padding {
-            left: mac::row_pad_h(),
+            left: style::row_pad_h(),
             ..amane::Padding::default()
         })
         .align_child(amane::Start, Center)
@@ -53,13 +53,13 @@ fn hero() -> Rectangle {
                     Column::new(vec![
                         boxed(
                             Text::new("Shell Settings")
-                                .style(mac::page_title_font())
-                                .color(mac::label_primary()),
+                                .style(style::page_title_font())
+                                .color(style::label_primary()),
                         ),
                         boxed(
                             Text::new(format!("Version {}", env!("CARGO_PKG_VERSION")))
-                                .style(mac::subtitle_font())
-                                .color(mac::label_secondary()),
+                                .style(style::subtitle_font())
+                                .color(style::label_secondary()),
                         ),
                     ])
                     .gap(2.0),
@@ -119,8 +119,8 @@ pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
     }
     let home = std::env::var_os("HOME").map(std::path::PathBuf::from);
     // the room beside the button for the path
-    let room = crate::page_width() - 2.0 * mac::row_pad_h() - 150.0;
-    let fits = |text: &str| amane_kit::layout::text_width(text, mac::subtitle_font()) <= room;
+    let room = crate::page_width() - 2.0 * style::row_pad_h() - 150.0;
+    let fits = |text: &str| amane_kit::layout::text_width(text, style::subtitle_font()) <= room;
     let rows = files().map(|(name, path)| {
         let folder = path.parent().map(Path::to_path_buf).unwrap_or_default();
         FormRow::new(format!("settings.about.file.{name}"), name)

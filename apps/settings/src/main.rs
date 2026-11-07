@@ -31,9 +31,9 @@ use amane_kit::icons::{
     ICON_STORAGE, ICON_TRAY, ICON_TUNE, ICON_UPDATE,
 };
 use amane_kit::layout::boxed;
-use amane_kit::macform::MacSegmentedNav;
-use amane_kit::macform::theme as mac;
 use amane_kit::material::{self, Level};
+use amane_kit::nav_buttons::NavButtons;
+use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
 
 use system::apply_bar;
@@ -631,7 +631,7 @@ fn search_field() -> Box<dyn Widget> {
     boxed(
         Rectangle::new()
             .width(Size::Parent)
-            .height(Size::Fixed(mac::control_height() + sys::space::gap::s()))
+            .height(Size::Fixed(style::control_height() + sys::space::gap::s()))
             .fill(amane::Color::TRANSPARENT)
             .align_child(amane::Start, amane::Start)
             .child(field_box(
@@ -701,7 +701,7 @@ fn header(
 ) -> Rectangle {
     let lead = Row::new(vec![
         boxed(
-            MacSegmentedNav::new("settings.header.nav")
+            NavButtons::new("settings.header.nav")
                 .back_enabled(can_back)
                 .forward_enabled(can_forward)
                 .on_back(back)
@@ -710,8 +710,8 @@ fn header(
         ),
         boxed(
             Text::new(title)
-                .style(mac::page_title_font())
-                .color(mac::label_primary())
+                .style(style::page_title_font())
+                .color(style::label_primary())
                 .elide(),
         ),
     ])
@@ -818,7 +818,7 @@ pub fn problem_row(id: &str, title: &str, meaning: &str, details: &str) -> FormR
 
 /// How tall a column of `count` radios is, for a row's detail.
 pub fn radios_height(count: usize) -> f32 {
-    count as f32 * mac::control_height()
+    count as f32 * style::control_height()
 }
 
 #[cfg(test)]

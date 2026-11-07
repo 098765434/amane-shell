@@ -22,7 +22,7 @@ use crate::buttons::{Actions, interactive, state_fill};
 use crate::color::Accent;
 use crate::icons::ICON_CHECK;
 use crate::layout::{boxed, caption, clipped_label, icon, pad, split_row};
-use crate::macform::MacLeadingIcon;
+use crate::leading_icon::LeadingIcon;
 use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, sys};
 
@@ -172,7 +172,7 @@ impl ListItem {
                     .tile_accent
                     .map_or_else(sys::color::accent::bg, Accent::color);
                 leading.push(boxed(
-                    MacLeadingIcon::new(glyph)
+                    LeadingIcon::new(glyph)
                         .color(fill)
                         .side(leading_side())
                         .build(),

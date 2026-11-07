@@ -7,9 +7,9 @@ use amane::Column;
 use amane_kit::app::Dialog;
 use amane_kit::buttons::PushButton;
 use amane_kit::form::FormRow;
-use amane_kit::macform::ThumbnailPicker;
-use amane_kit::macform::theme as mac;
 use amane_kit::settings::{AppsLayout, change_launcher, launcher};
+use amane_kit::style;
+use amane_kit::thumbnail_picker::ThumbnailPicker;
 
 use crate::{group, groups, previews, switch_row};
 
@@ -41,7 +41,7 @@ pub fn page() -> Column {
         previews::WIDTH,
         previews::HEIGHT,
     )
-    .width(crate::page_width() - 2.0 * mac::row_pad_h())
+    .width(crate::page_width() - 2.0 * style::row_pad_h())
     .chosen(layouts.iter().position(|(_, choice)| *choice == layout))
     .on_select(move |index| {
         let choice = layouts[index].1;

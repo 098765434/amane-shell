@@ -724,7 +724,7 @@ mod tests {
             "a popup of whichever surface shows it, under that one's rule",
         ),
         (
-            "amane.macform.menu",
+            "amane.menu",
             "a popup of the window or surface that opens it",
         ),
         (

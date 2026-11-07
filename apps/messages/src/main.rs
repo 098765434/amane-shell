@@ -32,7 +32,7 @@ use amane::{
 };
 use amane_kit::app::{app, app_window, sidebar_panel, standard_shortcut};
 use amane_kit::layout::{boxed, caption};
-use amane_kit::macform::theme as mac;
+use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
 
 /// How wide the inbox is.
@@ -324,8 +324,8 @@ pub fn content_width() -> f32 {
 /// A view's title, in the page title's type.
 pub fn title(text: impl Into<String>) -> Text {
     Text::new(text)
-        .style(mac::page_title_font())
-        .color(mac::label_primary())
+        .style(style::page_title_font())
+        .color(style::label_primary())
         .elide()
 }
 

@@ -9,8 +9,8 @@ use amane_kit::buttons::{PushButton, Switch};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
 use amane_kit::layout::boxed;
-use amane_kit::macform::MacStepper;
-use amane_kit::macform::theme as mac;
+use amane_kit::stepper::Stepper;
+use amane_kit::style;
 use serde_json::Value;
 
 use super::adopt;
@@ -167,7 +167,7 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
             let now = value.as_i64().unwrap_or(min).clamp(min, max);
             let e = entry.clone();
             row.trailing(
-                MacStepper::new(stepper_id(&entry.id), now as f64)
+                Stepper::new(stepper_id(&entry.id), now as f64)
                     .range(min as f64, max as f64)
                     .width(80.0)
                     .disabled(locked)
@@ -217,7 +217,10 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
     };
 
     Some(match mover {
-        Some(button) => row.detail(Row::new(vec![boxed(button.build())]), mac::control_height()),
+        Some(button) => row.detail(
+            Row::new(vec![boxed(button.build())]),
+            style::control_height(),
+        ),
         None => row,
     })
 }

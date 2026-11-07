@@ -12,7 +12,7 @@ use amane_kit::app::Dialog;
 use amane_kit::buttons::PushButton;
 use amane_kit::form::FormRow;
 use amane_kit::layout::boxed;
-use amane_kit::macform::theme as mac;
+use amane_kit::style;
 
 use super::controls::{self, Feedback};
 use super::job::BuildJob;
@@ -153,7 +153,7 @@ fn status_dot(state: Option<&UnitState>) -> amane::Rectangle {
         Some("active") => Color::from("#30d158"),
         Some("activating" | "deactivating") => Color::from("#ffd600"),
         Some("failed") => Color::from("#ff4245"),
-        _ => mac::label_tertiary(),
+        _ => style::label_tertiary(),
     };
     Rectangle::new()
         .width(Size::Fixed(DOT))
@@ -364,7 +364,10 @@ pub fn page() -> Column {
             .subtitle(join_parts(&lines))
             .trailing(controls::switch(entry, &managed).build());
         if let Some(mover) = mover {
-            row = row.detail(Row::new(vec![boxed(mover.build())]), mac::control_height());
+            row = row.detail(
+                Row::new(vec![boxed(mover.build())]),
+                style::control_height(),
+            );
         }
         services = services.row(row);
 
@@ -389,8 +392,10 @@ pub fn page() -> Column {
                 let (summary, mover) = controls::summary(link, &managed, &feedback);
                 linked_row = linked_row.subtitle(summary);
                 if let Some(mover) = mover {
-                    linked_row = linked_row
-                        .detail(Row::new(vec![boxed(mover.build())]), mac::control_height());
+                    linked_row = linked_row.detail(
+                        Row::new(vec![boxed(mover.build())]),
+                        style::control_height(),
+                    );
                 }
             }
             services = services.row(linked_row);

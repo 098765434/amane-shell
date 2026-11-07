@@ -1,6 +1,6 @@
 //! Checkbox — a setting that's on or off, in a list of independent ones.
 //!
-//! Drawn in the macform look: a 16 px box, radius 5.5,
+//! Drawn in the form controls' look ([`style`](crate::style)): a 16 px box, radius 5.5,
 //! `fieldFill` in a hairline while off, filling with the accent around a
 //! drawn checkmark when on, with an optional label 3 px after it that takes
 //! the click too. Where a setting applies at once, a [`Switch`] reads
@@ -15,9 +15,10 @@ use std::rc::Rc;
 use amane::{Center, Rectangle, Size};
 
 use super::{Actions, interactive};
-use crate::macform::symbol::{Symbol, symbol};
-use crate::macform::theme::{self, px};
-use crate::macform::{crossfade, labelled};
+use crate::controls::parts::labelled;
+use crate::look::hover::crossfade;
+use crate::style::{self, px};
+use crate::symbol::{Symbol, symbol};
 
 /// A checkbox. `id` keys its hover, so it must be unique and stable.
 pub struct Checkbox {
@@ -62,8 +63,8 @@ impl Checkbox {
         let fill = crossfade(
             &format!("{}.fill", self.id),
             self.checked,
-            theme::field_fill(),
-            theme::tint(),
+            style::field_fill(),
+            style::tint(),
         );
         let mark = Rectangle::new()
             .width(Size::Fixed(side))
@@ -72,9 +73,9 @@ impl Checkbox {
             .fill(fill)
             .align_child(Center, Center);
         let mark = if self.checked {
-            mark.child(symbol(Symbol::Checkmark, px(11.0), theme::glyph_on_tint()))
+            mark.child(symbol(Symbol::Checkmark, px(11.0), style::glyph_on_tint()))
         } else {
-            mark.border(1.0, theme::field_border())
+            mark.border(1.0, style::field_border())
         };
 
         let toggle = self.on_toggle;

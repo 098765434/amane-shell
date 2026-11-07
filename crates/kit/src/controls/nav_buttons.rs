@@ -1,4 +1,4 @@
-//! MacSegmentedNav — the back/forward pill: two 28 px round buttons with
+//! NavButtons — the back/forward pill: two 28 px round buttons with
 //! left and right chevrons, a 1×20 `fieldBorder` line between them, on a
 //! `controlFill` capsule with a soft shadow. A disabled side greys its
 //! chevron and takes no click.
@@ -9,13 +9,14 @@ use std::rc::Rc;
 
 use amane::{Center, Color, Radius, Rectangle, Row, Shadow, Size};
 
-use super::symbol::{Symbol, symbol};
-use super::theme::{self, px};
-use super::{crossfade, hover_fill, on_press};
 use crate::buttons::interactive;
+use crate::controls::parts::on_press;
 use crate::layout::boxed;
+use crate::look::hover::{crossfade, hover_fill};
+use crate::style::{self, px};
+use crate::symbol::{Symbol, symbol};
 
-pub struct MacSegmentedNav {
+pub struct NavButtons {
     id: String,
     back_enabled: bool,
     forward_enabled: bool,
@@ -23,7 +24,7 @@ pub struct MacSegmentedNav {
     on_forward: Rc<dyn Fn()>,
 }
 
-impl MacSegmentedNav {
+impl NavButtons {
     pub fn new(id: impl Into<String>) -> Self {
         Self {
             id: id.into(),
@@ -60,8 +61,8 @@ impl MacSegmentedNav {
             let fg = crossfade(
                 &format!("{key}.fg"),
                 enabled,
-                theme::label_tertiary(),
-                theme::label_primary(),
+                style::label_tertiary(),
+                style::label_primary(),
             );
             let base = Rectangle::new()
                 .width(Size::Fixed(side))
@@ -77,7 +78,7 @@ impl MacSegmentedNav {
         let line = Rectangle::new()
             .width(Size::Fixed(1.0))
             .height(Size::Fixed(px(20.0)))
-            .fill(theme::field_border());
+            .fill(style::field_border());
 
         let row = Row::new(vec![
             boxed(button(
@@ -103,11 +104,11 @@ impl MacSegmentedNav {
             .radius(Radius::Full)
             // opaque, so the shadow under it doesn't show through and grey it
             .fill(crate::color::over(
-                theme::control_fill(),
+                style::control_fill(),
                 crate::tokens::sys::color::window::bg(),
             ))
             .shadow(
-                Shadow::drop(theme::shadow_color())
+                Shadow::drop(style::shadow_color())
                     .blur(3.09)
                     .spread(-0.29)
                     .offset(0.0, 0.5),

@@ -48,7 +48,7 @@ taller than its content.
 
 `ListItem::new(id, headline)` is a one-line M3 list item, or two-line with `.supporting(text)`
 (a caption under the headline, elided too; the row is `sys.size.row.two-line-height`). It has a `.leading(glyph)` (or
-`.leading_tile(glyph)`, the glyph on a `MacLeadingIcon` tile of the accent, as a sidebar names its
+`.leading_tile(glyph)`, the glyph on a `LeadingIcon` tile of the accent, as a sidebar names its
 sections, or `.leading_tile_accent(glyph, Accent)` on a tile of one of the system accents, or
 `.leading_widget(…)`, any widget in its place, such as an app's `app_icon::entry_tile` at
 `list::leading_side()`), the
@@ -75,7 +75,7 @@ and `.build()` gives a `Column`. Every row knows its height, so a group sizes it
 (`Group::height()`).
 
 - `FormRow::new(id, title)`: 42 px tall with one line (more with a `.subtitle(…)`, which wraps),
-  12 px in. `.icon(glyph, Accent)` puts a `MacLeadingIcon` before the title, or `.leading(widget,
+  12 px in. `.icon(glyph, Accent)` puts a `LeadingIcon` before the title, or `.leading(widget,
   side)` anything else (an app's icon). `.trailing(widget)` adds a control at the trailing edge
   (several sit side by side), `.value(text)` a grey value. `.detail(widget, height)` puts a block
   under the title, lined up with it (a radio group, a field and its button, tags).
@@ -97,10 +97,10 @@ Pieces that go in rows:
   ten times a second while a window shows it (each build asks for the next step, so a window
   that stops showing one rests); under reduced motion it breathes instead.
   `spinner::ProgressBar::new(fraction, width)`: a thin accent track.
-- `macform::ThumbnailPicker::new(id, width, height)`: choices as small pictures (`.option(widget,
+- `thumbnail_picker::ThumbnailPicker::new(id, width, height)`: choices as small pictures (`.option(widget,
   label)`), the `.chosen(…)` one ringed in the accent, wrapping to `.width(…)`; `.height()` for a
   row's detail. Shell Settings draws its pictures with flat shapes, so they stay on quads.
-- `macform::ColorWells::new(id, colors, chosen)`: colors as dots, `None` for a multicolor
+- `color_picker::ColorWells::new(id, colors, chosen)`: colors as dots, `None` for a multicolor
   "System" one; `.shown_name()` is the hovered or chosen one's name, for the row's subtitle.
 
 ## Divider and Slider

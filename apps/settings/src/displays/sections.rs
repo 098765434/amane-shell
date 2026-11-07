@@ -13,13 +13,13 @@ use amane_kit::dropdown::Dropdown;
 use amane_kit::form::{FormRow, Group, SliderRow};
 use amane_kit::icons::{ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_DISPLAY, ICON_INFO};
 use amane_kit::layout::boxed;
-use amane_kit::macform::MacLeadingIcon;
-use amane_kit::macform::theme as mac;
+use amane_kit::leading_icon::LeadingIcon;
 use amane_kit::settings::{
     appearance, change_appearance, change_displays, change_dock, change_status_bar, displays, dock,
     status_bar,
 };
 use amane_kit::slider::Slider;
+use amane_kit::style;
 use amane_kit::tag::{Tag, tags};
 use amane_kit::theme::Mode as Scheme;
 use amane_kit::tokens::{Styled, sys};
@@ -341,11 +341,11 @@ pub fn header(ctx: &Ctx) -> Group {
 
     // the tags line up under the title, past the tile
     let tile = 28.0 * sys::density::factor();
-    let inner = page_width() - mac::row_pad_h() * 2.0 - tile - 10.0;
+    let inner = page_width() - style::row_pad_h() * 2.0 - tile - 10.0;
     let (facts, facts_h) = tags(inner, facts(output, &ctx.caps));
     let row = FormRow::new("settings.displays.header", ctx.name())
         .leading(
-            MacLeadingIcon::new(ICON_DISPLAY)
+            LeadingIcon::new(ICON_DISPLAY)
                 .accent(Accent::Teal)
                 .large(true)
                 .build(),
@@ -736,7 +736,7 @@ fn vrr_apps(ctx: &Ctx, group: Group) -> Group {
             ])
             .gap(sys::space::gap::s())
             .align(Center),
-            mac::control_height(),
+            style::control_height(),
         );
     group.rows(rows).row(add_row)
 }
@@ -774,9 +774,9 @@ fn open_apps_menu(added: &[String], add: impl Fn(&str) + Clone + 'static) -> Rec
         .into_iter()
         .filter(|id| !added.contains(id))
         .collect();
-    let items = ids.iter().map(amane_kit::macform::MenuItem::new).collect();
+    let items = ids.iter().map(amane_kit::menu::MenuItem::new).collect();
     let picked = ids.clone();
-    amane_kit::macform::MacPopUpButton::new("settings.displays.vrr-open-apps")
+    amane_kit::pop_up_button::PopUpButton::new("settings.displays.vrr-open-apps")
         .items(items, None)
         .disabled(ids.is_empty())
         .on_select(move |index| {
@@ -1124,7 +1124,7 @@ pub fn advanced(ctx: &Ctx) -> Group {
                     Err(_) => Screens::fail(String::from("A scale is a number, like 1.6.")),
                 }
             }),
-            mac::control_height(),
+            style::control_height(),
         );
 
     // a mode the monitor doesn't list
@@ -1153,7 +1153,7 @@ pub fn advanced(ctx: &Ctx) -> Group {
                     },
                 );
             }),
-            mac::control_height(),
+            style::control_height(),
         );
 
     // behind the workspaces in the overview
@@ -1176,7 +1176,7 @@ pub fn advanced(ctx: &Ctx) -> Group {
                     move |block| block.backdrop = (!color.is_empty()).then_some(color),
                 );
             }),
-            mac::control_height(),
+            style::control_height(),
         );
 
     // what was read from the screen itself

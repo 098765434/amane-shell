@@ -1,5 +1,5 @@
-//! SFSymbol: the handful of symbols the macform controls draw, as
-//! strokes with round caps and joins (no font has them on Linux).
+//! The handful of symbols the form controls draw (chevrons, a checkmark,
+//! an ellipsis, info), as strokes with round caps and joins.
 //!
 //! Each symbol is a few straight lines in a `size` square, which amane
 //! draws on its quad pipeline (round-joined polylines), or plain

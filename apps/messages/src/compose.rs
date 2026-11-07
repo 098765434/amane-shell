@@ -18,8 +18,8 @@ use amane_kit::buttons::{Actions, IconButton, PushButton, Style, interactive, st
 use amane_kit::color::with_alpha;
 use amane_kit::control_size::ControlSize;
 use amane_kit::layout::{boxed, caption, fixed_width, icon, pad, text_width};
-use amane_kit::macform::theme as mac;
 use amane_kit::material::{self, Level};
+use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
 
 /// The field's id, which keeps its text.
@@ -212,16 +212,16 @@ fn frame(input: TextInput, width: f32) -> Rectangle {
     };
 
     let edge = if TextInput::has_focus(FIELD) {
-        mac::tint()
+        style::tint()
     } else {
-        mac::field_border()
+        style::field_border()
     };
 
     Rectangle::new()
         .width(Size::Fixed(width))
         .height(Size::Fixed(shown + 2.0 * inset))
         .radius(Radius::Fixed((line / 2.0 + inset).min(18.0)))
-        .fill(mac::field_fill())
+        .fill(style::field_fill())
         .border(1.0, edge)
         .padding(pad(12.0, inset))
         .align_child(amane::Start, Center)
@@ -300,7 +300,7 @@ fn chip(draft: Draft, path: &PathBuf) -> Rectangle {
         .width(Size::Fixed(width))
         .height(Size::Fixed(28.0))
         .radius(Radius::Full)
-        .fill(with_alpha(mac::label_primary(), 0.07))
+        .fill(with_alpha(style::label_primary(), 0.07))
         .padding(pad(8.0, 0.0))
         .align_child(amane::Start, Center)
         .child(
@@ -313,7 +313,7 @@ fn chip(draft: Draft, path: &PathBuf) -> Rectangle {
                 boxed(Text::new(label).style(style).color(if big {
                     sys::color::status::critical::text()
                 } else {
-                    mac::label_primary()
+                    style::label_primary()
                 })),
                 boxed(remove),
             ])

@@ -10,9 +10,9 @@ use std::rc::Rc;
 
 use amane::{Center, Color, Column, Rectangle, Row, Size, Text, Widget};
 
-use super::theme::{self, px};
-use super::{interactive, on_press};
+use crate::controls::parts::{interactive, on_press};
 use crate::layout::{boxed, text_height};
+use crate::style::{self, px};
 use crate::tokens::Styled;
 
 /// One choice: its picture and its name.
@@ -98,7 +98,7 @@ impl ThumbnailPicker {
     }
 
     fn cell_height(&self) -> f32 {
-        self.size.1 + 2.0 * ring() + px(6.0) + text_height(theme::subtitle_font())
+        self.size.1 + 2.0 * ring() + px(6.0) + text_height(style::subtitle_font())
     }
 
     /// How tall it is, for a row's detail.
@@ -118,7 +118,7 @@ impl ThumbnailPicker {
         for (index, choice) in self.choices.into_iter().enumerate() {
             let chosen = self.chosen == Some(index);
             let ring_color = if chosen {
-                theme::tint()
+                style::tint()
             } else {
                 Color::TRANSPARENT
             };
@@ -126,7 +126,7 @@ impl ThumbnailPicker {
                 .width(Size::Fixed(width))
                 .height(Size::Fixed(height))
                 .radius(px(7.0))
-                .border(1.0, theme::divider())
+                .border(1.0, style::divider())
                 .clip()
                 .child(Column::new(vec![choice.picture]));
             let framed = Rectangle::new()
@@ -137,11 +137,11 @@ impl ThumbnailPicker {
                 .align_child(Center, Center)
                 .child(picture);
             let label = Text::new(choice.label)
-                .style(theme::subtitle_font())
+                .style(style::subtitle_font())
                 .color(if chosen {
-                    theme::label_primary()
+                    style::label_primary()
                 } else {
-                    theme::label_secondary()
+                    style::label_secondary()
                 });
             let cell = Rectangle::new()
                 .width(Size::Fixed(cell_width))

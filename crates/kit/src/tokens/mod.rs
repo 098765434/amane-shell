@@ -30,9 +30,9 @@ pub mod envelope;
 pub mod error;
 pub mod expr;
 pub mod font;
-pub mod resolve;
 #[cfg(any(test, feature = "tools"))]
 pub mod lint;
+pub mod resolve;
 pub mod values;
 
 use std::cell::Cell;

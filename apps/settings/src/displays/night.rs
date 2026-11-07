@@ -17,8 +17,8 @@ use amane_kit::buttons::PushButton;
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::{FormRow, Group, SliderRow};
 use amane_kit::layout::boxed;
-use amane_kit::macform::theme as mac;
 use amane_kit::slider::Slider;
+use amane_kit::style;
 use amane_kit::tokens::sys;
 
 use crate::{group, switch_row};
@@ -313,7 +313,7 @@ pub fn section() -> Group {
                             ))),
                         },
                     ),
-                    mac::control_height(),
+                    style::control_height(),
                 ),
             )
             .footer(format!(
@@ -332,7 +332,7 @@ pub fn section() -> Group {
                             _ => refuse(Some(String::from("Times read like 21:00 or 07:30."))),
                         }
                     }),
-                    mac::control_height(),
+                    style::control_height(),
                 ),
             )
             .footer(format!(
@@ -358,8 +358,8 @@ fn pair(
         boxed({
             use amane_kit::tokens::Styled;
             amane::Text::new(text)
-                .style(mac::control_font())
-                .color(mac::label_secondary())
+                .style(style::control_font())
+                .color(style::label_secondary())
         })
     };
     let send = set.clone();

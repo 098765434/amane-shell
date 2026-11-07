@@ -15,8 +15,8 @@ use amane::{
 use amane_kit::buttons::{PushButton, Style};
 use amane_kit::icons::ICON_KEYBOARD;
 use amane_kit::layout::{boxed, caption, icon};
-use amane_kit::macform::theme as mac;
 use amane_kit::material::{self, Level};
+use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
 
 use crate::title;
@@ -116,9 +116,9 @@ fn trackpad(id: String) -> Rectangle {
     Rectangle::new()
         .width(Size::Parent)
         .height(Size::Parent)
-        .radius(Radius::Fixed(mac::group_radius()))
-        .fill(mac::group_fill())
-        .border(1.0, mac::field_border())
+        .radius(Radius::Fixed(style::group_radius()))
+        .fill(style::group_fill())
+        .border(1.0, style::field_border())
         .cursor(Cursor::Default)
         .align_child(Center, Center)
         .child(

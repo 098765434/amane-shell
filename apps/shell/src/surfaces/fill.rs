@@ -24,8 +24,8 @@ use amane::{
 };
 use amane_kit::buttons::{Actions, hovered, interactive};
 use amane_kit::layout::{boxed, icon, pad};
-use amane_kit::macform::theme::{self, px};
 use amane_kit::settings::{self, AppLink, Passwords};
+use amane_kit::style::{self as theme, px};
 use amane_kit::tokens::Styled;
 
 use crate::components::icons::{ICON_CLOSE, ICON_LOCK, ICON_SEARCH, ICON_WARNING};

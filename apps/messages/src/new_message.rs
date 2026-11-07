@@ -15,8 +15,8 @@ use amane_kit::app::{field_box, text_field};
 use amane_kit::buttons::{Actions, interactive, state_fill};
 use amane_kit::color::with_alpha;
 use amane_kit::layout::{boxed, caption, icon, pad, text_width};
-use amane_kit::macform::theme as mac;
 use amane_kit::material::{self, Level};
+use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
 
 use crate::compose::{self, Draft};
@@ -272,7 +272,7 @@ fn suggestion(name: String, number: String) -> Rectangle {
     let mut text: Vec<Box<dyn Widget>> = vec![boxed(
         Text::new(name.clone())
             .style(sys::r#type::label())
-            .color(mac::label_primary())
+            .color(style::label_primary())
             .elide(),
     )];
     if !under.is_empty() {

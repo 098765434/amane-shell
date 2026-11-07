@@ -1,10 +1,11 @@
-//! MacTheme: the colours and sizes the macform controls share.
+//! The colours, sizes and fonts the form controls share: the stepper, the
+//! checkbox and radio, the dropdown and its menu, text fields, form rows.
 //!
-//! The Quickshell original was dark only. Where a token has a kit
-//! counterpart with the same dark value it reads that (so the accent, the
-//! labels and light mode follow the shell); the rest keep the original's
-//! literal values, with a light twin chosen to read the same on a light
-//! window.
+//! The look was ported from a dark-only Quickshell set. Where a token has a
+//! kit counterpart with the same dark value it reads that (so the accent,
+//! the labels and light mode follow the shell); the rest keep the
+//! original's literal values, each marked `TODO(token)`, with a light twin
+//! chosen to read the same on a light window.
 
 #![allow(missing_docs)]
 
@@ -38,6 +39,7 @@ pub fn glyph_on_tint() -> Color {
 }
 
 /// `knob`: a switch's or slider's knob, white in both modes.
+// TODO(token): sys.color.knob
 pub fn knob() -> Color {
     Color::WHITE
 }
@@ -48,17 +50,20 @@ pub fn field_fill() -> Color {
 }
 
 /// `fieldBorder`: white @ 0.15 (black @ 0.15 in light).
+// TODO(token): sys.color.field.border
 pub fn field_border() -> Color {
     ink(0.15)
 }
 
 /// `controlFill`: white @ 0.12, under push buttons and pull-downs
 /// (black @ 0.06 in light, where a darker one reads heavy).
+// TODO(token): sys.color.control.fill
 pub fn control_fill() -> Color {
     if dark() { ink(0.12) } else { ink(0.06) }
 }
 
 /// `menuFill`: an open menu's panel.
+// TODO(token): sys.color.surface.menu.bg
 pub fn menu_fill() -> Color {
     if dark() {
         Color::rgb(0x2e, 0x2e, 0x2e)
@@ -69,12 +74,14 @@ pub fn menu_fill() -> Color {
 
 /// `groupFill`: white @ 0.05, a settings group's card (black @ 0.04 in
 /// light, where the window is already white).
+// TODO(token): sys.color.surface.group.bg
 pub fn group_fill() -> Color {
     if dark() { ink(0.05) } else { ink(0.04) }
 }
 
 /// A received message's bubble, as Messages greys it: #3B3B3D in dark
 /// mode, #E9E9EB in light.
+// TODO(token): a Messages component token
 pub fn bubble_received() -> Color {
     if dark() {
         Color::rgb(0x3b, 0x3b, 0x3d)
@@ -102,6 +109,7 @@ pub fn label_tertiary() -> Color {
 }
 
 /// The red edge of a field that failed its check.
+// TODO(token): sys.color.error
 pub fn error() -> Color {
     Color::rgb(0xff, 0x69, 0x61)
 }
@@ -112,6 +120,7 @@ pub fn hover_of(content: Color) -> Color {
 }
 
 /// The shadow under raised parts (slider knob, nav pill, menus).
+// TODO(token): sys.color.shadow
 pub fn shadow_color() -> Color {
     with_alpha(Color::BLACK, if dark() { 0.7 } else { 0.35 })
 }
@@ -157,6 +166,7 @@ pub fn control_font() -> TextStyle {
 }
 
 /// `subtitleFont`: 11 medium.
+// TODO(token): a sys.type role
 pub fn subtitle_font() -> TextStyle {
     TextStyle {
         size: 11.0,
@@ -165,6 +175,7 @@ pub fn subtitle_font() -> TextStyle {
 }
 
 /// `pageTitleFont`: 15 semibold.
+// TODO(token): a sys.type role
 pub fn page_title_font() -> TextStyle {
     TextStyle {
         size: 15.0,

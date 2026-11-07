@@ -5,7 +5,7 @@ use amane_kit::app::Dialog;
 use amane_kit::buttons::{PushButton, Style};
 use amane_kit::form::FormRow;
 use amane_kit::layout::boxed;
-use amane_kit::macform::theme as mac;
+use amane_kit::style;
 use amane_kit::tokens::sys;
 
 use super::generations::Generations;
@@ -41,7 +41,7 @@ pub fn page() -> Column {
         if chosen {
             let is_current = Some(&g.toplevel) == generations.current.as_ref();
             let actions = actions(g.toplevel.clone(), number, running || is_current);
-            row = row.detail(actions, mac::control_height());
+            row = row.detail(actions, style::control_height());
         }
         row
     });

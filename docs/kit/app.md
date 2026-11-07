@@ -26,7 +26,7 @@ fn main_window() -> amane::Window {
 | `window_bg()` | the opaque window background, `sys.color.window.bg`, behind a window's content |
 | `standard_shortcut(key)` | the shortcuts every window has: Ctrl+W closes it. Call it from your own `on_shortcut` and handle what it leaves (`false`) |
 | `text_field(id, placeholder)` | a one-line `TextInput` in the control font (13), its selection in the accent; its text is kept under `id` |
-| `field_box(id, input, width)` | the box a text field sits in, in the macform look: 24 px tall, radius 6, `fieldFill` in a 1 px `fieldBorder` that takes the accent while it has the keys |
+| `field_box(id, input, width)` | the box a text field sits in, in the form controls' look: 24 px tall, radius 6, `fieldFill` in a 1 px `fieldBorder` that takes the accent while it has the keys |
 | `Page`, `sidebar(…)`, `sidebar_with(…)` | a settings-style sidebar ([below](#sidebar)) |
 | `commit_on_blur(id, commit)` | runs `commit` with a field's text when it loses the keys (amane has no blur event; call it while drawing) |
 | `sidebar_panel(content)`, `sidebar_label()` | the sidebar's panel around anything else (Messages' inbox), and the colour for labels on it |
@@ -39,7 +39,7 @@ settings files a shell app changes are `amane_kit::settings` ([settings-app.md](
 
 `sidebar(id, &pages, selected, on_select)` lists `Page::new(glyph, name)`s one row each
 (`sys.size.row.height`, a glyph and a `sys.type.label` name; with `.accent(Accent)` the glyph sits
-on a `MacLeadingIcon` tile of that colour), the shown one filled
+on a `LeadingIcon` tile of that colour), the shown one filled
 `sys.color.state.selected`, with the hover layer; `on_select` gets the index of a row clicked.
 Each row is keyed `<id>.<index>`. A `Page::section(name)` is a caption over the pages after it,
 which groups the sidebar; it can't be selected but takes an index like a page, so one array

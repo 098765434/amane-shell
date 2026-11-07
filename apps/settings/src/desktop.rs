@@ -5,9 +5,9 @@
 use amane::{Column, ipc_call};
 use amane_kit::buttons::PushButton;
 use amane_kit::form::FormRow;
-use amane_kit::macform::ThumbnailPicker;
-use amane_kit::macform::theme as mac;
 use amane_kit::settings::{WidgetStyle, change_desktop, desktop};
+use amane_kit::style;
+use amane_kit::thumbnail_picker::ThumbnailPicker;
 
 use crate::{group, groups, previews, switch_row};
 
@@ -25,7 +25,7 @@ pub fn page() -> Column {
         ("Always full", WidgetStyle::Full),
         ("Always dimmed", WidgetStyle::Dim),
     ];
-    let width = crate::page_width() - 2.0 * mac::row_pad_h();
+    let width = crate::page_width() - 2.0 * style::row_pad_h();
     let mut picker =
         ThumbnailPicker::new("settings.widget-style", previews::WIDTH, previews::HEIGHT)
             .width(width)

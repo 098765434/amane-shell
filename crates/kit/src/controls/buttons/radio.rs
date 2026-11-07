@@ -1,6 +1,6 @@
 //! Radio — one choice out of a few, all in sight.
 //!
-//! Drawn in the macform look: a 16 px circle, `fieldFill` in a
+//! Drawn in the form controls' look ([`style`](crate::style)): a 16 px circle, `fieldFill` in a
 //! hairline while not chosen, filling with the accent around a white dot
 //! when chosen, with an optional label 3 px after it that takes the click
 //! too. It is as wide as its mark and label. A group
@@ -17,8 +17,9 @@ use std::rc::Rc;
 use amane::{Center, Radius, Rectangle, Size};
 
 use super::{Actions, interactive};
-use crate::macform::theme::{self, px};
-use crate::macform::{crossfade, labelled};
+use crate::controls::parts::labelled;
+use crate::look::hover::crossfade;
+use crate::style::{self, px};
 
 /// A radio button. `id` keys its hover, so it must be unique and stable.
 pub struct Radio {
@@ -63,8 +64,8 @@ impl Radio {
         let fill = crossfade(
             &format!("{}.fill", self.id),
             self.selected,
-            theme::field_fill(),
-            theme::tint(),
+            style::field_fill(),
+            style::tint(),
         );
         // chosen, the circle fills with the accent around a white dot
         let mark = Rectangle::new()
@@ -80,10 +81,10 @@ impl Radio {
                     .width(Size::Fixed(dot))
                     .height(Size::Fixed(dot))
                     .radius(Radius::Full)
-                    .fill(theme::glyph_on_tint()),
+                    .fill(style::glyph_on_tint()),
             )
         } else {
-            mark.border(1.0, theme::field_border())
+            mark.border(1.0, style::field_border())
         };
 
         // choosing what's already chosen asks for nothing

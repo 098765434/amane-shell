@@ -15,9 +15,14 @@
 //! - [`color_picker`] — a colour, from a square, a hue strip or hex.
 //! - [`control_size`] — the control sizes, and the one in use.
 //! - [`tag`] — a small fact about something, like M3's assist chip.
-//! - [`macform`] — form controls ported from Quickshell, which Shell
-//!   Settings and the password-fill popup use; the `macform` example shows
-//!   them against the kit's own.
+//! - [`menu`] — a pop-up menu of items, under a control or the pointer.
+//! - [`leading_icon`] — the glyph on a coloured tile that leads a row.
+//! - [`stepper`] — a number nudged up and down.
+//! - [`thumbnail_picker`] — one choice out of pictures.
+//! - [`nav_buttons`] — the back and forward pair of a window's toolbar.
+//! - [`pop_up_button`] — a small round button that opens a menu.
+//!
+//! The `controls` example shows them all.
 //!
 //! Containers (`containers/`):
 //!
@@ -41,6 +46,7 @@
 //! - [`glass`] — the lit edge and glow every translucent surface wears.
 //! - [`glass_region`] — where the compositor frosts behind clear glass.
 //! - [`lab`] — Shader Lab's saved looks, and putting one on a rectangle.
+//! - [`style`] — the colours, sizes and fonts the form controls share.
 //!
 //! Motion (`animation/`):
 //!
@@ -55,6 +61,7 @@
 //! - [`layout`] — layout primitives (`boxed`, `pad`, `icon`, `split_row` …).
 //! - [`icons`] — the Material Symbols glyphs and their pickers.
 //! - [`color`] — colour arithmetic (`over`, `faded`, `with_alpha`).
+//! - [`symbol`] — the few drawn symbols the controls use (chevrons, checks).
 //!
 //! The system around an app (`platform/`):
 //!
@@ -83,8 +90,9 @@ pub use containers::{
     app_bar, arrangement, card, dialog, divider, flow, form, list, scroll_view, tooltip,
 };
 pub use controls::{
-    avatar, buttons, color_picker, control_size, dropdown, macform, slider, spinner, tag,
+    avatar, buttons, color_picker, control_size, dropdown, leading_icon, menu, nav_buttons,
+    pop_up_button, slider, spinner, stepper, tag, thumbnail_picker,
 };
-pub use foundation::{color, icons, layout};
-pub use look::{glass, glass_region, lab, material};
+pub use foundation::{color, icons, layout, symbol};
+pub use look::{glass, glass_region, lab, material, style};
 pub use platform::{app, app_icon, marker, secrets, settings};

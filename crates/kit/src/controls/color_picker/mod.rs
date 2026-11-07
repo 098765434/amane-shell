@@ -9,6 +9,10 @@
 
 #![allow(missing_docs)]
 
+mod wells;
+
+pub use wells::ColorWells;
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;

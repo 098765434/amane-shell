@@ -5,12 +5,13 @@
 
 use amane::{Color, Column};
 use amane_kit::buttons::Switch;
+use amane_kit::color_picker::ColorWells;
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::FormRow;
-use amane_kit::macform::theme as mac;
-use amane_kit::macform::{ColorWells, ThumbnailPicker};
 use amane_kit::settings::{ACCENTS, appearance, change_appearance};
+use amane_kit::style;
 use amane_kit::theme::{Density, Glass, Mode};
+use amane_kit::thumbnail_picker::ThumbnailPicker;
 
 use crate::{group, groups, previews};
 
@@ -50,7 +51,7 @@ pub fn page() -> Column {
         )
     };
 
-    let width = crate::page_width() - 2.0 * mac::row_pad_h();
+    let width = crate::page_width() - 2.0 * style::row_pad_h();
 
     let modes = [
         ("Light", Some(Mode::Light)),
