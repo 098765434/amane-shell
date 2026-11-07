@@ -15,7 +15,7 @@
 //! Whether it's on, how warm and the schedule are kept in the state file
 //! `night-light.json` (the older one-line `night-light` is read when that
 //! isn't there), so the shell turns it back on after a restart. Shell
-//! Settings changes them over IPC ([`ipc`]).
+//! Settings changes them over IPC ([`run`]).
 
 use amane::serde::{Deserialize, Serialize};
 

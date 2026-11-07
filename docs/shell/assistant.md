@@ -60,7 +60,7 @@ it ([`launcher/assistant.rs`](../../apps/shell/src/surfaces/launcher/assistant.r
 
 A command runs through the shell's own path:
 - the Quick Settings toggle (`quick_toggle(id).fire()`);
-- the OSD's volume and brightness keys (`osd::set_volume`, `osd::ipc`), so the OSD shows;
+- the OSD's volume and brightness keys (`osd::set_volume`, `osd::step_volume`), so the OSD shows;
 - `DesktopApp::launch`;
 - MPRIS (`Media::play_pause`, `next`, `previous`);
 - `Session` for the session;
