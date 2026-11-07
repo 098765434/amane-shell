@@ -182,7 +182,7 @@
             cargoLock = {
               lockFile = ./Cargo.lock;
               outputHashes = {
-                "amane-0.1.2" = "sha256-52d1Fv9y8FGcSn8yTKNXtGcGp9TsKEeMYyXiWLCpT8Y=";
+                "amane-0.1.2" = "sha256-9R2jiu+0IDEUYbgDDf/21VWGWX+rZJiypnChH6p5lP0=";
                 # one entry covers every crate from the same git rev
                 "vello-0.11.0" = "sha256-4bzBYT9BUIb0oMjB1rKJpxXhdT20lVQ4HTCTWsar/cc=";
               };

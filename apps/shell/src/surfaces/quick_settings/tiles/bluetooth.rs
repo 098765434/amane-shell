@@ -275,8 +275,8 @@ fn devices(height: f32) -> Vec<Box<dyn Widget>> {
     let power = bluetooth.power();
     let adapter_failure = bluetooth
         .adapter()
-        .and_then(|adapter| bluetooth.failure(adapter.path()))
-        .map(|failure| failure.description().to_string());
+        .and_then(|adapter| super::failure::recent(bluetooth.failure(adapter.path())))
+        .map(|failure| super::bluetooth_text::description(failure).to_string());
     let name = bluetooth
         .adapter()
         .map(|adapter| adapter.name().to_string())
@@ -408,9 +408,8 @@ fn operation_label(operation: Operation) -> &'static str {
 fn device_item(device: &BluetoothDevice) -> ListItem {
     let bluetooth = Bluetooth::read();
     let operation = bluetooth.operation(device.path());
-    let failure = bluetooth
-        .failure(device.path())
-        .map(|failure| failure.label().to_string());
+    let failure = super::failure::recent(bluetooth.failure(device.path()))
+        .map(|failure| super::bluetooth_text::label(failure).to_string());
     drop(bluetooth);
 
     let mut item = ListItem::new(
@@ -632,9 +631,8 @@ fn code_text(code: &str, entered: usize) -> Row {
 fn device_page(device: BluetoothDevice) -> DetailPage {
     let bluetooth = Bluetooth::read();
     let operation = bluetooth.operation(device.path());
-    let failure = bluetooth
-        .failure(device.path())
-        .map(|failure| failure.description().to_string());
+    let failure = super::failure::recent(bluetooth.failure(device.path()))
+        .map(|failure| super::bluetooth_text::description(failure).to_string());
     drop(bluetooth);
 
     let status = match operation {

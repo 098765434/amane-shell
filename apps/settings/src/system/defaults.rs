@@ -186,9 +186,9 @@ impl Role {
     }
 }
 
-fn failed(error: String) {
+fn failed(error: impl std::fmt::Display) {
     Dialog::new("settings.defaults.failed", "The default didn't change")
-        .message(error)
+        .message(error.to_string())
         .button("OK", || {})
         .open("main");
 }

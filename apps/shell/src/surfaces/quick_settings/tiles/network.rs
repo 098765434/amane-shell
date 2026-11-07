@@ -11,8 +11,8 @@ use std::cell::{Cell as Slot, RefCell};
 use std::time::{Duration, Instant};
 
 use amane::{
-    AccessPoint, Center, Column, Link, Network, Parent, Row, ScrollArea, Service, Size, TextInput,
-    Widget,
+    AccessPoint, Center, Column, ErrorKind, Link, Network, NetworkOperation, Parent, Row,
+    ScrollArea, Service, ServiceError, Size, TextInput, Widget,
 };
 
 use super::super::{Page, open};
@@ -209,11 +209,16 @@ fn networks(height: f32) -> Vec<Box<dyn Widget>> {
 fn ap_list(height: f32) -> ScrollArea {
     let net = Network::read();
     let enabled = net.wifi_enabled();
-    let connecting = net.connecting().then(|| net.ssid().to_string());
     let items = net
         .access_points()
         .iter()
-        .map(|ap| ap_item(ap, connecting.as_deref()))
+        .map(|ap| {
+            let state = Joining {
+                connecting: net.operation(ap.ssid()) == Some(NetworkOperation::Connecting),
+                failed: super::failure::recent(net.failure(ap.ssid())).map(failure_label),
+            };
+            ap_item(ap, &state)
+        })
         .collect();
     drop(net);
 
@@ -226,7 +231,24 @@ fn ap_list(height: f32) -> ScrollArea {
         .height(Size::Fixed(height))
 }
 
-fn ap_item(ap: &AccessPoint, connecting: Option<&str>) -> ListItem {
+/// Where joining a network stands, as its row shows it.
+struct Joining {
+    connecting: bool,
+    /// The last try failed lately: a few words why.
+    failed: Option<&'static str>,
+}
+
+/// A few words for why joining a network failed.
+fn failure_label(failure: &ServiceError) -> &'static str {
+    match failure.kind {
+        ErrorKind::AuthenticationFailed => "Wrong password",
+        ErrorKind::Unreachable | ErrorKind::Gone => "Not in range",
+        ErrorKind::TimedOut => "Timed out",
+        _ => "Couldn't join",
+    }
+}
+
+fn ap_item(ap: &AccessPoint, joining: &Joining) -> ListItem {
     let ssid = ap.ssid().to_string();
     let secured = ap.secured();
     let active = ap.active();
@@ -235,8 +257,13 @@ fn ap_item(ap: &AccessPoint, connecting: Option<&str>) -> ListItem {
     let mut item = ListItem::new(format!("amane.qs.wifi.ap.{ssid}"), ssid.clone())
         .leading(wifi_glyph(ap.strength()))
         .selected(active);
-    if connecting == Some(ssid.as_str()) && !active {
+    if joining.connecting && !active {
         item = item.trailing(caption("Connecting…"));
+    } else if let Some(failed) = joining.failed {
+        item = item.trailing(list::trailing_text(
+            failed,
+            sys::color::status::critical::text(),
+        ));
     }
     if secured {
         item = item.trailing(icon(

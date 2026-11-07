@@ -9,7 +9,7 @@
 
 use std::cell::Cell;
 
-use amane::{AuthRequest, Polkit, Service, TextInput};
+use amane::{AuthRequest, ErrorKind, Polkit, Service, TextInput};
 
 use crate::surfaces::alert;
 use amane_kit::dialog::{Dialog, Field, Icon};
@@ -99,7 +99,10 @@ fn dialog(request: &AuthRequest) -> Dialog {
         }
     }
     if let Some(error) = request.error() {
-        shown = shown.error(error.trim());
+        shown = shown.error(match error.kind {
+            ErrorKind::AuthenticationFailed => "Sorry, that didn't work. Try again.",
+            _ => error.message.trim(),
+        });
     } else if request.busy() {
         shown = shown.note("Checking…");
     }
