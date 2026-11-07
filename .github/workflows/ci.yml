@@ -32,7 +32,11 @@ jobs:
         run: nix develop -c cargo test --workspace --locked
 
       - name: shellcheck
-        run: nix run nixpkgs#shellcheck -- gen-layer-rules.sh scripts/check-pins scripts/idle-report
+        run: nix run nixpkgs#shellcheck -- gen-layer-rules.sh scripts/check-pins scripts/idle-report scripts/lint-terms
+
+      # no other vendor's platform terms in the text (ROADMAP.md, ground rules)
+      - name: lint-terms
+        run: scripts/lint-terms
 
   # The Nix package: catches a stale amane `outputHashes` after a rev bump
   # (flake.nix), and runs the tests again in its check phase.

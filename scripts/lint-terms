@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Fails on Apple platform terms in text: macOS and its versions, Mac, iOS,
+# Spotlight, Control Center, Liquid Glass and the like. Features are named
+# for what they are (ROADMAP.md, ground rules).
+#
+# Usage: scripts/lint-terms [path…]          the shell's tracked files
+#        scripts/lint-terms --diff <base>     lines added since <base>, in the
+#                                             repository in the current
+#                                             directory (the forks' CI)
+#
+# Allowed: the paths and patterns in scripts/lint-terms.allow, and any line
+# with the marker `lint-terms: allow` (a name kept for compatibility).
+
+set -euo pipefail
+
+here=$(cd "$(dirname "$0")" && pwd)
+
+# case-sensitive, so "applet", "MAC address" and "ipAddress" don't count
+terms='macOS|MacOS|Mac OS|\bMacs?\b|\bTahoe\b|\bSequoia\b|\bSonoma\b|Big Sur|\biOS\b|iPadOS|\biPads?\b|\biPhones?\b|\bApple\b|Spotlight|spotlight|Control Cent(er|re)|control cent(er|re)|Launchpad|AirDrop|\bFinder\b|Liquid Glass|liquid glass|SF Pro|SF Symbols?|AppKit|\bAqua\b|NSStatusItem|Live Activit|live activit|Dropzone|dropzone|Aptonic'
+
+paths=()
+patterns=()
+while IFS= read -r line; do
+    line=${line%%#*}
+    line=${line%"${line##*[![:space:]]}"}
+    case $line in
+        '') ;;
+        path\ *) paths+=("${line#path }") ;;
+        match\ *) patterns+=("${line#match }") ;;
+        *)
+            echo "lint-terms: bad line in lint-terms.allow: $line" >&2
+            exit 2
+            ;;
+    esac
+done <"$here/lint-terms.allow"
+
+# drops allowed lines from "file:line:text" input
+filter() {
+    local hit file text p allowed
+    while IFS= read -r hit; do
+        file=${hit%%:*}
+        text=${hit#*:*:}
+        [[ $text == *"lint-terms: allow"* ]] && continue
+        allowed=false
+        for p in "${paths[@]}"; do
+            # shellcheck disable=SC2053 # a glob, on purpose
+            if [[ $file == $p ]]; then
+                allowed=true
+                break
+            fi
+        done
+        $allowed && continue
+        # what's left once the allowed identifiers are taken out
+        for p in "${patterns[@]}"; do
+            text=$(sed -E "s/$p//g" <<<"$text")
+        done
+        grep -qE "$terms" <<<"$text" && echo "$hit"
+    done
+    return 0
+}
+
+if [[ ${1:-} == --diff ]]; then
+    base=${2:?usage: lint-terms --diff <base>}
+    # "file:line:text" for every added line
+    # the working tree against <base>: in CI that is HEAD; locally it
+    # includes edits not yet committed
+    hits=$(git diff --unified=0 --no-color "$base" | awk '
+        /^\+\+\+ / { file = substr($0, 7); next }
+        /^@@/ { split($3, a, ","); line = substr(a[1], 2); next }
+        /^\+/ { print file ":" line ":" substr($0, 2); line++ }
+    ' | grep -E "$terms" | filter || true)
+else
+    cd "$here/.."
+    hits=$(git grep -nIE "$terms" -- "${@:-.}" | filter || true)
+fi
+
+if [[ -n $hits ]]; then
+    echo "$hits"
+    echo "lint-terms: $(wc -l <<<"$hits") lines name Apple platform terms; say what the feature is instead (ROADMAP.md, Phase 3)" >&2
+    exit 1
+fi

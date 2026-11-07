@@ -1,0 +1,22 @@
+# What scripts/lint-terms lets through.
+#
+#   path <glob>     a file that may name the terms
+#   match <regex>   an identifier taken out of a line before it is checked
+#                   (extended regex, as sed -E reads it)
+
+# names the terms it removes, until Phase 13 rewords it
+path ROADMAP.md
+# a package name in the lock (wgpu-core-deps-apple)
+path Cargo.lock
+# this list and the script name the terms
+path scripts/lint-terms
+path scripts/lint-terms.allow
+
+# identifiers waiting for the kit consolidation (Phase 8)
+match macform
+match \bmac::
+match as mac;
+match show_in_spotlight
+match settings\.[a-z.]*spotlight
+# Shell Settings' page id for the Launcher page, in its routing and search
+match "spotlight"
