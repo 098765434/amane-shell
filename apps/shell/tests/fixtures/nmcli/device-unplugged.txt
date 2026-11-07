@@ -1,5 +1,0 @@
-wlp1s0:wifi:connected:Home Wi-Fi
-tailscale0:tun:connected (externally):tailscale0
-lo:loopback:connected (externally):lo
-p2p-dev-wlp1s0:wifi-p2p:disconnected:
-enp2s0:ethernet:unavailable:
