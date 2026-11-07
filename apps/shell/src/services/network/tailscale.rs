@@ -1,13 +1,15 @@
-//! Tailscale — the tailnet as `tailscaled` has it, driven through its CLI,
-//! the interface upstream documents.
+//! Tailscale — the tailnet as `tailscaled` has it.
 //!
-//! Nothing polls: `tailscale debug watch-ipn` prints whenever anything
-//! changes, and each line is taken only as "something happened" (it's
-//! pretty-printed JSON, and a `debug` command besides), after which
-//! `status --json` and `debug prefs` are read again. A burst is collapsed
-//! into one read. When the daemon goes away the stream ends with it, and
-//! it's started again with a backoff, so a stopped daemon never has the
-//! shell respawning a process in a tight loop.
+//! Nothing polls, and nothing runs while idle: reads go to the daemon's
+//! LocalAPI over its socket ([`tailscale_local`](super::tailscale_local)),
+//! the same JSON `tailscale status --json` and `debug prefs` print. Its
+//! change stream (`watch-ipn-bus`, without the engine's counters) sends a
+//! notice whenever the state, prefs or netmap change; each is taken only as
+//! "something happened", and a burst is collapsed into one read. When the
+//! daemon goes away the stream ends with it, and it's started again with a
+//! backoff, so a stopped daemon never has the shell retrying in a tight
+//! loop. Without the socket the same goes through the CLI
+//! (`tailscale debug watch-ipn`).
 //!
 //! Reads work for anyone; writes need root or the operator grant
 //! (`sudo tailscale set --operator=$USER`). Without it the state still
@@ -24,6 +26,7 @@ use std::time::{Duration, Instant};
 use amane::Service;
 use serde_json::Value;
 
+use super::tailscale_local;
 use crate::services::{installed, run};
 
 const BINARY: &str = "tailscale";
@@ -312,13 +315,24 @@ fn capture(args: &[&str]) -> Option<String> {
 }
 
 fn read_now() -> (Status, Option<Prefs>) {
-    let status = capture(&["status", "--json"])
+    let local = tailscale_local::available();
+    let status = if local {
+        tailscale_local::get("/localapi/v0/status")
+    } else {
+        capture(&["status", "--json"])
+    };
+    let status = status
         .and_then(|json| parse_status(&json))
         .unwrap_or(Status {
             state: State::DaemonDown,
             ..Status::default()
         });
-    let prefs = capture(&["debug", "prefs"]).and_then(|json| parse_prefs(&json));
+    let prefs = if local {
+        tailscale_local::get("/localapi/v0/prefs")
+    } else {
+        capture(&["debug", "prefs"])
+    };
+    let prefs = prefs.and_then(|json| parse_prefs(&json));
     (status, prefs)
 }
 
@@ -341,7 +355,20 @@ fn refresh() {
 }
 
 /// Follows the change stream until it ends; whether anything came of it.
+/// The daemon's socket when it's there, so no program runs while idle;
+/// else `tailscale debug watch-ipn`.
 fn watch() -> bool {
+    if tailscale_local::available() {
+        let (notices, changes) = mpsc::channel();
+        let reader = thread::spawn(move || {
+            tailscale_local::watch(|| {
+                let _ = notices.send(());
+            })
+        });
+        settle_and_refresh(&changes);
+        return reader.join().unwrap_or(false);
+    }
+
     let child = Command::new(BINARY)
         .args(["debug", "watch-ipn"])
         .stdin(Stdio::null())
@@ -364,16 +391,22 @@ fn watch() -> bool {
         }
     });
 
+    let heard = settle_and_refresh(&changes);
+    let _ = child.kill();
+    let _ = child.wait();
+    heard
+}
+
+/// A notice is only "something changed": lets each burst settle, then reads
+/// again, until the stream ends. Whether anything came.
+fn settle_and_refresh(changes: &mpsc::Receiver<()>) -> bool {
     let mut heard = false;
-    // a line is only "something changed": let the burst settle, then read
     while changes.recv().is_ok() {
         heard = true;
         thread::sleep(SETTLE);
         while changes.try_recv().is_ok() {}
         refresh();
     }
-    let _ = child.kill();
-    let _ = child.wait();
     heard
 }
 

@@ -5,3 +5,4 @@ pub mod bt_battery;
 pub mod connections;
 pub mod rfkill;
 pub mod tailscale;
+mod tailscale_local;
