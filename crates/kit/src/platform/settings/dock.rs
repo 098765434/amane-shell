@@ -1,0 +1,95 @@
+//! `dock.json`: the dock's size, magnification, pins and where it is.
+
+#![allow(missing_docs)]
+
+use super::*;
+
+/// How much the dock's icons grow under the pointer.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum Magnify {
+    Off,
+    Small,
+    #[default]
+    Medium,
+    Large,
+}
+
+impl Magnify {
+    pub const ALL: [Magnify; 4] = [Self::Off, Self::Small, Self::Medium, Self::Large];
+
+    /// How much more than Medium it grows: 0 for none.
+    pub fn amount(self) -> f32 {
+        match self {
+            Self::Off => 0.0,
+            Self::Small => 0.5,
+            Self::Medium => 1.0,
+            Self::Large => 1.6,
+        }
+    }
+}
+
+/// The smallest and largest the dock's icons are set to.
+pub const DOCK_ICON_SIZES: (u8, u8) = (32, 64);
+
+/// The dock: its icons, whether it hides, and what it shows and animates.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct Dock {
+    /// The icons' resting size, within `DOCK_ICON_SIZES`.
+    pub icon_size: u8,
+    pub magnification: Magnify,
+
+    /// Whether it slides away until the pointer meets the screen's edge.
+    pub auto_hide: bool,
+
+    /// Whether it rises with niri's overview.
+    pub rise_with_overview: bool,
+
+    /// Whether a dot marks the apps with a window open.
+    pub running_dots: bool,
+
+    /// Whether an app's name shows over its icon on hover.
+    pub tooltips: bool,
+
+    pub animations: bool,
+}
+
+impl Default for Dock {
+    fn default() -> Self {
+        Self {
+            icon_size: 44,
+            magnification: Magnify::Medium,
+            auto_hide: true,
+            rise_with_overview: true,
+            running_dots: true,
+            tooltips: true,
+            animations: true,
+        }
+    }
+}
+
+impl Dock {
+    /// The icons' resting size, kept within `DOCK_ICON_SIZES`.
+    pub fn icon(&self) -> f32 {
+        let (least, most) = DOCK_ICON_SIZES;
+
+        f32::from(self.icon_size.clamp(least, most))
+    }
+}
+
+impl Settings for Dock {
+    const APP: &'static str = "amane-shell";
+    const FILE: &'static str = "dock";
+}
+
+/// The dock settings as they are now; a view that reads them redraws when
+/// they change.
+pub fn dock() -> RwLockReadGuard<'static, Config<Dock>> {
+    Config::<Dock>::read()
+}
+
+/// Changes the dock settings and saves them, for input handlers.
+pub fn change_dock(edit: impl FnOnce(&mut Dock)) {
+    Config::<Dock>::change(edit);
+}

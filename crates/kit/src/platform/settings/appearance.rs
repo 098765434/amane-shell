@@ -1,0 +1,97 @@
+//! `appearance.json`: light or dark, the accent, the glass, text size and motion.
+
+#![allow(missing_docs)]
+
+use super::*;
+
+/// The accents to pick from, the system colours in their dark
+/// form, and none for the system's.
+pub const ACCENTS: [(&str, Option<&str>); 9] = [
+    ("System", None),
+    ("Blue", Some("#0091ff")),
+    ("Purple", Some("#db34f2")),
+    ("Pink", Some("#ff375f")),
+    ("Red", Some("#ff4245")),
+    ("Orange", Some("#ff9230")),
+    ("Yellow", Some("#ffd600")),
+    ("Green", Some("#30d158")),
+    ("Graphite", Some("#98989f")),
+];
+
+/// How the shell looks: mode, accent, density, text size, how see-through
+/// its glass is, and whether it moves.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "amane::serde", default)]
+pub struct Appearance {
+    /// Light or dark, or none to follow the system.
+    pub mode: Option<Mode>,
+
+    /// The accent as `#rrggbb`, or none for the system's (else the tokens').
+    pub accent: Option<String>,
+
+    pub density: Density,
+
+    /// Multiplies every font size, kept within 0.5–3.
+    pub text_scale: f32,
+
+    /// How see-through the glass is.
+    pub glass: Glass,
+
+    /// Whether to reduce motion, or none to follow the system.
+    pub reduce_motion: Option<bool>,
+
+    /// Whether small glass turns light or dark with what's behind it, from
+    /// niri's readings of the backdrop (an experiment, off by default).
+    pub adaptive_glass: bool,
+
+    /// Whether labels on glass blend with the frosted backdrop under them,
+    /// through niri's vibrancy (an experiment, off by default).
+    pub vibrancy: bool,
+}
+
+impl Default for Appearance {
+    fn default() -> Self {
+        Self {
+            mode: None,
+            accent: None,
+            density: Density::Comfortable,
+            text_scale: 1.0,
+            glass: Glass::Tinted,
+            reduce_motion: None,
+            adaptive_glass: false,
+            vibrancy: false,
+        }
+    }
+}
+
+impl Settings for Appearance {
+    const APP: &'static str = "amane-shell";
+    const FILE: &'static str = "appearance";
+}
+
+impl Appearance {
+    /// The accent colour, if a valid one is set.
+    pub fn accent_color(&self) -> Option<Color> {
+        let hex = self.accent.as_deref()?.strip_prefix('#')?;
+
+        if hex.len() != 6 {
+            return None;
+        }
+
+        let channel = |at: usize| u8::from_str_radix(&hex[at..at + 2], 16).ok();
+
+        Some(Color::rgb(channel(0)?, channel(2)?, channel(4)?))
+    }
+}
+
+/// The appearance settings as they are now; a view that reads them redraws
+/// when they change, from this program or the settings app. Every token
+/// read looks here, so it hands out the lock rather than a copy.
+pub fn appearance() -> RwLockReadGuard<'static, Config<Appearance>> {
+    Config::<Appearance>::read()
+}
+
+/// Changes the appearance settings and saves them, for input handlers.
+pub fn change_appearance(edit: impl FnOnce(&mut Appearance)) {
+    Config::<Appearance>::change(edit);
+}

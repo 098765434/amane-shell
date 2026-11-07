@@ -11,8 +11,8 @@ use amane_kit::form::FormRow;
 use amane_kit::layout::{boxed, fixed_width};
 use amane_kit::settings::{
     AutoHide, BAR_ITEMS, BUILTIN_ACTIVITIES, BarPosition, BarSize, BarStyle, ClockStyle,
-    DateFormat, ShowDate, StatusBar, activities_seen, bar_item_icon, change_status_bar,
-    status_apps_seen, status_bar, tray_seen,
+    DateFormat, ShowDate, StatusBar, activities_seen, change_status_bar, status_apps_seen,
+    status_bar, tray_seen,
 };
 use amane_kit::style;
 use amane_kit::thumbnail_picker::ThumbnailPicker;
@@ -583,4 +583,31 @@ fn allowed_apps(now: &amane_kit::settings::StatusBar) -> amane_kit::form::Group 
             .rows(rows)
             .footer("An app left out keeps running; only its icon is gone from the bar.")
     }
+}
+
+/// The glyph and tile colour Shell Settings shows before a status bar
+/// item: the glyph the bar itself draws at rest.
+fn bar_item_icon(name: &str) -> (amane_kit::icons::Glyph, amane_kit::color::Accent) {
+    use amane_kit::color::Accent;
+    use amane_kit::icons::Glyph;
+    let (glyph, accent) = match name {
+        "tray" => (amane_kit::icons::ICON_APPS, Accent::Gray),
+        "privacy" => (amane_kit::icons::ICON_MIC, Accent::Orange),
+        "status-icons" => (amane_kit::icons::ICON_NIGHT_LIGHT, Accent::Indigo),
+        "activities" => (amane_kit::icons::ICON_TIMER, Accent::Purple),
+        "weather" => (amane_kit::icons::ICON_PARTLY_CLOUDY, Accent::Cyan),
+        "volume" => (amane_kit::icons::ICON_VOLUME_UP, Accent::Pink),
+        "bluetooth" => (amane_kit::icons::ICON_BLUETOOTH, Accent::Blue),
+        "network" => (amane_kit::icons::ICON_WIFI, Accent::Blue),
+        "tailscale" => return (Glyph::Tailscale, Accent::Gray),
+        "keep-awake" => (amane_kit::icons::ICON_KEEP_AWAKE, Accent::Brown),
+        "keyboard" => (amane_kit::icons::ICON_KEYBOARD, Accent::Gray),
+        "phone" => (amane_kit::icons::ICON_PHONE, Accent::Green),
+        "battery" => (amane_kit::icons::ICON_BATTERY_FULL, Accent::Green),
+        "quick-settings" => (amane_kit::icons::ICON_TUNE, Accent::Gray),
+        "notifications" => (amane_kit::icons::ICON_NOTIFICATIONS, Accent::Red),
+        "clock" => (amane_kit::icons::ICON_SCHEDULE, Accent::Blue),
+        _ => (amane_kit::icons::ICON_APPS, Accent::Gray),
+    };
+    (Glyph::Font(glyph), accent)
 }
