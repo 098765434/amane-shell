@@ -26,14 +26,12 @@ mod read;
 mod thread;
 mod time;
 
-use amane::{
-    Column, KdeConnect, Key, PhoneDevice, PhoneMessages, Row, Service, Size, Text, TextInput,
-    Widget, Window,
-};
+use amane::{Column, Key, Row, Service, Size, Text, TextInput, Widget, Window};
 use amane_kit::app::{app, app_window, sidebar_panel, standard_shortcut};
 use amane_kit::layout::{boxed, caption};
 use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
+use amane_phone::{KdeConnect, PhoneDevice, PhoneMessages};
 
 /// How wide the inbox is.
 pub const SIDEBAR_WIDTH: f32 = 280.0;
@@ -109,7 +107,7 @@ fn find_thread(wanted: &str) -> Option<i64> {
                 })
             })?
         })
-        .map(amane::SmsThread::id)
+        .map(amane_phone::SmsThread::id)
 }
 
 /// Moves `step` conversations down the list (up when negative).

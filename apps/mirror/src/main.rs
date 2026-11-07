@@ -27,16 +27,14 @@ use std::collections::HashSet;
 use std::net::IpAddr;
 use std::sync::{Mutex, PoisonError};
 
-use amane::{
-    Adb, Center, Column, KdeConnect, Key, Rectangle, Row, Service, Size, Text, Video, Widget,
-    Window,
-};
+use amane::{Center, Column, Key, Rectangle, Row, Service, Size, Text, Video, Widget, Window};
 use amane_kit::app::{app, standard_shortcut};
 use amane_kit::buttons::IconButton;
 use amane_kit::color::with_alpha;
 use amane_kit::layout::boxed;
 use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
+use amane_phone::{Adb, KdeConnect};
 
 use crate::session::{Mirror, Phase};
 
@@ -499,7 +497,7 @@ fn push_files(paths: Vec<std::path::PathBuf>) {
                 .extension()
                 .is_some_and(|extension| extension.eq_ignore_ascii_case("apk"));
             if is_apk {
-                if let Err(why) = amane::adb(Some(&serial), &["install", "-r", &local]) {
+                if let Err(why) = amane_phone::adb(Some(&serial), &["install", "-r", &local]) {
                     eprintln!("amane-mirror: install {local}: {why}");
                 }
                 continue;
@@ -508,7 +506,7 @@ fn push_files(paths: Vec<std::path::PathBuf>) {
                 continue;
             };
             let remote = format!("/sdcard/Download/{}", name.to_string_lossy());
-            match amane::adb(Some(&serial), &["push", &local, &remote]) {
+            match amane_phone::adb(Some(&serial), &["push", &local, &remote]) {
                 Ok(_) => session::send(protocol::Control::ScanFile(remote)),
                 Err(why) => eprintln!("amane-mirror: push {local}: {why}"),
             }

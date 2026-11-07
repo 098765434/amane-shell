@@ -163,6 +163,8 @@ fn main() -> ExitCode {
     amane::Bluetooth::serve_agent();
     // and it is the session's polkit agent: the password prompt is its alert
     amane::Polkit::serve_agent();
+    // the commands a paired phone's remote may run here
+    services::phone::start();
     // and the bar's own bus service: other programs' items and activities
     services::status_apps::serve();
     services::network::bt_battery::watch();

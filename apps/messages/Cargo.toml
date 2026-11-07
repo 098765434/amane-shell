@@ -10,6 +10,7 @@ authors.workspace = true
 
 [dependencies]
 amane = { workspace = true }
+amane-phone = { workspace = true }
 amane-kit = { workspace = true }
 chrono = { workspace = true }
 serde_json = { workspace = true }

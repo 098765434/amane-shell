@@ -57,6 +57,7 @@ pub mod desktop;
 pub mod display;
 pub mod launcher;
 pub mod network;
+pub mod phone;
 pub mod power;
 pub mod status_apps;
 pub mod vault;

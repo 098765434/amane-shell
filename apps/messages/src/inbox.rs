@@ -7,8 +7,8 @@
 use std::rc::Rc;
 
 use amane::{
-    Center, Color, Column, Image, PhoneDevice, PhoneMessages, Radius, Rectangle, Row, ScrollArea,
-    Service, Size, SmsState, SmsThread, Text, TextInput, Widget,
+    Center, Color, Column, Image, Radius, Rectangle, Row, ScrollArea, Service, Size, Text,
+    TextInput, Widget,
 };
 use amane_kit::app::{field_box, sidebar_label, text_field};
 use amane_kit::buttons::{Actions, IconButton, interactive, state_fill};
@@ -19,6 +19,7 @@ use amane_kit::icons::ICON_KEYBOARD;
 use amane_kit::layout::{boxed, caption, icon, pad, text_height};
 use amane_kit::material::{self, Level};
 use amane_kit::tokens::{Styled, sys};
+use amane_phone::{PhoneDevice, PhoneMessages, SmsState, SmsThread};
 
 use crate::{Navigation, View, read, thread, time};
 
@@ -260,7 +261,7 @@ fn empty(state: SmsState, any: bool) -> Vec<Box<dyn Widget>> {
 }
 
 /// What a message shows as in the list: its words, else what's attached.
-fn snippet(latest: &amane::SmsMessage) -> String {
+fn snippet(latest: &amane_phone::SmsMessage) -> String {
     let attached = latest.attachments();
     let words = match (latest.body().trim(), attached.first()) {
         ("", None) => return String::new(),

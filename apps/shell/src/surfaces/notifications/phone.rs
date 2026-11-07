@@ -7,7 +7,8 @@
 //! message's notification also gets **Open in Messages**, which opens
 //! `amane-messages` on that person's conversation.
 
-use amane::{KdeConnect, Notification, PhoneNotification, Service};
+use amane::{Notification, Service};
+use amane_phone::{KdeConnect, PhoneNotification};
 
 use crate::surfaces::quick_settings::tiles::phone_screen;
 

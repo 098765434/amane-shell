@@ -15,10 +15,8 @@ use std::net::IpAddr;
 use std::path::PathBuf;
 
 use amane::serde::{Deserialize, Serialize};
-use amane::{
-    Adb, Center, Column, Parent, PhoneDevice, Rectangle, Row, Service, Size, Text, TextInput,
-    Widget, WirelessKind,
-};
+use amane::{Center, Column, Parent, Rectangle, Row, Service, Size, Text, TextInput, Widget};
+use amane_phone::{Adb, AdbAction, AdbOperation, PhoneDevice, WirelessKind};
 use qrcode::{Color as Module, EcLevel, QrCode};
 
 use crate::services::installed;
@@ -433,10 +431,23 @@ fn pair_with_code(device: &PhoneDevice) {
     });
 }
 
+/// What adb is busy with, as the page says it.
+fn doing(operation: &AdbOperation) -> String {
+    let target = &operation.target;
+    match operation.action {
+        AdbAction::Pairing => format!("Pairing with {target}…"),
+        AdbAction::Connecting => format!("Connecting to {target}…"),
+        AdbAction::Disconnecting => format!("Disconnecting {target}…"),
+    }
+}
+
 fn body(device: &PhoneDevice) -> Vec<Box<dyn Widget>> {
     let (busy, error) = {
         let adb = Adb::read();
-        (adb.busy().map(String::from), adb.error().map(String::from))
+        (
+            adb.operation().map(doing),
+            adb.failure().map(|failure| failure.message.clone()),
+        )
     };
 
     if ready(device) {

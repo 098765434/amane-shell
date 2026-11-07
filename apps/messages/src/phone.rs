@@ -3,7 +3,8 @@
 
 use std::path::PathBuf;
 
-use amane::{Adb, PhoneDevice, Service};
+use amane::Service;
+use amane_phone::{Adb, PhoneDevice};
 
 /// The phone's messaging apps, the one Samsung ships first.
 const MESSAGING: [&str; 2] = [

@@ -13,8 +13,8 @@ use std::time::Instant;
 
 use amane::{
     Apps, Arc, Button, Canvas, Cap, Center, Color, Column, DragData, FileDialog, Image, InputArea,
-    KdeConnect, Key, Keyboard, Layer, LayerWindow, Padding, Parent, Rectangle, Row, Service, Shape,
-    Size, Stack, Start, Text, TextInput, Widget, WindowSize, Zone, window_size,
+    Key, Keyboard, Layer, LayerWindow, Padding, Parent, Rectangle, Row, Service, Shape, Size,
+    Stack, Start, Text, TextInput, Widget, WindowSize, Zone, window_size,
 };
 use amane_kit::app::{field_box, text_field};
 use amane_kit::buttons::{IconButton, PushButton, Style};
@@ -29,6 +29,7 @@ use amane_kit::settings::{
     DropTile, FolderMode, UploadTo, change_drop_grids, drop_grids, drop_sharing, status_bar,
 };
 use amane_kit::tokens::{Styled, sys};
+use amane_phone::KdeConnect;
 use amane_status::BarEdge;
 
 use crate::state::{self, Changed, Outcome, Prompt, Target};

@@ -10,6 +10,7 @@ authors.workspace = true
 
 [dependencies]
 amane = { workspace = true }
+amane-phone = { workspace = true }
 amane-kit = { workspace = true }
 ffmpeg-next = { version = "9", default-features = false, features = ["codec", "format", "device"] }
 libpulse-binding = { workspace = true }

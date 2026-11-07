@@ -17,10 +17,8 @@
 
 use std::cell::{Cell, RefCell};
 
-use amane::{
-    Center, Column, FileDialog, KdeConnect, Parent, PhoneDevice, PhonePairState as PairState, Row,
-    ScrollArea, Service, Size, Text, Widget,
-};
+use amane::{Center, Column, FileDialog, Parent, Row, ScrollArea, Service, Size, Text, Widget};
+use amane_phone::{KdeConnect, PhoneDevice, PhonePairState as PairState};
 
 use super::super::{Page, open};
 use crate::chrome::battery;
@@ -262,7 +260,7 @@ fn paired_item(device: &PhoneDevice) -> ListItem {
         .selected(device.connected())
         .trailing(paired_trailing(device));
 
-    if let Some(failure) = KdeConnect::read().failure(id) {
+    if let Some(failure) = super::failure::recent(KdeConnect::read().failure(id)) {
         item = item.trailing(list::trailing_text(
             failure.to_string(),
             sys::color::status::critical::text(),
@@ -303,7 +301,7 @@ fn other_item(device: &PhoneDevice) -> ListItem {
             .on_press(move || KdeConnect::cancel_pairing(&canceled));
     }
 
-    if let Some(failure) = KdeConnect::read().failure(&id) {
+    if let Some(failure) = super::failure::recent(KdeConnect::read().failure(&id)) {
         item = item.trailing(list::trailing_text(
             failure.to_string(),
             sys::color::status::critical::text(),
@@ -391,7 +389,7 @@ fn device_page(device: PhoneDevice) -> DetailPage {
 fn device_body(device: &PhoneDevice, height: f32) -> Vec<Box<dyn Widget>> {
     let mut body: Vec<Box<dyn Widget>> = Vec::new();
 
-    if let Some(failure) = KdeConnect::read().failure(device.id()) {
+    if let Some(failure) = super::failure::recent(KdeConnect::read().failure(device.id())) {
         body.push(boxed(
             Text::new(failure.to_string())
                 .style(sys::r#type::caption())
@@ -431,7 +429,8 @@ fn device_body(device: &PhoneDevice, height: f32) -> Vec<Box<dyn Widget>> {
         ));
         if device.run_commands() {
             let commands: Vec<&str> = KdeConnect::run_command_list()
-                .map(|(name, _)| name)
+                .iter()
+                .map(|command| command.name)
                 .collect();
             body.push(boxed(caption(format!(
                 "In KDE Connect's Run Command on the phone: {}",

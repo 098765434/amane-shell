@@ -8,16 +8,14 @@
 
 use std::cell::Cell;
 
-use amane::{
-    Button, Center, Column, Cursor, KdeConnect, Key, PhoneClick, PhoneDevice, PhoneKey,
-    PhoneModifiers, Point, Radius, Rectangle, Row, Size, Text,
-};
+use amane::{Button, Center, Column, Cursor, Key, Point, Radius, Rectangle, Row, Size, Text};
 use amane_kit::buttons::{PushButton, Style};
 use amane_kit::icons::ICON_KEYBOARD;
 use amane_kit::layout::{boxed, caption, icon};
 use amane_kit::material::{self, Level};
 use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
+use amane_phone::{KdeConnect, PhoneClick, PhoneDevice, PhoneKey, PhoneModifiers};
 
 use crate::title;
 

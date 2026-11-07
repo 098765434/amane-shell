@@ -7,6 +7,7 @@ pub mod airplane;
 pub mod appearance;
 pub mod background;
 pub mod bluetooth;
+pub mod failure;
 pub mod keep_awake;
 pub mod keyboard;
 pub mod media;

@@ -33,12 +33,13 @@ use std::time::Duration;
 
 use amane::{
     Animation, Audio, Battery, Bluetooth, BluetoothDevice, Center, Color, Easing, Full, InputArea,
-    Justify, KdeConnect, Keyboard, Layer, LayerWindow, Link, Monitor, Network, Parent,
-    PowerProfile, Rectangle, Row, Scroll, ScrollSource, Service, Size, Start, Vertical, Widget,
-    Workspace, Workspaces, Zone, window_size,
+    Justify, Keyboard, Layer, LayerWindow, Link, Monitor, Network, Parent, PowerProfile, Rectangle,
+    Row, Scroll, ScrollSource, Service, Size, Start, Vertical, Widget, Workspace, Workspaces, Zone,
+    window_size,
 };
 use amane_kit::settings::{AutoHide, BarPosition, BarStyle, ClockStyle, ShowDate, status_bar};
 use amane_kit::theme::{self, Mode};
+use amane_phone::KdeConnect;
 
 use crate::chrome::battery;
 use crate::chrome::panel::{self, Panel, is_open};

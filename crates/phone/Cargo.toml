@@ -1,0 +1,19 @@
+[package]
+name = "amane-phone"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Phones for amane-shell and its apps: KDE Connect (pairing, files, clipboard, input, text messages) and adb with mDNS discovery."
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+# the session bus, services and the one ordered thread for calls
+amane = { workspace = true }
+serde_json = { workspace = true }
+# finding phones offering Wireless debugging on the network
+mdns-sd = { version = "0.21.7", default-features = false }
+
+[lints]
+workspace = true

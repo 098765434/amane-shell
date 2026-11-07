@@ -6,7 +6,8 @@
 use std::collections::BTreeMap;
 use std::sync::Once;
 
-use amane::{Bluetooth, KdeConnect, Notify, Service, Urgency};
+use amane::{Bluetooth, Notify, Service, Urgency};
+use amane_phone::KdeConnect;
 
 use crate::services::Wake;
 

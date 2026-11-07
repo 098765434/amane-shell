@@ -8,8 +8,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use amane::{
-    Center, Color, Column, PhoneMessages, Radius, Rectangle, Row, Service, Size, Text, TextInput,
-    Widget,
+    Center, Color, Column, Radius, Rectangle, Row, Service, Size, Text, TextInput, Widget,
 };
 use amane_kit::app::{field_box, text_field};
 use amane_kit::buttons::{Actions, interactive, state_fill};
@@ -18,6 +17,7 @@ use amane_kit::layout::{boxed, caption, icon, pad, text_width};
 use amane_kit::material::{self, Level};
 use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
+use amane_phone::PhoneMessages;
 
 use crate::compose::{self, Draft};
 use crate::{Navigation, View, content_width, inbox, title};

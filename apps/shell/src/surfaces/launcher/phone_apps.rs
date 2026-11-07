@@ -10,8 +10,9 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use amane::Service;
 use amane::serde::Deserialize;
-use amane::{Adb, KdeConnect, Service};
+use amane_phone::{Adb, KdeConnect};
 
 use amane_kit::icons::ICON_PHONE;
 

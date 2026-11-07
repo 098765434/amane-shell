@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use amane::SmsThread;
+use amane_phone::SmsThread;
 
 thread_local! {
     static SEEN: RefCell<Option<HashMap<i64, i64>>> = const { RefCell::new(None) };

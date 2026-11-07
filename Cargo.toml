@@ -35,6 +35,7 @@ members = [
     "apps/train-watch",
     "crates/kit",
     "crates/pinentry",
+    "crates/phone",
     "crates/status",
     "crates/assistant",
     "xtask",
@@ -53,6 +54,7 @@ authors = ["ocbk"]
 [workspace.dependencies]
 amane-kit = { path = "crates/kit" }
 amane-pinentry = { path = "crates/pinentry" }
+amane-phone = { path = "crates/phone" }
 amane-status = { path = "crates/status" }
 amane-assistant = { path = "crates/assistant" }
 serde = { version = "1", features = ["derive"] }

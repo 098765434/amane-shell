@@ -8,7 +8,8 @@
 use std::cell::RefCell;
 use std::sync::{Mutex, Once, PoisonError};
 
-use amane::{KdeConnect, Service};
+use amane::Service;
+use amane_phone::KdeConnect;
 
 use crate::surfaces::alert;
 use crate::surfaces::quick_settings::{self, Page};

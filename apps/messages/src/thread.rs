@@ -16,9 +16,8 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use amane::{
-    Button, Center, Clipboard, Color, Column, End, Image, PhoneDevice, PhoneMessages, Radius,
-    Rectangle, Row, SMS_PAGE, ScrollArea, Service, Shadow, Size, SmsAttachment, SmsKind,
-    SmsMessage, SmsThread, Stack, Start, Text, Widget,
+    Button, Center, Clipboard, Color, Column, End, Image, Radius, Rectangle, Row, ScrollArea,
+    Service, Shadow, Size, Stack, Start, Text, Widget,
 };
 use amane_kit::buttons::{Actions, PushButton, Style, interactive, state_fill};
 use amane_kit::color::with_alpha;
@@ -27,6 +26,9 @@ use amane_kit::material::{self, Level};
 use amane_kit::menu::{self, MenuItem};
 use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
+use amane_phone::{
+    PhoneDevice, PhoneMessages, SMS_PAGE, SmsAttachment, SmsKind, SmsMessage, SmsThread,
+};
 
 use crate::bubble::{self, Look};
 use crate::compose::{self, Draft};

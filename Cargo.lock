@@ -76,6 +76,7 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
+ "amane-phone",
  "amane-status",
  "serde_json",
 ]
@@ -95,6 +96,7 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
+ "amane-phone",
  "chrono",
  "serde_json",
 ]
@@ -105,9 +107,19 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "amane-kit",
+ "amane-phone",
  "ffmpeg-next",
  "libpulse-binding",
  "libpulse-simple-binding",
+ "serde_json",
+]
+
+[[package]]
+name = "amane-phone"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "mdns-sd",
  "serde_json",
 ]
 
@@ -149,6 +161,7 @@ dependencies = [
  "amane",
  "amane-assistant",
  "amane-kit",
+ "amane-phone",
  "amane-pinentry",
  "amane-status",
  "chrono",

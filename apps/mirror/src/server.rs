@@ -186,7 +186,7 @@ impl Log {
 }
 
 fn adb(serial: &str, arguments: &[&str]) -> Result<String, String> {
-    amane::adb(Some(serial), arguments)
+    amane_phone::adb(Some(serial), arguments).map_err(|error| error.to_string())
 }
 
 fn push(serial: &str) -> Result<(), String> {
