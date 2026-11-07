@@ -61,9 +61,6 @@ fn cli(args: &[String]) -> Option<ExitCode> {
 /// nothing: for seeing the alert without ending the session. Debug builds
 /// only.
 fn alert_test(args: &[String]) -> String {
-    if !cfg!(debug_assertions) {
-        return String::from("only in debug builds");
-    }
     let sample = components::dialog::Dialog::new("amane.alert.test", "Discard changes?")
         .message("Your changes to this document will be lost if you don't save them.")
         .button("Cancel", || eprintln!("alert-test: cancel"));
@@ -90,30 +87,9 @@ fn no_core_dumps() {
     }
 }
 
-fn main() -> ExitCode {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    if let Some(code) = cli(&args) {
-        return code;
-    }
-
-    // no core dump of the shell, which passes passwords on their way into a field; rbw and
-    // its agent are started with none too
-    no_core_dumps();
-
-    // the shell answers BlueZ's pairing questions, and warns of a device running low
-    amane::Bluetooth::serve_agent();
-    // and it is the session's polkit agent: the password prompt is its alert
-    amane::Polkit::serve_agent();
-    // and the bar's own bus service: other programs' items and Live Activities
-    services::status_apps::serve();
-    services::network::bt_battery::watch();
-    // and lowers the displays' refresh rate on battery, when asked to
-    services::power::power_refresh::watch();
-    // and keeps the screen's brightness in HDR, which niri only holds until a reload
-    services::display::hdr_white::watch();
-    // and rbw's pinentry: the master password asked in the shell's own dialog
-    services::vault::pinentry::serve();
-
+/// A sample file menu, nested three levels deep, whose items do nothing:
+/// for trying the context menu with `arm` or `open`. Debug builds only.
+fn sample_menu() -> ContextMenu {
     let share = ContextMenu::new()
         .item(
             MenuItem::label("AirDrop")
@@ -146,7 +122,7 @@ fn main() -> ExitCode {
         .item(MenuItem::label("Firefox").on_select(|| eprintln!("firefox")))
         .item(MenuItem::label("Preview").on_select(|| eprintln!("preview")));
 
-    let menu = ContextMenu::new()
+    ContextMenu::new()
         .item(
             MenuItem::label("Open")
                 .icon(Icon::glyph("\u{1F4C2}"))
@@ -184,9 +160,37 @@ fn main() -> ExitCode {
                 .shortcut("\u{2318}\u{232B}")
                 .destructive()
                 .on_select(|| eprintln!("trash")),
-        );
+        )
+}
 
-    context_menu::register("file", menu);
+fn main() -> ExitCode {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if let Some(code) = cli(&args) {
+        return code;
+    }
+
+    // no core dump of the shell, which passes passwords on their way into a field; rbw and
+    // its agent are started with none too
+    no_core_dumps();
+
+    // the shell answers BlueZ's pairing questions, and warns of a device running low
+    amane::Bluetooth::serve_agent();
+    // and it is the session's polkit agent: the password prompt is its alert
+    amane::Polkit::serve_agent();
+    // and the bar's own bus service: other programs' items and Live Activities
+    services::status_apps::serve();
+    services::network::bt_battery::watch();
+    // and lowers the displays' refresh rate on battery, when asked to
+    services::power::power_refresh::watch();
+    // and keeps the screen's brightness in HDR, which niri only holds until a reload
+    services::display::hdr_white::watch();
+    // and rbw's pinentry: the master password asked in the shell's own dialog
+    services::vault::pinentry::serve();
+
+    // a sample menu for `arm` and `open`, in debug builds
+    if cfg!(debug_assertions) {
+        context_menu::register("file", sample_menu());
+    }
 
     // the bar's hidden icons, from the state file they were kept in before
     status_bar::migrate();
@@ -216,57 +220,68 @@ fn main() -> ExitCode {
         app = app.input_method(fill::popup);
     }
 
-    app.ipc("arm", |args| {
-        // Expand the anchor fullscreen so the next right-click captures a
-        // fresh input serial and opens the menu with a working grab.
-        // Call: `printf 'arm\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-        let name = args.first().map(String::as_str).unwrap_or("file");
-        context_menu::arm(name);
-        String::from("ok")
-    })
-    .ipc("open", |args| {
-        let name = args.first().map(String::as_str).unwrap_or("file");
-        let x = args
-            .get(1)
-            .and_then(|s| s.parse::<i32>().ok())
-            .unwrap_or(240);
-        let y = args
-            .get(2)
-            .and_then(|s| s.parse::<i32>().ok())
-            .unwrap_or(180);
-        context_menu::open_named(name, x, y);
-        String::from("ok")
-    })
-    // One argument per line, e.g. Do Not Disturb from a keybind:
-    // `printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("notifications", notifications::ipc)
-    // `printf 'quick-settings\nopen\nwifi\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("quick-settings", quick_settings::ipc)
-    // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("launcher", launcher::ipc)
-    .ipc("assistant", launcher::assistant_ipc)
-    // the media and brightness keys, each acting and showing the new level:
-    // `printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("osd", osd::ipc)
-    // `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("widgets", widgets::ipc)
-    // `printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("status-bar", status_bar::ipc)
-    // Shell Settings' Displays page:
-    // `printf 'night-light\nschedule\nhours\n21:00\n07:00\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("night-light", services::display::night_light::ipc)
-    // its name while it was the taskbar, for scripts and keybinds
-    .ipc("taskbar", status_bar::ipc)
+    let app = app
+        .ipc("arm", |args| {
+            // Expand the anchor fullscreen so the next right-click captures a
+            // fresh input serial and opens the menu with a working grab.
+            // Call: `printf 'arm\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+            let name = args.first().map(String::as_str).unwrap_or("file");
+            if context_menu::arm(name) {
+                String::from("ok")
+            } else {
+                format!("error: no menu {name}")
+            }
+        })
+        .ipc("open", |args| {
+            let name = args.first().map(String::as_str).unwrap_or("file");
+            let x = args
+                .get(1)
+                .and_then(|s| s.parse::<i32>().ok())
+                .unwrap_or(240);
+            let y = args
+                .get(2)
+                .and_then(|s| s.parse::<i32>().ok())
+                .unwrap_or(180);
+            if context_menu::open_named(name, x, y) {
+                String::from("ok")
+            } else {
+                format!("error: no menu {name}")
+            }
+        })
+        // One argument per line, e.g. Do Not Disturb from a keybind:
+        // `printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+        .ipc("notifications", notifications::ipc)
+        // `printf 'quick-settings\nopen\nwifi\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+        .ipc("quick-settings", quick_settings::ipc)
+        // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+        .ipc("launcher", launcher::ipc)
+        .ipc("assistant", launcher::assistant_ipc)
+        // the media and brightness keys, each acting and showing the new level:
+        // `printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+        .ipc("osd", osd::ipc)
+        // `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+        .ipc("widgets", widgets::ipc)
+        // `printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+        .ipc("status-bar", status_bar::ipc)
+        // Shell Settings' Displays page:
+        // `printf 'night-light\nschedule\nhours\n21:00\n07:00\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+        .ipc("night-light", services::display::night_light::ipc)
+        // its name while it was the taskbar, for scripts and keybinds
+        .ipc("taskbar", status_bar::ipc)
+        // a niri keybind: `printf 'passwords\nsuggest\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+        .ipc("passwords", fill::ipc)
+        .ipc("close", |_| {
+            context_menu::close();
+            String::from("ok")
+        });
     // a sample alert for trying it out, in debug builds:
     // `printf 'alert-test\nstacked\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("alert-test", alert_test)
-    // a niri keybind: `printf 'passwords\nsuggest\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
-    .ipc("passwords", fill::ipc)
-    .ipc("close", |_| {
-        context_menu::close();
-        String::from("ok")
-    })
-    .run();
+    let app = if cfg!(debug_assertions) {
+        app.ipc("alert-test", alert_test)
+    } else {
+        app
+    };
+    app.run();
 
     ExitCode::SUCCESS
 }

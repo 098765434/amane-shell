@@ -77,7 +77,8 @@ for level in context_menu::LEVELS {
 | `close()` | close every level |
 
 `main.rs` exposes `arm`, `open` and `close` over the shell's IPC socket
-([ipc.md](../integration/ipc.md#context-menus)), and registers a sample menu, `file`.
+([ipc.md](../integration/ipc.md#context-menus)). In debug builds it registers a sample menu,
+`file`, to try them on; `arm` and `open_named` return false for a name nothing registered.
 
 ## Why "arming"
 

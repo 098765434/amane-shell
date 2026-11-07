@@ -127,9 +127,9 @@ Errors start with `error:` (`no room for it`, `no monitor`, `no widget <id>`).
 ### `status-bar`
 
 `status-bar (show | hide | toggle) <icon>` ([status-bar.md](../shell/status-bar.md#status-icons)):
-shows or hides one of the optional status icons, `activities`, `volume`, `bluetooth`, `network`,
-`tailscale`, `battery`, `phone`, `keep-awake`, `privacy`, `status-icons` or `notifications`, in
-`status-bar.json`.
+shows or hides one of the optional status icons, `activities`, `tray`, `volume`, `bluetooth`,
+`network`, `tailscale`, `battery`, `phone`, `keep-awake`, `privacy`, `status-icons`, `weather`,
+`keyboard` or `notifications`, in `status-bar.json`.
 
 - **Order.** `status-bar move <item> <index>` moves an item (any of those, or
   `quick-settings`, `clock`, `app:<id>`) to `index` among the rest. `status-bar reset-order`
@@ -188,13 +188,14 @@ See [context-menu.md](../shell/context-menu.md#why-arming) for why a menu opened
 | `open [name] [x] [y]` | opens it at a screen position (`file` at 240, 180 by default) |
 | `close` | closes every open menu |
 
-`file` is a sample menu `main.rs` registers.
+Both answer `error: no menu <name>` when no menu has that name. `file` is a sample menu `main.rs`
+registers in debug builds only, so a release build has none to arm until a surface registers one.
 
 ### `alert-test`
 
 `alert-test [stacked]` shows a sample alert whose answers do nothing, its buttons side by side or
-stacked ([the alert](../shell/quick-settings.md#the-alert)). Release builds answer
-`only in debug builds`.
+stacked ([the alert](../shell/quick-settings.md#the-alert)). Debug builds only: a release build
+doesn't have the command.
 
 ## niri keybinds
 

@@ -137,12 +137,14 @@ fn open_root(
     request_frame();
 }
 
-/// Open a menu by its string name (for IPC / dynamic callers).
-pub fn open_named(name: &str, x: i32, y: i32) {
+/// Open a menu by its string name (for IPC / dynamic callers); false when
+/// no menu has that name.
+pub fn open_named(name: &str, x: i32, y: i32) -> bool {
     let key = with(|r| r.registry.keys().copied().find(|k| *k == name));
     if let Some(key) = key {
         open_at(key, x, y);
     }
+    key.is_some()
 }
 
 /// Close the whole menu stack.
@@ -169,16 +171,18 @@ pub(crate) fn root_parent() -> Option<&'static str> {
 
 /// Arm the menu named `name`: expand the anchor fullscreen so the next
 /// right-click captures a fresh input serial and opens it with a working
-/// grab. Called from the niri keybind via IPC.
-pub fn arm(name: &str) {
-    with_mut(|r| {
+/// grab. Called over IPC; false when no menu has that name.
+pub fn arm(name: &str) -> bool {
+    let armed = with_mut(|r| {
         let key = r.registry.keys().copied().find(|k| *k == name);
         if let Some(key) = key {
             r.pending = Some(key);
             r.phase = Phase::Arming;
         }
+        key.is_some()
     });
     request_frame();
+    armed
 }
 
 /// Open the armed menu at the last tracked cursor position.
