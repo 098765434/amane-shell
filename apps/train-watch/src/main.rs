@@ -10,7 +10,7 @@
 //! start, again after a dropped connection. A copy is kept in
 //! `$XDG_CACHE_HOME/amane-train-watch/RUN.log`, which Log opens.
 
-mod log;
+mod run_log;
 
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
@@ -24,7 +24,7 @@ use amane_status::{
     ActivityButton, ActivityContent, ActivityEvent, Dismiss, ItemIcon, LiveActivity, Tint, Trailing,
 };
 
-use log::{Phase, Run};
+use run_log::{Phase, Run};
 
 /// How long a finished run waits for its dev score (`remote.sh score`).
 const SCORE_WAIT: Duration = Duration::from_secs(15 * 60);
@@ -173,7 +173,7 @@ impl Watch {
                     }
                     "log" => {
                         if let Err(error) = Cmd::new("xdg-open").arg(&self.copy).detach() {
-                            ::log::warn!("couldn't open the log: {error}");
+                            log::warn!("couldn't open the log: {error}");
                         }
                     }
                     "dismissed" => {
@@ -218,7 +218,7 @@ impl Watch {
                     // tail -F only ends when ssh does; how is in the run's state
                     let _ = running.finish();
                 }
-                Err(error) => ::log::warn!("couldn't follow the log: {error}"),
+                Err(error) => log::warn!("couldn't follow the log: {error}"),
             }
             // the watcher may have gone already
             let _ = tx.send(Message::Gone);
