@@ -385,6 +385,36 @@ a boundary the compiler checks) against what it costs (a public API to keep, `pu
 items that were private, the cycle of a service that names a surface). Write down
 the finding and the moves it recommends, with their order.
 
+
+### Finding (2026-11-07)
+
+**`apps/shell/src/services` stays in the shell; it doesn't become a crate yet.** What was measured:
+
+| Question | What the code says |
+|---|---|
+| Is it separable? | Yes, cleanly. Its 10.2k lines (23% of the shell) import nothing from `surfaces/`, `chrome/` or `tokens/`, only each other and the shared crates (kit, phone, status, assistant, pinentry, nixos), and the boundary test in `surfaces/mod.rs` already holds that. |
+| Would anything else use it? | No. The apps reach the shell's state through its IPC and its files on purpose: Shell Settings asks `night-light state` and only watches the state file for a change, and its Quick Settings page asks `quick-settings controls`. The one program that would share a service's *data* already shares it through a crate (`amane_phone::shared`, now `amane_nixos::lock::Check`). |
+| Would it build faster? | Not noticeably. After an edit, the shell rebuilds in 1.9 s for a surface file and 2.0 s for a service file; rustc's incremental build already recompiles only what changed, and a crate split would save a fraction of that. |
+| Would it test better? | No. Its tests already run without a window, in the shell's test binary. |
+| What would it cost? | About 150 items go from `pub(super)`/`pub(crate)` to `pub`, under `missing_docs`; about 200 `crate::services::` paths change; the crate would be named for the shell and used only by it. |
+
+Splitting it now buys a compiler-checked boundary that a test already checks, and costs a public API with no second user. **Revisit when** a second program needs one of these services in-process: the vault (rbw) for a Passwords page that fills without the shell, or the launcher's file search for another app. That service then moves into a crate of its own, the way the phone and the status items did in Phase 9 of the roadmap, rather than all of `services/` at once.
+
+**What else moved, or should:**
+
+| Candidate | Verdict |
+|---|---|
+| `nixos/check.json`, parsed by both Shell Settings and the shell | **Moved** to `amane_nixos::lock` (shell `d617190`): one format, one path, one reader; each program wraps it in its own service. |
+| The phone's two shared files (`phone-apps.json`, `phone-screen.json`) | **Moved** to `amane_phone::shared` (Phase 6). |
+| `services/vault` (2.1k lines: the rbw client, matching, the identity check) | **Stays.** Its only user is the shell; Shell Settings' Passwords page asks the shell. It's the first candidate for a crate if a second user appears. |
+| `services/launcher` (file search, clipboard history, timers) | **Stays.** Only the launcher uses it; it's a service because it runs programs and keeps state, not because it draws. |
+| `tokens/layer_rules.rs` | **Stays.** It names the shell's surfaces; `cargo xtask layer-rules` runs it through the shell (roadmap Phase 10). |
+| `chrome/catalog.rs`, `chrome/edit_marks.rs` | **Stay in `chrome`.** They are shell-only, and the kit's grid is pure by design. |
+| `kit::platform::shell_ipc` | **Stays in the kit.** It's std-only and could sit lower, but every program that sends a shell command already uses the kit. |
+| Shell Settings' `displays/kdl.rs` | **Stays.** It's the one writer of `displays.kdl`, and only Settings writes it. |
+
+The moves that remain are the ones in Phases 6 and 7's "not done yet".
+
 ---
 
 ## Visible changes (to check live)
