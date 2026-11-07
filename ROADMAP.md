@@ -9,6 +9,8 @@ This plan turns amane-shell and its forks (amane, niri, vello) into one delibera
 | niri (`niri/`) | ocbk | `16384e00` | 2 commits ahead of origin, not pushed |
 | vello (`vello/`) | ocbk | `46585523` | |
 
+After Phase 0 (2026-11-07), all of it is pushed: shell `main` `859debc`, which pins amane `14eb0dd` and vello `46585523` by rev; niri `ocbk` `72d679c5`.
+
 ## Ground rules
 
 These hold for every phase.
@@ -230,6 +232,13 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 - The idle baseline is written down.
 
 **Risks.** Low. A cache change can slow CI; acceptable.
+
+**Status (2026-11-07).** Done except the idle baseline, which needs the new build switched in and a re-login.
+- **Clippy** over the whole workspace found errors in the apps too; all are fixed.
+- **Shell CI** is green.
+- **amane** has its CI in a new `.github/workflows/fork.yml`, so upstream's `test.yml` is untouched. Upstream's image filters trip `needless_range_loop`, so CI allows that one lint.
+- **niri** couldn't use upstream's `ci.yml`: the fork's HDR output needs libdisplay-info 0.2, which Ubuntu, Fedora and FreeBSD packages don't have. Its CI is `fork.yml` too, run in the flake's dev shell and skipping the EGL tests as the flake's own build does. Upstream's `ci.yml` should be turned off on the fork in the Actions settings.
+- **Idle numbers.** `scripts/idle-report` gives exact numbers only under `sudo`. The shell's memory maps and its children's `exe` links are closed to the user, so without root it reports RSS instead of PSS, and its count of programs started is a lower bound.
 
 ---
 
