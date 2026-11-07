@@ -1083,14 +1083,13 @@ fn on_key(key: Key) {
                 text_edit::copy(&view.field.selected());
                 type_into(Field::delete_selection);
             }
-            'v' => {
-                if let Some(text) = text_edit::paste() {
-                    type_into(|field| {
-                        field.insert(&text);
-                        true
-                    });
-                }
-            }
+            'v' => text_edit::paste(|text| {
+                type_into(|field| {
+                    field.insert(&text);
+                    true
+                });
+                Launcher::changed();
+            }),
             // the keyboard's way to set the picked action's quick keys
             'k' => {
                 if let Some(entry) = view.entry(view.selected)
@@ -1576,7 +1575,7 @@ fn scrollbar() -> f32 {
     let now = Instant::now();
     let (scrolled, due) = with(|state| (state.scrolled, state.fade_due));
     let showing = scrolled.is_some_and(|at| now.duration_since(at) < SCROLLBAR_IDLE);
-    // amane has no timers: a frame comes when the scrollbar is due to fade
+    // a timer asks for the frame when the scrollbar is due to fade
     if let Some(at) = scrolled.filter(|_| showing)
         && due.is_none_or(|due| now >= due)
     {

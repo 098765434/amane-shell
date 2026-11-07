@@ -1,14 +1,14 @@
 //! A connected Bluetooth device, or a phone through KDE Connect, running
 //! low: a notification at 20 % and again at 10 %, once each per connection,
-//! as phones warn about a headset. Read from the fork's `Bluetooth` and
-//! `KdeConnect` services once a minute, as a battery that reports itself
-//! changes slowly.
+//! as phones warn about a headset. Checked whenever the fork's `Bluetooth`
+//! or `KdeConnect` service changes.
 
 use std::collections::BTreeMap;
 use std::sync::Once;
-use std::time::Duration;
 
 use amane::{Bluetooth, KdeConnect, Notify, Service, Urgency};
+
+use crate::services::Wake;
 
 /// The levels warned at, highest first.
 const LEVELS: [u8; 2] = [20, 10];
@@ -16,17 +16,19 @@ const LEVELS: [u8; 2] = [20, 10];
 /// Above this a device counts as charged again, and is warned anew.
 const RESET_ABOVE: u8 = 25;
 
-const EVERY: Duration = Duration::from_secs(60);
+static WAKE: Wake = Wake::new();
 
 /// Starts watching, once.
 pub fn watch() {
     static WATCH: Once = Once::new();
     WATCH.call_once(|| {
+        Bluetooth::subscribe(|_| WAKE.nudge()).forever();
+        KdeConnect::subscribe(|_| WAKE.nudge()).forever();
         std::thread::spawn(|| {
             // the lowest level each device was warned at, by address
             let mut warned: BTreeMap<String, u8> = BTreeMap::new();
             loop {
-                std::thread::sleep(EVERY);
+                WAKE.wait(None);
                 check(&mut warned);
             }
         });

@@ -17,7 +17,7 @@ use super::{Readout, show};
 use crate::components::icons::{ICON_AIRPLANE, power_profile_glyph};
 use crate::components::slider::STEP;
 use crate::services::display::hdr_white;
-use crate::services::network::rfkill::Rfkill;
+use crate::services::network::rfkill::{self, Rfkill};
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::surfaces::launcher::profile_name;
 
@@ -191,10 +191,7 @@ fn restore() {
         Brightness::set(level);
     }
     // once the level is back, or the dim one could still be read as rested
-    std::thread::spawn(|| {
-        std::thread::sleep(Duration::from_secs(3));
-        hdr_white::dimmed(false);
-    });
+    amane::Timer::after(Duration::from_secs(3), || hdr_white::dimmed(false));
 }
 
 enum Light {
@@ -233,7 +230,7 @@ fn airplane() {
         return;
     }
 
-    Rfkill::set_airplane(!on);
+    rfkill::set_airplane(!on);
     pressed();
     show(airplane_readout(!on));
 }

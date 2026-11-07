@@ -24,6 +24,23 @@ const GENERIC: &[&str] = &[
 /// last entry. Each stack is looked up once; token reads call this every
 /// frame, so a repeat costs one hash lookup.
 pub fn first_installed(stack: &[String]) -> &'static str {
+    // a token's stack lives as long as the program (resolved tables are kept), so its
+    // address is a key: a repeat on the UI thread is one lookup with no lock and no hashing
+    // of the names
+    thread_local! {
+        static BY_ADDRESS: std::cell::RefCell<HashMap<usize, &'static str>> =
+            std::cell::RefCell::new(HashMap::new());
+    }
+    let address = stack.as_ptr() as usize;
+    if let Some(family) = BY_ADDRESS.with_borrow(|known| known.get(&address).copied()) {
+        return family;
+    }
+    let family = first_installed_by_name(stack);
+    BY_ADDRESS.with_borrow_mut(|known| known.insert(address, family));
+    family
+}
+
+fn first_installed_by_name(stack: &[String]) -> &'static str {
     static CHOSEN: OnceLock<Mutex<HashMap<Vec<String>, &'static str>>> = OnceLock::new();
     let mut chosen = CHOSEN
         .get_or_init(Default::default)

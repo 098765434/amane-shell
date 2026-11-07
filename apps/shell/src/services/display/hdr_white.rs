@@ -12,48 +12,78 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Once;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::sync::{Mutex, Once, PoisonError};
+use std::time::{Duration, SystemTime};
 
 use amane::{Brightness, Service};
 
-const EVERY: Duration = Duration::from_secs(1);
+use crate::services::Wake;
+
+// how long a level stays put before it counts as rested
+const REST: Duration = Duration::from_secs(1);
 
 static DIMMED: AtomicBool = AtomicBool::new(false);
+
+// the panel's SDR white as last seen, and when it changed
+type Seen = (Option<(String, f64)>, SystemTime);
+static LATEST: Mutex<Option<Seen>> = Mutex::new(None);
+static WAKE: Wake = Wake::new();
 
 /// Whether idle has the screen dimmed, so its level isn't kept.
 pub fn dimmed(on: bool) {
     DIMMED.store(on, Ordering::Relaxed);
 }
 
+fn hdr_white(brightness: &Brightness) -> Option<(String, f64)> {
+    brightness
+        .hdr()
+        .map(|panel| (panel.output.clone(), panel.sdr_white.round()))
+}
+
 /// Starts watching, once.
 pub fn watch() {
     static WATCH: Once = Once::new();
     WATCH.call_once(|| {
+        Brightness::subscribe(|brightness| {
+            let now = hdr_white(brightness);
+            let mut latest = LATEST.lock().unwrap_or_else(PoisonError::into_inner);
+            if latest.as_ref().is_some_and(|(seen, _)| *seen == now) {
+                return;
+            }
+            *latest = Some((now, SystemTime::now()));
+            drop(latest);
+            WAKE.nudge();
+        })
+        .forever();
+
         std::thread::spawn(|| {
-            // what was last seen, and what's in the file, by connector
-            let mut seen: Option<(String, f64)> = None;
-            let mut kept: Option<(String, f64)> = None;
+            // what's in the file: the first reading is what it already says
+            let mut kept = hdr_white(&Brightness::read());
             loop {
-                std::thread::sleep(EVERY);
-                let now = Brightness::read()
-                    .hdr()
-                    .map(|panel| (panel.output.clone(), panel.sdr_white.round()));
-                // the first reading is what the file already says
-                if kept.is_none() {
-                    kept.clone_from(&now);
-                }
-                let rested = now.is_some() && now == seen;
-                seen.clone_from(&now);
-                if !rested || now == kept || DIMMED.load(Ordering::Relaxed) {
+                let latest = LATEST
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .clone();
+                let Some((now, at)) = latest else {
+                    WAKE.wait(None);
+                    continue;
+                };
+                // not rested yet: wait out the rest, or the next change
+                let rested = at + REST;
+                if SystemTime::now() < rested {
+                    WAKE.wait(Some(rested));
                     continue;
                 }
-                if let Some((output, nits)) = &now
+                if now.is_some()
+                    && now != kept
+                    && !DIMMED.load(Ordering::Relaxed)
+                    && let Some((output, nits)) = &now
                     && keep(&displays_file(), output, *nits).is_ok()
                 {
                     kept.clone_from(&now);
                 }
+                WAKE.wait(None);
             }
         });
     });

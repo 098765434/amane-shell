@@ -4,10 +4,12 @@
 //! to type on it. A code to type here opens the page, which has the field.
 //! The page itself asks under its list while it shows.
 //!
-//! Synced from the alert surface's view, which reads `Bluetooth` for it
-//! and so runs again whenever a request comes or goes.
+//! A subscription to `Bluetooth` keeps the latest request (and its device's
+//! name), and wakes the alert surface's view only when it comes or goes; the
+//! view syncs from that.
 
 use std::cell::Cell;
+use std::sync::{Mutex, Once, PoisonError};
 
 use amane::{Bluetooth, PairingAnswer, PairingKind, PairingRequest, Service};
 
@@ -23,19 +25,40 @@ thread_local! {
     static ASKED: Cell<Option<u64>> = const { Cell::new(None) };
 }
 
+// what BlueZ asks now, and the device's name
+static LATEST: Mutex<Option<(PairingRequest, String)>> = Mutex::new(None);
+
+fn asking(bluetooth: &Bluetooth) -> Option<(PairingRequest, String)> {
+    let request = bluetooth.pairing_request()?.clone();
+    let device = bluetooth
+        .device(request.device())
+        .map_or_else(|| String::from("A device"), |d| d.name().to_string());
+    Some((request, device))
+}
+
 /// Shows the alert for a new request, or puts it away once BlueZ stopped
 /// asking.
 pub fn sync() {
-    let bluetooth = Bluetooth::read();
-    let request = bluetooth.pairing_request().cloned();
-    let device = request.as_ref().map(|request| {
-        bluetooth
-            .device(request.device())
-            .map_or_else(|| String::from("A device"), |d| d.name().to_string())
+    static WATCH: Once = Once::new();
+    WATCH.call_once(|| {
+        Bluetooth::subscribe(|bluetooth| {
+            let fresh = asking(bluetooth);
+            let mut latest = LATEST.lock().unwrap_or_else(PoisonError::into_inner);
+            if *latest != fresh {
+                *latest = fresh;
+                alert::Requests::changed();
+            }
+        })
+        .forever();
+        *LATEST.lock().unwrap_or_else(PoisonError::into_inner) = asking(&Bluetooth::read());
     });
-    drop(bluetooth);
+    alert::Requests::watch();
+    let latest = LATEST
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone();
 
-    let Some((request, device)) = request.zip(device) else {
+    let Some((request, device)) = latest else {
         if ASKED.take().is_some() && alert::showing(NAME) {
             alert::close();
         }

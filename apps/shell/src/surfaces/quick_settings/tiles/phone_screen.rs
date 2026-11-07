@@ -176,10 +176,33 @@ enum Facing {
     Back,
 }
 
-thread_local! {
-    // whether the webcam runs, and which camera, as last looked
-    static CAMERA: RefCell<(Option<std::time::Instant>, Option<Facing>)> =
-        const { RefCell::new((None, None)) };
+/// The phone's webcam as the tile shows it: whether its loopback device is there, and which
+/// camera runs. Read on the service's thread once a second (sysfs and every process's command
+/// line), only while the tile shows it, so a view never does that file IO itself.
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+struct Webcam {
+    loopback: bool,
+    running: Option<Facing>,
+}
+
+impl Service for Webcam {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn idle_stop() -> Option<std::time::Duration> {
+        Some(std::time::Duration::from_secs(2))
+    }
+
+    fn update(&mut self) -> bool {
+        let fresh = Self {
+            loopback: loopback(),
+            running: camera(),
+        };
+        let changed = fresh != *self;
+        *self = fresh;
+        changed
+    }
 }
 
 fn loopback() -> bool {
@@ -191,13 +214,9 @@ fn loopback() -> bool {
     })
 }
 
-/// The running webcam's camera, from its process; looked at once a second.
+/// The running webcam's camera, from its process.
 fn camera() -> Option<Facing> {
-    let (looked, facing) = CAMERA.with_borrow(|camera| *camera);
-    if looked.is_some_and(|looked| looked.elapsed() < std::time::Duration::from_secs(1)) {
-        return facing;
-    }
-    let facing = std::fs::read_dir("/proc").ok().and_then(|entries| {
+    std::fs::read_dir("/proc").ok().and_then(|entries| {
         entries.flatten().find_map(|entry| {
             let line = std::fs::read(entry.path().join("cmdline")).ok()?;
             let words: Vec<&[u8]> = line.split(|b| *b == 0).collect();
@@ -212,9 +231,7 @@ fn camera() -> Option<Facing> {
                 _ => Some(Facing::Front),
             }
         })
-    });
-    CAMERA.set((Some(std::time::Instant::now()), facing));
-    facing
+    })
 }
 
 fn set_camera(device: &str, facing: Option<Facing>) {
@@ -234,16 +251,18 @@ fn set_camera(device: &str, facing: Option<Facing>) {
         }
     };
     amane::spawn(&command);
-    CAMERA.set((Some(std::time::Instant::now()), facing));
+    // shown at once; the next reading confirms it
+    Webcam::write().running = facing;
     QuickSettings::changed();
 }
 
 /// The webcam's rows, when the loopback device is there and adb has the phone.
 pub(crate) fn camera_rows(device: &PhoneDevice) -> Vec<ListItem> {
-    if !installed(MIRROR_APP) || !loopback() || !ready(device) {
+    let webcam = *Webcam::read();
+    if !installed(MIRROR_APP) || !webcam.loopback || !ready(device) {
         return Vec::new();
     }
-    let running = camera();
+    let running = webcam.running;
     let on = running.is_some();
     let id = device.id().to_string();
 

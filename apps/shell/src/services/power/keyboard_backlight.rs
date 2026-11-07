@@ -1,8 +1,9 @@
 //! Keyboard backlight — the light under the keys.
 //!
 //! Read from the first `*::kbd_backlight` LED in `/sys/class/leds`, polled
-//! like amane's screen `Brightness` (the kernel announces no change, and the
-//! keyboard's own key changes it too). The file belongs to root, so logind
+//! once a second: the kernel announces no change to an LED (only some
+//! drivers have `brightness_hw_changed`; a ThinkPad's doesn't), and the
+//! keyboard's own key changes it too. This is the one poll left while idle. The file belongs to root, so logind
 //! writes it (`Session.SetBrightness("leds", …)`), which it allows whoever
 //! sits at the machine. Most keyboards have a few steps (a ThinkPad's: off,
 //! low, high), so it works in steps up to [`max`](KeyboardBacklight::max).
@@ -36,7 +37,7 @@ impl Service for KeyboardBacklight {
     }
 
     fn interval() -> Duration {
-        Duration::from_millis(500)
+        Duration::from_secs(1)
     }
 
     fn update(&mut self) -> bool {

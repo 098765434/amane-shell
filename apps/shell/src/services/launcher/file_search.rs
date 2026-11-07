@@ -201,13 +201,17 @@ pub fn find(request: &Request) -> (Vec<Hit>, bool) {
         state.asked = Some(request.clone());
         let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
         let request = request.clone();
-        std::thread::spawn(move || run(request, generation));
+        // a timer waits out the typing; only the last request gets a thread
+        amane::Timer::after(DEBOUNCE, move || {
+            if GENERATION.load(Ordering::SeqCst) == generation {
+                std::thread::spawn(move || run(request, generation));
+            }
+        });
     }
     (stale, false)
 }
 
 fn run(request: Request, generation: u64) {
-    std::thread::sleep(DEBOUNCE);
     if GENERATION.load(Ordering::SeqCst) != generation {
         return;
     }
@@ -449,19 +453,15 @@ pub fn open(path: &Path) {
 pub fn reveal(path: &Path) {
     let url = file_url(path);
     std::thread::spawn(move || {
-        run_now(
-            "gdbus",
+        // ShowItems(as uris, s startup_id)
+        amane::Bus::session().call(
+            "org.freedesktop.FileManager1",
+            "/org/freedesktop/FileManager1",
+            "org.freedesktop.FileManager1",
+            "ShowItems",
             &[
-                String::from("call"),
-                String::from("--session"),
-                String::from("--dest"),
-                String::from("org.freedesktop.FileManager1"),
-                String::from("--object-path"),
-                String::from("/org/freedesktop/FileManager1"),
-                String::from("--method"),
-                String::from("org.freedesktop.FileManager1.ShowItems"),
-                format!("['{url}']"),
-                String::new(),
+                amane::Argument::TextList(vec![url]),
+                amane::Argument::from(""),
             ],
         );
     });

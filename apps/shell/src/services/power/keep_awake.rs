@@ -24,7 +24,7 @@ use std::time::{Duration, SystemTime};
 
 use amane::{Argument, Bus, Service};
 
-use crate::services::{Latest, run};
+use crate::services::{Latest, Wake};
 
 const SCREENSAVER: &str = "org.freedesktop.ScreenSaver";
 const SCREENSAVER_PATH: &str = "/org/freedesktop/ScreenSaver";
@@ -59,6 +59,9 @@ pub const LIMITS: [(&str, Option<Duration>); 5] = [
 
 /// Takes and lets go of the inhibitors off the UI thread, one at a time.
 static SYNC: Latest<()> = Latest::new();
+
+// a new time limit wakes the listener
+static WAKE: Wake = Wake::new();
 
 pub struct KeepAwake {
     screen: bool,
@@ -99,9 +102,9 @@ impl Service for KeepAwake {
         }
     }
 
-    // only a time limit changes by itself, and half a minute late is fine
+    // a running limit's tile counts down in minutes
     fn interval() -> Duration {
-        Duration::from_secs(30)
+        Duration::from_secs(60)
     }
 
     fn update(&mut self) -> bool {
@@ -114,10 +117,13 @@ impl Service for KeepAwake {
         self.until.is_some()
     }
 
+    // waits for the limit to run out (and the tile's next minute meanwhile); with no limit
+    // running, for a new one
     fn listen() {
         thread::spawn(watch_lock);
         loop {
-            thread::sleep(Self::interval());
+            let until = Self::read().until;
+            WAKE.wait(until.map(|until| until.min(SystemTime::now() + Self::interval())));
             // a write redraws whatever reads this, so only with a limit running
             if Self::read().until.is_some() {
                 Self::write().update();
@@ -198,20 +204,20 @@ impl KeepAwake {
                 keep.screen = true;
             }
         }
+        WAKE.nudge();
         SYNC.send((), sync);
     }
 
     /// Turns the monitors off without locking or letting go of anything;
     /// niri turns them back on at the next input.
     pub fn screen_off_now() {
-        thread::spawn(|| {
-            thread::sleep(SCREEN_OFF_DELAY);
-            run(
-                "niri",
-                ["msg", "action", "power-off-monitors"]
-                    .map(String::from)
-                    .to_vec(),
-            );
+        amane::Timer::after(SCREEN_OFF_DELAY, || {
+            // niri's answer isn't for the UI thread
+            thread::spawn(|| {
+                if let Err(err) = amane::niri::power_off_monitors() {
+                    eprintln!("amane-shell: couldn't turn the screens off: {err}");
+                }
+            });
         });
     }
 
@@ -342,27 +348,57 @@ fn watch_lock() {
     }
 }
 
+// the locker starts a moment after the Lock signal, and the session is unlocked once it exits
 fn wait_for_unlock() {
     let mut waited = Duration::ZERO;
-    while !locker_running() {
+    let pid = loop {
+        if let Some(pid) = locker() {
+            break pid;
+        }
         if waited >= LOCKER_START {
             return;
         }
-        thread::sleep(Duration::from_secs(1));
-        waited += Duration::from_secs(1);
-    }
-    while locker_running() {
-        thread::sleep(Duration::from_secs(1));
-    }
+        thread::sleep(Duration::from_millis(250));
+        waited += Duration::from_millis(250);
+    };
+    wait_for_exit(pid);
 }
 
-fn locker_running() -> bool {
-    std::fs::read_dir("/proc").is_ok_and(|entries| {
-        entries.flatten().any(|entry| {
-            std::fs::read_to_string(entry.path().join("comm"))
-                .is_ok_and(|comm| comm.trim_end() == LOCKER)
+// the running locker's process id
+fn locker() -> Option<i32> {
+    std::fs::read_dir("/proc")
+        .ok()?
+        .flatten()
+        .find_map(|entry| {
+            let pid = entry.file_name().to_str()?.parse::<i32>().ok()?;
+            let comm = std::fs::read_to_string(entry.path().join("comm")).ok()?;
+            (comm.trim_end() == LOCKER).then_some(pid)
         })
-    })
+}
+
+// blocks until `pid` exits, with no wake-ups meanwhile (a pidfd turns readable when it does)
+fn wait_for_exit(pid: i32) {
+    // SAFETY: pidfd_open(2) takes a pid and flags and returns a new descriptor or -1
+    let fd = unsafe { libc::syscall(libc::SYS_pidfd_open, pid, 0) };
+    let Ok(fd) = i32::try_from(fd) else {
+        return;
+    };
+    if fd < 0 {
+        // gone already, or too old a kernel: look once a second instead
+        while std::path::Path::new(&format!("/proc/{pid}")).exists() {
+            thread::sleep(Duration::from_secs(1));
+        }
+        return;
+    }
+    // SAFETY: fd is a fresh descriptor nothing else owns
+    let fd = unsafe { <OwnedFd as std::os::fd::FromRawFd>::from_raw_fd(fd) };
+    let mut poll = libc::pollfd {
+        fd: std::os::fd::AsRawFd::as_raw_fd(&fd),
+        events: libc::POLLIN,
+        revents: 0,
+    };
+    // SAFETY: one valid pollfd for the length passed; -1 waits until it's readable
+    while unsafe { libc::poll(&raw mut poll, 1, -1) } < 0 {}
 }
 
 #[cfg(test)]

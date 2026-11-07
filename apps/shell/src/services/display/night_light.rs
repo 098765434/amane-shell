@@ -100,8 +100,9 @@ pub struct NightLight {
     on: bool,
     temperature: u32,
     schedule: Schedule,
-    child: Option<Child>,
-    // turned back on after a restart, on the first poll
+    // the running wlsunset's process id; a thread of its own waits for it to exit
+    child: Option<u32>,
+    // turned back on after a restart, once the service listens
     restored: bool,
 }
 
@@ -120,30 +121,39 @@ impl Service for NightLight {
         }
     }
 
-    // to notice `wlsunset` dying under it
-    fn interval() -> Duration {
-        Duration::from_secs(5)
-    }
-
-    fn update(&mut self) -> bool {
-        if !self.restored {
-            self.restored = true;
-            self.child = start(self.temperature, self.schedule);
-            self.on = self.child.is_some();
-            return !self.on;
+    // turns it back on after a restart; after that a thread per wlsunset notices it exit
+    fn listen() {
+        let (restore, kelvin, schedule) = {
+            let light = Self::read();
+            (!light.restored, light.temperature, light.schedule)
+        };
+        if !restore {
+            return;
         }
-
-        let exited = self
-            .child
-            .as_mut()
-            .is_some_and(|child| !matches!(child.try_wait(), Ok(None)));
-        if exited {
-            eprintln!("amane-shell: wlsunset exited; night light is off");
-            self.child = None;
-            self.on = false;
-        }
-        exited
+        // started outside the write: stopping another wlsunset first takes a moment
+        let child = start(kelvin, schedule);
+        let mut light = Self::write();
+        light.restored = true;
+        light.on = child.is_some();
+        light.child = child;
     }
+}
+
+// when the wlsunset `pid` exits while it's still the one running, night light is off
+fn wait_for(mut child: Child) -> u32 {
+    let pid = child.id();
+    std::thread::spawn(move || {
+        let _ = child.wait();
+        let mut light = NightLight::write();
+        if light.child != Some(pid) {
+            light.quiet();
+            return;
+        }
+        eprintln!("amane-shell: wlsunset exited; night light is off");
+        light.child = None;
+        light.on = false;
+    });
+    pid
 }
 
 impl NightLight {
@@ -279,8 +289,8 @@ fn arguments(kelvin: u32, schedule: Schedule) -> Vec<String> {
 }
 
 /// `wlsunset` at `kelvin` on `schedule`, after stopping any other one;
-/// `None` when it isn't installed.
-fn start(kelvin: u32, schedule: Schedule) -> Option<Child> {
+/// `None` when it isn't installed. Called with no lock held.
+fn start(kelvin: u32, schedule: Schedule) -> Option<u32> {
     // another wlsunset still holding the screens would make ours fail
     let _ = run_now("pkill", &["-x".into(), "wlsunset".into()]);
     std::thread::sleep(Duration::from_millis(100));
@@ -293,12 +303,16 @@ fn start(kelvin: u32, schedule: Schedule) -> Option<Child> {
         .spawn()
         .map_err(|e| eprintln!("amane-shell: wlsunset: {e}"))
         .ok()
+        .map(wait_for)
 }
 
-fn stop(child: Option<Child>) {
-    if let Some(mut child) = child {
-        let _ = child.kill();
-        std::thread::spawn(move || child.wait());
+// its waiting thread reaps it
+fn stop(child: Option<u32>) {
+    if let Some(pid) = child.and_then(|pid| i32::try_from(pid).ok()) {
+        // SAFETY: a plain kill(2) of our own child, which its waiting thread hasn't reaped yet
+        unsafe {
+            libc::kill(pid, libc::SIGTERM);
+        }
     }
 }
 

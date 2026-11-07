@@ -2,10 +2,11 @@
 //! page isn't showing asks through the shell's alert, with the code both
 //! screens show; the page itself asks under its list while it shows.
 //!
-//! Synced from the alert surface's view, which reads `KdeConnect` for it
-//! and so runs again whenever a request comes or goes.
+//! A subscription to `KdeConnect` keeps the latest request and wakes the
+//! alert surface's view only when it comes or goes; the view syncs from that.
 
 use std::cell::RefCell;
+use std::sync::{Mutex, Once, PoisonError};
 
 use amane::{KdeConnect, Service};
 
@@ -21,18 +22,41 @@ thread_local! {
     static ASKED: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
-/// Shows the alert for a new request, or puts it away once the phone
-/// stopped asking.
-pub fn sync() {
-    let kdeconnect = KdeConnect::read();
-    let request = kdeconnect.pairing_request().map(|device| {
+// the phone asking now: its id, name and the code both screens show
+type Asking = (String, String, String);
+static LATEST: Mutex<Option<Asking>> = Mutex::new(None);
+
+fn asking(kdeconnect: &KdeConnect) -> Option<Asking> {
+    kdeconnect.pairing_request().map(|device| {
         (
             device.id().to_string(),
             device.name().to_string(),
             device.verification_key().to_string(),
         )
+    })
+}
+
+/// Shows the alert for a new request, or puts it away once the phone
+/// stopped asking.
+pub fn sync() {
+    static WATCH: Once = Once::new();
+    WATCH.call_once(|| {
+        KdeConnect::subscribe(|kdeconnect| {
+            let fresh = asking(kdeconnect);
+            let mut latest = LATEST.lock().unwrap_or_else(PoisonError::into_inner);
+            if *latest != fresh {
+                *latest = fresh;
+                alert::Requests::changed();
+            }
+        })
+        .forever();
+        *LATEST.lock().unwrap_or_else(PoisonError::into_inner) = asking(&KdeConnect::read());
     });
-    drop(kdeconnect);
+    alert::Requests::watch();
+    let request = LATEST
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone();
 
     let Some((id, name, key)) = request else {
         if ASKED.take().is_some() && alert::showing(NAME) {

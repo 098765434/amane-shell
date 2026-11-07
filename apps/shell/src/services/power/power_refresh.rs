@@ -5,47 +5,56 @@
 //!
 //! The change is niri's temporary kind (`niri msg output … mode`), so
 //! `displays.kdl` keeps the rate for AC. A config reload puts that back
-//! even on battery; the next check lowers it again. Checked every five
-//! seconds from amane's `Battery`, and niri is only asked while on battery
-//! or while a display waits to go back.
+//! even on battery; the next check lowers it again. Checked when amane's
+//! `Battery` or `Outputs` change, or the setting does; the outputs are only
+//! read while on battery or while a display waits to go back.
 
 use std::collections::BTreeMap;
 use std::sync::Once;
-use std::time::Duration;
 
-use amane::serde::Deserialize;
-use amane::{Battery, Service};
-use amane_kit::settings::displays;
+use amane::{Battery, Config, Outputs, Service, niri};
+use amane_kit::settings::{Displays, displays};
 
-use crate::services::run_now;
+use crate::services::Wake;
 
-const EVERY: Duration = Duration::from_secs(5);
-
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
-#[serde(crate = "amane::serde")]
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct Mode {
     width: u16,
     height: u16,
     refresh_rate: u32,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(crate = "amane::serde")]
+impl From<niri::Mode> for Mode {
+    fn from(mode: niri::Mode) -> Self {
+        Self {
+            width: mode.width,
+            height: mode.height,
+            refresh_rate: mode.refresh_rate,
+        }
+    }
+}
+
+#[derive(Debug)]
 struct Output {
     modes: Vec<Mode>,
     current_mode: Option<usize>,
 }
 
+static WAKE: Wake = Wake::new();
+
 /// Starts watching, once.
 pub fn watch() {
     static WATCH: Once = Once::new();
     WATCH.call_once(|| {
+        Battery::subscribe(|_| WAKE.nudge()).forever();
+        Outputs::subscribe(|_| WAKE.nudge()).forever();
+        Config::<Displays>::subscribe(|_| WAKE.nudge()).forever();
         std::thread::spawn(|| {
             // the mode each lowered display had on AC, by connector
             let mut lowered: BTreeMap<String, Mode> = BTreeMap::new();
             loop {
                 check(&mut lowered);
-                std::thread::sleep(EVERY);
+                WAKE.wait(None);
             }
         });
     });
@@ -99,35 +108,39 @@ fn slowest(modes: &[Mode], now: Mode) -> Mode {
         .unwrap_or(now)
 }
 
+// read only here, while a change is wanted: reading keeps amane's Outputs watched
 fn outputs() -> Option<BTreeMap<String, Output>> {
-    parse_outputs(&run_now(
-        "niri",
-        &["msg".into(), "--json".into(), "outputs".into()],
-    )?)
-}
-
-/// niri's `outputs` JSON, by output name.
-fn parse_outputs(json: &str) -> Option<BTreeMap<String, Output>> {
-    serde_json::from_str(json).ok()
+    let outputs = Outputs::read();
+    if outputs.all().is_empty() {
+        return None;
+    }
+    Some(
+        outputs
+            .all()
+            .iter()
+            .map(|output| {
+                (
+                    output.name.clone(),
+                    Output {
+                        modes: output.modes.iter().copied().map(Mode::from).collect(),
+                        current_mode: output.current_mode,
+                    },
+                )
+            })
+            .collect(),
+    )
 }
 
 fn set_mode(name: &str, mode: Mode) {
-    let target = format!(
-        "{}x{}@{:.3}",
-        mode.width,
-        mode.height,
-        f64::from(mode.refresh_rate) / 1000.
-    );
-    let _ = run_now(
-        "niri",
-        &[
-            "msg".into(),
-            "output".into(),
-            name.into(),
-            "mode".into(),
-            target,
-        ],
-    );
+    let mode = niri::Mode {
+        width: mode.width,
+        height: mode.height,
+        refresh_rate: mode.refresh_rate,
+        is_preferred: false,
+    };
+    if let Err(err) = niri::set_output_mode(name, mode) {
+        eprintln!("amane-shell: couldn't set {name}'s refresh rate: {err}");
+    }
 }
 
 #[cfg(test)]
@@ -155,6 +168,40 @@ mod tests {
     }
 
     const OUTPUTS: &str = include_str!("../../../tests/fixtures/niri/outputs.json");
+
+    /// niri's `outputs` JSON, by output name.
+    fn parse_outputs(json: &str) -> Option<BTreeMap<String, Output>> {
+        let outputs: serde_json::Value = serde_json::from_str(json).ok()?;
+        let mode = |m: &serde_json::Value| {
+            Some(Mode {
+                width: u16::try_from(m["width"].as_u64()?).ok()?,
+                height: u16::try_from(m["height"].as_u64()?).ok()?,
+                refresh_rate: u32::try_from(m["refresh_rate"].as_u64()?).ok()?,
+            })
+        };
+        Some(
+            outputs
+                .as_object()?
+                .iter()
+                .map(|(name, output)| {
+                    let modes = output["modes"]
+                        .as_array()
+                        .map(|modes| modes.iter().filter_map(mode).collect())
+                        .unwrap_or_default();
+                    let current_mode = output["current_mode"]
+                        .as_u64()
+                        .and_then(|i| usize::try_from(i).ok());
+                    (
+                        name.clone(),
+                        Output {
+                            modes,
+                            current_mode,
+                        },
+                    )
+                })
+                .collect(),
+        )
+    }
 
     #[test]
     fn the_recorded_panel_at_120_hz_lowers_to_60() {

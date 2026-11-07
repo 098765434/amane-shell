@@ -6,7 +6,7 @@
 //!
 //! An activity ends when its program ends it, after eight hours, or when
 //! its program leaves the bus. Ending it "after" a few seconds keeps its
-//! last state up that long. amane has no timers, so threads sleep those out.
+//! last state up that long. Timers on amane's event loop wait those out.
 
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant, SystemTime};
@@ -238,10 +238,11 @@ fn redraw_when_stale(stale_after: Option<u64>) {
     }
 }
 
+// on amane's event loop once `wait` has passed; `then` tells programs over the bus, so it
+// runs on a thread of its own then rather than on the UI thread
 fn after(wait: Duration, then: impl FnOnce() + Send + 'static) {
-    std::thread::spawn(move || {
-        std::thread::sleep(wait);
-        then();
+    amane::Timer::after(wait, move || {
+        std::thread::spawn(then);
     });
 }
 

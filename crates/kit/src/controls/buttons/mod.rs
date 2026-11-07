@@ -339,13 +339,16 @@ pub fn expect(id: &str, wanted: bool) {
     request_frame();
 }
 
+// each control's state by id, with when it was last asked for
+type States = HashMap<String, (Instant, Box<dyn Any>)>;
+
 thread_local! {
     // the buttons under the pointer, which show the hover layer: more than
     // one when a control sits inside another (a tile's disc in its tile)
     static HOVERED: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
 
-    // each switch's and segmented button's motion, by id
-    static STATES: RefCell<HashMap<String, Box<dyn Any>>> = RefCell::new(HashMap::new());
+    // each switch's and segmented button's motion, by id, with when it was last asked for
+    static STATES: RefCell<States> = RefCell::new(HashMap::new());
 
     // the button held down and when it last reported: the drag that
     // reports a press goes on reporting every motion after it
@@ -359,20 +362,35 @@ pub fn with_state<S: 'static, R>(
     init: impl FnOnce() -> S,
     f: impl FnOnce(&mut S) -> R,
 ) -> R {
+    let now = Instant::now();
     STATES.with_borrow_mut(|states| {
-        if !states.get(id).is_some_and(|state| state.is::<S>()) {
-            states.insert(id.to_string(), Box::new(init()));
+        if !states.get(id).is_some_and(|(_, state)| state.is::<S>()) {
+            prune(states, now);
+            states.insert(id.to_string(), (now, Box::new(init())));
         }
-        let state = states
-            .get_mut(id)
-            .and_then(|state| state.downcast_mut::<S>());
-        f(state.expect("just inserted"))
+        let (used, state) = states.get_mut(id).expect("just inserted");
+        *used = now;
+        f(state.downcast_mut::<S>().expect("just inserted"))
     })
 }
 
 /// Runs `f` on control `id`'s state, if it has one yet.
 pub fn with_existing<S: 'static, R>(id: &str, f: impl FnOnce(&mut S) -> R) -> Option<R> {
-    STATES.with_borrow_mut(|states| states.get_mut(id)?.downcast_mut::<S>().map(f))
+    STATES.with_borrow_mut(|states| {
+        let (used, state) = states.get_mut(id)?;
+        *used = Instant::now();
+        state.downcast_mut::<S>().map(f)
+    })
+}
+
+// controls come and go with their ids (a list's rows, a page's switches): once there are many,
+// the ones not asked for in a while are let go, and start fresh if they come back
+fn prune(states: &mut States, now: Instant) {
+    const MANY: usize = 512;
+    const UNUSED: std::time::Duration = std::time::Duration::from_secs(5 * 60);
+    if states.len() >= MANY {
+        states.retain(|_, (used, _)| now.duration_since(*used) < UNUSED);
+    }
 }
 
 /// The pointer entered or left the button `id`. amane redraws after any

@@ -833,12 +833,12 @@ fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
 /// The keyboard layout as an input menu shows it, a short code, with
 /// two or more; a click lists them to switch.
 fn keyboard() -> Option<Box<dyn Widget>> {
-    use crate::services::desktop::keyboard_layout::{KeyboardLayout, short};
+    use crate::services::desktop::keyboard_layout::{self, KeyboardLayout, short};
     let layouts = KeyboardLayout::read();
     if layouts.names().len() < 2 {
         return None;
     }
-    let name = layouts.name().unwrap_or_default().to_string();
+    let name = layouts.current().unwrap_or_default().to_string();
     drop(layouts);
     let code = short(&name);
     let width = text_width(&code, metrics().label()) + sys::space::inset::s() * 2.0;
@@ -848,11 +848,11 @@ fn keyboard() -> Option<Box<dyn Widget>> {
             .width(width.max(metrics().item_width))
             .on_press(|| {
                 let layouts = KeyboardLayout::read();
-                let current = layouts.current();
+                let current = layouts.current_index();
                 let mut menu = crate::surfaces::context_menu::ContextMenu::new();
                 for (index, name) in layouts.names().iter().enumerate() {
                     let mut row = crate::surfaces::context_menu::MenuItem::label(name.clone())
-                        .on_select(move || KeyboardLayout::switch(index));
+                        .on_select(move || keyboard_layout::switch(index));
                     if index == current {
                         row = row.icon(crate::surfaces::context_menu::Icon::glyph("\u{2713}"));
                     }

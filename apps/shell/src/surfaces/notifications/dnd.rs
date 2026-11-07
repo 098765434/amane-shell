@@ -9,6 +9,8 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use amane::Service;
+
+use crate::services::Wake;
 use chrono::{Days, Local, NaiveDateTime, NaiveTime, TimeZone};
 
 use crate::surfaces::context_menu::{self, ContextMenu, MenuItem};
@@ -38,9 +40,20 @@ impl Service for DoNotDisturb {
         Self { until }
     }
 
-    // only a timed one changes by itself, and half a minute late is fine
-    fn interval() -> Duration {
-        Duration::from_secs(30)
+    // only a timed one changes by itself: the listener waits for its end, or for a new setting
+    fn listen() {
+        loop {
+            let end = match Self::read().until {
+                Some(Until::At(end)) => Some(end),
+                _ => None,
+            };
+            WAKE.wait(end);
+
+            let mut dnd = Self::write();
+            if !dnd.update() {
+                dnd.quiet();
+            }
+        }
     }
 
     fn update(&mut self) -> bool {
@@ -54,6 +67,9 @@ impl Service for DoNotDisturb {
         false
     }
 }
+
+// a new setting moves the end the listener waits for
+static WAKE: Wake = Wake::new();
 
 impl DoNotDisturb {
     pub fn on(&self) -> bool {
@@ -72,6 +88,7 @@ impl DoNotDisturb {
     pub fn set(until: Option<Until>) {
         Self::write().until = until;
         save(until);
+        WAKE.nudge();
     }
 
     pub fn toggle() {

@@ -1,12 +1,12 @@
 //! A countdown the launcher's Start Timer action sets: one at a time, a
 //! notification when it runs out, and an activity in the bar while it
 //! runs.
-//! amane has no timers, so a thread sleeps it out.
+//! It runs out on a timer on amane's event loop, cancelled when replaced or stopped.
 
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 
-use amane::Notify;
+use amane::{Notify, Timer, TimerHandle};
 
 amane_kit::marker! {
     /// The timer started, ran out or was stopped: what asked how long
@@ -15,49 +15,49 @@ amane_kit::marker! {
 }
 
 struct Running {
-    // which start this is, so an older thread waking finds it replaced
-    id: u64,
     ends: SystemTime,
     label: String,
+    due: TimerHandle,
 }
 
 static TIMER: Mutex<Option<Running>> = Mutex::new(None);
-static STARTS: Mutex<u64> = Mutex::new(0);
 
 /// Starts a timer for `length`, replacing any running, called `label`.
 pub fn start(length: Duration, label: String) {
-    let id = {
-        let mut starts = STARTS.lock().unwrap_or_else(|e| e.into_inner());
-        *starts += 1;
-        *starts
-    };
-    *TIMER.lock().unwrap_or_else(|e| e.into_inner()) = Some(Running {
-        id,
-        ends: SystemTime::now() + length,
-        label,
-    });
+    let due = Timer::after(length, ran_out);
+    let replaced = TIMER
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .replace(Running {
+            ends: SystemTime::now() + length,
+            label,
+            due,
+        });
+    if let Some(replaced) = replaced {
+        replaced.due.cancel();
+    }
     Countdown::changed();
+}
+
+// on the event loop, when the running timer's time is up
+fn ran_out() {
+    let Some(done) = TIMER.lock().unwrap_or_else(|e| e.into_inner()).take() else {
+        return;
+    };
+    Countdown::changed();
+    // the notification goes over D-Bus, which isn't for the UI thread
     std::thread::spawn(move || {
-        std::thread::sleep(length);
-        let done = {
-            let mut timer = TIMER.lock().unwrap_or_else(|e| e.into_inner());
-            match timer.as_ref() {
-                Some(running) if running.id == id => timer.take(),
-                _ => None,
-            }
-        };
-        if let Some(done) = done {
-            Notify::new("Timer")
-                .body(&format!("{} is done", done.label))
-                .send();
-            Countdown::changed();
-        }
+        Notify::new("Timer")
+            .body(&format!("{} is done", done.label))
+            .send();
     });
 }
 
 /// Stops the timer running, if one is.
 pub fn cancel() {
-    *TIMER.lock().unwrap_or_else(|e| e.into_inner()) = None;
+    if let Some(running) = TIMER.lock().unwrap_or_else(|e| e.into_inner()).take() {
+        running.due.cancel();
+    }
     Countdown::changed();
 }
 

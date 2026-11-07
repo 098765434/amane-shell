@@ -140,6 +140,46 @@ pub fn library() -> &'static Library {
 }
 
 /// Resolve the bundled tokens for `key`, once per key.
+/// The table the generated functions read now. Working out the [`Key`] reads the appearance
+/// settings and service, so it's kept per thread and worked out again only after one of
+/// them changed; such a change redraws every window, since a view that only reads tokens
+/// hasn't read them itself.
+fn current() -> &'static Resolved {
+    use std::sync::Once;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    use amane::{Appearance, Config, Service};
+
+    static GENERATION: AtomicU64 = AtomicU64::new(1);
+    static WATCH: Once = Once::new();
+    thread_local! {
+        static CURRENT: Cell<Option<(u64, &'static Resolved)>> = const { Cell::new(None) };
+    }
+
+    if let Some(key) = OVERRIDE.with(Cell::get) {
+        return resolved(key);
+    }
+
+    WATCH.call_once(|| {
+        let changed = || {
+            GENERATION.fetch_add(1, Ordering::Release);
+            amane::mark_all();
+        };
+        Config::<crate::settings::Appearance>::subscribe(move |_| changed()).forever();
+        Appearance::subscribe(move |_| changed()).forever();
+    });
+
+    let generation = GENERATION.load(Ordering::Acquire);
+    if let Some((seen, table)) = CURRENT.with(Cell::get)
+        && seen == generation
+    {
+        return table;
+    }
+    let table = resolved(Key::current());
+    CURRENT.with(|current| current.set(Some((generation, table))));
+    table
+}
+
 pub fn resolved(key: Key) -> &'static Resolved {
     static CACHE: OnceLock<Mutex<HashMap<Key, &'static Resolved>>> = OnceLock::new();
     let mut cache = CACHE
@@ -240,12 +280,10 @@ impl Styled for Text {
 pub mod read {
     use amane::Color;
 
-    use super::{
-        Key, Resolved, Shadow, TextCase, TextDecoration, TextStyle, Value, font, resolved,
-    };
+    use super::{Resolved, Shadow, TextCase, TextDecoration, TextStyle, Value, font};
 
     fn get(name: &str) -> (&'static Resolved, &'static Value) {
-        let r = resolved(Key::current());
+        let r = super::current();
         let token = r
             .tokens
             .get(name)

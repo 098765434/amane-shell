@@ -1,13 +1,14 @@
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
-use amane::Service;
-use amane_kit::settings::status_bar;
-use chrono::{DateTime, Local};
+use amane::{Config, Logind, Service};
+use amane_kit::settings::{StatusBar, status_bar};
+use chrono::{DateTime, Local, Timelike};
 
-/// A tiny clock service: holds the wall-clock time and re-reads it once a
-/// second, signalling a redraw only when the bar's clock would read
-/// differently (so the bar repaints once a minute, or a second while it
-/// shows seconds).
+use crate::services::Wake;
+
+/// A tiny clock service: holds the wall-clock time and wakes when the bar's clock would next
+/// read differently: on the minute, or each second while it shows seconds or flashes its
+/// colons. A change of the bar's settings, or the computer waking from sleep, wakes it too.
 pub struct Clock {
     now: DateTime<Local>,
     // the bar's clock as last signalled
@@ -23,8 +24,18 @@ impl Service for Clock {
         }
     }
 
-    fn interval() -> Duration {
-        Duration::from_secs(1)
+    fn listen() {
+        Config::<StatusBar>::subscribe(|_| WAKE.nudge()).forever();
+        // a sleep that spans a suspend wakes late: the wake-up itself is the cue
+        Logind::subscribe(|_| WAKE.nudge()).forever();
+
+        loop {
+            WAKE.wait(Some(next_turn(SystemTime::now(), per_second())));
+            let mut clock = Self::write();
+            if !clock.update() {
+                clock.quiet();
+            }
+        }
     }
 
     fn update(&mut self) -> bool {
@@ -61,7 +72,6 @@ impl Clock {
 
     /// The hour and minute, for an analog clock's hands.
     pub fn hands(&self) -> (u32, u32) {
-        use chrono::Timelike;
         (self.now.hour(), self.now.minute())
     }
 
@@ -71,6 +81,31 @@ impl Clock {
             .format(status_bar().date_format.pattern())
             .to_string()
     }
+}
+
+static WAKE: Wake = Wake::new();
+
+// whether what the bar shows changes every second
+fn per_second() -> bool {
+    let bar = status_bar();
+    let pattern = format!("{}{}", bar.clock_pattern(true), bar.time_pattern());
+    bar.flash_separators
+        || ["%S", "%T", "%X", "%r", "%s"]
+            .iter()
+            .any(|s| pattern.contains(s))
+}
+
+// a moment past the next second, or minute, turning over
+fn next_turn(now: SystemTime, per_second: bool) -> SystemTime {
+    let local: DateTime<Local> = now.into();
+    let into_second = Duration::from_nanos(u64::from(local.nanosecond() % 1_000_000_000));
+    let into = if per_second {
+        into_second
+    } else {
+        Duration::from_secs(u64::from(local.second())) + into_second
+    };
+    let period = Duration::from_secs(if per_second { 1 } else { 60 });
+    now + period.saturating_sub(into) + Duration::from_millis(5)
 }
 
 // the clock as the bar shows it now, and its day, so a change of format or
@@ -85,4 +120,23 @@ fn shown(now: DateTime<Local>) -> String {
         bar.date_format.pattern()
     ))
     .to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wakes_just_past_the_next_turn() {
+        let now = SystemTime::now();
+        let minute = next_turn(now, false);
+        let at: DateTime<Local> = minute.into();
+        assert_eq!(at.second(), 0);
+        assert!(minute > now && minute <= now + Duration::from_secs(61));
+
+        let second = next_turn(now, true);
+        assert!(second > now && second <= now + Duration::from_millis(1010));
+        let at: DateTime<Local> = second.into();
+        assert!(at.nanosecond() < 50_000_000, "just past the turn");
+    }
 }

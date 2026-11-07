@@ -5,9 +5,9 @@
 //! list and the clock ([`alive`]): one shows from its arrival until its
 //! lifetime runs out, unless the user swiped it away, Do Not Disturb is on
 //! (critical ones still show), or the center is open. A small [`Toasts`]
-//! service ticks to notice a lifetime running out and keeps the little the
-//! list can't say: swiped toasts, and the pointer resting on one, which
-//! holds them all.
+//! service waits for the next lifetime to run out (or for the list, Do Not
+//! Disturb or the pointer to change) and keeps the little the list can't
+//! say: swiped toasts, and the pointer resting on one, which holds them all.
 //!
 //! Each toast is its own layer surface (a fixed set of [`SLOTS`]), sized to
 //! its card, so niri's blur frosts exactly the card; sliding and swiping
@@ -29,6 +29,7 @@ use crate::components::layout::blank;
 use crate::components::material::Material;
 use crate::components::motion::{self, Arrive, Item, Pose, Shown};
 use crate::components::panel::{Panel, is_open, overlay};
+use crate::services::Wake;
 use crate::tokens::{notification, sys};
 
 /// Layer-surface namespace of every toast; the niri `layer-rule` matches it.
@@ -83,9 +84,24 @@ impl Service for Toasts {
         }
     }
 
-    // a lifetime ends at most a tenth of a second late
-    fn interval() -> Duration {
-        Duration::from_millis(100)
+    /*
+     * waits for the next toast's lifetime to end, or for something its end is worked out from
+     * to change: the notifications, Do Not Disturb, the pointer on a toast, a swipe
+     */
+    fn listen() {
+        Notifications::subscribe(|_| WAKE.nudge()).forever();
+        DoNotDisturb::subscribe(|_| WAKE.nudge()).forever();
+
+        loop {
+            let next = {
+                let mut toasts = Self::write();
+                if !toasts.update() {
+                    toasts.quiet();
+                }
+                toasts.next_end(SystemTime::now())
+            };
+            WAKE.wait(next);
+        }
     }
 
     fn update(&mut self) -> bool {
@@ -127,7 +143,22 @@ impl Service for Toasts {
     }
 }
 
+// what the listener's next end is worked out from changed
+static WAKE: Wake = Wake::new();
+
 impl Toasts {
+    /// When the next toast up now goes, if one has a lifetime.
+    fn next_end(&self, now: SystemTime) -> Option<SystemTime> {
+        // Notifications is pushed, never polled, so this read keeps nothing awake
+        Notifications::read()
+            .list()
+            .iter()
+            .map(Toast::from)
+            .filter(|toast| alive(*toast, now, self))
+            .filter_map(|toast| end(toast, self))
+            .min()
+    }
+
     fn alive(&self, n: &Notification, now: SystemTime) -> bool {
         alive(Toast::from(n), now, self)
     }
@@ -150,11 +181,14 @@ impl Toasts {
                 toasts.held.insert(id, until);
             }
         }
+        drop(toasts);
+        WAKE.nudge();
     }
 
     /// Puts one toast away; it stays in the center.
     pub fn hide(id: u32, received: SystemTime) {
         Self::write().hidden.insert((id, received));
+        WAKE.nudge();
     }
 
     /// Puts every toast away, as the center opens.
@@ -167,6 +201,8 @@ impl Toasts {
         let mut toasts = Self::write();
         toasts.hidden.extend(all);
         toasts.hovered = false;
+        drop(toasts);
+        WAKE.nudge();
     }
 }
 
@@ -211,12 +247,16 @@ fn alive(toast: Toast, now: SystemTime, state: &Toasts) -> bool {
     if state.hovered && state.shown.contains(&toast.id) {
         return true;
     }
-    let Some(lifetime) = lifetime(toast.timeout, toast.urgency) else {
-        return true;
-    };
-    let end = toast.received + lifetime;
-    let end = state.held.get(&toast.id).map_or(end, |held| end.max(*held));
-    now < end
+    end(toast, state).is_none_or(|end| now < end)
+}
+
+/// When `toast` goes, unless it stays until the user acts (`None`), or the pointer holds it.
+fn end(toast: Toast, state: &Toasts) -> Option<SystemTime> {
+    if state.hovered && state.shown.contains(&toast.id) {
+        return None;
+    }
+    let end = toast.received + lifetime(toast.timeout, toast.urgency)?;
+    Some(state.held.get(&toast.id).map_or(end, |held| end.max(*held)))
 }
 
 // ───── layout ────────────────────────────────────────────────────────────────

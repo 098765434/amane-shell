@@ -8,8 +8,6 @@
 
 use amane::{Argument, Bus, Service};
 
-use crate::services::run;
-
 const LOGIND: &str = "org.freedesktop.login1";
 const MANAGER_PATH: &str = "/org/freedesktop/login1";
 const MANAGER: &str = "org.freedesktop.login1.Manager";
@@ -76,12 +74,11 @@ impl Session {
     }
 
     pub fn log_out() {
-        run(
-            "niri",
-            ["msg", "action", "quit", "--skip-confirmation"]
-                .map(String::from)
-                .to_vec(),
-        );
+        std::thread::spawn(|| {
+            if let Err(err) = amane::niri::quit() {
+                eprintln!("amane-shell: couldn't log out: {err}");
+            }
+        });
     }
 }
 

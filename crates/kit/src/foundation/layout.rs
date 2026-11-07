@@ -128,6 +128,41 @@ pub fn text_width(text: &str, style: TextStyle) -> f32 {
 /// can't centre each line of wrapped text, so a caption centred under a
 /// tile is drawn a line at a time from this.
 pub fn wrapped_lines(text: &str, style: TextStyle, width: f32, max_lines: usize) -> Vec<String> {
+    // a rebuild asks again for every row, and shaping each candidate line isn't cheap: the
+    // answers are kept per thread, the whole lot let go once there are many
+    type Wrap = (String, [u32; 4], u16, bool, u32, usize);
+    thread_local! {
+        static WRAPPED: std::cell::RefCell<std::collections::HashMap<Wrap, Vec<String>>> =
+            std::cell::RefCell::new(std::collections::HashMap::new());
+    }
+    let key: Wrap = (
+        text.to_owned(),
+        [
+            style.size.to_bits(),
+            style.line_height.unwrap_or(0.0).to_bits(),
+            style.letter_spacing.unwrap_or(0.0).to_bits(),
+            // the family is a 'static name, so its address tells it apart
+            style.family.as_ptr() as usize as u32,
+        ],
+        style.weight,
+        style.italic,
+        width.to_bits(),
+        max_lines,
+    );
+    if let Some(lines) = WRAPPED.with_borrow(|known| known.get(&key).cloned()) {
+        return lines;
+    }
+    let lines = wrap(text, style, width, max_lines);
+    WRAPPED.with_borrow_mut(|known| {
+        if known.len() >= 1024 {
+            known.clear();
+        }
+        known.insert(key, lines.clone());
+    });
+    lines
+}
+
+fn wrap(text: &str, style: TextStyle, width: f32, max_lines: usize) -> Vec<String> {
     let fits = |line: &str| text_width(line, style) <= width;
     let mut lines: Vec<String> = Vec::new();
     let mut line = String::new();

@@ -23,6 +23,8 @@ use std::time::{Duration, Instant};
 
 use amane::Service;
 
+use crate::services::Wake;
+
 /// How often it reads, and how many readings each graph keeps (15 min).
 const TICK: Duration = Duration::from_secs(2);
 pub const HISTORY: usize = 450;
@@ -38,6 +40,9 @@ const STALLED_SKIP: u32 = 10;
 
 /// Whether a system widget shows anywhere; while none does, nothing is read.
 static WATCHED: AtomicBool = AtomicBool::new(false);
+
+// a widget showing again wakes the paused listener
+static WAKE: Wake = Wake::new();
 
 /// The readings of one thing over time, oldest first.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -181,6 +186,8 @@ impl Service for SystemStats {
             if !WATCHED.load(Ordering::Relaxed) {
                 // a reading after the pause would average over all of it
                 probe.paused = true;
+                // no wake-ups until a widget shows again
+                WAKE.wait(None);
                 continue;
             }
             let reading = probe.read();
@@ -198,7 +205,9 @@ impl Service for SystemStats {
 impl SystemStats {
     /// Says whether a system widget shows, so the readings go on or pause.
     pub fn watch(watched: bool) {
-        WATCHED.store(watched, Ordering::Relaxed);
+        if !WATCHED.swap(watched, Ordering::Relaxed) && watched {
+            WAKE.nudge();
+        }
     }
 
     fn apply(&mut self, reading: Reading) {

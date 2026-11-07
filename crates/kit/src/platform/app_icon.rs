@@ -8,7 +8,7 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use amane::{Apps, Center, DesktopApp, Image, Rectangle, Service, Size, Text};
 
@@ -62,21 +62,20 @@ pub fn icon_for(app_id: &str) -> Option<PathBuf> {
         return None;
     }
 
+    if let Some(path) = with_entry(app_id, |app| app.icon_path().map(Path::to_path_buf)).flatten() {
+        return Some(path);
+    }
+    // an app with no desktop entry may still have a theme icon by its id, or its last part
     let needle = app_id.to_lowercase();
-    let last = needle.rsplit('.').next().unwrap_or(&needle).to_string();
-
-    entry_for(app_id)
-        .and_then(|app| app.icon_path().map(|path| path.to_path_buf()))
-        // an app with no desktop entry may still have a theme icon by its id
-        .or_else(|| Apps::find_icon(&needle))
-        .or_else(|| Apps::find_icon(&last))
+    let last = needle.rsplit('.').next().unwrap_or(&needle);
+    Apps::find_icon(&needle).or_else(|| (last != needle).then(|| Apps::find_icon(last)).flatten())
 }
 
 /// The name an app with this app_id goes by: its desktop entry's, else the
 /// id's last dotted segment.
 pub fn name_for(app_id: &str) -> Option<String> {
-    if let Some(app) = entry_for(app_id) {
-        return Some(app.name().to_string());
+    if let Some(name) = with_entry(app_id, |app| app.name().to_string()) {
+        return Some(name);
     }
     app_id
         .rsplit('.')
@@ -88,6 +87,12 @@ pub fn name_for(app_id: &str) -> Option<String> {
 /// The desktop entry a window's app_id belongs to, matched as [`icon_for`]
 /// says.
 pub fn entry_for(app_id: &str) -> Option<DesktopApp> {
+    with_entry(app_id, DesktopApp::clone)
+}
+
+/// Runs `f` on the desktop entry a window's app_id belongs to, without copying it: the dock
+/// and notifications ask for every icon on every frame.
+pub fn with_entry<R>(app_id: &str, f: impl FnOnce(&DesktopApp) -> R) -> Option<R> {
     if app_id.is_empty() {
         return None;
     }
@@ -110,7 +115,7 @@ pub fn entry_for(app_id: &str) -> Option<DesktopApp> {
         }
     })?;
 
-    apps.list().get(index).cloned()
+    apps.list().get(index).map(f)
 }
 
 // the list an index was made from (its address and length), and each name to

@@ -159,9 +159,21 @@ fn shader() -> Option<&'static Path> {
             .map(PathBuf::from)
             .unwrap_or_else(std::env::temp_dir)
             .join("amane-shell");
-        let path = dir.join("glass.wgsl");
+        // named for its text, so the shell and Shell Settings of different builds don't
+        // overwrite each other's, and written to a part file first, so neither ever loads
+        // half of one
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        std::hash::Hash::hash(SOURCE, &mut hasher);
+        let path = dir.join(format!(
+            "glass-{:016x}.wgsl",
+            std::hash::Hasher::finish(&hasher)
+        ));
+        let part = path.with_extension(format!("part{}", std::process::id()));
 
-        match std::fs::create_dir_all(&dir).and_then(|()| std::fs::write(&path, SOURCE)) {
+        let written = std::fs::create_dir_all(&dir)
+            .and_then(|()| std::fs::write(&part, SOURCE))
+            .and_then(|()| std::fs::rename(&part, &path));
+        match written {
             Ok(()) => Some(path),
             Err(e) => {
                 eprintln!("amane-shell: {}: {e}", path.display());

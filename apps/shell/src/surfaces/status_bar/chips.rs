@@ -121,20 +121,16 @@ fn privacy_menu() {
 /// helper), off the event loop.
 fn focus_pid(pid: u64) {
     std::thread::spawn(move || {
-        let Some(json) =
-            crate::services::run_now("niri", &["msg".into(), "--json".into(), "windows".into()])
-        else {
+        let Ok(windows) = amane::niri::windows() else {
             return;
         };
-        let Ok(windows) = serde_json::from_str::<serde_json::Value>(&json) else {
-            return;
-        };
+        let windows: Vec<(u64, Option<i32>)> = windows.iter().map(|w| (w.id, w.pid)).collect();
         let mut wanted = Some(pid);
         // a recording helper is often a child of the app with the window
         for _ in 0..4 {
             let Some(pid) = wanted else { break };
             if let Some(id) = window_for_pid(&windows, pid) {
-                amane::spawn(&format!("niri msg action focus-window --id {id}"));
+                let _ = amane::niri::focus_window(id);
                 return;
             }
             wanted = parent(pid);
@@ -142,13 +138,12 @@ fn focus_pid(pid: u64) {
     });
 }
 
-/// The id of the window process `pid` owns, in niri's `windows` JSON.
-fn window_for_pid(windows: &serde_json::Value, pid: u64) -> Option<u64> {
-    windows.as_array()?.iter().find_map(|window| {
-        (window["pid"].as_u64() == Some(pid))
-            .then(|| window["id"].as_u64())
-            .flatten()
-    })
+/// The id of the window process `pid` owns, among windows' ids and processes.
+fn window_for_pid(windows: &[(u64, Option<i32>)], pid: u64) -> Option<u64> {
+    windows
+        .iter()
+        .find(|(_, owner)| owner.and_then(|owner| u64::try_from(owner).ok()) == Some(pid))
+        .map(|(id, _)| *id)
 }
 
 fn parent(pid: u64) -> Option<u64> {
@@ -169,12 +164,21 @@ mod tests {
 
     #[test]
     fn a_process_finds_its_window() {
-        let windows: serde_json::Value =
+        let json: serde_json::Value =
             serde_json::from_str(include_str!("../../../tests/fixtures/niri/windows.json"))
                 .expect("niri's windows JSON");
+        let windows: Vec<(u64, Option<i32>)> = json
+            .as_array()
+            .expect("a list")
+            .iter()
+            .map(|w| {
+                let pid = w["pid"].as_i64().and_then(|pid| i32::try_from(pid).ok());
+                (w["id"].as_u64().expect("an id"), pid)
+            })
+            .collect();
         assert_eq!(window_for_pid(&windows, 3100), Some(5));
         assert_eq!(window_for_pid(&windows, 2315), Some(2));
         assert_eq!(window_for_pid(&windows, 1), None);
-        assert_eq!(window_for_pid(&serde_json::Value::Null, 3100), None);
+        assert_eq!(window_for_pid(&[], 3100), None);
     }
 }

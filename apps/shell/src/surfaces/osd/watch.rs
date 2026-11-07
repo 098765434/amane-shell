@@ -21,7 +21,6 @@ use super::keys::{airplane_readout, just_pressed, profile_readout};
 use super::{Readout, show};
 use crate::components::icons::{ICON_CAPS_LOCK, ICON_NUM_LOCK, audio_glyph};
 use crate::components::panel::{Panel, is_open};
-use crate::services::desktop::lock_keys::LockKeys;
 use crate::services::network::rfkill::Rfkill;
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
 
@@ -67,7 +66,9 @@ fn read() -> Seen {
         .then(|| (keyboard.level(), keyboard.max()));
     drop(keyboard);
 
-    let locks = *LockKeys::read();
+    let locks = amane::LockKeys::read();
+    let (caps, num) = (locks.caps_lock(), locks.num_lock());
+    drop(locks);
 
     let radios = Rfkill::read();
     let airplane = radios.present().then(|| radios.airplane());
@@ -86,8 +87,8 @@ fn read() -> Seen {
         mic_muted,
         output,
         light,
-        caps: locks.caps(),
-        num: locks.num(),
+        caps: Some(caps),
+        num: Some(num),
         airplane,
         profile,
     }

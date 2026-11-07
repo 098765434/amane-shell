@@ -160,7 +160,8 @@ fn counting(name: &str, on: bool) {
 }
 
 /// A second's tick for the dialogs counting down: it redraws the windows
-/// that read it once a second, and stays quiet while none counts.
+/// that read it once a second, and stops once no window has read it for a
+/// couple of seconds (only a counting dialog reads it).
 struct Tick;
 
 impl Service for Tick {
@@ -170,6 +171,10 @@ impl Service for Tick {
 
     fn interval() -> Duration {
         Duration::from_secs(1)
+    }
+
+    fn idle_stop() -> Option<Duration> {
+        Some(Duration::from_secs(2))
     }
 
     fn update(&mut self) -> bool {

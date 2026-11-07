@@ -3,11 +3,9 @@
 //! draws its search text itself rather than focusing a `TextInput` (so
 //! every key reaches its `on_key`) keeps one of these and hands it the keys
 //! ([`Field::handle`]); the launcher and Quick Settings' Customize window
-//! do. Copying and pasting go through wl-clipboard ([`copy`], [`paste`]).
+//! do. Copying and pasting go through amane's `Clipboard` ([`copy`], [`paste`]).
 
 use amane::{Key, Modifiers};
-
-use crate::services::{run, run_now};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Field {
@@ -137,7 +135,11 @@ impl Field {
     /// caret (Shift extends the selection), and Ctrl+A/C/X/V select all,
     /// copy, cut and paste. Other chords (Alt, Super) are swallowed, not
     /// typed. Whether the key was one of the field's at all.
-    pub(crate) fn handle(&mut self, key: Key, held: Modifiers) -> bool {
+    ///
+    /// A paste arrives later, once the program that copied has answered:
+    /// `pasted` gets the text then, on the event loop, to insert into the field
+    /// where its owner keeps it.
+    pub(crate) fn handle(&mut self, key: Key, held: Modifiers, pasted: fn(String)) -> bool {
         if held.ctrl
             && let Key::Character(letter) = key
         {
@@ -148,11 +150,7 @@ impl Field {
                     copy(&self.selected());
                     self.delete_selection();
                 }
-                'v' => {
-                    if let Some(text) = paste() {
-                        self.insert(&text);
-                    }
-                }
+                'v' => paste(pasted),
                 _ => return false,
             }
             return true;
@@ -191,16 +189,19 @@ impl Field {
     }
 }
 
-/// Puts `text` on the clipboard (`wl-copy`).
+/// Puts `text` on the clipboard, from an input handler (the compositor wants a key or a click
+/// behind a copy).
 pub(crate) fn copy(text: &str) {
     if !text.is_empty() {
-        run("wl-copy", vec![String::from("--"), text.to_string()]);
+        amane::Clipboard::copy(text);
     }
 }
 
-/// The clipboard's text (`wl-paste`). Blocks for as long as it takes.
-pub(crate) fn paste() -> Option<String> {
-    run_now("wl-paste", &[String::from("--no-newline")])
+/// Calls `then` with the clipboard's text on the event loop, once the program that copied has
+/// answered; never when there's no text. The UI thread never waits: when the shell itself owns
+/// the clipboard (a password the vault copied), it's the one that answers.
+pub(crate) fn paste(then: impl FnOnce(String) + Send + 'static) {
+    amane::Clipboard::paste(then);
 }
 
 #[cfg(test)]
@@ -277,24 +278,24 @@ mod tests {
             ..Modifiers::default()
         };
         let mut field = Field::new();
-        assert!(field.handle(Key::Character('h'), none));
-        assert!(field.handle(Key::Character('i'), none));
-        assert!(field.handle(Key::Space, none));
+        assert!(field.handle(Key::Character('h'), none, |_| {}));
+        assert!(field.handle(Key::Character('i'), none, |_| {}));
+        assert!(field.handle(Key::Space, none, |_| {}));
         assert_eq!(field.text(), "hi ");
-        assert!(field.handle(Key::Backspace, none));
-        assert!(field.handle(Key::Home, none));
-        assert!(field.handle(Key::Right, shift));
+        assert!(field.handle(Key::Backspace, none, |_| {}));
+        assert!(field.handle(Key::Home, none, |_| {}));
+        assert!(field.handle(Key::Right, shift, |_| {}));
         assert_eq!(field.selected(), "h");
-        assert!(field.handle(Key::End, none));
+        assert!(field.handle(Key::End, none, |_| {}));
         assert_eq!(field.caret(), 2);
         // not the field's: Enter, Escape, a Super chord
-        assert!(!field.handle(Key::Enter, none));
-        assert!(!field.handle(Key::Escape, none));
+        assert!(!field.handle(Key::Enter, none, |_| {}));
+        assert!(!field.handle(Key::Escape, none, |_| {}));
         let logo = Modifiers {
             logo: true,
             ..Modifiers::default()
         };
-        assert!(!field.handle(Key::Character('q'), logo));
+        assert!(!field.handle(Key::Character('q'), logo, |_| {}));
         assert_eq!(field.text(), "hi");
     }
 

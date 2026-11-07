@@ -30,6 +30,13 @@ amane_kit::marker! {
     pub Alert
 }
 
+amane_kit::marker! {
+    /// A pairing request came or went: the alert window syncs again. Bluetooth and KDE Connect
+    /// change all the time (battery levels, device lists), so the view reads this rather than
+    /// them.
+    pub Requests
+}
+
 /// Layer-surface namespace; the niri `layer-rule` matches it.
 pub const ALERT_NS: &str = "amane.alert";
 
@@ -79,7 +86,7 @@ fn unfold(open: bool) -> f32 {
 /// The surface: hidden while no alert shows, else the card, swelling in.
 pub fn surface() -> LayerWindow {
     // a device or phone asking to pair, or polkit asking for a password,
-    // asks here; reading Bluetooth, KdeConnect and Polkit for it wakes this view
+    // asks here; a request coming or going wakes this view (Requests, Polkit, PinEntry)
     bluetooth::sync();
     phone::sync();
     polkit::sync();

@@ -8,7 +8,9 @@
 //! (`org.freedesktop.Application.ActivateAction("quit")`), as GNOME does,
 //! and kills it with `flatpak kill` when it doesn't answer that.
 
-use amane::{Bus, Service, Value};
+use std::collections::BTreeMap;
+
+use amane::{Argument, Bus, Service, Value};
 
 use crate::services::run_now;
 
@@ -56,23 +58,19 @@ impl BackgroundApps {
         let app_id = app_id.to_string();
         std::thread::spawn(move || {
             let path = format!("/{}", app_id.replace('.', "/").replace('-', "_"));
-            let asked = run_now(
-                "gdbus",
+            // ActivateAction(s action, av parameter, a{sv} platform_data)
+            let asked = Bus::session().try_call(
+                &app_id,
+                &path,
+                "org.freedesktop.Application",
+                "ActivateAction",
                 &[
-                    "call".into(),
-                    "--session".into(),
-                    "--dest".into(),
-                    app_id.clone(),
-                    "--object-path".into(),
-                    path,
-                    "--method".into(),
-                    "org.freedesktop.Application.ActivateAction".into(),
-                    "quit".into(),
-                    "[]".into(),
-                    "{}".into(),
+                    Argument::from("quit"),
+                    Argument::Variants(Vec::new()),
+                    Argument::Map(BTreeMap::new()),
                 ],
             );
-            if asked.is_none() {
+            if asked.is_err() {
                 let _ = run_now("flatpak", &["kill".into(), app_id]);
             }
         });

@@ -3,10 +3,10 @@
 //! kept in `$XDG_STATE_HOME/amane-shell/clipboard/`, an index and a file a
 //! copy.
 //!
-//! It watches the clipboard through wl-clipboard (`wl-paste --watch`),
-//! which follows the compositor's selection without needing the keyboard,
-//! and reads each new copy's best kind: a PNG or JPEG image, a list of
-//! files, or text. A copy a password manager marks as one
+//! It follows the clipboard through amane's `ClipboardWatcher` (the
+//! compositor's data-control protocol, which needs no keyboard focus and
+//! starts no program), and reads each new copy's best kind: a PNG or JPEG
+//! image, a list of files, or text. A copy a password manager marks as one
 //! (`x-kde-passwordManagerHint`), or made in an app it's told to leave
 //! out, isn't kept. Pasting puts a copy back with `wl-copy` and, once the
 //! window it's for has the keyboard again, types Ctrl+V into it (`wtype`;
@@ -14,14 +14,14 @@
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use std::process::{Child, Command, Stdio};
+use std::process::{Command, Stdio};
 use std::sync::Mutex;
+use std::sync::mpsc::{self, Sender};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use amane::serde::{Deserialize, Serialize};
-use amane::{Service, Windows};
+use amane::{ClipboardWatcher, Service, Subscription, Windows};
 use amane_kit::settings::ClipboardHistory as Settings;
 
 use crate::services::{run_now, save_state, state_file};
@@ -88,8 +88,8 @@ fn extension(mime: &str) -> &'static str {
 
 struct History {
     clips: Vec<Clip>,
-    // the watcher, while the history is on
-    watch: Option<Child>,
+    // following the clipboard, while the history is on
+    watch: Option<Subscription>,
 }
 
 static HISTORY: Mutex<Option<History>> = Mutex::new(None);
@@ -125,66 +125,51 @@ pub fn clips() -> Vec<Clip> {
 /// on every frame.
 pub fn sync(settings: &Settings) {
     let on = settings.enabled;
-    let start = with(|history| {
-        // a watcher that died (wl-paste missing, the session going) is let go
-        if let Some(child) = &mut history.watch
-            && child.try_wait().ok().flatten().is_some()
-        {
+    let start = with(|history| match (on, history.watch.is_some()) {
+        (true, false) => true,
+        (false, true) => {
+            // dropping the subscription stops it
             history.watch = None;
+            false
         }
-        match (on, history.watch.is_some()) {
-            (true, false) => true,
-            (false, true) => {
-                if let Some(mut child) = history.watch.take() {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                }
-                false
-            }
-            _ => false,
-        }
+        _ => false,
     });
     if start {
-        watch(settings.clone());
+        let watch = watch(settings.clone());
+        with(|history| history.watch = Some(watch));
     }
 }
 
-/// Runs `wl-paste --watch`, which runs a command at every new copy; its
-/// line out is the cue to read the copy.
-fn watch(settings: Settings) {
-    let child = Command::new("wl-paste")
-        .args(["--watch", "sh", "-c", "cat > /dev/null; echo"])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn();
-    let mut child = match child {
-        Ok(child) => child,
-        Err(e) => {
-            eprintln!("amane-shell: clipboard history: wl-paste: {e}");
+/// Each new copy goes to a reader thread: reading it can wait on the program that copied,
+/// which mustn't hold up amane's other subscriptions.
+fn watch(settings: Settings) -> Subscription {
+    // the settings it was turned on with, and the kinds a copy is offered as
+    type Copy = (Settings, Vec<String>);
+    static READER: Mutex<Option<Sender<Copy>>> = Mutex::new(None);
+    let reader = READER
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get_or_insert_with(|| {
+            let (sender, copies) = mpsc::channel::<Copy>();
+            std::thread::spawn(move || {
+                for (settings, types) in copies {
+                    take(&settings, &types);
+                }
+            });
+            sender
+        })
+        .clone();
+    ClipboardWatcher::subscribe(move |clipboard| {
+        if clipboard.mime_types().is_empty() {
             return;
         }
-    };
-    let Some(out) = child.stdout.take() else {
-        return;
-    };
-    with(|history| history.watch = Some(child));
-    std::thread::spawn(move || {
-        for line in BufReader::new(out).lines() {
-            if line.is_err() {
-                break;
-            }
-            take(&settings);
-        }
-    });
+        let _ = reader.send((settings.clone(), clipboard.mime_types().to_vec()));
+    })
 }
 
-/// Reads the copy just made, and keeps it unless it shouldn't be.
-fn take(settings: &Settings) {
-    let Some(types) = run_now("wl-paste", &[String::from("--list-types")]) else {
-        return;
-    };
-    let types: Vec<String> = types.lines().map(String::from).collect();
+/// Reads the copy just made, offered as `types`, and keeps it unless it shouldn't be.
+fn take(settings: &Settings, types: &[String]) {
+    let types = types.to_vec();
     if is_secret(&types) {
         return;
     }
@@ -200,15 +185,10 @@ fn take(settings: &Settings) {
     let Some((mime, kind)) = pick(&types, settings.images) else {
         return;
     };
-    let Ok(out) = Command::new("wl-paste")
-        .args(["--no-newline", "--type", &mime])
-        .stdin(Stdio::null())
-        .stderr(Stdio::null())
-        .output()
-    else {
+    // the bytes as copied (what `wl-paste --no-newline` read)
+    let Ok(bytes) = ClipboardWatcher::contents(&mime) else {
         return;
     };
-    let bytes = out.stdout;
     if bytes.is_empty() || bytes.len() > ITEM_BYTES {
         return;
     }
@@ -275,15 +255,10 @@ pub fn put_back(clip: &Clip, paste: bool) {
             return;
         }
         std::thread::sleep(REFOCUS);
-        let app = run_now(
-            "niri",
-            &[
-                String::from("msg"),
-                String::from("--json"),
-                String::from("focused-window"),
-            ],
-        )
-        .and_then(|json| focused_app_id(&json));
+        let app = amane::niri::focused_window()
+            .ok()
+            .flatten()
+            .and_then(|window| window.app_id);
         let chord: Vec<String> = paste_chord(app.as_deref())
             .iter()
             .map(|arg| arg.to_string())
@@ -441,11 +416,6 @@ fn now() -> u64 {
 
 /// The app_id in niri's `focused-window` JSON; none with no window focused
 /// (`null`) or no app_id.
-fn focused_app_id(json: &str) -> Option<String> {
-    let window: serde_json::Value = serde_json::from_str(json).ok()?;
-    window.get("app_id")?.as_str().map(String::from)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -534,13 +504,5 @@ mod tests {
     #[test]
     fn text_runs_together_in_its_preview() {
         assert_eq!(preview("  one\n\ntwo   three "), "one two three");
-    }
-
-    #[test]
-    fn the_focused_windows_app_id_is_read() {
-        let json = include_str!("../../../tests/fixtures/niri/focused-window.json");
-        assert_eq!(focused_app_id(json).as_deref(), Some("code"));
-        assert_eq!(focused_app_id("null"), None);
-        assert_eq!(focused_app_id(r#"{"id": 1, "app_id": null}"#), None);
     }
 }

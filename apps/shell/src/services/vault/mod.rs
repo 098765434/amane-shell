@@ -21,15 +21,18 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Condvar, Mutex, PoisonError};
 use std::thread;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 
 use amane::{Argument, Bus, FieldOwner, Service};
 
 pub use identity::Identity;
 pub use rbw::{Entry, Error, Status};
 
-// how often the vault's state is looked at while nothing asks
-const LOOK_EVERY: Duration = Duration::from_secs(15);
+// how soon after the last look a view's look_soon() looks again
+const LOOK_AGAIN: Duration = Duration::from_secs(5);
+
+// past the agent's lock timeout, so the vault has locked by itself when it's looked at
+const LOCK_SLACK: Duration = Duration::from_secs(5);
 
 const LOGIND: &str = "org.freedesktop.login1";
 const MANAGER_PATH: &str = "/org/freedesktop/login1";
@@ -61,22 +64,47 @@ pub struct Vault {
 // a nudge for the watcher to look again at once
 static LOOK: (Mutex<bool>, Condvar) = (Mutex::new(false), Condvar::new());
 
+// when the watcher last looked
+static LOOKED: Mutex<Option<Instant>> = Mutex::new(None);
+
 impl Service for Vault {
     fn new() -> Self {
         Self::default()
     }
 
+    /*
+     * rbw says nothing when the vault locks or unlocks, so it's looked at when asked (a fill, the
+     * launcher's passwords, a command here) and, while unlocked, once the agent's lock timeout
+     * could have locked it; never on a clock of its own
+     */
     fn listen() {
         thread::spawn(watch_lock);
 
         loop {
             look();
+            *LOOKED.lock().unwrap_or_else(PoisonError::into_inner) = Some(Instant::now());
+
+            let timeout = {
+                let vault = Vault::read();
+                (vault.status == Status::Unlocked).then(|| {
+                    let lock = vault.config.as_ref().map_or(3600, |c| c.lock_timeout);
+                    Duration::from_secs(lock) + LOCK_SLACK
+                })
+            };
 
             let (asked, nudge) = &LOOK;
             let asked = asked.lock().unwrap_or_else(PoisonError::into_inner);
-            let (mut asked, _) = nudge
-                .wait_timeout_while(asked, LOOK_EVERY, |asked| !*asked)
-                .unwrap_or_else(PoisonError::into_inner);
+            let mut asked = match timeout {
+                Some(timeout) => {
+                    nudge
+                        .wait_timeout_while(asked, timeout, |asked| !*asked)
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .0
+                }
+                None => nudge
+                    .wait_while(asked, |asked| !*asked)
+                    .unwrap_or_else(PoisonError::into_inner),
+            };
             *asked = false;
         }
     }
@@ -108,6 +136,18 @@ impl Vault {
     /// rbw's settings: the server, the email and the auto-lock time.
     pub fn config(&self) -> Option<&rbw::Config> {
         self.config.as_ref()
+    }
+
+    /// Looks at the vault again unless it was looked at a moment ago, for a view about to show
+    /// its entries, like the launcher's passwords.
+    pub fn look_soon() {
+        let recent = LOOKED
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_some_and(|at| at.elapsed() < LOOK_AGAIN);
+        if !recent {
+            Self::look_now();
+        }
     }
 
     /// Looks at the vault again now, as after the popup opens.

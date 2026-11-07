@@ -5,17 +5,19 @@
 //! Nothing but the place name and its coordinates leave the machine.
 
 use std::process::Command;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
-use amane::Service;
-use amane_kit::settings::status_bar;
+use amane::{Config, Service};
+use amane_kit::settings::{StatusBar, status_bar};
 use serde_json::Value;
+
+use crate::services::Wake;
 
 /// How often the weather is read again.
 const EVERY: Duration = Duration::from_secs(30 * 60);
 
-/// How often the settings are looked at for a change.
-const LOOK: Duration = Duration::from_secs(5);
+// a change of the bar's settings wakes the listener
+static WAKE: Wake = Wake::new();
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Weather {
@@ -40,6 +42,8 @@ impl Service for Weather {
     }
 
     fn listen() {
+        Config::<StatusBar>::subscribe(|_| WAKE.nudge()).forever();
+
         let mut asked: Option<(String, Instant)> = None;
         let mut found: Option<(String, (f64, f64, String))> = None;
         loop {
@@ -66,7 +70,12 @@ impl Service for Weather {
                 }
                 asked = Some((place, Instant::now()));
             }
-            std::thread::sleep(LOOK);
+            // the next read is due in half an hour, while it's on; a setting may change sooner
+            let next = asked
+                .as_ref()
+                .filter(|_| on)
+                .map(|(_, at)| SystemTime::now() + EVERY.saturating_sub(at.elapsed()));
+            WAKE.wait(next);
         }
     }
 }

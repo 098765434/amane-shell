@@ -9,19 +9,13 @@
 //! `Video/Source` node that's running. Streams that only watch an output
 //! (visualisers, `stream.capture.sink`) and the shell's own aren't counted.
 //!
-//! Screen sharing is niri's to know (`niri msg --json casts`), polled.
+//! Screen sharing is niri's to know: amane's `Casts` follows niri's cast events.
 
+use amane::{Casts, Service, niri};
+use serde_json::Value;
 use std::collections::{BTreeSet, HashMap};
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
-use std::time::Duration;
-
-use amane::Service;
-use serde_json::Value;
-
-use crate::services::run_now;
-
-const CASTS_EVERY: Duration = Duration::from_secs(2);
 
 #[derive(Default, PartialEq)]
 pub struct Privacy {
@@ -60,7 +54,18 @@ impl Service for Privacy {
     }
 
     fn listen() {
-        std::thread::spawn(watch_casts);
+        Casts::subscribe(|casts| {
+            let casts = sharing(casts.all());
+            if Privacy::read().casts != casts {
+                Privacy::write().casts = casts;
+            }
+        })
+        .forever();
+        // a cast going before the subscription would otherwise wait for the next change
+        let casts = sharing(Casts::read().all());
+        if Privacy::read().casts != casts {
+            Privacy::write().casts = casts;
+        }
         watch_pipewire();
     }
 }
@@ -96,8 +101,12 @@ impl Privacy {
 
 /// Stops the screencast `session`, as the bar's Stop Sharing does.
 pub fn stop_cast(session: u64) {
-    let session = session.to_string();
-    amane::spawn(&format!("niri msg action stop-cast --session-id {session}"));
+    // niri's answer can take a moment, so not on the UI thread
+    std::thread::spawn(move || {
+        if let Err(err) = niri::stop_cast(session) {
+            eprintln!("amane-shell: couldn't stop the screencast: {err}");
+        }
+    });
 }
 
 fn watch_pipewire() {
@@ -140,19 +149,6 @@ fn watch_pipewire() {
     let _ = child.wait();
 }
 
-fn watch_casts() {
-    let args = ["msg".to_string(), "--json".into(), "casts".into()];
-    loop {
-        let casts = run_now("niri", &args)
-            .map(|json| sharing(&json))
-            .unwrap_or_default();
-        if Privacy::read().casts != casts {
-            Privacy::write().casts = casts;
-        }
-        std::thread::sleep(CASTS_EVERY);
-    }
-}
-
 /// `pw-dump --monitor`'s output, a batch at a time: each change is a JSON
 /// array whose closing `]` is a line of its own.
 #[derive(Default)]
@@ -174,30 +170,21 @@ impl Batch {
 }
 
 /// The casts in niri's list that stream frames, one per session.
-fn sharing(json: &str) -> Vec<Cast> {
-    let Ok(casts) = serde_json::from_str::<Value>(json) else {
-        return Vec::new();
-    };
+fn sharing(casts: &[niri::Cast]) -> Vec<Cast> {
     let mut found: Vec<Cast> = Vec::new();
-    for cast in casts.as_array().into_iter().flatten() {
-        if !cast["is_active"].as_bool().unwrap_or(true) {
+    for cast in casts {
+        if !cast.is_active || found.iter().any(|known| known.session == cast.session_id) {
             continue;
         }
-        let Some(session) = cast["session_id"].as_u64() else {
-            continue;
+        let target = match &cast.target {
+            niri::CastTarget::Output(name) => CastTarget::Output(name.clone()),
+            niri::CastTarget::Window(id) => CastTarget::Window(*id),
+            niri::CastTarget::Nothing => CastTarget::Nothing,
         };
-        if found.iter().any(|known| known.session == session) {
-            continue;
-        }
-        let target = &cast["target"];
-        let target = if let Some(name) = target["Output"]["name"].as_str() {
-            CastTarget::Output(name.to_string())
-        } else if let Some(id) = target["Window"]["id"].as_u64() {
-            CastTarget::Window(id)
-        } else {
-            CastTarget::Nothing
-        };
-        found.push(Cast { session, target });
+        found.push(Cast {
+            session: cast.session_id,
+            target,
+        });
     }
     found
 }
@@ -312,9 +299,37 @@ mod tests {
         assert_eq!(batch.push("]"), Some(Value::Array(Vec::new())));
     }
 
+    /// niri's `casts` answer, as amane hands it over.
+    fn parsed(json: &str) -> Vec<niri::Cast> {
+        let Ok(Value::Array(list)) = serde_json::from_str::<Value>(json) else {
+            return Vec::new();
+        };
+        list.iter()
+            .filter_map(|cast| {
+                let target = &cast["target"];
+                Some(niri::Cast {
+                    session_id: cast["session_id"].as_u64()?,
+                    stream_id: cast["stream_id"].as_u64().unwrap_or(0),
+                    kind: String::from("PipeWire"),
+                    target: if let Some(name) = target["Output"]["name"].as_str() {
+                        niri::CastTarget::Output(name.to_string())
+                    } else if let Some(id) = target["Window"]["id"].as_u64() {
+                        niri::CastTarget::Window(id)
+                    } else {
+                        niri::CastTarget::Nothing
+                    },
+                    is_active: cast["is_active"].as_bool().unwrap_or(true),
+                    pid: None,
+                })
+            })
+            .collect()
+    }
+
     #[test]
     fn recorded_casts_are_one_per_active_session() {
-        let casts = sharing(include_str!("../../../tests/fixtures/niri/casts.json"));
+        let casts = sharing(&parsed(include_str!(
+            "../../../tests/fixtures/niri/casts.json"
+        )));
         assert_eq!(
             casts,
             [
@@ -357,17 +372,17 @@ mod tests {
 
     #[test]
     fn a_paused_cast_isnt_sharing() {
-        assert!(sharing("[]").is_empty());
-        assert!(sharing("not json").is_empty());
-        assert!(sharing(r#"[{"session_id": 3, "is_active": false}]"#).is_empty());
-        let casts = sharing(
+        assert!(sharing(&parsed("[]")).is_empty());
+        assert!(sharing(&parsed("not json")).is_empty());
+        assert!(sharing(&parsed(r#"[{"session_id": 3, "is_active": false}]"#)).is_empty());
+        let casts = sharing(&parsed(
             r#"[{"stream_id": 1, "session_id": 3, "is_active": true,
                  "target": {"Output": {"name": "eDP-1"}}},
                 {"stream_id": 2, "session_id": 3, "is_active": true,
                  "target": {"Window": {"id": 9}}},
                 {"stream_id": 4, "session_id": 5, "is_active": true,
                  "target": {"Window": {"id": 9}}}]"#,
-        );
+        ));
         assert_eq!(
             casts,
             [

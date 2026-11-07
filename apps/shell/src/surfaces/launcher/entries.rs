@@ -254,14 +254,11 @@ fn open(url: String) {
             "xdg-settings",
             &[String::from("get"), String::from("default-web-browser")],
         );
-        let windows = run_now(
-            "niri",
-            &[
-                String::from("msg"),
-                String::from("--json"),
-                String::from("windows"),
-            ],
-        );
+        let windows: Option<Vec<(u64, String)>> = amane::niri::windows().ok().map(|list| {
+            list.into_iter()
+                .map(|w| (w.id, w.app_id.unwrap_or_default()))
+                .collect()
+        });
         let (Some(browser), Some(windows)) = (browser, windows) else {
             return;
         };
@@ -275,17 +272,12 @@ fn open(url: String) {
 /// The id of the window in niri's `windows` JSON whose app_id is `app_id`,
 /// else one whose app_id holds it or is held in it (a desktop file and its
 /// windows are often named a little differently).
-fn window_of(windows: &str, app_id: &str) -> Option<u64> {
+fn window_of(windows: &[(u64, String)], app_id: &str) -> Option<u64> {
     let want = app_id.to_lowercase();
     if want.is_empty() {
         return None;
     }
-    let list: Vec<serde_json::Value> = serde_json::from_str(windows).ok()?;
-    let ids = list.iter().filter_map(|window| {
-        let id = window.get("id")?.as_u64()?;
-        let app = window.get("app_id")?.as_str()?.to_lowercase();
-        Some((id, app))
-    });
+    let ids = windows.iter().map(|(id, app)| (*id, app.to_lowercase()));
     let mut near = None;
     for (id, app) in ids {
         if app == want {
@@ -313,25 +305,30 @@ pub(super) fn truncate(text: &str, max: usize) -> String {
 mod tests {
     use super::*;
 
-    const WINDOWS: &str = r#"[
-        {"id": 3, "app_id": "org.gnome.Nautilus", "title": "Home"},
-        {"id": 7, "app_id": "firefox-esr", "title": "Mozilla Firefox"},
-        {"id": 9, "app_id": "firefox", "title": "Mozilla Firefox"},
-        {"id": 11, "app_id": null, "title": "untitled"}
-    ]"#;
+    fn windows() -> Vec<(u64, String)> {
+        [
+            (3, "org.gnome.Nautilus"),
+            (7, "firefox-esr"),
+            (9, "firefox"),
+            (11, ""),
+        ]
+        .into_iter()
+        .map(|(id, app)| (id, app.to_string()))
+        .collect()
+    }
 
     #[test]
     fn the_browsers_window_is_found_by_its_app_id() {
-        assert_eq!(window_of(WINDOWS, "firefox"), Some(9));
-        assert_eq!(window_of(WINDOWS, "Firefox"), Some(9));
+        assert_eq!(window_of(&windows(), "firefox"), Some(9));
+        assert_eq!(window_of(&windows(), "Firefox"), Some(9));
     }
 
     #[test]
     fn a_differently_named_window_is_found_too() {
-        assert_eq!(window_of(WINDOWS, "nautilus"), Some(3));
-        assert_eq!(window_of(WINDOWS, "chromium"), None);
-        assert_eq!(window_of(WINDOWS, ""), None);
-        assert_eq!(window_of("not json", "firefox"), None);
+        assert_eq!(window_of(&windows(), "nautilus"), Some(3));
+        assert_eq!(window_of(&windows(), "chromium"), None);
+        assert_eq!(window_of(&windows(), ""), None);
+        assert_eq!(window_of(&[], "firefox"), None);
     }
 
     #[test]
@@ -342,9 +339,20 @@ mod tests {
 
     #[test]
     fn recorded_windows_are_found_by_app_id() {
-        let windows = include_str!("../../../tests/fixtures/niri/windows.json");
-        assert_eq!(window_of(windows, "firefox"), Some(5));
-        assert_eq!(window_of(windows, "nautilus"), Some(8));
-        assert_eq!(window_of(windows, "code"), Some(2));
+        let json: serde_json::Value =
+            serde_json::from_str(include_str!("../../../tests/fixtures/niri/windows.json"))
+                .expect("niri's windows JSON");
+        let windows: Vec<(u64, String)> = json
+            .as_array()
+            .expect("a list")
+            .iter()
+            .map(|w| {
+                let app = w["app_id"].as_str().unwrap_or_default().to_string();
+                (w["id"].as_u64().expect("an id"), app)
+            })
+            .collect();
+        assert_eq!(window_of(&windows, "firefox"), Some(5));
+        assert_eq!(window_of(&windows, "nautilus"), Some(8));
+        assert_eq!(window_of(&windows, "code"), Some(2));
     }
 }

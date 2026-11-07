@@ -143,13 +143,10 @@ pub fn fade<T: Blend>(value: T, duration: Duration) -> Animation<T> {
 
 /// Changes the marker `M` once `delay` has passed, so the windows that
 /// watch it draw again, for a view whose output changes with time alone (a
-/// wait running out). amane has no timers, so a thread sleeps it. See
-/// [`marker!`](crate::marker!).
-pub fn redraw_after<M: Service>(delay: Duration) {
-    std::thread::spawn(move || {
-        std::thread::sleep(delay);
-        drop(M::write());
-    });
+/// wait running out). A timer on amane's event loop, so no thread waits; only
+/// the windows that read `M` redraw. See [`marker!`](crate::marker!).
+pub fn redraw_after<M: Service>(delay: Duration) -> amane::TimerHandle {
+    amane::Timer::after(delay, || drop(M::write()))
 }
 
 /// Where one card is and how it looks: moved by `x`/`y`, scaled about its

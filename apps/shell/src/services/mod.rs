@@ -13,7 +13,7 @@
 //!
 //! Network and radios (`network/`):
 //!
-//! - [`network::connections`] — wired, VPN and hotspot (NetworkManager's `nmcli`).
+//! - [`network::connections`] — wired, VPN and hotspot (amane's `Network`).
 //! - [`network::rfkill`] — airplane mode: every radio blocked.
 //! - [`network::tailscale`] — the tailnet, its exit nodes and settings (the CLI).
 //! - [`network::bt_battery`] — a notification when a Bluetooth device runs low.
@@ -27,7 +27,6 @@
 //!
 //! - [`desktop::privacy`] — what's using the microphone, the camera or the screen.
 //! - [`desktop::background_apps`] — apps running without a window (the portal).
-//! - [`desktop::lock_keys`] — whether Caps Lock and Num Lock are on (the keyboards' LEDs).
 //! - [`desktop::updates`] — what the last NixOS update check found.
 //! - [`desktop::system_stats`] — processor, memory, network, temperature and
 //!   disks, and their recent history, for the desktop's widgets.
@@ -46,8 +45,8 @@
 //! - [`vault`] — Bitwarden through rbw: locked or not, its entries without their
 //!   secrets, the shell's pinentry, and which app owns a field (`docs/shell/passwords.md`).
 //!
-//! Shared helpers: [`state_file`] and [`save_state`] (`state.rs`), and
-//! [`run`], [`run_now`], [`installed`] and [`Latest`] (`process.rs`).
+//! Shared helpers: [`state_file`] and [`save_state`] (`state.rs`),
+//! [`run`], [`run_now`], [`installed`] and [`Latest`] (`process.rs`), and [`Wake`] (`wake.rs`).
 //!
 //! See `docs/shell/quick-settings.md` and `docs/shell/widgets.md`.
 //!
@@ -64,6 +63,8 @@ pub mod vault;
 
 mod process;
 mod state;
+mod wake;
 
 pub use process::{Latest, installed, run, run_now};
 pub use state::{save_state, state_file};
+pub use wake::Wake;

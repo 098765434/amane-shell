@@ -195,7 +195,11 @@ pub(super) fn clear_query() {
 pub(super) fn key(key: Key) -> bool {
     let taken = with(|state| {
         let before = state.field.text().to_string();
-        let taken = state.field.handle(key, modifiers());
+        let taken = state.field.handle(key, modifiers(), |text| {
+            with(|state| state.field.insert(&text));
+            SCROLL.with_borrow_mut(|scroll| scroll.go(0.0));
+            super::QuickSettings::changed();
+        });
         if state.field.text() != before {
             SCROLL.with_borrow_mut(|scroll| scroll.go(0.0));
         }
@@ -749,7 +753,7 @@ fn scrollbar() -> f32 {
     let now = Instant::now();
     let (scrolled, due) = with(|state| (state.scrolled, state.fade_due));
     let showing = scrolled.is_some_and(|at| now.duration_since(at) < SCROLLBAR_IDLE);
-    // amane has no timers: a frame comes when the scrollbar is due to fade
+    // a timer asks for the frame when the scrollbar is due to fade
     if let Some(at) = scrolled.filter(|_| showing)
         && due.is_none_or(|due| now >= due)
     {

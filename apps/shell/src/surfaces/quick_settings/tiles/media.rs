@@ -57,6 +57,9 @@ fn playing() -> Option<Playing> {
 thread_local! {
     // the web art being fetched, so each is asked for once
     static FETCHING: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
+    // the web art already in the cache, by URL, so a frame doesn't look on disk
+    static FOUND: RefCell<std::collections::HashMap<String, String>> =
+        RefCell::new(std::collections::HashMap::new());
 }
 
 /// The file holding the art at `url`: the file itself for a `file://`
@@ -72,9 +75,21 @@ pub(crate) fn art_path(url: &str) -> Option<String> {
     if !(url.starts_with("http://") || url.starts_with("https://")) {
         return None;
     }
+    // asked on every frame of the card and the bar's Now Playing: a file found once is kept
+    if let Some(found) = FOUND.with_borrow(|found| found.get(url).cloned()) {
+        return Some(found);
+    }
     let path = art_cache(url);
     if path.exists() {
-        return Some(path.to_string_lossy().into_owned());
+        let found = path.to_string_lossy().into_owned();
+        FOUND.with_borrow_mut(|known| {
+            // a few players' art at most; a long session's list is let go now and then
+            if known.len() > 64 {
+                known.clear();
+            }
+            known.insert(url.to_string(), found.clone());
+        });
+        return Some(found);
     }
     let fresh = FETCHING.with_borrow_mut(|fetching| fetching.insert(url.to_string()));
     if fresh {

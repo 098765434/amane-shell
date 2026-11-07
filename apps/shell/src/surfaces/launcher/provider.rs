@@ -707,6 +707,8 @@ impl Provider for Passwords {
             return;
         }
 
+        // rbw says nothing when the vault locks, so it's looked at as the passwords show
+        Vault::look_soon();
         let vault = Vault::read();
 
         let mut push = |entry: Entry| {

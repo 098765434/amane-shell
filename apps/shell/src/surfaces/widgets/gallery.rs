@@ -171,7 +171,11 @@ pub(super) fn clear_query() -> bool {
 
 /// A key for the search field.
 pub(super) fn key(key: Key) {
-    if with(|state| state.field.handle(key, modifiers())) {
+    let pasted = |text: String| {
+        with(|state| state.field.insert(&text));
+        changed();
+    };
+    if with(|state| state.field.handle(key, modifiers(), pasted)) {
         changed();
     }
 }

@@ -5,7 +5,7 @@ use amane::Service;
 
 use super::on_off;
 use crate::components::icons::ICON_AIRPLANE;
-use crate::services::network::rfkill::Rfkill;
+use crate::services::network::rfkill::{self, Rfkill};
 use crate::surfaces::quick_settings::tile::QuickToggle;
 
 pub(crate) fn toggle() -> Option<QuickToggle> {
@@ -20,6 +20,6 @@ pub(crate) fn toggle() -> Option<QuickToggle> {
         QuickToggle::new("amane.qs.airplane", ICON_AIRPLANE, "Airplane Mode")
             .subtitle(on_off(on))
             .checked(on)
-            .on_toggle(Rfkill::set_airplane),
+            .on_toggle(rfkill::set_airplane),
     )
 }

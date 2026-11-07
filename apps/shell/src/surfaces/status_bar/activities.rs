@@ -178,7 +178,8 @@ fn now_playing() -> Option<Shown> {
         let left = LAST_PLAYED.get().map_or(PAUSED_FOR, |at| {
             PAUSED_FOR.saturating_sub(now.duration_since(at))
         });
-        motion::redraw_after::<Tick>(left + TICK);
+        // once per wait, not once per frame drawn while paused
+        tick_in(left);
     }
 
     let mut content = ActivityContent::new(

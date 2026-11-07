@@ -106,13 +106,17 @@ pub fn read(text: &str, snapshot: impl FnOnce() -> Snapshot) -> Option<Reading> 
         state.asked = Some(text.to_string());
         let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
         let text = text.to_string();
-        std::thread::spawn(move || ask(text, snapshot, generation));
+        // a timer waits out the typing; only the last request gets a thread
+        amane::Timer::after(DEBOUNCE, move || {
+            if GENERATION.load(Ordering::SeqCst) == generation {
+                std::thread::spawn(move || ask(text, snapshot, generation));
+            }
+        });
     }
     None
 }
 
 fn ask(text: String, snapshot: Snapshot, generation: u64) {
-    std::thread::sleep(DEBOUNCE);
     if GENERATION.load(Ordering::SeqCst) != generation {
         return;
     }
