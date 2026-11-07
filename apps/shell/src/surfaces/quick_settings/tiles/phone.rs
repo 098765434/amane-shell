@@ -23,6 +23,8 @@ use amane_phone::{KdeConnect, PhoneDevice, PhonePairState as PairState};
 use super::super::{Page, open};
 use crate::chrome::battery;
 use crate::services::installed;
+use crate::services::phone::MESSAGES_APP;
+use crate::services::phone::open_messages as open_app;
 use crate::surfaces::alert;
 use crate::surfaces::quick_settings::QuickSettings;
 use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
@@ -52,7 +54,6 @@ thread_local! {
     static SEARCHED: Cell<bool> = const { Cell::new(false) };
 }
 
-use crate::services::phone::MESSAGES_APP;
 pub(crate) use crate::services::phone::available;
 
 /// The glyph for a kind of device, as KDE Connect names them.
@@ -154,8 +155,6 @@ fn ask_forget(device: &PhoneDevice) {
     });
     alert::show(ask);
 }
-
-use crate::services::phone::open_messages as open_app;
 
 // ───── the list ──────────────────────────────────────────────────────────────
 

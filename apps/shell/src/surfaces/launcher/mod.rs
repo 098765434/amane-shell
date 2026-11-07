@@ -257,8 +257,6 @@ thread_local! {
     // 0 closed … 1 open: the glass fades and swells in
     static OPEN: RefCell<Reveal> = RefCell::new(Reveal::new());
 
-    // whether OPEN is heading for 1
-
     // the glass, between the pill and the panel; it starts where it
     // belongs each time the launcher opens (`FRESH`)
     static GEOMETRY: RefCell<Animation<Geometry>> = RefCell::new(motion::sheet(Geometry::default()));

@@ -111,8 +111,6 @@ thread_local! {
     // 0 closed … 1 open: the card fades, swells and rises in over the bar
     static OPEN: RefCell<Reveal> = RefCell::new(Reveal::new());
 
-    // whether OPEN is heading for 1
-
     // when the card began opening from nothing onto the grid: its modules
     // arrive in a wave from then
     static OPENED_AT: Cell<Option<Instant>> = const { Cell::new(None) };
