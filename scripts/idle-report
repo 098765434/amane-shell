@@ -14,9 +14,13 @@
 #   - PSS at the end, from smaps_rollup (as root; otherwise RSS, as the
 #     kernel won't show the shell's memory maps to a non-root reader);
 #   - programs it started. As root, strace follows every execve, so the count
-#     is exact. Otherwise (ptrace_scope 1 forbids attaching) the service's
-#     cgroup is polled every 20 ms, and a program that comes and goes between
-#     two polls is missed: the count is a lower bound.
+#     is exact. strace stops every thread at every syscall, which would swamp
+#     the wakeups and CPU time, so as root the programs are counted in a second
+#     window of the same length, after the others are measured: the report
+#     takes twice as long. Otherwise (ptrace_scope 1 forbids attaching) the
+#     service's cgroup is polled every 20 ms during the one window, and a
+#     program that comes and goes between two polls is missed: the count is a
+#     lower bound.
 
 set -euo pipefail
 
@@ -90,16 +94,29 @@ memory_kib() {
 trace=$(mktemp)
 trap 'rm -f "$trace"' EXIT
 
-echo "idle-report: measuring amane-shell (pid $pid) for ${seconds}s; leave the desktop alone" >&2
+window=$seconds
+if ((EUID == 0)); then
+    window=$((seconds * 2))
+fi
+echo "idle-report: measuring amane-shell (pid $pid) for ${window}s; leave the desktop alone" >&2
 
 switches_before=$(switches)
 read -r own_before children_before < <(cpu)
+
+measure_after() {
+    switches_after=$(switches)
+    read -r own_after children_after < <(cpu)
+    read -r memory_kind memory < <(memory_kib)
+}
 
 declare -A started=()
 exact=false
 
 if ((EUID == 0)); then
     exact=true
+    sleep "$seconds"
+    measure_after
+
     strace -f -qq -e trace=execve -e signal=none -o "$trace" -p "$pid" &
     tracer=$!
     sleep "$seconds"
@@ -165,11 +182,8 @@ else
         read -r -t 0.02 -u "$nap" || true
     done
     exec {nap}<&-
+    measure_after
 fi
-
-switches_after=$(switches)
-read -r own_after children_after < <(cpu)
-read -r memory_kind memory < <(memory_kib)
 
 total_started=0
 for name in "${!started[@]}"; do
@@ -201,7 +215,7 @@ cat <<EOF
 
 - Date: $(date --iso-8601=minutes)
 - Shell: \`${running:-unknown}\`, pid $pid
-- Window: ${seconds}s, the desktop left alone
+- Window: ${seconds}s, the desktop left alone$(if $exact; then echo ", then ${seconds}s more to count programs under strace"; fi)
 
 | Measure | Value |
 |---|---|
