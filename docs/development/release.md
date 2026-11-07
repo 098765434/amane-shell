@@ -54,7 +54,7 @@ niri is built by nixos-config, not by the shell. After pushing niri's `ocbk`:
 
 1. In `~/nixos-config`, `nix flake update amane-shell` once the shell is pushed (`niri-fork`
    for niri).
-2. Build: `nixos-rebuild build --flake .#nixos`, which leaves `./result`.
+2. Build: `nixos-rebuild build --flake .#nixos-niri` (the host, as `nixos.json` names it for Shell Settings), which leaves `./result`.
 3. Commit and push `flake.lock`.
 4. **Back up** what the shell keeps before a switch that changes a file format:
 
