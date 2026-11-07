@@ -5,11 +5,8 @@
 
 use amane::{Service, watch_file};
 use amane_kit::service::ServiceExt as _;
-use serde_json::Value;
 
-use crate::services::state_file;
-
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Updates {
     /// The inputs with something newer, by name.
     pub changed: Vec<String>,
@@ -18,29 +15,19 @@ pub struct Updates {
     pub error: Option<String>,
 }
 
-/// `check.json` as the checker writes it.
-pub fn parse(json: &str) -> Updates {
-    let value: Value = serde_json::from_str(json).unwrap_or(Value::Null);
-    Updates {
-        changed: value
-            .get("changes")
-            .and_then(Value::as_array)
-            .map(|changes| {
-                changes
-                    .iter()
-                    .filter_map(|change| change.get("name")?.as_str().map(String::from))
-                    .collect()
-            })
-            .unwrap_or_default(),
-        checked: value.get("checked").and_then(Value::as_u64),
-        error: value.get("error").and_then(Value::as_str).map(String::from),
-    }
-}
-
 fn look() -> Updates {
-    std::fs::read_to_string(state_file("nixos/check.json"))
-        .map(|json| parse(&json))
-        .unwrap_or_default()
+    let check = amane_nixos::lock::read_check();
+    Updates {
+        changed: check
+            .changes
+            .into_iter()
+            .map(|change| change.name)
+            .collect(),
+        checked: check
+            .checked
+            .and_then(|at| u64::try_from(at.timestamp()).ok()),
+        error: check.error,
+    }
 }
 
 impl Service for Updates {
@@ -49,7 +36,7 @@ impl Service for Updates {
     }
 
     fn listen() {
-        let path = state_file("nixos/check.json");
+        let path = amane_nixos::lock::check_path();
         loop {
             if !path.parent().is_some_and(|folder| folder.is_dir()) {
                 std::thread::sleep(std::time::Duration::from_secs(60));
@@ -66,27 +53,5 @@ impl Updates {
     /// "nixpkgs, amane-shell": what has updates, for a subtitle.
     pub fn names(&self) -> String {
         self.changed.join(", ")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_check_lists_what_moved() {
-        let found = parse(
-            r#"{"checked": 1761500000, "changes": [{"name": "nixpkgs", "from": "a", "to": "b"}, {"name": "amane-shell"}]}"#,
-        );
-        assert_eq!(found.names(), "nixpkgs, amane-shell");
-        assert_eq!(found.checked, Some(1761500000));
-        assert!(parse("{}").changed.is_empty());
-        assert_eq!(
-            parse(r#"{"checked": 1, "changes": [], "error": "no network"}"#)
-                .error
-                .as_deref(),
-            Some("no network")
-        );
-        assert!(parse("not json").changed.is_empty());
     }
 }

@@ -13,77 +13,32 @@ use amane_kit::buttons::{PushButton, Style};
 use amane_kit::color::Accent;
 use amane_kit::form::FormRow;
 use amane_kit::icons::{ICON_CHECK, ICON_UPDATE};
-use chrono::{DateTime, Utc};
-use serde_json::Value;
+use chrono::Utc;
 
+use super::controls;
 use super::job::{BuildJob, Phase, Target};
 use super::nixos::repo;
 use super::repo::short;
-use super::{controls, state_dir};
 use crate::View;
 use crate::{group, groups};
 
 use amane_kit::service::ServiceExt as _;
-pub use amane_nixos::lock::{Input, InputChange, message, parse_lock};
+pub use amane_nixos::lock::{
+    Check, Input, InputChange, check_path, message, parse_lock, read_check,
+};
 
 pub struct Lock {
     pub inputs: Vec<Input>,
     pub error: Option<String>,
 }
 
-/// What the scheduled check (`amane-update-check`, a user timer from the
-/// configuration) last found, from `check.json` in the state dir.
+/// The scheduled check, followed as it's written.
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Check {
-    pub checked: Option<DateTime<Utc>>,
-    pub changes: Vec<InputChange>,
-    pub error: Option<String>,
-    pub present: bool,
-}
+pub struct Checked(pub Check);
 
-fn check_path() -> PathBuf {
-    state_dir().join("check.json")
-}
-
-/// `check.json` as the checker writes it.
-pub fn parse_check(json: &str) -> Check {
-    let value: Value = serde_json::from_str(json).unwrap_or(Value::Null);
-    let text = |change: &Value, key: &str| change.get(key)?.as_str().map(String::from);
-    Check {
-        checked: value
-            .get("checked")
-            .and_then(Value::as_i64)
-            .and_then(|secs| DateTime::from_timestamp(secs, 0)),
-        changes: value
-            .get("changes")
-            .and_then(Value::as_array)
-            .map(|changes| {
-                changes
-                    .iter()
-                    .filter_map(|change| {
-                        Some(InputChange {
-                            name: text(change, "name")?,
-                            from: text(change, "from"),
-                            to: text(change, "to"),
-                        })
-                    })
-                    .collect()
-            })
-            .unwrap_or_default(),
-        error: value.get("error").and_then(Value::as_str).map(String::from),
-        present: value.is_object(),
-    }
-}
-
-fn look_check() -> Check {
-    fs::read_to_string(check_path())
-        .map(|json| parse_check(&json))
-        .unwrap_or_default()
-}
-
-impl Service for Check {
+impl Service for Checked {
     fn new() -> Self {
-        look_check()
+        Self(read_check())
     }
 
     fn listen() {
@@ -94,32 +49,25 @@ impl Service for Check {
                 continue;
             }
             for _ in watch_file(&path.to_string_lossy()) {
-                Self::replace(look_check());
+                Self::replace(Self(read_check()));
             }
         }
     }
 }
 
-impl Check {
+impl Checked {
     /// Records that nothing waits any more (an update was applied, or a
     /// check found everything current), so the tile and the card clear
     /// before the timer's next run.
     pub fn clear() {
-        let path = check_path();
-        let now = Utc::now().timestamp();
-        let json = format!("{{\n  \"checked\": {now},\n  \"changes\": []\n}}\n");
-        if let Some(folder) = path.parent() {
-            // the write below says so if the folder couldn't be made
-            let _ = fs::create_dir_all(folder);
-        }
-        if let Err(error) = fs::write(path, json) {
+        if let Err(error) = amane_nixos::lock::clear_check() {
             log::warn!("couldn't keep the update check: {error}");
         }
     }
 
     /// "2 h ago", "yesterday".
     fn ago(&self) -> String {
-        match self.checked {
+        match self.0.checked {
             Some(when) => amane_kit::format::ago((Utc::now() - when).to_std().unwrap_or_default()),
             None => String::from("never"),
         }
@@ -170,7 +118,7 @@ impl Service for Lock {
 
 /// What a check found, while its job is around; else what the scheduled
 /// check last found.
-fn result_card(job: &BuildJob, check: &Check) -> Option<FormRow> {
+fn result_card(job: &BuildJob, check: &Checked) -> Option<FormRow> {
     let (glyph, text, button) = match (&job.target, &job.phase) {
         (Target::Update { .. }, Phase::UpToDate) => {
             (ICON_CHECK, String::from("Everything is up to date."), None)
@@ -192,13 +140,14 @@ fn result_card(job: &BuildJob, check: &Check) -> Option<FormRow> {
             Some(("Show Changes", Button::Changes)),
         ),
         (Target::Update { .. }, _) if job.busy() => return None,
-        _ if !check.present => return None,
-        _ if !check.changes.is_empty() => (
+        _ if !check.0.present => return None,
+        _ if !check.0.changes.is_empty() => (
             ICON_UPDATE,
             format!(
                 "Checked {} · updates for {}",
                 check.ago(),
                 check
+                    .0
                     .changes
                     .iter()
                     .map(|c| c.name.as_str())
@@ -209,7 +158,7 @@ fn result_card(job: &BuildJob, check: &Check) -> Option<FormRow> {
         ),
         _ => (
             ICON_CHECK,
-            match &check.error {
+            match &check.0.error {
                 Some(error) => format!("Checked {} · couldn't: {error}", check.ago()),
                 None => format!("Checked {} · up to date", check.ago()),
             },
@@ -248,12 +197,12 @@ enum Button {
 pub fn page() -> Column {
     let lock = Lock::read();
     let job = BuildJob::read();
-    let check = Check::read();
+    let check = Checked::read();
     let running = job.running();
     // the inputs a job moved, else what the scheduled check saw move
     let moved: Vec<&InputChange> = match &job.target {
         Target::Update { changes, .. } if job.busy() => changes.iter().collect(),
-        _ => check.changes.iter().collect(),
+        _ => check.0.changes.iter().collect(),
     };
 
     let inputs = lock.inputs.iter().map(|input| {
@@ -344,28 +293,4 @@ fn friendly(input: &str) -> Option<&'static str> {
         "disko" => "Disk layout",
         _ => return None,
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_scheduled_check_reads_back() {
-        let check = parse_check(
-            r#"{"checked": 1761500000, "changes": [{"name": "nixpkgs", "from": "1111111aaaaaaa", "to": "2222222bbbbbbb"}]}"#,
-        );
-        assert!(check.present);
-        assert_eq!(check.changes.len(), 1);
-        assert_eq!(check.changes[0].text(), "nixpkgs 1111111 → 2222222");
-        assert!(check.checked.is_some());
-        let none = parse_check("");
-        assert!(!none.present && none.changes.is_empty());
-        assert_eq!(
-            parse_check(r#"{"checked": 1, "changes": [], "error": "offline"}"#)
-                .error
-                .as_deref(),
-            Some("offline")
-        );
-    }
 }

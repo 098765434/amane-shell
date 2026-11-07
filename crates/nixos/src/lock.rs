@@ -1,5 +1,10 @@
 //! A `flake.lock`'s root inputs, and what a fresh lock moves: what Check
-//! for Updates shows and an update's commit says.
+//! for Updates shows and an update's commit says; and what the scheduled
+//! check last found ([`Check`]), which Shell Settings and the shell's
+//! Software Update tile both read.
+
+use std::io;
+use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
 use serde_json::Value;
@@ -161,5 +166,99 @@ mod tests {
         assert_eq!(message(&changes), "update: a 1111111 → 3333333");
         assert!(diff_locks(new, new).unwrap().is_empty());
         assert!(diff_locks("", new).unwrap().len() == 2);
+    }
+}
+
+/// What the scheduled check (`amane-update-check`, a user timer from the
+/// configuration) last found, from `check.json` in the shell's state folder.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Check {
+    /// When it ran.
+    pub checked: Option<DateTime<Utc>>,
+    /// The inputs with something newer.
+    pub changes: Vec<InputChange>,
+    /// Why it couldn't look, if it couldn't.
+    pub error: Option<String>,
+    /// Whether there's a check at all.
+    pub present: bool,
+}
+
+/// Where the check is kept: `$XDG_STATE_HOME/amane-shell/nixos/check.json`.
+pub fn check_path() -> PathBuf {
+    amane_base::paths::state()
+        .join(amane_base::app_ids::SHELL)
+        .join("nixos")
+        .join("check.json")
+}
+
+/// `check.json` as the checker writes it.
+pub fn parse_check(json: &str) -> Check {
+    let value: Value = serde_json::from_str(json).unwrap_or(Value::Null);
+    let text = |change: &Value, key: &str| change.get(key)?.as_str().map(String::from);
+    Check {
+        checked: value
+            .get("checked")
+            .and_then(Value::as_i64)
+            .and_then(|secs| DateTime::from_timestamp(secs, 0)),
+        changes: value
+            .get("changes")
+            .and_then(Value::as_array)
+            .map(|changes| {
+                changes
+                    .iter()
+                    .filter_map(|change| {
+                        Some(InputChange {
+                            name: text(change, "name")?,
+                            from: text(change, "from"),
+                            to: text(change, "to"),
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        error: value.get("error").and_then(Value::as_str).map(String::from),
+        present: value.is_object(),
+    }
+}
+
+/// The check kept, or none.
+pub fn read_check() -> Check {
+    std::fs::read_to_string(check_path())
+        .map(|json| parse_check(&json))
+        .unwrap_or_default()
+}
+
+/// Says nothing waits, checked now: once an update is applied.
+pub fn clear_check() -> io::Result<()> {
+    let now = Utc::now().timestamp();
+    let json = format!("{{\n  \"checked\": {now},\n  \"changes\": []\n}}\n");
+    amane_base::fs::write_whole(&check_path(), json)
+}
+
+#[cfg(test)]
+mod check_tests {
+    use super::*;
+
+    #[test]
+    fn a_check_lists_what_moved() {
+        let found = parse_check(
+            r#"{"checked": 1761500000, "changes": [{"name": "nixpkgs", "from": "a", "to": "b"}, {"name": "amane-shell"}]}"#,
+        );
+        let names: Vec<&str> = found.changes.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, ["nixpkgs", "amane-shell"]);
+        assert_eq!(found.changes[0].to.as_deref(), Some("b"));
+        let moved = parse_check(
+            r#"{"checked": 1, "changes": [{"name": "nixpkgs", "from": "1111111aaaaaaa", "to": "2222222bbbbbbb"}]}"#,
+        );
+        assert_eq!(moved.changes[0].text(), "nixpkgs 1111111 → 2222222");
+        assert_eq!(found.checked.map(|at| at.timestamp()), Some(1761500000));
+        assert!(found.present);
+        assert!(!parse_check("not json").present);
+        assert_eq!(
+            parse_check(r#"{"checked": 1, "changes": [], "error": "no network"}"#)
+                .error
+                .as_deref(),
+            Some("no network")
+        );
     }
 }

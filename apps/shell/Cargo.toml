@@ -28,6 +28,7 @@ amane-status = { workspace = true }
 amane-kit = { workspace = true }
 # the assistant's commands, rules and protocol; its daemon (Cactus) is apps/assistant
 amane-assistant = { workspace = true }
+amane-nixos = { workspace = true }
 serde_json = { workspace = true }
 # for the one bus call that hands back a file descriptor (logind's Inhibit),
 # which amane's Bus can't carry; the same zbus amane already pulls in

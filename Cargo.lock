@@ -220,6 +220,7 @@ dependencies = [
  "amane-assistant",
  "amane-kit",
  "amane-log",
+ "amane-nixos",
  "amane-phone",
  "amane-pinentry",
  "amane-status",
