@@ -9,6 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+amane-base = { workspace = true }
 log = { workspace = true }
 # the session bus, services and the one ordered thread for calls
 amane = { workspace = true }

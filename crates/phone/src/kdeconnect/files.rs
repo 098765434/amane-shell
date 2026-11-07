@@ -4,15 +4,13 @@
  * $XDG_CACHE_HOME/amane/messages, so they draw like any other image
  */
 
-use std::fs;
 use std::path::PathBuf;
 
-pub(crate) fn cache(folder: &str) -> Option<PathBuf> {
-    let cache = std::env::var_os("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))?;
-
-    Some(cache.join("amane").join("messages").join(folder))
+pub(crate) fn cache(folder: &str) -> PathBuf {
+    amane_base::paths::cache()
+        .join("amane")
+        .join("messages")
+        .join(folder)
 }
 
 /*
@@ -20,9 +18,7 @@ pub(crate) fn cache(folder: &str) -> Option<PathBuf> {
  * or none when it isn't base64 or can't be written
  */
 pub(crate) fn write_once(folder: &str, name: &str, data: &str) -> Option<PathBuf> {
-    let folder = cache(folder)?;
-
-    let path = folder.join(name);
+    let path = cache(folder).join(name);
 
     if path.exists() {
         return Some(path);
@@ -34,13 +30,8 @@ pub(crate) fn write_once(folder: &str, name: &str, data: &str) -> Option<PathBuf
         return None;
     }
 
-    fs::create_dir_all(&folder).ok()?;
-
-    // written beside and moved, so a half-written file is never drawn
-    let partial = folder.join(format!(".{name}.part"));
-
-    fs::write(&partial, bytes).ok()?;
-    fs::rename(&partial, &path).ok()?;
+    // written whole, so a half-written file is never drawn
+    amane_base::fs::write_whole(&path, bytes).ok()?;
 
     Some(path)
 }

@@ -35,10 +35,16 @@ pub fn data() -> PathBuf {
 
 /// `$XDG_RUNTIME_DIR`, else the temporary folder: sockets and files for this session only.
 pub fn runtime() -> PathBuf {
+    private_runtime().unwrap_or_else(std::env::temp_dir)
+}
+
+/// `$XDG_RUNTIME_DIR` alone, which only this user can enter: for a socket
+/// that must not be reachable by anyone else, which goes without rather
+/// than fall back to the shared temporary folder.
+pub fn private_runtime() -> Option<PathBuf> {
     std::env::var_os("XDG_RUNTIME_DIR")
         .map(PathBuf::from)
         .filter(|path| path.is_absolute())
-        .unwrap_or_else(std::env::temp_dir)
 }
 
 #[cfg(test)]

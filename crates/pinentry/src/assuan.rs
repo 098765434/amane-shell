@@ -117,24 +117,7 @@ pub fn parse(line: &str) -> Result<Command, ParseError> {
 
 /// Undoes Assuan's percent escapes; none for a bad escape or text that isn't UTF-8.
 pub fn unescape(text: &str) -> Option<String> {
-    let bytes = text.as_bytes();
-    let mut out = Vec::with_capacity(bytes.len());
-
-    let mut at = 0;
-    while at < bytes.len() {
-        if bytes[at] == b'%' {
-            let high = hex(*bytes.get(at + 1)?)?;
-            let low = hex(*bytes.get(at + 2)?)?;
-
-            out.push(high << 4 | low);
-            at += 3;
-        } else {
-            out.push(bytes[at]);
-            at += 1;
-        }
-    }
-
-    String::from_utf8(out).ok()
+    amane_base::percent::decode_strict(text)
 }
 
 /// Escapes data for a D line: percent, line breaks and carriage returns, as the protocol asks.
@@ -151,15 +134,6 @@ pub fn escape(text: &str) -> Zeroizing<String> {
     }
 
     out
-}
-
-fn hex(digit: u8) -> Option<u8> {
-    match digit {
-        b'0'..=b'9' => Some(digit - b'0'),
-        b'a'..=b'f' => Some(digit - b'a' + 10),
-        b'A'..=b'F' => Some(digit - b'A' + 10),
-        _ => None,
-    }
 }
 
 /// Cuts text to at most `limit` bytes, at a whole letter.

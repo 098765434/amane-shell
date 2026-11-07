@@ -16,8 +16,9 @@ mod files;
 mod input;
 mod sms;
 
+use amane_base::sync::Locked as _;
 use std::collections::BTreeMap;
-use std::sync::{Mutex, Once, PoisonError};
+use std::sync::{Mutex, Once};
 use std::thread;
 use std::time::Duration;
 
@@ -107,12 +108,7 @@ impl Service for KdeConnect {
         resync();
 
         for signal in signals {
-            if signal.sender()
-                != OWNER
-                    .lock()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .as_str()
-            {
+            if signal.sender() != OWNER.locked().as_str() {
                 continue;
             }
 
@@ -186,7 +182,7 @@ impl KdeConnect {
 
 // the daemon's unique name, empty while it isn't running
 pub(crate) fn owner() -> String {
-    OWNER.lock().unwrap_or_else(PoisonError::into_inner).clone()
+    OWNER.locked().clone()
 }
 
 pub(crate) fn device_path(id: &str) -> String {
@@ -209,7 +205,7 @@ fn fetch() -> (bool, Vec<PhoneDevice>) {
 
     let running = !owner.is_empty();
 
-    *OWNER.lock().unwrap_or_else(PoisonError::into_inner) = owner;
+    *OWNER.locked() = owner;
 
     if !running {
         return (false, Vec::new());
@@ -241,7 +237,7 @@ fn fetch() -> (bool, Vec<PhoneDevice>) {
 
 // reads everything again and shows it, writing only when that changed
 pub(crate) fn resync() {
-    let _reading = READING.lock().unwrap_or_else(PoisonError::into_inner);
+    let _reading = READING.locked();
 
     let (running, devices) = fetch();
 

@@ -2,8 +2,9 @@
 //! from xkeyboard-config, for checking what's typed on the General page.
 //! The layout list is read once; variants once per layout.
 
+use amane_base::sync::Locked as _;
 use std::collections::BTreeMap;
-use std::sync::{Mutex, OnceLock, PoisonError};
+use std::sync::{Mutex, OnceLock};
 
 static LAYOUTS: OnceLock<Vec<String>> = OnceLock::new();
 static VARIANTS: Mutex<BTreeMap<String, Vec<String>>> = Mutex::new(BTreeMap::new());
@@ -32,7 +33,7 @@ pub fn layouts() -> &'static [String] {
 
 /// The variants of `layout`.
 pub fn variants(layout: &str) -> Vec<String> {
-    let mut known = VARIANTS.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut known = VARIANTS.locked();
     known
         .entry(layout.to_string())
         .or_insert_with(|| parse_list(&localectl(&["list-x11-keymap-variants", layout])))

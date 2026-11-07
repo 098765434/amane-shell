@@ -5,9 +5,10 @@
  * rather than remembered
  */
 
+use amane_base::sync::Locked as _;
 use std::collections::BTreeMap;
 use std::net::IpAddr;
-use std::sync::{Mutex, PoisonError, mpsc};
+use std::sync::{Mutex, mpsc};
 use std::thread;
 
 use mdns_sd::{ServiceDaemon, ServiceEvent};
@@ -41,7 +42,7 @@ pub struct WirelessService {
 static DAEMON: Mutex<Option<ServiceDaemon>> = Mutex::new(None);
 
 pub fn start() {
-    let mut daemon = DAEMON.lock().unwrap_or_else(PoisonError::into_inner);
+    let mut daemon = DAEMON.locked();
 
     if daemon.is_some() {
         return;
@@ -94,7 +95,7 @@ pub fn start() {
 }
 
 pub fn stop() {
-    if let Some(daemon) = DAEMON.lock().unwrap_or_else(PoisonError::into_inner).take() {
+    if let Some(daemon) = DAEMON.locked().take() {
         // a browser that already stopped stops as well
         let _ = daemon.shutdown();
     }

@@ -6,7 +6,6 @@
 //! hand-written modules are never touched.
 
 use std::collections::BTreeMap;
-use std::fs;
 use std::path::Path;
 
 use serde_json::Value;
@@ -513,15 +512,9 @@ pub fn commit_message(changes: &[Change], entries: &[Entry]) -> String {
     format!("settings: {}", summary(changes, entries).join(", "))
 }
 
-/// Writes the map as the file, whole, through a rename.
+/// Writes the map as the file, whole.
 pub fn save(path: &Path, map: &BTreeMap<String, Value>) -> Result<(), String> {
-    let json = serde_json::to_string_pretty(map).map_err(|error| error.to_string())? + "\n";
-    let new = path.with_extension("json.new");
-    if let Some(folder) = path.parent() {
-        fs::create_dir_all(folder).map_err(|error| error.to_string())?;
-    }
-    fs::write(&new, json).map_err(|error| error.to_string())?;
-    fs::rename(&new, path).map_err(|error| error.to_string())
+    amane_base::fs::save_json(path, map).map_err(|error| error.to_string())
 }
 
 #[cfg(test)]

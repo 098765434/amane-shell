@@ -15,7 +15,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use amane::run_in_order;
 use amane::{Argument, Bus, Service, Value};
@@ -152,28 +152,7 @@ impl SmsAttachment {
 
     // a file on this computer, to be sent
     pub(crate) fn from_file(path: &Path) -> Self {
-        let extension = path
-            .extension()
-            .and_then(|extension| extension.to_str())
-            .unwrap_or("")
-            .to_ascii_lowercase();
-
-        let mime = match extension.as_str() {
-            "jpg" | "jpeg" => "image/jpeg",
-            "png" => "image/png",
-            "gif" => "image/gif",
-            "webp" => "image/webp",
-            "heic" => "image/heic",
-            "mp4" | "m4v" => "video/mp4",
-            "3gp" => "video/3gpp",
-            "webm" => "video/webm",
-            "mp3" => "audio/mpeg",
-            "m4a" | "aac" => "audio/aac",
-            "ogg" | "opus" => "audio/ogg",
-            "vcf" => "text/vcard",
-            "pdf" => "application/pdf",
-            _ => "application/octet-stream",
-        };
+        let mime = amane_base::mime::of(path);
 
         let image = mime.starts_with("image/") && mime != "image/heic";
 
@@ -873,7 +852,7 @@ impl PhoneMessages {
             thread,
             body: text.to_string(),
             addresses,
-            date: now_ms(),
+            date: amane_base::time::unix_ms(),
             kind: SmsKind::Outbox,
             read: true,
             attachments: files
@@ -1146,12 +1125,6 @@ fn open_file(path: &Path) {
     if let Err(error) = amane::Launch::argv(&["xdg-open", &path.display().to_string()]).spawn() {
         log::warn!("{error}");
     }
-}
-
-fn now_ms() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |since| since.as_millis() as i64)
 }
 
 #[cfg(test)]

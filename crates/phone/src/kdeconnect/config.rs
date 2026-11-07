@@ -42,17 +42,12 @@ pub(crate) fn list() -> &'static [RunCommand] {
     COMMANDS.get().copied().unwrap_or_default()
 }
 
-fn plugin_config(device: &str, plugin: &str) -> Option<PathBuf> {
-    let base = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))?;
-
-    Some(
-        base.join("kdeconnect")
-            .join(device)
-            .join(plugin)
-            .join("config"),
-    )
+fn plugin_config(device: &str, plugin: &str) -> PathBuf {
+    amane_base::paths::config()
+        .join("kdeconnect")
+        .join(device)
+        .join(plugin)
+        .join("config")
 }
 
 pub(crate) fn run_commands_enabled(device: &str) -> bool {
@@ -121,22 +116,14 @@ fn parse_commands(text: &str) -> Map<String, Json> {
 }
 
 fn read(device: &str, plugin: &str) -> Ini {
-    plugin_config(device, plugin)
-        .and_then(|path| fs::read_to_string(path).ok())
+    fs::read_to_string(plugin_config(device, plugin))
         .map(|text| Ini::parse(&text))
         .unwrap_or_default()
 }
 
 fn write(device: &str, plugin: &str, ini: &Ini) -> std::io::Result<()> {
-    let Some(path) = plugin_config(device, plugin) else {
-        return Err(std::io::Error::other("no home folder"));
-    };
-
-    if let Some(folder) = path.parent() {
-        fs::create_dir_all(folder)?;
-    }
-
-    fs::write(path, ini.render())
+    // whole, so kdeconnect never reads half of it
+    amane_base::fs::write_whole(&plugin_config(device, plugin), ini.render())
 }
 
 /*

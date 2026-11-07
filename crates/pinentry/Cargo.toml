@@ -17,6 +17,7 @@ name = "amane-pinentry"
 path = "src/main.rs"
 
 [dependencies]
+amane-base = { workspace = true }
 log = { workspace = true }
 amane-log = { workspace = true }
 # SO_PEERCRED, SO_PEERPIDFD and pidfd_send_signal, which std doesn't have

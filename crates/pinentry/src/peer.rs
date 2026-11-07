@@ -13,11 +13,10 @@ const SO_PEERPIDFD: libc::c_int = 77;
 
 /// The socket the shell answers on: in the runtime directory, which only this user can enter.
 pub fn socket_path() -> Option<PathBuf> {
-    let runtime = std::env::var_os("XDG_RUNTIME_DIR")?;
-
+    let runtime = amane_base::paths::private_runtime()?;
     Some(
-        Path::new(&runtime)
-            .join("amane-shell")
+        runtime
+            .join(amane_base::app_ids::SHELL)
             .join("pinentry.sock"),
     )
 }

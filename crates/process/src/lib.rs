@@ -22,12 +22,13 @@
 
 #![warn(missing_docs)]
 
+use amane_base::sync::Locked as _;
 use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::io::{self, BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStderr, ChildStdout, Command, ExitStatus, Stdio};
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 /// How many of a failed command's last lines its [`Failure`] keeps: the
@@ -241,7 +242,7 @@ pub struct Stopper(Arc<Mutex<Child>>);
 impl Stopper {
     /// Kills it; nothing when it has already ended.
     pub fn stop(&self) {
-        let mut child = self.0.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut child = self.0.locked();
         // it may have ended on its own a moment ago
         let _ = child.kill();
     }
@@ -301,11 +302,7 @@ impl Running {
             stdout: String::from_utf8_lossy(&stdout).into_owned(),
             stderr,
         };
-        let status = self
-            .child
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .wait();
+        let status = self.child.locked().wait();
         match status {
             Ok(status) if status.success() => Ok(output),
             Ok(status) => Err(Failure::from(status, output)),

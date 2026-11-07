@@ -46,8 +46,5 @@ pub const SOCKET: &str = "amane-assistant.sock";
 
 /// The daemon's socket: `$XDG_RUNTIME_DIR/amane-assistant.sock`.
 pub fn socket_path() -> std::path::PathBuf {
-    let dir = std::env::var_os("XDG_RUNTIME_DIR")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(std::env::temp_dir);
-    dir.join(SOCKET)
+    amane_base::paths::runtime().join(SOCKET)
 }

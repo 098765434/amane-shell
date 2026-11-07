@@ -1,7 +1,7 @@
 //! A `flake.lock`'s root inputs, and what a fresh lock moves: what Check
 //! for Updates shows and an update's commit says.
 
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Utc};
 use serde_json::Value;
 
 use crate::repo::short;
@@ -20,19 +20,11 @@ pub struct Input {
 }
 
 impl Input {
-    /// "12 days ago", "today", "3 months ago".
+    /// "12 days ago", "3 h ago", "3 months ago".
     pub fn ago(&self) -> String {
-        let Some(when) = self.modified else {
-            return String::from("unknown");
-        };
-        let days = (Local::now().with_timezone(&Utc) - when).num_days();
-        match days {
-            i64::MIN..=0 => String::from("today"),
-            1 => String::from("yesterday"),
-            2..=13 => format!("{days} days ago"),
-            14..=60 => format!("{} weeks ago", days / 7),
-            61..=730 => format!("{} months ago", days / 30),
-            _ => format!("{} years ago", days / 365),
+        match self.modified {
+            Some(when) => amane_base::format::ago((Utc::now() - when).to_std().unwrap_or_default()),
+            None => String::from("unknown"),
         }
     }
 }

@@ -9,6 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+amane-base = { workspace = true }
 
 [lints]
 workspace = true

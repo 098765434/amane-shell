@@ -9,11 +9,12 @@
 //! stops it from another. What a step says comes back as it goes: the log
 //! lines, and the build's [`Progress`].
 
+use amane_base::sync::Locked as _;
 use std::collections::VecDeque;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Mutex, PoisonError};
 
 use amane_process::{Cmd, Failure, Stopper};
 use serde_json::Value;
@@ -200,12 +201,7 @@ impl Steps {
     /// Stops the step running, and any after it in this job.
     pub fn cancel(&self) {
         self.cancelled.store(true, Ordering::SeqCst);
-        if let Some(child) = self
-            .child
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .as_ref()
-        {
+        if let Some(child) = self.child.locked().as_ref() {
             child.stop();
         }
     }
@@ -231,13 +227,10 @@ impl Steps {
                 format!("{}: {error}", command.program().to_string_lossy()),
             )
         })?;
-        *self.child.lock().unwrap_or_else(PoisonError::into_inner) = Some(running.stopper());
+        *self.child.locked() = Some(running.stopper());
         let seen = running.each_stderr_line(each_stderr_line);
         let result = running.finish_with(seen);
-        self.child
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .take();
+        self.child.locked().take();
         if self.cancelled() {
             return Err(StepError::Cancelled);
         }

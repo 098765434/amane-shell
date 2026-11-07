@@ -1,5 +1,6 @@
+use amane_base::sync::Locked as _;
 use std::collections::HashMap;
-use std::sync::{Arc, LazyLock, Mutex, MutexGuard, Once, PoisonError};
+use std::sync::{Arc, LazyLock, Mutex, MutexGuard, Once};
 use std::thread;
 
 use amane::{Argument, Bus, BusError, run_in_order};
@@ -37,7 +38,7 @@ static CLIENT: LazyLock<Mutex<Client>> = LazyLock::new(Mutex::default);
 static LISTENING: Once = Once::new();
 
 fn client() -> MutexGuard<'static, Client> {
-    CLIENT.lock().unwrap_or_else(PoisonError::into_inner)
+    CLIENT.locked()
 }
 
 fn call(method: &str, arguments: &[Argument]) -> Result<amane::Value, BusError> {

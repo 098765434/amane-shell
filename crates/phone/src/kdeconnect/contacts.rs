@@ -37,11 +37,7 @@ pub(crate) struct Contacts {
 
 impl Contacts {
     pub(crate) fn load(device: &str) -> Self {
-        let Some(folder) = folder(device) else {
-            return Self::default();
-        };
-
-        let Ok(entries) = fs::read_dir(folder) else {
+        let Ok(entries) = fs::read_dir(folder(device)) else {
             return Self::default();
         };
 
@@ -167,17 +163,10 @@ impl Contacts {
     }
 }
 
-fn folder(device: &str) -> Option<PathBuf> {
-    let data = std::env::var_os("XDG_DATA_HOME")
-        .map(PathBuf::from)
-        .or_else(|| {
-            std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/share"))
-        })?;
-
-    Some(
-        data.join("kpeoplevcard")
-            .join(format!("kdeconnect-{device}")),
-    )
+fn folder(device: &str) -> PathBuf {
+    amane_base::paths::data()
+        .join("kpeoplevcard")
+        .join(format!("kdeconnect-{device}"))
 }
 
 pub(crate) fn same_number(a: &str, b: &str) -> bool {
