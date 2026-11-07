@@ -38,6 +38,8 @@ use amane::{
     Widget, WindowSize, WorkspaceSwitch, Workspaces, Zone,
 };
 
+use crate::chrome::bar;
+use crate::chrome::per_output::PerOutput;
 use crate::services::desktop::system_stats::SystemStats;
 use crate::surfaces::context_menu::{self, ContextMenu, Icon, MenuItem};
 use crate::surfaces::status_bar;
@@ -109,12 +111,12 @@ impl Geometry {
     fn of(width: f32, height: f32) -> Self {
         let px = metrics();
         let area_w = width - 2.0 * MARGIN;
-        let bar = status_bar::height();
+        let bar = bar::height();
         let area_h = height - bar - 2.0 * MARGIN;
         let canvas = Canvas::fit(&px, area_w, area_h);
         let (x, y) = px.centred_origin(&canvas, area_w, area_h);
         // below a bar along the top, rather than above one along the bottom
-        let top = if status_bar::edge() == Vertical::Top {
+        let top = if bar::edge() == Vertical::Top {
             bar
         } else {
             0.0
@@ -204,7 +206,7 @@ impl Desk {
 }
 
 thread_local! {
-    static DESKS: RefCell<HashMap<String, Desk>> = RefCell::new(HashMap::new());
+    static DESKS: PerOutput<Desk> = const { PerOutput::new() };
     static NAMES: RefCell<HashMap<String, &'static str>> = RefCell::new(HashMap::new());
     /// The windows that show a system card, live, now.
     static WATCHING: RefCell<HashSet<&'static str>> = RefCell::new(HashSet::new());
@@ -249,7 +251,7 @@ fn changed() {
 }
 
 fn with_desk<R>(output: &str, f: impl FnOnce(&mut Desk) -> R) -> R {
-    DESKS.with_borrow_mut(|desks| f(desks.entry(output.to_string()).or_insert_with(Desk::new)))
+    DESKS.with(|desks| desks.with(output, Desk::new, f))
 }
 
 /// The namespace `amane.widgets.<name>`: a monitor's desktop surface (its
@@ -1103,7 +1105,7 @@ fn output_for(name: Option<&String>) -> Option<String> {
         .iter()
         .find(|ws| ws.focused())
         .and_then(|ws| ws.output().map(String::from));
-    focused.or_else(|| DESKS.with_borrow(|desks| desks.keys().next().cloned()))
+    focused.or_else(|| DESKS.with(|desks| desks.all(|desks| desks.keys().next().cloned())))
 }
 
 /// `widgets list`, `add <kind> [size] [output]`, `remove <id>`,
@@ -1198,8 +1200,8 @@ mod tests {
         let geometry = Geometry::of(1920.0, 1080.0);
         let px = metrics();
         // the bar is wherever the settings put it, top or bottom
-        let bar = status_bar::height();
-        let (above, below) = match status_bar::edge() {
+        let bar = bar::height();
+        let (above, below) = match bar::edge() {
             Vertical::Top => (bar, 0.0),
             _ => (0.0, bar),
         };

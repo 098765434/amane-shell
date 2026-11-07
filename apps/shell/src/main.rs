@@ -187,6 +187,13 @@ fn main() -> ExitCode {
     // the bar's hidden icons, from the state file they were kept in before
     status_bar::migrate();
 
+    // what the panels do as they open and close; a menu belongs to the surface it was
+    // opened from, so it closes as the panel changes
+    chrome::per_output::follow_outputs();
+    quick_settings::register_panel();
+    notifications::register_panel();
+    chrome::panel::on_switch(context_menu::close);
+
     let mut app = App::new()
         .window(quick_settings::surface)
         .window(notifications::side_sheet)

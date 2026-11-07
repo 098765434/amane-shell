@@ -10,7 +10,7 @@
 use amane::{Notification, Service};
 use amane_phone::{KdeConnect, PhoneNotification};
 
-use crate::surfaces::quick_settings::tiles::phone_screen;
+use super::{MESSAGES_APP, MIRROR_APP, quoted, screen};
 
 /// What the button says.
 pub const LABEL: &str = "Open on Phone";
@@ -37,10 +37,6 @@ const MESSAGING: [&str; 2] = [
 
 /// What Open in Messages says.
 pub const MESSAGES_LABEL: &str = "Open in Messages";
-
-fn quoted(text: &str) -> String {
-    format!("'{}'", text.replace('\'', r"'\''"))
-}
 
 /// The buttons a phone's notification gets, as their labels and the
 /// commands they run: Open in Messages for a text message, and Open on
@@ -72,18 +68,18 @@ pub fn commands(notification: &Notification) -> Vec<(&'static str, String)> {
                 MESSAGES_LABEL,
                 format!(
                     "{} --device {} --view messages --thread-of {}",
-                    crate::surfaces::quick_settings::tiles::phone::MESSAGES_APP,
+                    MESSAGES_APP,
                     quoted(device.id()),
                     quoted(&found.title),
                 ),
             ));
         }
-        if phone_screen::set_up(device.id()) || phone_screen::ready(device) {
+        if screen::set_up(device.id()) || screen::ready(device) {
             commands.push((
                 LABEL,
                 format!(
                     "{} --device {} --app {} --name {}",
-                    phone_screen::MIRROR_APP,
+                    MIRROR_APP,
                     quoted(device.id()),
                     quoted(package),
                     quoted(&found.app),

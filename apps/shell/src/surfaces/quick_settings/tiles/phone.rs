@@ -40,9 +40,6 @@ use amane_kit::layout::{boxed, caption, fixed_width, icon, text_height};
 use amane_kit::list::{self, List, ListItem};
 use amane_kit::material::{self, Level};
 
-/// The app the phone's messages and remote input open in.
-pub(crate) const MESSAGES_APP: &str = "amane-messages";
-
 /// `ring_volume`, `upload_file` and `chat`, for the device page's rows.
 const ICON_RING: char = '\u{e0d1}';
 const ICON_SEND_FILE: char = '\u{e9fc}';
@@ -56,11 +53,8 @@ thread_local! {
     static SEARCHED: Cell<bool> = const { Cell::new(false) };
 }
 
-/// Whether KDE Connect is installed: its daemon is on `PATH` while it's on
-/// in Shell Settings → Services.
-pub(crate) fn available() -> bool {
-    installed("kdeconnectd")
-}
+use crate::services::phone::MESSAGES_APP;
+pub(crate) use crate::services::phone::available;
 
 /// The glyph for a kind of device, as KDE Connect names them.
 pub(crate) fn kind_glyph(kind: &str) -> char {
@@ -162,10 +156,7 @@ fn ask_forget(device: &PhoneDevice) {
     alert::show(ask);
 }
 
-/// Opens `amane-messages` on `device`, at `view` ("messages" or "input").
-fn open_app(device: &str, view: &str) {
-    amane::spawn_activated(&format!("{MESSAGES_APP} --device {device} --view {view}"));
-}
+use crate::services::phone::open_messages as open_app;
 
 // ───── the list ──────────────────────────────────────────────────────────────
 

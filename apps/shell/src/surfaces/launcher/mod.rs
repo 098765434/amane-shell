@@ -74,7 +74,7 @@ use amane_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
 use amane_kit::text_edit::{self, Field};
 
 use entries::{Entry, Scope};
-use mode::Mode;
+pub use mode::Mode;
 use provider::{Found, Query};
 use shape::{Geometry, PILL_H, PILL_W};
 
@@ -623,10 +623,6 @@ fn under(apps: &[DesktopApp], bucket: usize) -> Vec<&DesktopApp> {
 
 // ───── runtime ───────────────────────────────────────────────────────────────
 
-pub(crate) fn opened() {}
-
-pub(crate) fn closed() {}
-
 /// Gone from the screen: the next opening starts afresh, on the pill.
 fn hidden() {
     // listening ends with the launcher
@@ -641,6 +637,15 @@ fn hidden() {
 }
 
 /// `amane-shell` IPC: `launcher [toggle | open | close] [mode]`.
+/// Opens the launcher on `mode`, as `launcher open <mode>` does.
+pub fn open(mode: Mode) {
+    switch_mode(mode);
+    if !is_open(Panel::Launcher) {
+        panel::toggle(Panel::Launcher);
+    }
+    Launcher::changed();
+}
+
 pub fn ipc(args: &[String]) -> String {
     const USAGE: &str =
         "usage: launcher [toggle | open | close] [apps | files | actions | clipboard | passwords]";

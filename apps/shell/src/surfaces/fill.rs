@@ -647,7 +647,7 @@ fn press(run: impl Fn() + 'static) -> Actions {
 }
 
 fn search() {
-    crate::surfaces::launcher::ipc(&[String::from("open"), String::from("vault")]);
+    crate::surfaces::launcher::open(crate::surfaces::launcher::Mode::Vault);
 }
 
 fn open_settings() {

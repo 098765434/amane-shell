@@ -5,7 +5,7 @@
 use amane_kit::icons::{ICON_APPS, ICON_CONTENT_PASTE, ICON_FOLDER, ICON_LAYERS, ICON_LOCK};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(super) enum Mode {
+pub enum Mode {
     /// The pill: apps, answers, the session and the web.
     #[default]
     Home,

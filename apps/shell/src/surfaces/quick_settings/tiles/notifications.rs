@@ -9,9 +9,8 @@ use amane::Service;
 use chrono::Local;
 
 use super::super::{Page, open};
-use crate::surfaces::notifications::DoNotDisturb;
-use crate::surfaces::notifications::card::local;
-use crate::surfaces::notifications::dnd::{self, Until};
+use crate::services::clock::local;
+use crate::services::do_not_disturb::{self as dnd, DoNotDisturb, Until};
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use amane_kit::icons::ICON_DND;

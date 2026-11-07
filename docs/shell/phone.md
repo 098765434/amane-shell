@@ -48,7 +48,7 @@ The page:
   answer at once.
 - **A phone asking to pair** appears under the list with its code and
   **Decline** / **Pair**. When the page isn't showing, it asks in the shell's
-  alert instead (`surfaces/alert/phone.rs`).
+  alert instead (`surfaces/alert/phone.rs`, from `services/phone/pairing.rs`).
 - Without the daemon, the page says so and offers **Turn On**.
 
 A paired phone's page, as far as the phone offers each:
@@ -166,7 +166,7 @@ two work together:
   scrcpy's own clipboard sync is off, so a copy isn't echoed back. Ctrl+V in
   the screen still pastes this computer's clipboard into the phone.
 - **Notifications stay KDE Connect's.** A phone notification gets **Open on
-  Phone**, which opens its app (`surfaces/notifications/phone.rs`).
+  Phone**, which opens its app (`services/phone/notifications.rs`).
 - **Phone Input** stays for when adb isn't there. Messages offers **Show
   Screen** beside it when it is.
 

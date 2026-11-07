@@ -110,7 +110,7 @@ again. The old readers go after 2027-01.
 
 | File | Holds | Written by | Read before it |
 |---|---|---|---|
-| `dnd.json` | Do Not Disturb: `"off"`, `"forever"` or `{"until": <unix seconds>}` | `notifications/dnd.rs` | `dnd` |
+| `dnd.json` | Do Not Disturb: `"off"`, `"forever"` or `{"until": <unix seconds>}` | `services/do_not_disturb.rs` | `dnd` |
 | `dock-pins.json` | the dock's pins | `dock/pins.rs` | `dock-pins` |
 | `quick-settings.json` | Quick Settings' layout | `quick_settings/layout.rs` | `quick-settings` (version 2) |
 | `widgets.json` | each monitor's widgets and their settings | `widgets/store.rs` | `widgets` (version 1) |

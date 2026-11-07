@@ -122,6 +122,13 @@ fn shown(now: DateTime<Local>) -> String {
     .to_string()
 }
 
+/// `time` on the local clock, in chrono's `format`.
+pub fn local(time: std::time::SystemTime, format: &str) -> String {
+    chrono::DateTime::<chrono::Local>::from(time)
+        .format(format)
+        .to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

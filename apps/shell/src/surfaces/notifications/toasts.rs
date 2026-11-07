@@ -23,9 +23,9 @@ use amane::{
 };
 
 use super::card::{self, Measured, Place, critical};
-use super::dnd::DoNotDisturb;
 use crate::chrome::panel::{Panel, is_open, overlay};
 use crate::services::Wake;
+use crate::services::do_not_disturb::DoNotDisturb;
 use crate::tokens::{notification, sys};
 use amane_kit::glass_region;
 use amane_kit::layout::blank;

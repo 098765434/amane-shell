@@ -96,11 +96,6 @@ pub fn metrics() -> Metrics {
     Metrics::of(status_bar().size)
 }
 
-/// How tall the bar is, for what keeps clear of it.
-pub fn height() -> f32 {
-    metrics().height
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

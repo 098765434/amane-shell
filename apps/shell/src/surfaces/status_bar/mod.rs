@@ -27,8 +27,7 @@ mod size;
 mod tray;
 mod workspace_shape;
 
-use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::cell::Cell;
 use std::time::Duration;
 
 use amane::{
@@ -37,19 +36,20 @@ use amane::{
     Row, Scroll, ScrollSource, Service, Size, Start, Vertical, Widget, Workspace, Workspaces, Zone,
     window_size,
 };
-use amane_kit::settings::{AutoHide, BarPosition, BarStyle, ClockStyle, ShowDate, status_bar};
+use amane_kit::settings::{AutoHide, BarStyle, ClockStyle, ShowDate, status_bar};
 use amane_kit::theme::{self, Mode};
 use amane_phone::KdeConnect;
 
 use crate::chrome::battery;
 use crate::chrome::panel::{self, Panel, is_open};
+use crate::services::clock::Clock;
 use crate::services::display::night_light::NightLight;
-use crate::services::launcher::clock::Clock;
+use crate::services::do_not_disturb::DoNotDisturb;
 use crate::services::network::connections::Connections;
 use crate::services::network::rfkill::Rfkill;
 use crate::services::network::tailscale::{State as TailscaleState, Tailscale};
 use crate::services::power::keep_awake::KeepAwake;
-use crate::surfaces::notifications::{self, DoNotDisturb};
+use crate::surfaces::notifications;
 use crate::surfaces::quick_settings::{self, Page};
 use amane_kit::buttons::{ButtonBuilder, DrawnButton, IconButton, PushButton, Shape, Style};
 use amane_kit::edge_reveal::EdgeReveal;
@@ -67,9 +67,11 @@ use crate::tokens::{bar, sys};
 
 pub(crate) use indicators::{Indicator, Item};
 
+use crate::chrome::bar::{edge, height};
+use crate::chrome::per_output::PerOutput;
 pub use activities::popup as activity_popup;
 pub use indicators::{ipc, migrate};
-pub use size::{height, metrics};
+pub use size::metrics;
 pub use workspace_shape::switch_position;
 
 /// The status bar's layer-surface namespace. The niri `layer-rule` matches
@@ -88,7 +90,7 @@ thread_local! {
     static SCROLLED: Cell<f32> = const { Cell::new(0.0) };
 
     // where each monitor's hiding bar is, when it hides
-    static REVEALS: RefCell<HashMap<String, EdgeReveal>> = RefCell::new(HashMap::new());
+    static REVEALS: PerOutput<EdgeReveal> = const { PerOutput::new() };
 }
 
 fn new_reveal() -> EdgeReveal {
@@ -106,17 +108,7 @@ fn new_reveal() -> EdgeReveal {
 
 /// Runs `f` on monitor `output`'s bar's reveal.
 fn with_reveal<R>(output: &str, f: impl FnOnce(&mut EdgeReveal) -> R) -> R {
-    REVEALS
-        .with_borrow_mut(|reveals| f(reveals.entry(output.to_string()).or_insert_with(new_reveal)))
-}
-
-/// The edge the bar runs along; the panels and cards that keep clear of
-/// it ask here.
-pub fn edge() -> Vertical {
-    match status_bar().position {
-        BarPosition::Bottom => Vertical::Bottom,
-        BarPosition::Top => Vertical::Top,
-    }
+    REVEALS.with(|reveals| reveals.with(output, new_reveal, f))
 }
 
 /// The status bar on `monitor`, one on each display. Registered with
@@ -732,7 +724,7 @@ fn notification_icon() -> Option<Box<dyn Widget>> {
         bar_icon("amane.bar.notifications", glyph, color)
             .active(is_open(Panel::Notifications))
             .on_press(|| panel::toggle(Panel::Notifications))
-            .on_secondary(|| DoNotDisturb::open_menu(BAR_NS, (cursor().0, menu_edge())))
+            .on_secondary(|| notifications::dnd_menu(BAR_NS, (cursor().0, menu_edge())))
             .tooltip(BAR_NS, tip)
             .build(),
     ))

@@ -11,8 +11,7 @@
 //! The shape is one closed straight-sided `Path`, so it draws as a single
 //! quad outline and never reaches vello.
 
-use std::cell::RefCell;
-use std::collections::HashMap;
+use crate::chrome::per_output::PerOutput;
 use std::f32::consts::{PI, TAU};
 use std::time::Duration;
 
@@ -47,7 +46,7 @@ const TURN: f32 = PI / 12.0;
 thread_local! {
     // where each monitor's shape is heading, on a monitor niri doesn't
     // report the switch for
-    static SPRINGS: RefCell<HashMap<String, Animation<f32>>> = RefCell::new(HashMap::new());
+    static SPRINGS: PerOutput<Animation<f32>> = const { PerOutput::new() };
 }
 
 /// One shape: how far its edge is from its middle at each of [`POINTS`]
@@ -280,21 +279,22 @@ fn spring(value: f32) -> Animation<f32> {
 /// reports it there, else springing to the workspace `shown` (0 the top).
 fn position(output: &str, count: usize, shown: usize) -> f32 {
     let reported = switch_position(&WorkspaceSwitch::read(), output, count);
-    SPRINGS.with_borrow_mut(|springs| {
-        let spring_here = springs
-            .entry(output.to_string())
-            .or_insert_with(|| spring(shown as f32));
-        match reported {
-            Some(at) => {
-                // kept where niri says, so losing the report never jumps
-                *spring_here = spring(at);
-                at
-            }
-            None => {
-                spring_here.to(shown as f32);
-                spring_here.value()
-            }
-        }
+    SPRINGS.with(|springs| {
+        springs.with(
+            output,
+            || spring(shown as f32),
+            |spring_here| match reported {
+                Some(at) => {
+                    // kept where niri says, so losing the report never jumps
+                    *spring_here = spring(at);
+                    at
+                }
+                None => {
+                    spring_here.to(shown as f32);
+                    spring_here.value()
+                }
+            },
+        )
     })
 }
 

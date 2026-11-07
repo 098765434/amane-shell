@@ -318,7 +318,7 @@ The parts are in `apps/shell/src/surfaces/quick_settings/`:
   control on a plain tint, named), the footer, the still drag layer and the control in hand;
   `catalog.rs` the categories, what each shows and the search (pure, tested).
 - **`glass_region`** (the kit's, `crates/kit/src/look/glass_region.rs`): the frost behind a piece of glass as a blur shape, and its transforms.
-- **`tiles/media.rs`**: the square Now Playing module.
+- **`tiles/media.rs`**: the square Now Playing module; its art is `services/media_art.rs`'.
 - **`slider_card.rs`**: the Display and Sound cards: a title over each thin slider, a small
   glyph before the track and a large faint one after it, and a right click (`Card::on_secondary`)
   for a card with a page. The track's fill is the panel's `fg` (white in dark mode),

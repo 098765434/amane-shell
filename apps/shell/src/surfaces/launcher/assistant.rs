@@ -174,9 +174,9 @@ fn proposal(
                 Level::Volume => ("Volume", ICON_VOLUME_UP, ICON_VOLUME_DOWN),
                 Level::Brightness => ("Brightness", ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW),
             };
-            let key = match level {
-                Level::Volume => "volume",
-                Level::Brightness => "brightness",
+            let step = match level {
+                Level::Volume => osd::step_volume,
+                Level::Brightness => osd::step_brightness,
             };
             match *target {
                 Target::Percent(percent) => {
@@ -193,16 +193,12 @@ fn proposal(
                 Target::Up => (
                     format!("Turn {name} Up"),
                     Icon::Glyph(up),
-                    run(Rc::new(move || {
-                        osd::ipc(&[key.to_string(), String::from("up")]);
-                    })),
+                    run(Rc::new(move || step(true))),
                 ),
                 Target::Down => (
                     format!("Turn {name} Down"),
                     Icon::Glyph(down),
-                    run(Rc::new(move || {
-                        osd::ipc(&[key.to_string(), String::from("down")]);
-                    })),
+                    run(Rc::new(move || step(false))),
                 ),
             }
         }
@@ -224,9 +220,7 @@ fn proposal(
             (
                 String::from(if to { "Mute Sound" } else { "Unmute Sound" }),
                 Icon::Glyph(if to { ICON_VOLUME_OFF } else { ICON_VOLUME_UP }),
-                run(Rc::new(|| {
-                    osd::ipc(&[String::from("volume"), String::from("mute")]);
-                })),
+                run(Rc::new(osd::toggle_mute)),
             )
         }
         Command::Open { app } => {

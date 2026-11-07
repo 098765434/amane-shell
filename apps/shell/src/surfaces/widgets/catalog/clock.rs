@@ -16,7 +16,7 @@ use chrono::{Local, Timelike};
 
 use super::digits::{self, HEIGHT, WIDTH};
 use super::{Face, accent, caption_style, line, place};
-use crate::services::launcher::clock::Clock;
+use crate::services::clock::Clock;
 use crate::surfaces::widgets::kind::WidgetSize;
 use crate::theme;
 use amane_kit::layout::{text_height, text_width};

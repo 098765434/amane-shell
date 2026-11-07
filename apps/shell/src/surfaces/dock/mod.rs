@@ -46,8 +46,9 @@ use amane::{
 
 use amane_kit::settings::dock as dock_settings;
 
+use crate::chrome::bar;
+use crate::chrome::per_output::PerOutput;
 use crate::surfaces::context_menu;
-use crate::surfaces::status_bar;
 use crate::tokens::sys;
 use amane_kit::app_icon;
 use amane_kit::divider::Divider;
@@ -159,7 +160,7 @@ impl Dock {
 }
 
 thread_local! {
-    static DOCKS: RefCell<HashMap<String, Dock>> = RefCell::new(HashMap::new());
+    static DOCKS: PerOutput<Dock> = const { PerOutput::new() };
 
     // the windows by when they last had the focus, latest first, for which
     // of an app's windows its pin brings up
@@ -177,14 +178,17 @@ thread_local! {
 /// changed its motion.
 fn with_dock<R>(output: &str, f: impl FnOnce(&mut Dock) -> R) -> R {
     let motion = motion::motion();
-    DOCKS.with_borrow_mut(|docks| {
-        let dock = docks
-            .entry(output.to_string())
-            .or_insert_with(|| Dock::new(&motion));
-        if dock.motion != motion {
-            *dock = Dock::new(&motion);
-        }
-        f(dock)
+    DOCKS.with(|docks| {
+        docks.with(
+            output,
+            || Dock::new(&motion),
+            |dock| {
+                if dock.motion != motion {
+                    *dock = Dock::new(&motion);
+                }
+                f(dock)
+            },
+        )
     })
 }
 
@@ -236,9 +240,9 @@ impl Measures {
         let headroom = |side: f32| side * (scale - 1.0) + lift + tip + sys::space::gap::s();
         // over the bar, the gap a popover keeps from it; a bar along the top
         // isn't in the way, nor is one a dock that stays out keeps above
-        let over_bar = status_bar::edge() == Vertical::Bottom && dock_settings().auto_hide;
+        let over_bar = bar::edge() == Vertical::Bottom && dock_settings().auto_hide;
         let below = if over_bar {
-            status_bar::height() + sys::space::gap::m()
+            bar::height() + sys::space::gap::m()
         } else {
             sys::space::gap::m()
         };

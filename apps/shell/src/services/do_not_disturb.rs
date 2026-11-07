@@ -1,4 +1,5 @@
 //! Do Not Disturb — hides toasts until it's turned off or its time runs out.
+//! The notifications surface hides them, and offers [`choices`] in its menu.
 //!
 //! Notifications still arrive and collect in the center, and critical ones
 //! still show as toasts. It's kept in the state file `dnd.json` (the older
@@ -15,13 +16,9 @@ use crate::services::state::{self, State};
 use crate::services::Wake;
 use chrono::{Days, Local, NaiveDateTime, NaiveTime, TimeZone};
 
-use crate::surfaces::context_menu::{self, ContextMenu, MenuItem};
-
 /// When a timed Do Not Disturb runs out: "this evening" and "tomorrow".
 const EVENING: NaiveTime = NaiveTime::from_hms_opt(19, 0, 0).unwrap();
 const MORNING: NaiveTime = NaiveTime::from_hms_opt(8, 0, 0).unwrap();
-
-const MENU_KEY: &str = "amane.notifications.dnd";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Until {
@@ -94,24 +91,6 @@ impl DoNotDisturb {
     pub fn toggle() {
         let on = Self::read().on();
         Self::set(if on { None } else { Some(Until::Forever) });
-    }
-
-    /// The menu of timed choices, hung under `parent_ns` at `point`.
-    pub fn open_menu(parent_ns: &'static str, point: (i32, i32)) {
-        let on = Self::read().on();
-
-        let mut menu = ContextMenu::new();
-        for (label, end) in choices(Local::now().naive_local()) {
-            menu = menu.item(MenuItem::label(label).on_select(move || Self::set(Some(end))));
-        }
-        menu = menu.separator();
-        menu = if on {
-            menu.item(MenuItem::label("Turn Off").on_select(|| Self::set(None)))
-        } else {
-            menu.item(MenuItem::label("Turn On").on_select(|| Self::set(Some(Until::Forever))))
-        };
-
-        context_menu::show_under(MENU_KEY, menu, parent_ns, point);
     }
 }
 

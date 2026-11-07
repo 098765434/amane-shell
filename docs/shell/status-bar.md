@@ -274,7 +274,7 @@ the layouts with a tick on the current one; picking one runs `niri msg action sw
 - `components/battery.rs`: a battery reads low from UPower's warning level, or at 15 % and below
   when nothing gives one (`battery::low`, `battery::LOW`), so the bar and Quick Settings agree.
   `battery::color` and `battery::tint` give the colour that says so.
-- `services/launcher/clock.rs`: the `Clock` service (time and date), also read by the notification center.
+- `services/clock.rs`: the `Clock` service (time and date), also read by the notification center.
 - `dock/window_menu.rs`: a window's and a pinned app's context menus, opened from the dock. Their
   "Move to Workspace" and "Open in Workspace" submenus are the shared
   `surfaces/context_menu/workspace_menu.rs`, which the launcher's app menu uses too.

@@ -91,6 +91,29 @@ pub fn ipc(args: &[String]) -> String {
     String::from("ok")
 }
 
+/// One step of the volume up or down, as its key does.
+pub fn step_volume(up: bool) {
+    volume(if up {
+        i16::from(STEP)
+    } else {
+        -i16::from(STEP)
+    });
+}
+
+/// One step of the screen's brightness up or down, as its key does.
+pub fn step_brightness(up: bool) {
+    brightness(if up {
+        i16::from(STEP)
+    } else {
+        -i16::from(STEP)
+    });
+}
+
+/// Mutes or unmutes the sound, as its key does.
+pub fn toggle_mute() {
+    mute();
+}
+
 /// Sets the volume to `level`, showing it, as the keys would get there.
 pub fn set_volume(level: u8) {
     let now = latest(&VOLUME, Audio::read().volume());

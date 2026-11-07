@@ -65,10 +65,10 @@ use amane::{
     Parent, Rectangle, Size, Stack, Start, Vertical, Widget, WindowSize, window_size,
 };
 
+use crate::chrome::bar;
 use crate::chrome::panel::{self, Panel, close, is_open, overlay, popover_margin};
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::surfaces::quick_settings::layout::Stored as _;
-use crate::surfaces::status_bar;
 use crate::tokens::quick;
 use amane_kit::glass_region;
 use amane_kit::layout::{blank, boxed, pad, track_cursor};
@@ -229,11 +229,20 @@ fn escape() {
     }
 }
 
-pub(crate) fn opened() {}
+/// Tells the panels what Quick Settings does as it closes. Once, at startup.
+pub fn register_panel() {
+    panel::register(
+        Panel::QuickSettings,
+        panel::Hooks {
+            opened: || {},
+            closed,
+        },
+    );
+}
 
 /// The panel closed: its page's searches stop now; the page itself, and
 /// edit mode's canvas, stay drawn as they were while the card fades away.
-pub(crate) fn closed() {
+fn closed() {
     pages::left(PAGE.get());
 }
 
@@ -582,7 +591,7 @@ pub fn surface() -> LayerWindow {
     let scale = f32::blend(motion::scale(quick::open::scale()), 1.0, unfolded);
     // under a bar along the top it drops out of the bar instead, its
     // top-right corner staying put
-    let down = if status_bar::edge() == Vertical::Top {
+    let down = if bar::edge() == Vertical::Top {
         -1.0
     } else {
         1.0
@@ -613,7 +622,7 @@ pub fn surface() -> LayerWindow {
     let margin = popover_margin();
     let card_at = (
         (screen_w - margin.right as f32 - width).max(0.0),
-        if status_bar::edge() == Vertical::Top {
+        if bar::edge() == Vertical::Top {
             margin.top as f32
         } else {
             (screen_h - margin.bottom as f32 - outer).max(0.0)
@@ -808,7 +817,7 @@ fn window(width: f32, height: f32) -> LayerWindow {
         .width(width)
         .height(height)
         .margin(popover_margin());
-    overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right).output(panel::on_output())
+    overlay(keyed(base), QS_NS, bar::edge(), Horizontal::Right).output(panel::on_output())
 }
 
 /// The surface over the whole output while the card shows (clear of what
@@ -818,7 +827,7 @@ fn full_window() -> LayerWindow {
     let base = LayerWindow::new()
         .width(WindowSize::Full)
         .height(WindowSize::Full);
-    overlay(keyed(base), QS_NS, status_bar::edge(), Horizontal::Right).output(panel::on_output())
+    overlay(keyed(base), QS_NS, bar::edge(), Horizontal::Right).output(panel::on_output())
 }
 
 /// `base` taking the keyboard: the card is modal while open, so Escape

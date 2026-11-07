@@ -36,7 +36,7 @@ use amane_kit::material::{self, FillLevel, Level, Material};
 use amane_kit::motion;
 use amane_kit::slider::Slider;
 
-pub use keys::{ipc, set_brightness, set_volume};
+pub use keys::{ipc, set_brightness, set_volume, step_brightness, step_volume, toggle_mute};
 
 amane_kit::marker! {
     /// The display showed, changed or ran out: only its window draws again.

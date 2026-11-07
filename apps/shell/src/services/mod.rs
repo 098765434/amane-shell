@@ -33,7 +33,7 @@
 //!
 //! The launcher and the bar (`launcher/`):
 //!
-//! - [`launcher::clock`] — the wall-clock time and date the bar shows.
+//! - [`clock`] — the wall-clock time and date the bar shows, and times written on the local clock.
 //! - [`launcher::timer`] — the launcher's countdown, which the bar shows while it runs.
 //! - [`launcher::clipboard_history`] — what's been copied, for the launcher's
 //!   Clipboard (wl-clipboard), once it's turned on.
@@ -53,9 +53,12 @@
 //! [`Service`]: amane::Service
 
 pub mod assistant;
+pub mod clock;
 pub mod desktop;
 pub mod display;
+pub mod do_not_disturb;
 pub mod launcher;
+pub mod media_art;
 pub mod network;
 pub mod phone;
 pub mod power;

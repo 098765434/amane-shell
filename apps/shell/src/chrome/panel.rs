@@ -8,7 +8,7 @@ use std::cell::{Cell, RefCell};
 
 use amane::{Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Vertical, Zone, mark_all};
 
-use crate::surfaces::{context_menu, launcher, notifications, quick_settings, status_bar};
+use super::bar;
 use crate::tokens::sys;
 use amane_kit::material;
 
@@ -16,17 +16,51 @@ use amane_kit::material;
 pub enum Panel {
     /// The notification center, a sidebar at the right edge.
     Notifications,
-    /// Quick Settings, a bottom-right card, see [`quick_settings`].
+    /// Quick Settings, a card at the bar's right-hand corner.
     QuickSettings,
-    /// The app launcher, a panel in the middle, see [`launcher`].
+    /// The app launcher, a panel in the middle.
     Launcher,
 }
+
+/// What a panel's surface does as it opens and closes, given once at startup
+/// ([`register`]) so this module knows no surface.
+#[derive(Clone, Copy)]
+pub struct Hooks {
+    pub opened: fn(),
+    pub closed: fn(),
+}
+
+/// What happens whenever the open panel changes away from one, as closing the
+/// menu that belonged to it.
+pub type OnSwitch = fn();
 
 thread_local! {
     static OPEN: Cell<Option<Panel>> = const { Cell::new(None) };
 
     // the monitor the open panel shows on: the one the pointer was over
     static ON: RefCell<Option<String>> = const { RefCell::new(None) };
+
+    static HOOKS: RefCell<Vec<(Panel, Hooks)>> = const { RefCell::new(Vec::new()) };
+    static ON_SWITCH: RefCell<Vec<OnSwitch>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Runs `hooks` as `panel` opens and closes.
+pub fn register(panel: Panel, hooks: Hooks) {
+    HOOKS.with_borrow_mut(|all| all.push((panel, hooks)));
+}
+
+/// Runs `f` whenever the open panel changes away from one.
+pub fn on_switch(f: OnSwitch) {
+    ON_SWITCH.with_borrow_mut(|all| all.push(f));
+}
+
+fn hooks(panel: Option<Panel>) -> Vec<Hooks> {
+    HOOKS.with_borrow(|all| {
+        all.iter()
+            .filter(|(p, _)| Some(*p) == panel)
+            .map(|(_, hooks)| *hooks)
+            .collect()
+    })
 }
 
 /// The monitor the panels show on, by name: the one the pointer was over as
@@ -67,21 +101,16 @@ fn set(next: Option<Panel>) {
         return;
     }
 
-    match previous {
-        Some(Panel::Notifications) => notifications::center::closed(),
-        Some(Panel::QuickSettings) => quick_settings::closed(),
-        Some(Panel::Launcher) => launcher::closed(),
-        _ => {}
+    for hooks in hooks(previous) {
+        (hooks.closed)();
     }
-    match next {
-        Some(Panel::Notifications) => notifications::center::opened(),
-        Some(Panel::QuickSettings) => quick_settings::opened(),
-        Some(Panel::Launcher) => launcher::opened(),
-        _ => {}
+    for hooks in hooks(next) {
+        (hooks.opened)();
     }
-    // a menu belongs to the surface it was opened from
     if previous.is_some() {
-        context_menu::close();
+        for f in ON_SWITCH.with_borrow(Clone::clone) {
+            f();
+        }
     }
 
     mark_all();
@@ -119,8 +148,8 @@ pub(crate) fn dismissable(base: LayerWindow, keyboard: Keyboard) -> LayerWindow 
 /// Where a card in the bar's right-hand corner sits: `gap.m` in from the
 /// right edge and clear of the bar, above it or below it.
 pub(crate) fn popover_margin() -> Margin {
-    let clear = (status_bar::height() + sys::space::gap::m()) as i32;
-    let top = status_bar::edge() == Vertical::Top;
+    let clear = (bar::height() + sys::space::gap::m()) as i32;
+    let top = bar::edge() == Vertical::Top;
 
     Margin {
         top: if top { clear } else { 0 },

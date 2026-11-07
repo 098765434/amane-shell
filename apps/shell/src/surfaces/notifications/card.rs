@@ -15,11 +15,11 @@ use std::cell::Cell;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
+use crate::services::clock::local;
 use amane::{
     Button, Center, Color, Column, End, Image, Notification, Notifications, Padding, Pointer,
     Rectangle, Row, Size, Start, Text, Urgency, Widget,
 };
-use chrono::{DateTime, Local};
 
 use crate::tokens::{Styled, notification, sys};
 use amane_kit::app_icon::{icon_for, tile as app_icon_tile};
@@ -382,13 +382,13 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
 
 /// Whether the card has a row of buttons: the sender's, or Open on Phone.
 fn has_actions(n: &Notification) -> bool {
-    !n.actions().is_empty() || !super::phone::commands(n).is_empty()
+    !n.actions().is_empty() || !crate::services::phone::notifications::commands(n).is_empty()
 }
 
 /// The sender's actions as equal buttons across `width`, then Open in
 /// Messages and Open on Phone for one of the phone's notifications.
 fn actions(n: &Notification, width: f32, color: Color) -> Row {
-    let phone = super::phone::commands(n);
+    let phone = crate::services::phone::notifications::commands(n);
     let count = (n.actions().len() + phone.len()) as f32;
     let gap = sys::space::gap::s();
     let each = ((width - gap * (count - 1.0)) / count).max(1.0);
@@ -611,11 +611,6 @@ pub fn ago(received: SystemTime, now: SystemTime) -> String {
         60..1440 => format!("{}h ago", minutes / 60),
         _ => local(received, "%a %H:%M"),
     }
-}
-
-/// `time` on the local clock, in chrono's `format`.
-pub fn local(time: SystemTime, format: &str) -> String {
-    DateTime::<Local>::from(time).format(format).to_string()
 }
 
 #[cfg(test)]

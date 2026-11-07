@@ -29,9 +29,9 @@ use amane_status::{ActivityButton, ActivityContent, ItemIcon, Tint, Trailing};
 
 use crate::services::desktop::activities::{self as registry, Live, now_ms};
 use crate::services::desktop::privacy::{CastTarget, Privacy, stop_cast};
+use crate::services::do_not_disturb::DoNotDisturb;
 use crate::services::launcher::timer;
 use crate::surfaces::launcher;
-use crate::surfaces::notifications::DoNotDisturb;
 use crate::surfaces::quick_settings::{self, Page};
 use crate::tokens::{Styled, sys};
 use amane_kit::buttons::{DrawnButton, IconButton, PushButton, Style};
@@ -159,7 +159,7 @@ fn now_playing() -> Option<Shown> {
         .active()
         .map(|player| player.identity().to_string())
         .unwrap_or_default();
-    let art = quick_settings::tiles::media::art_path(media.art_url());
+    let art = crate::services::media_art::path(media.art_url());
     drop(media);
 
     let now = Instant::now();
@@ -258,7 +258,7 @@ fn timer() -> Option<Shown> {
             match button {
                 "cancel" => timer::cancel(),
                 _ => {
-                    launcher::ipc(&[String::from("open"), String::from("actions")]);
+                    launcher::open(launcher::Mode::Actions);
                 }
             }
         }),

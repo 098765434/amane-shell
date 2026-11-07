@@ -20,7 +20,7 @@ use super::edit;
 use super::kind::{Category, WidgetKey, WidgetKind};
 use super::store::Settings;
 use super::{Geometry, MARGIN, RADIUS, changed};
-use crate::surfaces::status_bar;
+use crate::chrome::bar;
 use crate::tokens::{Styled, sys};
 use amane_kit::buttons::{PushButton, Shape, Style};
 use amane_kit::divider::Divider;
@@ -215,8 +215,8 @@ pub(super) fn tile_at(point: amane::Point) -> Option<(WidgetKind, Area, f32)> {
 fn place(geometry: &Geometry) -> Area {
     let width = WIDTH.min(geometry.width - 2.0 * MARGIN).max(1.0);
     let height = HEIGHT.min(geometry.height * 0.5).max(1.0);
-    let bar = if status_bar::edge() == Vertical::Bottom {
-        status_bar::height()
+    let bar = if bar::edge() == Vertical::Bottom {
+        bar::height()
     } else {
         0.0
     };

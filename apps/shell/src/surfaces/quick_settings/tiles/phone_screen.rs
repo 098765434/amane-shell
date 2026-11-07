@@ -6,20 +6,20 @@
 //! KDE Connect and adb complement each other here: KDE Connect knows where
 //! the phone is on the network, and adb (through the fork's `Adb`
 //! service) finds the phone's Wireless debugging there by mDNS, pairs and
-//! connects. A phone set up once is remembered in
-//! `~/.config/amane-shell/phone-screen.json`, so its row stays Screen.
+//! connects. A phone set up once is remembered (`services::phone::screen`),
+//! so its row stays Screen.
 
 use std::cell::RefCell;
-use std::collections::BTreeSet;
 use std::net::IpAddr;
-use std::path::PathBuf;
 
-use amane::serde::{Deserialize, Serialize};
 use amane::{Center, Column, Parent, Rectangle, Row, Service, Size, Text, TextInput, Widget};
 use amane_phone::{Adb, AdbAction, AdbOperation, PhoneDevice, WirelessKind};
 use qrcode::{Color as Module, EcLevel, QrCode};
 
 use crate::services::installed;
+use crate::services::phone::MIRROR_APP;
+use crate::services::phone::screen::{open_screen, ready, remember, set_up};
+use crate::services::phone::webcam::{Facing, Webcam, set_camera};
 use crate::surfaces::quick_settings::QuickSettings;
 use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::tokens::{Styled, sys};
@@ -27,9 +27,6 @@ use amane_kit::buttons::{PushButton, Style, Switch};
 use amane_kit::layout::{boxed, caption};
 use amane_kit::list::ListItem;
 use amane_kit::material::{self, Level};
-
-/// The app the screen opens in.
-pub(crate) const MIRROR_APP: &str = "amane-mirror";
 
 /// `screen_share`, for the Screen row.
 pub(crate) const ICON_SCREEN: char = '\u{e0e2}';
@@ -49,84 +46,9 @@ struct Pairing {
     code: String,
 }
 
-type Known = Option<(Option<std::time::SystemTime>, BTreeSet<String>)>;
-
 thread_local! {
     static PAIRING: RefCell<Option<Pairing>> = const { RefCell::new(None) };
 
-    // the remembered phones, and when their file was written
-    static KNOWN: RefCell<Known> = const { RefCell::new(None) };
-}
-
-#[derive(Default, Serialize, Deserialize)]
-#[serde(crate = "amane::serde")]
-struct Remembered {
-    /// KDE Connect ids of the phones whose screen was set up.
-    devices: BTreeSet<String>,
-}
-
-fn file() -> Option<PathBuf> {
-    let config = amane_kit::paths::config();
-    Some(config.join("amane-shell").join("phone-screen.json"))
-}
-
-fn remembered() -> Remembered {
-    let Some(path) = file() else {
-        return Remembered::default();
-    };
-    // read again only when the file changed: cards ask on every draw
-    let modified = std::fs::metadata(&path)
-        .and_then(|meta| meta.modified())
-        .ok();
-    if let Some(known) = KNOWN.with_borrow(|known| {
-        known
-            .as_ref()
-            .filter(|(when, _)| *when == modified)
-            .map(|(_, devices)| devices.clone())
-    }) {
-        return Remembered { devices: known };
-    }
-    let known: Remembered = std::fs::read_to_string(&path)
-        .ok()
-        .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default();
-    KNOWN.set(Some((modified, known.devices.clone())));
-    known
-}
-
-fn remember(device: &str) {
-    let mut known = remembered();
-    if !known.devices.insert(device.to_string()) {
-        return;
-    }
-    let Some(path) = file() else {
-        return;
-    };
-    // Messages reads this file too, looking for the id in quotes
-    if let Ok(text) = serde_json::to_string_pretty(&known)
-        && let Err(error) = amane_kit::files::write_whole(&path, text)
-    {
-        log::warn!("couldn't save {}: {error}", path.display());
-    }
-}
-
-/// Whether `device`'s screen was set up before.
-pub(crate) fn set_up(device: &str) -> bool {
-    remembered().devices.contains(device)
-}
-
-/// Whether adb has `device` now, at one of the addresses KDE Connect knows.
-pub(crate) fn ready(device: &PhoneDevice) -> bool {
-    let adb = Adb::read();
-    device
-        .addresses()
-        .iter()
-        .any(|address| adb.ready_at(*address).is_some())
-}
-
-/// Opens the phone's screen.
-pub(crate) fn open_screen(device: &str) {
-    amane::spawn_activated(&format!("{MIRROR_APP} --device {device}"));
 }
 
 /// The phone page's row for the screen, when the app and adb are here.
@@ -155,101 +77,6 @@ pub(crate) fn row(device: &PhoneDevice, chevron: impl Fn() -> Text) -> Option<Li
         .trailing(chevron())
         .on_press(move || start(&id)),
     )
-}
-
-// ───── the camera as a webcam ───────────────────────────────────────────────
-
-/// The user unit the webcam runs as, apart from the shell's own.
-const CAMERA_UNIT: &str = "amane-phone-camera";
-
-/// The loopback device's name, as nixos-config loads v4l2loopback.
-const CAMERA_LABEL: &str = "Phone Camera";
-
-/// Which camera the webcam is, while it runs.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Facing {
-    Front,
-    Back,
-}
-
-/// The phone's webcam as the tile shows it: whether its loopback device is there, and which
-/// camera runs. Read on the service's thread once a second (sysfs and every process's command
-/// line), only while the tile shows it, so a view never does that file IO itself.
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
-struct Webcam {
-    loopback: bool,
-    running: Option<Facing>,
-}
-
-impl Service for Webcam {
-    fn new() -> Self {
-        Self::default()
-    }
-
-    fn idle_stop() -> Option<std::time::Duration> {
-        Some(std::time::Duration::from_secs(2))
-    }
-
-    fn update(&mut self) -> bool {
-        let fresh = Self {
-            loopback: loopback(),
-            running: camera(),
-        };
-        let changed = fresh != *self;
-        *self = fresh;
-        changed
-    }
-}
-
-fn loopback() -> bool {
-    std::fs::read_dir("/sys/class/video4linux").is_ok_and(|entries| {
-        entries.flatten().any(|entry| {
-            std::fs::read_to_string(entry.path().join("name"))
-                .is_ok_and(|name| name.trim() == CAMERA_LABEL)
-        })
-    })
-}
-
-/// The running webcam's camera, from its process.
-fn camera() -> Option<Facing> {
-    std::fs::read_dir("/proc").ok().and_then(|entries| {
-        entries.flatten().find_map(|entry| {
-            let line = std::fs::read(entry.path().join("cmdline")).ok()?;
-            let words: Vec<&[u8]> = line.split(|b| *b == 0).collect();
-            let at = words.iter().position(|word| *word == b"--camera")?;
-            if !words.iter().any(|word| {
-                word.ends_with(MIRROR_APP.as_bytes()) || word.ends_with(b".amane-mirror-wrapped")
-            }) {
-                return None;
-            }
-            match words.get(at + 1) {
-                Some(&b"back") => Some(Facing::Back),
-                _ => Some(Facing::Front),
-            }
-        })
-    })
-}
-
-fn set_camera(device: &str, facing: Option<Facing>) {
-    let stop = format!("systemctl --user stop {CAMERA_UNIT}.service");
-    let command = match facing {
-        None => stop,
-        Some(facing) => {
-            let which = if facing == Facing::Back {
-                "back"
-            } else {
-                "front"
-            };
-            format!(
-                "{stop}; systemd-run --user --unit={CAMERA_UNIT} --collect --quiet \
-                 {MIRROR_APP} --camera {which} --device '{device}'"
-            )
-        }
-    };
-    amane::spawn(&command);
-    // shown at once; the next reading confirms it
-    Webcam::write().running = facing;
-    QuickSettings::changed();
 }
 
 /// The webcam's rows, when the loopback device is there and adb has the phone.

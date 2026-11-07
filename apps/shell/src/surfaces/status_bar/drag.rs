@@ -8,8 +8,8 @@
 //! The drag is measured on one still layer over the whole cluster, never
 //! on the item that moves (amane measures a drag against the last frame).
 
+use crate::chrome::per_output::PerOutput;
 use std::cell::RefCell;
-use std::collections::HashMap;
 
 use amane::{Center, Color, Parent, Point, Rectangle, Row, Size, Stack, Widget};
 
@@ -54,7 +54,7 @@ struct Laid {
 
 thread_local! {
     static HELD: RefCell<Option<(String, Held)>> = const { RefCell::new(None) };
-    static LAID: RefCell<HashMap<String, Laid>> = RefCell::new(HashMap::new());
+    static LAID: PerOutput<Laid> = const { PerOutput::new() };
 }
 
 /// The items `built` for the bar on `output`, in a row whose items can be
@@ -106,15 +106,17 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
         left += width + gap;
     }
     let total = (left - gap).max(0.0);
-    LAID.with_borrow_mut(|laid| {
-        laid.insert(
-            output.to_string(),
-            Laid {
-                spans,
-                height,
-                start: amane::window_size().0 - sys::space::inset::m() - total,
-            },
-        );
+    LAID.with(|laid| {
+        laid.all(|laid| {
+            laid.insert(
+                output.to_string(),
+                Laid {
+                    spans,
+                    height,
+                    start: amane::window_size().0 - sys::space::inset::m() - total,
+                },
+            );
+        })
     });
 
     let row = Row::new(children).gap(gap).align(Center).height(Parent);
@@ -133,20 +135,24 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
 
 /// A monitor whose bar has `item`, for when no pointer says which (IPC).
 pub fn output_with(item: Item) -> Option<String> {
-    LAID.with_borrow(|laid| {
-        laid.iter()
-            .find(|(_, laid)| laid.spans.iter().any(|(laid, ..)| *laid == item))
-            .map(|(output, _)| output.clone())
+    LAID.with(|laid| {
+        laid.all(|laid| {
+            laid.iter()
+                .find(|(_, laid)| laid.spans.iter().any(|(laid, ..)| *laid == item))
+                .map(|(output, _)| output.clone())
+        })
     })
 }
 
 /// Where the middle of `item` is on the bar on `output`, as last drawn,
 /// from the bar's left: where a program opens a window under its item.
 pub fn middle_of(output: &str, item: Item) -> Option<f32> {
-    LAID.with_borrow(|laid| {
-        let laid = laid.get(output)?;
-        let (_, left, width) = laid.spans.iter().find(|(laid, ..)| *laid == item)?;
-        Some(laid.start + left + width / 2.0)
+    LAID.with(|laid| {
+        laid.all(|laid| {
+            let laid = laid.get(output)?;
+            let (_, left, width) = laid.spans.iter().find(|(laid, ..)| *laid == item)?;
+            Some(laid.start + left + width / 2.0)
+        })
     })
 }
 
@@ -182,12 +188,14 @@ fn drag(output: &str, at: Point) {
         }
         _ => {
             // the press: the item under it, if any
-            let under = LAID.with_borrow(|laid| {
-                laid.get(output).and_then(|laid| {
-                    laid.spans
-                        .iter()
-                        .find(|(_, left, width)| at.x >= *left && at.x < left + width)
-                        .map(|(item, left, _)| (*item, at.x - left))
+            let under = LAID.with(|laid| {
+                laid.all(|laid| {
+                    laid.get(output).and_then(|laid| {
+                        laid.spans
+                            .iter()
+                            .find(|(_, left, width)| at.x >= *left && at.x < left + width)
+                            .map(|(item, left, _)| (*item, at.x - left))
+                    })
                 })
             });
             *held = under.map(|(item, grab)| {
@@ -216,7 +224,7 @@ fn release(output: &str, at: Point) {
     held.at = at;
     swallow_click();
 
-    let laid = LAID.with_borrow(|laid| laid.get(output).cloned().unwrap_or_default());
+    let laid = LAID.with(|laid| laid.get(output)).unwrap_or_default();
     if off(at.y, laid.height) && held.item.hideable() {
         held.item.hide();
         return;

@@ -20,9 +20,9 @@ use amane::{
 };
 
 use super::card::{self, Measured, Place};
-use super::dnd::{DoNotDisturb, Until};
 use crate::chrome::panel::{self, Panel, dismissable, is_open, overlay};
-use crate::services::launcher::clock::Clock;
+use crate::services::clock::{self, Clock};
+use crate::services::do_not_disturb::{DoNotDisturb, Until};
 use crate::tokens::{Styled, notification, sys};
 use amane_kit::app_bar::TopAppBar;
 use amane_kit::buttons::{IconButton, PushButton, Shape, Style};
@@ -56,8 +56,14 @@ thread_local! {
 
 // ───── runtime ───────────────────────────────────────────────────────────────
 
+/// Tells the panels what the center does as it opens and closes. Once, at
+/// startup.
+pub fn register_panel() {
+    panel::register(Panel::Notifications, panel::Hooks { opened, closed });
+}
+
 /// The center opened: toasts go, everything counts as seen.
-pub fn opened() {
+fn opened() {
     super::toasts::Toasts::hide_all();
     let newest = Notifications::read()
         .list()
@@ -69,7 +75,7 @@ pub fn opened() {
 }
 
 /// The center closed: stacks fold back up for next time.
-pub fn closed() {
+fn closed() {
     EXPANDED.with_borrow_mut(HashSet::clear);
 }
 
@@ -242,7 +248,7 @@ fn sheet() -> Rectangle {
 fn header(any: bool) -> amane::Row {
     let until = DoNotDisturb::read().until();
 
-    let open_menu = || DoNotDisturb::open_menu(CENTER_NS, cursor());
+    let open_menu = || super::dnd_menu(CENTER_NS, cursor());
     let dnd = IconButton::new("amane.notifications.dnd", ICON_DND)
         .style(Style::Tonal)
         .color(material::label(Level::Secondary))
@@ -271,7 +277,7 @@ fn header(any: bool) -> amane::Row {
 fn dnd_status(until: Until) -> String {
     match until {
         Until::Forever => String::from("Do Not Disturb"),
-        Until::At(end) => format!("Do Not Disturb until {}", card::local(end, "%H:%M")),
+        Until::At(end) => format!("Do Not Disturb until {}", clock::local(end, "%H:%M")),
     }
 }
 
