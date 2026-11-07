@@ -65,7 +65,7 @@ libpulse-simple-binding = "2"
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/local.toml` with `paths = ["../amane"]` overrides it with a sibling
 # checkout during local co-development. See CONTRIBUTING.
-amane = { git = "https://github.com/098765434/amane", rev = "808b695aed7f3b32b2866eca8aae9a39cfb1c2f8" }
+amane = { git = "https://github.com/098765434/amane", rev = "86b73ad2d8d5f2f2ccadd20f96cf366a4cf8fca6" }
 
 # amane's vello fork: scratch buffers sized for a shell (about 29 MB a set
 # instead of 165, vello_encoding) that are let go when idle (vello). A patch
