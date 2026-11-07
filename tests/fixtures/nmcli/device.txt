@@ -1,0 +1,6 @@
+wlp1s0:wifi:connected:Home Wi-Fi
+enp2s0:ethernet:connected:Wired connection 1
+tailscale0:tun:connected (externally):tailscale0
+wg-home:wireguard:connected:wg-home
+lo:loopback:connected (externally):lo
+p2p-dev-wlp1s0:wifi-p2p:disconnected:

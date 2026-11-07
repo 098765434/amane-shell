@@ -104,6 +104,21 @@ fn radios(root: &Path) -> Vec<Radio> {
 mod tests {
     use super::*;
 
+    /// A laptop's recorded tree (tests/fixtures/sysfs).
+    fn fixture(class: &str) -> std::path::PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/sysfs")
+            .join(class)
+    }
+
+    #[test]
+    fn a_recorded_laptop_has_four_radios_and_no_airplane_mode() {
+        let found = radios(&fixture("rfkill"));
+        let kinds: Vec<&str> = found.iter().map(|radio| radio.kind.as_str()).collect();
+        assert_eq!(kinds, ["bluetooth", "bluetooth", "nfc", "wlan"]);
+        assert!(!airplane(&found));
+    }
+
     fn switch(root: &Path, name: &str, kind: &str, soft: u8, hard: u8) {
         let dir = root.join(name);
         std::fs::create_dir_all(&dir).unwrap();

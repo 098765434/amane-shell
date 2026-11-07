@@ -283,8 +283,7 @@ pub fn put_back(clip: &Clip, paste: bool) {
                 String::from("focused-window"),
             ],
         )
-        .and_then(|json| serde_json::from_str::<serde_json::Value>(&json).ok())
-        .and_then(|window| window.get("app_id")?.as_str().map(String::from));
+        .and_then(|json| focused_app_id(&json));
         let chord: Vec<String> = paste_chord(app.as_deref())
             .iter()
             .map(|arg| arg.to_string())
@@ -440,6 +439,13 @@ fn now() -> u64 {
         .map_or(0, |since| since.as_secs())
 }
 
+/// The app_id in niri's `focused-window` JSON; none with no window focused
+/// (`null`) or no app_id.
+fn focused_app_id(json: &str) -> Option<String> {
+    let window: serde_json::Value = serde_json::from_str(json).ok()?;
+    window.get("app_id")?.as_str().map(String::from)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -528,5 +534,13 @@ mod tests {
     #[test]
     fn text_runs_together_in_its_preview() {
         assert_eq!(preview("  one\n\ntwo   three "), "one two three");
+    }
+
+    #[test]
+    fn the_focused_windows_app_id_is_read() {
+        let json = include_str!("../../../tests/fixtures/niri/focused-window.json");
+        assert_eq!(focused_app_id(json).as_deref(), Some("code"));
+        assert_eq!(focused_app_id("null"), None);
+        assert_eq!(focused_app_id(r#"{"id": 1, "app_id": null}"#), None);
     }
 }

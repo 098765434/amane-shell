@@ -1,0 +1,70 @@
+[
+  {
+    "stream_id": 1,
+    "session_id": 10,
+    "kind": "PipeWire",
+    "target": {
+      "Output": {
+        "name": "eDP-1"
+      }
+    },
+    "is_dynamic_target": false,
+    "is_active": true,
+    "pid": 3100,
+    "pw_node_id": 71
+  },
+  {
+    "stream_id": 2,
+    "session_id": 10,
+    "kind": "PipeWire",
+    "target": {
+      "Output": {
+        "name": "eDP-1"
+      }
+    },
+    "is_dynamic_target": false,
+    "is_active": true,
+    "pid": 3100,
+    "pw_node_id": 72
+  },
+  {
+    "stream_id": 3,
+    "session_id": 11,
+    "kind": "PipeWire",
+    "target": {
+      "Window": {
+        "id": 5
+      }
+    },
+    "is_dynamic_target": false,
+    "is_active": true,
+    "pid": 2315,
+    "pw_node_id": 73
+  },
+  {
+    "stream_id": 4,
+    "session_id": 12,
+    "kind": "PipeWire",
+    "target": {
+      "Window": {
+        "id": 8
+      }
+    },
+    "is_dynamic_target": false,
+    "is_active": false,
+    "pid": 2315,
+    "pw_node_id": 74
+  },
+  {
+    "stream_id": 5,
+    "session_id": 13,
+    "kind": "WlrScreencopy",
+    "target": {
+      "Nothing": {}
+    },
+    "is_dynamic_target": true,
+    "is_active": true,
+    "pid": null,
+    "pw_node_id": null
+  }
+]

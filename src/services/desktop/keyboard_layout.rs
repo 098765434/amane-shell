@@ -138,6 +138,22 @@ mod tests {
     }
 
     #[test]
+    fn a_recorded_stream_replays_to_the_last_switch() {
+        let stream = include_str!("../../../tests/fixtures/niri/event-stream.jsonl");
+        let mut now = KeyboardLayout::default();
+        let mut seen = Vec::new();
+        for line in stream.lines() {
+            if let Some(next) = apply(&now, line) {
+                now = next;
+                seen.push(now.current);
+            }
+        }
+        assert_eq!(now.names, ["Norwegian", "English (US)"]);
+        // changed (0), switched to 1, then back to 0; the rest says nothing
+        assert_eq!(seen, [0, 1, 0]);
+    }
+
+    #[test]
     fn a_layout_has_a_short_code() {
         assert_eq!(short("Norwegian"), "NO");
         assert_eq!(short("English (US, intl., with dead keys)"), "US");

@@ -117,17 +117,10 @@ fn watch_pipewire() {
 
     let own = std::process::id();
     let mut nodes = HashMap::new();
-    let mut batch = String::new();
+    let mut batch = Batch::default();
     for line in BufReader::new(stdout).lines() {
         let Ok(line) = line else { break };
-        let end = line == "]";
-        batch.push_str(&line);
-        batch.push('\n');
-        if !end {
-            continue;
-        }
-
-        if let Ok(objects) = serde_json::from_str::<Value>(&batch) {
+        if let Some(objects) = batch.push(&line) {
             apply(&mut nodes, &objects);
             let (microphone, camera, camera_users) = summary(&nodes, own);
             let privacy = Privacy::read();
@@ -142,7 +135,6 @@ fn watch_pipewire() {
                 privacy.camera_users = camera_users;
             }
         }
-        batch.clear();
     }
     let _ = child.kill();
     let _ = child.wait();
@@ -158,6 +150,26 @@ fn watch_casts() {
             Privacy::write().casts = casts;
         }
         std::thread::sleep(CASTS_EVERY);
+    }
+}
+
+/// `pw-dump --monitor`'s output, a batch at a time: each change is a JSON
+/// array whose closing `]` is a line of its own.
+#[derive(Default)]
+struct Batch(String);
+
+impl Batch {
+    /// Adds a line. At a batch's end, its objects; a batch that doesn't
+    /// parse is dropped.
+    fn push(&mut self, line: &str) -> Option<Value> {
+        self.0.push_str(line);
+        self.0.push('\n');
+        if line != "]" {
+            return None;
+        }
+        let objects = serde_json::from_str(&self.0).ok();
+        self.0.clear();
+        objects
     }
 }
 
@@ -280,19 +292,46 @@ mod tests {
 
     const FIXTURE: &str = include_str!("../../../tests/fixtures/pipewire/monitor.json");
 
-    /// The fixture's batches, split as `pw-dump --monitor` prints them.
+    /// The fixture's batches, split as the watcher splits them.
     fn batches() -> Vec<Value> {
-        let mut out = Vec::new();
-        let mut batch = String::new();
-        for line in FIXTURE.lines() {
-            batch.push_str(line);
-            batch.push('\n');
-            if line == "]" {
-                out.push(serde_json::from_str(&batch).unwrap());
-                batch.clear();
-            }
-        }
+        let mut batch = Batch::default();
+        let out: Vec<Value> = FIXTURE
+            .lines()
+            .filter_map(|line| batch.push(line))
+            .collect();
+        assert_eq!(out.len(), 3, "the fixture holds three batches");
         out
+    }
+
+    #[test]
+    fn a_broken_batch_is_dropped_and_the_next_one_read() {
+        let mut batch = Batch::default();
+        assert!(batch.push("[ { \"id\": ").is_none());
+        assert!(batch.push("]").is_none());
+        assert!(batch.push("[").is_none());
+        assert_eq!(batch.push("]"), Some(Value::Array(Vec::new())));
+    }
+
+    #[test]
+    fn recorded_casts_are_one_per_active_session() {
+        let casts = sharing(include_str!("../../../tests/fixtures/niri/casts.json"));
+        assert_eq!(
+            casts,
+            [
+                Cast {
+                    session: 10,
+                    target: CastTarget::Output(String::from("eDP-1"))
+                },
+                Cast {
+                    session: 11,
+                    target: CastTarget::Window(5)
+                },
+                Cast {
+                    session: 13,
+                    target: CastTarget::Nothing
+                },
+            ]
+        );
     }
 
     #[test]

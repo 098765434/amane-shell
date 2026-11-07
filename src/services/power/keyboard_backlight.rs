@@ -123,6 +123,20 @@ fn read(path: &Path) -> (u32, u32) {
 mod tests {
     use super::*;
 
+    /// A laptop's recorded tree (tests/fixtures/sysfs).
+    fn fixture(class: &str) -> std::path::PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/sysfs")
+            .join(class)
+    }
+
+    #[test]
+    fn a_recorded_laptops_keyboard_light_is_found_and_read() {
+        let light = find(&fixture("leds")).expect("a kbd_backlight");
+        assert!(light.ends_with("tpacpi::kbd_backlight"));
+        assert_eq!(read(&light), (1, 2));
+    }
+
     #[test]
     fn finds_the_keyboard_light_among_the_leds() {
         let root = std::env::temp_dir().join(format!("amane-leds-{}", std::process::id()));

@@ -76,42 +76,41 @@ fn fetch(modes: &mut HashMap<String, String>) -> Option<Connections> {
     let profiles = nmcli(&["-t", "-f", "NAME,UUID,TYPE,DEVICE,ACTIVE", "connection"])?;
     let devices =
         nmcli(&["-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device"]).unwrap_or_default();
-    let profiles = parse_profiles(&profiles);
+    // a profile's mode doesn't change while it's up, so it's asked once
+    Some(assemble(&profiles, &devices, |uuid| {
+        modes
+            .entry(uuid.to_string())
+            .or_insert_with(|| {
+                nmcli(&["-g", "802-11-wireless.mode", "connection", "show", uuid])
+                    .unwrap_or_default()
+                    .trim()
+                    .to_string()
+            })
+            .clone()
+    }))
+}
 
-    let vpns = vpns(&profiles);
-    let wired = wired(&parse_rows(&devices));
+/// The model from `nmcli -t` connection and device lists, with `mode_of`
+/// giving an active Wi-Fi profile's `802-11-wireless.mode` by UUID.
+fn assemble(profiles: &str, devices: &str, mut mode_of: impl FnMut(&str) -> String) -> Connections {
+    let profiles = parse_profiles(profiles);
 
     // the active Wi-Fi profile in access-point mode is a hotspot
-    let mut hotspot = None;
-    for profile in profiles
+    let hotspot = profiles
         .iter()
         .filter(|p| p.kind == "802-11-wireless" && p.active)
-    {
-        let mode = modes.entry(profile.uuid.clone()).or_insert_with(|| {
-            nmcli(&[
-                "-g",
-                "802-11-wireless.mode",
-                "connection",
-                "show",
-                &profile.uuid,
-            ])
-            .unwrap_or_default()
-            .trim()
-            .to_string()
+        .filter(|p| mode_of(&p.uuid) == "ap")
+        .last()
+        .map(|p| Hotspot {
+            uuid: p.uuid.clone(),
+            ssid: p.name.clone(),
         });
-        if mode == "ap" {
-            hotspot = Some(Hotspot {
-                uuid: profile.uuid.clone(),
-                ssid: profile.name.clone(),
-            });
-        }
-    }
 
-    Some(Connections {
-        vpns,
-        wired,
+    Connections {
+        vpns: vpns(&profiles),
+        wired: wired(&parse_rows(devices)),
         hotspot,
-    })
+    }
 }
 
 impl Connections {
@@ -315,5 +314,72 @@ mod tests {
             wired(&rows).map(|w| (w.connected, w.name)),
             Some((true, "Wired connection 1".into()))
         );
+    }
+
+    const CONNECTION: &str = include_str!("../../../tests/fixtures/nmcli/connection.txt");
+    const DEVICE: &str = include_str!("../../../tests/fixtures/nmcli/device.txt");
+    const DEVICE_UNPLUGGED: &str =
+        include_str!("../../../tests/fixtures/nmcli/device-unplugged.txt");
+
+    fn vpn(uuid: &str, name: &str, active: bool) -> Vpn {
+        Vpn {
+            uuid: uuid.into(),
+            name: name.into(),
+            active,
+        }
+    }
+
+    #[test]
+    fn recorded_lists_give_the_vpns_and_the_wired_link() {
+        let c = assemble(CONNECTION, DEVICE, |_| String::from("infrastructure"));
+        assert_eq!(
+            c.vpns,
+            [
+                vpn("55555555-5555-4555-8555-555555555555", "Work VPN", false),
+                vpn("66666666-6666-4666-8666-666666666666", "wg-home", true),
+            ]
+        );
+        assert_eq!(
+            c.wired,
+            Some(Wired {
+                device: "enp2s0".into(),
+                connected: true,
+                name: "Wired connection 1".into(),
+            })
+        );
+        assert_eq!(c.hotspot, None);
+    }
+
+    #[test]
+    fn an_unplugged_cable_hides_the_wired_link() {
+        let c = assemble(CONNECTION, DEVICE_UNPLUGGED, |_| String::new());
+        assert_eq!(c.wired, None);
+    }
+
+    #[test]
+    fn an_active_wifi_profile_in_ap_mode_is_the_hotspot() {
+        let mut asked = Vec::new();
+        let c = assemble(CONNECTION, DEVICE, |uuid| {
+            asked.push(uuid.to_string());
+            String::from("ap")
+        });
+        // only the active Wi-Fi profile is asked about, not "Office: 5 GHz"
+        assert_eq!(asked, ["11111111-1111-4111-8111-111111111111"]);
+        assert_eq!(
+            c.hotspot,
+            Some(Hotspot {
+                uuid: "11111111-1111-4111-8111-111111111111".into(),
+                ssid: "Home Wi-Fi".into(),
+            })
+        );
+    }
+
+    #[test]
+    fn an_escaped_colon_stays_in_the_name() {
+        let names: Vec<String> = parse_profiles(CONNECTION)
+            .into_iter()
+            .map(|p| p.name)
+            .collect();
+        assert!(names.contains(&String::from("Office: 5 GHz")), "{names:?}");
     }
 }

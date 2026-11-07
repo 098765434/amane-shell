@@ -339,4 +339,12 @@ mod tests {
         assert_eq!(truncate("  short ", 10), "short");
         assert_eq!(truncate("abcdefghij", 5), "abcd…");
     }
+
+    #[test]
+    fn recorded_windows_are_found_by_app_id() {
+        let windows = include_str!("../../../tests/fixtures/niri/windows.json");
+        assert_eq!(window_of(windows, "firefox"), Some(5));
+        assert_eq!(window_of(windows, "nautilus"), Some(8));
+        assert_eq!(window_of(windows, "code"), Some(2));
+    }
 }

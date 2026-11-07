@@ -133,18 +133,22 @@ fn focus_pid(pid: u64) {
         // a recording helper is often a child of the app with the window
         for _ in 0..4 {
             let Some(pid) = wanted else { break };
-            let found = windows.as_array().into_iter().flatten().find_map(|window| {
-                (window["pid"].as_u64() == Some(pid))
-                    .then(|| window["id"].as_u64())
-                    .flatten()
-            });
-            if let Some(id) = found {
+            if let Some(id) = window_for_pid(&windows, pid) {
                 amane::spawn(&format!("niri msg action focus-window --id {id}"));
                 return;
             }
             wanted = parent(pid);
         }
     });
+}
+
+/// The id of the window process `pid` owns, in niri's `windows` JSON.
+fn window_for_pid(windows: &serde_json::Value, pid: u64) -> Option<u64> {
+    windows.as_array()?.iter().find_map(|window| {
+        (window["pid"].as_u64() == Some(pid))
+            .then(|| window["id"].as_u64())
+            .flatten()
+    })
 }
 
 fn parent(pid: u64) -> Option<u64> {
@@ -157,4 +161,20 @@ fn parent(pid: u64) -> Option<u64> {
         .parse()
         .ok()
         .filter(|ppid| *ppid > 1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_process_finds_its_window() {
+        let windows: serde_json::Value =
+            serde_json::from_str(include_str!("../../../tests/fixtures/niri/windows.json"))
+                .expect("niri's windows JSON");
+        assert_eq!(window_for_pid(&windows, 3100), Some(5));
+        assert_eq!(window_for_pid(&windows, 2315), Some(2));
+        assert_eq!(window_for_pid(&windows, 1), None);
+        assert_eq!(window_for_pid(&serde_json::Value::Null, 3100), None);
+    }
 }

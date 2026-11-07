@@ -100,8 +100,15 @@ fn slowest(modes: &[Mode], now: Mode) -> Mode {
 }
 
 fn outputs() -> Option<BTreeMap<String, Output>> {
-    let json = run_now("niri", &["msg".into(), "--json".into(), "outputs".into()])?;
-    serde_json::from_str(&json).ok()
+    parse_outputs(&run_now(
+        "niri",
+        &["msg".into(), "--json".into(), "outputs".into()],
+    )?)
+}
+
+/// niri's `outputs` JSON, by output name.
+fn parse_outputs(json: &str) -> Option<BTreeMap<String, Output>> {
+    serde_json::from_str(json).ok()
 }
 
 fn set_mode(name: &str, mode: Mode) {
@@ -145,5 +152,18 @@ mod tests {
         assert_eq!(slowest(&modes, modes[1]), modes[0]);
         // nothing slower at its size
         assert_eq!(slowest(&modes, modes[2]), modes[2]);
+    }
+
+    const OUTPUTS: &str = include_str!("../../../tests/fixtures/niri/outputs.json");
+
+    #[test]
+    fn the_recorded_panel_at_120_hz_lowers_to_60() {
+        let outputs = parse_outputs(OUTPUTS).expect("niri's outputs JSON");
+        let panel = &outputs["eDP-1"];
+        assert_eq!(panel.modes.len(), 13);
+        let now = panel.modes[panel.current_mode.expect("a mode is on")];
+        assert_eq!(now, mode(2880, 1800, 120));
+        assert_eq!(slowest(&panel.modes, now), mode(2880, 1800, 60));
+        assert!(parse_outputs("not json").is_none());
     }
 }

@@ -1,0 +1,138 @@
+[
+  {
+    "id": 2,
+    "title": "Notes - Editor",
+    "app_id": "code",
+    "pid": 2315,
+    "workspace_id": 1,
+    "is_focused": true,
+    "is_floating": false,
+    "is_urgent": false,
+    "is_fullscreen": false,
+    "layout": {
+      "pos_in_scrolling_layout": [
+        1,
+        1
+      ],
+      "tile_size": [
+        1646.2857142857142,
+        1029.142857142857
+      ],
+      "window_size": [
+        1646,
+        1029
+      ],
+      "tile_pos_in_workspace_view": null,
+      "window_offset_in_tile": [
+        0.0,
+        0.0
+      ]
+    },
+    "focus_timestamp": {
+      "secs": 216,
+      "nanos": 488039583
+    }
+  },
+  {
+    "id": 5,
+    "title": "Mozilla Firefox",
+    "app_id": "firefox",
+    "pid": 3100,
+    "workspace_id": 1,
+    "is_focused": false,
+    "is_floating": false,
+    "is_urgent": false,
+    "is_fullscreen": false,
+    "layout": {
+      "pos_in_scrolling_layout": [
+        1,
+        1
+      ],
+      "tile_size": [
+        1646.2857142857142,
+        1029.142857142857
+      ],
+      "window_size": [
+        1646,
+        1029
+      ],
+      "tile_pos_in_workspace_view": null,
+      "window_offset_in_tile": [
+        0.0,
+        0.0
+      ]
+    },
+    "focus_timestamp": {
+      "secs": 216,
+      "nanos": 488039583
+    }
+  },
+  {
+    "id": 8,
+    "title": "Files",
+    "app_id": "org.gnome.Nautilus",
+    "pid": 4200,
+    "workspace_id": 2,
+    "is_focused": false,
+    "is_floating": false,
+    "is_urgent": false,
+    "is_fullscreen": false,
+    "layout": {
+      "pos_in_scrolling_layout": [
+        1,
+        1
+      ],
+      "tile_size": [
+        1646.2857142857142,
+        1029.142857142857
+      ],
+      "window_size": [
+        1646,
+        1029
+      ],
+      "tile_pos_in_workspace_view": null,
+      "window_offset_in_tile": [
+        0.0,
+        0.0
+      ]
+    },
+    "focus_timestamp": {
+      "secs": 216,
+      "nanos": 488039583
+    }
+  },
+  {
+    "id": 9,
+    "title": "untitled",
+    "app_id": null,
+    "pid": null,
+    "workspace_id": 2,
+    "is_focused": false,
+    "is_floating": false,
+    "is_urgent": false,
+    "is_fullscreen": false,
+    "layout": {
+      "pos_in_scrolling_layout": [
+        1,
+        1
+      ],
+      "tile_size": [
+        1646.2857142857142,
+        1029.142857142857
+      ],
+      "window_size": [
+        1646,
+        1029
+      ],
+      "tile_pos_in_workspace_view": null,
+      "window_offset_in_tile": [
+        0.0,
+        0.0
+      ]
+    },
+    "focus_timestamp": {
+      "secs": 216,
+      "nanos": 488039583
+    }
+  }
+]

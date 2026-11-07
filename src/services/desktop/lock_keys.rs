@@ -81,6 +81,19 @@ fn read(root: &Path) -> LockKeys {
 mod tests {
     use super::*;
 
+    /// A laptop's recorded tree (tests/fixtures/sysfs).
+    fn fixture(class: &str) -> std::path::PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/sysfs")
+            .join(class)
+    }
+
+    #[test]
+    fn a_recorded_laptops_locks_are_read() {
+        let keys = read(&fixture("leds"));
+        assert_eq!((keys.caps(), keys.num()), (Some(true), Some(false)));
+    }
+
     #[test]
     fn a_lock_is_on_while_any_keyboard_lights_it() {
         let root = std::env::temp_dir().join(format!("amane-lock-keys-{}", std::process::id()));
