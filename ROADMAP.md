@@ -694,6 +694,15 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 
 **Risks.** Medium–high, **cross-repo contract**: amane's API shrinks, and the shell must move in step, so land the shell crates first, then the amane removal and the rev bump together. D-Bus wire format unchanged.
 
+**Status (2026-11-07).** Done in four steps that each built: amane `8efa0b2`/`8e5c110` (additive), shell `aff6e3c`/`88893b5` (the crates), amane `3a119c5`/`e7bf47a` (removal and the error model), then the shell's pin to `e7bf47a`.
+- **Size.** The moved code was about 4.9k lines (`status_item` 915, `kdeconnect` 3,438, `adb` 634), not 9.5k. The fork diff went from +40,957 to +36,348 lines.
+- **`pub use serde` stays.** The kit and the apps derive settings through `amane::serde` in about 20 files; it's one line, and generic.
+- **Helpers made public, all generic:** `run_in_order` (the ordered control thread), `Service::watched_within`, `Service::peek` (a read that doesn't count as watching) and `IDLE_STOP`. `amane-phone` needs nothing else from amane's insides.
+- **Run commands.** `KdeConnect::set_run_command_list` takes the program's list once; the shell's four, with their old ids, are in `services/phone.rs`. A list was simpler than passing it to each call, since reading a device also checks whether its commands are on.
+- **Errors.** `ServiceError { kind, message, at }`. Bluetooth's words are in `tiles/bluetooth_text.rs`, polkit's "Sorry, that didn't work" in its alert, and Quick Settings shows any service's failure for 10 s (`tiles/failure.rs`). Network now keeps failed joins, a wrong password among them, and the Wi-Fi rows show them. `Lock` and `Pam` are upstream and keep their own types.
+- **polkit.** `serve_agent_with(PolkitAgent { helper_socket })`; the agent is behind `polkit-agent`, off by default and on in the shell's workspace dependency.
+- **Open: the `niri-fork` feature.** The target architecture (above) puts fork-only code behind a `niri-fork` cargo feature; Phase 6 chose a run-time `features()` check instead. Decide in Phase 12.
+
 ---
 
 ### Phase 10: Shell internal structure (L)

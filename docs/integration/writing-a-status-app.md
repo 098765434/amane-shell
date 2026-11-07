@@ -4,8 +4,9 @@ A status app is a program with its own item in the bar, and Activities while som
 going on. It runs on its own and talks to the bar over `org.amane.StatusBar1`. amane-drop
 ([drop.md](../shell/drop.md), `apps/drop`) is the worked example this guide points into.
 
-The protocol reference is [status-apps.md](status-apps.md). The client and its types are in amane
-([status-items.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/status-items.md)).
+The protocol reference is [status-apps.md](status-apps.md). The client and its types are the
+`amane-status` crate (`crates/status`): depend on it with `amane-status = { workspace = true }`
+inside this workspace, or by git from outside it.
 This page covers how to build one that behaves like the bar's own items.
 
 ## Pick the right surface
@@ -23,8 +24,7 @@ recorder can show an activity while it records and have no item at all.
 ## 1. Put up an item
 
 ```rust
-use amane::status_item::{Accepts, ItemIcon, ItemSpec, MenuEntry};
-use amane::StatusItem;
+use amane_status::{Accepts, ItemIcon, ItemSpec, MenuEntry, StatusItem};
 
 let mut spec = ItemSpec::new("org.example.shelf", ItemIcon::Glyph("tray".into()));
 spec.tooltip = "Shelf".into();

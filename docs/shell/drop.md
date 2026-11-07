@@ -162,7 +162,7 @@ Mod+Shift+D. A crash restarts it.
 
 | File | What |
 |---|---|
-| `main.rs` | the status item (`amane::StatusItem`) and its events; launches and IPC |
+| `main.rs` | the status item (`amane_status::StatusItem`) and its events; launches and IPC |
 | `state.rs` | what the grid shows, shared between the bus thread, tasks and the window; the Drop Bar on disk |
 | `grid.rs` | the window: a clear full-screen Overlay surface frosting only its card (a blur shape, layer rule `amane.drop`) |
 | `tasks.rs` | jobs on threads of their own, each a `LiveActivity` with Cancel |

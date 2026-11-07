@@ -15,7 +15,7 @@ four surfaces:
   here, and its apps in windows of their own.
 
 All three read the fork's `KdeConnect` and `PhoneMessages` services
-([`system/kdeconnect.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/kdeconnect.md)).
+([amane-phone](../../crates/phone/README.md)).
 They come from the Quickshell version's "KDE Connect, made native".
 
 The phone's **notifications** and **media** need no code. The shell is the

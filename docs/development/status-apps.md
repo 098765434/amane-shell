@@ -11,14 +11,14 @@ touching the user's clipboard, keyring or phone. To use the framework, see
 ```
  a status app (amane-drop, a script…)              amane-shell
  ┌──────────────────────────────┐   session bus    ┌────────────────────────────────────────┐
- │ amane::StatusItem            │  RegisterItem …  │ services/status_apps.rs                │
- │ amane::LiveActivity          │ ───────────────▶ │   org.amane.StatusBar1: items by id,   │
- │  (status_item/client.rs:     │                  │   owner checks, NameOwnerChanged       │
+ │ amane_status::StatusItem     │  RegisterItem …  │ services/status_apps.rs                │
+ │ amane_status::LiveActivity   │ ───────────────▶ │   org.amane.StatusBar1: items by id,   │
+ │  (crates/status/client.rs:   │                  │   owner checks, NameOwnerChanged       │
  │   worker thread, in order;   │ ◀─────────────── │      │                  │              │
  │   re-registers on a new bar) │  ItemEvent /     │      ▼                  ▼              │
  └──────────────────────────────┘  ActivityEvent   │ status_bar/apps.rs   services/desktop/ │
             ▲   protocol types:    (unicast)       │ (app:<id> items)     activities.rs     │
-            │   status_item/protocol.rs            │                      (the registry)    │
+            │   crates/status/protocol.rs          │                      (the registry)    │
             │                                      │        Now Playing, Timer, ▲           │
  amane (library, branch ocbk)                      │        Screen Sharing ────┘           │
                                                    │      status_bar/activities.rs:        │
@@ -28,8 +28,8 @@ touching the user's clipboard, keyring or phone. To use the framework, see
 
 | Repo | Files | What |
 |---|---|---|
-| amane | `src/status_item/protocol.rs` | the JSON types (`ItemSpec`, `ItemEvent`, `ActivityContent`, `Trailing`, `Tint`, `Dismiss`…), `encode`/`decode` with clamping and a version check |
-| amane | `src/status_item/client.rs` | `StatusItem` and `LiveActivity`: calls in order on the worker, events on their own thread, re-registration |
+| amane-status | `crates/status/src/protocol.rs` | the JSON types (`ItemSpec`, `ItemEvent`, `ActivityContent`, `Trailing`, `Tint`, `Dismiss`…), `encode`/`decode` with clamping and a version check |
+| amane-status | `crates/status/src/client.rs` | `StatusItem` and `LiveActivity`: calls in order on amane's control thread (`run_in_order`), events on their own thread, re-registration |
 | amane | `src/dbus/bus.rs` | `Bus::emit_to`: a signal to one destination |
 | amane | `src/wayland/dropped.rs` | drops read off the event loop (`Drags`, `read_later`, `handle_arrived_drags`), so a slow drag source can't stall the bar |
 | amane | `src/services/kdeconnect/actions.rs` | `share_files_now`, `share_text_now`: KDE Connect sends that wait and report |
@@ -159,7 +159,7 @@ Make it read a path with `slow` in it slowly, to watch the progress ring and try
 
 | Where | Covers |
 |---|---|
-| amane `status_item/protocol.rs` | round trips, clamping, a newer `v` refused, an empty id refused |
+| amane-status `protocol.rs` | round trips, clamping, a newer `v` refused, an empty id refused |
 | shell `services/status_apps.rs` | an id belongs to the program that registered it; a bad payload refused |
 | shell `services/desktop/activities.rs` | only the owner changes or ends one; ending later; a program leaving; staleness |
 | shell `surfaces/status_bar/activities.rs` | countdown and trailing text |

@@ -5,14 +5,14 @@ their own items in the bar, and Activities: what's going on now, shown in the ba
 The server is `apps/shell/src/services/status_apps.rs`. What the bar draws is in
 [status-bar.md](../shell/status-bar.md#programs-items).
 
-The protocol and its JSON types belong to amane, so a program and the bar share one definition:
-amane's [status-items.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/status-items.md)
-(`amane::status_item`, with the `StatusItem` and `LiveActivity` clients).
+The protocol and its JSON types are one crate, [amane-status](../../crates/status/README.md)
+(`crates/status`, with the `StatusItem` and `LiveActivity` clients), so a program and the bar
+share one definition.
 
 ## From Rust
 
 ```rust
-use amane::status_item::{ActivityContent, ItemEvent, ItemIcon, ItemSpec, Trailing};
+use amane_status::{ActivityContent, ItemEvent, ItemIcon, ItemSpec, Trailing};
 use amane::{LiveActivity, StatusItem};
 
 let item = StatusItem::register(ItemSpec::new("org.amane.drop", ItemIcon::Glyph("tray".into())));
@@ -23,7 +23,7 @@ content.trailing = Trailing::Progress(0.4);
 let upload = LiveActivity::start(content);
 ```
 
-The client sends everything again when the bar restarts. amane's `examples/status_item.rs` is a
+The client sends everything again when the bar restarts. `crates/status/examples/status_item.rs` is a
 whole program.
 
 ## From a script

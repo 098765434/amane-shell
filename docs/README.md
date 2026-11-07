@@ -94,7 +94,7 @@ The kit's folders don't show in its paths: every module is re-exported at the ro
 | Topic | Doc | The forks' side |
 |---|---|---|
 | niri layer rules and surface namespaces, generated from the tokens | [integration/layer-rules.md](integration/layer-rules.md) | niri [materials](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md), [desktop layer](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md); amane [blur](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md) |
-| Other programs' items in the bar and their Activities, over `org.amane.StatusBar1` | [integration/status-apps.md](integration/status-apps.md) | amane [status items](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/status-items.md) |
+| Other programs' items in the bar and their Activities, over `org.amane.StatusBar1` | [integration/status-apps.md](integration/status-apps.md) | [amane-status](../crates/status/README.md) |
 | Writing a status app: an item, a window under it, drags through it, Activities, running as a service | [integration/writing-a-status-app.md](integration/writing-a-status-app.md) | |
 | Every CLI and IPC command, and the socket they go over | [integration/ipc.md](integration/ipc.md) | niri [IPC events](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/events.md), [actions](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/actions.md) |
 | The shell's services and amane's, the settings files and the state files | [integration/services.md](integration/services.md) | amane [compositor services](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md), [system services](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/idle.md) (`system/`) |
