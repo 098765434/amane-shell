@@ -367,22 +367,25 @@ impl Material {
         radius: f32,
         opacity: f32,
     ) -> BlurShape {
-        self.shape_tinted(x, y, width, height, radius, opacity, self.tint())
+        let area = crate::area::Area::new(x, y, width, height);
+        self.shape_tinted(area, radius, opacity, self.tint())
     }
 
     /// [`shape`](Self::shape) with `tint` in place of the material's own,
     /// for glass turning from one material into another.
-    #[allow(clippy::too_many_arguments)]
     pub fn shape_tinted(
         self,
-        x: f32,
-        y: f32,
-        width: f32,
-        height: f32,
+        area: crate::area::Area,
         radius: f32,
         opacity: f32,
         tint: Color,
     ) -> BlurShape {
+        let crate::area::Area {
+            x,
+            y,
+            width,
+            height,
+        } = area;
         let shape = BlurShape::new(x, y, width, height, radius).tint(tint);
         if !see_through() {
             return shape.alpha(0.0);

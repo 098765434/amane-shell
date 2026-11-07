@@ -126,13 +126,12 @@ pub(super) fn entry(reading: &Reading, apps: &[DesktopApp]) -> Option<Entry> {
     Some(Entry::new(key, title, icon, action).subtitle(subtitle))
 }
 
-/// What `command` is called, its icon, and running it; `None` to run when
+/// What a command is called, its icon, and running it; `None` to run when
 /// there's nothing to do ("Night Light Is On").
-#[allow(clippy::type_complexity)]
-fn proposal(
-    command: &Command,
-    apps: &[DesktopApp],
-) -> Option<(String, Icon, Option<Rc<dyn Fn()>>)> {
+type Proposal = (String, Icon, Option<Rc<dyn Fn()>>);
+
+/// What `command` proposes, if it can be done here.
+fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<Proposal> {
     let run = |f: Rc<dyn Fn()>| Some(f);
     Some(match command {
         Command::Switch { control, state } => {

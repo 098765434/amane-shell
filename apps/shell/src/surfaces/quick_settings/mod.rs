@@ -314,15 +314,8 @@ impl Sheet {
 
     /// Where the compositor frosts behind it.
     fn frost(self) -> BlurShape {
-        Material::Popover.shape_tinted(
-            self.x,
-            self.y,
-            self.width,
-            self.height,
-            self.radius,
-            1.0,
-            self.tint,
-        )
+        let area = amane_kit::area::Area::new(self.x, self.y, self.width, self.height);
+        Material::Popover.shape_tinted(area, self.radius, 1.0, self.tint)
     }
 }
 
