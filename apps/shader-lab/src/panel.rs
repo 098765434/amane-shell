@@ -493,7 +493,7 @@ fn number_pair(name: &str, x: f32, y: f32) -> Row {
                 .width(SLIDER_WIDTH)
                 .height(sys::size::control::height())
                 .align_child(amane::Start, amane::Center)
-                .child(caption(&format!("{x:.0}, {y:.0} px"))),
+                .child(caption(format!("{x:.0}, {y:.0} px"))),
         ),
         boxed(button("lab.center", "Centre", x != 0.0 || y != 0.0, || {
             change("move", |state| {
@@ -940,11 +940,7 @@ fn setting(name: &str, control: impl Widget + 'static) -> Column {
     Column::new(vec![boxed(caption(name)), boxed(control)]).gap(sys::space::gap::xs())
 }
 
-pub fn caption(text: &str) -> Text {
-    Text::new(text)
-        .style(sys::r#type::caption())
-        .color(material::label(Level::Secondary))
-}
+pub use amane_kit::layout::caption;
 
 pub fn caption_height() -> f32 {
     text_height(sys::r#type::caption())

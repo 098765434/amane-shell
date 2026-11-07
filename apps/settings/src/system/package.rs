@@ -25,7 +25,8 @@ use super::catalog::{Catalog, Named};
 use super::installed::Launchers;
 use super::nixos::{Managed, Snapshot, host, repo};
 use crate::View;
-use crate::{group, note, page_width};
+use crate::{group, page_width};
+use amane_kit::layout::caption;
 use amane_process::Cmd;
 
 /// What `--apply` makes of the package: plain JSON whatever the meta's shape.
@@ -289,12 +290,12 @@ pub fn view() -> Column {
 
     let meta = match &details.meta {
         None => {
-            return Column::new(vec![boxed(note("Reading the package…"))])
+            return Column::new(vec![boxed(caption("Reading the package…"))])
                 .gap(sys::space::gap::l());
         }
         Some(Err(error)) => {
             return Column::new(vec![boxed(paragraph(
-                note(error.clone()).color(sys::color::status::critical::text()),
+                caption(error.clone()).color(sys::color::status::critical::text()),
             ))])
             .gap(sys::space::gap::l());
         }
@@ -338,12 +339,12 @@ pub fn view() -> Column {
             .map(|paragraph| paragraph.split_whitespace().collect::<Vec<_>>().join(" "))
             .collect::<Vec<_>>()
             .join("\n\n");
-        parts.push(boxed(paragraph(note(text))));
+        parts.push(boxed(paragraph(caption(text))));
     }
     let problem = meta.problem();
     if let Some(problem) = &problem {
         parts.push(boxed(paragraph(
-            note(problem.clone()).color(sys::color::status::critical::text()),
+            caption(problem.clone()).color(sys::color::status::critical::text()),
         )));
     }
 

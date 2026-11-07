@@ -15,7 +15,8 @@ use amane_kit::tokens::{Styled, sys};
 use super::job::{BuildJob, Kind, Mode, Phase, Target};
 use super::nixos::{Managed, Snapshot};
 use super::repo::short;
-use crate::{View, note, page_width};
+use crate::{View, page_width};
+use amane_kit::layout::caption;
 
 fn button(id: &str, label: &str, style: Style, press: impl Fn() + 'static) -> Box<dyn Widget> {
     boxed(
@@ -343,19 +344,19 @@ fn changes() -> Column {
             }
         }
         if built.diff.is_empty() {
-            parts.push(boxed(note(if built.raw_diff.trim().is_empty() {
+            parts.push(boxed(caption(if built.raw_diff.trim().is_empty() {
                 String::from("No package changes.")
             } else {
                 built.raw_diff.clone()
             })));
         }
         if built.needs_restart {
-            parts.push(boxed(note(
+            parts.push(boxed(caption(
                 "The kernel, its modules or the initrd change: a restart is needed for those.",
             )));
         }
     } else {
-        parts.push(boxed(note(
+        parts.push(boxed(caption(
             "What the build changes shows here once it's built.",
         )));
     }

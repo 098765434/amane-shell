@@ -28,7 +28,6 @@ use amane_kit::buttons::Switch;
 use amane_kit::color::Accent;
 use amane_kit::form::{FormRow, Group};
 use amane_kit::layout::boxed;
-use amane_kit::material::{self, Level};
 use amane_kit::nav_buttons::NavButtons;
 use amane_kit::style;
 use amane_kit::tokens::{Styled, sys};
@@ -561,13 +560,6 @@ fn page_width_in(window: f32) -> f32 {
 /// How wide a page's groups are in this window.
 pub fn page_width() -> f32 {
     page_width_in(amane::window_size().0)
-}
-
-/// A line of explanation under a setting, in the caption's grey.
-pub fn note(text: impl Into<String>) -> Text {
-    Text::new(text)
-        .style(sys::r#type::caption())
-        .color(material::label(Level::Secondary))
 }
 
 /// A group of settings rows as wide as a page.
