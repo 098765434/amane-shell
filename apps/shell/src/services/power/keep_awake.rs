@@ -29,12 +29,6 @@ use crate::services::{Latest, Wake};
 const SCREENSAVER: &str = "org.freedesktop.ScreenSaver";
 const SCREENSAVER_PATH: &str = "/org/freedesktop/ScreenSaver";
 
-const LOGIND: &str = "org.freedesktop.login1";
-const MANAGER_PATH: &str = "/org/freedesktop/login1";
-const MANAGER: &str = "org.freedesktop.login1.Manager";
-const SESSION_PATH: &str = "/org/freedesktop/login1/session/auto";
-const SESSION: &str = "org.freedesktop.login1.Session";
-
 /// The locker hypridle runs on logind's Lock signal.
 const LOCKER: &str = "swaylock";
 
@@ -87,8 +81,7 @@ impl Service for KeepAwake {
                 &[Argument::from(SCREENSAVER)],
             )
             .bool();
-        let lid_present = Bus::system().property(LOGIND, MANAGER_PATH, MANAGER, "BlockInhibited")
-            != amane::Value::Nothing;
+        let lid_present = super::logind::can_inhibit();
         Self {
             screen: false,
             lid: false,
@@ -120,7 +113,7 @@ impl Service for KeepAwake {
     // waits for the limit to run out (and the tile's next minute meanwhile); with no limit
     // running, for a new one
     fn listen() {
-        thread::spawn(watch_lock);
+        watch_lock();
         loop {
             let until = Self::read().until;
             WAKE.wait(until.map(|until| until.min(SystemTime::now() + Self::interval())));
@@ -298,54 +291,28 @@ fn inhibit_screen() -> Option<u32> {
     }
 }
 
-/// amane's bus calls don't carry file descriptors, so this one goes to
-/// zbus itself.
 fn inhibit_lid() -> Option<OwnedFd> {
-    let answer = zbus::blocking::Connection::system().and_then(|bus| {
-        let reply = bus.call_method(
-            Some(LOGIND),
-            MANAGER_PATH,
-            Some(MANAGER),
-            "Inhibit",
-            &("handle-lid-switch", WHO, WHY, "block"),
-        )?;
-        let fd: zbus::zvariant::OwnedFd = reply.body().deserialize()?;
-        Ok(OwnedFd::from(fd))
-    });
-    answer
-        .inspect_err(|e| log::warn!("keep awake: lid: {e}"))
-        .ok()
+    super::logind::inhibit("handle-lid-switch", WHO, WHY)
 }
 
-/// Lets the screen blank while the session is locked: on logind's Lock
+/// Lets the screen blank while the session is locked: from logind's Lock
 /// signal for this session, until the locker has gone.
 fn watch_lock() {
-    let bus = Bus::system();
-    let id = bus.property(LOGIND, SESSION_PATH, SESSION, "Id");
-    if id.text().is_empty() {
-        return;
-    }
-    let path = bus.call(
-        LOGIND,
-        MANAGER_PATH,
-        MANAGER,
-        "GetSession",
-        &[Argument::from(id.text())],
+    super::logind::follow(
+        || {
+            // waiting for the locker to go is long work
+            thread::spawn(|| {
+                KeepAwake::write().locked = true;
+                SYNC.send((), sync);
+
+                wait_for_unlock();
+
+                KeepAwake::write().locked = false;
+                SYNC.send((), sync);
+            });
+        },
+        || {},
     );
-    let path = path.text().to_string();
-
-    for signal in bus.signals(SESSION, "Lock") {
-        if signal.path() != path {
-            continue;
-        }
-        KeepAwake::write().locked = true;
-        SYNC.send((), sync);
-
-        wait_for_unlock();
-
-        KeepAwake::write().locked = false;
-        SYNC.send((), sync);
-    }
 }
 
 // the locker starts a moment after the Lock signal, and the session is unlocked once it exits

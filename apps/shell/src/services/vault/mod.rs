@@ -23,7 +23,7 @@ use std::sync::{Arc, Condvar, Mutex, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 
-use amane::{Argument, Bus, FieldOwner, Service};
+use amane::{FieldOwner, Service};
 
 pub use identity::Identity;
 pub use rbw::{Entry, Error, Status};
@@ -33,12 +33,6 @@ const LOOK_AGAIN: Duration = Duration::from_secs(5);
 
 // past the agent's lock timeout, so the vault has locked by itself when it's looked at
 const LOCK_SLACK: Duration = Duration::from_secs(5);
-
-const LOGIND: &str = "org.freedesktop.login1";
-const MANAGER_PATH: &str = "/org/freedesktop/login1";
-const MANAGER: &str = "org.freedesktop.login1.Manager";
-const SESSION_PATH: &str = "/org/freedesktop/login1/session/auto";
-const SESSION: &str = "org.freedesktop.login1.Session";
 
 /// What the vault is busy with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -78,7 +72,7 @@ impl Service for Vault {
      * could have locked it; never on a clock of its own
      */
     fn listen() {
-        thread::spawn(watch_lock);
+        watch_lock();
 
         loop {
             look();
@@ -331,43 +325,13 @@ pub fn lock_now() {
 
 // the vault locks with the screen and before the computer sleeps, when asked to
 fn watch_lock() {
-    let bus = Bus::system();
-
-    let id = bus.property(LOGIND, SESSION_PATH, SESSION, "Id");
-    let session = if id.text().is_empty() {
-        String::new()
-    } else {
-        bus.call(
-            LOGIND,
-            MANAGER_PATH,
-            MANAGER,
-            "GetSession",
-            &[Argument::from(id.text())],
-        )
-        .text()
-        .to_string()
+    let lock = || {
+        if wants_lock() {
+            // rbw takes a moment, and logind's thread has others to tell
+            thread::spawn(lock_now);
+        }
     };
-
-    let sleeps = thread::spawn(|| {
-        for signal in Bus::system().signals(MANAGER, "PrepareForSleep") {
-            let going = signal.arguments().first().is_some_and(|value| value.bool());
-
-            if going && wants_lock() {
-                lock_now();
-            }
-        }
-    });
-
-    if !session.is_empty() {
-        for signal in bus.signals(SESSION, "Lock") {
-            if signal.path() == session && wants_lock() {
-                lock_now();
-            }
-        }
-    }
-
-    // a panicked thread has stopped watching either way
-    let _ = sleeps.join();
+    crate::services::power::logind::follow(lock, lock);
 }
 
 fn wants_lock() -> bool {

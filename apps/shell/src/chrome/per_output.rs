@@ -18,6 +18,8 @@ static GENERATION: AtomicU64 = AtomicU64::new(0);
 pub fn follow_outputs() {
     static FOLLOW: Once = Once::new();
     FOLLOW.call_once(|| {
+        // a subscription only hears changes: the service is started (peeked at, not watched)
+        drop(Outputs::peek());
         Outputs::subscribe(|outputs| {
             let names: Vec<String> = outputs.all().iter().map(|o| o.name.clone()).collect();
             let mut known = NAMES.lock().unwrap_or_else(PoisonError::into_inner);

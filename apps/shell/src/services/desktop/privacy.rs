@@ -66,7 +66,11 @@ impl Service for Privacy {
         if Privacy::read().casts != casts {
             Privacy::write().casts = casts;
         }
-        watch_pipewire();
+        if !crate::services::installed("pw-dump") {
+            log::warn!("pw-dump isn't available; no microphone or camera indicator");
+            return;
+        }
+        crate::services::child_stream::supervise("pw-dump", watch_pipewire);
     }
 }
 
@@ -109,27 +113,33 @@ pub fn stop_cast(session: u64) {
     });
 }
 
-fn watch_pipewire() {
+/// Follows `pw-dump --monitor` until it ends; whether it heard anything.
+fn watch_pipewire() -> bool {
     let child = Command::new("pw-dump")
         .args(["--monitor", "--no-colors"])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn();
-    let Ok(mut child) = child else {
-        log::warn!("pw-dump isn't available; no microphone or camera indicator");
-        return;
+    let mut child = match child {
+        Ok(child) => child,
+        Err(error) => {
+            log::warn!("pw-dump: {error}");
+            return false;
+        }
     };
     let Some(stdout) = child.stdout.take() else {
-        return;
+        return false;
     };
 
     let own = std::process::id();
     let mut nodes = HashMap::new();
     let mut batch = Batch::default();
+    let mut heard = false;
     for line in BufReader::new(stdout).lines() {
         let Ok(line) = line else { break };
         if let Some(objects) = batch.push(&line) {
+            heard = true;
             apply(&mut nodes, &objects);
             let (microphone, camera, camera_users) = summary(&nodes, own);
             let privacy = Privacy::read();
@@ -148,6 +158,7 @@ fn watch_pipewire() {
     // the stream has ended; the child is likely gone already
     let _ = child.kill();
     let _ = child.wait();
+    heard
 }
 
 /// `pw-dump --monitor`'s output, a batch at a time: each change is a JSON

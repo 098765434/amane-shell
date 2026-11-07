@@ -2,5 +2,6 @@
 
 pub mod keep_awake;
 pub mod keyboard_backlight;
+pub mod logind;
 pub mod power_refresh;
 pub mod session;

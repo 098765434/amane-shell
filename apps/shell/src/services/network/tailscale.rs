@@ -34,10 +34,6 @@ const BINARY: &str = "tailscale";
 /// How long a burst of changes is let settle before reading once.
 const SETTLE: Duration = Duration::from_millis(300);
 
-/// The change stream's restart pacing.
-const BACKOFF_FIRST: Duration = Duration::from_secs(1);
-const BACKOFF_MAX: Duration = Duration::from_secs(60);
-
 /// How long a login waits for the control plane's URL.
 const LOGIN_WAIT: Duration = Duration::from_secs(30);
 
@@ -113,16 +109,12 @@ impl Service for Tailscale {
         if !installed(BINARY) {
             return;
         }
-        let mut backoff = BACKOFF_FIRST;
-        loop {
-            if watch() {
-                backoff = BACKOFF_FIRST;
-            }
+        crate::services::child_stream::supervise("tailscale's change stream", || {
+            let heard = watch();
             // the daemon may have gone with the stream
             refresh();
-            thread::sleep(backoff);
-            backoff = (backoff * 2).min(BACKOFF_MAX);
-        }
+            heard
+        });
     }
 }
 

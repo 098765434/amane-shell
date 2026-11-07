@@ -53,6 +53,7 @@
 //! [`Service`]: amane::Service
 
 pub mod assistant;
+pub mod child_stream;
 pub mod clock;
 pub mod desktop;
 pub mod display;

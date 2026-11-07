@@ -11,15 +11,11 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use amane::{Argument, Bus, Service};
+use amane::Service;
 
 use crate::services::Latest;
 
 const LEDS: &str = "/sys/class/leds";
-
-const LOGIND: &str = "org.freedesktop.login1";
-const SESSION_PATH: &str = "/org/freedesktop/login1/session/auto";
-const SESSION: &str = "org.freedesktop.login1.Session";
 
 static PENDING: Latest<u32> = Latest::new();
 
@@ -83,12 +79,7 @@ fn write_level(level: u32) {
         return;
     };
 
-    let arguments = [
-        Argument::from("leds"),
-        Argument::from(name),
-        Argument::from(level.min(max)),
-    ];
-    Bus::system().call(LOGIND, SESSION_PATH, SESSION, "SetBrightness", &arguments);
+    super::logind::set_brightness("leds", name, level.min(max));
 
     KeyboardBacklight::write().update();
 }

@@ -6,13 +6,9 @@
 //! locker the session runs on its Lock signal (swaylock under hypridle, say)
 //! shows. Logging out quits niri, which ends the session.
 
-use amane::{Argument, Bus, Service};
+use amane::Service;
 
-const LOGIND: &str = "org.freedesktop.login1";
-const MANAGER_PATH: &str = "/org/freedesktop/login1";
-const MANAGER: &str = "org.freedesktop.login1.Manager";
-const SESSION_PATH: &str = "/org/freedesktop/login1/session/auto";
-const SESSION: &str = "org.freedesktop.login1.Session";
+use super::logind::{self, Action};
 
 pub struct Session {
     suspend: bool,
@@ -23,23 +19,13 @@ pub struct Session {
 impl Service for Session {
     fn new() -> Self {
         Self {
-            suspend: can("CanSuspend"),
-            reboot: can("CanReboot"),
-            power_off: can("CanPowerOff"),
+            suspend: logind::can(Action::Suspend),
+            reboot: logind::can(Action::Reboot),
+            power_off: logind::can(Action::PowerOff),
         }
     }
 
     fn listen() {}
-}
-
-/// logind answers "yes", "no", "challenge" (a password first) or "na".
-fn can(method: &str) -> bool {
-    let answer = Bus::system().call(LOGIND, MANAGER_PATH, MANAGER, method, &[]);
-    allowed(answer.text())
-}
-
-fn allowed(answer: &str) -> bool {
-    matches!(answer, "yes" | "challenge")
 }
 
 impl Session {
@@ -56,21 +42,19 @@ impl Session {
     }
 
     pub fn lock() {
-        std::thread::spawn(|| {
-            Bus::system().call(LOGIND, SESSION_PATH, SESSION, "Lock", &[]);
-        });
+        logind::lock_session();
     }
 
     pub fn suspend() {
-        manager("Suspend");
+        logind::power(Action::Suspend);
     }
 
     pub fn reboot() {
-        manager("Reboot");
+        logind::power(Action::Reboot);
     }
 
     pub fn power_off() {
-        manager("PowerOff");
+        logind::power(Action::PowerOff);
     }
 
     pub fn log_out() {
@@ -79,33 +63,5 @@ impl Session {
                 log::warn!("couldn't log out: {err}");
             }
         });
-    }
-}
-
-/// A Manager action, interactive so polkit may ask for a password.
-fn manager(method: &'static str) {
-    std::thread::spawn(move || {
-        Bus::system().call(
-            LOGIND,
-            MANAGER_PATH,
-            MANAGER,
-            method,
-            &[Argument::from(true)],
-        );
-    });
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_challenge_still_offers_the_action() {
-        assert!(allowed("yes"));
-        assert!(allowed("challenge"));
-        assert!(!allowed("no"));
-        assert!(!allowed("na"));
-        // no logind at all
-        assert!(!allowed(""));
     }
 }
