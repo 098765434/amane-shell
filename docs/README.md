@@ -20,7 +20,7 @@ flowchart BT
   [docs/fork/README.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md).
 
 A feature's docs live where its code lives: these docs link to the forks' rather than repeat
-them.
+them. How the four repositories pin each other is in [STACK.md](../STACK.md).
 
 The docs are in two halves. `user/` is for someone running the desktop: installing it, setting
 it up, and what each surface does. `developer/` is for someone changing it: the architecture,
