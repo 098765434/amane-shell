@@ -50,6 +50,7 @@ The docs use one name for each thing:
 | [user/configure.md](user/configure.md) | the settings files, theme, density and text size, the environment variables |
 | [user/keyboard-and-ipc.md](user/keyboard-and-ipc.md) | the niri keybinds to copy, and the socket in user terms |
 | [user/troubleshooting.md](user/troubleshooting.md) | no frost, a missing item, Vulkan, the assistant, the logs |
+| [user/screenshots/README.md](user/screenshots/README.md) | the README's pictures, and how to take them |
 
 ### Features
 

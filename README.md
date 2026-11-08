@@ -1,128 +1,84 @@
 # amane-shell
 
-A Wayland desktop shell for the [niri](https://github.com/YaLTeR/niri) compositor, built on the
-[amane](https://github.com/098765434/amane) shell library (a fork). It has a status bar on every
-monitor, at the top or the bottom, in three sizes (Compact, Regular, Comfortable) and four styles
-(Frosted, Glass, Solid, Clear); a dock that rises from the bottom edge and with niri's overview;
-and glass floating surfaces (context menus, Quick Settings, the launcher, notification toasts and
-the notification center), all blurred by the compositor.
+**A complete desktop for niri.** amane-shell is a Wayland desktop shell built for the
+[niri](https://github.com/niri-wm/niri) scrollable-tiling compositor. It covers everything a
+desktop needs beyond window management — bar, dock, launcher, notifications, settings — plus a
+set of first-party apps, all drawn with the same GPU-rendered design library. The shell is
+written in Rust on top of [amane](https://github.com/098765434/amane) and
+[vello](https://github.com/098765434/vello), and ships with a
+[niri fork](https://github.com/098765434/niri) that adds the compositor features the shell
+relies on.
 
-> **Built for a forked niri**: [098765434/niri](https://github.com/098765434/niri). The generated
-> layer rules use options only the fork has (named `materials {}`, `background-effect { material }`
-> and the `desktop` layer the widgets sit on), the dock rises with the overview from the fork's
-> live overview progress, and dragging a window's icon in the dock to reorder it needs
-> `MoveColumnToIndex` with a `window_id` (stock niri would move the focused column instead). What
-the forks add is in their docs: [niri](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md), [amane](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md).
+- **Shell:** a status bar on every monitor, a dock that rises with the overview, a launcher,
+  notifications, Quick Settings, desktop widgets and an on-screen display
+- **Apps:** Shell Settings, Messages, Phone Screen, Shader Lab, Drop and an on-device assistant
+- **amane-kit:** the shell's look as a library, so any app can match it
 
-## Features
+## Screenshots
 
-- **Status bar**: workspace pips, the status icons, Quick Settings, notifications and the clock,
-  one bar a monitor, top or bottom, in three sizes and four styles
-  ([docs/shell/status-bar.md](docs/user/features/status-bar.md)).
-- **Status apps and Activities**: other programs' items in the bar and what's going on now
-  (Now Playing, the timer, screen sharing, uploads), over `org.amane.StatusBar1`
-  ([docs/developer/integration/status-apps.md](docs/developer/integration/status-apps.md), and
-  [writing one](docs/developer/integration/status-apps.md#writing-a-status-app)).
-- **Drop**: `amane-drop`, a drop shelf in the bar: drop files on folders, apps, your phone
-  or an upload (0x0.st, Imgur, SFTP, S3), with a Drop Bar to hold them
-  ([docs/shell/drop.md](docs/user/features/drop.md)).
-- **Dock**: every workspace's windows and pinned apps, rising from the bottom edge and with the
-  overview; drag to reorder or move, drop files to open them ([docs/shell/dock.md](docs/user/features/dock.md)).
-- **Launcher**: a search pill, with Applications, Files, Actions and a clipboard
-  history ([docs/shell/launcher.md](docs/user/features/launcher.md)).
-- **Notifications**: the shell is the notification daemon: toasts, a notification center and
-  Do Not Disturb ([docs/shell/notifications.md](docs/user/features/notifications.md)).
-- **Quick Settings**: GNOME's quick settings as a grid of glass modules, with a page per
-  control and Edit Controls ([docs/shell/quick-settings.md](docs/user/features/quick-settings.md)).
-- **Desktop widgets**: a stroke-drawn clock, batteries and the system's readings on the wallpaper
-  ([docs/shell/widgets.md](docs/user/features/widgets.md)).
-- **Context menus**: nested menus on xdg-popups ([docs/shell/context-menu.md](docs/user/features/context-menu.md)).
-- **Shell Settings**: a settings app the shell follows live ([docs/shell/settings-app.md](docs/user/features/settings-app.md)).
-- **amane-kit**: the look as a library: controls, components and the design tokens from Penpot,
-  for the shell and apps like Shell Settings ([kit/README.md](crates/kit/README.md)).
+Coming soon. The slots, and how they're taken, are in
+[docs/user/screenshots](docs/user/screenshots/README.md).
 
-Every doc is listed in [docs/README.md](docs/README.md).
+| Status bar | Dock | Launcher |
+|---|---|---|
+| *bar, Regular, Frosted* | *the dock risen* | *a search and its results* |
 
-## Build & run
+| Quick Settings | Shell Settings |
+|---|---|
+| *the grid of controls* | *the Appearance page* |
 
-A Nix flake (`flake.nix`) provides a devShell with the Rust toolchain and the required
-wayland/vulkan/pulse/fontconfig libraries wired up (no hardcoded store paths), so plain `cargo`
-works inside it:
+## Install
+
+The shell is built and run through its Nix flake, and needs the niri fork.
 
 ```sh
-nix develop -c cargo build          # compile
-nix develop -c cargo run            # run  (follows the system light/dark preference)
-nix develop -c env AMANE_THEME=light cargo run   # force the light theme
+nix develop -c cargo run    # in a niri session
+nix build                   # ./result/bin/amane-shell and the apps
 ```
 
-The theme follows the system preference (the Settings portal), else dark. `AMANE_THEME=light|dark`
-forces one, `AMANE_DENSITY=compact` tightens spacing and rows, and `AMANE_TEXT_SCALE` (0.5–3)
-scales text.
+On NixOS, add `github:098765434/amane-shell` as a flake input, run the shell as a user service,
+and let `gen-layer-rules.sh` put the shell's layer rules into niri's config. The steps are in
+[docs/user/install.md](docs/user/install.md).
 
-For a release binary, `nix build` produces `./result/bin/amane-shell`, wrapped with the runtime
-libraries it needs (so it runs standalone).
+> **Do not** build this shell with the upstream `amane` CLI (`amane dev`, `amane compile`): it
+> compiles against its own bundled copy of the library, not this fork. The flake is the one
+> build path.
 
-The `amane` library is a **git dependency** pinned to a rev (`Cargo.toml`). To develop the shell and
-the library together, check `amane` out beside this repo and add a git-ignored
-`.cargo/local.toml` with `paths = ["../amane"]` — see [CONTRIBUTING.md](CONTRIBUTING.md).
+## Configure
 
-> **Do not** build this shell with the upstream `amane` CLI (`amane dev`/`compile`): it compiles
-> against its own bundled library copy, **not** this fork (so it lacks `Gestures` and won't compile
-> the bar). The flake is the one canonical build path.
+Settings are JSON files under `~/.config/amane-shell/`, written by Shell Settings and followed
+live by the running shell. Theme, density, text size, the bar's position and size, the dock,
+the launcher's sources and the notification rules are all there, with `AMANE_*` variables to
+override them: [docs/user/configure.md](docs/user/configure.md). The niri keybinds to copy are
+in [docs/user/keyboard-and-ipc.md](docs/user/keyboard-and-ipc.md).
 
-## niri layer rules
+## Documentation
 
-The shell's glass is frosted by niri, through `layer-rule` blocks generated from the design
-tokens into `niri-layer-rule.kdl` and injected into your niri config by `./gen-layer-rules.sh`:
+- **User guide:** [docs/user](docs/user): installing, configuring, the keybinds,
+  troubleshooting, and a page per surface under [features](docs/user/features).
+- **Developer docs:** [docs/developer](docs/developer): the architecture, the kit, the design
+  system, the integration points (IPC, layer rules, status apps, NixOS), testing and releasing.
+- **Index:** every doc is listed in [docs/README.md](docs/README.md).
 
-```sh
-cargo xtask layer-rules > niri-layer-rule.kdl
-./gen-layer-rules.sh /path/to/your/niri/config.kdl   # e.g. ~/.config/niri/config.kdl
-```
+## The stack
 
-See [docs/integration/layer-rules.md](docs/developer/integration/layer-rules.md).
+Four repositories make the desktop, each pinning the one below it; the chart and the bump order
+are in [STACK.md](STACK.md).
 
-## Running it persistently
+- **[niri fork](https://github.com/098765434/niri)** (branch `ocbk`): materials and blur shapes,
+  vibrancy, HDR, the workspace mat, the desktop layer the widgets sit on, gesture IPC.
+- **[amane fork](https://github.com/098765434/amane)** (branch `ocbk`): the UI library the shell
+  is written in, with the [vello fork](https://github.com/098765434/vello) as its renderer.
 
-Autostart the bar with your compositor/session. A **systemd user service** is the robust option
-(crash recovery + logs); as a home-manager snippet:
+## Contributing
 
-```nix
-systemd.user.services.amane-shell = {
-  Unit = { Description = "amane-shell bar"; PartOf = [ "graphical-session.target" ]; After = [ "graphical-session.target" ]; };
-  Service = { ExecStart = "${inputs.amane-shell.packages.${pkgs.system}.default}/bin/amane-shell"; Restart = "on-failure"; };
-  Install.WantedBy = [ "graphical-session.target" ];
-};
-```
-
-The package comes from this repository's flake, as the input `amane-shell` of your own flake
-(`inputs.amane-shell.url = "github:098765434/amane-shell"`); there is no nixpkgs overlay, so
-`pkgs.amane-shell` doesn't exist.
-
-Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery).
-
-Run status apps such as `amane-drop` as units of their own, not from the shell: a restart of the
-shell kills what's in its cgroup, and they put their items back by themselves once the bar is
-there ([docs/shell/drop.md](docs/user/features/drop.md#installing)).
-
-## Shell Settings
-
-`amane-settings` is a settings app for the shell, built on the [kit](crates/kit/README.md): appearance
-(light or dark, accent, density, text size, glass, adaptive glass, vibrant labels, motion), the
-desktop's widgets and the launcher. It writes `~/.config/amane-shell/*.json`, which the running shell
-follows at once. Its **System** pages manage the NixOS configuration the machine is built from
-(the computer's name, language and keyboard; apps, services, idle timeouts, storage, history,
-updates with a scheduled check), through [docs/integration/nixos.md](docs/developer/integration/nixos.md),
-and the shell is the session's polkit agent, so the password prompt is its own. See
-[docs/shell/settings-app.md](docs/user/features/settings-app.md).
-
-## Layout
-
-`apps/shell/src/` is the shell, `crates/kit/` is amane-kit (the look as a library, for the shell and its apps),
-`apps/` the programs beside it, and `crates/kit/design-tokens/tokens.json` the Penpot export. Where each
-part lives, folder by folder, is in the source-layout table of [docs/README.md](docs/README.md).
+Start with [CONTRIBUTING.md](CONTRIBUTING.md): the dev shell, the checks CI runs, and where a
+change belongs (the shell, the kit, or one of the forks). The project follows the
+[Contributor Covenant](CODE_OF_CONDUCT.md). Security reports go through GitHub's private
+reporting, as [SECURITY.md](SECURITY.md) says. Changes are recorded in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE). The bar links the `amane` library (also MIT) and talks to niri over
-**IPC**, so the GPL-3.0 niri fork imposes no copyleft obligation on this crate.
+MIT — see [LICENSE](LICENSE). The shell links the `amane` library (also MIT) and talks to niri
+over **IPC**, so the GPL-3.0 niri fork imposes no copyleft obligation on this crate.
