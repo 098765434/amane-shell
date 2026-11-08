@@ -21,6 +21,7 @@
 //! - [`thumbnail_picker`] — one choice out of pictures.
 //! - [`nav_buttons`] — the back and forward pair of a window's toolbar.
 //! - [`pop_up_button`] — a small round button that opens a menu.
+//! - [`calendar`] — a month at a glance, today marked.
 //!
 //! The `controls` example shows them all.
 //!
@@ -93,8 +94,9 @@ pub use containers::{
     app_bar, arrangement, card, dialog, divider, flow, form, grid, list, scroll_view, tooltip,
 };
 pub use controls::{
-    avatar, buttons, color_picker, control_size, dropdown, leading_icon, menu, nav_buttons,
-    pop_up_button, search_field, slider, spinner, stepper, tag, text_edit, thumbnail_picker,
+    avatar, buttons, calendar, color_picker, control_size, dropdown, leading_icon, menu,
+    nav_buttons, pop_up_button, search_field, slider, spinner, stepper, tag, text_edit,
+    thumbnail_picker,
 };
 pub use foundation::{area, color, fuzzy, icons, layout, symbol};
 pub use look::{glass, glass_region, lab, material, style};

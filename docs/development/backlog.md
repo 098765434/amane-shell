@@ -34,6 +34,9 @@ icons.
 while open, like the launcher.
 
 ### 3. Notification persistence and per-app settings · M
+
+**Partly done**: persistence and per-app rules ([notifications.md](../shell/notifications.md#history)).
+Sounds, inline reply and Focus schedules remain.
 **Gap.** "History lasts the session" and "No sounds, inline reply, per-app settings, or Focus
 schedules" (`docs/shell/notifications.md`, *Not yet*).
 **Build, in order of value.**
@@ -47,6 +50,8 @@ schedules" (`docs/shell/notifications.md`, *Not yet*).
   `privacy` service already knows when a cast is live).
 
 ### 4. A calendar in the notification center · S–M
+
+**Done**: the month card ([notifications.md](../shell/notifications.md#calendar)). Events remain.
 **Gap.** The clock opens the notification center, but there's no month view or upcoming events, which
 GNOME puts there.
 **Build.** A month grid card at the top of the center (today highlighted, week numbers optional);

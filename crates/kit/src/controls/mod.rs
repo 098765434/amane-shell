@@ -2,6 +2,7 @@
 
 pub mod avatar;
 pub mod buttons;
+pub mod calendar;
 pub mod color_picker;
 pub mod control_size;
 pub mod dropdown;

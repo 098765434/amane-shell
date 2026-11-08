@@ -15,6 +15,7 @@ amane-process = { workspace = true }
 # the same pinned amane as the shell, overridden the same way during co-development
 amane = { workspace = true }
 serde_json = { workspace = true }
+chrono = { workspace = true }
 fontconfig = "0.11"
 
 [features]

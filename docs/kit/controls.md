@@ -103,6 +103,21 @@ radios read better.
 corner there (flipped or slid to stay on screen), over the current normal window. Call it from a
 right click (`on_click` with `Button::Right`). A second right click while it's open closes it.
 
+## Calendar
+
+`calendar::Calendar::new(id, month, today)` draws a month: its name with Today (when another month
+is shown) and back/forward chevron buttons, a row of weekday letters, then six weeks of day
+numbers. Today is a filled `sys.color.accent` circle, and the days of the months either side are
+in the fainter color. It's quads and text only. `.first_weekday(..)` (Monday by default; chrono has
+no locale data here), `.width(..)` (the days share it), `.colors(text, faint)` (labels on glass),
+and `.on_month(|first_of_month| …)`, since the caller keeps which month shows. `.height()` says
+how tall `build()` draws it, as a fixed-height container needs to know.
+
+`calendar::month_grid(month, today, first)` is the layout alone (6 × 7 `Day { date, in_month,
+today }`), and `shift_month` / `first_of` move between months. The sizes are `sys.size.control.height`
+for the header and a 32 px cap on a week's height, so there are no `calendar.*` tokens yet. The
+notification center shows it ([notifications.md](../shell/notifications.md#calendar)).
+
 ## Control sizes
 
 `control_size` has the design kit's five sizes, Mini, Small, Medium, Large and XL. The switch,

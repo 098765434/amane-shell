@@ -74,9 +74,11 @@ fn opened() {
     SEEN.with(|seen| seen.set(seen.get().max(newest)));
 }
 
-/// The center closed: stacks fold back up for next time.
+/// The center closed: stacks fold back up, and the calendar comes back to
+/// this month, for next time.
 fn closed() {
     EXPANDED.with_borrow_mut(HashSet::clear);
+    super::calendar_card::reset();
 }
 
 /// Whether something arrived since the center was last opened; what was
@@ -214,7 +216,11 @@ fn sheet() -> Rectangle {
     drop(Clock::read());
     let now = SystemTime::now();
 
-    let mut rows: Vec<Box<dyn Widget>> = vec![boxed(header(!list.is_empty()))];
+    // the month stays put over the list, which scrolls under it
+    let mut rows: Vec<Box<dyn Widget>> = vec![
+        boxed(header(!list.is_empty())),
+        boxed(super::calendar_card::card()),
+    ];
 
     let groups = groups(&list);
     let mut drawn = Vec::new();

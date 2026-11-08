@@ -14,6 +14,7 @@
 //!
 //! See `docs/shell/notifications.md`.
 
+mod calendar_card;
 pub mod card;
 pub mod center;
 mod dnd_menu;

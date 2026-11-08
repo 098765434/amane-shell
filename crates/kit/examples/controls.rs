@@ -10,6 +10,7 @@ use amane_kit::app::{Page, app, app_window, field_box, sidebar, standard_shortcu
 use amane_kit::buttons::{
     Checkbox, PushButton, Radio, Segment, SegmentedButton, Shape, Style, Switch,
 };
+use amane_kit::calendar::{self, Calendar};
 use amane_kit::dropdown::Dropdown;
 use amane_kit::form::{FormRow, Group, SliderRow};
 use amane_kit::icons::{
@@ -27,6 +28,7 @@ use amane_kit::stepper::Stepper;
 use amane_kit::style::{self, Accent};
 use amane_kit::symbol::{Symbol, symbol};
 use amane_kit::tokens::{Styled, sys};
+use chrono::Datelike;
 
 struct Lab {
     page: usize,
@@ -41,6 +43,7 @@ struct Lab {
     port: f64,
     scale: f64,
     pages_back: usize,
+    month: i32,
     pressed: String,
     name: String,
 }
@@ -64,6 +67,7 @@ impl Service for Lab {
             port: 8080.0,
             scale: 1.5,
             pages_back: 2,
+            month: 0,
             pressed: String::from("nothing yet"),
             name: String::new(),
         }
@@ -371,6 +375,22 @@ fn buttons(s: &Lab) -> Vec<Box<dyn Widget>> {
                 })
                 .build(),
             String::from("the same position as the segmented button"),
+        ),
+        show(
+            "Calendar",
+            300.0,
+            {
+                let today = chrono::Local::now().date_naive();
+                let shown = calendar::shift_month(today, s.month);
+                Calendar::new("kit.calendar", shown, today)
+                    .on_month(move |month| {
+                        let months = (month.year() - today.year()) * 12 + month.month() as i32
+                            - today.month() as i32;
+                        Lab::write().month = months;
+                    })
+                    .build()
+            },
+            String::from("the months either side, and back to this one"),
         ),
         show(
             "Leading icons",

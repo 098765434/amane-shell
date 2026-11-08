@@ -87,6 +87,15 @@ is dismissed, across restarts of the shell (see [History](#history)).
 
 Times read "now", "5m ago", "2h ago", then the day. They tick with the bar's `Clock`.
 
+### Calendar
+
+Under the header, above the list (so it stays put while the list scrolls), a raised card holds
+this month ([`Calendar`](../kit/controls.md#calendar), `calendar_card.rs`): today in an accent
+circle, weeks from Monday, chevrons to the months either side and **Today** back. Which month
+shows is kept while the center is open and goes back to this one when it closes. It reads the
+bar's `Clock`, so today moves on at midnight. Days aren't clickable yet: there are no events to
+show (Evolution Data Server, a `.ics` file or khal would be the sources).
+
 ## History (`services/notification_history.rs`)
 
 The center's list outlives the shell. Whenever the notifications change, the shell saves each

@@ -102,6 +102,7 @@ dependencies = [
  "amane",
  "amane-base",
  "amane-process",
+ "chrono",
  "fontconfig",
  "log",
  "serde_json",
