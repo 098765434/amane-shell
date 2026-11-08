@@ -1,0 +1,21 @@
+# Weekly dependency bumps. The git dependencies (amane, and its vello fork) are
+# pinned by rev on purpose and bumped by hand (docs/developer/release.md).
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: amane
+      - dependency-name: vello
+      - dependency-name: vello_encoding
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
