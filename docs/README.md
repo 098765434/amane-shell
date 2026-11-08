@@ -48,6 +48,7 @@ The docs use one name for each thing:
 |---|---|
 | [user/install.md](user/install.md) | building with the flake, the NixOS service, niri's layer rules, updating |
 | [user/configure.md](user/configure.md) | the settings files, theme, density and text size, the environment variables |
+| [user/keyboard-and-ipc.md](user/keyboard-and-ipc.md) | the niri keybinds to copy, and the socket in user terms |
 
 ### Features
 
