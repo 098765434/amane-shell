@@ -42,6 +42,12 @@ The docs use one name for each thing:
 
 ## Using amane-shell
 
+### Setting it up
+
+| Doc | What |
+|---|---|
+| [user/install.md](user/install.md) | building with the flake, the NixOS service, niri's layer rules, updating |
+
 ### Features
 
 | Surface | What it does | Doc |
