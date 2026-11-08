@@ -237,7 +237,8 @@ fn current_block(saved: &Saved, output: &Output) -> OutputConfig {
         block.transform = logical.transform;
     }
     block.off = !output.on();
-    if output.hdr_supported {
+    // with hdr-auto, HDR on now is niri's doing, not a setting to save
+    if output.hdr_supported && !block.hdr_auto {
         block.hdr = output.hdr_enabled;
         if output.hdr_enabled {
             block.sdr_brightness = output.sdr_brightness.map(f64::round);

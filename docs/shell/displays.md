@@ -88,7 +88,7 @@ A `config.kdl` with uncommitted edits is refused.
 | Variable refresh rate | dropdown: Off, On demand, Always; the range it follows; under On demand, the apps that turn it on (by app id with **Add**, or from a menu of the apps open; **Remove**) | `variable-refresh-rate [on-demand=true]` and the `window-rule`, at once |
 | Scale | dropdown, 100–300 % in quarters, each "looks like W × H", and any other scale already in use | `scale`, tried first |
 | Rotation | dropdown: Standard, 90°, 180°, 270°, flipped and flipped turned (counter-clockwise, as niri turns) | `transform`, tried first |
-| High dynamic range | **Use HDR**, tried first, with what the screen shows and an ⓘ naming the apps that show HDR; while on, **Brightness** moves SDR white ([below](#hdr)) | `hdr`, `sdr-brightness` |
+| High dynamic range | **Use HDR**: Off, Automatic or On (On and Off tried first), with what the screen shows and an ⓘ naming the apps that show HDR; while on, **Brightness** moves SDR white ([below](#hdr)) | `hdr`, `hdr-auto`, `sdr-brightness` |
 | Advanced › (sub-page) | Custom scale (0.5–4, or a percentage), Custom mode (`2560x1600@90`), Overview backdrop (`#rrggbb`), and the raw facts each source gave | `scale`, `mode custom=true`, `backdrop-color` |
 | All Displays | with a battery, **Slower on battery** ([below](#refresh-rate-on-battery)) | `displays.json` |
 | Night Light | a switch, how warm, and when: All day, Sunset to sunrise, Set hours | the shell's state ([below](#night-light)) |
@@ -115,8 +115,13 @@ niri drives an output in HDR10 when its EDID says it decodes PQ (see niri's
 what the screen can do (HDR10 support and peak, from the EDID and from niri's `peak_luminance`),
 and:
 
-- **Use HDR** is niri's `hdr` (`Change::Hdr`). It's tried first because niri sets the output up
-  again from scratch, so the screen blanks for a moment. Saved as `hdr` in `displays.kdl`.
+- **Use HDR** is niri's `hdr` (`Change::Hdr`). On and Off are tried first because niri sets
+  the output up again from scratch, so the screen blanks for a moment. Saved as `hdr` in
+  `displays.kdl`. **Automatic** is the fork's `hdr-auto`, saved without a trial: niri turns HDR
+  on a second after something brighter than SDR white shows and off ten seconds after the last
+  one goes, so the 41 MB half-float composition and its encode pass cost nothing the rest of the
+  time. While it's set, a save never writes the HDR niri turned on for it as `hdr`
+  (`current_block`), and the row says whether HDR is on now.
 - **Brightness** while HDR is on is where SDR white sits (`sdr-brightness`, niri's default 203
   nits), not the backlight: in PQ the OLED takes its light from the signal and ignores the
   backlight. amane's `Brightness` asks niri every two seconds whether the built-in panel is in

@@ -45,6 +45,8 @@ pub struct OutputConfig {
     pub focus_at_startup: bool,
     /// HDR10, when the display takes it.
     pub hdr: bool,
+    /// HDR10 only while a video or game shows HDR (the niri fork's `hdr-auto`).
+    pub hdr_auto: bool,
     /// SDR white in HDR mode, in nits; niri's default (203) when unset.
     pub sdr_brightness: Option<f64>,
     /// `#rrggbb` behind the workspaces in the overview.
@@ -126,6 +128,9 @@ impl Displays {
             }
             if output.hdr {
                 line(String::from("hdr"));
+            }
+            if output.hdr_auto {
+                line(String::from("hdr-auto"));
             }
             if let Some(nits) = output.sdr_brightness {
                 line(format!("sdr-brightness {}", nits.round()));
@@ -312,6 +317,7 @@ fn read_setting(output: &mut OutputConfig, line: &str) -> bool {
         "variable-refresh-rate" if value == "on-demand=true" => output.vrr = Vrr::OnDemand,
         "focus-at-startup" if value.is_empty() => output.focus_at_startup = true,
         "hdr" if value.is_empty() => output.hdr = true,
+        "hdr-auto" if value.is_empty() => output.hdr_auto = true,
         "sdr-brightness" => match value.parse() {
             Ok(nits) => output.sdr_brightness = Some(nits),
             Err(_) => return false,
@@ -674,6 +680,7 @@ layout {
                     focus_at_startup: true,
                     backdrop: Some(String::from("#101010")),
                     hdr: true,
+                    hdr_auto: true,
                     sdr_brightness: Some(300.),
                     extra: Vec::new(),
                 },

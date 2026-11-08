@@ -26,7 +26,7 @@ use amane_kit::tokens::{Styled, sys};
 
 use super::caps::Caps;
 use super::ddc::{self, Ddc, Feature, Monitor};
-use super::kdl::{self, Displays as Saved, Setup, Vrr};
+use super::kdl::{self, Displays as Saved, OutputConfig, Setup, Vrr};
 use super::outputs::{self, Change, Mode, Output, OutputExt, Transform, TransformExt};
 use super::trial::try_change;
 use super::{Screens, block_name, save, save_all, saved_block};
@@ -902,17 +902,58 @@ pub fn hdr(ctx: &Ctx) -> Group {
     }
 
     let on = output.hdr_enabled;
+    let auto = ctx
+        .saved
+        .as_ref()
+        .and_then(|saved| super::saved_block(saved, &output))
+        .is_some_and(|block| block.hdr_auto);
+    // Off, Automatic (only while a video or game shows HDR), On
+    let at = if auto {
+        1
+    } else if on {
+        2
+    } else {
+        0
+    };
+    let labels = ["Off", "Automatic", "On"].map(String::from).to_vec();
     let switched = output.clone();
-    let switch = Switch::new("settings.displays.hdr", on)
+    let dropdown = Dropdown::new("settings.displays.hdr", labels, at)
         .disabled(!ctx.editable() || !output.on())
-        .on_toggle(move |hdr| {
-            try_change(
-                &switched,
-                Change::Hdr(hdr),
-                Change::Hdr(!hdr),
-                format!("{} HDR {}", switched.name, if hdr { "on" } else { "off" }),
-                move |block| block.hdr = hdr,
-            );
+        .on_select(move |index| {
+            if index == at {
+                return;
+            }
+            let name = switched.name.clone();
+            match index {
+                // the file alone: niri switches when HDR shows
+                1 => super::save(&switched, format!("{name} HDR automatic"), |block| {
+                    block.hdr = false;
+                    block.hdr_auto = true;
+                }),
+                _ => {
+                    let hdr = index == 2;
+                    let keep = move |block: &mut OutputConfig| {
+                        block.hdr = hdr;
+                        block.hdr_auto = false;
+                    };
+                    if hdr == on {
+                        // already showing as asked (Automatic had it on or off): only the file
+                        super::save(
+                            &switched,
+                            format!("{name} HDR {}", if hdr { "on" } else { "off" }),
+                            keep,
+                        );
+                    } else {
+                        try_change(
+                            &switched,
+                            Change::Hdr(hdr),
+                            Change::Hdr(!hdr),
+                            format!("{name} HDR {}", if hdr { "on" } else { "off" }),
+                            keep,
+                        );
+                    }
+                }
+            }
         })
         .build();
 
@@ -930,13 +971,19 @@ pub fn hdr(ctx: &Ctx) -> Group {
         .build();
     let group = group().header(title).row(
         FormRow::new("settings.displays.hdr-row", "Use HDR")
-            .subtitle(format!("HDR10{peak}"))
+            .subtitle(if auto {
+                format!("HDR10{peak}, {} now", if on { "on" } else { "off" })
+            } else {
+                format!("HDR10{peak}")
+            })
             .trailing(apps)
-            .trailing(switch),
+            .trailing(dropdown),
     );
     let mut footer = String::from(
         "The screen blanks for a moment while it switches. The desktop looks the same; video \
-         and games that support HDR show brighter highlights.",
+         and games that support HDR show brighter highlights. Automatic turns HDR on a second \
+         after one starts and off ten seconds after it ends, and saves the memory and power \
+         HDR takes the rest of the time.",
     );
 
     if on {
