@@ -2,6 +2,14 @@
 # the crates they share (crates/). Each crate's manifest takes its package
 # fields, shared dependencies and lints from here.
 
+# Release: cross-crate inlining (thin LTO, one codegen unit) for less CPU per
+# frame and smaller binaries. Fat LTO buys little more for a far longer link
+# of each binary. Panics still unwind: amane's App catches a view's panic.
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+
 [profile.dev]
 debug = "line-tables-only"
 
