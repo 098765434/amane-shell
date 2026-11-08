@@ -253,9 +253,12 @@ What the desktop holds in memory, rather than what it spends per frame, is in
   widget dim stays a group per card.
 - **The launcher rebuilds** its search, actions and suggestions on every frame of its animations.
   It should memoize on the query.
-- **Toasts poll at 10 Hz forever.** It's cheap, and it redraws only on change.
-- **Privacy spawns `niri msg casts` every 2 s.**
-- **Media's position** is part of its equality, so a playing player writes every second. Only
-  Quick Settings reads it, and only while it's open.
-- **Bluetooth** builds its device list afresh every 2 s and compares. A failed call reads as "no
-  adapter", which is a real change if bluetoothd went away, so it's left as it is.
+- **The keyboard light** is read once a second while anything reads it, the hidden OSD
+  included: the LED sends no event, and the OSD shows a change the firmware's own key made.
+
+Since gone: toasts, privacy, media and Bluetooth no longer poll (the roadmap's Phase 7), and
+on 2026-11-08 the idle wakeups fell again, from 14.6 to 6.9 a second on a second shell with
+nothing happening and from 1,758 to 339 during workspace switching (amane: niri events sent
+only to the listeners that read them, a change nobody reads waking nothing, the blocking
+pool's idle threads leaving, trimming after a hide instead of every 10 s; the shell: system
+readings paused under windows, the kit spinner on a timer).

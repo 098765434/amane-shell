@@ -221,6 +221,26 @@ rendered frames, the screenshot targets released right after a capture (about 30
 screenshot before), the blur-shape capture dropped before the blur checks its textures (it
 rebuilt the whole chain every frame), and a swiped tile's offscreen cleared.
 
+### Made when shown, sized when drawn (2026-11-08)
+
+- **A window's GPU is made at its first frame**, and once every window of a program has been
+  hidden for a minute all of them go, the Vulkan device and vello with them (amane's
+  [memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#a-windows-gpu-is-made-when-it-first-draws-and-the-device-goes-with-the-last-one)).
+  A hidden-only amane-drop: 12.4 MB VRAM, 3.3 MB GTT, 66 MB RSS before; no GPU client and
+  15 MB after. `AMANE_DEVICE_IDLE=0` keeps the device.
+- **Images are decoded as big as they're drawn** (at least 256 pixels, a power of two), with
+  a 64 MB least-recently-used cap (`AMANE_IMAGE_CACHE_MB`) and two decoding threads; an icon
+  drawn at 84 pixels no longer keeps its 512-pixel file. `AMANE_IMAGE_FULL=1` restores full
+  decodes. The center keeps 200 notifications; past that the oldest expire.
+- **A hidden dock is only its reveal strip**, 2 px tall with no vibrancy, until the pointer
+  touches it: 30.8 → 25.1 MB of VRAM on a second shell (`AMANE_DOCK_FULL_WHILE_HIDDEN=1`).
+- **The assistant starts when asked and leaves after five idle minutes** (socket-activated),
+  so its models' 80–140 MB go back ([assistant.md](../shell/assistant.md#the-daemon)).
+- **niri:** `hdr-auto` keeps an output in SDR until something HDR shows (no 41 MB half-float
+  composition the rest of the time; Shell Settings' Displays offers it as Automatic), and an
+  xray buffer is blurred again only near where it changed, so a widget repainting no longer
+  re-blurs the whole screen's frost behind the bar.
+
 ## Planned
 
 The open items, in order of payoff, from the 2026-10-26 research and plan (the numbers are the
@@ -231,9 +251,6 @@ plan's, kept so its notes can be found). Pollers to events is part of the cleanu
   driver-level view (`RADV_DEBUG=info` or `VK_EXT_device_memory_report`) of what outlives the
   hide, then wgpu's `generate_report()` to map it to buffers and textures. Suspects: per-window
   blur passes, notification pictures.
-- **8.3 Images at their drawn size, with a byte cap.** Decode notification images and launcher
-  previews at twice their drawn size, keep a 64 MB LRU over loaded images, and cap the
-  notification history at 200.
 - **8.4 A smaller BIOS UMA carve-out.** On a UMA iGPU, VRAM and GTT are the same memory: once
   the busy peak (launcher, Quick Settings, a screenshot, a swipe) is well under 1 GiB, a 512 MB
   or 1 GiB frame buffer gives 2–3 GiB back to Linux. Measure the peak first.
@@ -247,10 +264,9 @@ plan's, kept so its notes can be found). Pollers to events is part of the cleanu
   monitor; the quads atlas and the glyph atlas become one R8 atlas, tinted in the shader.
 - **8.9 niri: one blur chain for targets of the same size.** Output, screencast and screen
   capture each keep their own; sharing it makes a screenshot or a running cast nearly free.
-- **8.10 Pollers to events.** Few bytes but many wakeups: the roadmap's Phases 6 and 7, measured
-  against [idle-baseline.md](idle-baseline.md).
-- **8.11 The heap.** `MALLOC_ARENA_MAX=2` and a `malloc_trim` after big transients (the
-  launcher closing) usually save 10–20 MB; check whether parley loads the whole font database.
+- **8.11 The heap.** amane already caps glibc's arenas at two and now trims after a hide;
+  what's left is checking whether parley's font database (fontconfig's whole font list) is
+  worth loading lazily.
 - **8.12 Other apps out of the number.** Report niri and the shell alone, so the floor is
   honest: the editor and browser are easily 500 MB of the whole-GPU figure.
 
