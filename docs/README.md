@@ -47,6 +47,7 @@ The docs use one name for each thing:
 | Doc | What |
 |---|---|
 | [user/install.md](user/install.md) | building with the flake, the NixOS service, niri's layer rules, updating |
+| [user/configure.md](user/configure.md) | the settings files, theme, density and text size, the environment variables |
 
 ### Features
 
