@@ -289,11 +289,16 @@ pub fn take_heard() -> Option<String> {
 
 /// What the daemon runs, once it's said; asks it if it hasn't.
 pub fn status() -> Option<String> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    // one ask at a time, however often the launcher looks
+    static ASKING: AtomicBool = AtomicBool::new(false);
+
     let hello = state().hello.clone();
-    if hello.is_none() {
+    if hello.is_none() && !ASKING.swap(true, Ordering::AcqRel) {
         std::thread::spawn(|| {
             // no daemon leaves hello empty, which is what the caller shows
             let _ = send_now(Request::Hello);
+            ASKING.store(false, Ordering::Release);
         });
     }
     hello

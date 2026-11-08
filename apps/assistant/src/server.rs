@@ -9,7 +9,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use amane_assistant::protocol::{Envelope, Message, Request};
 
@@ -62,19 +62,81 @@ impl Out {
     }
 }
 
+/// When socket-activated, how long the daemon waits with nothing to do before it exits, giving
+/// its models' memory (80–140 MB once loaded) back: `AMANE_ASSISTANT_IDLE` seconds, 300 by
+/// default, 0 to stay. systemd starts it again at the next connection.
+fn idle_exit() -> Option<Duration> {
+    let seconds = std::env::var("AMANE_ASSISTANT_IDLE")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(300u64);
+    (seconds > 0).then(|| Duration::from_secs(seconds))
+}
+
+/// When the daemon last did anything: a connection, a request, a piece heard.
+static LAST: Mutex<Option<Instant>> = Mutex::new(None);
+
+fn busy() {
+    *LAST.locked() = Some(Instant::now());
+}
+
+/// The socket systemd passed (`LISTEN_FDS`, fd 3), when it started the daemon for one.
+fn activated() -> Option<UnixListener> {
+    use std::os::fd::FromRawFd;
+
+    let pid = std::env::var("LISTEN_PID").ok()?.parse::<u32>().ok()?;
+    let fds = std::env::var("LISTEN_FDS").ok()?.parse::<u32>().ok()?;
+    if pid != std::process::id() || fds != 1 {
+        return None;
+    }
+    // SAFETY: systemd hands over fd 3, a listening socket, for this process alone
+    Some(unsafe { UnixListener::from_raw_fd(3) })
+}
+
 pub fn serve(engine: Engine) -> Result<(), String> {
     let path = amane_assistant::socket_path();
-    if UnixStream::connect(&path).is_ok() {
-        return Err(format!("another one already serves {}", path.display()));
+    let (listener, on_demand) = match activated() {
+        Some(listener) => (listener, true),
+        None => {
+            if UnixStream::connect(&path).is_ok() {
+                return Err(format!("another one already serves {}", path.display()));
+            }
+            // a socket an earlier run left, if any
+            let _ = std::fs::remove_file(&path);
+            let listener = UnixListener::bind(&path)
+                .map_err(|error| format!("{}: {error}", path.display()))?;
+            if let Err(error) =
+                std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600))
+            {
+                log::warn!("couldn't make the socket private: {error}");
+            }
+            (listener, false)
+        }
+    };
+    log::info!(
+        "serving {}{}",
+        path.display(),
+        if on_demand { ", started for it" } else { "" }
+    );
+    busy();
+
+    let recording: Arc<Mutex<Option<Recording>>> = Arc::default();
+    if on_demand && let Some(idle) = idle_exit() {
+        let recording = recording.clone();
+        std::thread::spawn(move || {
+            loop {
+                std::thread::sleep(idle / 4);
+                let quiet = LAST.locked().is_none_or(|at| at.elapsed() >= idle);
+                if quiet && recording.locked().is_none() {
+                    log::info!(
+                        "nothing asked for {} s; exiting until the next",
+                        idle.as_secs()
+                    );
+                    std::process::exit(0);
+                }
+            }
+        });
     }
-    // a socket an earlier run left, if any
-    let _ = std::fs::remove_file(&path);
-    let listener =
-        UnixListener::bind(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-    if let Err(error) = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)) {
-        log::warn!("couldn't make the socket private: {error}");
-    }
-    log::info!("serving {}", path.display());
 
     let out = Arc::new(Out::default());
     let (jobs, queue) = mpsc::channel();
@@ -82,10 +144,9 @@ pub fn serve(engine: Engine) -> Result<(), String> {
         let out = out.clone();
         std::thread::spawn(move || work(engine, queue, &out));
     }
-    let recording: Arc<Mutex<Option<Recording>>> = Arc::default();
-
     for stream in listener.incoming() {
         let Ok(stream) = stream else { continue };
+        busy();
         let Ok(writer) = stream.try_clone() else {
             continue;
         };
@@ -185,6 +246,7 @@ fn work(mut engine: Engine, queue: Receiver<Job>, out: &Out) {
     let mut voiced = false;
     let mut before: std::collections::VecDeque<Vec<f32>> = std::collections::VecDeque::new();
     while let Ok(first) = queue.recv() {
+        busy();
         let mut batch = vec![first];
         batch.extend(queue.try_iter());
         // of the answers asked for meanwhile, the newest

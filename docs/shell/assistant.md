@@ -121,6 +121,11 @@ the shell:
   the whole process, and its calls block. Restarting the shell doesn't reload the
   models, and a crash in Cactus can't take the shell down.
 - The shell works without it: rules still read what they can, and nothing waits.
+- It starts when it's first asked for. Given its socket by systemd (a socket unit on
+  `%t/amane-assistant.sock`; `LISTEN_FDS`), it exits after 5 minutes with nothing asked,
+  connected or heard (`AMANE_ASSISTANT_IDLE` seconds, 0 to stay), so its models' 80–140 MB
+  go back; systemd starts it again at the next connection, and loading the models takes
+  40–60 ms. Started any other way, it binds the socket itself and stays.
 
 The protocol ([`protocol.rs`](../../crates/assistant/src/protocol.rs)) is JSON lines. The
 shell sends requests with an id, and the daemon answers with the id. While listening it
