@@ -3,8 +3,8 @@
 
 use super::*;
 use crate::chrome::catalog as sheet;
-use amane_kit::layout::frame;
-use amane_kit::reveal::{self, Swell};
+use emaki_kit::layout::frame;
+use emaki_kit::reveal::{self, Swell};
 
 /// Steps the window's opening and gives how far it is, a little past 1 on
 /// the spring; `None` once it has gone.
@@ -57,7 +57,7 @@ pub(crate) fn view(screen: (f32, f32), card: Area) -> Option<Built> {
 
 /// The sheet: the categories beside the controls, over the footer.
 const SHEET: sheet::Sheet = sheet::Sheet {
-    id: "amane.qs.customize",
+    id: "emaki.qs.customize",
     sidebar: SIDEBAR,
     inset: INSET,
 };

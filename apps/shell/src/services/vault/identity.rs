@@ -21,7 +21,7 @@ use std::process::Command;
 use std::sync::Mutex;
 
 use amane::FieldOwner;
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 const NIX_STORE: &str = "/run/current-system/sw/bin/nix-store";
 
@@ -179,7 +179,7 @@ fn is_runtime(exe: &Path) -> bool {
 fn in_home(path: &Path) -> bool {
     let homes = [
         std::env::var_os("HOME").map(PathBuf::from),
-        Some(amane_kit::paths::data()),
+        Some(emaki_kit::paths::data()),
     ];
 
     homes
@@ -362,7 +362,7 @@ fn read_entry(path: PathBuf) -> Option<DesktopEntry> {
 fn application_folders() -> Vec<PathBuf> {
     let mut folders = Vec::new();
 
-    let home_data = amane_kit::paths::data();
+    let home_data = emaki_kit::paths::data();
     if !home_data.as_os_str().is_empty() {
         folders.push(home_data);
     }

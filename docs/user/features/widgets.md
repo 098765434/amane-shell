@@ -39,9 +39,9 @@ leftwards.
 The cards fade back while a window is open on the monitor's workspace, and come up
 again on an empty one; during a workspace switch the fade follows the switch, part way between the
 two workspaces as far as it has gone. The cards stay put while the workspaces slide over them, and
-fade out in place as the overview opens. Shell Settings' **Desktop** page has **Show widgets on the desktop** and the
+fade out in place as the overview opens. Emaki Settings' **Desktop** page has **Show widgets on the desktop** and the
 **Widget style**: dim while windows are open (the default), always full, or always dimmed
-(`~/.config/amane-shell/desktop.json`).
+(`~/.config/emaki/desktop.json`).
 
 ## Edit Widgets
 
@@ -86,7 +86,7 @@ tokens.
 
 Each monitor has a surface of its own (`App::window_per_monitor`) on the background layer under
 the windows (and its edit surface, above), covering the output (`Zone::Ignore`; the canvas keeps clear of the bar itself). Its
-namespace is `amane.widgets.<output>`, so a card's menu hangs under the surface on its own monitor
+namespace is `emaki.widgets.<output>`, so a card's menu hangs under the surface on its own monitor
 (amane parents a popup to the first surface with the namespace asked for). niri hands a
 background surface the pointer wherever no window is, so the desktop's clicks reach it, and
 the fork's `desktop` layer rule ([`layout/desktop-layer.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md)) draws it once, on the wallpaper (the overview's backdrop) under
@@ -134,7 +134,7 @@ all, the first monitor starts with the battery (where there is one) and the CPU.
 
 Each card is a `Material::Control` blur shape (`glass_region`), as Quick Settings' modules are,
 lit in one pass over all of them (`glass::rim_layers`) where niri doesn't draw the material. The
-layer rule (`amane.widgets.` matched as a prefix) is `clear`: `xray false`, as niri's xray buffer
+layer rule (`emaki.widgets.` matched as a prefix) is `clear`: `xray false`, as niri's xray buffer
 for the background layer holds this surface too, and `desktop true`. The cards' frost fades with
 them when they dim, where niri can fade frost (`amane::blur_fades()`); niri fades it with the
 overview itself.

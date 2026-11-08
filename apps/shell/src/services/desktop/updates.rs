@@ -1,10 +1,10 @@
-//! What the last NixOS update check found: `amane-update-check` (a user
+//! What the last NixOS update check found: `emaki-update-check` (a user
 //! timer from the NixOS configuration) relocks the flake beside the repo
-//! and writes `nixos/check.json` in the shell's state dir; Shell Settings
+//! and writes `nixos/check.json` in the shell's state dir; Emaki Settings
 //! clears it once an update is applied. The Software Update tile reads it.
 
 use amane::{Service, watch_file};
-use amane_kit::service::ServiceExt as _;
+use emaki_kit::service::ServiceExt as _;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Updates {
@@ -16,7 +16,7 @@ pub struct Updates {
 }
 
 fn look() -> Updates {
-    let check = amane_nixos::lock::read_check();
+    let check = emaki_nixos::lock::read_check();
     Updates {
         changed: check
             .changes
@@ -36,7 +36,7 @@ impl Service for Updates {
     }
 
     fn listen() {
-        let path = amane_nixos::lock::check_path();
+        let path = emaki_nixos::lock::check_path();
         loop {
             if !path.parent().is_some_and(|folder| folder.is_dir()) {
                 std::thread::sleep(std::time::Duration::from_secs(60));
@@ -50,7 +50,7 @@ impl Service for Updates {
 }
 
 impl Updates {
-    /// "nixpkgs, amane-shell": what has updates, for a subtitle.
+    /// "nixpkgs, emaki": what has updates, for a subtitle.
     pub fn names(&self) -> String {
         self.changed.join(", ")
     }

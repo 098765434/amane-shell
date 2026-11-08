@@ -1,16 +1,16 @@
-//! Every control the kit has, in one app window: `cargo run -p amane-kit --example gallery`.
+//! Every control the kit has, in one app window: `cargo run -p emaki-kit --example gallery`.
 
 use amane::{Column, Key, Row, Service, Size, Text, Widget, Window, modifiers};
-use amane_kit::app::{
+use emaki_kit::app::{
     Dialog, Page, app, app_window, field_box, sidebar, standard_shortcut, text_field,
 };
-use amane_kit::buttons::{Checkbox, PushButton, Radio, Shape, Style, Switch};
-use amane_kit::dropdown::Dropdown;
-use amane_kit::icons::{ICON_DARK_MODE, ICON_TUNE};
-use amane_kit::layout::boxed;
-use amane_kit::material::{self, Level};
-use amane_kit::slider::Slider;
-use amane_kit::tokens::{Styled, sys};
+use emaki_kit::buttons::{Checkbox, PushButton, Radio, Shape, Style, Switch};
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::icons::{ICON_DARK_MODE, ICON_TUNE};
+use emaki_kit::layout::boxed;
+use emaki_kit::material::{self, Level};
+use emaki_kit::slider::Slider;
+use emaki_kit::tokens::{Styled, sys};
 
 struct Gallery {
     page: usize,
@@ -44,7 +44,7 @@ const SIZES: [&str; 3] = ["Small", "Medium", "Large"];
 const ACCENTS: [&str; 4] = ["Blue", "Purple", "Green", "Orange"];
 
 fn main() {
-    app("amane-kit-gallery")
+    app("emaki-kit-gallery")
         .normal_window("gallery", gallery)
         .run();
 }

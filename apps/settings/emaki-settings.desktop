@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Emaki Settings
+Comment=Change how emaki looks
+Exec=emaki-settings
+Icon=emaki-settings
+Categories=Settings;DesktopSettings;
+StartupNotify=true

@@ -1,7 +1,7 @@
 //! The nixpkgs catalog the Apps page searches: every package `nix search`
 //! finds in the configuration's nixpkgs (less nixpkgs' own `tests`), a line each (`attr`, `pname`, `version`,
 //! `description`, tab-separated), in a file per locked nixpkgs revision
-//! under `$XDG_CACHE_HOME/amane-shell/nixpkgs`. It's built once per nixpkgs
+//! under `$XDG_CACHE_HOME/emaki/nixpkgs`. It's built once per nixpkgs
 //! update from `nix search --json … ^`, streamed straight into the file, and
 //! each search reads the file again (from the page cache, a few hundred
 //! thousand lines in tens of milliseconds) rather than the app keeping the
@@ -18,7 +18,7 @@ use amane::Service;
 
 use super::apps::{Found, Search};
 use super::nixos::repo;
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 /// How often the page looks at `flake.lock` again for a new nixpkgs.
 const RECHECK: Duration = Duration::from_secs(10);
@@ -44,19 +44,19 @@ impl Service for Catalog {
     fn listen() {}
 }
 
-/// `$XDG_CACHE_HOME/amane-shell/nixpkgs`.
+/// `$XDG_CACHE_HOME/emaki/nixpkgs`.
 fn cache_dir() -> PathBuf {
-    let cache = amane_kit::paths::cache();
+    let cache = emaki_kit::paths::cache();
 
-    cache.join(amane_kit::app_ids::SHELL).join("nixpkgs")
+    cache.join(emaki_kit::app_ids::SHELL).join("nixpkgs")
 }
 
 fn path_for(rev: &str) -> PathBuf {
-    amane_nixos::catalog::file_for(&cache_dir(), rev)
+    emaki_nixos::catalog::file_for(&cache_dir(), rev)
 }
 
-use amane_nixos::catalog::write_catalog;
-pub use amane_nixos::catalog::{find, instead_of, locked_rev, lookup_in};
+use emaki_nixos::catalog::write_catalog;
+pub use emaki_nixos::catalog::{find, instead_of, locked_rev, lookup_in};
 
 impl Catalog {
     /// Makes sure there's a catalog for the nixpkgs `flake.lock` pins,

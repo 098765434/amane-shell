@@ -19,11 +19,11 @@ use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
-use amane_kit::buttons::{Segment, SegmentedButton};
-use amane_kit::icons::{peripheral_glyph, power_profile_glyph};
-use amane_kit::layout::{boxed, caption};
-use amane_kit::list::{self, List, ListItem};
-use amane_kit::material::{self, Level};
+use emaki_kit::buttons::{Segment, SegmentedButton};
+use emaki_kit::icons::{peripheral_glyph, power_profile_glyph};
+use emaki_kit::layout::{boxed, caption};
+use emaki_kit::list::{self, List, ListItem};
+use emaki_kit::material::{self, Level};
 
 const BALANCED: &str = "balanced";
 
@@ -68,7 +68,7 @@ pub(crate) fn mode_toggle() -> Option<QuickToggle> {
 
     Some(
         QuickToggle::new(
-            "amane.qs.power-mode",
+            "emaki.qs.power-mode",
             power_profile_glyph(&active),
             "Power Mode",
         )
@@ -86,7 +86,7 @@ pub(crate) fn mode_page() -> DetailPage {
     let degraded = profile.degraded().map(String::from);
     drop(profile);
 
-    DetailPage::new("amane.qs.power-mode.page", "Power Mode")
+    DetailPage::new("emaki.qs.power-mode.page", "Power Mode")
         .subtitle(label(&active))
         .body(move |_| {
             let items: Vec<ListItem> = available
@@ -95,7 +95,7 @@ pub(crate) fn mode_page() -> DetailPage {
                     let selected = *name == active;
                     let pick = name.clone();
                     let mut item =
-                        ListItem::new(format!("amane.qs.power-mode.{name}"), label(name))
+                        ListItem::new(format!("emaki.qs.power-mode.{name}"), label(name))
                             .leading(power_profile_glyph(name))
                             .selected(selected)
                             .on_press(move || PowerProfile::set(&pick));
@@ -122,7 +122,7 @@ pub(crate) fn battery_page() -> DetailPage {
     let detail = battery_detail(&battery);
     drop(battery);
 
-    let mut page = DetailPage::new("amane.qs.battery.page", format!("Battery {percent}%"))
+    let mut page = DetailPage::new("emaki.qs.battery.page", format!("Battery {percent}%"))
         .status_bar(Indicator::Battery)
         .body(|height| {
             let mut body = Vec::new();
@@ -145,11 +145,11 @@ pub(crate) fn battery_detail(battery: &Battery) -> String {
     match battery.state() {
         BatteryState::Discharging => battery
             .time_to_empty()
-            .map(|left| format!("{} left", amane_kit::format::span(left)))
+            .map(|left| format!("{} left", emaki_kit::format::span(left)))
             .unwrap_or_else(|| String::from("on battery")),
         BatteryState::Charging => battery
             .time_to_full()
-            .map(|left| format!("full in {}", amane_kit::format::span(left)))
+            .map(|left| format!("full in {}", emaki_kit::format::span(left)))
             .unwrap_or_else(|| String::from("charging")),
         BatteryState::Full => String::from("full"),
         _ if battery.on_ac() => String::from("on AC"),
@@ -172,7 +172,7 @@ fn profile_section() -> Box<dyn Widget> {
         .collect();
     let selected = available.iter().position(|name| *name == active);
 
-    let picker = SegmentedButton::new("amane.qs.battery.profile", segments, selected)
+    let picker = SegmentedButton::new("emaki.qs.battery.profile", segments, selected)
         .width(page_width())
         .on_select(move |index, _| PowerProfile::set(&available[index]))
         .build();
@@ -197,7 +197,7 @@ fn peripheral_section(height: f32) -> Box<dyn Widget> {
 
     boxed(
         ScrollArea::new(
-            "amane.qs.battery.devices",
+            "emaki.qs.battery.devices",
             List::new(items)
                 .header("Devices")
                 .empty("No devices with a battery")
@@ -216,7 +216,7 @@ fn peripheral_item(device: &PowerDevice) -> ListItem {
     let percent = device.percent();
 
     // nothing to pick, so full-strength like a selected item, but unfilled
-    ListItem::new(format!("amane.qs.battery.device.{model}"), model)
+    ListItem::new(format!("emaki.qs.battery.device.{model}"), model)
         .leading(peripheral_glyph(device))
         .color(material::label(Level::Primary))
         .trailing(

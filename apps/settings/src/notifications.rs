@@ -2,10 +2,10 @@
 //! changes `notifications.json`, which the shell follows at once.
 
 use amane::Column;
-use amane_kit::app_icon;
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::FormRow;
-use amane_kit::settings::{AppRule, change_notification_rules, notification_rules, notifiers_seen};
+use emaki_kit::app_icon;
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::FormRow;
+use emaki_kit::settings::{AppRule, change_notification_rules, notification_rules, notifiers_seen};
 
 use crate::system::apps::icon_side;
 use crate::{group, groups};

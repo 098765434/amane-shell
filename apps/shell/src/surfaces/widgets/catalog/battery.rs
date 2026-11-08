@@ -12,8 +12,8 @@ use super::{
 use crate::chrome::battery::LOW;
 use crate::surfaces::widgets::kind::{WidgetKind, WidgetSize};
 use crate::tokens::sys;
-use amane_kit::icons::{ICON_COMPUTER, battery_glyph, device_glyph, peripheral_glyph};
-use amane_kit::layout::text_height;
+use emaki_kit::icons::{ICON_COMPUTER, battery_glyph, device_glyph, peripheral_glyph};
+use emaki_kit::layout::text_height;
 
 /// One thing with a battery.
 #[derive(Clone, Debug, PartialEq)]
@@ -76,7 +76,7 @@ pub fn devices() -> Vec<Device> {
 
 /// "2 h 14 min left", "1 h 5 min until full", or nothing to say.
 fn time_left(battery: &Battery) -> Option<String> {
-    use amane_kit::format::span;
+    use emaki_kit::format::span;
     if battery.charging() {
         battery
             .time_to_full()
@@ -139,7 +139,7 @@ fn small(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
     if device.charging {
         let side = text_height(label_style());
         out.push(super::place(
-            amane_kit::layout::icon(battery_glyph(device.percent, true), side, primary()),
+            emaki_kit::layout::icon(battery_glyph(device.percent, true), side, primary()),
             face.width - side,
             0.0,
             side,
@@ -192,7 +192,7 @@ fn medium(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
             diameter,
         ));
         let label = percent(f32::from(device.percent) / 100.0);
-        let width = amane_kit::layout::text_width(&label, caption);
+        let width = emaki_kit::layout::text_width(&label, caption);
         out.push(line(
             label,
             caption,
@@ -224,7 +224,7 @@ fn large(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
             break;
         }
         out.push(super::place(
-            amane_kit::layout::icon(device.glyph, side * 0.8, primary()),
+            emaki_kit::layout::icon(device.glyph, side * 0.8, primary()),
             0.0,
             y + side * 0.1,
             side,

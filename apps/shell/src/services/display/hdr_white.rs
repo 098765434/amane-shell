@@ -4,7 +4,7 @@
 //! of change: the next config read puts back what `displays.kdl` says. So
 //! once a level has rested for a moment it's kept in the shell's own
 //! `hdr-white.json`, and set in niri again at the start and after each
-//! config read. Shell Settings alone writes `displays.kdl`. A level idle
+//! config read. Emaki Settings alone writes `displays.kdl`. A level idle
 //! dimmed to ([`dimmed`]) is never kept.
 
 use std::collections::BTreeMap;
@@ -20,7 +20,7 @@ use crate::services::Wake;
 use crate::services::state::{self, State};
 
 // how long a level stays put before it counts as rested
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 const REST: Duration = Duration::from_secs(1);
 
 static DIMMED: AtomicBool = AtomicBool::new(false);

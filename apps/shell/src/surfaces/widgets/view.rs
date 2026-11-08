@@ -2,7 +2,7 @@
 //! shadows, the one held.
 
 use super::*;
-use amane_kit::layout::frame;
+use emaki_kit::layout::frame;
 
 /// Whether the cards fade back now, as the widget style says: by default
 /// while a window is open on the monitor's workspace, and part way through

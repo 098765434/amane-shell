@@ -3,7 +3,7 @@
 //! resolve against, and the controls built from them.
 //!
 //! The source is grouped into folders by kind, and every module is
-//! re-exported here, so its path is `amane_kit::<module>` whatever folder
+//! re-exported here, so its path is `emaki_kit::<module>` whatever folder
 //! it lives in.
 //!
 //! Controls (`controls/`):
@@ -102,7 +102,7 @@ pub use foundation::{area, color, fuzzy, icons, layout, symbol};
 pub use look::{glass, glass_region, lab, material, style};
 pub use platform::{app, app_icon, launch, marker, process, secrets, service, settings, shell_ipc};
 
-// what's below the UI, from amane-base, so an app needs only the kit
-pub use amane_base::{
+// what's below the UI, from emaki-base, so an app needs only the kit
+pub use emaki_base::{
     app_ids, args, format, fs, intern, migrate, mime, paths, percent, sync, time,
 };

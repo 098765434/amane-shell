@@ -43,7 +43,7 @@ pub(crate) fn list() -> &'static [RunCommand] {
 }
 
 fn plugin_config(device: &str, plugin: &str) -> PathBuf {
-    amane_base::paths::config()
+    emaki_base::paths::config()
         .join("kdeconnect")
         .join(device)
         .join(plugin)
@@ -123,7 +123,7 @@ fn read(device: &str, plugin: &str) -> Ini {
 
 fn write(device: &str, plugin: &str, ini: &Ini) -> std::io::Result<()> {
     // whole, so kdeconnect never reads half of it
-    amane_base::fs::write_whole(&plugin_config(device, plugin), ini.render())
+    emaki_base::fs::write_whole(&plugin_config(device, plugin), ini.render())
 }
 
 /*

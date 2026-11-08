@@ -3,14 +3,14 @@
 use std::path::Path;
 
 use amane::{Center, Color, Column, Config, Rectangle, Row, Size, Text, Widget};
-use amane_kit::buttons::PushButton;
-use amane_kit::color::Accent;
-use amane_kit::form::FormRow;
-use amane_kit::icons::ICON_TUNE;
-use amane_kit::layout::{boxed, icon};
-use amane_kit::settings::{Appearance, Desktop, Dock, Launcher, StatusBar};
-use amane_kit::style;
-use amane_kit::tokens::Styled;
+use emaki_kit::buttons::PushButton;
+use emaki_kit::color::Accent;
+use emaki_kit::form::FormRow;
+use emaki_kit::icons::ICON_TUNE;
+use emaki_kit::layout::{boxed, icon};
+use emaki_kit::settings::{Appearance, Desktop, Dock, Launcher, StatusBar};
+use emaki_kit::style;
+use emaki_kit::tokens::Styled;
 
 use crate::{View, group, groups};
 
@@ -34,7 +34,7 @@ fn hero() -> Rectangle {
     card(
         Accent::Gray.color(),
         ICON_TUNE,
-        String::from("Shell Settings"),
+        String::from("Emaki Settings"),
         boxed(
             Text::new(format!("Version {}", env!("CARGO_PKG_VERSION")))
                 .style(style::subtitle_font())
@@ -133,22 +133,22 @@ pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
     let home = std::env::var_os("HOME").map(std::path::PathBuf::from);
     // the room beside the button for the path
     let room = crate::page_width() - 2.0 * style::row_pad_h() - 150.0;
-    let fits = |text: &str| amane_kit::layout::text_width(text, style::subtitle_font()) <= room;
+    let fits = |text: &str| emaki_kit::layout::text_width(text, style::subtitle_font()) <= room;
     let rows = files().map(|(name, path)| {
         let folder = path.parent().map(Path::to_path_buf).unwrap_or_default();
         FormRow::new(format!("settings.about.file.{name}"), name)
             .subtitle(middle_elide(&tidy(&path, home.as_deref()), fits))
             .trailing(
                 PushButton::new(format!("settings.about.show.{name}"), "Show in Folder")
-                    .on_press(move || amane_kit::launch::open(folder.to_string_lossy()))
+                    .on_press(move || emaki_kit::launch::open(folder.to_string_lossy()))
                     .build(),
             )
     });
     Some((
         String::from("Settings Files"),
         boxed(groups(vec![group().rows(rows).footer(
-            "Editing one by hand works the same as changing it here. AMANE_THEME, \
-             AMANE_DENSITY and AMANE_TEXT_SCALE, when set, win over these settings.",
+            "Editing one by hand works the same as changing it here. EMAKI_THEME, \
+             EMAKI_DENSITY and EMAKI_TEXT_SCALE, when set, win over these settings.",
         )])),
     ))
 }
@@ -170,10 +170,10 @@ mod tests {
         let home = Path::new("/home/me");
         assert_eq!(
             tidy(
-                Path::new("/home/me/.config/amane-shell/dock.json"),
+                Path::new("/home/me/.config/emaki/dock.json"),
                 Some(home)
             ),
-            "~/.config/amane-shell/dock.json"
+            "~/.config/emaki/dock.json"
         );
         assert_eq!(tidy(Path::new("/etc/x"), Some(home)), "/etc/x");
     }

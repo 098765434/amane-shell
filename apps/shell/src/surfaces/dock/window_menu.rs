@@ -7,14 +7,14 @@ use amane::Windows;
 use super::model::{self, Space, Win};
 use super::pins::{self, Pin};
 use crate::chrome::workspace_menu;
-use amane_kit::app_icon;
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{ContextMenu, MenuItem};
+use emaki_kit::app_icon;
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{ContextMenu, MenuItem};
 
 /// Registry key for the dynamically-rebuilt per-window menu.
-const WINDOW_MENU_KEY: &str = "amane.dock.window-menu";
+const WINDOW_MENU_KEY: &str = "emaki.dock.window-menu";
 /// Registry key for a pinned app's menu.
-const PIN_MENU_KEY: &str = "amane.dock.pin-menu";
+const PIN_MENU_KEY: &str = "emaki.dock.pin-menu";
 
 /// Build `window`'s menu and open it at `at` on the surface `parent`. A
 /// bottom-anchored parent makes it open upward. `spaces` are niri's

@@ -1,7 +1,7 @@
 # Typography
 
 The shell's text styles are Penpot typography tokens (`sys.type.*` and a few component ones),
-read through amane-kit's `Styled`: `Text::new(…).style(sys::r#type::label())`.
+read through emaki-kit's `Styled`: `Text::new(…).style(sys::r#type::label())`.
 
 ## Roles
 
@@ -41,8 +41,8 @@ fontconfig maps), else the last entry (`crates/kit/src/tokens/font.rs`). Each st
 
 ## Text scale
 
-`TextStyle` multiplies the size and the letter spacing by the text scale: `AMANE_TEXT_SCALE`, else
-`text_scale` in `appearance.json` (Shell Settings' Text size), kept within 0.5–3. Layouts must let
+`TextStyle` multiplies the size and the letter spacing by the text scale: `EMAKI_TEXT_SCALE`, else
+`text_scale` in `appearance.json` (Emaki Settings' Text size), kept within 0.5–3. Layouts must let
 rows grow with it. Nothing about it is in Penpot.
 
 ## What reaches the text

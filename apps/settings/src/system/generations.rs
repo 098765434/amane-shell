@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::thread;
 
 use amane::{Service, watch_file};
-use amane_kit::service::ServiceExt as _;
+use emaki_kit::service::ServiceExt as _;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Generations {
@@ -18,10 +18,10 @@ pub struct Generations {
     pub loading: bool,
 }
 
-pub use amane_nixos::generations::Generation;
+pub use emaki_nixos::generations::Generation;
 
 fn scan() -> Generations {
-    let found = amane_nixos::generations::scan(&super::nixos::config());
+    let found = emaki_nixos::generations::scan(&super::nixos::config());
     Generations {
         list: found.list,
         current: found.current,

@@ -1,6 +1,6 @@
 //! Album art for what's playing: the file a player names, or a copy of the
 //! art it links to on the web, fetched once into
-//! `$XDG_CACHE_HOME/amane-shell/art/`. Quick Settings' Now Playing card and
+//! `$XDG_CACHE_HOME/emaki/art/`. Quick Settings' Now Playing card and
 //! the bar's Now Playing activity both show it.
 
 use std::cell::RefCell;
@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::PathBuf;
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// Art fetched from the web landed in the cache: what showed none draws
     /// again.
     Arrived
@@ -29,7 +29,7 @@ pub fn path(url: &str) -> Option<String> {
         return None;
     }
     if let Some(path) = url.strip_prefix("file://") {
-        return Some(amane_kit::percent::decode(path));
+        return Some(emaki_kit::percent::decode(path));
     }
     if !(url.starts_with("http://") || url.starts_with("https://")) {
         return None;
@@ -77,12 +77,12 @@ pub fn path(url: &str) -> Option<String> {
     None
 }
 
-/// Where the art at `url` is kept: `$XDG_CACHE_HOME/amane-shell/art/<hash>`.
+/// Where the art at `url` is kept: `$XDG_CACHE_HOME/emaki/art/<hash>`.
 fn cached(url: &str) -> PathBuf {
     let mut hasher = DefaultHasher::new();
     url.hash(&mut hasher);
-    let base = amane_kit::paths::cache();
-    base.join(amane_kit::app_ids::SHELL)
+    let base = emaki_kit::paths::cache();
+    base.join(emaki_kit::app_ids::SHELL)
         .join("art")
         .join(format!("{:016x}", hasher.finish()))
 }
@@ -97,6 +97,6 @@ mod tests {
         assert_eq!(a, cached("https://x/1.jpg"));
         assert_ne!(a, cached("https://x/2.jpg"));
         assert!(a.ends_with(a.file_name().unwrap()));
-        assert!(a.to_string_lossy().contains("amane-shell/art"));
+        assert!(a.to_string_lossy().contains("emaki/art"));
     }
 }

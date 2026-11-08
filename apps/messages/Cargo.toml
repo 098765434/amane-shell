@@ -1,5 +1,5 @@
 [package]
-name = "amane-messages"
+name = "emaki-messages"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,10 +10,10 @@ authors.workspace = true
 
 [dependencies]
 log = { workspace = true }
-amane-log = { workspace = true }
+emaki-log = { workspace = true }
 amane = { workspace = true }
-amane-phone = { workspace = true }
-amane-kit = { workspace = true }
+emaki-phone = { workspace = true }
+emaki-kit = { workspace = true }
 chrono = { workspace = true }
 serde_json = { workspace = true }
 

@@ -13,7 +13,7 @@ use zeroize::Zeroizing;
 use super::secret::{self, Secret};
 
 // set by the nix build to the store's rbw, so no PATH can swap it
-const RBW: &str = match option_env!("AMANE_RBW") {
+const RBW: &str = match option_env!("EMAKI_RBW") {
     Some(path) => path,
     None => "/run/current-system/sw/bin/rbw",
 };
@@ -122,7 +122,7 @@ fn folder_name() -> String {
 }
 
 pub fn config() -> Option<Config> {
-    let path = amane_kit::paths::config()
+    let path = emaki_kit::paths::config()
         .join(folder_name())
         .join("config.json");
 
@@ -153,7 +153,7 @@ pub fn config() -> Option<Config> {
  * email, in the cache folder only this user can enter
  */
 fn has_database(config: &Config) -> bool {
-    let folder = amane_kit::paths::cache();
+    let folder = emaki_kit::paths::cache();
 
     let server = if config.base_url.is_empty() {
         String::from("https://api.bitwarden.com")
@@ -163,7 +163,7 @@ fn has_database(config: &Config) -> bool {
 
     let name = format!(
         "{}:{}.json",
-        amane_kit::percent::encode(&server),
+        emaki_kit::percent::encode(&server),
         config.email
     );
 
@@ -385,7 +385,7 @@ mod tests {
     #[test]
     fn database_names_match_rbws() {
         assert_eq!(
-            amane_kit::percent::encode("https://vault.tail8c36e9.ts.net"),
+            emaki_kit::percent::encode("https://vault.tail8c36e9.ts.net"),
             "https%3A%2F%2Fvault.tail8c36e9.ts.net"
         );
     }

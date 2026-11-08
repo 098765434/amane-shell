@@ -1,13 +1,13 @@
 # Context menu
 
 A reusable glass context menu with arbitrarily nested submenus: the kit's menu
-(`crates/kit/src/controls/menu/`) on its layer host, `amane_kit::menu::layer`. App windows' menus
+(`crates/kit/src/controls/menu/`) on its layer host, `emaki_kit::menu::layer`. App windows' menus
 (a dropdown's, Messages' right click) take the same items on the popup host, with their own
 panel. Each menu level is an **xdg-popup**, so the compositor positions
 it, keeps it on screen, grabs input for it and dismisses it on an outside click. The cards are
 `Material::Menu` glass. xdg-popups can't send blur shapes, so niri frosts them through the
 `popups {}` block of their parent surface's layer rule: the anchor's
-(`amane.context-menu-anchor`) for a menu opened with `arm`/`open_at`, or the surface a menu hangs
+(`emaki.context-menu-anchor`) for a menu opened with `arm`/`open_at`, or the surface a menu hangs
 under (the dock, the launcher, Quick Settings, the widgets, the bar, the notification center) for
 `show_under`/`open_under` ([layer-rules.md](../../developer/integration/layer-rules.md)).
 
@@ -27,8 +27,8 @@ under (the dock, the launcher, Quick Settings, the widgets, the bar, the notific
 Menus are built once with a builder and registered under a name:
 
 ```rust
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{ContextMenu, Icon, MenuItem};
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{ContextMenu, Icon, MenuItem};
 
 let open_with = ContextMenu::new()
     .item(MenuItem::label("Firefox").on_select(|| log::info!("firefox")))
@@ -108,7 +108,7 @@ that click provides the serial.
 ## Behaviour
 
 **Levels.** Level 0 is the root menu; each submenu is the next level, up to `MAX_DEPTH` (8). Each
-level is its own popup with its own namespace (`amane.context-menu.0` … `.7`), parented to the
+level is its own popup with its own namespace (`emaki.context-menu.0` … `.7`), parented to the
 level above (level 0 to the anchor or to `open_under`'s parent).
 
 **Placement.** Level 0 opens below-right of its anchor point and may slide or flip on both axes to

@@ -9,7 +9,7 @@
 //!   right-edge sidebar the clock opens.
 //! - [`dnd_menu()`] — Do Not Disturb's timed choices; Do Not Disturb itself
 //!   is a service (`services::do_not_disturb`).
-//! - [`card`] — the card both draw; [`motion`](amane_kit::motion)
+//! - [`card`] — the card both draw; [`motion`](emaki_kit::motion)
 //!   moves their cards.
 //!
 //! See `docs/user/features/notifications.md`.
@@ -28,9 +28,9 @@ pub use toasts::{TOAST_NS, TOASTS};
 
 use crate::chrome::panel::{Panel, toggle};
 use crate::services::do_not_disturb::{DoNotDisturb, Until};
-use amane_kit::shell_ipc::{Notifications as Command, Switch};
+use emaki_kit::shell_ipc::{Notifications as Command, Switch};
 
-/// `amane-shell` IPC: `notifications [toggle | clear | dnd [on|off|toggle]]`.
+/// `emaki` IPC: `notifications [toggle | clear | dnd [on|off|toggle]]`.
 pub fn run(command: Command) -> String {
     match command {
         Command::Toggle => toggle(Panel::Notifications),

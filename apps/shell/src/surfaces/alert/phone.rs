@@ -7,16 +7,16 @@
 
 use std::cell::RefCell;
 
-use amane_phone::KdeConnect;
+use emaki_phone::KdeConnect;
 
 use crate::services::phone::pairing::{self, Asking};
 
 use crate::surfaces::alert;
 use crate::surfaces::quick_settings::{self, Page};
-use amane_kit::dialog::Dialog;
+use emaki_kit::dialog::Dialog;
 
 /// The alert's name, so only this alert is closed when the phone stops asking.
-const NAME: &str = "amane.alert.phone.pair";
+const NAME: &str = "emaki.alert.phone.pair";
 
 thread_local! {
     // the phone already asked about, by its id

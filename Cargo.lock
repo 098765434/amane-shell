@@ -52,214 +52,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "amane-assistant"
-version = "0.1.0"
-dependencies = [
- "amane-base",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "amane-assistant-daemon"
-version = "0.1.0"
-dependencies = [
- "amane-assistant",
- "amane-base",
- "amane-log",
- "libpulse-binding",
- "libpulse-simple-binding",
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "amane-base"
-version = "0.1.0"
-dependencies = [
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "amane-drop"
-version = "0.1.0"
-dependencies = [
- "amane",
- "amane-kit",
- "amane-log",
- "amane-phone",
- "amane-process",
- "amane-status",
- "log",
- "serde_json",
-]
-
-[[package]]
-name = "amane-kit"
-version = "0.1.0"
-dependencies = [
- "amane",
- "amane-base",
- "amane-process",
- "chrono",
- "fontconfig",
- "log",
- "serde_json",
-]
-
-[[package]]
-name = "amane-log"
-version = "0.1.0"
-dependencies = [
- "log",
-]
-
-[[package]]
-name = "amane-messages"
-version = "0.1.0"
-dependencies = [
- "amane",
- "amane-kit",
- "amane-log",
- "amane-phone",
- "chrono",
- "log",
- "serde_json",
-]
-
-[[package]]
-name = "amane-mirror"
-version = "0.1.0"
-dependencies = [
- "amane",
- "amane-kit",
- "amane-log",
- "amane-phone",
- "ffmpeg-next",
- "libpulse-binding",
- "libpulse-simple-binding",
- "log",
- "serde_json",
-]
-
-[[package]]
-name = "amane-nixos"
-version = "0.1.0"
-dependencies = [
- "amane-base",
- "amane-process",
- "chrono",
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "amane-phone"
-version = "0.1.0"
-dependencies = [
- "amane",
- "amane-base",
- "log",
- "mdns-sd",
- "serde_json",
-]
-
-[[package]]
-name = "amane-pinentry"
-version = "0.1.0"
-dependencies = [
- "amane-base",
- "amane-log",
- "libc",
- "log",
- "proptest",
- "zeroize",
-]
-
-[[package]]
-name = "amane-process"
-version = "0.1.0"
-dependencies = [
- "amane-base",
-]
-
-[[package]]
-name = "amane-settings"
-version = "0.1.0"
-dependencies = [
- "amane",
- "amane-kit",
- "amane-log",
- "amane-nixos",
- "amane-process",
- "chrono",
- "drm",
- "libc",
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "amane-shader-lab"
-version = "0.1.0"
-dependencies = [
- "amane",
- "amane-kit",
- "amane-log",
- "log",
- "serde_json",
-]
-
-[[package]]
-name = "amane-shell"
-version = "0.1.0"
-dependencies = [
- "amane",
- "amane-assistant",
- "amane-kit",
- "amane-log",
- "amane-nixos",
- "amane-phone",
- "amane-pinentry",
- "amane-status",
- "chrono",
- "libc",
- "log",
- "qrcode",
- "serde_json",
- "zbus",
- "zeroize",
-]
-
-[[package]]
-name = "amane-status"
-version = "0.1.0"
-dependencies = [
- "amane",
- "amane-base",
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "amane-train-watch"
-version = "0.1.0"
-dependencies = [
- "amane",
- "amane-base",
- "amane-log",
- "amane-process",
- "amane-status",
- "log",
-]
-
-[[package]]
 name = "android_system_properties"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -760,6 +552,214 @@ checksum = "ecc8e1361066d91f5ffccff060a3c3be9c3ecde15be2959c1937595f7a82a9f8"
 dependencies = [
  "libc",
  "linux-raw-sys 0.9.4",
+]
+
+[[package]]
+name = "emaki"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "chrono",
+ "emaki-assistant",
+ "emaki-kit",
+ "emaki-log",
+ "emaki-nixos",
+ "emaki-phone",
+ "emaki-pinentry",
+ "emaki-status",
+ "libc",
+ "log",
+ "qrcode",
+ "serde_json",
+ "zbus",
+ "zeroize",
+]
+
+[[package]]
+name = "emaki-assistant"
+version = "0.1.0"
+dependencies = [
+ "emaki-base",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-assistant-daemon"
+version = "0.1.0"
+dependencies = [
+ "emaki-assistant",
+ "emaki-base",
+ "emaki-log",
+ "libpulse-binding",
+ "libpulse-simple-binding",
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-base"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-drop"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "emaki-kit",
+ "emaki-log",
+ "emaki-phone",
+ "emaki-process",
+ "emaki-status",
+ "log",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-kit"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "chrono",
+ "emaki-base",
+ "emaki-process",
+ "fontconfig",
+ "log",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-log"
+version = "0.1.0"
+dependencies = [
+ "log",
+]
+
+[[package]]
+name = "emaki-messages"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "chrono",
+ "emaki-kit",
+ "emaki-log",
+ "emaki-phone",
+ "log",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-mirror"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "emaki-kit",
+ "emaki-log",
+ "emaki-phone",
+ "ffmpeg-next",
+ "libpulse-binding",
+ "libpulse-simple-binding",
+ "log",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-nixos"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "emaki-base",
+ "emaki-process",
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-phone"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "emaki-base",
+ "log",
+ "mdns-sd",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-pinentry"
+version = "0.1.0"
+dependencies = [
+ "emaki-base",
+ "emaki-log",
+ "libc",
+ "log",
+ "proptest",
+ "zeroize",
+]
+
+[[package]]
+name = "emaki-process"
+version = "0.1.0"
+dependencies = [
+ "emaki-base",
+]
+
+[[package]]
+name = "emaki-settings"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "chrono",
+ "drm",
+ "emaki-kit",
+ "emaki-log",
+ "emaki-nixos",
+ "emaki-process",
+ "libc",
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-shader-lab"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "emaki-kit",
+ "emaki-log",
+ "log",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-status"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "emaki-base",
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-train-watch"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "emaki-base",
+ "emaki-log",
+ "emaki-process",
+ "emaki-status",
+ "log",
 ]
 
 [[package]]
@@ -3568,7 +3568,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 name = "xtask"
 version = "0.1.0"
 dependencies = [
- "amane-kit",
+ "emaki-kit",
 ]
 
 [[package]]

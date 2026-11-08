@@ -30,11 +30,11 @@ use amane::{
 };
 
 use crate::tokens::{Styled, notification, sys};
-use amane_kit::app_icon::{icon_for, tile as app_icon_tile};
-use amane_kit::buttons::{IconButton, PushButton, Style};
-use amane_kit::icons::ICON_CLOSE;
-use amane_kit::layout::{blank, boxed, frame, inner_width, text_width};
-use amane_kit::material::{self, FillLevel, Level, Material};
+use emaki_kit::app_icon::{icon_for, tile as app_icon_tile};
+use emaki_kit::buttons::{IconButton, PushButton, Style};
+use emaki_kit::icons::ICON_CLOSE;
+use emaki_kit::layout::{blank, boxed, frame, inner_width, text_width};
+use emaki_kit::material::{self, FillLevel, Level, Material};
 
 /// The body is cut after this many lines, like a banner's.
 const BODY_LINES: usize = 2;
@@ -295,7 +295,7 @@ pub fn card(m: &Measured, place: Place, now: SystemTime, content: f32) -> Rectan
     let time: Box<dyn Widget> = if hovered {
         let side = close_side(parts.time_line);
         let close = close_button(
-            format!("amane.notification.{id}.close"),
+            format!("emaki.notification.{id}.close"),
             side,
             look.secondary,
             move || Notifications::dismiss(id),

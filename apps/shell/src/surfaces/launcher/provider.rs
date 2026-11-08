@@ -18,12 +18,12 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use amane::DesktopApp;
-use amane_kit::settings::{QuickKey, launcher};
+use emaki_kit::settings::{QuickKey, launcher};
 
 use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history::{self, Clip, Kind as ClipKind};
 use crate::services::launcher::file_search::{self, FileKind, Hit, Request};
-use amane_kit::icons::{
+use emaki_kit::icons::{
     ICON_CALCULATE, ICON_CONTENT_COPY, ICON_DESCRIPTION, ICON_FOLDER, ICON_LOCK, ICON_OPEN_IN_NEW,
     ICON_SEARCH, ICON_SWAP,
 };
@@ -142,7 +142,7 @@ pub(super) fn search(query: &Query, scope: Option<&Scope>, excluded: &[String]) 
             }
         }
     }
-    usage::read(|usage| arrange(found, query.text, usage, amane_kit::time::unix_s()))
+    usage::read(|usage| arrange(found, query.text, usage, emaki_kit::time::unix_s()))
 }
 
 /// Ranks `found` for `query` by match and use.
@@ -292,7 +292,7 @@ impl Provider for Assistant {
         let outright = out
             .iter()
             .any(|found| found.group == Group::Ranked && found.matched >= 1.0);
-        if reading.source == amane_assistant::Source::Model && outright {
+        if reading.source == emaki_assistant::Source::Model && outright {
             return;
         }
         if let Some(entry) = super::assistant::entry(&reading, query.apps) {
@@ -429,7 +429,7 @@ impl Provider for Web {
         let url = format!(
             "{}{}",
             model::SEARCH_URL,
-            amane_kit::percent::encode(query.text)
+            emaki_kit::percent::encode(query.text)
         );
         out.push(Candidate {
             entry: Entry::new(

@@ -1,16 +1,16 @@
 [package]
-name = "amane-nixos"
+name = "emaki-nixos"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Shell Settings' NixOS model and jobs, with no UI: the settings registry, the build, compare, activate and update pipeline, generations and the nixpkgs catalog."
+description = "Emaki Settings' NixOS model and jobs, with no UI: the settings registry, the build, compare, activate and update pipeline, generations and the nixpkgs catalog."
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-amane-base = { workspace = true }
-amane-process = { workspace = true }
+emaki-base = { workspace = true }
+emaki-process = { workspace = true }
 chrono = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true }

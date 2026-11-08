@@ -11,10 +11,10 @@ use crate::services::power::keep_awake::{KeepAwake, LIMITS};
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
-use amane_kit::buttons::{Segment, SegmentedButton, Switch};
-use amane_kit::icons::{ICON_KEEP_AWAKE, ICON_SCREEN_OFF};
-use amane_kit::layout::boxed;
-use amane_kit::list::{List, ListItem};
+use emaki_kit::buttons::{Segment, SegmentedButton, Switch};
+use emaki_kit::icons::{ICON_KEEP_AWAKE, ICON_SCREEN_OFF};
+use emaki_kit::layout::boxed;
+use emaki_kit::list::{List, ListItem};
 
 /// What's held and for how long: "Off", "No limit", "1 h 24 min", "Lid
 /// ignored" or "Lid · 1 h 24 min".
@@ -22,9 +22,9 @@ fn describe(screen: bool, lid: bool, left: Option<Duration>) -> String {
     match (screen, lid, left) {
         (false, false, _) => String::from("Off"),
         (_, true, None) => String::from("Lid ignored"),
-        (_, true, Some(left)) => format!("Lid · {}", amane_kit::format::span(left)),
+        (_, true, Some(left)) => format!("Lid · {}", emaki_kit::format::span(left)),
         (true, false, None) => String::from("No limit"),
-        (true, false, Some(left)) => amane_kit::format::span(left),
+        (true, false, Some(left)) => emaki_kit::format::span(left),
     }
 }
 
@@ -43,7 +43,7 @@ pub(crate) fn toggle() -> Option<QuickToggle> {
     drop(keep);
 
     Some(
-        QuickToggle::new("amane.qs.keep-awake", ICON_KEEP_AWAKE, "Keep Awake")
+        QuickToggle::new("emaki.qs.keep-awake", ICON_KEEP_AWAKE, "Keep Awake")
             .subtitle(status())
             .checked(on)
             .on_toggle(KeepAwake::set)
@@ -61,7 +61,7 @@ pub(crate) fn page() -> DetailPage {
         .flatten();
     drop(keep);
 
-    DetailPage::new("amane.qs.keep-awake.page", "Keep Awake")
+    DetailPage::new("emaki.qs.keep-awake.page", "Keep Awake")
         .subtitle(status())
         .switch(on, KeepAwake::set)
         .body(move |_| {
@@ -69,7 +69,7 @@ pub(crate) fn page() -> DetailPage {
                 .iter()
                 .map(|(label, _)| Segment::new(*label))
                 .collect();
-            let limits = SegmentedButton::new("amane.qs.keep-awake.limit", segments, limit)
+            let limits = SegmentedButton::new("emaki.qs.keep-awake.limit", segments, limit)
                 .on_select(|index, _| KeepAwake::set_limit(LIMITS[index].1))
                 .build();
 
@@ -88,7 +88,7 @@ pub(crate) fn page() -> DetailPage {
                 ));
             }
             holds.push(
-                ListItem::new("amane.qs.keep-awake.screen-off", "Turn the screen off now")
+                ListItem::new("emaki.qs.keep-awake.screen-off", "Turn the screen off now")
                     .leading(ICON_SCREEN_OFF)
                     .on_press(KeepAwake::screen_off_now),
             );
@@ -100,9 +100,9 @@ pub(crate) fn page() -> DetailPage {
 
 /// A row with a switch at its end; pressing the row flips it too.
 fn switch_row(name: &str, label: &str, on: bool, set: fn(bool)) -> ListItem {
-    ListItem::new(format!("amane.qs.keep-awake.{name}"), label)
+    ListItem::new(format!("emaki.qs.keep-awake.{name}"), label)
         .trailing(
-            Switch::new(format!("amane.qs.keep-awake.{name}.switch"), on)
+            Switch::new(format!("emaki.qs.keep-awake.{name}.switch"), on)
                 .on_toggle(set)
                 .build(),
         )

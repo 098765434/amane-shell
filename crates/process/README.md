@@ -1,11 +1,11 @@
-# amane-process
+# emaki-process
 
-The one way amane-shell's programs run another program and read what it said.
-It uses std only, so the kit, Shell Settings' NixOS jobs and the small tools
+The one way emaki's programs run another program and read what it said.
+It uses std only, so the kit, Emaki Settings' NixOS jobs and the small tools
 beside the shell all share it.
 
 ```rust
-use amane_process::Cmd;
+use emaki_process::Cmd;
 
 // to its end: stdout on success, else the last lines it said
 let status = Cmd::new("git").args(["status", "--short"]).dir(repo).stdout()?;
@@ -24,7 +24,7 @@ let output = build.finish_with(seen)?;
   program.
 - `status` and `detach` are for openers like `xdg-open`, whose output nobody reads.
 
-In the kit, `amane_kit::platform::process` re-exports it next to `run`, `run_now`,
+In the kit, `emaki_kit::platform::process` re-exports it next to `run`, `run_now`,
 `installed` and `Latest`.
 
 Programs that are fed on stdin (`wl-copy`, Drop's `curl`) and long-running

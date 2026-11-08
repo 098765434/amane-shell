@@ -1,4 +1,4 @@
-//! Searching Shell Settings, from the field over the sidebar: what's typed
+//! Searching Emaki Settings, from the field over the sidebar: what's typed
 //! finds pages and the settings on them, by their titles and by
 //! other words people use for them ("dark mode", "wifi"). A result opens
 //! its page (or sub-page) and lights the row it names for a moment.
@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use amane::{Service, TextInput};
 
 use crate::system::nixos::Snapshot;
-use amane_kit::fuzzy::fuzzy;
+use emaki_kit::fuzzy::fuzzy;
 
 /// The search field's id.
 pub const FIELD: &str = "settings.search";
@@ -570,7 +570,7 @@ pub fn open(found: &Found) {
     LIT_ROW.with_borrow_mut(|lit| *lit = found.row.clone().map(|row| (row, Instant::now())));
     TextInput::set_text(FIELD, "");
     // the light goes out by itself
-    amane_kit::motion::redraw_after::<crate::Navigation>(LIT);
+    emaki_kit::motion::redraw_after::<crate::Navigation>(LIT);
 }
 
 /// The row to light while drawing, if it's still lit.

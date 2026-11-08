@@ -5,20 +5,20 @@ mod surfaces;
 mod tokens;
 
 // the theme lives in the kit, so apps share it
-use amane_kit::theme;
+use emaki_kit::theme;
 
 use std::process::ExitCode;
 
 use amane::App;
 
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{ContextMenu, Icon, MenuItem};
-use amane_kit::tooltip;
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{ContextMenu, Icon, MenuItem};
+use emaki_kit::tooltip;
 use surfaces::{
     alert, dock, fill, launcher, notifications, osd, quick_settings, status_bar, widgets,
 };
 
-/// `amane-shell layer-rules` prints the niri layer rules and exits instead of the shell, for
+/// `emaki layer-rules` prints the niri layer rules and exits instead of the shell, for
 /// `cargo xtask layer-rules`: the rules name the shell's own surfaces, so the shell builds them.
 fn cli(args: &[String]) -> Option<ExitCode> {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
@@ -124,8 +124,8 @@ fn sample_menu() -> ContextMenu {
 }
 
 fn main() -> ExitCode {
-    amane_log::init(amane_kit::app_ids::SHELL);
-    amane_kit::migrate::from_amane();
+    emaki_log::init(emaki_kit::app_ids::SHELL);
+    emaki_kit::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     if let Some(code) = cli(&args) {
         return code;
@@ -188,8 +188,8 @@ fn main() -> ExitCode {
     app = app.popup(tooltip::popup);
     app = app.popup(status_bar::activity_popup);
 
-    // the seat's input method, for password fill in other apps; Shell Settings turns it off
-    if amane_kit::settings::passwords().fill_in_apps {
+    // the seat's input method, for password fill in other apps; Emaki Settings turns it off
+    if emaki_kit::settings::passwords().fill_in_apps {
         app = app.input_method(fill::popup);
     }
 

@@ -12,14 +12,14 @@ use std::cell::Cell;
 use amane::{AuthRequest, ErrorKind, Polkit, Service, TextInput};
 
 use crate::surfaces::alert;
-use amane_kit::dialog::{Dialog, Field, Icon};
-use amane_kit::icons::ICON_LOCK;
+use emaki_kit::dialog::{Dialog, Field, Icon};
+use emaki_kit::icons::ICON_LOCK;
 
 /// The alert's name, so only this alert is closed when polkitd stops asking.
-const NAME: &str = "amane.alert.polkit";
+const NAME: &str = "emaki.alert.polkit";
 
 /// The password field's id; its text is read when the dialog answers.
-const FIELD: &str = "amane.polkit.password";
+const FIELD: &str = "emaki.polkit.password";
 
 thread_local! {
     // the request shown, and the state of it the dialog was built from

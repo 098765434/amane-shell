@@ -3,13 +3,13 @@
 //! shell. KDE Connect finds the phone (its address picks the adb device)
 //! and keeps the clipboard; adb carries the screen.
 //!
-//! `amane-mirror --device <kdeconnect id>` mirrors that phone; `--serial
+//! `emaki-mirror --device <kdeconnect id>` mirrors that phone; `--serial
 //! <adb serial>` names the adb device instead. Without either it mirrors
 //! KDE Connect's connected phone, or the one phone on USB.
 //!
 //! `--app <package> [--name <label>]` opens one of the phone's apps in a
 //! window of its own instead: a virtual display that resizes with the
-//! window, under its own app id (`amane-mirror.<package>`), so each app is
+//! window, under its own app id (`emaki-mirror.<package>`), so each app is
 //! a window of its own. `--list-apps --serial <serial> --device <id>`
 //! writes the phone's apps for the launcher and exits. `--camera front|back`
 //! makes the phone's camera this computer's webcam, without a window.
@@ -28,17 +28,17 @@ use std::net::IpAddr;
 use std::sync::Mutex;
 
 use amane::{Center, Column, Key, Rectangle, Row, Service, Size, Text, Video, Widget, Window};
-use amane_kit::app::{app, standard_shortcut};
-use amane_kit::buttons::IconButton;
-use amane_kit::color::with_alpha;
-use amane_kit::layout::boxed;
-use amane_kit::style;
-use amane_kit::tokens::{Styled, sys};
-use amane_phone::{Adb, KdeConnect};
+use emaki_kit::app::{app, standard_shortcut};
+use emaki_kit::buttons::IconButton;
+use emaki_kit::color::with_alpha;
+use emaki_kit::layout::boxed;
+use emaki_kit::style;
+use emaki_kit::tokens::{Styled, sys};
+use emaki_phone::{Adb, KdeConnect};
 
 use crate::session::{Mirror, Phase};
-use amane_kit::args::flag;
-use amane_kit::sync::Locked as _;
+use emaki_kit::args::flag;
+use emaki_kit::sync::Locked as _;
 
 /// The bar under the screen.
 const BAR_HEIGHT: f32 = 44.0;
@@ -155,8 +155,8 @@ fn want(phone: &Phone) {
 }
 
 fn main() {
-    amane_log::init(amane_kit::app_ids::MIRROR);
-    amane_kit::migrate::from_amane();
+    emaki_log::init(emaki_kit::app_ids::MIRROR);
+    emaki_kit::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
 
     if args.iter().any(|arg| arg == "--list-apps") {
@@ -183,8 +183,8 @@ fn main() {
 
     // each phone app is a window, and an app, of its own
     let id = match app_target() {
-        Some((package, _)) => amane_kit::app_ids::mirror_app(&package),
-        None => String::from(amane_kit::app_ids::MIRROR),
+        Some((package, _)) => emaki_kit::app_ids::mirror_app(&package),
+        None => String::from(emaki_kit::app_ids::MIRROR),
     };
 
     app(&id)
@@ -352,7 +352,7 @@ fn status(title: &str, detail: &str, retry: bool) -> Rectangle {
     }
     if retry {
         lines.push(boxed(
-            amane_kit::buttons::PushButton::new("amane.mirror.retry", "Try Again")
+            emaki_kit::buttons::PushButton::new("emaki.mirror.retry", "Try Again")
                 .on_press(|| Mirror::write().phase = Phase::Idle)
                 .build(),
         ));
@@ -392,7 +392,7 @@ fn app_bar() -> Rectangle {
         .height(BAR_HEIGHT)
         .align_child(Center, Center)
         .child(
-            IconButton::new("amane.mirror.back", ICON_BACK)
+            IconButton::new("emaki.mirror.back", ICON_BACK)
                 .on_press(input::back)
                 .tooltip("main", "Back")
                 .build(),
@@ -402,7 +402,7 @@ fn app_bar() -> Rectangle {
 fn bar(screen_off: bool) -> Rectangle {
     let button = |id: &str, glyph: char, tip: &'static str, press: fn()| {
         boxed(
-            IconButton::new(format!("amane.mirror.{id}"), glyph)
+            IconButton::new(format!("emaki.mirror.{id}"), glyph)
                 .on_press(press)
                 .tooltip("main", tip)
                 .build(),
@@ -428,7 +428,7 @@ fn bar(screen_off: bool) -> Rectangle {
     ])
     .gap(sys::space::gap::l());
 
-    let screen = IconButton::new("amane.mirror.screen-off", ICON_SCREEN_OFF)
+    let screen = IconButton::new("emaki.mirror.screen-off", ICON_SCREEN_OFF)
         .selected(screen_off)
         .on_press(move || {
             let off = !Mirror::read().screen_off;
@@ -448,7 +448,7 @@ fn bar(screen_off: bool) -> Rectangle {
     Rectangle::new()
         .width(Size::Parent)
         .height(BAR_HEIGHT)
-        .padding(amane_kit::layout::pad_x(
+        .padding(emaki_kit::layout::pad_x(
             sys::space::inset::s(),
             sys::space::inset::s(),
         ))
@@ -473,7 +473,7 @@ fn push_files(paths: Vec<std::path::PathBuf>) {
                 .extension()
                 .is_some_and(|extension| extension.eq_ignore_ascii_case("apk"));
             if is_apk {
-                if let Err(why) = amane_phone::adb(Some(&serial), &["install", "-r", &local]) {
+                if let Err(why) = emaki_phone::adb(Some(&serial), &["install", "-r", &local]) {
                     log::warn!("install {local}: {why}");
                 }
                 continue;
@@ -482,7 +482,7 @@ fn push_files(paths: Vec<std::path::PathBuf>) {
                 continue;
             };
             let remote = format!("/sdcard/Download/{}", name.to_string_lossy());
-            match amane_phone::adb(Some(&serial), &["push", &local, &remote]) {
+            match emaki_phone::adb(Some(&serial), &["push", &local, &remote]) {
                 Ok(_) => session::send(protocol::Control::ScanFile(remote)),
                 Err(why) => log::warn!("push {local}: {why}"),
             }

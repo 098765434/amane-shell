@@ -6,10 +6,10 @@
 use amane::{Cursor, End, Radius, Rectangle, Start};
 
 use crate::tokens::sys;
-use amane_kit::buttons::{IconButton, Shape, Style};
-use amane_kit::icons::{ICON_REMOVE, ICON_RESIZE};
-use amane_kit::layout::{frame, icon};
-use amane_kit::material::{self, FillLevel, Level};
+use emaki_kit::buttons::{IconButton, Shape, Style};
+use emaki_kit::icons::{ICON_REMOVE, ICON_RESIZE};
+use emaki_kit::layout::{frame, icon};
+use emaki_kit::material::{self, FillLevel, Level};
 
 /// The remove badge, `side` across, that `remove`s the item.
 pub fn remove_badge(id: String, side: f32, remove: impl Fn() + 'static) -> Rectangle {

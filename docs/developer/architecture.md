@@ -1,6 +1,6 @@
 # Architecture
 
-How amane-shell is put together: the layers and what goes in each, how the running shell works,
+How emaki is put together: the layers and what goes in each, how the running shell works,
 how a surface is built, and how other programs plug into the bar. Each section links to the doc
 that goes deeper.
 
@@ -11,10 +11,10 @@ flowchart TB
     niri["niri fork<br/>compositor: materials, blur shapes, vibrancy,<br/>HDR, the mat, the desktop layer, IPC additions"]
     vello["vello fork<br/>memory tuning only"]
     amane["amane fork<br/>Wayland, rendering, widgets, text,<br/>the niri client, system services"]
-    crates["crates/*<br/>amane-kit, amane-status, amane-phone,<br/>amane-nixos, amane-process, amane-log, …"]
-    base["amane-base<br/>folders, whole files, times and sizes in words,<br/>locks, flags, file types, ids"]
+    crates["crates/*<br/>emaki-kit, emaki-status, emaki-phone,<br/>emaki-nixos, emaki-process, emaki-log, …"]
+    base["emaki-base<br/>folders, whole files, times and sizes in words,<br/>locks, flags, file types, ids"]
     shell["apps/shell<br/>the surfaces, and state only the shell has"]
-    apps["apps/*<br/>Shell Settings, Messages, Phone Screen,<br/>Drop, Shader Lab, train-watch, the assistant"]
+    apps["apps/*<br/>Emaki Settings, Messages, Phone Screen,<br/>Drop, Shader Lab, train-watch, the assistant"]
 
     vello --> amane
     amane --> crates
@@ -23,22 +23,22 @@ flowchart TB
     crates --> shell
     crates --> apps
     niri <-->|"Wayland protocols, niri IPC"| amane
-    shell <-->|"amane.sock, org.amane.StatusBar1"| apps
+    shell <-->|"emaki.sock, org.emaki.StatusBar1"| apps
 ```
 
 | Layer | Owns | Never contains |
 |---|---|---|
-| **niri fork** | compositor rendering and policy: materials, blur shapes, vibrancy, HDR and color management, the mat, the desktop layer, gaps, the IPC additions, and a `Features` request that says which exist | names or behavior specific to amane-shell |
+| **niri fork** | compositor rendering and policy: materials, blur shapes, vibrancy, HDR and color management, the mat, the desktop layer, gaps, the IPC additions, and a `Features` request that says which exist | names or behavior specific to emaki |
 | **vello fork** | memory tuning only (scratch sizes, releasing idle buffers) | anything else |
-| **amane fork** | a generic shell library: Wayland, rendering, widgets, text, the niri client, generic system services, timers, subscriptions, services that stop when unwatched, launching programs in their own systemd scope | UI strings, display timings, `org.amane.*` interfaces, product features |
+| **amane fork** | a generic shell library: Wayland, rendering, widgets, text, the niri client, generic system services, timers, subscriptions, services that stop when unwatched, launching programs in their own systemd scope | UI strings, display timings, `org.emaki.*` interfaces, product features |
 | **`crates/*`** | what the shell and its apps share: the kit (the look), the status-item wire types, the phone, the NixOS model, a process runner, logging | surfaces or windows of their own |
 | **`crates/base`** | what every program needs below its UI, written once: the XDG folders, writing a file whole, times, lengths and sizes in words, poison-tolerant locks, `--flag` parsing, file types, `%` escapes, interned ids, the programs' ids. std and serde only, so the crates without a window use it; the kit re-exports it | anything that draws or talks to a service |
 | **`apps/shell`** | the surfaces and the state only the shell has | generic UI, generic system clients |
 | **`apps/*`** | one program each, built on the kit | their own niri, IPC or process clients |
 
-How to decide where new code goes: if a second program could use it and it has no amane-shell look,
+How to decide where new code goes: if a second program could use it and it has no emaki look,
 it goes in amane. If it has the look, it goes in the kit. If two of our programs share it but it
-isn't UI, it gets a crate, or `amane-base` when it's a small std-only helper. Otherwise it stays in
+isn't UI, it gets a crate, or `emaki-base` when it's a small std-only helper. Otherwise it stays in
 the program. `cargo test` holds the line: a hygiene test (`xtask/src/hygiene.rs`) fails on a
 helper written again outside its one place.
 
@@ -93,11 +93,11 @@ The shell's own services, amane's, and the files they keep are in
 
 ### Files
 
-- **Settings** are `~/.config/amane-shell/*.json`, read through `Config<T>`: watched, so a change
-  from Shell Settings or a text editor shows at once, and written atomically.
-- **State** the shell keeps for itself is in `$XDG_STATE_HOME/amane-shell/`, as JSON with a
+- **Settings** are `~/.config/emaki/*.json`, read through `Config<T>`: watched, so a change
+  from Emaki Settings or a text editor shows at once, and written atomically.
+- **State** the shell keeps for itself is in `$XDG_STATE_HOME/emaki/`, as JSON with a
   version, written whole. A file in an older format is still read.
-- **Logs** go through the `log` crate to stderr, which the journal keeps. `AMANE_LOG` sets the
+- **Logs** go through the `log` crate to stderr, which the journal keeps. `EMAKI_LOG` sets the
   level.
 
 ## A surface
@@ -119,7 +119,7 @@ services, never in a view. Details in [shell-structure.md](shell-structure.md).
 
 ## Talking to the shell
 
-- **The shell's IPC** is `$XDG_RUNTIME_DIR/amane.sock`, a line protocol that scripts and the apps
+- **The shell's IPC** is `$XDG_RUNTIME_DIR/emaki.sock`, a line protocol that scripts and the apps
   use to open a surface, step the volume, and so on. Apps send the kit's typed `ShellCommand`,
   which writes the same lines. The verbs are in [ipc.md](integration/ipc.md).
 - **Status apps** put an item in the bar, and activities beside it, over D-Bus:
@@ -127,17 +127,17 @@ services, never in a view. Details in [shell-structure.md](shell-structure.md).
 ```mermaid
 sequenceDiagram
     participant App as a status app (Drop, train-watch, …)
-    participant Bar as the shell (org.amane.StatusBar1)
+    participant Bar as the shell (org.emaki.StatusBar1)
     App->>Bar: RegisterItem(spec, with the item's id)
     App->>Bar: UpdateItem(spec)
     App->>Bar: StartActivity(content)
     Bar-->>App: the activity's handle
     Bar-->>App: ItemEvent / ActivityEvent: clicks, menu picks, dropped files, to that app alone
-    Note over Bar,App: when the bar restarts, amane-status registers the app's items again
+    Note over Bar,App: when the bar restarts, emaki-status registers the app's items again
 ```
 
 The interface is in [status-apps.md](integration/status-apps.md), and how to write one in
-[its "Writing a status app" section](integration/status-apps.md#writing-a-status-app). Programs use the `amane-status`
+[its "Writing a status app" section](integration/status-apps.md#writing-a-status-app). Programs use the `emaki-status`
 crate rather than speaking D-Bus themselves.
 
 ## Where to read next

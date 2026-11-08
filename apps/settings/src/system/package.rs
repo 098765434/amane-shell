@@ -10,13 +10,13 @@ use std::sync::Mutex;
 use std::thread;
 
 use amane::{Apps, Column, Rectangle, Service, Size, Text, Widget};
-use amane_kit::app_icon::entry_tile;
-use amane_kit::buttons::{PushButton, Style};
-use amane_kit::form::FormRow;
-use amane_kit::icons::{ICON_PACKAGE, ICON_TERMINAL};
-use amane_kit::layout::{boxed, frame, icon};
-use amane_kit::material::{self, Level};
-use amane_kit::tokens::{Styled, sys};
+use emaki_kit::app_icon::entry_tile;
+use emaki_kit::buttons::{PushButton, Style};
+use emaki_kit::form::FormRow;
+use emaki_kit::icons::{ICON_PACKAGE, ICON_TERMINAL};
+use emaki_kit::layout::{boxed, frame, icon};
+use emaki_kit::material::{self, Level};
+use emaki_kit::tokens::{Styled, sys};
 use serde::Deserialize;
 
 use super::apps::{PACKAGES, Standing, change_packages, present, standing};
@@ -25,9 +25,9 @@ use super::installed::Launchers;
 use super::nixos::{Managed, Snapshot, host, repo};
 use crate::View;
 use crate::{group, page_width};
-use amane_kit::layout::caption;
-use amane_kit::sync::Locked as _;
-use amane_process::Cmd;
+use emaki_kit::layout::caption;
+use emaki_kit::sync::Locked as _;
+use emaki_process::Cmd;
 
 /// What `--apply` makes of the package: plain JSON whatever the meta's shape.
 const APPLY: &str = r#"p: let
@@ -394,7 +394,7 @@ pub fn view() -> Column {
             fact("homepage", "Homepage")
                 .trailing(
                     PushButton::new("settings.package.homepage.open", "Open")
-                        .on_press(move || amane_kit::launch::open(&url))
+                        .on_press(move || emaki_kit::launch::open(&url))
                         .build(),
                 )
                 .subtitle(meta.homepage.clone()),

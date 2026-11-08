@@ -11,7 +11,7 @@ use std::sync::{Mutex, Once};
 use amane::{Outputs, Service};
 
 // the connected outputs' names, and a count that moves on when they change
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 static NAMES: Mutex<Option<Vec<String>>> = Mutex::new(None);
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 

@@ -26,26 +26,26 @@ use amane::{
 
 use crate::chrome::panel::{self, overlay};
 use crate::tokens::{Styled, osd, sys};
-use amane_kit::glass_region;
-use amane_kit::icons::{
+use emaki_kit::glass_region;
+use emaki_kit::icons::{
     ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_KEYBOARD_LIGHT, ICON_MIC, ICON_MIC_OFF,
     volume_glyph,
 };
-use amane_kit::layout::{boxed, icon, pad, slot};
-use amane_kit::material::{self, FillLevel, Level, Material};
-use amane_kit::motion;
-use amane_kit::slider::Slider;
+use emaki_kit::layout::{boxed, icon, pad, slot};
+use emaki_kit::material::{self, FillLevel, Level, Material};
+use emaki_kit::motion;
+use emaki_kit::slider::Slider;
 
-use amane_kit::reveal::{self, Swell};
+use emaki_kit::reveal::{self, Swell};
 pub use keys::{run, set_brightness, set_volume, step_brightness, step_volume, toggle_mute};
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// The display showed, changed or ran out: only its window draws again.
     pub Osd
 }
 
 /// Layer-surface namespace; the niri `layer-rule` matches it.
-pub const OSD_NS: &str = "amane.osd";
+pub const OSD_NS: &str = "emaki.osd";
 
 /// How long a reading stays before it fades.
 const LINGER: Duration = Duration::from_millis(1500);

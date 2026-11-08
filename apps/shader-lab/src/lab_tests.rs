@@ -3,13 +3,13 @@
 
 use std::path::Path;
 
-use amane_kit::lab::config::Config;
-use amane_kit::lab::manifest::normal;
-use amane_kit::lab::{file, files, manifest};
+use emaki_kit::lab::config::Config;
+use emaki_kit::lab::manifest::normal;
+use emaki_kit::lab::{file, files, manifest};
 
 /// The lab with these files registered, as `main` does.
 fn registered() {
-    amane_kit::lab::register(crate::files::FILES);
+    emaki_kit::lab::register(crate::files::FILES);
 }
 
 #[test]

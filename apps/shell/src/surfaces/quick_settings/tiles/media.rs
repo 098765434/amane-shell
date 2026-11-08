@@ -15,12 +15,12 @@ use super::super::tile::{line, module};
 use crate::services::media_art;
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{quick, sys};
-use amane_kit::buttons::{IconButton, expect, optimistic};
-use amane_kit::icons::{ICON_MUSIC, ICON_PAUSE, ICON_PLAY, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS};
-use amane_kit::layout::{boxed, frame, icon, pad};
-use amane_kit::material::{self, FillLevel, Level};
+use emaki_kit::buttons::{IconButton, expect, optimistic};
+use emaki_kit::icons::{ICON_MUSIC, ICON_PAUSE, ICON_PLAY, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS};
+use emaki_kit::layout::{boxed, frame, icon, pad};
+use emaki_kit::material::{self, FillLevel, Level};
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// A playing track moved on: the progress line draws again. Players
     /// don't say, so the card asks for a frame each second while one plays.
     Progress
@@ -74,7 +74,7 @@ fn progress_in(wait: Duration) {
         return;
     }
     PROGRESS_DUE.set(Some(now + wait));
-    amane_kit::motion::redraw_after::<Progress>(wait);
+    emaki_kit::motion::redraw_after::<Progress>(wait);
 }
 
 /// The module, `span` big.
@@ -147,7 +147,7 @@ pub(crate) fn cell(span: Span, inert: bool) -> Box<dyn Widget> {
     let play_glyph = if is_playing { ICON_PAUSE } else { ICON_PLAY };
     let controls = Row::new(vec![
         boxed(control(
-            "amane.qs.media.previous",
+            "emaki.qs.media.previous",
             ICON_SKIP_PREVIOUS,
             sys::size::icon::s(),
             idle,
@@ -166,7 +166,7 @@ pub(crate) fn cell(span: Span, inert: bool) -> Box<dyn Widget> {
             },
         )),
         boxed(control(
-            "amane.qs.media.next",
+            "emaki.qs.media.next",
             ICON_SKIP_NEXT,
             sys::size::icon::s(),
             idle,
@@ -217,7 +217,7 @@ pub(crate) fn cell(span: Span, inert: bool) -> Box<dyn Widget> {
     boxed(module(width, height, quick::card::radius(), inner))
 }
 
-const PLAY_ID: &str = "amane.qs.media.play";
+const PLAY_ID: &str = "emaki.qs.media.play";
 
 fn control(
     id: &'static str,

@@ -1,13 +1,13 @@
-//! The phone's apps for the launcher: `amane-mirror --list-apps --serial
+//! The phone's apps for the launcher: `emaki-mirror --list-apps --serial
 //! <serial> --device <kdeconnect id>` asks scrcpy's server for them and
-//! writes `~/.cache/amane-shell/phone-apps.json`, which the shell's
+//! writes `~/.cache/emaki/phone-apps.json`, which the shell's
 //! Phone Apps search reads. The shell runs it when adb has the phone and
 //! the list is missing or a day old.
 
-use amane_phone::shared::apps::{self, App, List};
+use emaki_phone::shared::apps::{self, App, List};
 
 use crate::server;
-use amane_kit::args::flag;
+use emaki_kit::args::flag;
 
 pub fn write(args: &[String]) -> Result<(), String> {
     let serial = flag(args, "--serial").ok_or("--list-apps needs --serial")?;
@@ -24,7 +24,7 @@ pub fn write(args: &[String]) -> Result<(), String> {
 
     let list = List {
         device,
-        updated: amane_kit::time::unix_s(),
+        updated: emaki_kit::time::unix_s(),
         apps,
     };
 

@@ -9,12 +9,12 @@ use crate::services::desktop::background_apps::BackgroundApps;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::tokens::sys;
-use amane_kit::buttons::{IconButton, Style};
-use amane_kit::control_size::ControlSize;
-use amane_kit::icons::{ICON_BACKGROUND_APPS, ICON_CLOSE};
-use amane_kit::layout::{boxed, caption};
-use amane_kit::list::{self, List, ListItem};
-use amane_kit::material::{self, Level};
+use emaki_kit::buttons::{IconButton, Style};
+use emaki_kit::control_size::ControlSize;
+use emaki_kit::icons::{ICON_BACKGROUND_APPS, ICON_CLOSE};
+use emaki_kit::layout::{boxed, caption};
+use emaki_kit::list::{self, List, ListItem};
+use emaki_kit::material::{self, Level};
 
 fn count(n: usize) -> String {
     match n {
@@ -35,7 +35,7 @@ pub(crate) fn toggle() -> Option<QuickToggle> {
     }
 
     Some(
-        QuickToggle::new("amane.qs.background", ICON_BACKGROUND_APPS, count(n))
+        QuickToggle::new("emaki.qs.background", ICON_BACKGROUND_APPS, count(n))
             .subtitle("Running without a window")
             .on_open(|| open(Page::BackgroundApps)),
     )
@@ -45,7 +45,7 @@ pub(crate) fn page() -> DetailPage {
     let apps = BackgroundApps::read().apps().to_vec();
     let n = apps.len();
 
-    DetailPage::new("amane.qs.background.page", "Background Apps")
+    DetailPage::new("emaki.qs.background.page", "Background Apps")
         .subtitle(count(n))
         .body(move |height| {
             let items: Vec<ListItem> = apps
@@ -53,7 +53,7 @@ pub(crate) fn page() -> DetailPage {
                 .map(|app| {
                     let id = app.app_id.clone();
                     let mut item =
-                        ListItem::new(format!("amane.qs.background.{id}"), name(&app.app_id))
+                        ListItem::new(format!("emaki.qs.background.{id}"), name(&app.app_id))
                             .leading(ICON_BACKGROUND_APPS);
                     if !app.message.is_empty() {
                         item = item.trailing(list::trailing_text(
@@ -62,7 +62,7 @@ pub(crate) fn page() -> DetailPage {
                         ));
                     }
                     item.trailing(
-                        IconButton::new(format!("amane.qs.background.{id}.close"), ICON_CLOSE)
+                        IconButton::new(format!("emaki.qs.background.{id}.close"), ICON_CLOSE)
                             .style(Style::Tonal)
                             .size(sys::size::icon::s())
                             .height(ControlSize::Medium.height())
@@ -78,7 +78,7 @@ pub(crate) fn page() -> DetailPage {
             } else {
                 vec![boxed(
                     ScrollArea::new(
-                        "amane.qs.background.list",
+                        "emaki.qs.background.list",
                         List::new(items).header("Running without a window").build(),
                     )
                     .height(height),

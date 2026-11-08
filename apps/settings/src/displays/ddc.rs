@@ -12,7 +12,7 @@ use std::time::Duration;
 use amane::Service;
 
 use super::drm;
-use amane_process::Cmd;
+use emaki_process::Cmd;
 
 /// The VCP features the page sets.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

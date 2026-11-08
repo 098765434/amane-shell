@@ -13,9 +13,9 @@ use crate::services::clock::local;
 use crate::services::do_not_disturb::{self as dnd, DoNotDisturb, Until};
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
-use amane_kit::icons::ICON_DND;
-use amane_kit::layout::boxed;
-use amane_kit::list::{self, List, ListItem};
+use emaki_kit::icons::ICON_DND;
+use emaki_kit::layout::boxed;
+use emaki_kit::list::{self, List, ListItem};
 
 /// "On", "Until 19:00" or "Off".
 fn status(until: Option<Until>) -> String {
@@ -39,7 +39,7 @@ fn focus(until: Option<Until>) -> String {
 pub(crate) fn toggle() -> QuickToggle {
     let until = DoNotDisturb::read().until();
 
-    QuickToggle::new("amane.qs.dnd", ICON_DND, "Focus")
+    QuickToggle::new("emaki.qs.dnd", ICON_DND, "Focus")
         .subtitle(focus(until))
         .checked(until.is_some())
         .on_toggle(|on| DoNotDisturb::set(on.then_some(Until::Forever)))
@@ -65,7 +65,7 @@ fn chosen(until: Option<Until>, end: Until) -> bool {
 pub(crate) fn page() -> DetailPage {
     let until = DoNotDisturb::read().until();
 
-    DetailPage::new("amane.qs.dnd.page", "Focus")
+    DetailPage::new("emaki.qs.dnd.page", "Focus")
         .subtitle(match until {
             None => String::from("Off"),
             Some(_) => format!("Do Not Disturb · {}", status(until)),
@@ -78,7 +78,7 @@ pub(crate) fn page() -> DetailPage {
                 .into_iter()
                 .map(|(label, end)| {
                     let on = chosen(until, end);
-                    let mut item = ListItem::new(format!("amane.qs.dnd.{label}"), label)
+                    let mut item = ListItem::new(format!("emaki.qs.dnd.{label}"), label)
                         .selected(on)
                         .on_press(move || DoNotDisturb::set(Some(end)));
                     if on {

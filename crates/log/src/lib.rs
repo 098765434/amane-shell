@@ -1,13 +1,13 @@
-//! The one logger every amane-shell program sets up.
+//! The one logger every emaki program sets up.
 //!
 //! Programs log through the [`log`] crate's macros; [`init`] sends the lines to
 //! stderr, which systemd puts in the journal with its own timestamps:
 //!
 //! ```text
-//! [amane-shell] WARN amane_shell::services::state: couldn't save dock-pins.json: …
+//! [emaki] WARN emaki::services::state: couldn't save dock-pins.json: …
 //! ```
 //!
-//! The level is `info` unless `AMANE_LOG` names another one (`error`, `warn`,
+//! The level is `info` unless `EMAKI_LOG` names another one (`error`, `warn`,
 //! `info`, `debug`, `trace` or `off`).
 
 #![warn(missing_docs)]
@@ -18,7 +18,7 @@ use std::sync::OnceLock;
 use log::{LevelFilter, Log, Metadata, Record};
 
 /// The environment variable that sets the level.
-pub const LEVEL_VAR: &str = "AMANE_LOG";
+pub const LEVEL_VAR: &str = "EMAKI_LOG";
 
 static LOGGER: Logger = Logger;
 static APP: OnceLock<&'static str> = OnceLock::new();

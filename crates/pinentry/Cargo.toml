@@ -1,5 +1,5 @@
 [package]
-name = "amane-pinentry"
+name = "emaki-pinentry"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,17 +9,17 @@ repository.workspace = true
 authors.workspace = true
 
 [lib]
-name = "amane_pinentry"
+name = "emaki_pinentry"
 path = "src/lib.rs"
 
 [[bin]]
-name = "amane-pinentry"
+name = "emaki-pinentry"
 path = "src/main.rs"
 
 [dependencies]
-amane-base = { workspace = true }
+emaki-base = { workspace = true }
 log = { workspace = true }
-amane-log = { workspace = true }
+emaki-log = { workspace = true }
 # SO_PEERCRED, SO_PEERPIDFD and pidfd_send_signal, which std doesn't have
 libc = { workspace = true }
 # the pin is wiped from every buffer it passes through

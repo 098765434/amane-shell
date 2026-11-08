@@ -15,11 +15,11 @@ use amane::{Bluetooth, PairingAnswer, PairingKind, PairingRequest, Service};
 
 use crate::surfaces::alert;
 use crate::surfaces::quick_settings::{self, Page};
-use amane_kit::dialog::Dialog;
-use amane_kit::sync::Locked as _;
+use emaki_kit::dialog::Dialog;
+use emaki_kit::sync::Locked as _;
 
 /// The alert's name, so only this alert is closed when BlueZ stops asking.
-const NAME: &str = "amane.alert.bluetooth.pair";
+const NAME: &str = "emaki.alert.bluetooth.pair";
 
 thread_local! {
     // the request already asked about, by id

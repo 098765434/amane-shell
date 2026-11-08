@@ -44,35 +44,35 @@ generated from (2), not hand-edited, so neither can drift.
 
 | Namespace | Surface |
 |---|---|
-| `amane.status-bar` | the bar: frosted whole, square, without a shadow or `xray false` (`frost`: it reserves its zone, so only the wallpaper is behind it); its xdg-popups, tooltips and Do Not Disturb's menu, are frosted too |
-| `amane.quick-settings` | Quick Settings: a clear surface that frosts its own modules through blur shapes; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
-| `amane.dock` | the dock, one surface a monitor over the bar: a clear surface that frosts its card through a blur shape; `xray false`, and its popups (a window's or pinned app's menu) frosted |
-| `amane.widgets.<output>` | the desktop widgets, one surface a monitor on the background layer (matched by the prefix `^amane\.widgets\.`): a clear surface that frosts its own cards; `desktop true` (niri fork, [`layout/desktop-layer.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md): on the wallpaper, still while workspaces switch, faded out with the overview), `xray false`, and its popups (a card's menu) frosted |
-| `amane.launcher` | the app launcher: a clear surface over the output that frosts its glass panel through a blur shape; `xray false`, and its popups (an app's menu) frosted |
-| `amane.notifications.toast` | each notification toast: one surface per banner, frosting its card itself; `clear`, rounded `notification.card.radius`, with niri's shadow at softness 48 (the banner design's `0 8 48`; other surfaces use 16) |
-| `amane.alert` | the shell's alert in the middle of the screen, as big as its card, frosting itself in thick glass; `clear`, rounded `dialog.radius`, with niri's shadow at softness 48 and offset 18 (the dialog design's `0 18 48`) |
-| `amane.osd` | the on-screen display above the bottom edge, as big as its capsule, frosting itself in small glass; `clear`, rounded `osd.radius`, with niri's shadow at softness 48 (the banner's) |
-| `amane.notifications.center` | the notification center sidebar, frosting itself; `clear`, rounded `notification.center.radius`, with niri's shadow (its Do Not Disturb menu is a frosted xdg-popup of it) |
-| `amane.context-menu-anchor` | the context-menu anchor window |
-| `amane.context-menu.0` … `.7` | nested context-menu levels |
-| `amane.drop` | amane-drop's grid ([drop.md](../../user/features/drop.md)): a clear full-screen surface that frosts only its card through a blur shape; `xray false`, and its popups frosted. The activities' expanded view is a popup of the bar, frosted by `amane.status-bar`'s rule |
+| `emaki.status-bar` | the bar: frosted whole, square, without a shadow or `xray false` (`frost`: it reserves its zone, so only the wallpaper is behind it); its xdg-popups, tooltips and Do Not Disturb's menu, are frosted too |
+| `emaki.quick-settings` | Quick Settings: a clear surface that frosts its own modules through blur shapes; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
+| `emaki.dock` | the dock, one surface a monitor over the bar: a clear surface that frosts its card through a blur shape; `xray false`, and its popups (a window's or pinned app's menu) frosted |
+| `emaki.widgets.<output>` | the desktop widgets, one surface a monitor on the background layer (matched by the prefix `^emaki\.widgets\.`): a clear surface that frosts its own cards; `desktop true` (niri fork, [`layout/desktop-layer.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md): on the wallpaper, still while workspaces switch, faded out with the overview), `xray false`, and its popups (a card's menu) frosted |
+| `emaki.launcher` | the app launcher: a clear surface over the output that frosts its glass panel through a blur shape; `xray false`, and its popups (an app's menu) frosted |
+| `emaki.notifications.toast` | each notification toast: one surface per banner, frosting its card itself; `clear`, rounded `notification.card.radius`, with niri's shadow at softness 48 (the banner design's `0 8 48`; other surfaces use 16) |
+| `emaki.alert` | the shell's alert in the middle of the screen, as big as its card, frosting itself in thick glass; `clear`, rounded `dialog.radius`, with niri's shadow at softness 48 and offset 18 (the dialog design's `0 18 48`) |
+| `emaki.osd` | the on-screen display above the bottom edge, as big as its capsule, frosting itself in small glass; `clear`, rounded `osd.radius`, with niri's shadow at softness 48 (the banner's) |
+| `emaki.notifications.center` | the notification center sidebar, frosting itself; `clear`, rounded `notification.center.radius`, with niri's shadow (its Do Not Disturb menu is a frosted xdg-popup of it) |
+| `emaki.context-menu-anchor` | the context-menu anchor window |
+| `emaki.context-menu.0` … `.7` | nested context-menu levels |
+| `emaki.drop` | emaki-drop's grid ([drop.md](../../user/features/drop.md)): a clear full-screen surface that frosts only its card through a blur shape; `xray false`, and its popups frosted. The activities' expanded view is a popup of the bar, frosted by `emaki.status-bar`'s rule |
 
 Some namespaces have no rule of their own, and need none: the context-menu levels, the
-activities' expanded view (`amane.status-bar.activity`), tooltips (`amane.tooltip`) and the form
-controls' menu (`amane.menu`) are popups, frosted by the `popups {}` block of the surface
-they hang from; and `amane.fill`, the password-fill popup, is an input-method popup over another
+activities' expanded view (`emaki.status-bar.activity`), tooltips (`emaki.tooltip`) and the form
+controls' menu (`emaki.menu`) are popups, frosted by the `popups {}` block of the surface
+they hang from; and `emaki.fill`, the password-fill popup, is an input-method popup over another
 app's window, not a layer surface. A test in `layer_rules.rs` checks that every namespace in the
 code has a rule or is on that list.
 
 ## Generating the rules
 
 The generated file holds the layer rules, two `window-rule`s for each amane app (`APP_IDS`:
-`amane-settings` and `amane-messages`; its
+`emaki-settings` and `emaki-messages`; its
 window frosted behind in `frost`, its popups in `glass`; and its floating windows, its dialogs,
 in `glass-large` with the alert's 34 corners and `0 18 48` shadow, which a window floated by hand
-takes too), one for Phone Screen (`amane-mirror`: it opens floating, with the alert's corners and
+takes too), one for Phone Screen (`emaki-mirror`: it opens floating, with the alert's corners and
 shadow, clipped to them, and no blur, since the phone's screen fills it) and, last, a
-`materials {}` block. The ids are the apps' own, from `amane_kit::app_ids`; a test finds every
+`materials {}` block. The ids are the apps' own, from `emaki_kit::app_ids`; a test finds every
 app under `apps/` that opens a window and checks it has a rule, or a reason in `NO_RULE` (Shader
 Lab: a developer tool, plain on purpose; Drop: its grid is a layer surface with a layer rule). It defines one
 niri material per `material.<name>.*` token group: `glass`, `glass-small`, `glass-large`,
@@ -80,7 +80,7 @@ niri material per `material.<name>.*` token group: `glass`, `glass-small`, `glas
 which the shell asks for where is in [materials.md](../design-system/materials.md). What each
 material setting does, and how niri combines `materials {}` blocks, is niri's
 ([`effects/materials.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md)). The shell asks for these by name
-(`amane_kit::material`), so the niri config must not define them by hand as well.
+(`emaki_kit::material`), so the niri config must not define them by hand as well.
 
 First bring the KDL up to date with the tokens (needed whenever a radius or a material changes in
 Penpot; CI tells you):
@@ -94,8 +94,8 @@ cargo xtask layer-rules > niri-layer-rule.kdl
 touching nothing else:
 
 ```
-// >>> amane layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)
-// <<< amane layer-rules
+// >>> emaki layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)
+// <<< emaki layer-rules
 ```
 
 ```sh
@@ -123,8 +123,8 @@ The target needs the two marker lines once. Replace the hand-written amane `laye
 the niri config with just:
 
 ```kdl
-// >>> amane layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)
-// <<< amane layer-rules
+// >>> emaki layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)
+// <<< emaki layer-rules
 ```
 
 then run `./gen-layer-rules.sh` to fill them. (If the markers are missing the script prints this

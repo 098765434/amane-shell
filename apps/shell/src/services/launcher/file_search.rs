@@ -11,9 +11,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, UNIX_EPOCH};
 
 use crate::services::run_now;
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// A search finished: what asked for its hits draws again.
     pub Found
 }
@@ -326,7 +326,7 @@ pub fn parse_rows(out: &str) -> Vec<PathBuf> {
     out.lines()
         .filter_map(|line| line.strip_prefix("  "))
         .filter_map(|url| url.trim().strip_prefix("file://"))
-        .map(|path| PathBuf::from(amane_kit::percent::decode(path)))
+        .map(|path| PathBuf::from(emaki_kit::percent::decode(path)))
         .collect()
 }
 
@@ -422,7 +422,7 @@ fn file_url(path: &Path) -> String {
 
 /// Opens `path` in the app it opens with.
 pub fn open(path: &Path) {
-    amane_kit::launch::open(path.to_string_lossy());
+    emaki_kit::launch::open(path.to_string_lossy());
 }
 
 /// Shows `path` in the file manager, picked out in its folder

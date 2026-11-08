@@ -5,10 +5,10 @@ use std::ffi::CString;
 use std::thread;
 
 use amane::{Column, Service};
-use amane_kit::app::Dialog;
-use amane_kit::buttons::PushButton;
-use amane_kit::form::FormRow;
-use amane_kit::spinner::ProgressBar;
+use emaki_kit::app::Dialog;
+use emaki_kit::buttons::PushButton;
+use emaki_kit::form::FormRow;
+use emaki_kit::spinner::ProgressBar;
 
 use super::controls;
 use crate::{group, groups};
@@ -72,7 +72,7 @@ fn freed(text: &str) -> Option<String> {
             "GiB" => 1024.0 * 1024.0 * 1024.0,
             _ => 1.0,
         };
-    Some(amane_kit::format::bytes(bytes as u64))
+    Some(emaki_kit::format::bytes(bytes as u64))
 }
 
 /// `n` with thousands apart: 5,139.
@@ -90,7 +90,7 @@ fn grouped(n: usize) -> String {
 
 /// Runs `args` through nix, which reports on stderr.
 fn nix_said(program: &str, args: &[&str]) -> Result<String, String> {
-    match amane_process::Cmd::new(program).args(args).output() {
+    match emaki_process::Cmd::new(program).args(args).output() {
         Ok(output) => Ok(output.stderr + &output.stdout),
         Err(failure) => {
             let text = failure.output.stderr + &failure.output.stdout;
@@ -159,9 +159,9 @@ fn meter(id: &str, title: &str, path: &str) -> FormRow {
             let percent = (used * 100 / total.max(1)) as u8;
             row.subtitle(format!(
                 "{} of {} used · {} free",
-                amane_kit::format::bytes(used),
-                amane_kit::format::bytes(total),
-                amane_kit::format::bytes(total.saturating_sub(used))
+                emaki_kit::format::bytes(used),
+                emaki_kit::format::bytes(total),
+                emaki_kit::format::bytes(total.saturating_sub(used))
             ))
             .trailing(ProgressBar::new(f32::from(percent) / 100.0, 140.0).build())
         }

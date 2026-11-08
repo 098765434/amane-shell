@@ -5,14 +5,14 @@
 use std::collections::BTreeMap;
 use std::sync::{Mutex, OnceLock};
 
-use amane_base::sync::Locked as _;
+use emaki_base::sync::Locked as _;
 
 static LAYOUTS: OnceLock<Vec<String>> = OnceLock::new();
 static VARIANTS: Mutex<BTreeMap<String, Vec<String>>> = Mutex::new(BTreeMap::new());
 
 fn localectl(args: &[&str]) -> String {
     // no list is nothing to check against: what's typed is let through
-    amane_process::Cmd::new("localectl")
+    emaki_process::Cmd::new("localectl")
         .args(args)
         .stdout()
         .unwrap_or_default()

@@ -22,7 +22,7 @@ use super::{Readout, show};
 use crate::chrome::panel::{Panel, is_open};
 use crate::services::network::rfkill::Rfkill;
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
-use amane_kit::icons::{ICON_CAPS_LOCK, ICON_NUM_LOCK, audio_glyph};
+use emaki_kit::icons::{ICON_CAPS_LOCK, ICON_NUM_LOCK, audio_glyph};
 
 /// One reading of everything the display answers.
 #[derive(Clone, Debug, PartialEq)]

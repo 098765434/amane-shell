@@ -24,14 +24,14 @@ use super::{
 };
 use crate::chrome::edit_marks as marks;
 use crate::tokens::sys;
-use amane_kit::control_size::ControlSize;
-use amane_kit::grid::Layout;
-use amane_kit::grid::drag::{Drag, Origin, Session, follow};
-use amane_kit::grid::geometry::{Metrics, Slot};
-use amane_kit::grid::{Entry, GridKey};
-use amane_kit::layout::{boxed, frame};
-use amane_kit::menu::layer as context_menu;
-use amane_kit::motion::Pose;
+use emaki_kit::control_size::ControlSize;
+use emaki_kit::grid::Layout;
+use emaki_kit::grid::drag::{Drag, Origin, Session, follow};
+use emaki_kit::grid::geometry::{Metrics, Slot};
+use emaki_kit::grid::{Entry, GridKey};
+use emaki_kit::layout::{boxed, frame};
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::motion::Pose;
 
 /// The key a widget lifted from the gallery has until it lands.
 pub(super) const PROVISIONAL: u32 = u32::MAX;
@@ -308,7 +308,7 @@ pub(super) fn dressing(output: &str, key: WidgetKey, slot: Slot, pose: Pose) -> 
     if key.id != PROVISIONAL {
         let on = output.to_string();
         let badge = marks::remove_badge(
-            format!("amane.widgets.edit.{}.remove", key.id),
+            format!("emaki.widgets.edit.{}.remove", key.id),
             side,
             move || remove(&on, key),
         );

@@ -1,10 +1,10 @@
-# Roadmap: a clean, maintainable amane-shell
+# Roadmap: a clean, maintainable emaki
 
-This plan turns amane-shell and its forks (amane, niri, vello) into one deliberate system, in phases that each leave the shell working on the daily machine. It was written on 2026-11-07 from a review of all four repos at these revisions:
+This plan turns emaki and its forks (amane, niri, vello) into one deliberate system, in phases that each leave the shell working on the daily machine. It was written on 2026-11-07 from a review of all four repos at these revisions:
 
 | Repo | Branch | Revision | Notes |
 |---|---|---|---|
-| amane-shell (`shell/`) | main | `3f683d7` | plus uncommitted bar-sizes work in the tree |
+| emaki (`shell/`) | main | `3f683d7` | plus uncommitted bar-sizes work in the tree |
 | amane (`amane/`) | ocbk | `74b5ddb` | 3 commits ahead of the rev the shell pins (`711ed5f`), not pushed |
 | niri (`niri/`) | ocbk | `16384e00` | 2 commits ahead of origin, not pushed |
 | vello (`vello/`) | ocbk | `46585523` | |
@@ -17,7 +17,7 @@ These hold for every phase.
 
 - **The shell keeps working after every phase.** Each phase ends with `nix build`, a NixOS switch, and the live checks listed in its acceptance criteria. No phase depends on a later one to be usable.
 - **The Nix flake is the canonical build.** `cargo` is for development; a phase is done only when `nix build` passes.
-- **Formats change only with a migration.** Settings (`~/.config/amane-shell/*.json`), state files (`$XDG_STATE_HOME/amane-shell/*`) and niri's `displays.kdl` may change shape, but the shell reads the old form once and rewrites it, so nothing is lost on a switch. The `amane.sock` IPC verbs and the `org.amane.StatusBar1` D-Bus interface stay wire-compatible; additions are fine, removals are not.
+- **Formats change only with a migration.** Settings (`~/.config/emaki/*.json`), state files (`$XDG_STATE_HOME/emaki/*`) and niri's `displays.kdl` may change shape, but the shell reads the old form once and rewrites it, so nothing is lost on a switch. The `emaki.sock` IPC verbs and the `org.emaki.StatusBar1` D-Bus interface stay wire-compatible; additions are fine, removals are not.
 - **The forks are never upstreamed. They must stay cheap to rebase.** niri follows upstream **release tags**; amane follows **upstream `main`**; vello follows upstream `main` when a rebase is wanted. "Cheap to rebase" means few hunks in hot upstream files, one group of commits per feature, and fork code in new files where it can be.
 - **No other vendor's platform terms** in code, identifiers, comments, docs or the README/CONTRIBUTING. Features are named for what they are: "the launcher", "Quick Settings", "glass". Commit history is not rewritten, but new commit messages follow the rule.
 - **New UI stays on amane's quad pipeline.** vello only where it can't be avoided.
@@ -37,14 +37,14 @@ flowchart TB
     niri["niri fork<br/>private protocols: niri-blur-shapes-v1 (v2), niri-vibrancy-v1, niri-secure-fill-v1<br/>config: materials, background-effect material, desktop layer, mat, gaps, hdr, sdr-brightness"]
     kdl["~/nixos-config/niri/config.kdl"]
     amane["amane fork<br/>Wayland, wgpu quads + vello (vello fork), widgets, Services, niri client;<br/>also KDE Connect, adb, polkit and Bluetooth agents, the status-item protocol"]
-    kit["amane-kit (kit/)<br/>tokens from design-tokens/tokens.json (build.rs), controls, containers, look, settings schemas"]
-    shell["amane-shell (src/): surfaces and services<br/>D-Bus: serves org.amane.StatusBar1, polkit agent, BlueZ agent, rbw pinentry<br/>settings: ~/.config/amane-shell/*.json (amane Config: watched, atomic)<br/>state: $XDG_STATE_HOME/amane-shell/* (three formats, not atomic)"]
+    kit["emaki-kit (kit/)<br/>tokens from design-tokens/tokens.json (build.rs), controls, containers, look, settings schemas"]
+    shell["emaki (src/): surfaces and services<br/>D-Bus: serves org.emaki.StatusBar1, polkit agent, BlueZ agent, rbw pinentry<br/>settings: ~/.config/emaki/*.json (amane Config: watched, atomic)<br/>state: $XDG_STATE_HOME/emaki/* (three formats, not atomic)"]
     apps["apps/*: settings, drop, messages, mirror,<br/>shader-lab, train-watch, assistant, pinentry"]
     niri -->|"IPC socket: JSON events and actions"| amane
     niri --> kdl
-    shell -->|"gen-layer-rules.sh splices amane-shell layer-rules"| kdl
+    shell -->|"gen-layer-rules.sh splices emaki layer-rules"| kdl
     amane --> kit --> shell
-    apps -->|"line IPC: $XDG_RUNTIME_DIR/amane.sock (15 verbs), as untyped strings"| shell
+    apps -->|"line IPC: $XDG_RUNTIME_DIR/emaki.sock (15 verbs), as untyped strings"| shell
     shell -->|"amane's socket for some calls, niri msg subprocesses for others"| niri
 ```
 
@@ -56,7 +56,7 @@ Details and file references are in the analysis that preceded this roadmap; each
 
 1. **CI is red and covers too little.** Shell CI has failed on all 30 recent runs: magic-nix-cache gets throttled and FlakeHub refuses access before the toolchain is fetched. Behind that, clippy fails at `kit/src/platform/app_icon.rs:122`. `cargo clippy` and `cargo test` run without `--workspace`. amane's CI doesn't run on `ocbk`. The local `.cargo` override builds against `../amane`'s working tree, not the pinned rev.
 2. **Idle cost.** 74 process spawns a minute and 116 wakeups a second with nothing happening, as measured in [docs/development/idle-baseline.md](../idle-baseline.md): Toasts polls every 100 ms, `nmcli` runs every 3 s, `niri msg` every 2–5 s, `rbw` every 15 s, sysfs every 250 ms to 1 s. `motion::redraw_after` spawns an OS thread per call. In the kit, every token read takes four locks and a string-keyed lookup.
-3. **Code in the wrong layer.** About 9.5k lines of product code in amane: KDE Connect, phone messages, adb, the `org.amane.StatusBar1` protocol, UI strings and timings. The shell runs `niri msg`, `nmcli`, `gdbus` and `rfkill` subprocesses for data amane has or should have. Generic UI lives in the shell (context menu, search field, text editing, grid, fade and reveal helpers). The apps have a third niri client and their own process runners. `displays.kdl` has two writers.
+3. **Code in the wrong layer.** About 9.5k lines of product code in amane: KDE Connect, phone messages, adb, the `org.emaki.StatusBar1` protocol, UI strings and timings. The shell runs `niri msg`, `nmcli`, `gdbus` and `rfkill` subprocesses for data amane has or should have. Generic UI lives in the shell (context menu, search field, text editing, grid, fade and reveal helpers). The apps have a third niri client and their own process runners. `displays.kdl` has two writers.
 4. **Duplication and leftovers.** XDG paths copied 8 times, logind code 3 times, child-stream loops 4 times. The kit's `macform` set has become the real theme, but four of its controls duplicate unused twins. M3 `lists` has no users. There's the `components/mod.rs` shim, a demo context menu in `main.rs`, empty folders, migration shims and a broken example.
 5. **Inconsistent patterns.** Errors are swallowed (`let _ =` ×60, `eprintln!` ×31, no logging). There are three process APIs, three state-file formats, and surfaces that reach into each other's internals. Some files are very large: launcher 1,683 lines, dock 1,317, widgets 1,224.
 6. **Fork drift.** amane conflicts in 6 files against upstream `main` today. niri is 263 commits behind upstream `main`, with hot spots in `input/mod.rs`, `niri.rs`, `backend/tty.rs` and `layout/*`, and Smithay's Dispatch2 refactor ahead. Both forks' `maintaining.md` understate conflicts. The cross-repo contract is unversioned: on stock niri the shell can't tell which fork features exist.
@@ -67,9 +67,9 @@ Details and file references are in the analysis that preceded this roadmap; each
 
 - Penpot tokens compiled into typed functions, with contract and contrast tests.
 - The golden layer-rules test and the splice script's sentinel check.
-- The `org.amane.StatusBar1` design.
+- The `org.emaki.StatusBar1` design.
 - amane `Config<T>`, and `Latest<T>`.
-- The kit's flat `amane_kit::<module>` paths.
+- The kit's flat `emaki_kit::<module>` paths.
 - Fork docs kept in `docs/fork/`, with upstream docs untouched and niri's fork-docs parse test.
 - Fork features mostly in new files.
 - 278 shell tests and 186 kit tests, few `unwrap`s, a `//!` doc on nearly every module.
@@ -83,14 +83,14 @@ Details and file references are in the analysis that preceded this roadmap; each
 
 | Layer | Owns | Never contains |
 |---|---|---|
-| **niri fork** | Compositor rendering and policy: materials, blur shapes, vibrancy, HDR and color management, the mat, the desktop layer, gaps, the IPC additions, and a `Features` request that says which of these exist. | Names or behaviour specific to amane-shell. |
+| **niri fork** | Compositor rendering and policy: materials, blur shapes, vibrancy, HDR and color management, the mat, the desktop layer, gaps, the IPC additions, and a `Features` request that says which of these exist. | Names or behaviour specific to emaki. |
 | **vello fork** | Memory tuning only (scratch sizes, releasing idle buffers). Pinned by `rev`. | Anything else. |
-| **amane fork** | A generic shell library: Wayland, rendering, widgets, text, a complete niri client, generic system services (UPower, BlueZ, NetworkManager, logind, rfkill, tray, polkit agent mechanics, clipboard), an event-loop timer, change subscriptions, services that stop when unwatched, and launching apps in their own systemd scope. Code that needs the niri fork checks `amane::niri::features()` at run time, so one build runs on stock niri and the fork. | UI strings, display timings, `org.amane.*` interfaces, product features (phone, status apps). |
-| **`crates/*`** in the shell repo | Libraries shared by the shell and apps: `amane-kit`, `amane-status`, `amane-phone`, `amane-nixos`, `amane-assistant`, `amane-pinentry`. | Surfaces or windows of their own. |
+| **amane fork** | A generic shell library: Wayland, rendering, widgets, text, a complete niri client, generic system services (UPower, BlueZ, NetworkManager, logind, rfkill, tray, polkit agent mechanics, clipboard), an event-loop timer, change subscriptions, services that stop when unwatched, and launching apps in their own systemd scope. Code that needs the niri fork checks `amane::niri::features()` at run time, so one build runs on stock niri and the fork. | UI strings, display timings, `org.emaki.*` interfaces, product features (phone, status apps). |
+| **`crates/*`** in the shell repo | Libraries shared by the shell and apps: `emaki-kit`, `emaki-status`, `emaki-phone`, `emaki-nixos`, `emaki-assistant`, `emaki-pinentry`. | Surfaces or windows of their own. |
 | **`apps/shell`** | The surfaces and the state only the shell has. | Generic UI, generic system clients. |
 | **`apps/*`** | One app each, built on the kit. | Their own niri, IPC or process clients. |
 
-How to decide: if a second program could use it and it has no amane-shell look, it goes in amane. If it has the look, it goes in the kit. If two of our binaries share it but it isn't UI, it gets a crate. Otherwise it stays in the binary.
+How to decide: if a second program could use it and it has no emaki look, it goes in amane. If it has the look, it goes in the kit. If two of our binaries share it but it isn't UI, it gets a crate. Otherwise it stays in the binary.
 
 ### Workspace
 
@@ -101,7 +101,7 @@ the flat re-exports in its `lib.rs` stay.
 
 ```mermaid
 flowchart TD
-    root["amane-shell/<br/>Cargo.toml: virtual workspace ([workspace.package], [workspace.dependencies], [workspace.lints])<br/>flake.nix · design-tokens/ · docs/ · tests/fixtures/"]
+    root["emaki/<br/>Cargo.toml: virtual workspace ([workspace.package], [workspace.dependencies], [workspace.lints])<br/>flake.nix · design-tokens/ · docs/ · tests/fixtures/"]
     xtask["xtask/<br/>cargo xtask layer-rules | tokens check | tokens normalize | lint-terms"]
     crates["crates/"]
     apps["apps/"]
@@ -109,12 +109,12 @@ flowchart TD
     root --> crates
     root --> apps
 
-    kit["kit/ amane-kit"]
-    status["status/ amane-status: the org.amane.StatusBar1 wire types and client"]
-    phone["phone/ amane-phone: KDE Connect, phone messages, adb"]
-    nixos["nixos/ amane-nixos: the NixOS model and job pipeline, no UI"]
-    assistant["assistant/ amane-assistant (library; the daemon feature off by default)"]
-    pinentry["pinentry/ amane-pinentry"]
+    kit["kit/ emaki-kit"]
+    status["status/ emaki-status: the org.emaki.StatusBar1 wire types and client"]
+    phone["phone/ emaki-phone: KDE Connect, phone messages, adb"]
+    nixos["nixos/ emaki-nixos: the NixOS model and job pipeline, no UI"]
+    assistant["assistant/ emaki-assistant (library; the daemon feature off by default)"]
+    pinentry["pinentry/ emaki-pinentry"]
     crates --> kit
     crates --> status
     crates --> phone
@@ -137,7 +137,7 @@ flowchart TD
     kit --> containers
     kit --> platform
 
-    shell["shell/ amane-shell"]
+    shell["shell/ emaki"]
     others["settings/ drop/ messages/ mirror/ shader-lab/ train-watch/"]
     daemon["assistant/ the assistant daemon"]
     apps --> shell
@@ -147,7 +147,7 @@ flowchart TD
     main["main.rs: startup only: agents, services, the surface list"]
     ipc["ipc.rs: one verb table that sends each command to its surface (types from kit::shell_ipc)"]
     chrome["chrome/: what several surfaces share and only the shell has: panel exclusivity, screen edges"]
-    services["services/: state only the shell has: launcher index, clipboard history, vault, usage, status_apps (the D-Bus server), phone (over amane-phone), media art, do-not-disturb"]
+    services["services/: state only the shell has: launcher index, clipboard history, vault, usage, status_apps (the D-Bus server), phone (over emaki-phone), media art, do-not-disturb"]
     surfaces["surfaces/&lt;surface&gt;/: mod.rs with surface() and the surface's public API (open, close, ipc); state.rs view.rs input.rs ipc.rs as the surface needs them"]
     shell --> main
     shell --> ipc
@@ -163,7 +163,7 @@ flowchart TD
   - `Timer::after(duration)` on the event loop, replacing every sleeping thread;
   - stopping a service when nothing has read it for a while.
 - **Surfaces.** A surface's `mod.rs` is its only public face. Data two surfaces share goes in `services/`. Side effects happen in services, never in a view.
-- **Status apps.** `amane-status` holds the wire types and the client, used by drop, train-watch and anyone else. `apps/shell/src/services/status_apps.rs` is the server. The bus name and methods stay the same.
+- **Status apps.** `emaki-status` holds the wire types and the client, used by drop, train-watch and anyone else. `apps/shell/src/services/status_apps.rs` is the server. The bus name and methods stay the same.
 - **Shell IPC.** `kit::platform::shell_ipc` defines a typed `ShellCommand`. It writes the same line verbs as today, so old and new clients both work. The shell's `ipc.rs` parses into the same type.
 - **Fork detection.** niri answers a `Features` request (fork only), amane exposes it as `Compositor::features()`, and the shell degrades on stock niri instead of misbehaving. `cargo xtask layer-rules` checks material values against the ranges niri accepts.
 - **Errors and logging.** The `log` crate, set up once in each binary. amane services report one `ServiceError { kind, message }`; the UI decides how long to show a failure. A program that won't start is logged, never a panic.
@@ -247,11 +247,11 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 
 **Tasks**
 - [shell] Add `[workspace.package]` (version, edition, rust-version, license, repository, authors) and inherit it in all 10 manifests.
-- [shell] Move shared deps into `[workspace.dependencies]`: `serde_json` (declared 9 times, as both `"1"` and `"1.0"`), `chrono`, `libc`, `libpulse-*`, `zbus`, `amane-kit`.
+- [shell] Move shared deps into `[workspace.dependencies]`: `serde_json` (declared 9 times, as both `"1"` and `"1.0"`), `chrono`, `libc`, `libpulse-*`, `zbus`, `emaki-kit`.
 - [shell] Add `[workspace.lints]`:
   - rust: `unsafe_op_in_unsafe_fn`, `unused_must_use = deny`;
   - clippy: `all = warn` plus a short list (`dbg_macro`, `todo`, `unwrap_used` in non-test code, `let_underscore_must_use`).
-  - Turn on `missing_docs = warn` for amane-kit, with an `#[allow]` on each module still missing docs, so the list of allows is the backlog.
+  - Turn on `missing_docs = warn` for emaki-kit, with an `#[allow]` on each module still missing docs, so the list of allows is the backlog.
 - [amane] Add a `[lints]` table matching the shell's, scoped so upstream's files aren't flagged. That means `#[allow]` at the root of upstream modules; fork modules opt in.
 - [shell] Token pipeline tests:
   - unit tests for `build.rs`'s `emit_module` and `ident`, by moving them into a module both `build.rs` and the tests include;
@@ -265,7 +265,7 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 
   Keep them next to the existing `tests/fixtures/{pipewire,tailscale}`.
 - [shell] A test that every IPC verb registered in `main.rs` has a row in `docs/integration/ipc.md`, and the reverse.
-- [shell] A test that the `layer_rules.rs` namespace list covers every `LayerWindow` namespace the surfaces create, including `amane.fill`, which has no rule today.
+- [shell] A test that the `layer_rules.rs` namespace list covers every `LayerWindow` namespace the surfaces create, including `emaki.fill`, which has no rule today.
 
 **Acceptance**
 - `cargo clippy --workspace -- -D warnings` and `cargo test --workspace` pass in CI.
@@ -285,7 +285,7 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
   - see amane's `docs/fork/maintaining.md`.
 - **Token tier budgets.** The manual's budgets (sys about 70, component about 15) are far below today's counts (133 and 163). The test caps each tier at today's size, so a tier can shrink but not grow, until Phase 8 brings them down.
 - **Fixtures.** They live in `tests/fixtures/{nmcli,niri,sysfs}`, with made-up names. The niri material ranges are copied from niri-config at `72d679c5`, into `tests/fixtures/niri/material-ranges.json`.
-- **`amane.fill`** is an input-method popup, not a layer surface, so it needs no rule. It's in the namespace test's `POPUPS` list.
+- **`emaki.fill`** is an input-method popup, not a layer surface, so it needs no rule. It's in the namespace test's `POPUPS` list.
 
 ---
 
@@ -300,7 +300,7 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 - [shell] Narrow the module-wide `#![allow(dead_code)]` in `src/surfaces/context_menu/mod.rs:5` and `kit/src/controls/buttons/mod.rs:24`. Delete what's actually dead.
 - [shell] Fix the docs found stale:
   - README: replace the "Layout" block with a link to `docs/README.md`'s source-layout table, and describe the bar as it is now (per monitor, top or bottom, three sizes, four styles).
-  - `docs/integration/layer-rules.md`: `APP_IDS`, blur shapes instead of blur regions, the `amane.dock` and `amane.fill` rows, the `amane-mirror` window rule, the bar's styles.
+  - `docs/integration/layer-rules.md`: `APP_IDS`, blur shapes instead of blur regions, the `emaki.dock` and `emaki.fill` rows, the `emaki-mirror` window rule, the bar's styles.
   - `docs/integration/ipc.md`: the `passwords` verb, and the `tray`, `weather` and `keyboard` icons.
   - `docs/development/performance.md:72`: the `Indicators` marker is gone.
   - `docs/shell/quick-settings.md:291`: only `Card` and `Round` tile styles exist.
@@ -329,12 +329,12 @@ Phases 0–3 are low-risk and make everything after them safer. Phase 4 is a sin
 **Risks.** None to behaviour.
 
 **Status (2026-11-07).** Done (shell `main`, amane `490abf4`, niri `d42a83ad`). Your one change to check by hand is the renamed password setting below.
-- **Rustdoc.** Every public item is documented, by four agents in parallel and then reviewed: the kit (498 items; its 49 `#![allow(missing_docs)]` gone), `amane-status` (124), `amane-phone` (190), `amane-nixos` (74), and amane's fork-added files (466). `missing_docs` is `deny` in the kit, status, phone and nixos, and `warn` (an error under clippy's `-D warnings`) in process, log, assistant, pinentry and amane's fork modules. Upstream amane's own files keep their style.
+- **Rustdoc.** Every public item is documented, by four agents in parallel and then reviewed: the kit (498 items; its 49 `#![allow(missing_docs)]` gone), `emaki-status` (124), `emaki-phone` (190), `emaki-nixos` (74), and amane's fork-added files (466). `missing_docs` is `deny` in the kit, status, phone and nixos, and `warn` (an error under clippy's `-D warnings`) in process, log, assistant, pinentry and amane's fork modules. Upstream amane's own files keep their style.
 - **`cargo doc`** builds with `-D warnings` in both repos' CI: links left from Phase 11's renames, docs naming private items, and angle brackets read as HTML were fixed, and the assistant daemon's binary no longer collides with its library's docs.
 - **New docs:** `docs/architecture.md`, `docs/development/release.md` (from CONTRIBUTING's "Bumping revs" and the status-app doc's "Shipping") and `docs/development/testing.md`. The diagrams in the docs are Mermaid now, the ASCII ones converted.
 - **No duplicates.** The status-app method table is only in `docs/integration/status-apps.md`; the shell's memory doc points to amane's for how its fixes work. `lists-m3.md` was already gone.
-- **Words.** `docs/README.md` names them (Shell Settings, Quick Settings, status app and status item, notification center, color), and "color" is the spelling across the shell's and the forks' docs. `cargo xtask links` also fails on a doc that `docs/README.md` doesn't link to.
-- **Terms.** This roadmap describes the rule without the names. The launcher's password setting is `show_in_launcher`, still read from its old key, and Shell Settings' Launcher page is `launcher`, with the old page name still accepted. The allowlist keeps only `Cargo.lock` and the lint's own files.
+- **Words.** `docs/README.md` names them (Emaki Settings, Quick Settings, status app and status item, notification center, color), and "color" is the spelling across the shell's and the forks' docs. `cargo xtask links` also fails on a doc that `docs/README.md` doesn't link to.
+- **Terms.** This roadmap describes the rule without the names. The launcher's password setting is `show_in_launcher`, still read from its old key, and Emaki Settings' Launcher page is `launcher`, with the old page name still accepted. The allowlist keeps only `Cargo.lock` and the lint's own files.
 - **niri.** `docs/fork/README.md` gained the Phase 6b events and the secure-fill protocol it had missed.
 
 **Status (2026-11-07).** Done. Shell `main` still pins amane `db47c38`, since amane's change was docs only (`77b63cc`); niri `ac07c307` is docs only too.
@@ -366,8 +366,8 @@ The list to work from was a references file in `docs/development/` (deleted in P
   - "the bar's symbol set", not the other platform's.
 - [shell] Touch these points too:
   - `Cargo.toml` descriptions (root, drop);
-  - `apps/drop/amane-drop.desktop` keywords;
-  - the Shell Settings search aliases (`apps/settings/src/search.rs`, e.g. the other platform's names for those pages);
+  - `apps/drop/emaki-drop.desktop` keywords;
+  - the Emaki Settings search aliases (`apps/settings/src/search.rs`, e.g. the other platform's names for those pages);
   - the assistant's training phrases in `apps/assistant/train/gen.py`;
   - `niri-layer-rule.kdl` comments, and through it the generated region in the niri config;
   - user-facing strings such as "About".
@@ -401,18 +401,18 @@ The list to work from was a references file in `docs/development/` (deleted in P
 **Acceptance**
 - `lint-terms` passes in CI.
 - The only remaining hits are `macform` identifiers (Phase 8) and upstream text in the forks.
-- Shell Settings search still finds the pages by their new words.
+- Emaki Settings search still finds the pages by their new words.
 
-**Risks.** Low. Search aliases and the assistant's phrases are behaviour: re-run the assistant's tests, and check search by hand. The Penpot font change alters text metrics; look at the bar, dock and Shell Settings after the switch.
+**Risks.** Low. Search aliases and the assistant's phrases are behaviour: re-run the assistant's tests, and check search by hand. The Penpot font change alters text metrics; look at the bar, dock and Emaki Settings after the switch.
 
 **Status (2026-11-07).** Done. Shell `main` pins amane `292d486`; niri `ocbk` carries the reword as `fixup!` commits.
 - **The lint.** `scripts/lint-terms` runs in the shell's CI on every tracked file. In each fork's CI it runs with `--diff fork-base` (amane) or `--diff v26.04` (niri), so it checks only the lines the fork added.
-  - What it lets through is listed in `scripts/lint-terms.allow`: `ROADMAP.md`, `Cargo.lock`, and the identifiers left for Phase 8 (the old control set's module and alias, the launcher's password setting, Shell Settings' launcher page id and widget ids), renamed in Phases 8 and 13.
-  - Lines kept for compatibility carry a `lint-terms: allow` marker, such as Shell Settings still accepting the launcher page's old name.
+  - What it lets through is listed in `scripts/lint-terms.allow`: `ROADMAP.md`, `Cargo.lock`, and the identifiers left for Phase 8 (the old control set's module and alias, the launcher's password setting, Emaki Settings' launcher page id and widget ids), renamed in Phases 8 and 13.
+  - Lines kept for compatibility carry a `lint-terms: allow` marker, such as Emaki Settings still accepting the launcher page's old name.
   - `docs/development/macos-references.md` is deleted.
 - **Names.**
   - What the bar shows of something going on now is an **Activity**.
-  - Shell Settings' page for the launcher is the **Launcher** page, and the launcher's placeholder is "Search".
+  - Emaki Settings' page for the launcher is the **Launcher** page, and the launcher's placeholder is "Search".
   - Drop is "a drop shelf".
 - **The font** was already Atkinson Hyperlegible Next in `tokens.json`. Only two tests still named the old one.
 - **niri.** The reword is in 12 `fixup!` commits on `ocbk` (11 for text, 1 for the CI lint step), which Phase 5's autosquash folds into their feature commits. Two of the commits they fix have the other vendor's terms in their subjects (`ada326f0` and `78620a8c`), so Phase 5 should reword those subjects as it squashes.
@@ -430,7 +430,7 @@ The list to work from was a references file in `docs/development/` (deleted in P
   - `kit/` → `crates/kit/`;
   - `apps/pinentry` → `crates/pinentry`;
   - the library half of `apps/assistant` → `crates/assistant`. The daemon stays in `apps/assistant`, and its `daemon` feature is no longer a default, so libpulse isn't built for the shell.
-- [shell] Add `xtask/` with `layer-rules`, `tokens check`, `tokens normalize` and `lint-terms`. Keep the `amane-shell layer-rules` and `amane-shell tokens …` subcommands for this one phase, printing a note that points to `cargo xtask`. Remove them in Phase 10.
+- [shell] Add `xtask/` with `layer-rules`, `tokens check`, `tokens normalize` and `lint-terms`. Keep the `emaki layer-rules` and `emaki tokens …` subcommands for this one phase, printing a note that points to `cargo xtask`. Remove them in Phase 10.
 - [shell] Update:
   - `flake.nix`: `src` filters, `cargoTestFlags`, binary names and installed files;
   - `gen-layer-rules.sh`: calls `cargo xtask layer-rules`;
@@ -445,15 +445,15 @@ The list to work from was a references file in `docs/development/` (deleted in P
 - `cargo xtask layer-rules` output is byte-identical to the committed `niri-layer-rule.kdl` (the golden test).
 - `cargo test --workspace` passes.
 - The switch works and the live session looks unchanged.
-- `cargo package -p amane-kit --no-verify` lists no files outside the crate.
+- `cargo package -p emaki-kit --no-verify` lists no files outside the crate.
 
 **Risks.** Medium, all mechanical: Nix `src` filters missing a moved file, and a stale path in a doc. In-flight branches conflict on every file, so land any open work first.
 
 **Status (2026-11-07).** Done. Shell `main` pins amane `112da4d`. The moves are one commit of renames, so `git log --follow` works.
 - **The design tokens** moved into the kit (`crates/kit/design-tokens/`), so the kit packages with nothing from outside it.
-- **Shader Lab's data.** Shader Lab embeds its effects and saved looks in its own `build.rs`, and hands them to `amane_kit::lab::register`. That's a smaller change than passing the files to every lab function. Its tests and the `lab_look` example moved with the data.
+- **Shader Lab's data.** Shader Lab embeds its effects and saved looks in its own `build.rs`, and hands them to `emaki_kit::lab::register`. That's a smaller change than passing the files to every lab function. Its tests and the `lab_look` example moved with the data.
 - **Token tests.** The two that read the shell's code (tokens read, and components reading only `sys`) moved into the shell (`apps/shell/src/tokens/contract.rs`).
-- **The assistant's daemon** is the package `amane-assistant-daemon`, and its binary is still `amane-assistant`. The library has no features and no libpulse.
+- **The assistant's daemon** is the package `emaki-assistant-daemon`, and its binary is still `emaki-assistant`. The library has no features and no libpulse.
 - **Workspace defaults.** `default-members = ["apps/shell"]`, so `cargo run` still means the shell.
 - **The cargo config.** `.cargo/config.toml` is tracked and holds only the `xtask` alias. A local amane override goes in the ignored `.cargo/local.toml`, used with `cargo --config .cargo/local.toml`; `check-pins` reads it there.
 - **The link check.** The "Phase 1 link checks" this phase leaned on didn't exist. `cargo xtask links` is new, runs in CI, and the move left no broken link.
@@ -492,7 +492,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
   4. build, tests, fork-docs parse test;
   5. a live session.
 
-  Add a contract section listing what amane-shell relies on.
+  Add a contract section listing what emaki relies on.
 - [niri] Prepare for the next tag: write in `maintaining.md` how each fork protocol (`blur_shapes`, `vibrancy`, `secure_fill`, `color_management`) will be ported to Smithay's Dispatch2. Do the port when the tag that needs it arrives.
 - [shell] `cargo xtask contract`, also in CI: checks that the protocol XMLs in amane and niri are byte-identical at the pinned revs, and that the niri IPC variants amane parses exist. Runs from checkouts (`../amane`, `../niri`), or from flake inputs in CI.
 - [shell] `docs/integration/contract.md`: every niri, amane and kit interface the shell relies on, with the minimum fork revision for each. It becomes the place to look before a rebase.
@@ -554,7 +554,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 - amane's tests pass in its CI.
 - Each new service has fixture tests.
 - With the new rev the shell behaves exactly as before; nothing uses the new APIs yet.
-- An app started from the dock survives `systemctl --user restart amane-shell`.
+- An app started from the dock survives `systemctl --user restart emaki`.
 
 **Risks.** High, in amane's core loop: a timer or subscription bug freezes redraws. Land behind tests, try the shell for a day before Phase 7. Contract: amane's API grows; nothing removed.
 
@@ -611,7 +611,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
   - prune `buttons::STATES` of ids not seen for a while;
   - make `app_icon::entry_for` look up without cloning;
   - write the shared `glass.wgsl` atomically.
-- [shell] Shell Settings: read the "seen" lists (`activities_seen`, `tray_seen`, `status_apps_seen`) through `Config<T>` instead of parsing JSON on every rebuild.
+- [shell] Emaki Settings: read the "seen" lists (`activities_seen`, `tray_seen`, `status_apps_seen`) through `Config<T>` instead of parsing JSON on every rebuild.
 - [shell] Re-run `scripts/idle-report` and record the result next to the baseline.
 
 **Acceptance**
@@ -647,17 +647,17 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
   - `MacPushButton`, `MacSegmentedNav` and `MacPopUpButton`, one call site each → fold into `PushButton`, `SegmentedButton` and `Dropdown`, then delete;
   - delete `MacSwitch`, `MacSlider`, `MacComboBox` and `MacTextField`, which have no users;
   - rename every `mac::` alias in the apps (about 109 sites), and the example `kit/examples/macform.rs` to `controls.rs`.
-- [shell] Choose one list row: `list::ListItem` (Quick Settings), `lists::ListItem` (M3, no users) and `form::FormRow` (Shell Settings). Either migrate Quick Settings' rows to `lists` and delete `list`, or delete `lists` and its example. **Decide at the start of the phase.** The M3 module was built as a showcase, so keep it only if Quick Settings will use it.
+- [shell] Choose one list row: `list::ListItem` (Quick Settings), `lists::ListItem` (M3, no users) and `form::FormRow` (Emaki Settings). Either migrate Quick Settings' rows to `lists` and delete `list`, or delete `lists` and its example. **Decide at the start of the phase.** The M3 module was built as a showcase, so keep it only if Quick Settings will use it.
 - [shell] Move generic UI from the shell into the kit:
   - `surfaces/context_menu` → `controls::menu`, one menu for the shell and apps;
-  - `components/search_field.rs` → `controls::search_field`; Shell Settings drops its own `search_field()`;
+  - `components/search_field.rs` → `controls::search_field`; Emaki Settings drops its own `search_field()`;
   - `components/text_edit.rs` → rebuilt on amane's text field, and on `amane::Clipboard` instead of `wl-copy`/`wl-paste`;
   - `components/grid/` → `containers::grid`;
   - the scrollbar fade (launcher, Quick Settings customize) → `scroll_view`;
   - the `unfold(open)` animation (alert, launcher, Quick Settings) → `animation::reveal`;
   - `services/process.rs` (`run`, `run_now`, `Latest`) → `platform::process`, built on amane's `launch`;
   - the 8 XDG path copies → `foundation::paths`.
-- [shell] Remove the `src/components/mod.rs` re-export shim. Point the roughly 200 imports at `amane_kit::…` directly.
+- [shell] Remove the `src/components/mod.rs` re-export shim. Point the roughly 200 imports at `emaki_kit::…` directly.
 - [shell] Split `platform/settings.rs` (1,792 lines) into `platform/settings/<schema>.rs`. Move UI helpers out of it: `bar_item_icon` to the status-bar code, the "seen" caches to their own module. File names and formats stay.
 - [shell] The token tools (`lint`, `check`, `normalize`) go behind a `tools` feature used by `xtask`; rename `tokens::rules` to `tokens::lint` so it isn't confused with the layer rules.
 - [shell] `missing_docs`: remove the per-module allows for every module touched in this phase.
@@ -665,18 +665,18 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 **Acceptance**
 - `lint-terms` passes with no exceptions left for `macform`.
 - Each control has one implementation; `rg` for the old module and type prefixes finds nothing.
-- The shell and all apps look the same in a side-by-side check of the bar, Quick Settings, launcher, Shell Settings, Messages and Drop.
+- The shell and all apps look the same in a side-by-side check of the bar, Quick Settings, launcher, Emaki Settings, Messages and Drop.
 - Every moved module has rustdoc on its public items.
 
 **Risks.** Medium. Visual regressions while folding controls: compare screenshots before and after. Kit API breaks only inside this workspace. No cross-repo contract change.
 
 **Status (2026-11-07).** Done, but for the one menu, which moves to Phase 10 (shell `1c21202`…`1d13689`). The counts were 63 `mac::` uses (not 109), about 275 imports through the shim (not 200), and about 25 XDG copies (not 8).
 - **Lists:** the M3 `lists` module and its example are gone; Quick Settings keeps `list`, Settings `form`.
-- **`macform`:** `look::style` (not `look::theme`, which would clash with the kit's root `theme`), `look::hover`, `controls::parts`, `foundation::symbol`, and the controls as ordinary kit modules. `MacSegmentedNav` and `MacPopUpButton` became `NavButtons` and `PopUpButton` rather than folding into `SegmentedButton` and `Dropdown`: they're different controls (a back/forward pair; an icon-only menu button), and folding them would change how Settings looks. Shell Settings' pages drew pixel for pixel the same before and after.
+- **`macform`:** `look::style` (not `look::theme`, which would clash with the kit's root `theme`), `look::hover`, `controls::parts`, `foundation::symbol`, and the controls as ordinary kit modules. `MacSegmentedNav` and `MacPopUpButton` became `NavButtons` and `PopUpButton` rather than folding into `SegmentedButton` and `Dropdown`: they're different controls (a back/forward pair; an icon-only menu button), and folding them would change how Settings looks. Emaki Settings' pages drew pixel for pixel the same before and after.
 - **One menu: moved to Phase 10.** The shell's context menu is a layer surface with submenus and its own item type used by 15 callers; the kit's is an xdg popup. Giving them one model and two hosts is a rewrite of the shell's menu, which belongs with the shell's restructure.
-- **Moved into the kit:** `search_field`, `text_edit` (on `amane::Clipboard`, kept as the `Field` model rather than rebuilt on amane's text field), `grid`, `process`, `scroll_view::ScrollbarFade`, `reveal::Reveal` and `paths`. The launcher's header and Shell Settings' sidebar still draw their own search fields, which look different from `SearchField`; unifying them is a design change. `train-watch`, `amane-assistant` and `amane-pinentry` don't depend on the kit and keep their own XDG lookups.
-- **Settings** are `platform/settings/<file>.rs` and `seen.rs`; `bar_item_icon` lives in Shell Settings' Status Bar page.
-- **Tokens:** `tokens::rules` is `tokens::lint`, behind a `tools` feature that `xtask` turns on; `amane-shell tokens …` only points at `cargo xtask`.
+- **Moved into the kit:** `search_field`, `text_edit` (on `amane::Clipboard`, kept as the `Field` model rather than rebuilt on amane's text field), `grid`, `process`, `scroll_view::ScrollbarFade`, `reveal::Reveal` and `paths`. The launcher's header and Emaki Settings' sidebar still draw their own search fields, which look different from `SearchField`; unifying them is a design change. `train-watch`, `emaki-assistant` and `emaki-pinentry` don't depend on the kit and keep their own XDG lookups.
+- **Settings** are `platform/settings/<file>.rs` and `seen.rs`; `bar_item_icon` lives in Emaki Settings' Status Bar page.
+- **Tokens:** `tokens::rules` is `tokens::lint`, behind a `tools` feature that `xtask` turns on; `emaki tokens …` only points at `cargo xtask`.
 
 ---
 
@@ -685,8 +685,8 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 **Goal.** amane becomes a generic library again, which also shrinks the fork by about 9.5k lines before its rebase in Phase 12. It comes after the kit work so the new crates can use the final kit.
 
 **Tasks**
-- [shell] New crate `crates/status` (`amane-status`): the status-item and activity wire types and client from `amane/src/status_item/`, with their tests. drop, train-watch and the shell's server use it. The bus name, object path, methods and errors stay as they are.
-- [shell] New crate `crates/phone` (`amane-phone`): KDE Connect and phone messages from `amane/src/services/kdeconnect/`, adb and its mDNS discovery from `amane/src/services/adb*`. The `caelestia` GUIDs and run-commands become configuration in the shell. The shell, Messages and Mirror depend on it.
+- [shell] New crate `crates/status` (`emaki-status`): the status-item and activity wire types and client from `amane/src/status_item/`, with their tests. drop, train-watch and the shell's server use it. The bus name, object path, methods and errors stay as they are.
+- [shell] New crate `crates/phone` (`emaki-phone`): KDE Connect and phone messages from `amane/src/services/kdeconnect/`, adb and its mDNS discovery from `amane/src/services/adb*`. The `caelestia` GUIDs and run-commands become configuration in the shell. The shell, Messages and Mirror depend on it.
 - [amane] Remove `status_item/`, `services/kdeconnect/`, `services/adb*`, the `mdns-sd` dependency, and `pub use serde`.
 - [amane] Bluetooth: move the user-facing strings (`errors.rs:72-100`, `label()`, `description()`) and the 10 s failure timers out to the shell. The service reports a `ServiceError { kind, message }` and the time it happened.
 - [amane] One error model for fork services: a `ServiceError` with typed kinds, returned by every blocking call and kept as the last failure. Each service exposes "in progress" the same way.
@@ -705,7 +705,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 **Status (2026-11-07).** Done in four steps that each built: amane `8efa0b2`/`8e5c110` (additive), shell `aff6e3c`/`88893b5` (the crates), amane `3a119c5`/`e7bf47a` (removal and the error model), then the shell's pin to `e7bf47a`.
 - **Size.** The moved code was about 4.9k lines (`status_item` 915, `kdeconnect` 3,438, `adb` 634), not 9.5k. The fork diff went from +40,957 to +36,348 lines.
 - **`pub use serde` stays.** The kit and the apps derive settings through `amane::serde` in about 20 files; it's one line, and generic.
-- **Helpers made public, all generic:** `run_in_order` (the ordered control thread), `Service::watched_within`, `Service::peek` (a read that doesn't count as watching) and `IDLE_STOP`. `amane-phone` needs nothing else from amane's insides.
+- **Helpers made public, all generic:** `run_in_order` (the ordered control thread), `Service::watched_within`, `Service::peek` (a read that doesn't count as watching) and `IDLE_STOP`. `emaki-phone` needs nothing else from amane's insides.
 - **Run commands.** `KdeConnect::set_run_command_list` takes the program's list once; the shell's four, with their old ids, are in `services/phone.rs`. A list was simpler than passing it to each call, since reading a device also checks whether its commands are on.
 - **Errors.** `ServiceError { kind, message, at }`. Bluetooth's words are in `tiles/bluetooth_text.rs`, polkit's "Sorry, that didn't work" in its alert, and Quick Settings shows any service's failure for 10 s (`tiles/failure.rs`). Network now keeps failed joins, a wrong password among them, and the Wi-Fi rows show them. `Lock` and `Pam` are upstream and keep their own types.
 - **polkit.** `serve_agent_with(PolkitAgent { helper_socket })`; the agent is behind `polkit-agent`, off by default and on in the shell's workspace dependency.
@@ -741,7 +741,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 - [shell] Thread-local state: one `surface_state!` macro (or a small type) for the "per-monitor `HashMap<String, T>` behind `with`/`with_mut`" pattern written in the dock, widgets and status bar.
 - [shell] Remove the shims:
   - the `taskbar` migration in `status_bar::migrate()` and the `taskbar` IPC alias, after checking the live files are migrated;
-  - the `amane-shell layer-rules` and `tokens` subcommands left from Phase 4;
+  - the `emaki layer-rules` and `tokens` subcommands left from Phase 4;
   - amane's `spawn(&str)` wrapper.
 - [shell] Shared helpers for the remaining copies: one logind client (vault, keep-awake, session) on amane `Logind`; one supervised child-stream helper with restart and back-off for the streams that stay (tailscale `watch-ipn`, `pw-dump`).
 
@@ -751,14 +751,14 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 - All persisted state is in the new format after one start; deleting the new file and starting again re-migrates from the old one, if present.
 - The live session keeps dock pins, widget layout, Quick Settings layout, night light and do-not-disturb across the switch.
 
-**Risks.** Medium–high: **file formats change**, guarded by the migration. Back up `~/.config/amane-shell` and `~/.local/state/amane-shell` before the switch.
+**Risks.** Medium–high: **file formats change**, guarded by the migration. Back up `~/.config/emaki` and `~/.local/state/emaki` before the switch.
 
 **Status (2026-11-07).** Done in seven steps, each pushed with CI green (shell `4e58599` logging, `914d6c4` state files, `06a5e04` boundaries, `b65c722` the menu, `265a0d1` typed IPC, `e009f8d` logind and child streams, `2e56cea` the splits). No amane or niri change.
 - **Sizes.** Twelve surface files were over 600 lines, not four: the launcher's `provider.rs` and `results.rs`, the bar's `mod.rs` and `activities.rs`, Customize, the Bluetooth tile and the notification card as well. Each was split by moving its functions into child modules (`use super::*;`), its types and state staying; the largest surface file is now 587 lines. Long functions (`on_key`, `build`, Quick Settings' `surface()`) moved whole; splitting their bodies is left for when they're next changed.
-- **Logging.** A small crate, `amane-log`, rather than a module in the kit: train-watch, the pinentry and the assistant's daemon don't use the kit. Every program sets it up; the shell's and the kit's `eprintln!` and `let _ =` are done, the other apps' are Phase 11's.
+- **Logging.** A small crate, `emaki-log`, rather than a module in the kit: train-watch, the pinentry and the assistant's daemon don't use the kit. Every program sets it up; the shell's and the kit's `eprintln!` and `let _ =` are done, the other apps' are Phase 11's.
 - **State.** `services/state.rs`: `{"version", "data"}`, written through a part file and a rename. Six files moved to new `.json` names and read their old file when there's none; launcher usage and the clipboard index kept their names. Fixtures are copies of the live old files. `phone-screen.json` kept its shape (Messages reads it), written whole now.
-- **One menu.** One item model (with real ticks, radio dots and headers, replacing five callers' ✓ and • glyphs), one row drawing with a `Look` per host, one keyboard; the popup host for apps and the layer host for the shell. The layer rules stay in the shell, not the kit's `tools`: they name the shell's surfaces. So `amane-shell layer-rules` stays, for `cargo xtask layer-rules`; `amane-shell tokens` is gone.
-- **IPC.** `amane_kit::shell_ipc::ShellCommand` and `apps/shell/src/ipc.rs`. A test pins every verb's lines as scripts send them today.
+- **One menu.** One item model (with real ticks, radio dots and headers, replacing five callers' ✓ and • glyphs), one row drawing with a `Look` per host, one keyboard; the popup host for apps and the layer host for the shell. The layer rules stay in the shell, not the kit's `tools`: they name the shell's surfaces. So `emaki layer-rules` stays, for `cargo xtask layer-rules`; `emaki tokens` is gone.
+- **IPC.** `emaki_kit::shell_ipc::ShellCommand` and `apps/shell/src/ipc.rs`. A test pins every verb's lines as scripts send them today.
 - **Boundaries.** Panels register their hooks; the bar's place is `chrome/bar.rs`; per-monitor state is `chrome/per_output.rs`, which forgets an unplugged monitor. The phone, Do Not Disturb, media art and the clock are services. Bar's Now Playing now redraws when its art arrives.
 - **Found along the way.** `pw-dump` was never restarted, so the microphone and camera indicator died with PipeWire; it's supervised now. A `subscribe` doesn't start a service, so the clock's Logind subscription heard nothing unless something else had started Logind; the logind client starts it.
 - **Not done:** `spawn_activated(&str)` callers stay, as the activation token only comes through that path; Phase 12 may give `Launch` the token.
@@ -770,32 +770,32 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 **Goal.** The apps use the shared pieces instead of their own, and `displays.kdl` gets one writer.
 
 **Tasks**
-- [shell] `displays.kdl`: one `kit::platform::displays_kdl` module that parses and writes the file atomically. Shell Settings owns it. The shell's HDR white-point code stops editing it and either asks niri directly (an IPC action) or asks Shell Settings' service, so there is no race between two writers.
-- [shell] Shell Settings uses amane's niri client instead of `apps/settings/src/displays/niri.rs`, which is removed.
-- [shell] New crate `crates/nixos` (`amane-nixos`): the NixOS model, catalog and job pipeline from `apps/settings/src/system/` (about 8.8k lines), with no UI. More tests for the job pipeline. Merge the two `about.rs` files.
+- [shell] `displays.kdl`: one `kit::platform::displays_kdl` module that parses and writes the file atomically. Emaki Settings owns it. The shell's HDR white-point code stops editing it and either asks niri directly (an IPC action) or asks Emaki Settings' service, so there is no race between two writers.
+- [shell] Emaki Settings uses amane's niri client instead of `apps/settings/src/displays/niri.rs`, which is removed.
+- [shell] New crate `crates/nixos` (`emaki-nixos`): the NixOS model, catalog and job pipeline from `apps/settings/src/system/` (about 8.8k lines), with no UI. More tests for the job pipeline. Merge the two `about.rs` files.
 - [shell] Apps use `platform::process` instead of their own runners (`system/nixos.rs`, `passwords.rs`, `storage.rs`, `displays/ddc.rs`).
-- [shell] Shell Settings search:
+- [shell] Emaki Settings search:
   - share the shell's fuzzy matching (`launcher/rank.rs`), moved to the kit;
   - add a test that every page and section has an entry in the search index, so the 771-line static table can't drift.
-- [shell] `train-watch`: read Tailscale state through the shell's service (or `amane-status`), not its own `tailscale` CLI calls, if it runs beside the shell.
+- [shell] `train-watch`: read Tailscale state through the shell's service (or `emaki-status`), not its own `tailscale` CLI calls, if it runs beside the shell.
 - [shell] The hand-typed ids in `layer_rules.rs` (`DROP_NS`, `APP_IDS`) come from the apps' crates. The test covers every app, and says whether shader-lab gets a rule.
 
 **Acceptance**
 - One writer of `displays.kdl` (grep-checked).
 - HDR brightness, displays arrangement and night light work after the switch.
-- Shell Settings' System pages run an update and a rollback end to end.
-- `amane-nixos` has its own tests in CI.
+- Emaki Settings' System pages run an update and a rollback end to end.
+- `emaki-nixos` has its own tests in CI.
 
 **Risks.** Medium: `displays.kdl` ownership is a format and behaviour change on the niri side; the existing file must be read without loss.
 
-**Status (2026-11-07).** Done in seven steps, each pushed with CI green (shell `6bb385a` the process runner, `5eb04ef` Settings on amane's niri client, `a3a21a1` one writer of `displays.kdl`, `f57dfbd` `amane-nixos`, `bb0379d` search, `fe4926d` app ids, `e40ebcc` the apps' logging). amane `9d5fb6f` (the niri client's output changes and config reads); no niri change.
-- **Process runner.** A new crate, `amane-process` (std only), rather than the kit's `platform::process`: `amane-nixos` and train-watch don't use the kit. The kit re-exports it beside `run`, `run_now`, `installed` and `Latest`. Programs fed on stdin (`wl-copy`, Drop's `curl`) and long-running children (the mirror's `adb`) keep their own code.
+**Status (2026-11-07).** Done in seven steps, each pushed with CI green (shell `6bb385a` the process runner, `5eb04ef` Settings on amane's niri client, `a3a21a1` one writer of `displays.kdl`, `f57dfbd` `emaki-nixos`, `bb0379d` search, `fe4926d` app ids, `e40ebcc` the apps' logging). amane `9d5fb6f` (the niri client's output changes and config reads); no niri change.
+- **Process runner.** A new crate, `emaki-process` (std only), rather than the kit's `platform::process`: `emaki-nixos` and train-watch don't use the kit. The kit re-exports it beside `run`, `run_now`, `installed` and `Latest`. Programs fed on stdin (`wl-copy`, Drop's `curl`) and long-running children (the mirror's `adb`) keep their own code.
 - **niri client.** amane's `niri::set_output(output, OutputChange)` covers every output change, `Output` has the serial, size, VRR and `Transform`, and `follow_config_loads` hears niri's `ConfigLoaded`. Settings' `displays/niri.rs` is gone; what only the page asks of an output is `displays/outputs.rs`.
 - **`displays.kdl`.** Settings' `displays/kdl.rs` is the one writer (a test fails if any other file names the file), and keeps every line it doesn't know, in a block or between blocks. The shell's HDR white goes to its own `hdr-white.json` and is set in niri again at start and after each config read, instead of an edit of the file.
-- **`amane-nixos`.** The model, the jobs (`Steps`: build, compare, activate, update, place the lock; stoppable), the lock, generations, the catalog and the keyboard layouts, about 2.5k lines, every command through a `Config`. Settings keeps its `Service` types and pages, which call the crate. New tests run the pipeline against fake `nix`, `git` and `pkexec`. `installed.rs` stays: it's amane's `Apps`. The crate has no `missing_docs` lint yet: Phase 13. The About pages share one card and one path helper.
-- **Search.** `fuzzy` is the kit's (`amane_kit::fuzzy`); Settings scores titles with it, other words at half. `PAGE_NAMES` and `SUBS` (by page) are the one list of places, and tests check every page and sub-page has an entry, every entry opens and every row it lights exists.
-- **train-watch** reads no Tailscale state: `tailscale ssh` is only its transport, so that task fell away; its commands go through `amane-process`.
-- **App ids.** `amane_kit::app_ids` names every app; the layer rules' test covers each app under `apps/` that opens a window. Shader Lab has no rule, on purpose (a developer tool), and Drop's grid has a layer rule.
+- **`emaki-nixos`.** The model, the jobs (`Steps`: build, compare, activate, update, place the lock; stoppable), the lock, generations, the catalog and the keyboard layouts, about 2.5k lines, every command through a `Config`. Settings keeps its `Service` types and pages, which call the crate. New tests run the pipeline against fake `nix`, `git` and `pkexec`. `installed.rs` stays: it's amane's `Apps`. The crate has no `missing_docs` lint yet: Phase 13. The About pages share one card and one path helper.
+- **Search.** `fuzzy` is the kit's (`emaki_kit::fuzzy`); Settings scores titles with it, other words at half. `PAGE_NAMES` and `SUBS` (by page) are the one list of places, and tests check every page and sub-page has an entry, every entry opens and every row it lights exists.
+- **train-watch** reads no Tailscale state: `tailscale ssh` is only its transport, so that task fell away; its commands go through `emaki-process`.
+- **App ids.** `emaki_kit::app_ids` names every app; the layer rules' test covers each app under `apps/` that opens a window. Shader Lab has no rule, on purpose (a developer tool), and Drop's grid has a layer rule.
 - **Logging.** The apps' and crates' `eprintln!` and `let _ =` are done as Phase 10 did the shell's; CLI output (train-watch's usage) stays on stderr, and tests' cleanup is left as it is.
 
 ---
@@ -838,7 +838,7 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
 - **Hunk moves** (`docs/fork/maintaining.md` has the table): `paint.rs` 24 → 18 hunks (+764 → +77 lines), `quads/draw.rs` 11 → 6 (+566 → +31; upstream's own test is upstream's again), `quads/batch.rs` 22 → 19, `compositor/niri.rs` 22 → 17 (+628 → +229), `path.rs` 14 → 12 (+401 → +54), `dropped.rs` 38 → 34, `keyboard.rs` +165 → +103. They stay commits at the tip: folding them into the features that wrote the code meant moving them across later commits that change the same lines. `field.rs`, `font.rs`, `normal.rs` and `scroll_area/offsets.rs` are written down as fork-owned.
 - **The rebase's real work** was upstream's single submit per frame (`e2e29c9`): the fork's own submits had to join the frame's encoder (`lay_at`), the glyph atlas starting over mid-frame now submits the frame so far first (a queue's texture writes land ahead of later encoders), and the fork's GPU tests draw through a helper that submits. Upstream's direct icon lookup (`45c90da`) replaced the fork's icon index; `Apps::find_icon` keeps the theme folders once read. Upstream's password clear after submit (`f6a96b8`) wipes the field through `fields::take`, with two tests. Upstream's `text_stroke` example calls a `Text::stroke` upstream hasn't committed, so the fork removes it.
 - **vello.** Rebased onto upstream (clean, version and wgpu unchanged), docs folded in. `VELLO_SCRATCH` is gone: `vello_encoding::use_upstream_scratch`, which amane calls under `AMANE_VELLO_SCRATCH=upstream`.
-- **Launching.** `Launch::activated()` asks the compositor for a token and starts the program when it comes; `spawn_activated` rides on it. The shell's, Messages', Drop's and `amane-phone`'s launches of other programs are argv now, so the hand-quoted `xdg-open '…'` and `sh -c` words are gone. `spawn(&str)` stays: upstream has it.
+- **Launching.** `Launch::activated()` asks the compositor for a token and starts the program when it comes; `spawn_activated` rides on it. The shell's, Messages', Drop's and `emaki-phone`'s launches of other programs are argv now, so the hand-quoted `xdg-open '…'` and `sh -c` words are gone. `spawn(&str)` stays: upstream has it.
 - **`niri-fork`.** Run-time `features()` checks, as Phase 6 built; the target table says so now.
 
 ---
@@ -865,18 +865,18 @@ This comes before the amane work because amane's new niri client (Phase 6) uses 
   - running a second shell beside the live one;
   - `idle-report`.
 - [shell] Remove duplicated docs:
-  - the status-app method table: keep it in `integration/status-apps.md`, and remove the copies now that `amane-status` lives here;
+  - the status-app method table: keep it in `integration/status-apps.md`, and remove the copies now that `emaki-status` lives here;
   - the memory write-ups: one in amane's `docs/fork/internals/memory.md`, the shell's points to it;
   - `lists-m3.md`, depending on the Phase 8 decision.
 - [shell] Terminology, written in `docs/README.md`:
-  - "Shell Settings", with `amane-settings` the first time in each doc;
+  - "Emaki Settings", with `emaki-settings` the first time in each doc;
   - "Quick Settings";
   - a status app is the program, a status item is its thing in the bar;
   - "notification center" lowercase;
   - one spelling of color/color in prose.
 
   Apply across the docs.
-- [shell] `missing_docs` becomes `deny` for amane-kit, `amane-status`, `amane-phone` and `amane-nixos`.
+- [shell] `missing_docs` becomes `deny` for emaki-kit, `emaki-status`, `emaki-phone` and `emaki-nixos`.
 - [amane] Rustdoc (`///`) on all public items in fork modules; upstream's own files keep their style. A `cargo doc` warnings check in CI.
 - [niri] Make sure `docs/fork/README.md` describes each feature group as Phase 5 left it.
 - [shell] Reword this roadmap's mentions of the removed terms (the ground rule, Phases 3 and 8), and drop it from `lint-terms`' allowlist, which is then empty.

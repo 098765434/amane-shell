@@ -13,12 +13,12 @@ use amane::{
     Center, Color, Fill, Image, Point, Rectangle, Shadow, Size, Stack, Start, Text, Weight, Widget,
     click_count, request_frame,
 };
-use amane_kit::color_picker::to_color;
-use amane_kit::lab::config::{Backdrop, Kind, Subject};
-use amane_kit::lab::manifest::{Manifest, SurfaceSpec};
-use amane_kit::lab::shadows;
-use amane_kit::layout::boxed;
-use amane_kit::tokens::sys;
+use emaki_kit::color_picker::to_color;
+use emaki_kit::lab::config::{Backdrop, Kind, Subject};
+use emaki_kit::lab::manifest::{Manifest, SurfaceSpec};
+use emaki_kit::lab::shadows;
+use emaki_kit::layout::boxed;
+use emaki_kit::tokens::sys;
 
 use amane::Service;
 

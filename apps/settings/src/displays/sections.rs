@@ -5,24 +5,24 @@
 use std::thread;
 
 use amane::{Battery, Brightness, Center, Rectangle, Row, Service, Size, Text, TextInput};
-use amane_kit::app::{Dialog, field_box, text_field};
-use amane_kit::arrangement::{Arrangement, Screen};
-use amane_kit::buttons::{IconButton, PushButton, Switch};
-use amane_kit::color::Accent;
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::{FormRow, Group, SliderRow};
-use amane_kit::icons::{ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_DISPLAY, ICON_INFO};
-use amane_kit::layout::{boxed, frame};
-use amane_kit::leading_icon::LeadingIcon;
-use amane_kit::settings::{
+use emaki_kit::app::{Dialog, field_box, text_field};
+use emaki_kit::arrangement::{Arrangement, Screen};
+use emaki_kit::buttons::{IconButton, PushButton, Switch};
+use emaki_kit::color::Accent;
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::{FormRow, Group, SliderRow};
+use emaki_kit::icons::{ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_DISPLAY, ICON_INFO};
+use emaki_kit::layout::{boxed, frame};
+use emaki_kit::leading_icon::LeadingIcon;
+use emaki_kit::settings::{
     appearance, change_appearance, change_displays, change_dock, change_status_bar, displays, dock,
     status_bar,
 };
-use amane_kit::slider::Slider;
-use amane_kit::style;
-use amane_kit::tag::{Tag, tags};
-use amane_kit::theme::Mode as Scheme;
-use amane_kit::tokens::{Styled, sys};
+use emaki_kit::slider::Slider;
+use emaki_kit::style;
+use emaki_kit::tag::{Tag, tags};
+use emaki_kit::theme::Mode as Scheme;
+use emaki_kit::tokens::{Styled, sys};
 
 use super::caps::Caps;
 use super::ddc::{self, Ddc, Feature, Monitor};
@@ -113,7 +113,7 @@ pub fn setup_banner(setup: &Setup) -> Option<Group> {
                             ),
                     )
                     .footer(
-                        "Move the display settings to Shell Settings to change them here; \
+                        "Move the display settings to Emaki Settings to change them here; \
                          until then this page only shows them.",
                     ),
             )
@@ -160,9 +160,9 @@ pub fn error_line(error: String) -> Row {
             .width(width),
         ),
         boxed(
-            amane_kit::buttons::IconButton::new(
+            emaki_kit::buttons::IconButton::new(
                 "settings.displays.error.dismiss",
-                amane_kit::icons::ICON_CLOSE,
+                emaki_kit::icons::ICON_CLOSE,
             )
             .size(sys::size::icon::s())
             .on_press(Screens::dismiss)
@@ -771,9 +771,9 @@ fn open_apps_menu(added: &[String], add: impl Fn(&str) + Clone + 'static) -> Rec
         .into_iter()
         .filter(|id| !added.contains(id))
         .collect();
-    let items = ids.iter().map(amane_kit::menu::MenuItem::new).collect();
+    let items = ids.iter().map(emaki_kit::menu::MenuItem::new).collect();
     let picked = ids.clone();
-    amane_kit::pop_up_button::PopUpButton::new("settings.displays.vrr-open-apps")
+    emaki_kit::pop_up_button::PopUpButton::new("settings.displays.vrr-open-apps")
         .items(items, None)
         .disabled(ids.is_empty())
         .on_select(move |index| {
@@ -1010,7 +1010,7 @@ pub fn oled_care(ctx: &Ctx) -> Option<Group> {
     }
     let dark = appearance().mode == Some(Scheme::Dark);
     let hidden = dock().auto_hide;
-    let bar_hidden = status_bar().auto_hide != amane_kit::settings::AutoHide::Never;
+    let bar_hidden = status_bar().auto_hide != emaki_kit::settings::AutoHide::Never;
     Some(
         group()
             .header("OLED care")
@@ -1033,7 +1033,7 @@ pub fn oled_care(ctx: &Ctx) -> Option<Group> {
                 |on| {
                     // turning it on keeps a mode already chosen
                     change_status_bar(|now| {
-                        use amane_kit::settings::AutoHide;
+                        use emaki_kit::settings::AutoHide;
                         if !on {
                             now.auto_hide = AutoHide::Never;
                         } else if now.auto_hide == AutoHide::Never {

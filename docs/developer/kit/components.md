@@ -1,7 +1,7 @@
 # Components
 
-amane-kit's building blocks (`crates/kit/src/`, `amane_kit::*`), which Quick Settings, the notification
-center, the context menu, the dock, the launcher and Shell Settings are made of. Like the
+emaki-kit's building blocks (`crates/kit/src/`, `emaki_kit::*`), which Quick Settings, the notification
+center, the context menu, the dock, the launcher and Emaki Settings are made of. Like the
 [buttons](controls.md), each is drawn in the shell's glass look. They read `sys.*` tokens only, so
 any component can use them.
 
@@ -64,10 +64,10 @@ caption, with an `.empty(…)` note while there are none.
 
 ## Form
 
-`form` lays settings out as grouped rows, and is what Shell Settings' pages are
+`form` lays settings out as grouped rows, and is what Emaki Settings' pages are
 built from. A `Group::new()` is a rounded card (radius 12, `groupFill`) of rows with hairlines
 between them, starting past each row's tile; `.header(text)` is a caption above it and
-`.footer(text)` a note below it, wrapped to its `.width(…)` (504 by default, Shell Settings'
+`.footer(text)` a note below it, wrapped to its `.width(…)` (504 by default, Emaki Settings'
 page). `.row(FormRow)`, `.rows(…)`, `.slider(SliderRow)` and `.custom(widget, height)` add to it,
 and `.build()` gives a `Column`. Every row knows its height, so a group sizes itself
 (`Group::height()`).
@@ -97,7 +97,7 @@ Pieces that go in rows:
   `spinner::ProgressBar::new(fraction, width)`: a thin accent track.
 - `thumbnail_picker::ThumbnailPicker::new(id, width, height)`: choices as small pictures (`.option(widget,
   label)`), the `.chosen(…)` one ringed in the accent, wrapping to `.width(…)`; `.height()` for a
-  row's detail. Shell Settings draws its pictures with flat shapes, so they stay on quads.
+  row's detail. Emaki Settings draws its pictures with flat shapes, so they stay on quads.
 - `color_picker::ColorWells::new(id, colors, chosen)`: colors as dots, `None` for a multicolor
   "System" one; `.shown_name()` is the hovered or chosen one's name, for the row's subtitle.
 
@@ -209,7 +209,7 @@ the same card as its alert, in the middle of the screen
 `.countdown(seconds, f)` makes it answer by itself: a line under the message counts down
 ("Going back in 15 seconds."), and at zero the dialog closes and runs `f`, usually the cancel
 button's action. The count starts when it opens. A `Tick` service redraws the dialog's window
-once a second, and stays quiet while no countdown dialog is open. Shell Settings uses it to
+once a second, and stays quiet while no countdown dialog is open. Emaki Settings uses it to
 undo a display change nobody confirmed ([displays.md](../../user/features/displays.md)).
 
 ## Tag
@@ -252,8 +252,8 @@ measured against. It's all quads.
 - `marker.rs` holds `marker!`: a service holding nothing, for state kept elsewhere, so only the
   windows that `watch()` it draw again when it's `changed()` ([performance.md](../performance.md)).
 - `settings.rs` holds the shell's settings files, `appearance.json`, `desktop.json` and
-  `launcher.json` under `~/.config/amane-shell/`, which a settings app changes and the shell
-  follows live. It also holds amane-drop's `DropGrids` and `DropSharing`, which Drop and Shell
+  `launcher.json` under `~/.config/emaki/`, which a settings app changes and the shell
+  follows live. It also holds emaki-drop's `DropGrids` and `DropSharing`, which Drop and Shell
   Settings share ([drop.md](../../user/features/drop.md#settings)).
 - `secrets.rs` keeps an app's passwords and keys in the Secret Service through `secret-tool`
   (`application <app> account <name>`), and in `~/.config/<app>/secrets.json` (0600) when no
@@ -263,7 +263,7 @@ measured against. It's all quads.
   warn.
 - `theme.rs` holds the runtime inputs the tokens resolve with (mode, density, accent, text scale)
   and the ones the materials follow (glass level, higher contrast, reduced motion, adaptive glass,
-  vibrancy), each from its `AMANE_*` override, else the settings file, else the system
+  vibrancy), each from its `EMAKI_*` override, else the settings file, else the system
   ([tokens.md](../design-system/tokens.md)).
 - `tokens/` holds the Penpot resolver, the manual's checks (`cargo xtask tokens check`) and the
   functions `build.rs` generates, one per token.
@@ -272,7 +272,7 @@ measured against. It's all quads.
   the tint, `Tinted`, `Solid` opaque, and the system's high contrast, which, like `Solid`, turns
   the material off and brings the hairlines back).
   **Adaptive glass** (an experiment, off by default: `adaptive_glass` in `appearance.json`, or
-  `AMANE_ADAPTIVE_GLASS=1`) turns small glass light or dark with its backdrop.
+  `EMAKI_ADAPTIVE_GLASS=1`) turns small glass light or dark with its backdrop.
   Each piece names its shape (`shape_id`, sent as `BlurShape::id`), niri reports how
   bright the backdrop behind it is (amane's `Backdrop`, for a material with `report-backdrop true`
   in niri's `materials {}`), and `Material::adapted(id, ..)` builds the piece and its frost with

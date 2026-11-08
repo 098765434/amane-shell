@@ -3,11 +3,11 @@
 //! shadows follow a rounded rectangle.
 
 use amane::{Column, Row, Service, Widget};
-use amane_kit::buttons::PushButton;
-use amane_kit::color_picker::{ColorPicker, to_hex};
-use amane_kit::lab::config::{Config, ShadowSpec};
-use amane_kit::layout::boxed;
-use amane_kit::tokens::sys;
+use emaki_kit::buttons::PushButton;
+use emaki_kit::color_picker::{ColorPicker, to_hex};
+use emaki_kit::lab::config::{Config, ShadowSpec};
+use emaki_kit::layout::boxed;
+use emaki_kit::tokens::sys;
 
 use crate::panel::{self, Number};
 use crate::{Lab, change};

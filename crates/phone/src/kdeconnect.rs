@@ -25,7 +25,7 @@ use std::time::Duration;
 
 use amane::{Argument, Bus, Service, ServiceError};
 
-use amane_base::sync::Locked as _;
+use emaki_base::sync::Locked as _;
 pub use config::RunCommand;
 pub use device::{PairState, PhoneBattery, PhoneDevice, PhoneNotification};
 pub use input::{PhoneClick, PhoneKey, PhoneModifiers};

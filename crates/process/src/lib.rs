@@ -1,9 +1,9 @@
 //! Running a program and reading what it said.
 //!
-//! One runner for every amane-shell program, so each doesn't carry its own:
+//! One runner for every emaki program, so each doesn't carry its own:
 //!
 //! ```no_run
-//! use amane_process::Cmd;
+//! use emaki_process::Cmd;
 //!
 //! // to its end: what it printed, or the last lines of what it said
 //! let branch = Cmd::new("git").args(["branch", "--show-current"]).dir("/etc/nixos").stdout();
@@ -30,7 +30,7 @@ use std::process::{Child, ChildStderr, ChildStdout, Command, ExitStatus, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use amane_base::sync::Locked as _;
+use emaki_base::sync::Locked as _;
 
 /// How many of a failed command's last lines its [`Failure`] keeps: the
 /// error is what most programs say last.
@@ -372,9 +372,9 @@ mod tests {
 
     #[test]
     fn a_missing_program_says_so() {
-        let failed = Cmd::new("amane-no-such-program").output().unwrap_err();
+        let failed = Cmd::new("emaki-no-such-program").output().unwrap_err();
         assert_eq!(failed.code, None);
-        assert!(failed.message.starts_with("amane-no-such-program: "));
+        assert!(failed.message.starts_with("emaki-no-such-program: "));
     }
 
     #[test]

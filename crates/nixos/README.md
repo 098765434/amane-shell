@@ -1,13 +1,13 @@
-# amane-nixos
+# emaki-nixos
 
-Shell Settings' NixOS model and jobs, with no UI. Settings' System pages
+Emaki Settings' NixOS model and jobs, with no UI. Settings' System pages
 (`apps/settings/src/system/`) hold the state and draw it; this crate does what they
 ask, off their UI thread, and keeps nothing between calls. The contract with the
 repo is in [nixos.md](../../docs/developer/integration/nixos.md).
 
 | Module | What |
 |---|---|
-| `settings` | the flake's `amaneSettings` output read into `Entry`s, a value checked against its control, and `managed/settings.json`: what differs from HEAD and the commit's words |
+| `settings` | the flake's `emakiSettings` output read into `Entry`s, a value checked against its control, and `managed/settings.json`: what differs from HEAD and the commit's words |
 | `job` | `Steps`: build as the user (nix's JSON log read into `Progress`), compare with the running system, activate as root through polkit, a fresh `flake.lock` for an update and putting it into the repo. One step at a time, stoppable from another thread |
 | `lock` | a `flake.lock`'s root inputs and what a fresh one moves |
 | `generations`, `repo` | the system profile's generations, what a system says about itself, a commit as a label shows it |
@@ -20,4 +20,4 @@ builds one from `nixos.json` with `Config::new`; the tests put fake programs in 
 place and run the pipeline through them: a build's progress and path, a failed and a
 cancelled build, an update's lock and commit, activating (and polkit's cancel and
 refusal), a rollback to an older generation, and the order of an Apply's steps.
-Commands run through [`amane-process`](../process/README.md).
+Commands run through [`emaki-process`](../process/README.md).

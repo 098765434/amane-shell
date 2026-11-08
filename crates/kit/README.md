@@ -1,19 +1,19 @@
-# amane-kit
+# emaki-kit
 
-The look of [amane-shell](../../README.md) as a library: the design tokens from Penpot, the theme they resolve against (mode, density, accent, text scale), and the controls built from them. The shell uses it, and so can apps that should look like the shell, like its settings app.
+The look of [emaki](../../README.md) as a library: the design tokens from Penpot, the theme they resolve against (mode, density, accent, text scale), and the controls built from them. The shell uses it, and so can apps that should look like the shell, like its settings app.
 
 ```toml
 [dependencies]
 amane = { git = "https://github.com/098765434/amane", rev = "…" }
-amane-kit = { git = "https://github.com/098765434/amane-shell" }
+emaki-kit = { git = "https://github.com/098765434/amane-shell" }
 ```
 
 ```rust
-use amane_kit::app::{app, app_window, standard_shortcut};
-use amane_kit::buttons::Switch;
+use emaki_kit::app::{app, app_window, standard_shortcut};
+use emaki_kit::buttons::Switch;
 
 fn main() {
-    app("amane-example").normal_window("main", main_window).run();
+    app("emaki-example").normal_window("main", main_window).run();
 }
 
 fn main_window() -> amane::Window {
@@ -23,12 +23,12 @@ fn main_window() -> amane::Window {
 }
 ```
 
-`cargo run -p amane-kit --example gallery` shows every control in one window.
+`cargo run -p emaki-kit --example gallery` shows every control in one window.
 
 ## Docs
 
 - [Controls](../../docs/developer/kit/controls.md): buttons, switch, checkbox, radio, dropdown, menu, stepper and
-  control sizes; `cargo run -p amane-kit --example controls` shows them all.
+  control sizes; `cargo run -p emaki-kit --example controls` shows them all.
 - [Components](../../docs/developer/kit/components.md): card, list, slider, dialog, scroll view and the other
   building blocks, and the modules under them.
 - [App scaffolding](../../docs/developer/kit/app.md): `app`, `app_window`, text fields and the sidebar.

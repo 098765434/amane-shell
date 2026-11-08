@@ -22,7 +22,7 @@
 # a dropped connection doesn't stop it.
 #
 # Scoring runs here: NEEDLE_WORK keeps the fetched runs (default
-# ~/.cache/needle-ft), AMANE_ASSISTANT_BIN is a daemon built with Cactus
+# ~/.cache/needle-ft), EMAKI_ASSISTANT_BIN is a daemon built with Cactus
 # (default: the repo's target/release), WHISTLE the whistle.cact to load
 # beside the tuned model (default: the installed one, else one fetched into
 # NEEDLE_WORK at the commit flake.nix pins).
@@ -46,14 +46,14 @@ send() { rsync -az -e "tailscale ssh" "$@"; }
 
 # the watcher, as a user unit here, when a bar is there to show it
 start_watcher() {
-    busctl --user status org.amane.StatusBar1 >/dev/null 2>&1 || return 0
+    busctl --user status org.emaki.StatusBar1 >/dev/null 2>&1 || return 0
     local repo installed; repo=$(cd "$here/../../.." && pwd)
     local -a command
-    if installed=$(command -v amane-train-watch); then
+    if installed=$(command -v emaki-train-watch); then
         command=("$installed")
-    elif [ -x "$repo/target/debug/amane-train-watch" ]; then
+    elif [ -x "$repo/target/debug/emaki-train-watch" ]; then
         # a build in the repo needs the dev shell's libraries
-        command=(nix develop "$repo" -c "$repo/target/debug/amane-train-watch")
+        command=(nix develop "$repo" -c "$repo/target/debug/emaki-train-watch")
     else
         return 0
     fi
@@ -128,8 +128,8 @@ EOF
     ;;
 watch)
     name=${2:?usage: remote.sh watch NAME [--plain]}; name_ok "$name"
-    watcher=$(command -v amane-train-watch || echo "$here/../../../target/debug/amane-train-watch")
-    [ -x "$watcher" ] || { echo "no amane-train-watch: cargo build -p amane-train-watch" >&2; exit 1; }
+    watcher=$(command -v emaki-train-watch || echo "$here/../../../target/debug/emaki-train-watch")
+    [ -x "$watcher" ] || { echo "no emaki-train-watch: cargo build -p emaki-train-watch" >&2; exit 1; }
     exec "$watcher" "$host" "$name" ${3:+"$3"}
     ;;
 status)
@@ -149,12 +149,12 @@ fetch)
 score)
     name=${2:?usage: remote.sh score NAME CASES}; cases=${3:?usage: remote.sh score NAME CASES}; name_ok "$name"
     repo=$(cd "$here/../../.." && pwd)
-    bin=${AMANE_ASSISTANT_BIN:-$repo/target/release/amane-assistant}
+    bin=${EMAKI_ASSISTANT_BIN:-$repo/target/release/emaki-assistant}
     work=${NEEDLE_WORK:-$HOME/.cache/needle-ft}
     dir=$work/$name
     whistle=${WHISTLE:-}
-    if [ -z "$whistle" ] && installed=$(command -v amane-assistant); then
-        whistle=$(dirname "$(readlink -f "$installed")")/../share/amane-assistant/models/whistle.cact
+    if [ -z "$whistle" ] && installed=$(command -v emaki-assistant); then
+        whistle=$(dirname "$(readlink -f "$installed")")/../share/emaki-assistant/models/whistle.cact
     fi
     if [ ! -s "${whistle:-/nonexistent}" ]; then
         whistle=$work/whistle.cact
@@ -163,7 +163,7 @@ score)
     "$0" fetch "$name" "$dir"
     [ -e "$dir/whistle.cact" ] || ln -s "$(readlink -f "$whistle")" "$dir/whistle.cact"
     # offline, as the daemon runs: no network in its namespace
-    score=$(AMANE_ASSISTANT_MODELS="$dir" XDG_CACHE_HOME="$dir/cache" CACTUS_TELEMETRY=0 DO_NOT_TRACK=1 \
+    score=$(EMAKI_ASSISTANT_MODELS="$dir" XDG_CACHE_HOME="$dir/cache" CACTUS_TELEMETRY=0 DO_NOT_TRACK=1 \
         unshare -rn "$bin" eval --json "$cases" "$repo/apps/assistant/eval/laptop.json")
     echo "$score" >"$dir/score.json"
     line=$(python3 -c 'import json, sys; print("{right}/{commands} right, {wrong} wrong ({destructive_wrong} destructive), negatives {clean}/{negatives}".format(**json.loads(sys.argv[1])))' "$score")

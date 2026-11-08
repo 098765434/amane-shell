@@ -8,11 +8,11 @@ use std::process::Command;
 use std::time::{Duration, Instant, SystemTime};
 
 use amane::{Config, Service};
-use amane_kit::settings::{StatusBar, status_bar};
+use emaki_kit::settings::{StatusBar, status_bar};
 use serde_json::Value;
 
 use crate::services::Wake;
-use amane_kit::service::ServiceExt as _;
+use emaki_kit::service::ServiceExt as _;
 
 /// How often the weather is read again.
 const EVERY: Duration = Duration::from_secs(30 * 60);

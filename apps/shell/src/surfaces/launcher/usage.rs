@@ -138,7 +138,7 @@ pub(super) fn read<R>(f: impl FnOnce(&Usage) -> R) -> R {
 pub(super) fn record(key: &str, query: &str) {
     USAGE.with_borrow_mut(|usage| {
         let usage = usage.get_or_insert_with(load);
-        usage.record(key, query, amane_kit::time::unix_s());
+        usage.record(key, query, emaki_kit::time::unix_s());
         state::save(usage);
     });
 }

@@ -8,8 +8,8 @@ use std::sync::Mutex;
 use std::time::SystemTime;
 
 use amane::serde::{Deserialize, Serialize, de::DeserializeOwned};
-use amane_base::sync::Locked as _;
-use amane_base::{app_ids, fs, paths};
+use emaki_base::sync::Locked as _;
+use emaki_base::{app_ids, fs, paths};
 
 /// `path` read as JSON, kept in `cache` until the file changes: views ask
 /// on every draw.
@@ -31,8 +31,8 @@ fn read_cached<T: DeserializeOwned + Clone>(
     Some(value)
 }
 
-/// The phone's apps, `~/.cache/amane-shell/phone-apps.json`: Mirror lists
-/// them (`amane-mirror --list-apps`), the launcher finds them by name, and
+/// The phone's apps, `~/.cache/emaki/phone-apps.json`: Mirror lists
+/// them (`emaki-mirror --list-apps`), the launcher finds them by name, and
 /// Messages finds the phone's messaging app among them.
 pub mod apps {
     use super::*;
@@ -80,7 +80,7 @@ pub mod apps {
     }
 }
 
-/// The phones whose screen was set up, `~/.config/amane-shell/phone-screen.json`.
+/// The phones whose screen was set up, `~/.config/emaki/phone-screen.json`.
 pub mod screen {
     use super::*;
 
@@ -120,7 +120,7 @@ mod tests {
     use super::apps::List;
 
     #[test]
-    fn reads_the_list_amane_mirror_writes() {
+    fn reads_the_list_emaki_mirror_writes() {
         let list: List = serde_json::from_str(
             r#"{"device":"abc","updated":1,"apps":[{"name":"Signal","package":"org.thoughtcrime.securesms","system":false}]}"#,
         )

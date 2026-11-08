@@ -1,24 +1,24 @@
-# amane-status
+# emaki-status
 
 Moved out of the amane fork in Phase 9; the wire format and bus name are unchanged.
 
 A program's own **item in the status bar**, and its **activities**: something
 going on now, like a timer, a song or an upload, shown in the bar while it
 lasts. amane is the client side and holds the
-protocol types. The bar serves `org.amane.StatusBar1` on the session bus and
-draws both. amane-shell is that bar. Unlike the tray (StatusNotifierItem), the
+protocol types. The bar serves `org.emaki.StatusBar1` on the session bus and
+draws both. emaki is that bar. Unlike the tray (StatusNotifierItem), the
 bar draws everything here itself, and drops reach the program.
 
 ## Usage
 
 ```rust
-use amane_status::{
+use emaki_status::{
     Accepts, ActivityContent, Dismiss, ItemEvent, ItemIcon, ItemSpec, MenuEntry, Trailing,
 };
-use amane_status::{LiveActivity, StatusItem};
+use emaki_status::{LiveActivity, StatusItem};
 
 // the id is unique on the desktop, like an app id
-let mut spec = ItemSpec::new("org.amane.drop", ItemIcon::Glyph("tray".into()));
+let mut spec = ItemSpec::new("org.emaki.drop", ItemIcon::Glyph("tray".into()));
 spec.accepts = Accepts { files: true, text: false };
 spec.opens_on_drag = true;
 spec.menu = vec![MenuEntry::new("quit", "Quit")];
@@ -74,10 +74,10 @@ What an activity shows:
 Every payload is one JSON string, so `busctl` works:
 
 ```sh
-busctl --user call org.amane.StatusBar1 /org/amane/StatusBar org.amane.StatusBar1 \
+busctl --user call org.emaki.StatusBar1 /org/emaki/StatusBar org.emaki.StatusBar1 \
     StartActivity s '{"title":"Tea","leading":{"glyph":"timer"},"trailing":{"countdown":1767225600000}}'
 # → u 7
-busctl --user call org.amane.StatusBar1 /org/amane/StatusBar org.amane.StatusBar1 \
+busctl --user call org.emaki.StatusBar1 /org/emaki/StatusBar org.emaki.StatusBar1 \
     EndActivity us 7 '"now"'
 ```
 
@@ -87,8 +87,8 @@ open, for example with `gdbus` in a loop or a small Python `dbus-next` client.
 
 ## The protocol
 
-At `/org/amane/StatusBar`, interface `org.amane.StatusBar1`. The methods, signals and errors
-are listed once, in amane-shell's
+At `/org/emaki/StatusBar`, interface `org.emaki.StatusBar1`. The methods, signals and errors
+are listed once, in emaki's
 [status-apps.md](../../docs/developer/integration/status-apps.md#the-interface). What the client relies on:
 
 - **Versions.** Payloads carry `v` (now `1`; left out means `1`). The bar
@@ -106,15 +106,15 @@ are listed once, in amane-shell's
 - **Events.** Events come in on a thread of their own. A handler that should
   change a window writes a `Service` and lets that redraw.
 - **Bar restarts.** The client keeps every item and activity. When
-  `org.amane.StatusBar1` gets a new owner (the bar restarted), it registers
+  `org.emaki.StatusBar1` gets a new owner (the bar restarted), it registers
   them all again and maps the new handles back.
 
 ## Related
 
-- amane-shell's [writing a status app](https://github.com/098765434/amane-shell/blob/main/docs/developer/integration/status-apps.md#writing-a-status-app):
+- emaki's [writing a status app](https://github.com/098765434/amane-shell/blob/main/docs/developer/integration/status-apps.md#writing-a-status-app):
   a window under the item, drags through it, what to put in an activity, running as a
-  service. amane-drop is the worked example.
-- amane-shell's [status apps internals](https://github.com/098765434/amane-shell/blob/main/docs/developer/integration/status-apps.md#the-pieces-across-repos):
+  service. emaki-drop is the worked example.
+- emaki's [status apps internals](https://github.com/098765434/amane-shell/blob/main/docs/developer/integration/status-apps.md#the-pieces-across-repos):
   how the bar serves this, and testing beside a running desktop.
 - amane's [tray](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/tray.md): the StatusNotifierItem tray, for programs that already speak it.
 - amane's [notifications](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md): `Notify`, for what is over rather than going on.

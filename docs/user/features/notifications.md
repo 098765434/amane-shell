@@ -12,7 +12,7 @@ cards stack, what Do Not Disturb hides.
 
 A banner slides in at the top-right for each arriving notification, newest on top, at most
 `notification.toast.max-visible` at once. Each toast is **its own layer surface** (namespace
-`amane.notifications.toast`, one of `SLOTS` windows) sized to its card, so niri's shadow, which
+`emaki.notifications.toast`, one of `SLOTS` windows) sized to its card, so niri's shadow, which
 its layer rule gives the surface, falls under exactly the card. The card is glass: the surface
 asks for one blur shape the size of the card, a `Material::Banner`: thin glass that turns light or
 dark with its backdrop (see [materials.md](../../developer/design-system/materials.md)). Sliding in, sliding out and swiping
@@ -65,7 +65,7 @@ the set that shows changes, and keeps what the list can't say: swiped toasts, ho
 
 ## Notification center (`center.rs`)
 
-A full-height sidebar of thick glass at the right edge (namespace `amane.notifications.center`,
+A full-height sidebar of thick glass at the right edge (namespace `emaki.notifications.center`,
 `side_sheet()`). The surface frosts itself as one blur shape, a
 `Material::Sheet`: thick glass, as it holds the most text of any glass. It
 springs in when the **clock** is clicked and closes with Escape, the clock, or the IPC call. It
@@ -73,7 +73,7 @@ shares Quick Settings' one-open-at-a-time state (`Panel::Notifications`). Its he
 Disturb's state, **Clear All**, and the Do Not Disturb button, which opens the timed menu.
 
 Notifications are grouped by app (`desktop-entry`, else the app name, lowercased:
-`amane_kit::settings::notification_app_key`), newest group first. A notification stays until it
+`emaki_kit::settings::notification_app_key`), newest group first. A notification stays until it
 is dismissed, across restarts of the shell (see [History](#history)).
 
 - **One notification** is a plain card.
@@ -112,12 +112,12 @@ At startup, before the surfaces come up, the file goes back to amane (`Notificat
 - It never shows a toast, even a critical one, and it doesn't light the bar's bell: it was there
   before.
 - Its image is kept by path. One amane saved from raw pixels lives in
-  `$XDG_RUNTIME_DIR/amane-notifications`, which a reboot empties, so after a reboot the card
+  `$XDG_RUNTIME_DIR/emaki-notifications`, which a reboot empties, so after a reboot the card
   shows the app's icon instead.
 
 ## Per-app rules
 
-Shell Settings' **Notifications** page sets a rule for each app that has sent one
+Emaki Settings' **Notifications** page sets a rule for each app that has sent one
 (`notifications.json` in the settings folder, keyed like the groups; the apps are remembered in
 the cache's `notifiers-seen.json`):
 
@@ -157,7 +157,7 @@ when off) is read when there's no `dnd.json`.
 `notifications [toggle | clear | dnd [on|off|toggle]]` opens or closes the center, clears it, and
 switches Do Not Disturb ([ipc.md](../../developer/integration/ipc.md#notifications)).
 
-## Motion (`amane_kit::motion`, `crates/kit/src/animation/motion.rs`)
+## Motion (`emaki_kit::motion`, `crates/kit/src/animation/motion.rs`)
 
 Both surfaces place cards through one keyed animator, shared with the rest of the shell. The view says where each card should be
 (a `Pose`: offset, scale, opacity, content opacity) every time it runs. Each card springs there

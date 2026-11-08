@@ -27,14 +27,14 @@ use crate::chrome::panel::{Panel, is_open, overlay};
 use crate::services::Wake;
 use crate::services::do_not_disturb::DoNotDisturb;
 use crate::tokens::{notification, sys};
-use amane_kit::glass_region;
-use amane_kit::layout::blank;
-use amane_kit::material::Material;
-use amane_kit::motion::{self, Arrive, Item, Pose, Shown};
-use amane_kit::settings::{AppRule, NotificationRules, notification_app_key, notification_rules};
+use emaki_kit::glass_region;
+use emaki_kit::layout::blank;
+use emaki_kit::material::Material;
+use emaki_kit::motion::{self, Arrive, Item, Pose, Shown};
+use emaki_kit::settings::{AppRule, NotificationRules, notification_app_key, notification_rules};
 
 /// Layer-surface namespace of every toast; the niri `layer-rule` matches it.
-pub const TOAST_NS: &str = "amane.notifications.toast";
+pub const TOAST_NS: &str = "emaki.notifications.toast";
 
 /// Toast surfaces: room for `notification.toast.max-visible` plus the ones
 /// still sliding out.
@@ -457,7 +457,7 @@ fn slot(index: usize) -> LayerWindow {
     let offset = swipe_offset(id);
 
     // a toast is small glass, light or dark with its backdrop
-    let glass = glass_region::shape_id(&format!("amane.toast.{id}"));
+    let glass = glass_region::shape_id(&format!("emaki.toast.{id}"));
     let mut view = Material::Banner
         .adapted(glass, || card::card(&m, Place::Toast, now, 1.0))
         .opacity(pose.opacity);

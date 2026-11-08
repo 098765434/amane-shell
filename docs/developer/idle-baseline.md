@@ -1,7 +1,7 @@
 # Idle report
 
 - Date: 2026-11-07T01:39+01:00
-- Shell: `/nix/store/4dpwcs2f9cxf7jj4m3mls4p2nm3bagdz-amane-shell-0.1.0`, pid 1778
+- Shell: `/nix/store/4dpwcs2f9cxf7jj4m3mls4p2nm3bagdz-emaki-0.1.0`, pid 1778
 - Window: 60s, the desktop left alone, then 60s more to count programs under strace
 
 | Measure | Value |

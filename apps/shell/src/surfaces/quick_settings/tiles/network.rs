@@ -26,14 +26,14 @@ use crate::surfaces::quick_settings::detail::page_width;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::sys;
-use amane_kit::buttons::{PushButton, Style, Switch};
-use amane_kit::icons::{
+use emaki_kit::buttons::{PushButton, Style, Switch};
+use emaki_kit::icons::{
     ICON_HOTSPOT, ICON_LOCK, ICON_VPN, ICON_WIFI_NONE, ICON_WIFI_OFF, ICON_WIRED, wifi_glyph,
 };
-use amane_kit::layout::{boxed, caption, fixed_width, icon, nothing, text_height};
-use amane_kit::list::{self, List, ListItem};
-use amane_kit::material::{self, Level};
-use amane_kit::motion::redraw_after;
+use emaki_kit::layout::{boxed, caption, fixed_width, icon, nothing, text_height};
+use emaki_kit::list::{self, List, ListItem};
+use emaki_kit::material::{self, Level};
+use emaki_kit::motion::redraw_after;
 
 /// How often the Wi‑Fi page looks for networks again.
 const RESCAN: Duration = Duration::from_secs(15);
@@ -41,7 +41,7 @@ const RESCAN: Duration = Duration::from_secs(15);
 const NETWORK_SETTINGS: &str = "nm-connection-editor";
 
 /// TextInput identity for the password field (keys its text store).
-const PW_ID: &str = "amane.qs.wifi.password";
+const PW_ID: &str = "emaki.qs.wifi.password";
 
 /// The network a password is being typed for.
 #[derive(Default)]
@@ -68,7 +68,7 @@ pub(crate) fn wired_toggle() -> Option<QuickToggle> {
         String::from("Not Connected")
     };
     Some(
-        QuickToggle::new("amane.qs.wired", ICON_WIRED, "Wired")
+        QuickToggle::new("emaki.qs.wired", ICON_WIRED, "Wired")
             .subtitle(subtitle)
             .checked(wired.connected)
             .on_toggle(move |on| Connections::set_wired(&device, on)),
@@ -89,7 +89,7 @@ pub(crate) fn wifi_toggle() -> Option<QuickToggle> {
         // the disc stops the hotspot; the tile opens the networks
         return Some(
             QuickToggle::new(
-                "amane.qs.wifi",
+                "emaki.qs.wifi",
                 ICON_HOTSPOT,
                 format!("{} Hotspot", hotspot.ssid),
             )
@@ -129,7 +129,7 @@ pub(crate) fn wifi_toggle() -> Option<QuickToggle> {
     drop(net);
 
     Some(
-        QuickToggle::new("amane.qs.wifi", glyph, "Wi‑Fi")
+        QuickToggle::new("emaki.qs.wifi", glyph, "Wi‑Fi")
             .subtitle(subtitle)
             .checked(enabled)
             .on_toggle(move |on| {
@@ -154,7 +154,7 @@ pub(crate) fn wifi_page() -> DetailPage {
         redraw_after::<QuickSettings>(RESCAN);
     }
 
-    let page = DetailPage::new("amane.qs.wifi.page", "Wi‑Fi")
+    let page = DetailPage::new("emaki.qs.wifi.page", "Wi‑Fi")
         .subtitle(
             subtitle.unwrap_or_else(|| String::from(if enabled { "Not Connected" } else { "Off" })),
         )
@@ -227,7 +227,7 @@ fn ap_list(height: f32) -> ScrollArea {
     } else {
         "Wi‑Fi is off"
     };
-    ScrollArea::new("amane.qs.wifi.aps", List::new(items).empty(note).build()).height(height)
+    ScrollArea::new("emaki.qs.wifi.aps", List::new(items).empty(note).build()).height(height)
 }
 
 /// Where joining a network stands, as its row shows it.
@@ -253,7 +253,7 @@ fn ap_item(ap: &AccessPoint, joining: &Joining) -> ListItem {
     let active = ap.active();
     let saved = ap.saved();
 
-    let mut item = ListItem::new(format!("amane.qs.wifi.ap.{ssid}"), ssid.clone())
+    let mut item = ListItem::new(format!("emaki.qs.wifi.ap.{ssid}"), ssid.clone())
         .leading(wifi_glyph(ap.strength()))
         .selected(active);
     if joining.connecting && !active {
@@ -290,7 +290,7 @@ fn password_section() -> Box<dyn Widget> {
     };
 
     let connect_ssid = ssid.clone();
-    let connect = PushButton::new("amane.qs.wifi.connect", "Connect")
+    let connect = PushButton::new("emaki.qs.wifi.connect", "Connect")
         .style(Style::Filled)
         .on_press(move || {
             let typed = PASSWORD.with_borrow(|p| p.typed.clone());
@@ -340,7 +340,7 @@ pub(crate) fn vpn_toggle() -> Option<QuickToggle> {
     drop(connections);
 
     Some(
-        QuickToggle::new("amane.qs.vpn", ICON_VPN, "VPN")
+        QuickToggle::new("emaki.qs.vpn", ICON_VPN, "VPN")
             .subtitle(vpn_status(&active))
             .checked(!active.is_empty())
             .on_toggle(move |on| set_vpns(on, &preferred, &active))
@@ -378,7 +378,7 @@ pub(crate) fn vpn_page() -> DetailPage {
     let active: Vec<Vpn> = vpns.iter().filter(|vpn| vpn.active).cloned().collect();
     let any = !active.is_empty();
 
-    let page = DetailPage::new("amane.qs.vpn.page", "VPN")
+    let page = DetailPage::new("emaki.qs.vpn.page", "VPN")
         .subtitle(vpn_status(&active))
         .switch(any, move |on| set_vpns(on, &preferred, &active))
         .body(move |height| {
@@ -386,11 +386,11 @@ pub(crate) fn vpn_page() -> DetailPage {
                 .iter()
                 .map(|vpn| {
                     let uuid = vpn.uuid.clone();
-                    ListItem::new(format!("amane.qs.vpn.{}", vpn.uuid), vpn.name.clone())
+                    ListItem::new(format!("emaki.qs.vpn.{}", vpn.uuid), vpn.name.clone())
                         .leading(ICON_VPN)
                         .selected(vpn.active)
                         .trailing(
-                            Switch::new(format!("amane.qs.vpn.{}.switch", vpn.uuid), vpn.active)
+                            Switch::new(format!("emaki.qs.vpn.{}.switch", vpn.uuid), vpn.active)
                                 .on_toggle(move |on| Connections::set_vpn(&uuid, on))
                                 .build(),
                         )
@@ -398,7 +398,7 @@ pub(crate) fn vpn_page() -> DetailPage {
                 .collect();
             vec![boxed(
                 ScrollArea::new(
-                    "amane.qs.vpn.list",
+                    "emaki.qs.vpn.list",
                     List::new(items)
                         .header("VPN Connections")
                         .empty("No VPN connections")

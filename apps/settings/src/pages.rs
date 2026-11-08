@@ -1,11 +1,11 @@
-//! Shell Settings' pages, written once: the sidebar, `--page`, the search
+//! Emaki Settings' pages, written once: the sidebar, `--page`, the search
 //! index, the toolbar and what shows in the page's place all go by
 //! [`SIDEBAR`]. Adding a page is adding its entry here.
 
 use amane::{Column, Widget};
-use amane_kit::app::Page;
-use amane_kit::color::Accent;
-use amane_kit::icons::{
+use emaki_kit::app::Page;
+use emaki_kit::color::Accent;
+use emaki_kit::icons::{
     ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO,
     ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_NOTIFICATIONS, ICON_OPEN_IN_NEW, ICON_PACKAGE,
     ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TRAY, ICON_TUNE, ICON_UPDATE,
@@ -205,9 +205,9 @@ pub const SIDEBAR: [Entry; 22] = [
     aliased(
         found_by(
             page("drop", "Drop", ICON_TRAY, Accent::Orange, drop::page),
-            &["amane-drop", "grid", "shelf", "share"],
+            &["emaki-drop", "grid", "shelf", "share"],
         ),
-        &["amane-drop"],
+        &["emaki-drop"],
     ),
     aliased(
         found_by(

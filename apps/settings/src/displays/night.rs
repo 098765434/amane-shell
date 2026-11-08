@@ -12,15 +12,15 @@ use std::path::PathBuf;
 use std::thread;
 
 use amane::{Center, Row, Service, TextInput, watch_file};
-use amane_kit::app::{field_box, text_field};
-use amane_kit::buttons::PushButton;
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::{FormRow, Group, SliderRow};
-use amane_kit::layout::boxed;
-use amane_kit::shell_ipc::{NightLight as Ask, ShellCommand};
-use amane_kit::slider::Slider;
-use amane_kit::style;
-use amane_kit::tokens::sys;
+use emaki_kit::app::{field_box, text_field};
+use emaki_kit::buttons::PushButton;
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::{FormRow, Group, SliderRow};
+use emaki_kit::layout::boxed;
+use emaki_kit::shell_ipc::{NightLight as Ask, ShellCommand};
+use emaki_kit::slider::Slider;
+use emaki_kit::style;
+use emaki_kit::tokens::sys;
 
 use crate::{group, switch_row};
 
@@ -90,8 +90,8 @@ impl Service for NightLight {
 }
 
 fn state_file() -> PathBuf {
-    amane_kit::paths::state()
-        .join(amane_kit::app_ids::SHELL)
+    emaki_kit::paths::state()
+        .join(emaki_kit::app_ids::SHELL)
         .join("night-light.json")
 }
 
@@ -346,12 +346,12 @@ fn pair(
     set: impl Fn(&str, &str) + Clone + 'static,
 ) -> Row {
     for (id, _, value) in [first, second] {
-        amane_kit::app::fill_once(id, || value.to_string());
+        emaki_kit::app::fill_once(id, || value.to_string());
     }
     let (a, b) = (first.0, second.0);
     let label = |text: &str| {
         boxed({
-            use amane_kit::tokens::Styled;
+            use emaki_kit::tokens::Styled;
             amane::Text::new(text)
                 .style(style::control_font())
                 .color(style::label_secondary())

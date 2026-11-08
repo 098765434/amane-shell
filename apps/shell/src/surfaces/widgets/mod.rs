@@ -53,26 +53,26 @@ use crate::chrome::bar;
 use crate::chrome::per_output::PerOutput;
 use crate::services::desktop::system_stats::SystemStats;
 use crate::surfaces::status_bar;
-use amane_kit::glass::{self, Rim};
-use amane_kit::glass_region;
-use amane_kit::grid::Layout;
-use amane_kit::grid::drag::{Drag, Hit, Origin, Session, hit};
-use amane_kit::grid::geometry::{Canvas, Metrics, Place, Rect, Slot, Span};
-use amane_kit::layout::{blank, boxed};
-use amane_kit::material::{self, Material};
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{ContextMenu, MenuItem};
-use amane_kit::motion::{self, Arrive, Item, Pose};
-use amane_kit::settings::{ACCENTS, WidgetStyle, desktop};
-use amane_kit::shell_ipc::Widgets as Command;
+use emaki_kit::glass::{self, Rim};
+use emaki_kit::glass_region;
+use emaki_kit::grid::Layout;
+use emaki_kit::grid::drag::{Drag, Hit, Origin, Session, hit};
+use emaki_kit::grid::geometry::{Canvas, Metrics, Place, Rect, Slot, Span};
+use emaki_kit::layout::{blank, boxed};
+use emaki_kit::material::{self, Material};
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{ContextMenu, MenuItem};
+use emaki_kit::motion::{self, Arrive, Item, Pose};
+use emaki_kit::settings::{ACCENTS, WidgetStyle, desktop};
+use emaki_kit::shell_ipc::Widgets as Command;
 
 use kind::{Category, WidgetKey, WidgetKind, WidgetSize};
 use store::Settings;
 
-/// Every monitor's widget surface is `amane.widgets.<output>`; the niri
+/// Every monitor's widget surface is `emaki.widgets.<output>`; the niri
 /// `layer-rule` matches the prefix. Each has its own name, so a card's menu
 /// hangs under the surface on its own monitor.
-pub const WIDGETS_NS: &str = "amane.widgets.";
+pub const WIDGETS_NS: &str = "emaki.widgets.";
 
 // TODO(token): `widget.grid.cell`, `widget.grid.gap` (Quick Settings'
 // `quick.grid.cell` and `.gap`, which code outside it can't read),
@@ -265,11 +265,11 @@ fn with_desk<R>(output: &str, f: impl FnOnce(&mut Desk) -> R) -> R {
     DESKS.with(|desks| desks.with(output, Desk::new, f))
 }
 
-/// The namespace `amane.widgets.<name>`: a monitor's desktop surface (its
+/// The namespace `emaki.widgets.<name>`: a monitor's desktop surface (its
 /// name) or its edit surface (`edit.<name>`), kept for the run, as amane
 /// takes a `&'static str`.
 fn namespace(output: &str) -> &'static str {
-    amane_kit::intern::intern(&format!("{WIDGETS_NS}{output}"))
+    emaki_kit::intern::intern(&format!("{WIDGETS_NS}{output}"))
 }
 
 fn glass_id(output: &str, key: WidgetKey) -> u32 {
@@ -423,7 +423,7 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
      * over the whole screen): the surface keeps its last frame and draws
      * nothing, reading only what says when it shows again. The readings pause
      * too, so a covered desktop costs no wake-ups; the graphs carry on from
-     * where they were when it shows again (AMANE_STATS_WHILE_HIDDEN=1 keeps
+     * where they were when it shows again (EMAKI_STATS_WHILE_HIDDEN=1 keeps
      * gathering history under the windows, as before)
      */
     let hidden = !editing && Desktop::read().obscured(&output);
@@ -478,13 +478,13 @@ struct View {
 
 // ───── menus ─────────────────────────────────────────────────────────────────
 
-const WIDGET_MENU_KEY: &str = "amane.widgets.widget-menu";
-const DESKTOP_MENU_KEY: &str = "amane.widgets.desktop-menu";
+const WIDGET_MENU_KEY: &str = "emaki.widgets.widget-menu";
+const DESKTOP_MENU_KEY: &str = "emaki.widgets.desktop-menu";
 
 type Field = fn(&mut Settings) -> &mut Option<String>;
 
-/// Whether the system readings go on while the desktop is covered (`AMANE_STATS_WHILE_HIDDEN=1`).
+/// Whether the system readings go on while the desktop is covered (`EMAKI_STATS_WHILE_HIDDEN=1`).
 fn stats_while_hidden() -> bool {
     static KEEP: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *KEEP.get_or_init(|| std::env::var_os("AMANE_STATS_WHILE_HIDDEN").is_some_and(|v| v == "1"))
+    *KEEP.get_or_init(|| std::env::var_os("EMAKI_STATS_WHILE_HIDDEN").is_some_and(|v| v == "1"))
 }

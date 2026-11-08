@@ -1,4 +1,4 @@
-//! `org.amane.StatusBar1`: where other programs put their own items in the
+//! `org.emaki.StatusBar1`: where other programs put their own items in the
 //! bar (status items) and their activities. Each payload is
 //! one JSON string of amane's `status_item` types, so a script can call it
 //! with `busctl` too. Items are kept here; activities go to the bar's
@@ -13,15 +13,15 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
 use amane::{Argument, Bus, Method};
-use amane_kit::settings::remember_status_app;
-use amane_status::{
+use emaki_kit::settings::remember_status_app;
+use emaki_status::{
     ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH, encode,
 };
 
 use super::desktop::activities;
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// A program's item came, changed or went: the bar draws again.
     pub StatusApps
 }
@@ -31,7 +31,7 @@ const INTROSPECTABLE: &str = "org.freedesktop.DBus.Introspectable";
 const INTROSPECTION: &str = r#"<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
  "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
 <node>
-  <interface name="org.amane.StatusBar1">
+  <interface name="org.emaki.StatusBar1">
     <method name="RegisterItem"><arg name="spec" type="s" direction="in"/></method>
     <method name="UpdateItem"><arg name="spec" type="s" direction="in"/></method>
     <method name="RemoveItem"><arg name="id" type="s" direction="in"/></method>
@@ -58,9 +58,9 @@ const INTROSPECTION: &str = r#"<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS 
 "#;
 
 /// Errors a caller gets back.
-const INVALID: &str = "org.amane.StatusBar1.Error.Invalid";
-const TAKEN: &str = "org.amane.StatusBar1.Error.IdTaken";
-const UNKNOWN: &str = "org.amane.StatusBar1.Error.Unknown";
+const INVALID: &str = "org.emaki.StatusBar1.Error.Invalid";
+const TAKEN: &str = "org.emaki.StatusBar1.Error.IdTaken";
+const UNKNOWN: &str = "org.emaki.StatusBar1.Error.Unknown";
 
 /// A program's item in the bar.
 #[derive(Clone, Debug, PartialEq)]
@@ -113,7 +113,7 @@ pub fn send(id: &str, event: ItemEvent) {
     });
 }
 
-/// Serves `org.amane.StatusBar1` on threads of its own, unless another
+/// Serves `org.emaki.StatusBar1` on threads of its own, unless another
 /// program already does. Called once at start.
 pub fn serve() {
     thread::spawn(|| {
@@ -251,7 +251,7 @@ fn register(sender: &str, json: &str, update: bool) -> Answer {
             }),
         }
     }
-    // Shell Settings lists it once seen; tests leave the real list alone
+    // Emaki Settings lists it once seen; tests leave the real list alone
     if !cfg!(test) {
         remember_status_app(&id, &name);
     }

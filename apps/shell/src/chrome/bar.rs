@@ -3,7 +3,7 @@
 //! surface asks here rather than the bar.
 
 use amane::Vertical;
-use amane_kit::settings::{BarPosition, status_bar};
+use emaki_kit::settings::{BarPosition, status_bar};
 
 /// The edge the bar runs along.
 pub fn edge() -> Vertical {

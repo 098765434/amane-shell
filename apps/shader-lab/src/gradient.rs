@@ -6,14 +6,14 @@
 use std::cell::Cell;
 
 use amane::{Color, Column, Gradient, Point, Radius, Rectangle, Row, Service, Stack, Widget};
-use amane_kit::buttons::PushButton;
-use amane_kit::color_picker::{ColorPicker, to_color};
-use amane_kit::dropdown::Dropdown;
-use amane_kit::lab::config::Config;
-use amane_kit::lab::manifest::Manifest;
-use amane_kit::layout::{boxed, frame};
-use amane_kit::material;
-use amane_kit::tokens::sys;
+use emaki_kit::buttons::PushButton;
+use emaki_kit::color_picker::{ColorPicker, to_color};
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::lab::config::Config;
+use emaki_kit::lab::manifest::Manifest;
+use emaki_kit::layout::{boxed, frame};
+use emaki_kit::material;
+use emaki_kit::tokens::sys;
 
 use crate::effects::Effects;
 use crate::{Lab, change, panel, preview};

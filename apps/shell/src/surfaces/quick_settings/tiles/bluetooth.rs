@@ -37,26 +37,26 @@ use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
-use amane_kit::buttons::{IconButton, PushButton, Style, Switch};
-use amane_kit::control_size::ControlSize;
-use amane_kit::dialog::Dialog;
-use amane_kit::icons::{
+use emaki_kit::buttons::{IconButton, PushButton, Style, Switch};
+use emaki_kit::control_size::ControlSize;
+use emaki_kit::dialog::Dialog;
+use emaki_kit::icons::{
     ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_INFO, device_glyph,
 };
-use amane_kit::layout::{boxed, caption, cursor, fixed_width, text_height};
-use amane_kit::list::{self, List, ListItem};
-use amane_kit::material::{self, Level};
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{ContextMenu, MenuItem};
+use emaki_kit::layout::{boxed, caption, cursor, fixed_width, text_height};
+use emaki_kit::list::{self, List, ListItem};
+use emaki_kit::material::{self, Level};
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{ContextMenu, MenuItem};
 
 /// Registry key for the rebuilt-per-device right-click menu.
-const DEVICE_MENU_KEY: &str = "amane.qs.bluetooth.device-menu";
+const DEVICE_MENU_KEY: &str = "emaki.qs.bluetooth.device-menu";
 
 /// The field a PIN or passkey is typed in.
-const CODE_ID: &str = "amane.qs.bluetooth.code";
+const CODE_ID: &str = "emaki.qs.bluetooth.code";
 
 /// The field a device is renamed in.
-const NAME_ID: &str = "amane.qs.bluetooth.name";
+const NAME_ID: &str = "emaki.qs.bluetooth.name";
 
 /// A PIN is at most 16 characters; a passkey is six digits.
 const PIN_MAX: usize = 16;
@@ -98,7 +98,7 @@ pub(crate) fn toggle() -> Option<QuickToggle> {
     };
 
     Some(
-        QuickToggle::new("amane.qs.bluetooth", glyph, "Bluetooth")
+        QuickToggle::new("emaki.qs.bluetooth", glyph, "Bluetooth")
             .subtitle(subtitle)
             .checked(matches!(power, PowerState::On | PowerState::TurningOn))
             .on_toggle(Bluetooth::set_powered)
@@ -128,7 +128,7 @@ pub(crate) fn page() -> DetailPage {
         (PowerState::On, n) => connected_count(n),
         (power, _) => power_label(power).to_string(),
     };
-    DetailPage::new("amane.qs.bluetooth.page", "Bluetooth")
+    DetailPage::new("emaki.qs.bluetooth.page", "Bluetooth")
         .subtitle(subtitle)
         .switch(
             matches!(power, PowerState::On | PowerState::TurningOn),
@@ -313,7 +313,7 @@ fn device_list(
         .gap(sys::space::gap::xl())
         .width(Parent);
 
-    boxed(ScrollArea::new("amane.qs.bluetooth.devices", column).height(height))
+    boxed(ScrollArea::new("emaki.qs.bluetooth.devices", column).height(height))
 }
 
 /// The devices worth offering to pair: named ones (a bare address means
@@ -350,7 +350,7 @@ fn device_item(device: &BluetoothDevice) -> ListItem {
     drop(bluetooth);
 
     let mut item = ListItem::new(
-        format!("amane.qs.bluetooth.device.{}", device.path()),
+        format!("emaki.qs.bluetooth.device.{}", device.path()),
         device.name(),
     )
     .leading(device_glyph(device.icon()))
@@ -383,7 +383,7 @@ fn device_item(device: &BluetoothDevice) -> ListItem {
         let details = device.clone();
         item = item.trailing(
             IconButton::new(
-                format!("amane.qs.bluetooth.device.{}.info", device.path()),
+                format!("emaki.qs.bluetooth.device.{}.info", device.path()),
                 ICON_INFO,
             )
             .size(sys::size::icon::s())

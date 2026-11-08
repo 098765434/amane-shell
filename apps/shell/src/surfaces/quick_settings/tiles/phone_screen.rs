@@ -1,5 +1,5 @@
 //! The phone's screen on the Phone page: a **Screen** row that opens
-//! `amane-mirror`, and before that **Set Up Screen Sharing…**, a page that
+//! `emaki-mirror`, and before that **Set Up Screen Sharing…**, a page that
 //! pairs adb with the phone's Wireless debugging by a QR code the phone
 //! scans (or the code it shows).
 //!
@@ -13,7 +13,7 @@ use std::cell::RefCell;
 use std::net::IpAddr;
 
 use amane::{Center, Column, Parent, Rectangle, Row, Service, Text, TextInput, Widget};
-use amane_phone::{Adb, AdbAction, AdbOperation, PhoneDevice, WirelessKind};
+use emaki_phone::{Adb, AdbAction, AdbOperation, PhoneDevice, WirelessKind};
 use qrcode::{Color as Module, EcLevel, QrCode};
 
 use crate::services::installed;
@@ -23,10 +23,10 @@ use crate::services::phone::webcam::{Facing, Webcam, set_camera};
 use crate::surfaces::quick_settings::QuickSettings;
 use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::tokens::{Styled, sys};
-use amane_kit::buttons::{PushButton, Style, Switch};
-use amane_kit::layout::{boxed, caption};
-use amane_kit::list::ListItem;
-use amane_kit::material::{self, Level};
+use emaki_kit::buttons::{PushButton, Style, Switch};
+use emaki_kit::layout::{boxed, caption};
+use emaki_kit::list::ListItem;
+use emaki_kit::material::{self, Level};
 
 /// `screen_share`, for the Screen row.
 pub(crate) const ICON_SCREEN: char = '\u{e0e2}';
@@ -61,7 +61,7 @@ pub(crate) fn row(device: &PhoneDevice, chevron: impl Fn() -> Text) -> Option<Li
     // set up, or adb has it anyway (over USB): the screen opens, and waits for the phone if need be
     if set_up(&id) || ready(device) {
         return Some(
-            ListItem::new("amane.qs.phone.device.screen", "Screen")
+            ListItem::new("emaki.qs.phone.device.screen", "Screen")
                 .leading(ICON_SCREEN)
                 .trailing(chevron())
                 .on_press(move || open_screen(&id)),
@@ -70,7 +70,7 @@ pub(crate) fn row(device: &PhoneDevice, chevron: impl Fn() -> Text) -> Option<Li
 
     Some(
         ListItem::new(
-            "amane.qs.phone.device.screen-setup",
+            "emaki.qs.phone.device.screen-setup",
             "Set Up Screen Sharing…",
         )
         .leading(ICON_SCREEN)
@@ -91,10 +91,10 @@ pub(crate) fn camera_rows(device: &PhoneDevice) -> Vec<ListItem> {
 
     let (toggled, pressed) = (id.clone(), id.clone());
     let mut rows = vec![
-        ListItem::new("amane.qs.phone.device.webcam", "Use as Webcam")
+        ListItem::new("emaki.qs.phone.device.webcam", "Use as Webcam")
             .leading(ICON_CAMERA)
             .trailing(
-                Switch::new("amane.qs.phone.device.webcam.switch", on)
+                Switch::new("emaki.qs.phone.device.webcam.switch", on)
                     .on_toggle(move |on| set_camera(&toggled, on.then_some(Facing::Front)))
                     .build(),
             )
@@ -106,9 +106,9 @@ pub(crate) fn camera_rows(device: &PhoneDevice) -> Vec<ListItem> {
         let (toggled, pressed) = (id.clone(), id);
         let pick = |back: bool| Some(if back { Facing::Back } else { Facing::Front });
         rows.push(
-            ListItem::new("amane.qs.phone.device.webcam.back", "Back Camera")
+            ListItem::new("emaki.qs.phone.device.webcam.back", "Back Camera")
                 .trailing(
-                    Switch::new("amane.qs.phone.device.webcam.back.switch", back)
+                    Switch::new("emaki.qs.phone.device.webcam.back.switch", back)
                         .on_toggle(move |on| set_camera(&toggled, pick(on)))
                         .build(),
                 )
@@ -180,7 +180,7 @@ pub(crate) fn page(device: &PhoneDevice) -> Option<DetailPage> {
 
     let device = device.clone();
     Some(
-        DetailPage::new("amane.qs.phone.screen-setup", "Screen Sharing")
+        DetailPage::new("emaki.qs.phone.screen-setup", "Screen Sharing")
             .subtitle(device.name().to_string())
             .on_back(close)
             .body(move |_| body(&device)),
@@ -279,7 +279,7 @@ fn body(device: &PhoneDevice) -> Vec<Box<dyn Widget>> {
 
     if ready(device) {
         let id = device.id().to_string();
-        let open = PushButton::new("amane.qs.phone.screen-setup.open", "Show Screen")
+        let open = PushButton::new("emaki.qs.phone.screen-setup.open", "Show Screen")
             .style(Style::Filled)
             .on_press(move || {
                 open_screen(&id);
@@ -337,7 +337,7 @@ fn body(device: &PhoneDevice) -> Vec<Box<dyn Widget>> {
     ));
 
     // or the six-digit code, for a phone that can't scan
-    let pair = PushButton::new("amane.qs.phone.screen-setup.pair", "Pair")
+    let pair = PushButton::new("emaki.qs.phone.screen-setup.pair", "Pair")
         .style(Style::Tonal)
         .on_press({
             let device = device.clone();
@@ -346,7 +346,7 @@ fn body(device: &PhoneDevice) -> Vec<Box<dyn Widget>> {
         .build();
     let field_width = (page_width() - 80.0).max(1.0);
     let submitted = device.clone();
-    let field = TextInput::new("amane.qs.phone.screen-setup.code")
+    let field = TextInput::new("emaki.qs.phone.screen-setup.code")
         .placeholder("Or the pairing code it shows")
         .size(sys::r#type::label().size)
         .color(material::label(Level::Primary))
@@ -438,7 +438,7 @@ mod tests {
     #[test]
     fn the_pairing_text_makes_a_code() {
         let code = QrCode::with_error_correction_level(
-            "WIFI:T:ADB;S:amane-abcdefgh;P:abcdefghij;;",
+            "WIFI:T:ADB;S:emaki-abcdefgh;P:abcdefghij;;",
             EcLevel::M,
         )
         .expect("a QR code");

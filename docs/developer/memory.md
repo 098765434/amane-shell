@@ -31,8 +31,8 @@ needs root (`ptrace_scope 1`); an example or a second shell you start yourself i
 gpu() { sudo awk '/drm-client-id/{id=$2} /drm-total-(vram|gtt):/{m[id SUBSEP $1]=$2*($3=="MiB"?1024:1)}
   END{for(k in m){split(k,a,SUBSEP); t[a[2]]+=m[k]} for(x in t) printf "  %s %.0f MiB\n", x, t[x]/1024}' /proc/$1/fdinfo/*; }
 echo niri; gpu $(pidof niri)
-echo shell; gpu $(pgrep -f '\.amane-shell-wrapped')
-grep -E 'VmRSS|RssAnon' /proc/$(pidof niri)/status /proc/$(pgrep -f '\.amane-shell-wrapped')/status
+echo shell; gpu $(pgrep -f '\.emaki-wrapped')
+grep -E 'VmRSS|RssAnon' /proc/$(pidof niri)/status /proc/$(pgrep -f '\.emaki-wrapped')/status
 cat /sys/class/drm/card*/device/mem_info_vram_used   # the whole GPU, in bytes
 ```
 
@@ -66,8 +66,8 @@ should draw through vello shows nothing, try that first.
 **Checking a scene.** Build with amane's readback feature and run with frame logging:
 
 ```sh
-cargo build -p amane-shell --features amane/vello-stats
-AMANE_FRAMES=1 ./target/debug/amane-shell 2>&1 | grep ^scratch | sort -k10 -n | tail
+cargo build -p emaki --features amane/vello-stats
+AMANE_FRAMES=1 ./target/debug/emaki 2>&1 | grep ^scratch | sort -k10 -n | tail
 ```
 
 Each vello run prints a `scratch WxH failed 0 tiles N lines N seg_counts N segments N …` line.
@@ -143,7 +143,7 @@ them `vello 0`, 2 vello runs in all (the digits' first frame), 61 before.
 
 **Audited** on 2026-10-27, a second `vello-stats` shell driven over IPC: the launcher (apps
 and files), Quick Settings' grid, every detail page and edit mode, the notification centre, the
-dock, the bar, a context menu and Shell Settings. 1,300 frames, no `to vello` line and no vello
+dock, the bar, a context menu and Emaki Settings. 1,300 frames, no `to vello` line and no vello
 run in any of them. The notification centre held no notification with an image (a second shell
 doesn't own the notification service), but a card's image is a straight `Image::cover`, which
 the quads take. What runs vello in the shell now: the clock's curved digits when they change,
@@ -226,18 +226,18 @@ rebuilt the whole chain every frame), and a swiped tile's offscreen cleared.
 - **A window's GPU is made at its first frame**, and once every window of a program has been
   hidden for a minute all of them go, the Vulkan device and vello with them (amane's
   [memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#a-windows-gpu-is-made-when-it-first-draws-and-the-device-goes-with-the-last-one)).
-  A hidden-only amane-drop: 12.4 MB VRAM, 3.3 MB GTT, 66 MB RSS before; no GPU client and
+  A hidden-only emaki-drop: 12.4 MB VRAM, 3.3 MB GTT, 66 MB RSS before; no GPU client and
   15 MB after. `AMANE_DEVICE_IDLE=0` keeps the device.
 - **Images are decoded as big as they're drawn** (at least 256 pixels, a power of two), with
   a 64 MB least-recently-used cap (`AMANE_IMAGE_CACHE_MB`) and two decoding threads; an icon
   drawn at 84 pixels no longer keeps its 512-pixel file. `AMANE_IMAGE_FULL=1` restores full
   decodes. The center keeps 200 notifications; past that the oldest expire.
 - **A hidden dock is only its reveal strip**, 2 px tall with no vibrancy, until the pointer
-  touches it: 30.8 → 25.1 MB of VRAM on a second shell (`AMANE_DOCK_FULL_WHILE_HIDDEN=1`).
+  touches it: 30.8 → 25.1 MB of VRAM on a second shell (`EMAKI_DOCK_FULL_WHILE_HIDDEN=1`).
 - **The assistant starts when asked and leaves after five idle minutes** (socket-activated),
   so its models' 80–140 MB go back ([assistant.md](../user/features/assistant.md#the-daemon)).
 - **niri:** `hdr-auto` keeps an output in SDR until something HDR shows (no 41 MB half-float
-  composition the rest of the time; Shell Settings' Displays offers it as Automatic), and an
+  composition the rest of the time; Emaki Settings' Displays offers it as Automatic), and an
   xray buffer is blurred again only near where it changed, so a widget repainting no longer
   re-blurs the whole screen's frost behind the bar.
 

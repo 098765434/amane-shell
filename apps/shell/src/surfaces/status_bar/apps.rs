@@ -9,25 +9,25 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 
 use amane::{Center, Color, Parent, Rectangle, Row, Text, Vertical, Widget};
-use amane_status::{BarEdge, ItemButton, ItemEvent, ItemSpec, MenuEntry};
+use emaki_status::{BarEdge, ItemButton, ItemEvent, ItemSpec, MenuEntry};
 
 use crate::services::status_apps;
 use crate::tokens::{Styled, sys};
-use amane_kit::buttons::DrawnButton;
-use amane_kit::layout::{boxed, cursor, text_width};
-use amane_kit::material::{self, Level};
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{ContextMenu, MenuItem};
+use emaki_kit::buttons::DrawnButton;
+use emaki_kit::layout::{boxed, cursor, text_width};
+use emaki_kit::material::{self, Level};
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{ContextMenu, MenuItem};
 
 use super::activities::picture;
 use super::indicators::Item;
 use super::{BAR_NS, drag, edge, item, menu_edge};
-use amane_kit::shell_ipc::Listed;
+use emaki_kit::shell_ipc::Listed;
 
 /// How wide an item's title may be.
 const TITLE: f32 = 120.0;
 
-const MENU_KEY: &str = "amane.bar.app";
+const MENU_KEY: &str = "emaki.bar.app";
 
 thread_local! {
     // the items files are held over now, so a program hears once each way
@@ -104,7 +104,7 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
     let (on, pressed, middled) = (output.to_string(), output.to_string(), output.to_string());
     let (left, right, middle) = (id.clone(), id.clone(), id.clone());
     let menu = spec.menu.clone();
-    let built = item(DrawnButton::new(format!("amane.bar.app.{id}"), draw))
+    let built = item(DrawnButton::new(format!("emaki.bar.app.{id}"), draw))
         .width(width)
         .color(material::label(Level::Secondary))
         .on_press(move || activated(&left, ItemButton::Left, name, &pressed))
@@ -233,7 +233,7 @@ pub fn run(command: Listed) -> String {
         Listed::List => status_apps::items()
             .iter()
             .map(|app| {
-                let shown = if amane_kit::settings::status_bar().shows(&app.name()) {
+                let shown = if emaki_kit::settings::status_bar().shows(&app.name()) {
                     "shown"
                 } else {
                     "hidden"

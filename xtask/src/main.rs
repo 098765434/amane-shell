@@ -26,12 +26,12 @@ fn main() -> ExitCode {
             "run",
             "-q",
             "-p",
-            "amane-shell",
+            "emaki",
             "--",
             "layer-rules",
         ])),
         ["tokens", "normalize", path] => {
-            read(path).is_some_and(|json| match amane_kit::tokens::check::normalize(&json) {
+            read(path).is_some_and(|json| match emaki_kit::tokens::check::normalize(&json) {
                 Ok(out) => {
                     print!("{out}");
                     true
@@ -43,7 +43,7 @@ fn main() -> ExitCode {
             })
         }
         ["tokens", "check", path] => {
-            read(path).is_some_and(|json| amane_kit::tokens::check::check(&json))
+            read(path).is_some_and(|json| emaki_kit::tokens::check::check(&json))
         }
         ["lint-terms", rest @ ..] => run(Command::new(root.join("scripts/lint-terms")).args(rest)),
         ["links"] => links(&root),

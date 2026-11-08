@@ -1,12 +1,12 @@
-# Spec: Design tokens v2 for amane-shell
+# Spec: Design tokens v2 for emaki
 
 > **Archived: implemented.** Kept as history and not kept up to date. The current reference is
-> [design-system/tokens.md](../design-system/tokens.md); the resolver now lives in amane-kit
+> [design-system/tokens.md](../design-system/tokens.md); the resolver now lives in emaki-kit
 > (`crates/kit/src/tokens`).
  
 Status: implemented, revision 5 (23 Oct 2026) · Target: `098765434/amane-shell` (`main`) · Scope:
 **Penpot is the source of truth for every design token, organised by the Design Token
-Manual** (`design-token-manual.md`). amane-shell reads Penpot's own token
+Manual** (`design-token-manual.md`). emaki reads Penpot's own token
 export, resolves it the way Penpot does, and enforces the manual's rules in CI. Also in
 scope: every remaining hard-coded style value moved into tokens, a theme that follows the
 system (mode, accent, density, text scale), font stacks that actually fall back, and niri
@@ -98,7 +98,7 @@ breaks a rule of the manual, and the shell drawing the same values Penpot shows.
  
 Non-goals:
  
-- **Editing tokens outside Penpot.** No amane-side token files, no converter back to Penpot.
+- **Editing tokens outside Penpot.** No emaki-side token files, no converter back to Penpot.
   The one exception is the one-time seed (§3.3).
 - **Live sync with a Penpot server.** Exchange is by exported file (§12).
 - High-contrast mode (not planned; the tier structure would take it as another `sys/color`
@@ -121,7 +121,7 @@ these files exist any more.
 | **Values that bypass tokens.** About twenty literals, mostly in the Wi-Fi panel (§6). | `wifi.rs`, `taskbar/mod.rs`, `context_menu/mod.rs` |
 | **Names that mislead.** `space` holds sizes (`panel-w`, `icon-size`, `dot-size`, `row-h`). The menu has `space.row-h` = 10 (actually horizontal row padding) next to `space.row-height` = 24. The accent is called `blue`. Font sizes are typed `number`. | both JSON files |
 | **Dead tokens.** Never read: bar `theme.*.separator`, bar `font.ui.weight.regular`, menu `font.ui.weight.medium`, menu `animation.open-ms` / `close-ms`. | both JSON files |
-| **Theme is an env var.** `Theme::auto()` reads `AMANE_THEME` at seven call sites, defaults to dark, ignores the system preference and accent. Each component defines its own `Mode`, and `Theme` copies every field of `ThemeTokens` by hand. | `taskbar/theme.rs`, `context_menu/theme.rs` |
+| **Theme is an env var.** `Theme::auto()` reads `EMAKI_THEME` at seven call sites, defaults to dark, ignores the system preference and accent. Each component defines its own `Mode`, and `Theme` copies every field of `ThemeTokens` by hand. | `taskbar/theme.rs`, `context_menu/theme.rs` |
 | **Font fallback doesn't happen.** Only the first family of a stack is used. amane passes it to fontconfig's `find`, which always returns *some* font, so on a machine without the UI font the text falls to fontconfig's default, never to Inter. | `font_family()` in both `tokens.rs`; amane `src/graphics/font.rs` |
 | **niri radii are copied by hand, and one is wrong.** `niri-layer-rule.kdl` hardcodes `geometry-corner-radius 10` for menus and **14** for the Wi-Fi card, which is drawn with `radius.tile` = **10**. The blur's corners don't match the card's. | `niri-layer-rule.kdl`, `wifi.rs` `card()` |
 | **`effect.blur` is ambiguous.** It feeds amane's in-surface `Rectangle::blur` on the bar and the Wi-Fi card, while the KDL comment says the bar is deliberately unblurred. | `bar.tokens.json`, `taskbar/mod.rs`, `wifi.rs` |
@@ -133,10 +133,10 @@ these files exist any more.
 ### 3.1 The loop
  
 ```
-Penpot file "amane-shell design system"
+Penpot file "emaki design system"
   └─ Tokens panel → Export → Single file → tokens.json
-       └─ amane-shell tokens normalize tokens.json > design-tokens/tokens.json
-            └─ amane-shell tokens check → commit → CI: cargo test (§11)
+       └─ emaki tokens normalize tokens.json > design-tokens/tokens.json
+            └─ emaki tokens check → commit → CI: cargo test (§11)
 ```
  
 One Penpot file owns the tokens; mockup files use it as a connected library. `tokens check
@@ -238,7 +238,7 @@ token a designer applies to a padding in Penpot is one the code uses as a paddin
 | `boolean` | `boolean` | switches |
 | `string` | `string`, `other` | enumerations, identifiers |
  
-### 4.4 amane-only meanings in Penpot types (manual §5–§6)
+### 4.4 emaki-only meanings in Penpot types (manual §5–§6)
  
 | Need | Penpot type | Convention | Example |
 |------|-------------|------------|---------|
@@ -394,10 +394,10 @@ pub enum Mode { Light, Dark }
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum Density { Comfortable, Compact }
  
-pub fn mode() -> Mode;                 // AMANE_THEME → system preference → Dark
-pub fn density() -> Density;           // AMANE_DENSITY → Comfortable
+pub fn mode() -> Mode;                 // EMAKI_THEME → system preference → Dark
+pub fn density() -> Density;           // EMAKI_DENSITY → Comfortable
 pub fn system_accent() -> Option<Color>;
-pub fn text_scale() -> f32;            // AMANE_TEXT_SCALE → 1.0
+pub fn text_scale() -> f32;            // EMAKI_TEXT_SCALE → 1.0
 ```
  
 - Env overrides are read once into `OnceLock`s.
@@ -494,7 +494,7 @@ Because menus, submenus and the Wi-Fi panel share one role, the old "menu card r
 submenu radius" invariant holds by construction: niri's single `popups {}` block styles every
 level.
  
-`amane-shell layer-rules` prints `render(&rules())` to stdout.
+`emaki layer-rules` prints `render(&rules())` to stdout.
  
 ### 9.2 The checked-in file stays, and can't drift
  
@@ -511,7 +511,7 @@ KDL is regenerated in the same PR.
 ### 9.3 Later
  
 When the fork gains `write_niri_rules` (amane `docs/fork/spec-write-own-layer-rules.md`), `rules()`
-maps onto `NiriLayerRule` one to one and the shell writes its own `amane.kdl` include at
+maps onto `NiriLayerRule` one to one and the shell writes its own `emaki.kdl` include at
 startup. The KDL file and the script can then be removed.
  
 ---
@@ -737,7 +737,7 @@ All in `cargo test`. Tests 1–10 are the contract between Penpot, the manual an
 - **Appearance dependency.** Mode and accent do nothing beyond today's behaviour until the
   amane fork ships the Appearance service.
 - **User theme file (later).** A user's own Penpot export in
-  `$XDG_CONFIG_HOME/amane-shell/tokens.json`, layered after the bundled sets, would let users
+  `$XDG_CONFIG_HOME/emaki/tokens.json`, layered after the bundled sets, would let users
   restyle the shell in Penpot. With the tiers, a user theme can override just `sys/color/*`
   and `ref.color.*`.
 ---
@@ -751,9 +751,9 @@ All in `cargo test`. Tests 1–10 are the contract between Penpot, the manual an
 2. **Switch components to Penpot tokens.** §5 mapping, §6 literals, old JSON files and seed
    script deleted. Tests 1–11. Pixel-identical at `density/comfortable`. (Revision 5 then
    replaced the per-component readers with generated token functions, §10.1.)
-3. **Theme.** Shared `Mode`, `AMANE_THEME` read once, Appearance adapter, accent override and
+3. **Theme.** Shared `Mode`, `EMAKI_THEME` read once, Appearance adapter, accent override and
    derivation, text scale. Tests 14, 15.
-4. **Density.** `AMANE_DENSITY`, compact factor set in Penpot. Visible only in compact.
+4. **Density.** `EMAKI_DENSITY`, compact factor set in Penpot. Visible only in compact.
 5. **Font stacks.** §8 and test 16. Visible only without the UI font installed.
 6. **Layer rules from tokens.** §9, `layer-rules`, golden test. Visible: Wi-Fi blur corners
    match the card.
@@ -780,11 +780,11 @@ PRs 1–2 change no pixels; 3–7 each change one thing.
 4. **Breaking change caught:** rename `menu.row.height` in Penpot; export; `cargo build` fails
    at each line calling `menu::row::height()`. Add a `bar.theme.surface` colour token;
    `cargo test` fails naming the tier rule and manual §7.
-5. **Theme (PR 3):** `AMANE_THEME=light` forces light; unset, with no portal preference, dark.
+5. **Theme (PR 3):** `EMAKI_THEME=light` forces light; unset, with no portal preference, dark.
    Switching the system scheme or accent re-themes without a restart; a yellow accent
-   keeps white selected text, a lime one gets dark text. `AMANE_TEXT_SCALE=1.25` enlarges all
+   keeps white selected text, a lime one gets dark text. `EMAKI_TEXT_SCALE=1.25` enlarges all
    text.
-6. **Density (PR 4):** `AMANE_DENSITY=compact` tightens gaps, paddings and row heights;
+6. **Density (PR 4):** `EMAKI_DENSITY=compact` tightens gaps, paddings and row heights;
    radii and font sizes don't change.
 7. **Fonts (PR 5):** with the UI font absent and Inter installed, the debug log names Inter.
 8. **Layer rules (PR 6):** `./gen-layer-rules.sh`, `niri validate`, reload; a Wi-Fi card

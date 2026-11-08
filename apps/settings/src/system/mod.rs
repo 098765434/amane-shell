@@ -1,5 +1,5 @@
 //! The System pages: the NixOS configuration in `~/nixos-config`, read
-//! through the flake's `amaneSettings` output, changed through
+//! through the flake's `emakiSettings` output, changed through
 //! `managed/settings.json`, built as the user and activated through polkit
 //! ([nixos.md](../../../../docs/developer/integration/nixos.md)).
 
@@ -32,11 +32,11 @@ use amane::Service;
 use nixos::Managed;
 use repo::{Applied, Repo, Running, Toplevel};
 
-/// `$XDG_STATE_HOME/amane-shell/nixos`, for the record of the last Apply.
+/// `$XDG_STATE_HOME/emaki/nixos`, for the record of the last Apply.
 pub fn state_dir() -> PathBuf {
-    let state = amane_kit::paths::state();
+    let state = emaki_kit::paths::state();
 
-    state.join(amane_kit::app_ids::SHELL).join("nixos")
+    state.join(emaki_kit::app_ids::SHELL).join("nixos")
 }
 
 /// Why the running system isn't the configuration.

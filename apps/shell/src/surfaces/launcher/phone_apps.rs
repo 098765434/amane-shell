@@ -4,11 +4,11 @@
 use std::rc::Rc;
 
 use amane::Service;
-use amane_phone::KdeConnect;
+use emaki_phone::KdeConnect;
 
 use crate::services::phone::apps;
 
-use amane_kit::icons::ICON_PHONE;
+use emaki_kit::icons::ICON_PHONE;
 
 use super::entries::{Action, Entry, Icon};
 use super::mode::Mode;

@@ -5,7 +5,7 @@
 //! under it; the content is the open conversation with a reply field, or
 //! the trackpad and keyboard that drive the phone.
 //!
-//! `amane-messages --device <id> --view messages|input|new` opens on a
+//! `emaki-messages --device <id> --view messages|input|new` opens on a
 //! phone and a view (Quick Settings' Phone page does), and `--thread-of
 //! <name or number>` on that person's conversation (a notification's Open
 //! in Messages does); launched again while it runs, it switches to them.
@@ -27,12 +27,12 @@ mod thread;
 mod time;
 
 use amane::{Column, Key, Row, Service, Size, Text, TextInput, Widget, Window};
-use amane_kit::app::{app, app_window, sidebar_panel, standard_shortcut};
-use amane_kit::args::flag;
-use amane_kit::layout::{boxed, caption};
-use amane_kit::style;
-use amane_kit::tokens::{Styled, sys};
-use amane_phone::{KdeConnect, PhoneDevice, PhoneMessages};
+use emaki_kit::app::{app, app_window, sidebar_panel, standard_shortcut};
+use emaki_kit::args::flag;
+use emaki_kit::layout::{boxed, caption};
+use emaki_kit::style;
+use emaki_kit::tokens::{Styled, sys};
+use emaki_phone::{KdeConnect, PhoneDevice, PhoneMessages};
 
 /// How wide the inbox is.
 pub const SIDEBAR_WIDTH: f32 = 280.0;
@@ -100,10 +100,10 @@ fn find_thread(wanted: &str) -> Option<i64> {
         .or_else(|| {
             threads.iter().find(|thread| {
                 (thread.addresses().iter())
-                    .any(|address| amane_phone::same_phone_number(address, wanted))
+                    .any(|address| emaki_phone::same_phone_number(address, wanted))
             })
         })
-        .map(amane_phone::SmsThread::id)
+        .map(emaki_phone::SmsThread::id)
 }
 
 /// Moves `step` conversations down the list (up when negative).
@@ -199,11 +199,11 @@ fn follow(args: &[String]) {
 }
 
 fn main() {
-    amane_log::init(amane_kit::app_ids::MESSAGES);
-    amane_kit::migrate::from_amane();
+    emaki_log::init(emaki_kit::app_ids::MESSAGES);
+    emaki_kit::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     follow(&args);
-    app(amane_kit::app_ids::MESSAGES)
+    app(emaki_kit::app_ids::MESSAGES)
         .normal_window("main", main_window)
         .on_activate(follow)
         .run();

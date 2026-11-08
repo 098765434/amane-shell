@@ -1,5 +1,5 @@
 [package]
-name = "amane-train-watch"
+name = "emaki-train-watch"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,12 +9,12 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-amane-base = { workspace = true }
+emaki-base = { workspace = true }
 log = { workspace = true }
-amane-log = { workspace = true }
-amane-process = { workspace = true }
+emaki-log = { workspace = true }
+emaki-process = { workspace = true }
 amane = { workspace = true }
-amane-status = { workspace = true }
+emaki-status = { workspace = true }
 
 [lints]
 workspace = true

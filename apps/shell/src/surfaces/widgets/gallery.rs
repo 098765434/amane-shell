@@ -22,15 +22,15 @@ use super::{Geometry, MARGIN, RADIUS, changed};
 use crate::chrome::bar;
 use crate::chrome::catalog as sheet;
 use crate::tokens::{Styled, sys};
-use amane_kit::flow::Flow;
-use amane_kit::layout::{boxed, caption, frame, pad, text_height, wrapped_lines};
-use amane_kit::material::{self, FillLevel, Level, Material};
-use amane_kit::motion;
-use amane_kit::text_edit::Field;
+use emaki_kit::flow::Flow;
+use emaki_kit::layout::{boxed, caption, frame, pad, text_height, wrapped_lines};
+use emaki_kit::material::{self, FillLevel, Level, Material};
+use emaki_kit::motion;
+use emaki_kit::text_edit::Field;
 
 // TODO(token): `widget.gallery.{width,height,sidebar,inset,preview}` once
 // Penpot has them (manual §1.1).
-use amane_kit::reveal::Swell;
+use emaki_kit::reveal::Swell;
 const WIDTH: f32 = 900.0;
 const HEIGHT: f32 = 420.0;
 const SIDEBAR: f32 = 240.0;
@@ -40,7 +40,7 @@ const PREVIEW: f32 = 120.0;
 /// How small the sheet is as it swells in.
 const OPEN_SCALE: f32 = 0.96;
 
-pub(super) use amane_kit::area::Area;
+pub(super) use emaki_kit::area::Area;
 
 /// The sidebar's rows: every kind, or one category's.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -66,7 +66,7 @@ impl Section {
 
     fn glyph(self) -> char {
         match self {
-            Self::All => amane_kit::icons::ICON_APPS,
+            Self::All => emaki_kit::icons::ICON_APPS,
             Self::Only(category) => category.glyph(),
         }
     }
@@ -285,7 +285,7 @@ pub(super) fn ghost(
 
 /// The sheet: the sections beside every kind of widget, over the footer.
 const SHEET: sheet::Sheet = sheet::Sheet {
-    id: "amane.widgets.gallery",
+    id: "emaki.widgets.gallery",
     sidebar: SIDEBAR,
     inset: INSET,
 };

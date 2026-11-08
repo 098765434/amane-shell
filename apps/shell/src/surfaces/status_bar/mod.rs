@@ -12,7 +12,7 @@
 //! `design-tokens/tokens.json` via [`tokens`](crate::tokens).
 //!
 //! Where it sits, what it's made of, its clock and which icons it shows
-//! are `~/.config/amane-shell/status-bar.json` (Shell Settings), followed
+//! are `~/.config/emaki/status-bar.json` (Emaki Settings), followed
 //! live. With `auto_hide` it slides past its edge ([`EdgeReveal`]) and
 //! keeps no room from windows, coming back when the pointer meets the edge
 //! or Quick Settings or the notification center is open, which spares an
@@ -41,9 +41,9 @@ use amane::{
     Scroll, ScrollSource, Service, Size, Start, Vertical, Widget, Workspace, Workspaces, Zone,
     window_size,
 };
-use amane_kit::settings::{AutoHide, BarStyle, ClockStyle, ShowDate, status_bar};
-use amane_kit::theme::{self, Mode};
-use amane_phone::KdeConnect;
+use emaki_kit::settings::{AutoHide, BarStyle, ClockStyle, ShowDate, status_bar};
+use emaki_kit::theme::{self, Mode};
+use emaki_phone::KdeConnect;
 
 use crate::chrome::battery;
 use crate::chrome::panel::{self, Panel, is_open};
@@ -56,17 +56,17 @@ use crate::services::network::tailscale::{State as TailscaleState, Tailscale};
 use crate::services::power::keep_awake::KeepAwake;
 use crate::surfaces::notifications;
 use crate::surfaces::quick_settings::{self, Page};
-use amane_kit::buttons::{ButtonBuilder, DrawnButton, IconButton, PushButton, Shape, Style};
-use amane_kit::edge_reveal::EdgeReveal;
-use amane_kit::icons::{
+use emaki_kit::buttons::{ButtonBuilder, DrawnButton, IconButton, PushButton, Shape, Style};
+use emaki_kit::edge_reveal::EdgeReveal;
+use emaki_kit::icons::{
     Glyph, ICON_AIRPLANE, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE,
     ICON_DND, ICON_KEEP_AWAKE, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS, ICON_PHONE, ICON_TUNE,
     ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
     battery_glyph, power_profile_glyph, wifi_glyph,
 };
-use amane_kit::layout::{boxed, cursor, pad, text_width, track_cursor};
-use amane_kit::material::{self, Level, Material};
-use amane_kit::slider;
+use emaki_kit::layout::{boxed, cursor, pad, text_width, track_cursor};
+use emaki_kit::material::{self, Level, Material};
+use emaki_kit::slider;
 
 use crate::tokens::{bar, sys};
 
@@ -81,7 +81,7 @@ pub use workspace_shape::switch_position;
 
 /// The status bar's layer-surface namespace. The niri `layer-rule` matches
 /// this to frost its popups, and tooltips hang under it.
-pub const BAR_NS: &str = "amane.status-bar";
+pub const BAR_NS: &str = "emaki.status-bar";
 
 /// How many lines of touchpad scroll move one workspace along.
 /// TODO(token): `bar.scroll.step` once Penpot has it.
@@ -100,7 +100,7 @@ thread_local! {
 
 fn new_reveal() -> EdgeReveal {
     EdgeReveal::new(
-        amane_kit::motion::eased(0.0, Duration::from_millis(220), Easing::Out),
+        emaki_kit::motion::eased(0.0, Duration::from_millis(220), Easing::Out),
         Duration::from_millis(400),
     )
 }
@@ -229,7 +229,7 @@ fn sections(output: &str) -> Row {
 /// The id niri's readings of the wallpaper under monitor `output`'s clear
 /// bar come by.
 fn clear_id(output: &str) -> u32 {
-    amane_kit::glass_region::shape_id(&format!("amane.status-bar.{output}"))
+    emaki_kit::glass_region::shape_id(&format!("emaki.status-bar.{output}"))
 }
 
 /// Whether the bar on monitor `output` hides now, as `auto_hide` says.

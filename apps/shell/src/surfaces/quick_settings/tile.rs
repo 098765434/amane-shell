@@ -30,14 +30,14 @@ use super::QS_NS;
 use super::grid::{Metrics, Span};
 use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::tokens::{Styled, TextStyle, quick, sys};
-use amane_kit::buttons::{
+use emaki_kit::buttons::{
     Actions, Pending, hovered, interactive, press_scale, state_fill, with_existing, with_state,
 };
-use amane_kit::icons::{Glyph, glyph};
-use amane_kit::layout::{boxed, frame, icon, pad, text_height, text_width};
-use amane_kit::material::{self, FillLevel, Level, Material};
-use amane_kit::motion;
-use amane_kit::tooltip;
+use emaki_kit::icons::{Glyph, glyph};
+use emaki_kit::layout::{boxed, frame, icon, pad, text_height, text_width};
+use emaki_kit::material::{self, FillLevel, Level, Material};
+use emaki_kit::motion;
+use emaki_kit::tooltip;
 
 /// Which of Quick Settings' shapes a toggle takes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

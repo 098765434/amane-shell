@@ -105,25 +105,25 @@ niri can't run a bind on a key's release, so a key **toggles**:
 ```kdl
 binds {
     Mod+Shift+Space hotkey-overlay-title="Assistant: listen" {
-        spawn "sh" "-c" "printf 'assistant\\nlisten\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+        spawn "sh" "-c" "printf 'assistant\\nlisten\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock";
     }
 }
 ```
 
 ## The daemon
 
-`amane-assistant` ([`apps/assistant`](../../../apps/assistant)) is a user service beside
+`emaki-assistant` ([`apps/assistant`](../../../apps/assistant)) is a user service beside
 the shell:
 - It holds Cactus, listens to the microphone while asked to, and answers over
-  `$XDG_RUNTIME_DIR/amane-assistant.sock` (mode 0600).
+  `$XDG_RUNTIME_DIR/emaki-assistant.sock` (mode 0600).
 - It runs no command itself.
 - It runs as its own process because Cactus keeps one model set and one conversation for
   the whole process, and its calls block. Restarting the shell doesn't reload the
   models, and a crash in Cactus can't take the shell down.
 - The shell works without it: rules still read what they can, and nothing waits.
 - It starts when it's first asked for. Given its socket by systemd (a socket unit on
-  `%t/amane-assistant.sock`; `LISTEN_FDS`), it exits after 5 minutes with nothing asked,
-  connected or heard (`AMANE_ASSISTANT_IDLE` seconds, 0 to stay), so its models' 80–140 MB
+  `%t/emaki-assistant.sock`; `LISTEN_FDS`), it exits after 5 minutes with nothing asked,
+  connected or heard (`EMAKI_ASSISTANT_IDLE` seconds, 0 to stay), so its models' 80–140 MB
   go back; systemd starts it again at the next connection, and loading the models takes
   40–60 ms. Started any other way, it binds the socket itself and stays.
 
@@ -145,12 +145,12 @@ also sends `level` and `partial`.
 Of several `complete`s queued while Needle was busy, only the newest is answered. The
 others get `superseded`.
 
-- **Models:** from `$AMANE_ASSISTANT_MODELS` (the package sets it to the store copy),
-  else `$XDG_DATA_HOME/amane-assistant/models`. A fine-tuned `needle3.cact` can go there.
-- **Tool index:** `$XDG_CACHE_HOME/amane-assistant/tools-<hash>.idx`. Cactus caches a
+- **Models:** from `$EMAKI_ASSISTANT_MODELS` (the package sets it to the store copy),
+  else `$XDG_DATA_HOME/emaki-assistant/models`. A fine-tuned `needle3.cact` can go there.
+- **Tool index:** `$XDG_CACHE_HOME/emaki-assistant/tools-<hash>.idx`. Cactus caches a
   tool set's embeddings there, so setting up a tool set costs 240 ms once and nothing
   after.
-- **Test hook:** `AMANE_ASSISTANT_FAKE_MIC=<raw 16 kHz f32le>` plays a recording as the
+- **Test hook:** `EMAKI_ASSISTANT_FAKE_MIC=<raw 16 kHz f32le>` plays a recording as the
   microphone, for tests.
 
 ### Cactus
@@ -179,13 +179,13 @@ others get `superseded`.
 ## Evaluating
 
 ```sh
-amane-assistant eval [--json] apps/assistant/eval/cases.jsonl apps/assistant/eval/laptop.json
+emaki-assistant eval [--json] apps/assistant/eval/cases.jsonl apps/assistant/eval/laptop.json
 ```
 
 This reads each case as the shell would: by the rules, then (if it's worth asking) by
 Needle, against the command it should give. Negatives should give nothing.
-- `AMANE_ASSISTANT_NO_RULES=1` scores Needle alone.
-- `AMANE_ASSISTANT_DEBUG=1` prints Needle's raw answers.
+- `EMAKI_ASSISTANT_NO_RULES=1` scores Needle alone.
+- `EMAKI_ASSISTANT_DEBUG=1` prints Needle's raw answers.
 - `--json` prints only the score: right, missed, wrong, negatives left alone, wrong
   commands that are Destructive, p50 and p95.
 
@@ -209,7 +209,7 @@ data is made locally, training runs offline with telemetry off, and the result i
 by the daemon's own engine.
 
 1. **Data:** `gen.py` writes `cactus finetune` rows over 200 made-up machines, with tools
-   from `amane-assistant tools`. Four rows in ten ask for no call (questions, bare names,
+   from `emaki-assistant tools`. Four rows in ten ask for no call (questions, bare names,
    taken-back commands, things this machine hasn't got, a tool not offered). Each has a
    reasoning line, so it weighs about as much in the loss as a call does. One template in
    seven is kept out for the **dev set** (`--dev`), on the eval's laptop.
@@ -222,7 +222,7 @@ by the daemon's own engine.
    - `remote.sh score NAME DEV`: fetches the archive and scores it here, offline.
    - `sweep.sh DATA DEV`: trains a grid in turn and ranks it by dev score (right − 3 ×
      wrong; a wrong Destructive command disqualifies).
-3. **Watching:** `amane-train-watch HOST NAME` ([`apps/train-watch`](../../../apps/train-watch))
+3. **Watching:** `emaki-train-watch HOST NAME` ([`apps/train-watch`](../../../apps/train-watch))
    follows the run's log and shows an activity: step, loss, time left, and the
    validation loss after each epoch. It alerts when the run ends, with the held-out and
    dev scores. Stop asks first. Log opens a copy of the log. `remote.sh run` starts it on

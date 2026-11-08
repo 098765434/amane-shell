@@ -1,17 +1,17 @@
 [package]
-name = "amane-kit"
+name = "emaki-kit"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "The controls, design tokens and theme of amane-shell, for building apps that look like the shell."
+description = "The controls, design tokens and theme of emaki, for building apps that look like the shell."
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
 [dependencies]
 log = { workspace = true }
-amane-base = { workspace = true }
-amane-process = { workspace = true }
+emaki-base = { workspace = true }
+emaki-process = { workspace = true }
 # the same pinned amane as the shell, overridden the same way during co-development
 amane = { workspace = true }
 serde_json = { workspace = true }

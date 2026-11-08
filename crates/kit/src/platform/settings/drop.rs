@@ -1,4 +1,4 @@
-//! `amane-drop`'s `grids.json` and `sharing.json`: Drop's tiles and where it uploads.
+//! `emaki-drop`'s `grids.json` and `sharing.json`: Drop's tiles and where it uploads.
 
 use super::*;
 
@@ -137,8 +137,8 @@ impl Default for DropGrid {
     }
 }
 
-/// amane-drop's grids, `~/.config/amane-drop/grids.json`, followed live by
-/// the app and Shell Settings.
+/// emaki-drop's grids, `~/.config/emaki-drop/grids.json`, followed live by
+/// the app and Emaki Settings.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct DropGrids {
@@ -228,8 +228,8 @@ pub struct S3Account {
     pub public: bool,
 }
 
-/// amane-drop's accounts and what it does with a link,
-/// `~/.config/amane-drop/sharing.json`.
+/// emaki-drop's accounts and what it does with a link,
+/// `~/.config/emaki-drop/sharing.json`.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "amane::serde", default)]
 pub struct DropSharing {

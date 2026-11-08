@@ -5,13 +5,13 @@
 //! [`super`]), so nothing here moves a hit area as the icons swell.
 
 use amane::{Center, Rectangle, Row, Service, Text, Widget, Windows};
-use amane_kit::settings::dock;
+use emaki_kit::settings::dock;
 
 use super::model::Icon;
 use crate::tokens::{Styled, sys};
-use amane_kit::app_icon;
-use amane_kit::layout::{boxed, text_height, text_width};
-use amane_kit::material::{self, Level, Material};
+use emaki_kit::app_icon;
+use emaki_kit::layout::{boxed, text_height, text_width};
+use emaki_kit::material::{self, Level, Material};
 
 // TODO(token): `dock.running.size` once Penpot has it (manual §1.1).
 /// How big a running dot is.
@@ -105,5 +105,5 @@ pub fn label_height() -> f32 {
 
 /// A clear `width` by `height` frame for absolute placement.
 pub fn frame(width: f32, height: f32) -> Rectangle {
-    amane_kit::layout::frame(width, height)
+    emaki_kit::layout::frame(width, height)
 }

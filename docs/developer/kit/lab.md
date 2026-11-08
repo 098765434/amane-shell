@@ -1,11 +1,11 @@
-# Saved Shader Lab looks (`amane_kit::lab`)
+# Saved Shader Lab looks (`emaki_kit::lab`)
 
 The Shader Lab ([development/shader-lab.md](../shader-lab.md)) saves each look as
 `apps/shader-lab/configs/<name>.json`. kit's build embeds every config and every effect folder,
 so the shell puts a saved look on a rectangle with one call:
 
 ```rust,ignore
-use amane_kit::lab;
+use emaki_kit::lab;
 
 let pill = Rectangle::new().width(330.0).height(105.0).radius(52.5);
 
@@ -22,9 +22,9 @@ frost and glow, for glass), its shader or effect, and its inner shadows over it.
 ones the effect is laid out for. Glass effects read what the window drew behind the rectangle,
 so draw the backdrop in the same window (and inside the same clip, if there's one).
 `apps/shader-lab/examples/lab_look.rs` shows a look over the wallpaper:
-`cargo run -p amane-kit --example lab_look`.
+`cargo run -p emaki-kit --example lab_look`.
 
-Shaders are written once to `$XDG_RUNTIME_DIR/amane-shell/lab/effects/`, as amane loads them from
+Shaders are written once to `$XDG_RUNTIME_DIR/emaki/lab/effects/`, as amane loads them from
 files.
 
 ## Also in the module

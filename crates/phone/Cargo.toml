@@ -1,15 +1,15 @@
 [package]
-name = "amane-phone"
+name = "emaki-phone"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Phones for amane-shell and its apps: KDE Connect (pairing, files, clipboard, input, text messages) and adb with mDNS discovery."
+description = "Phones for emaki and its apps: KDE Connect (pairing, files, clipboard, input, text messages) and adb with mDNS discovery."
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-amane-base = { workspace = true }
+emaki-base = { workspace = true }
 log = { workspace = true }
 # the session bus, services and the one ordered thread for calls
 amane = { workspace = true }

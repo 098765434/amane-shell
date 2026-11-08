@@ -11,7 +11,7 @@ use std::path::Path;
 use std::time::Duration;
 
 use amane::{Apps, DesktopApp, Service};
-use amane_kit::service::ServiceExt as _;
+use emaki_kit::service::ServiceExt as _;
 
 const APPLICATIONS: &str = "/run/current-system/sw/share/applications";
 

@@ -11,15 +11,15 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use amane::{Apps, Center, Column, DesktopApp, Rectangle, Service, TextInput};
-use amane_kit::app::{field_box, text_field};
-use amane_kit::app_icon::entry_tile;
-use amane_kit::buttons::PushButton;
-use amane_kit::form::{FormRow, Group};
-use amane_kit::icons::ICON_PACKAGE;
-use amane_kit::layout::icon;
-use amane_kit::material::{self, Level};
-use amane_kit::tokens::sys;
-use amane_process::{Cmd, Stopper};
+use emaki_kit::app::{field_box, text_field};
+use emaki_kit::app_icon::entry_tile;
+use emaki_kit::buttons::PushButton;
+use emaki_kit::form::{FormRow, Group};
+use emaki_kit::icons::ICON_PACKAGE;
+use emaki_kit::layout::icon;
+use emaki_kit::material::{self, Level};
+use emaki_kit::tokens::sys;
+use emaki_process::{Cmd, Stopper};
 use serde_json::Value;
 
 use super::busy::Busy;
@@ -30,8 +30,8 @@ use super::inventory::{self, FileAttrs};
 use super::nixos::{Entry, Managed, Snapshot, repo, run, strings};
 use super::package::Details;
 use crate::{group, groups};
-use amane_kit::service::ServiceExt as _;
-use amane_kit::sync::Locked as _;
+use emaki_kit::service::ServiceExt as _;
+use emaki_kit::sync::Locked as _;
 
 /// The registry id of the list of added packages.
 pub const PACKAGES: &str = "packages";
@@ -47,7 +47,7 @@ const PAUSE: Duration = Duration::from_millis(150);
 
 // ───── nixpkgs search ────────────────────────────────────────────────────────
 
-pub use amane_nixos::catalog::{Found, RESULTS, parse_search};
+pub use emaki_nixos::catalog::{Found, RESULTS, parse_search};
 
 /// The last search: its query, results (the first [`RESULTS`] of `total`),
 /// whether it's still running, and what was typed meanwhile.
@@ -504,8 +504,8 @@ fn search_section(
     // the catalog answers as you type; without it, Return or Search asks nix
     let mut search_row = FormRow::new("settings.apps.search-row", "Find an app")
         .icon(
-            amane_kit::icons::ICON_SEARCH,
-            amane_kit::color::Accent::Blue,
+            emaki_kit::icons::ICON_SEARCH,
+            emaki_kit::color::Accent::Blue,
         )
         .trailing(field_box(SEARCH, field, 240.0));
     if !catalog.ready {

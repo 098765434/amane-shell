@@ -16,7 +16,7 @@
 //! pointer took it: the pointer's position less where it was grabbed.
 //!
 //! The others make way live, each preview worked out from the
-//! layout the drag began from (`amane_kit::grid::drag::Session`).
+//! layout the drag began from (`emaki_kit::grid::drag::Session`).
 //!
 //! amane finds the target being dragged by its position in the frame's hit
 //! areas, which has to stay the same from frame to frame while a drag is
@@ -36,10 +36,10 @@ use crate::chrome::edit_marks as marks;
 use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::surfaces::quick_settings::layout::Stored as _;
 use crate::tokens::{quick, sys};
-use amane_kit::control_size::ControlSize;
-use amane_kit::grid::drag::{self, Hit, Origin, Session, follow, hit, off_canvas};
-use amane_kit::layout::{boxed, frame};
-use amane_kit::motion::{self, Pose};
+use emaki_kit::control_size::ControlSize;
+use emaki_kit::grid::drag::{self, Hit, Origin, Session, follow, hit, off_canvas};
+use emaki_kit::layout::{boxed, frame};
+use emaki_kit::motion::{self, Pose};
 
 // TODO(token): `quick.drag.band` once Penpot has it (manual §1.1).
 /// How far past the middle of the next cell a held control goes before it
@@ -354,7 +354,7 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
     let side = handle_side();
 
     let badge = marks::remove_badge(
-        format!("amane.qs.edit.{}.remove", id.name()),
+        format!("emaki.qs.edit.{}.remove", id.name()),
         side,
         move || hide(id),
     );

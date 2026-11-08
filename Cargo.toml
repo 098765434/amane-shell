@@ -64,16 +64,16 @@ repository = "https://github.com/098765434/amane-shell"
 authors = ["ocbk"]
 
 [workspace.dependencies]
-amane-base = { path = "crates/base" }
-amane-kit = { path = "crates/kit" }
-amane-pinentry = { path = "crates/pinentry" }
-amane-phone = { path = "crates/phone" }
-amane-status = { path = "crates/status" }
-amane-log = { path = "crates/log" }
-amane-process = { path = "crates/process" }
-amane-nixos = { path = "crates/nixos" }
+emaki-base = { path = "crates/base" }
+emaki-kit = { path = "crates/kit" }
+emaki-pinentry = { path = "crates/pinentry" }
+emaki-phone = { path = "crates/phone" }
+emaki-status = { path = "crates/status" }
+emaki-log = { path = "crates/log" }
+emaki-process = { path = "crates/process" }
+emaki-nixos = { path = "crates/nixos" }
 log = "0.4"
-amane-assistant = { path = "crates/assistant" }
+emaki-assistant = { path = "crates/assistant" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = "0.4"

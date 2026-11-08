@@ -16,21 +16,21 @@ use amane::{
     Key, Keyboard, Layer, LayerWindow, Padding, Parent, Rectangle, Row, Service, Shape, Size,
     Stack, Start, Text, TextInput, Widget, WindowSize, Zone, window_size,
 };
-use amane_kit::app::{field_box, text_field};
-use amane_kit::buttons::{IconButton, PushButton, Style};
-use amane_kit::icons::{
+use emaki_kit::app::{field_box, text_field};
+use emaki_kit::buttons::{IconButton, PushButton, Style};
+use emaki_kit::icons::{
     ICON_ADD, ICON_CHECK_CIRCLE, ICON_CHEVRON_LEFT, ICON_CHEVRON_RIGHT, ICON_CLOSE,
     ICON_CLOUD_UPLOAD, ICON_CONTENT_COPY, ICON_DESCRIPTION, ICON_DNS, ICON_ERROR, ICON_IMAGE,
     ICON_PHONE, ICON_TRAY,
 };
-use amane_kit::layout::{boxed, frame, icon, text_width};
-use amane_kit::material::{self, FillLevel, Level, Material};
-use amane_kit::settings::{
+use emaki_kit::layout::{boxed, frame, icon, text_width};
+use emaki_kit::material::{self, FillLevel, Level, Material};
+use emaki_kit::settings::{
     DropTile, FolderMode, UploadTo, change_drop_grids, drop_grids, drop_sharing, status_bar,
 };
-use amane_kit::tokens::{Styled, sys};
-use amane_phone::KdeConnect;
-use amane_status::BarEdge;
+use emaki_kit::tokens::{Styled, sys};
+use emaki_phone::KdeConnect;
+use emaki_status::BarEdge;
 
 use crate::state::{self, Changed, Outcome, Prompt, Target};
 use crate::tasks::{self, Job, Payload, name};
@@ -47,7 +47,7 @@ use shelf::*;
 use tiles::*;
 
 /// The grid's layer-surface namespace.
-pub const NS: &str = amane_kit::app_ids::DROP_NS;
+pub const NS: &str = emaki_kit::app_ids::DROP_NS;
 
 /// `folder`, `drive_file_move` and `drive_file_rename_outline`.
 const ICON_FOLDER_FILLED: char = '\u{e2c7}';
@@ -65,7 +65,7 @@ const PROMPT: f32 = 132.0;
 const RADIUS: f32 = 18.0;
 
 /// The rename prompt's field.
-const RENAME: &str = "amane-drop.rename";
+const RENAME: &str = "emaki-drop.rename";
 
 /// The card's width for `columns` tiles a row.
 fn card_width(columns: usize) -> f32 {
@@ -142,7 +142,7 @@ pub fn window() -> LayerWindow {
         return base
             .visible(false)
             .keyboard(Keyboard::None)
-            .child(amane_kit::layout::blank());
+            .child(emaki_kit::layout::blank());
     };
 
     let columns = grids.columns();
@@ -232,7 +232,7 @@ fn step(by: isize) {
 }
 
 fn card(
-    grids: &amane_kit::settings::DropGrids,
+    grids: &emaki_kit::settings::DropGrids,
     index: usize,
     columns: usize,
     size: (f32, f32),
@@ -277,7 +277,7 @@ fn card(
         .child(Column::new(rows).gap(GAP).width(Parent))
 }
 
-fn label(text: &str, style: amane_kit::tokens::TextStyle, color: Color, width: f32) -> Text {
+fn label(text: &str, style: emaki_kit::tokens::TextStyle, color: Color, width: f32) -> Text {
     Text::new(clip(text, style, width))
         .style(style)
         .color(color)
@@ -286,7 +286,7 @@ fn label(text: &str, style: amane_kit::tokens::TextStyle, color: Color, width: f
 /// The grid's name, with arrows between grids, and Edit or what editing
 /// offers.
 fn header(
-    grids: &amane_kit::settings::DropGrids,
+    grids: &emaki_kit::settings::DropGrids,
     index: usize,
     width: f32,
     editing: bool,
@@ -295,7 +295,7 @@ fn header(
     let mut left: Vec<Box<dyn Widget>> = Vec::new();
     if count > 1 {
         left.push(boxed(
-            IconButton::new("amane-drop.previous", ICON_CHEVRON_LEFT)
+            IconButton::new("emaki-drop.previous", ICON_CHEVRON_LEFT)
                 .on_press(|| step(-1))
                 .build(),
         ));
@@ -308,7 +308,7 @@ fn header(
     )));
     if count > 1 {
         left.push(boxed(
-            IconButton::new("amane-drop.next", ICON_CHEVRON_RIGHT)
+            IconButton::new("emaki-drop.next", ICON_CHEVRON_RIGHT)
                 .on_press(|| step(1))
                 .build(),
         ));
@@ -317,14 +317,14 @@ fn header(
     let mut right: Vec<Box<dyn Widget>> = Vec::new();
     if editing {
         right.push(boxed(
-            PushButton::new("amane-drop.add-folder", "Folder…")
+            PushButton::new("emaki-drop.add-folder", "Folder…")
                 .icon(ICON_ADD)
                 .style(Style::Tonal)
                 .on_press(add_folder)
                 .build(),
         ));
         right.push(boxed(
-            PushButton::new("amane-drop.new-grid", "Grid")
+            PushButton::new("emaki-drop.new-grid", "Grid")
                 .icon(ICON_ADD)
                 .style(Style::Tonal)
                 .on_press(new_grid)
@@ -332,7 +332,7 @@ fn header(
         ));
         if count > 1 {
             right.push(boxed(
-                IconButton::new("amane-drop.delete-grid", ICON_CLOSE)
+                IconButton::new("emaki-drop.delete-grid", ICON_CLOSE)
                     .style(Style::Destructive)
                     .on_press(move || delete_grid(index))
                     .build(),
@@ -340,7 +340,7 @@ fn header(
         }
     }
     right.push(boxed(
-        PushButton::new("amane-drop.edit", if editing { "Done" } else { "Edit" })
+        PushButton::new("emaki-drop.edit", if editing { "Done" } else { "Edit" })
             .style(if editing { Style::Filled } else { Style::Plain })
             .on_press(|| state::change(|ui| ui.editing = !ui.editing))
             .build(),

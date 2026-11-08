@@ -49,7 +49,7 @@ Input already redraws the window it landed on. When some *other* window shows th
 changed, declare a **marker** for it and change that:
 
 ```rust
-amane_kit::marker! {
+emaki_kit::marker! {
     /// The launcher's own state changed: only its window draws again.
     pub Launcher
 }
@@ -69,7 +69,7 @@ fn pick(index: usize) {
   without remembering to be. Examples:
   - `timer::left()` watches `Countdown`;
   - `clipboard_history::clips()` watches `Clips`;
-  - `amane_kit::settings::status_bar()` reads the `Config<StatusBar>` service, so a view that
+  - `emaki_kit::settings::status_bar()` reads the `Config<StatusBar>` service, so a view that
     reads it (`Indicator::shown()` among them) redraws when the bar's settings change.
 - A handler that runs from a menu popup lands on the *popup's* window. Its changes still need the
   marker.
@@ -182,7 +182,7 @@ built, as the bar's volume scroll does (shell `c1bef96`).
 `AMANE_FRAMES=1` prints a line per frame and per change on stderr:
 
 ```
-frame amane.dock 1646x150 gap 16.2 view 0.3 draw 0.0 gpu 4.2 vello 0
+frame emaki.dock 1646x150 gap 16.2 view 0.3 draw 0.0 gpu 4.2 vello 0
 change amane::services::windows::Windows
 change Titles
 change Backdrop 1234
@@ -200,14 +200,14 @@ Run a second shell beside your bar, with its own runtime dir, so it doesn't take
 ```sh
 T=$(mktemp -d /tmp/amXXXX)
 XDG_RUNTIME_DIR=$T WAYLAND_DISPLAY=/run/user/1000/wayland-1 AMANE_FRAMES=1 \
-  timeout 30 nix develop -c ./target/debug/amane-shell 2> frames.log >/dev/null
+  timeout 30 nix develop -c ./target/debug/emaki 2> frames.log >/dev/null
 
 # frames per window, and what changed
 awk '$1=="frame"{n[$2]++} $1=="change"{c[$2]++}
      END{for(k in n) print "frame",k,n[k]; for(k in c) print "change",k,c[k]}' frames.log | sort
 
 # which change each of one window's frames followed
-awk '$1=="change"{last=$2} $1=="frame" && $2=="amane.dock"{w[last]++}
+awk '$1=="change"{last=$2} $1=="frame" && $2=="emaki.dock"{w[last]++}
      END{for(k in w) print k, w[k]}' frames.log
 ```
 

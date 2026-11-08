@@ -1,20 +1,20 @@
 [package]
-name = "amane-settings"
+name = "emaki-settings"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Settings for amane-shell: how it looks, changed live while it runs."
+description = "Settings for emaki: how it looks, changed live while it runs."
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
 [dependencies]
 log = { workspace = true }
-amane-log = { workspace = true }
-amane-process = { workspace = true }
-amane-nixos = { workspace = true }
+emaki-log = { workspace = true }
+emaki-process = { workspace = true }
+emaki-nixos = { workspace = true }
 amane = { workspace = true }
-amane-kit = { workspace = true }
+emaki-kit = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }

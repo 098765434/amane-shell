@@ -1,6 +1,6 @@
 # Motion
 
-How the shell moves (`amane_kit::motion`, `kinetic` and `pager`, in `crates/kit/src/`). amane animates
+How the shell moves (`emaki_kit::motion`, `kinetic` and `pager`, in `crates/kit/src/`). amane animates
 with `Animation`s (a duration and an easing, springs included); the kit picks the shell's springs
 for them, keeps lists of cards moving between rebuilds, and adds the momentum a touchpad flick
 leaves, which the compositor doesn't draw.
@@ -23,7 +23,7 @@ values are constants until Penpot has `sys.motion.*` tokens
 ([penpot-backlog.md](../design-system/penpot-backlog.md)).
 
 **Reduced motion.** Where motion is reduced (`reduce_motion` in `appearance.json`, else the
-system's; `amane_kit::theme::reduced_motion`), every spring is a short fade instead, and what swells
+system's; `emaki_kit::theme::reduced_motion`), every spring is a short fade instead, and what swells
 or travels in arrives in place: `scale(from)` gives 1 and `travel(distance)` 0. An `Animation` takes
 its curve when it's made, so one kept for the shell's life follows a change after a restart;
 `scale` and `travel` follow it at once.
@@ -83,5 +83,5 @@ band. The launcher turns it sideways through its categories.
 The dock keeps every animation it runs in one table, `DOCK` in `apps/shell/src/surfaces/dock/motion.rs`
 (shell code, not the kit's): an `Anim` each (`Anim::spring(ms, bounce)`, `Anim::ease(ms)`, `.off()`),
 made through `dock::motion::anim`, which gives a motion that arrives at once when it's off, so the view
-never asks. `AMANE_DOCK_ANIMATIONS=off` turns them all off. See
+never asks. `EMAKI_DOCK_ANIMATIONS=off` turns them all off. See
 [dock.md](../../user/features/dock.md#configuring-the-motion).

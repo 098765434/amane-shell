@@ -8,7 +8,7 @@ use std::os::fd::OwnedFd;
 use std::sync::Mutex;
 
 use amane::{Argument, Bus, Logind, Service};
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 const LOGIND: &str = "org.freedesktop.login1";
 const MANAGER_PATH: &str = "/org/freedesktop/login1";

@@ -9,7 +9,7 @@
 //! draws again for its input by itself.
 //!
 //! ```ignore
-//! amane_kit::marker! {
+//! emaki_kit::marker! {
 //!     /// The launcher's own state changed.
 //!     pub Launcher
 //! }

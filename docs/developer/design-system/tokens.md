@@ -1,8 +1,8 @@
-# amane-shell Design Token Manual
+# emaki Design Token Manual
  
-For designers working in Penpot and developers working in the amane-shell code. Version 1.1,
+For designers working in Penpot and developers working in the emaki code. Version 1.1,
 23 Oct 2026. The implementation was specified in [spec-design-tokens-v2.md](../archive/spec-design-tokens-v2.md) (revision 5, archived) and
-lives in amane-kit's `tokens` module (`crates/kit/src/tokens`, with the generated functions from
+lives in emaki-kit's `tokens` module (`crates/kit/src/tokens`, with the generated functions from
 `crates/kit/build.rs`). Where this manual says "must", a check in CI enforces it (§13).
  
 ---
@@ -10,7 +10,7 @@ lives in amane-kit's `tokens` module (`crates/kit/src/tokens`, with the generate
 ## 1. The rules on one page
  
 1. **Penpot is the source of truth.** Every color, size, gap, radius, font and timing the
-   shell draws is a token in the Penpot file *amane-shell design system*. Nobody edits
+   shell draws is a token in the Penpot file *emaki design system*. Nobody edits
    `crates/kit/design-tokens/tokens.json` by hand.
 2. **Three tiers, one direction.** `ref.*` (raw values) ← `sys.*` (decisions) ← component
    tokens (`bar.*`, `menu.*`, `notification.*`, `quick.*`, `dialog.*`, `material.*`, `wifi.*`).
@@ -39,10 +39,10 @@ lives in amane-kit's `tokens` module (`crates/kit/src/tokens`, with the generate
  
 ```mermaid
 flowchart TB
-    penpot["Penpot file 'amane-shell design system'<br/>(designers edit here)"]
+    penpot["Penpot file 'emaki design system'<br/>(designers edit here)"]
     json["design-tokens/tokens.json<br/>normalized, committed (developers commit it)"]
     resolved["resolved values per (mode, density, accent)<br/>cached at runtime"]
-    code["bar, dock, launcher, menus, notifications, Quick Settings,<br/>widgets, alert, Shell Settings, niri layer rules"]
+    code["bar, dock, launcher, menus, notifications, Quick Settings,<br/>widgets, alert, Emaki Settings, niri layer rules"]
     penpot -->|"Tokens panel, Export, Single file"| json
     json -->|"include_str! and a resolver that behaves like Penpot"| resolved
     resolved -->|"build.rs: one Rust function per sys.* and component token"| code
@@ -52,18 +52,18 @@ What the running shell may change on top of Penpot, and nothing else:
  
 | Runtime input | Source | Acts on |
 |---------------|--------|---------|
-| Mode (light/dark) | `AMANE_THEME`, else `appearance.json`'s `mode`, else the system preference, else dark | selects theme `mode/light` or `mode/dark` |
-| Density | `AMANE_DENSITY`, else `appearance.json`'s `density` (`comfortable` by default) | selects theme `density/comfortable` or `density/compact` |
+| Mode (light/dark) | `EMAKI_THEME`, else `appearance.json`'s `mode`, else the system preference, else dark | selects theme `mode/light` or `mode/dark` |
+| Density | `EMAKI_DENSITY`, else `appearance.json`'s `density` (`comfortable` by default) | selects theme `density/comfortable` or `density/compact` |
 | Accent | `appearance.json`'s `accent`, else the system accent, if published | replaces `ref.color.accent.*` before resolving |
-| Text scale | `AMANE_TEXT_SCALE`, else `appearance.json`'s `text_scale` (1), kept within 0.5–3 | multiplies font sizes in `sys.type.*` after resolving |
+| Text scale | `EMAKI_TEXT_SCALE`, else `appearance.json`'s `text_scale` (1), kept within 0.5–3 | multiplies font sizes in `sys.type.*` after resolving |
 | Output scale (HiDPI) | niri | below the token system; tokens stay logical px |
  
-Everything else is exactly what Penpot shows. `~/.config/amane-shell/appearance.json` is the
-appearance settings file that Shell Settings writes and the running shell follows live
-(`amane_kit::settings`, read by `amane_kit::theme`; see [settings-app.md](../../user/features/settings-app.md)).
-Its other settings, the glass level (`AMANE_GLASS`), higher contrast (`AMANE_HIGH_CONTRAST`, else
-the system), reduced motion, adaptive glass (`AMANE_ADAPTIVE_GLASS`) and vibrant labels
-(`AMANE_VIBRANCY`), don't change any token: they change how the materials draw
+Everything else is exactly what Penpot shows. `~/.config/emaki/appearance.json` is the
+appearance settings file that Emaki Settings writes and the running shell follows live
+(`emaki_kit::settings`, read by `emaki_kit::theme`; see [settings-app.md](../../user/features/settings-app.md)).
+Its other settings, the glass level (`EMAKI_GLASS`), higher contrast (`EMAKI_HIGH_CONTRAST`, else
+the system), reduced motion, adaptive glass (`EMAKI_ADAPTIVE_GLASS`) and vibrant labels
+(`EMAKI_VIBRANCY`), don't change any token: they change how the materials draw
 ([materials.md](materials.md#settings)).
  
 ---
@@ -377,7 +377,7 @@ Avoid the `boolean` and `string` types: Penpot imports them but has no panel to 
   `sizing` for widths and heights, `borderRadius` for corners. That's why the types matter.
 - Draw a hover row as a rectangle with fill `sys.color.state.hover` on top of the row, the
   same way the shell paints it.
-- Build mockups in a separate file that uses *amane-shell design system* as a connected
+- Build mockups in a separate file that uses *emaki design system* as a connected
   library, so everyone shares one token set.
 - Check both `mode` themes and both `density` themes before exporting.
 ---

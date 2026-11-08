@@ -1,4 +1,4 @@
-//! The phone's camera as this computer's webcam: `amane-mirror --camera`
+//! The phone's camera as this computer's webcam: `emaki-mirror --camera`
 //! feeding the v4l2loopback device nixos-config loads, run as a user unit
 //! of its own so it outlives the shell.
 
@@ -7,7 +7,7 @@ use amane::Service;
 use super::MIRROR_APP;
 
 /// The user unit the webcam runs as, apart from the shell's own.
-pub const CAMERA_UNIT: &str = "amane-phone-camera";
+pub const CAMERA_UNIT: &str = "emaki-phone-camera";
 
 /// The loopback device's name, as nixos-config loads v4l2loopback.
 pub const CAMERA_LABEL: &str = "Phone Camera";
@@ -67,7 +67,7 @@ fn camera() -> Option<Facing> {
             let words: Vec<&[u8]> = line.split(|b| *b == 0).collect();
             let at = words.iter().position(|word| *word == b"--camera")?;
             if !words.iter().any(|word| {
-                word.ends_with(MIRROR_APP.as_bytes()) || word.ends_with(b".amane-mirror-wrapped")
+                word.ends_with(MIRROR_APP.as_bytes()) || word.ends_with(b".emaki-mirror-wrapped")
             }) {
                 return None;
             }

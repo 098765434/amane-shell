@@ -10,17 +10,17 @@
 use amane::{Center, Column, DesktopApp, Padding, Rectangle, Row, Stack, Start, Text, Widget};
 
 use crate::tokens::{Styled, sys};
-use amane_kit::app_icon;
-use amane_kit::kinetic::Axis;
-use amane_kit::layout::{boxed, frame, text_height, text_width};
-use amane_kit::scroll_view::ScrollView;
+use emaki_kit::app_icon;
+use emaki_kit::kinetic::Axis;
+use emaki_kit::layout::{boxed, frame, text_height, text_width};
+use emaki_kit::scroll_view::ScrollView;
 
 use super::results::{self, Empty};
 use super::{
     BODY, CELL, COLS, GRID_W, ICON, ICON_BOX, Layout, View, apps_on, hover, on_app_click,
     on_body_scroll,
 };
-use amane_kit::material::{self, Level};
+use emaki_kit::material::{self, Level};
 
 // TODO(token): `launcher.highlight.radius` once Penpot has it (manual §1.1).
 /// The highlight's corners.

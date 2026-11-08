@@ -2,13 +2,13 @@
 //! phone's notifications here as its own; the matching one in
 //! `PhoneDevice::notifications()` carries the app's package (from
 //! Android's notification key), and the button opens that app in a window
-//! of its own (`amane-mirror --app`). It's offered once the phone's screen
+//! of its own (`emaki-mirror --app`). It's offered once the phone's screen
 //! was set up on the Phone page, or adb has the phone anyway. A text
 //! message's notification also gets **Open in Messages**, which opens
-//! `amane-messages` on that person's conversation.
+//! `emaki-messages` on that person's conversation.
 
 use amane::{Notification, Service};
-use amane_phone::{KdeConnect, PhoneNotification};
+use emaki_phone::{KdeConnect, PhoneNotification};
 
 use super::{MESSAGES_APP, MIRROR_APP, screen};
 
@@ -29,7 +29,7 @@ fn same(summary: &str, body: &str, phone: &PhoneNotification) -> bool {
 }
 
 /// The phone's messaging apps: their notifications are text messages,
-/// which Messages (`amane-messages`) shows here.
+/// which Messages (`emaki-messages`) shows here.
 const MESSAGING: [&str; 2] = [
     "com.samsung.android.messaging",
     "com.google.android.apps.messaging",

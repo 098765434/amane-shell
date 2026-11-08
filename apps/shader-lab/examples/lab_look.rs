@@ -2,14 +2,14 @@
 //! `dock-glass` config (apps/shader-lab/configs/dock-glass.json), over the
 //! wallpaper so the glass has something to bend.
 //!
-//! `cargo run -p amane-shader-lab --example lab_look`
+//! `cargo run -p emaki-shader-lab --example lab_look`
 
 use std::path::PathBuf;
 
 use amane::{Center, Image, Rectangle, Size, Stack, Window};
-use amane_kit::app::{app, app_window};
-use amane_kit::lab;
-use amane_kit::layout::boxed;
+use emaki_kit::app::{app, app_window};
+use emaki_kit::lab;
+use emaki_kit::layout::boxed;
 
 const WIDTH: f32 = 330.0;
 const HEIGHT: f32 = 105.0;
@@ -21,7 +21,7 @@ mod files {
 
 fn main() {
     lab::register(files::FILES);
-    app("amane-kit-lab-look")
+    app("emaki-kit-lab-look")
         .normal_window("main", window)
         .run();
 }

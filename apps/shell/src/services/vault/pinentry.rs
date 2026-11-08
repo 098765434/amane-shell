@@ -1,9 +1,9 @@
-//! The shell's end of amane-pinentry: a socket only this user can reach, and a dialog only for
+//! The shell's end of emaki-pinentry: a socket only this user can reach, and a dialog only for
 //! the rbw the shell itself asked to unlock.
 //!
 //! A caller is answered only if all of these hold, or it's told no and runs pinentry-gnome3:
 //!
-//! - it's this user (SO_PEERCRED), and runs `amane-pinentry` from the Nix store;
+//! - it's this user (SO_PEERCRED), and runs `emaki-pinentry` from the Nix store;
 //! - its parent runs `rbw-agent` from the store, with the shell's own HOME, XDG_CONFIG_HOME,
 //!   XDG_CACHE_HOME, XDG_RUNTIME_DIR and RBW_PROFILE, so its server and account are the ones
 //!   the shell shows;
@@ -23,13 +23,13 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use amane::Service;
-use amane_pinentry::assuan::{self, Prompt};
-use amane_pinentry::peer::{self, Peer};
-use amane_pinentry::wire::{self, Answer};
+use emaki_pinentry::assuan::{self, Prompt};
+use emaki_pinentry::peer::{self, Peer};
+use emaki_pinentry::wire::{self, Answer};
 use zeroize::Zeroizing;
 
 // how long after the shell runs an rbw command that can ask the dialog may come up
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 const ASKING_TIME: Duration = Duration::from_secs(120);
 
 // how long one question waits for the user
@@ -210,7 +210,7 @@ fn trusted(stream: &UnixStream) -> bool {
         return false;
     }
 
-    if !peer::exe(caller.pid).is_some_and(|exe| peer::is_program(&exe, &["amane-pinentry"])) {
+    if !peer::exe(caller.pid).is_some_and(|exe| peer::is_program(&exe, &["emaki-pinentry"])) {
         return false;
     }
 

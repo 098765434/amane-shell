@@ -26,7 +26,7 @@ mod drag;
 mod tests;
 mod view;
 
-use amane_kit::reveal;
+use emaki_kit::reveal;
 use drag::*;
 pub(super) use drag::{drag_layer, ghost, place, set_canvas_origin};
 pub(super) use view::view;
@@ -43,14 +43,14 @@ use super::grid::{Metrics, Place, Rect, Slot};
 use super::{edit, layout, tile, tiles};
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{Styled, quick, sys};
-use amane_kit::divider::Divider;
-use amane_kit::flow::Flow;
-use amane_kit::kinetic::{Axis, Kinetic};
-use amane_kit::layout::{boxed, caption, text_height, wrapped_lines};
-use amane_kit::material::{self, Level, Material};
-use amane_kit::motion;
-use amane_kit::scroll_view::{ScrollView, ScrollbarFade};
-use amane_kit::text_edit::Field;
+use emaki_kit::divider::Divider;
+use emaki_kit::flow::Flow;
+use emaki_kit::kinetic::{Axis, Kinetic};
+use emaki_kit::layout::{boxed, caption, text_height, wrapped_lines};
+use emaki_kit::material::{self, Level, Material};
+use emaki_kit::motion;
+use emaki_kit::scroll_view::{ScrollView, ScrollbarFade};
+use emaki_kit::text_edit::Field;
 
 pub(super) use catalog::Category;
 
@@ -67,7 +67,7 @@ const INSET: f32 = 24.0;
 /// How small the window is as it swells in.
 const OPEN_SCALE: f32 = 0.96;
 
-pub(super) use amane_kit::area::Area;
+pub(super) use emaki_kit::area::Area;
 
 struct State {
     field: Field,

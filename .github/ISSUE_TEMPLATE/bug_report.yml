@@ -6,7 +6,7 @@ body:
     id: what
     attributes:
       label: What happened
-      description: What you saw, and which surface or app it was in (the bar, the dock, the launcher, Quick Settings, Shell Settings, Drop, Messages, …).
+      description: What you saw, and which surface or app it was in (the bar, the dock, the launcher, Quick Settings, Emaki Settings, Drop, Messages, …).
     validations:
       required: true
   - type: textarea
@@ -36,14 +36,14 @@ body:
     id: shell
     attributes:
       label: Shell revision
-      description: The commit you built, or the `amane-shell` input's `rev` in your nixos-config `flake.lock`.
+      description: The commit you built, or the `emaki` input's `rev` in your nixos-config `flake.lock`.
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
       label: Logs
-      description: An excerpt of `journalctl --user -u amane-shell -b` around the time it happened (`-u amane-drop`, `-u amane-assistant` for those). `AMANE_LOG=debug` in the unit's environment says more.
+      description: An excerpt of `journalctl --user -u emaki -b` around the time it happened (`-u emaki-drop`, `-u emaki-assistant` for those). `EMAKI_LOG=debug` in the unit's environment says more.
       render: text
   - type: input
     id: gpu
@@ -63,4 +63,4 @@ body:
     id: more
     attributes:
       label: Anything else
-      description: Settings that matter (`~/.config/amane-shell/*.json`), a screenshot, or what you already tried.
+      description: Settings that matter (`~/.config/emaki/*.json`), a screenshot, or what you already tried.

@@ -5,7 +5,7 @@
 
 use std::thread;
 
-use amane_kit::app::Dialog;
+use emaki_kit::app::Dialog;
 
 use super::kdl::OutputConfig;
 use super::outputs::{self, Change, Output};

@@ -3,10 +3,10 @@
 //! draw it. Flat shapes only, so they stay on amane's quads.
 
 use amane::{Color, Column, Rectangle, Stack, Widget};
-use amane_kit::color::with_alpha;
-use amane_kit::layout::{boxed, frame};
-use amane_kit::settings::{BarSize, BarStyle, WidgetStyle};
-use amane_kit::theme::{Glass, Mode};
+use emaki_kit::color::with_alpha;
+use emaki_kit::layout::{boxed, frame};
+use emaki_kit::settings::{BarSize, BarStyle, WidgetStyle};
+use emaki_kit::theme::{Glass, Mode};
 
 /// Every picture's size.
 pub const WIDTH: f32 = 96.0;
@@ -131,7 +131,7 @@ fn panel(dark: bool) -> Color {
 }
 
 fn dark_now() -> bool {
-    amane_kit::theme::mode() == Mode::Dark
+    emaki_kit::theme::mode() == Mode::Dark
 }
 
 /// A panel of glass over the wallpaper, as clear, tinted or solid.
@@ -328,9 +328,9 @@ pub fn clock(analog: bool) -> Rectangle {
             frame(WIDTH, HEIGHT)
                 .align_child(amane::Center, amane::Center)
                 .child(Column::new(vec![boxed({
-                    use amane_kit::tokens::Styled;
+                    use emaki_kit::tokens::Styled;
                     amane::Text::new("9:41")
-                        .style(amane_kit::style::page_title_font())
+                        .style(emaki_kit::style::page_title_font())
                         .color(ink)
                 })])),
         ));

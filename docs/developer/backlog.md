@@ -40,9 +40,9 @@ Sounds, inline reply and Focus schedules remain.
 **Gap.** "History lasts the session" and "No sounds, inline reply, per-app settings, or Focus
 schedules" ([notifications.md](../user/features/notifications.md), *Not yet*).
 **Build, in order of value.**
-- Persist the center across restarts (`$XDG_STATE_HOME/amane-shell/notifications.json`, capped,
+- Persist the center across restarts (`$XDG_STATE_HOME/emaki/notifications.json`, capped,
   images by path only).
-- Per-app: allow / banners off / center only / never, keyed by `desktop-entry`; a Shell Settings
+- Per-app: allow / banners off / center only / never, keyed by `desktop-entry`; a Emaki Settings
   **Notifications** page listing apps seen so far.
 - Notification sounds (`sound-name` / `sound-file` hints, a default sound, silenced in DND).
 - Inline reply (`inline-reply` capability, as KDE/GNOME advertise it), using `text_edit.rs`.
@@ -71,7 +71,7 @@ failure mode (session-lock's "compositor keeps it locked if the client dies" hel
 
 ---
 
-## Tier 2: fills obvious holes in Shell Settings / Quick Settings
+## Tier 2: fills obvious holes in Emaki Settings / Quick Settings
 
 ### 6. Displays page · M
 
@@ -83,13 +83,13 @@ edits in `niri/config.kdl`. The widgets, dock and bar are already per-monitor.
 15 s revert (the shell's alert). Persist by writing the config's `output {}` blocks (or a managed
 include). A drag-to-arrange canvas can reuse `grid/drag.rs` ideas.
 
-### 7. Sound page in Shell Settings + per-app volume in Quick Settings · M
+### 7. Sound page in Emaki Settings + per-app volume in Quick Settings · M
 **Gap.** Sound defers to `pavucontrol`. No per-app levels, no balance, no alert sound.
 **Build.** In Quick Settings' Sound page, a row per playing stream (app icon + slider + mute); in
-Shell Settings, output/input devices, balance, input level meter, alert sound. Needs amane's
+Emaki Settings, output/input devices, balance, input level meter, alert sound. Needs amane's
 `Audio` to expose sink-inputs (pulse/pipewire stream list), which it doesn't yet.
 
-### 8. Network page in Shell Settings · M
+### 8. Network page in Emaki Settings · M
 **Gap.** Wi‑Fi and VPN details defer to `nm-connection-editor`. Missing: forget network, saved
 networks list, hidden network, IP/DNS details, VPN import (`.ovpn`, WireGuard `.conf`), hotspot
 setup.
@@ -107,7 +107,7 @@ Also: a layout indicator/switcher in the bar when more than one layout is config
 ### 10. Wallpaper picker · S–M
 **Gap.** The glass and adaptive tint depend heavily on the wallpaper, yet choosing one is outside the
 shell. Light/dark-paired wallpapers would follow the theme the shell already tracks.
-**Build.** A Shell Settings **Wallpaper** page (folder of images, per-monitor, fit mode, light/dark
+**Build.** A Emaki Settings **Wallpaper** page (folder of images, per-monitor, fit mode, light/dark
 pair, optional slideshow). Set through whichever wallpaper daemon is in use (swaybg/swww), or a
 background layer of the shell's own, if memory allows (see `idle-ram-plan.md`: an image layer per
 monitor costs VRAM).
@@ -122,7 +122,7 @@ ramp. `wlsunset` already supports `-l/-L` and `-S/-s`; the service just needs to
 
 ### 12. Default apps and file associations · S
 
-**Done**: Shell Settings' Default Apps page.
+**Done**: Emaki Settings' Default Apps page.
 The dock already reads `MimeType` for drops. A page to pick the browser, mail, terminal, image
 viewer, etc. (`xdg-mime default`), and the launcher's web search engine, which is hard-coded to
 Google (`launcher/model.rs SEARCH_URL`, *Known limits*).
@@ -138,8 +138,8 @@ Google (`launcher/model.rs SEARCH_URL`, *Known limits*).
 - **Calculator history** and currency conversion (rates cached daily).
 - **Selectable search engine** and custom search shortcuts (`gh foo`, `nix foo` → search.nixos.org,
   which also fits the NixOS Apps page).
-- **Settings search:** Shell Settings pages and Quick Settings pages as results ("Night Light",
-  "Displays"), opening `amane-settings --page …`. Fixes the *Known limit* that controls which only
+- **Settings search:** Emaki Settings pages and Quick Settings pages as results ("Night Light",
+  "Displays"), opening `emaki-settings --page …`. Fixes the *Known limit* that controls which only
   open a page aren't actions.
 - **Clipboard:** pin items, and images beyond PNG/JPEG (once amane can show them).
 - **Run a command** (`>` prefix, in a terminal or not).

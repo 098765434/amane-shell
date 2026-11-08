@@ -4,7 +4,7 @@
 //!
 //! ```ignore
 //! fn main() {
-//!     amane_kit::app::app("amane-settings")
+//!     emaki_kit::app::app("emaki-settings")
 //!         .normal_window("main", main_window)
 //!         .run();
 //! }
@@ -155,7 +155,7 @@ pub struct Page {
     pub name: String,
     /// A title over a run of pages, not a page: it can't be selected.
     pub section: bool,
-    /// The tile its glyph sits on, as Shell Settings draws its sidebar;
+    /// The tile its glyph sits on, as Emaki Settings draws its sidebar;
     /// with none the glyph is drawn bare.
     pub accent: Option<Accent>,
 }

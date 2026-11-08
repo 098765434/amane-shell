@@ -1,9 +1,9 @@
 //! The dock's motion, all in one place: every animation it runs is an
 //! [`Anim`] in [`DOCK`], each with its own switch, and the magnification
-//! and tooltip can go altogether. Shell Settings' dock page
-//! (`~/.config/amane-shell/dock.json`) sets how much it magnifies, whether
+//! and tooltip can go altogether. Emaki Settings' dock page
+//! (`~/.config/emaki/dock.json`) sets how much it magnifies, whether
 //! it shows names and rises with the overview, and whether it animates;
-//! `AMANE_DOCK_ANIMATIONS=off` turns every animation off whatever that says
+//! `EMAKI_DOCK_ANIMATIONS=off` turns every animation off whatever that says
 //! ([`motion`]). The dock then jumps where it would have moved, and still
 //! magnifies and hides as configured.
 //!
@@ -14,7 +14,7 @@ use std::sync::OnceLock;
 use std::time::Duration;
 
 use amane::{Animation, Blend, Easing};
-use amane_kit::settings::{self, dock};
+use emaki_kit::settings::{self, dock};
 
 // TODO(token): these become `dock.motion.*` tokens once Penpot has them
 // (manual §1.1; docs/developer/design-system/penpot-backlog.md).
@@ -122,12 +122,12 @@ impl Magnify {
 }
 
 /// The dock's motion: [`DOCK`] as the dock settings have it, every
-/// animation off when `AMANE_DOCK_ANIMATIONS=off` (or `0`, `false`, `no`).
+/// animation off when `EMAKI_DOCK_ANIMATIONS=off` (or `0`, `false`, `no`).
 /// Read afresh each time, so a view that asks redraws when the settings
 /// change.
 pub fn motion() -> DockMotion {
     static VAR: OnceLock<Option<String>> = OnceLock::new();
-    let var = VAR.get_or_init(|| std::env::var("AMANE_DOCK_ANIMATIONS").ok());
+    let var = VAR.get_or_init(|| std::env::var("EMAKI_DOCK_ANIMATIONS").ok());
     configured(DOCK, var.as_deref(), &dock())
 }
 
@@ -162,7 +162,7 @@ fn configured(motion: DockMotion, var: Option<&str>, settings: &settings::Dock) 
 /// once when it or the dock's motion is off, or motion is reduced.
 pub fn anim<T: Blend>(anim: &Anim, value: T) -> Animation<T> {
     let runs = anim.on && motion().enabled;
-    amane_kit::motion::eased(
+    emaki_kit::motion::eased(
         value,
         if runs { anim.duration } else { Duration::ZERO },
         anim.easing,

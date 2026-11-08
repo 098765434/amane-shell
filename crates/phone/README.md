@@ -1,6 +1,6 @@
-# amane-phone
+# emaki-phone
 
-Phones for amane-shell and its apps. Moved out of the amane fork in Phase 9; it builds on
+Phones for emaki and its apps. Moved out of the amane fork in Phase 9; it builds on
 amane's public API (`Bus`, `Service`, `run_in_order`, `Service::watched_within`, `Service::peek`,
 `ServiceError`).
 
@@ -72,7 +72,7 @@ PhoneMessages::new_conversation(&numbers, "Hei", &[photo]);  // a thread started
 | `request_pair`, `accept_pairing`, `cancel_pairing`, `unpair` | pairing |
 | `ring(id)` | rings the phone, even when it's on silent |
 | `send_files(id, paths)` | each one to the phone's downloads (`share` plugin) |
-| `share_files_now(id, &paths)`, `share_text_now(id, text)` | the same, and text or a link for the phone to open, waiting for the daemon's answer: `Err` with its message. For a caller on a thread of its own that tells how it went (amane-drop's Send to Phone) |
+| `share_files_now(id, &paths)`, `share_text_now(id, text)` | the same, and text or a link for the phone to open, waiting for the daemon's answer: `Err` with its message. For a caller on a thread of its own that tells how it went (emaki-drop's Send to Phone) |
 | `send_clipboard(id)`, `set_clipboard_auto_sync(id, on)` | the clipboard plugin |
 | `set_run_commands(id, on)`, `run_command_list()` | the phone's remote for this computer: Lock Screen, Suspend, Lock & Suspend, Screenshot |
 | `move_pointer`, `click(PhoneClick)`, `scroll`, `type_text`, `press_key(PhoneKey)` | this computer as the phone's trackpad and keyboard |
@@ -191,7 +191,7 @@ if let Some(device) = adb.ready_at(address) {
     let serial = device.serial.clone();
 
     // a blocking call, off the event loop
-    let said = amane_phone::adb(Some(&serial), &["shell", "getprop", "ro.build.version.sdk"]);
+    let said = emaki_phone::adb(Some(&serial), &["shell", "getprop", "ro.build.version.sdk"]);
 }
 
 // keep the phone at this address connected while it offers Wireless debugging
@@ -216,7 +216,7 @@ for service in adb.found() {
 | `want(address)`, `unwant(address)` | connects whenever that address offers `Connect` and adb doesn't have it |
 | `look(on)` | looks for services without wanting any, like while pairing |
 | `pair(address, port, code)`, `connect(address, port)`, `disconnect(serial)` | on their own thread; `operation()` says what's under way (an `AdbOperation`), `failure()` why the last failed |
-| `amane_phone::adb(serial, args)` | runs `adb [-s serial] args…` and waits: what it printed, or why it failed |
+| `emaki_phone::adb(serial, args)` | runs `adb [-s serial] args…` and waits: what it printed, or why it failed |
 
 ## How it works
 

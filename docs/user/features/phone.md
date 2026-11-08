@@ -10,12 +10,12 @@ four surfaces:
   phone's screen and camera, the clipboard, and the phone's remote for this
   computer.
 - **The bar's phone icon:** the phone's charge, beside the battery.
-- **Messages** (`amane-messages`): the phone's text messages and Phone Input.
-- **Phone Screen** (`amane-mirror`): the phone's screen and sound, driven from
+- **Messages** (`emaki-messages`): the phone's text messages and Phone Input.
+- **Phone Screen** (`emaki-mirror`): the phone's screen and sound, driven from
   here, and its apps in windows of their own.
 
 All three read the fork's `KdeConnect` and `PhoneMessages` services
-([amane-phone](../../../crates/phone/README.md)).
+([emaki-phone](../../../crates/phone/README.md)).
 They come from the Quickshell version's "KDE Connect, made native".
 
 The phone's **notifications** and **media** need no code. The shell is the
@@ -25,7 +25,7 @@ shares land in `~/Downloads`, and KDE Connect sends its own notification.
 
 ## Setting up
 
-- `kdeconnect` on in Shell Settings → Services (`programs.kdeconnect`) installs
+- `kdeconnect` on in Emaki Settings → Services (`programs.kdeconnect`) installs
   it and opens its ports, UDP and TCP 1714–1764.
 - The daemon starts at login from its own autostart entry.
 - On the phone, install KDE Connect (F-Droid or Play), on the same network, and
@@ -58,7 +58,7 @@ A paired phone's page, as far as the phone offers each:
 | Battery | the charge, and "charging" |
 | Ring | rings the phone, even on silent |
 | Send Files… | the portal's file chooser, then each file to the phone |
-| Messages, Phone Input | opens `amane-messages` on that phone and view (when it's installed) |
+| Messages, Phone Input | opens `emaki-messages` on that phone and view (when it's installed) |
 | Clipboard: Share Automatically, Send Clipboard to Phone | auto-sync both ways, or this computer's clipboard now |
 | Phone Remote: Control This Computer | adds Lock Screen, Suspend, Lock & Suspend and Screenshot to the phone's Run Command |
 | Forget This Phone… | asks, then unpairs |
@@ -75,7 +75,7 @@ but not while it charges.
 
 ## Messages
 
-`amane-messages` is an app beside Shell Settings (`apps/messages`), with its
+`emaki-messages` is an app beside Emaki Settings (`apps/messages`), with its
 own window rule that frosts behind it.
 
 - **The inbox** (the sidebar): the phone's conversations, newest first.
@@ -88,7 +88,7 @@ own window rule that frosts behind it.
   - An unread one is bold, with the accent's dot, and the header counts them.
     KDE Connect can't mark a message read on the phone, so opening a
     conversation here clears it on this computer
-    (`~/.cache/amane-shell/messages/read.json`); a newer message brings it
+    (`~/.cache/emaki/messages/read.json`); a newer message brings it
     back.
   - The search field (Ctrl+F) filters by name, number or message.
   - ⟳ asks the phone again, since a sleeping phone sends nothing until asked.
@@ -131,7 +131,7 @@ own window rule that frosts behind it.
   may refuse. Each conversation keeps its half-written reply while another is
   shown.
 - **Show on Phone** in a conversation's header opens the phone's own messaging
-  app in a window (`amane-mirror --app`), once its screen is set up and its
+  app in a window (`emaki-mirror --app`), once its screen is set up and its
   apps are listed.
 - **Phone Input:** a trackpad (drag moves the phone's pointer, a tap clicks, a
   right click long-presses, scrolling scrolls) with Left/Middle/Right buttons.
@@ -141,7 +141,7 @@ own window rule that frosts behind it.
 Alt+Up and Alt+Down (or Ctrl+Tab and Ctrl+Shift+Tab) move through the
 conversations. Escape clears the search, or leaves a new message.
 
-`amane-messages --device <id> --view messages|input|new` opens on a phone and a
+`emaki-messages --device <id> --view messages|input|new` opens on a phone and a
 view, and `--thread-of <name or number>` on that person's conversation once the
 phone has sent it. Launched again while it runs, it switches to them. Without
 `--device`, it picks the first connected phone that has messages.
@@ -156,7 +156,7 @@ syncs. Without it, conversations show numbers.
 ## Phone Screen (scrcpy)
 
 KDE Connect can't show the phone's screen, play its sound or use its camera.
-scrcpy's server can, and `amane-mirror` is a client for it drawn by amane. The
+scrcpy's server can, and `emaki-mirror` is a client for it drawn by amane. The
 two work together:
 
 - **KDE Connect finds the phone.** Its address (`PhoneDevice::addresses`) picks
@@ -182,11 +182,11 @@ two work together:
 
 The fork's `Adb` service finds Wireless debugging over mDNS, which needs UDP
 5353 open (nixos-config `modules/desktop.nix`). The phones set up are kept in
-`~/.config/amane-shell/phone-screen.json`.
+`~/.config/emaki/phone-screen.json`.
 
 ### The screen
 
-`amane-mirror --device <id>` is a floating window shaped like the phone (its
+`emaki-mirror --device <id>` is a floating window shaped like the phone (its
 niri rule is generated with the others).
 
 - A press and drag is a finger, the right button is **Back**, the middle one
@@ -198,24 +198,24 @@ niri rule is generated with the others).
 - Files dropped on it go to the phone's Downloads, and APKs are installed.
 - The phone's sound plays here as the stream "Phone" (Android 11 and later),
   and its speaker goes quiet meanwhile.
-- H.264 is decoded on the GPU through VAAPI (`AMANE_MIRROR_SOFTWARE=1` uses the
+- H.264 is decoded on the GPU through VAAPI (`EMAKI_MIRROR_SOFTWARE=1` uses the
   processor), and each frame goes to amane's `Video` as NV12, drawn by the quad
   pipeline.
 
 ### The phone's apps
 
-The launcher finds the phone's apps by name ("On Galaxy S24"; Shell Settings →
+The launcher finds the phone's apps by name ("On Galaxy S24"; Emaki Settings →
 Launcher → Phone apps). Each one opens alone in a window of its own: a virtual
 display on the phone, twice the window's size at 320 dpi, that resizes with
-the window. Its app id is `amane-mirror.<package>`, and its bar is just Back.
-The list comes from `amane-mirror --list-apps` into
-`~/.cache/amane-shell/phone-apps.json`, asked for again after a day. An app's
+the window. Its app id is `emaki-mirror.<package>`, and its bar is just Back.
+The list comes from `emaki-mirror --list-apps` into
+`~/.cache/emaki/phone-apps.json`, asked for again after a day. An app's
 window has no sound of its own; the screen's window plays the phone's.
 
 ### The camera as a webcam
 
 Phone page → the phone → **Use as Webcam** (and **Back Camera**). It runs
-`amane-mirror --camera front|back` as the user unit `amane-phone-camera`, so a
+`emaki-mirror --camera front|back` as the user unit `emaki-phone-camera`, so a
 shell restart doesn't end a call. It writes 1280×720 frames to the v4l2loopback
 device named "Phone Camera", which video call apps list. It needs Android 12.
 

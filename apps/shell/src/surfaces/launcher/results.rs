@@ -14,17 +14,17 @@ pub(super) use cards::{answer_card, empty, scope_chips};
 pub(super) use preview::{ask_clipboard, preview};
 
 use amane::{Button, Center, Column, End, Image, Rectangle, Row, Stack, Start, Text, Widget};
-use amane_kit::settings::change_launcher;
+use emaki_kit::settings::change_launcher;
 
 use crate::tokens::{Styled, TextStyle, sys};
-use amane_kit::app_icon;
-use amane_kit::buttons::{PushButton, Style};
-use amane_kit::color::with_alpha;
-use amane_kit::icons::{ICON_APPS, ICON_CONTENT_PASTE, ICON_DESCRIPTION, ICON_FOLDER, ICON_SEARCH};
-use amane_kit::kinetic::Axis;
-use amane_kit::layout::{boxed, frame, icon, pad, slot, text_height, text_width, wrapped_lines};
-use amane_kit::material::{self, FillLevel, Level};
-use amane_kit::scroll_view::ScrollView;
+use emaki_kit::app_icon;
+use emaki_kit::buttons::{PushButton, Style};
+use emaki_kit::color::with_alpha;
+use emaki_kit::icons::{ICON_APPS, ICON_CONTENT_PASTE, ICON_DESCRIPTION, ICON_FOLDER, ICON_SEARCH};
+use emaki_kit::kinetic::Axis;
+use emaki_kit::layout::{boxed, frame, icon, pad, slot, text_height, text_width, wrapped_lines};
+use emaki_kit::material::{self, FillLevel, Level};
+use emaki_kit::scroll_view::ScrollView;
 
 use std::cell::RefCell;
 use std::io::Read;

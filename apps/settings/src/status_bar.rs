@@ -4,18 +4,18 @@
 
 use amane::TextInput;
 use amane::{Center, Column, Rectangle, Row, Size, Widget};
-use amane_kit::app::{Dialog, commit_on_blur, field_box, text_field};
-use amane_kit::buttons::{IconButton, PushButton, Switch};
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::FormRow;
-use amane_kit::layout::{boxed, fixed_width};
-use amane_kit::settings::{
+use emaki_kit::app::{Dialog, commit_on_blur, field_box, text_field};
+use emaki_kit::buttons::{IconButton, PushButton, Switch};
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::FormRow;
+use emaki_kit::layout::{boxed, fixed_width};
+use emaki_kit::settings::{
     AutoHide, BAR_ITEMS, BUILTIN_ACTIVITIES, BarPosition, BarSize, BarStyle, ClockStyle,
     DateFormat, ShowDate, StatusBar, activities_seen, change_status_bar, status_apps_seen,
     status_bar, tray_seen,
 };
-use amane_kit::style;
-use amane_kit::thumbnail_picker::ThumbnailPicker;
+use emaki_kit::style;
+use emaki_kit::thumbnail_picker::ThumbnailPicker;
 
 use crate::{View, group, groups, previews, switch_row};
 
@@ -312,7 +312,7 @@ fn weather() -> Column {
     let now = status_bar().clone();
 
     // the field shows the place kept until it's typed in
-    amane_kit::app::fill_once(PLACE, || now.weather_place.clone());
+    emaki_kit::app::fill_once(PLACE, || now.weather_place.clone());
     let keep = |text: String| {
         let text = text.trim().to_string();
         if text != status_bar().weather_place {
@@ -510,7 +510,7 @@ fn activities() -> Column {
 }
 
 /// The apps the bar has had in its tray, each allowed in it or not.
-fn allowed_apps(now: &amane_kit::settings::StatusBar) -> amane_kit::form::Group {
+fn allowed_apps(now: &emaki_kit::settings::StatusBar) -> emaki_kit::form::Group {
     let seen = tray_seen();
     // programs' own items (amane's status items), kept by `app:<id>`
     let own = status_apps_seen().into_iter().map(|(id, title)| {
@@ -563,29 +563,29 @@ fn allowed_apps(now: &amane_kit::settings::StatusBar) -> amane_kit::form::Group 
     }
 }
 
-/// The glyph and tile colour Shell Settings shows before a status bar
+/// The glyph and tile colour Emaki Settings shows before a status bar
 /// item: the glyph the bar itself draws at rest.
-fn bar_item_icon(name: &str) -> (amane_kit::icons::Glyph, amane_kit::color::Accent) {
-    use amane_kit::color::Accent;
-    use amane_kit::icons::Glyph;
+fn bar_item_icon(name: &str) -> (emaki_kit::icons::Glyph, emaki_kit::color::Accent) {
+    use emaki_kit::color::Accent;
+    use emaki_kit::icons::Glyph;
     let (glyph, accent) = match name {
-        "tray" => (amane_kit::icons::ICON_APPS, Accent::Gray),
-        "privacy" => (amane_kit::icons::ICON_MIC, Accent::Orange),
-        "status-icons" => (amane_kit::icons::ICON_NIGHT_LIGHT, Accent::Indigo),
-        "activities" => (amane_kit::icons::ICON_TIMER, Accent::Purple),
-        "weather" => (amane_kit::icons::ICON_PARTLY_CLOUDY, Accent::Cyan),
-        "volume" => (amane_kit::icons::ICON_VOLUME_UP, Accent::Pink),
-        "bluetooth" => (amane_kit::icons::ICON_BLUETOOTH, Accent::Blue),
-        "network" => (amane_kit::icons::ICON_WIFI, Accent::Blue),
+        "tray" => (emaki_kit::icons::ICON_APPS, Accent::Gray),
+        "privacy" => (emaki_kit::icons::ICON_MIC, Accent::Orange),
+        "status-icons" => (emaki_kit::icons::ICON_NIGHT_LIGHT, Accent::Indigo),
+        "activities" => (emaki_kit::icons::ICON_TIMER, Accent::Purple),
+        "weather" => (emaki_kit::icons::ICON_PARTLY_CLOUDY, Accent::Cyan),
+        "volume" => (emaki_kit::icons::ICON_VOLUME_UP, Accent::Pink),
+        "bluetooth" => (emaki_kit::icons::ICON_BLUETOOTH, Accent::Blue),
+        "network" => (emaki_kit::icons::ICON_WIFI, Accent::Blue),
         "tailscale" => return (Glyph::Tailscale, Accent::Gray),
-        "keep-awake" => (amane_kit::icons::ICON_KEEP_AWAKE, Accent::Brown),
-        "keyboard" => (amane_kit::icons::ICON_KEYBOARD, Accent::Gray),
-        "phone" => (amane_kit::icons::ICON_PHONE, Accent::Green),
-        "battery" => (amane_kit::icons::ICON_BATTERY_FULL, Accent::Green),
-        "quick-settings" => (amane_kit::icons::ICON_TUNE, Accent::Gray),
-        "notifications" => (amane_kit::icons::ICON_NOTIFICATIONS, Accent::Red),
-        "clock" => (amane_kit::icons::ICON_SCHEDULE, Accent::Blue),
-        _ => (amane_kit::icons::ICON_APPS, Accent::Gray),
+        "keep-awake" => (emaki_kit::icons::ICON_KEEP_AWAKE, Accent::Brown),
+        "keyboard" => (emaki_kit::icons::ICON_KEYBOARD, Accent::Gray),
+        "phone" => (emaki_kit::icons::ICON_PHONE, Accent::Green),
+        "battery" => (emaki_kit::icons::ICON_BATTERY_FULL, Accent::Green),
+        "quick-settings" => (emaki_kit::icons::ICON_TUNE, Accent::Gray),
+        "notifications" => (emaki_kit::icons::ICON_NOTIFICATIONS, Accent::Red),
+        "clock" => (emaki_kit::icons::ICON_SCHEDULE, Accent::Blue),
+        _ => (emaki_kit::icons::ICON_APPS, Accent::Gray),
     };
     (Glyph::Font(glyph), accent)
 }

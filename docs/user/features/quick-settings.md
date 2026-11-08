@@ -183,9 +183,9 @@ the first free cells (or hides it); a control the file doesn't name is added hid
 that arrives with an update or new hardware waits in Suggestions rather than tearing a hole in
 the canvas. The default layout packs the default order onto the canvas for the controls this machine
 has, with VPN, Wired, Tailscale, Keep Awake and Software Update hidden. `quick-settings
-reset-layout` over IPC restores it. Software Update (Utilities; with Shell Settings installed)
+reset-layout` over IPC restores it. Software Update (Utilities; with Emaki Settings installed)
 draws only while the NixOS configuration's scheduled update check found newer inputs
-(`$XDG_STATE_HOME/amane-shell/nixos/check.json`), naming them; a press opens Shell Settings on
+(`$XDG_STATE_HOME/emaki/nixos/check.json`), naming them; a press opens Emaki Settings on
 Software Update ([nixos.md](../../developer/integration/nixos.md#the-scheduled-check)).
 
 ## Motion
@@ -374,7 +374,7 @@ and `quick.drag.scale` (see [penpot-backlog.md](../../developer/design-system/pe
 The Power Off page's Restart…, Power Off… and Log Out… ask first in the shell's alert
 (`apps/shell/src/surfaces/alert/mod.rs`): an alert in the middle of the screen, a kit
 [`Dialog`](../../developer/kit/components.md#dialog) on thick glass. `alert::show(dialog)` puts it on the
-`amane.alert` surface, as big as its card, which frosts itself and holds the keyboard until
+`emaki.alert` surface, as big as its card, which frosts itself and holds the keyboard until
 answered; its layer rule rounds it (`dialog.radius`) and gives it niri's shadow (`0 18 48`). In
 debug builds the `alert-test` IPC call shows a sample ([ipc.md](../../developer/integration/ipc.md#alert-test)).
 

@@ -14,7 +14,7 @@ use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 
-use amane_process::Cmd;
+use emaki_process::Cmd;
 use serde::Deserialize;
 use serde::de::{self, Deserializer as _, MapAccess, Visitor};
 use serde_json::Value;

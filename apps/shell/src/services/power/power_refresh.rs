@@ -1,5 +1,5 @@
 //! Refresh rate by power source: with "Lower the refresh rate on battery"
-//! on (Shell Settings' Displays page, `displays.json`), each display runs at
+//! on (Emaki Settings' Displays page, `displays.json`), each display runs at
 //! its slowest rate at the same resolution while on battery, and goes back
 //! to the rate it had once on AC.
 //!
@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 use std::sync::Once;
 
 use amane::{Battery, Config, Outputs, Service, niri};
-use amane_kit::settings::{Displays, displays};
+use emaki_kit::settings::{Displays, displays};
 
 use crate::services::Wake;
 

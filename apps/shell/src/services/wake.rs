@@ -5,7 +5,7 @@
 use std::sync::{Condvar, Mutex, PoisonError};
 use std::time::SystemTime;
 
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 /// One listener's wake-up call.
 pub struct Wake {

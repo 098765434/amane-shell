@@ -4,7 +4,7 @@ The launcher (`apps/shell/src/surfaces/launcher/`): a glass search pill high on 
 with round buttons beside it for its modes, that grows down into a panel as you type. Its
 Applications mode is the app grid the launcher started as, after a KDE
 [launcher](https://github.com/EliverLara/TahoeLauncher). It's opened over IPC from a
-keybind. Its namespace is `amane.launcher`, and its surface covers the output, clear outside the
+keybind. Its namespace is `emaki.launcher`, and its surface covers the output, clear outside the
 glass, so a click anywhere but the glass closes it.
 
 ## What it shows
@@ -77,7 +77,7 @@ pointer, the glyph turns into a back button (a chevron on a soft square), back t
     launcher, filled out with the first of the rest, with a hairline under them. It's left
     out until an app has been used from the launcher.
   - The ⋯ button at the end of the row shows the apps as a **Grid** or a **List**
-    (`apps_layout` in `~/.config/amane-shell/launcher.json`).
+    (`apps_layout` in `~/.config/emaki/launcher.json`).
   - Typing searches the apps only.
 - **Actions** (`Ctrl+3`): every action, a section at a time (see [Actions](#actions)), in a
   panel of one size. Typing searches the actions only.
@@ -93,7 +93,7 @@ What the launcher does without opening an app (`actions.rs`), the launcher's Act
 | Section | Actions |
 |---|---|
 | Quick Settings | each of Quick Settings' toggles and buttons this machine has, as it is now ("Turn Night Light On" while it's off, Screenshot), Set Power Mode (a choice of the modes the daemon offers), Keep Awake For (how long) |
-| System | Lock Screen, Log Out, Suspend, Restart, Power Off, each when logind allows it; with Shell Settings installed, Check for Updates, Apply System Changes and Install Software, which open its System pages (`amane-settings --page update` / `about` / `apps`) |
+| System | Lock Screen, Log Out, Suspend, Restart, Power Off, each when logind allows it; with Emaki Settings installed, Check for Updates, Apply System Changes and Install Software, which open its System pages (`emaki-settings --page update` / `about` / `apps`) |
 | Clock | Start Timer (how long), and Cancel Timer while one runs |
 | *an app* | each of its `[Desktop Action]`s, like Firefox's "New Private Window" |
 
@@ -113,7 +113,7 @@ it on Enter:
   digits, Return to save (none clears them), Escape to give up.
 - Keys another action has are refused, saying which.
 - Typed in the launcher, an action's quick keys put it first, its keys shown at its end.
-- They're kept in `launcher.json` (`quick_keys`), with the action's name. Shell Settings lists
+- They're kept in `launcher.json` (`quick_keys`), with the action's name. Emaki Settings lists
   them and can remove them or reset them all.
 
 **The timer** (`services/launcher/timer.rs`): one at a time; a new one replaces it. While it runs the
@@ -168,7 +168,7 @@ Once on:
   - A copy a password manager marks as one (`x-kde-passwordManagerHint`) isn't kept, nor one
     made while an app it's told to leave out has the focus (KeePassXC, Bitwarden and 1Password
     by default).
-  - They're kept in `$XDG_STATE_HOME/amane-shell/clipboard/`: `index.json` and a file a copy.
+  - They're kept in `$XDG_STATE_HOME/emaki/clipboard/`: `index.json` and a file a copy.
 - **The list.** Each row is its start, or the image small, what it is and how big, the app it
   was copied in, and how long ago. Typing narrows it to the copies with that in them.
 - **The preview.** The copy picked shows beside the list: its text wrapped, or its image
@@ -182,7 +182,7 @@ Once on:
 
 It follows the clipboard through amane's `ClipboardWatcher` (the compositor's data-control
 protocol), which needs no keyboard focus and starts no program. It starts and stops as the setting
-changes (`clipboard.enabled` in `launcher.json`, or Shell Settings' Launcher page).
+changes (`clipboard.enabled` in `launcher.json`, or Emaki Settings' Launcher page).
 
 To open it from a key, bind `launcher toggle clipboard` in place of another history's picker
 ([ipc.md](../../developer/integration/ipc.md#niri-keybinds)).
@@ -254,7 +254,7 @@ Two fingers on the grid either scroll it or turn the category: the first few pix
   door slides the same way; one further away fades in instead.
 
 The compositor only reports the fingers moving and lifting, so the momentum is the launcher's
-(`amane_kit::kinetic`, `crates/kit/src/animation/kinetic.rs`), not amane's.
+(`emaki_kit::kinetic`, `crates/kit/src/animation/kinetic.rs`), not amane's.
 
 ## App menu
 
@@ -282,7 +282,7 @@ fuller lines.
 
 ## What it remembers
 
-- **Use**, in `$XDG_STATE_HOME/amane-shell/launcher-usage.json` (`usage.rs`), written when
+- **Use**, in `$XDG_STATE_HOME/emaki/launcher-usage.json` (`usage.rs`), written when
   something runs. It holds:
   - how much each result was used, by a key like `app:firefox.desktop` (amane's
     `DesktopApp::id()`);
@@ -290,7 +290,7 @@ fuller lines.
   - the last 50 searches run.
 
   Kept to 500 results and 2000 query starts, the least used going first.
-- **Settings**, in `~/.config/amane-shell/launcher.json` (`amane_kit::settings::Launcher`),
+- **Settings**, in `~/.config/emaki/launcher.json` (`emaki_kit::settings::Launcher`),
   followed live:
   - `apps_layout`: `grid` or `list`.
   - `excluded_providers`: the sources the search leaves out, by id: `answers`, `apps`,
@@ -299,7 +299,7 @@ fuller lines.
   - `clipboard`: whether the history is on, how many copies it keeps, whether images too,
     and the apps it leaves out.
 
-  Shell Settings' **Launcher** page changes them.
+  Emaki Settings' **Launcher** page changes them.
 
 ## IPC
 
@@ -320,7 +320,7 @@ The pill, the panel and the round buttons are the same glass as Quick Settings a
 The panel's content is laid out for the size the sheet is heading to, and clipped to the size it
 is, so growing reveals the rows rather than squeezing them.
 
-The `amane.launcher` layer rule in `niri-layer-rule.kdl` sets `xray false`, so the frost blurs
+The `emaki.launcher` layer rule in `niri-layer-rule.kdl` sets `xray false`, so the frost blurs
 the windows under it rather than the wallpaper, and frosts its popups, so an app's menu is a
 frosted card. Install it with `./gen-layer-rules.sh` (see
 [layer-rules.md](../../developer/integration/layer-rules.md)).

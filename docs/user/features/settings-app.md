@@ -1,8 +1,8 @@
-# Shell Settings
+# Emaki Settings
 
-`amane-settings` (`apps/settings/`) is the shell's settings app, built on the kit's
+`emaki-settings` (`apps/settings/`) is the shell's settings app, built on the kit's
 [app scaffolding](../../developer/kit/app.md). Each control changes one of the shell's settings files, which the
-running shell follows at once; Shell Settings' own window redraws in the new look too. Editing a
+running shell follows at once; Emaki Settings' own window redraws in the new look too. Editing a
 file by hand works the same way.
 
 Only one copy runs: launching it again brings the open window forward, and `--page <name>`
@@ -10,11 +10,11 @@ Only one copy runs: launching it again brings the open window forward, and `--pa
 page's name, like `displays`) opens that page, cold or in the running copy (`App::on_activate`): the launcher's
 system actions and the update toast use it. `--package <attr>` opens Apps with that nixpkgs
 package's details. The flake installs it with a `.desktop` entry, so
-the launcher lists it as *Shell Settings*.
+the launcher lists it as *Emaki Settings*.
 
 ## The window
 
-An `app_window` titled "Shell Settings", 760 × 760 (narrower down to where a 440 px page still
+An `app_window` titled "Emaki Settings", 760 × 760 (narrower down to where a 440 px page still
 fits), with a 200 px [`sidebar`](../../developer/kit/app.md#sidebar) in two sections, **Shell** (eight pages,
 the shell's own settings and the displays) and **System** (eight, the NixOS configuration), each
 page's glyph on a colored tile, under a **Search** field. Beside it, a toolbar row holds the
@@ -55,13 +55,13 @@ first ("Stop the build?"), as does the compositor's close.
 
 Its content is drawn on the opaque window background; only the sidebar shows the frost behind the
 window. That frost, and the frosted popups (the dropdowns' menus), come from the `window-rule`
-the generated config has for `amane-settings` ([layer-rules.md](../../developer/integration/layer-rules.md)).
+the generated config has for `emaki-settings` ([layer-rules.md](../../developer/integration/layer-rules.md)).
 Without it the sidebar is an opaque panel. A niri window rule can still round the window like
 other apps:
 
 ```kdl
 window-rule {
-    match app-id="^amane-settings$"
+    match app-id="^emaki-settings$"
     geometry-corner-radius 12
     clip-to-geometry true
 }
@@ -148,7 +148,7 @@ Writes `notifications.json` (`notifications.rs`); see
 
 The layout is the shell's own state, so this page (`quick_settings.rs`) has no file of its own: it
 calls the running shell over IPC ([ipc.md](../../developer/integration/ipc.md#quick-settings)) and watches
-`$XDG_STATE_HOME/amane-shell/quick-settings.json` to stay in step with Customize.
+`$XDG_STATE_HOME/emaki/quick-settings.json` to stay in step with Customize.
 
 - **Customize…** (`quick-settings customize`) and **Reset Layout…** (`reset-layout`, after a
   dialog).
@@ -171,13 +171,13 @@ them.
 
 ### Drop
 
-Writes amane-drop's `grids.json` and `sharing.json` (`drop.rs`); see [drop.md](drop.md).
+Writes emaki-drop's `grids.json` and `sharing.json` (`drop.rs`); see [drop.md](drop.md).
 
 | Setting | Control | Field |
 |---|---|---|
 | Grids | a row per grid with its tile count: **Rename…** (a dialog), up and down, ✕ (asks first, when there are more than one) | `grids` |
 | Tiles a row | dropdown, 3–6 | `columns` |
-| Grids and their tiles | **Add Grid**, **Open Drop** (`amane-drop open`) | |
+| Grids and their tiles | **Add Grid**, **Open Drop** (`emaki-drop open`) | |
 | After an upload | switches: Copy the link, Show a notification | `copy_link`, `notify` |
 | Imgur | Client ID | `imgur_client_id` |
 | SFTP | Server, Port, User name, Folder, Web address; Private key (**Choose…**, ✕); Password or Key passphrase | `sftp.*` |
@@ -185,9 +185,9 @@ Writes amane-drop's `grids.json` and `sharing.json` (`drop.rs`); see [drop.md](d
 
 Send to Phone and 0x0.st need nothing; their rows say so. Text fields keep what's typed on Return
 or once they lose the keys. A password field empties once its text is kept in the keyring
-(`amane_kit::secrets`, through `secret-tool`); its row then says "In the keyring" and offers
+(`emaki_kit::secrets`, through `secret-tool`); its row then says "In the keyring" and offers
 **Forget**. Where no keyring answers, the S3 group's note says secrets are in
-`~/.config/amane-drop/secrets.json`, readable only by the user.
+`~/.config/emaki-drop/secrets.json`, readable only by the user.
 
 ### Passwords
 
@@ -210,12 +210,12 @@ unlock is always the shell's own, and its dialog asks.
 
 The app's card (its icon, name and version), and **Settings files ›**: a sub-page with each
 file's path (from `~`, shortened in the middle when long) and **Show in Folder**, and a note that
-`AMANE_THEME`, `AMANE_DENSITY` and `AMANE_TEXT_SCALE` win over these settings when set.
+`EMAKI_THEME`, `EMAKI_DENSITY` and `EMAKI_TEXT_SCALE` win over these settings when set.
 
 ## System
 
 The NixOS configuration in `~/nixos-config`, through the contract in
-[nixos.md](../../developer/integration/nixos.md): read from the flake's `amaneSettings` output, changed in
+[nixos.md](../../developer/integration/nixos.md): read from the flake's `emakiSettings` output, changed in
 `managed/settings.json`, built as the user and activated through polkit. The pages are
 `apps/settings/src/system/`.
 
@@ -248,7 +248,7 @@ layout** and **Keyboard variant** (fields checked against `localectl list-x11-ke
 characters or more; Enter or **Search** at once) in the nixpkgs catalog
 (`system/catalog.rs`): every package `nix search --json --inputs-from <repo> nixpkgs ^` finds in
 the configuration's own nixpkgs, less nixpkgs' `apps/shell/tests`, one tab-separated line each (attribute,
-`pname`, version, description) in `$XDG_CACHE_HOME/amane-shell/nixpkgs/<rev>.tsv`, where `<rev>`
+`pname`, version, description) in `$XDG_CACHE_HOME/emaki/nixpkgs/<rev>.tsv`, where `<rev>`
 is the nixpkgs revision `flake.lock` pins for the root's `nixpkgs` input. The page builds it
 when it opens and there's none for that revision (*Preparing the app catalog… m:ss*: seconds
 with nix's evaluation cache warm, minutes the first time after a nixpkgs update), streaming
@@ -286,7 +286,7 @@ of adding when the build would refuse it. A change waits
 for Apply like any other.
 
 *Installed* (`system/inventory.rs`) is one list of everything on the system: the packages in
-`managed/settings.json`'s `packages` (nixpkgs attribute paths, `amane.packages` in the repo),
+`managed/settings.json`'s `packages` (nixpkgs attribute paths, `emaki.packages` in the repo),
 each with where it stands against HEAD's copy (what Apply last committed: *Added in Settings*,
 with **Remove**; *Installs on Apply* or *Removed on Apply*, with **Undo**), listed first while
 pending; the packages each repo file installs (the snapshot's `systemPackages`, with the file's
@@ -300,7 +300,7 @@ with an entry in the launcher. A file's package is matched to its attribute by t
 the file lists on lines of their own (`github-cli  # gh`), looked up in the catalog (`gh` is
 `github-cli`'s `pname`); with one, the row opens its details and has **Move…**: Move to
 Settings for a package (`adopt.rs`), a dialog, then the line listing it alone becomes a comment
-(`# github-cli is in \`packages\` in managed/settings.json (Shell Settings).`), the attribute
+(`# github-cli is in \`packages\` in managed/settings.json (Emaki Settings).`), the attribute
 joins `packages`, and both are one commit, `move: github-cli from modules/apps.nix`. Nothing is
 installed or removed, so the system doesn't change. A package listed twice, or with another on
 its line, says to edit the file by hand; one from a flake input (amane) has no attribute and no
@@ -349,7 +349,7 @@ Sunshine), with the unit's state beside it ("Running · 79 MB", "Stopped") from
 (`--user` for a user unit such as Sunshine's), and a dot before its name: green running, yellow
 starting or stopping, red failed, grey off. A spinner shows until the first look. A service
 that's installed but not started at boot has **Start only when needed** set in under it
-(`amane.services.<unit>.onDemand`, which empties the unit's `wantedBy`). **Start** / **Stop**
+(`emaki.services.<unit>.onDemand`, which empties the unit's `wantedBy`). **Start** / **Stop**
 act now through `systemctl start|stop` (systemd asks through polkit) and don't survive a
 restart; they show only for a unit systemd has (not for one switched on and not yet applied).
 Stopping SSH, Tailscale or Sunshine asks first, since a remote session may ride on it. The
@@ -358,7 +358,7 @@ switches wait for Apply.
 ### Power & Lock
 
 `system/power.rs`. **Dim the screen after**, **Lock the screen after** and **Turn the screen
-off after**: dropdowns over 1–30 minutes and *Never*, the `amane.idle.*` options that build
+off after**: dropdowns over 1–30 minutes and *Never*, the `emaki.idle.*` options that build
 hypridle's listeners (home-manager restarts hypridle on Apply). A note says when a step is set
 to come before the one it follows ("The screen locks before it dims."). **Idle service** shows
 whether hypridle is running.
@@ -384,7 +384,7 @@ clean-up removes versions older than 14 days. Then the registry's controls for t
 ### Software Update
 
 `system/update.rs`. **Check for Updates** writes a fresh lock beside the repo
-(`nix flake update --output-lock-file $XDG_STATE_HOME/amane-shell/nixos/update.lock`), and if
+(`nix flake update --output-lock-file $XDG_STATE_HOME/emaki/nixos/update.lock`), and if
 any root input moved, builds the working tree with it (`nix build --reference-lock-file`) and
 compares it with the running system, through the Apply bar like any build; a row then says
 "Update ready: 2 inputs change · 143 packages change · needs a restart" with **Show Changes**
@@ -397,7 +397,7 @@ from `flake.lock` (by a plain name where there's one: nixpkgs is *NixOS packages
 while a check is around, *not pinned* for none), and **Update** to check just that input.
 
 The scheduled check ([nixos.md](../../developer/integration/nixos.md#the-scheduled-check)) fills the same
-row between checks: "Checked 2 hours ago · updates for nixpkgs, amane-shell" with **Update
+row between checks: "Checked 2 hours ago · updates for nixpkgs, emaki" with **Update
 All**, "Checked yesterday · up to date", or why it couldn't; the inputs it saw move read `from
 → to` in the list. **Check automatically** (Daily, Weekly, Never) is the timer's setting, a
 managed setting like the others. The shell shows the check's toast, and its Software Update
@@ -410,7 +410,7 @@ tile (Quick Settings, Add Controls → Utilities) names the inputs while somethi
 | State | Says | Buttons |
 |---|---|---|
 | Waiting | "2 changes waiting · Time zone → Europe/Oslo · Tailscale off" | **Discard** (a dialog), **Try** (builds, then activates in `test` mode), **Apply** (builds) |
-| Building | a progress bar (a spinner while evaluating) and "Building amane-shell (3/7) · 1:12", "Evaluating…", or "Checking for updates" | **Show Log**, **Cancel** (asks first) |
+| Building | a progress bar (a spinner while evaluating) and "Building emaki (3/7) · 1:12", "Evaluating…", or "Checking for updates" | **Show Log**, **Cancel** (asks first) |
 | Built | "Ready: 12 packages change · needs a restart" ("Update ready: …" for a check) | **Show Changes**, **Cancel**, **Try**, **Apply at Restart** (when the kernel changes), **Apply Now** |
 | Up to date | "Everything is up to date." (a check that found nothing) | **Dismiss** |
 | Applying | "Applying… authenticate when asked." | **Show Log** |
@@ -426,8 +426,8 @@ with back in the toolbar's pill.
 `appearance.json`, `desktop.json`, `status-bar.json`, `dock.json`, `launcher.json`, `displays.json`
 (`battery_refresh`) and `nixos.json`
 (`repo`, `host`: where the NixOS configuration is) are JSON in
-`$XDG_CONFIG_HOME/amane-shell/` (else `~/.config/amane-shell/`), read and
-written through amane's `Config` by `amane_kit::settings`. A missing field takes its default, so
+`$XDG_CONFIG_HOME/emaki/` (else `~/.config/emaki/`), read and
+written through amane's `Config` by `emaki_kit::settings`. A missing field takes its default, so
 an older or hand-written file still works:
 
 ```json
@@ -435,6 +435,6 @@ an older or hand-written file still works:
   "reduce_motion": null, "adaptive_glass": false, "vibrancy": false }
 ```
 
-`AMANE_THEME`, `AMANE_DENSITY`, `AMANE_TEXT_SCALE`, `AMANE_GLASS`, `AMANE_ADAPTIVE_GLASS=1` and
-`AMANE_VIBRANCY=1` win over the file when set. The shell's other files, its state, are in
+`EMAKI_THEME`, `EMAKI_DENSITY`, `EMAKI_TEXT_SCALE`, `EMAKI_GLASS`, `EMAKI_ADAPTIVE_GLASS=1` and
+`EMAKI_VIBRANCY=1` win over the file when set. The shell's other files, its state, are in
 [services.md](../../developer/integration/services.md#settings-and-state).

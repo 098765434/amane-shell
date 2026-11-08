@@ -1,9 +1,9 @@
 [package]
-name = "amane-log"
+name = "emaki-log"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "The one logger every amane-shell program sets up: the `log` crate, written to stderr for the journal."
+description = "The one logger every emaki program sets up: the `log` crate, written to stderr for the journal."
 license.workspace = true
 repository.workspace = true
 authors.workspace = true

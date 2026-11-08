@@ -10,7 +10,7 @@
 //! window. Point it at another one with `GLASS_WALLPAPER=/path/to/image`.
 //! `GLASS_THEME=dark` shows the dark version, over a dimmed wallpaper, and
 //! `GLASS_THEME=dark-black` the same with black highlights.
-//! The edge is lit by the shell's own shader, now amane-kit's
+//! The edge is lit by the shell's own shader, now emaki-kit's
 //! `kit/src/look/glass.wgsl`, with this test's stronger values; `GLASS_RIM=flat`
 //! swaps it for the pen's plain 1px line, to compare. Run it from the repo
 //! root, the shader path is relative to it.
@@ -409,7 +409,7 @@ fn network(palette: &Palette, name: &str, strength: u8, secured: bool, active: b
         .height(40.0)
         .radius(6.0)
         .fill(fill)
-        .padding(amane_kit::layout::pad_x(INSET, INSET))
+        .padding(emaki_kit::layout::pad_x(INSET, INSET))
         .align_child(Center, Center)
         .child(
             Row::new(children![

@@ -12,7 +12,7 @@ A module's folder says what kind of thing it is. A new one goes where its kind i
 | `apps/shell/src/surfaces/` | a surface of its own, a folder each: the status bar, dock, launcher, notifications, Quick Settings, widgets, alert, on-screen display and the password-fill popup (`fill/`), each with its doc in `docs/user/features/`; how a surface is laid out is [below](#a-surface) |
 | `apps/shell/src/chrome/` | what several surfaces share and only the shell has (`panel`, `bar`, `per_output`, `battery`, `workspace_menu`); the rest is the kit's |
 | `apps/shell/src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; `vault/` (rbw, for passwords); the assistant's client (`assistant.rs`); the status apps' bus server (`status_apps.rs`); helpers in `process.rs` and `state.rs` |
-| `apps/` | the programs beside the shell (`apps/shell`): Shell Settings, Messages, Phone Screen, Shader Lab (with its effects and saved looks), Drop, the assistant's daemon, and `train-watch`, which follows a training run from the status bar |
+| `apps/` | the programs beside the shell (`apps/shell`): Emaki Settings, Messages, Phone Screen, Shader Lab (with its effects and saved looks), Drop, the assistant's daemon, and `train-watch`, which follows a training run from the status bar |
 | `crates/` | what they share: the kit (`crates/kit`, with the design tokens in `design-tokens/`), the status-item client (`status`), the phone (`phone`), the NixOS model (`nixos`), a process runner (`process`), logging (`log`), rbw's pinentry and the assistant's library |
 | `apps/shell/tests/fixtures/` | recorded output the shell's parsers are tested on |
 | `xtask/` | the workspace's tasks: `cargo xtask layer-rules`, `tokens`, `lint-terms`, `links` |
@@ -26,7 +26,7 @@ A module's folder says what kind of thing it is. A new one goes where its kind i
 | `crates/kit/src/tokens/`, `theme.rs` | the design tokens and the theme they resolve with |
 
 The kit's folders don't show in its paths: every module is re-exported at the root, so it's
-`amane_kit::card`, not `amane_kit::containers::card`.
+`emaki_kit::card`, not `emaki_kit::containers::card`.
 
 ## Folders
 
@@ -76,7 +76,7 @@ of them written again.
 | Need | Use |
 |---|---|
 | a box of a size, room to leave | `layout::frame(width, height)` (a `Rectangle` starts transparent) |
-| a rectangle on the surface, for hit tests and frost | `amane_kit::area::Area` |
+| a rectangle on the surface, for hit tests and frost | `emaki_kit::area::Area` |
 | opening and closing | `reveal::Reveal` for the motion, `reveal::Swell` for the scale, opacity and frost it draws at, `reveal::showing` for whether to draw at all, `panel::empty` while there's nothing |
 | motion timed to something outside the kit | `motion::eased` (still for reduced motion) |
 | a click | `buttons::Actions::press(f)` |
@@ -87,7 +87,7 @@ of them written again.
 | a row that opens more | `list::chevron()` |
 | a listener keeping what it read | `service::ServiceExt::replace(fresh)`; a listener reads its own service with `peek()`, never `read()` |
 | times, sizes, counts in words | `format::{ago, span, span_exact, bytes, count}` |
-| folders, whole files, now, locks, flags, file types, `%` escapes, `'static` ids | `amane_base::{paths, fs, time, sync, args, mime, percent, intern}`, through the kit |
+| folders, whole files, now, locks, flags, file types, `%` escapes, `'static` ids | `emaki_base::{paths, fs, time, sync, args, mime, percent, intern}`, through the kit |
 
 ## Tables
 
@@ -95,19 +95,19 @@ A fact written in several places is written once, as a table the rest is derived
 
 - **Quick Settings' controls:** `quick_settings/controls.rs` `SPECS`, one `Spec` per control (name,
   title, sizes, how it's drawn, whether this machine has it), in `ControlId`'s order.
-- **Shell Settings' pages:** `apps/settings/src/pages.rs` `SIDEBAR` (the `--page` names, titles,
+- **Emaki Settings' pages:** `apps/settings/src/pages.rs` `SIDEBAR` (the `--page` names, titles,
   search words, bodies, sub-pages, toolbar buttons).
 - **Settings files:** `settings_file!` in `crates/kit/src/platform/settings/mod.rs`.
 - **The IPC's keywords:** `words!` in `shell_ipc.rs`, and `handlers![…]` in `ipc.rs`.
 
 ## State, settings and logs
 
-- **Settings** are the kit's `Config<T>` files in `~/.config/amane-shell/`, which Shell Settings
+- **Settings** are the kit's `Config<T>` files in `~/.config/emaki/`, which Emaki Settings
   writes too.
 - **State** the shell keeps for itself is a `State` type (`services/state.rs`): JSON with a
-  version, written whole, in `$XDG_STATE_HOME/amane-shell/`
+  version, written whole, in `$XDG_STATE_HOME/emaki/`
   ([services.md](integration/services.md#settings-and-state)). A file in an older format is
   read by the type's `legacy()` and left as it was.
-- **Logs** go through the `log` crate. Each program calls `amane_log::init` once; `AMANE_LOG`
+- **Logs** go through the `log` crate. Each program calls `emaki_log::init` once; `EMAKI_LOG`
   (`warn`, `debug`, …) sets the level, `info` by default. A fallible call whose result is dropped
   says why in a comment, or logs.

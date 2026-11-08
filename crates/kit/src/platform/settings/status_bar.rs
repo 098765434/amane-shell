@@ -99,7 +99,7 @@ impl BarSize {
         }
     }
 
-    /// Its name in Shell Settings.
+    /// Its name in Emaki Settings.
     pub fn label(self) -> &'static str {
         match self {
             Self::Compact => "Compact",
@@ -303,7 +303,7 @@ impl StatusBar {
 }
 
 /// Every item on the status bar's right, by name, in its usual order,
-/// with what Shell Settings calls it and whether it can be hidden.
+/// with what Emaki Settings calls it and whether it can be hidden.
 pub const BAR_ITEMS: [(&str, &str, bool); 16] = [
     ("tray", "Apps", true),
     ("privacy", "Camera, Microphone and Screen Sharing", true),
@@ -328,7 +328,7 @@ pub const BAR_ITEMS: [(&str, &str, bool); 16] = [
 ];
 
 /// Every Quick Settings control, by the shell's name for it, with what
-/// Shell Settings calls it and the glyph its tile shows at rest.
+/// Emaki Settings calls it and the glyph its tile shows at rest.
 pub const QS_CONTROLS: [(&str, &str, Glyph, Accent); 22] = [
     ("wifi", "Wi-Fi", Glyph::Font(icons::ICON_WIFI), Accent::Blue),
     (

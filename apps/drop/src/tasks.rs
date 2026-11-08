@@ -10,16 +10,16 @@ use std::time::{Duration, Instant};
 
 use std::sync::Mutex;
 
-use amane_kit::settings::UploadTo;
-use amane_phone::KdeConnect;
-use amane_status::LiveActivity;
-use amane_status::{
+use emaki_kit::settings::UploadTo;
+use emaki_phone::KdeConnect;
+use emaki_status::LiveActivity;
+use emaki_status::{
     ActivityButton, ActivityContent, ActivityEvent, Dismiss, ItemIcon, Tint, Trailing,
 };
 
 use crate::state::{self, Outcome, Prompt};
 use crate::{files, share, shared};
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 /// How often progress is told, at most.
 const TELL_EVERY: Duration = Duration::from_millis(150);

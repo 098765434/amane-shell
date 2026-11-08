@@ -2,13 +2,13 @@
 //! the repo, and the settings the registry puts here.
 
 use amane::{Column, Service};
-use amane_kit::app::{commit_on_blur, field_box, text_field};
-use amane_kit::buttons::{PushButton, Style};
-use amane_kit::color::Accent;
-use amane_kit::form::FormRow;
-use amane_kit::icons::{ICON_CHECK, ICON_INFO};
-use amane_kit::layout::boxed;
-use amane_kit::settings::{change_nixos, nixos};
+use emaki_kit::app::{commit_on_blur, field_box, text_field};
+use emaki_kit::buttons::{PushButton, Style};
+use emaki_kit::color::Accent;
+use emaki_kit::form::FormRow;
+use emaki_kit::icons::{ICON_CHECK, ICON_INFO};
+use emaki_kit::layout::boxed;
+use emaki_kit::settings::{change_nixos, nixos};
 
 use super::generations::Generations;
 use super::job::BuildJob;
@@ -182,8 +182,8 @@ fn settings_repo() -> String {
 /// The computer's card: its glyph, its name and the NixOS it runs.
 fn hero(version: Option<&str>) -> amane::Rectangle {
     use amane::Text;
-    use amane_kit::style;
-    use amane_kit::tokens::Styled;
+    use emaki_kit::style;
+    use emaki_kit::tokens::Styled;
     let name = host_name();
     let under = match version {
         Some(version) => boxed(
@@ -191,11 +191,11 @@ fn hero(version: Option<&str>) -> amane::Rectangle {
                 .style(style::subtitle_font())
                 .color(style::label_secondary()),
         ),
-        None => boxed(amane_kit::spinner::Spinner::new(14.0).build()),
+        None => boxed(emaki_kit::spinner::Spinner::new(14.0).build()),
     };
     card(
         Accent::Blue.color(),
-        amane_kit::icons::ICON_COMPUTER,
+        emaki_kit::icons::ICON_COMPUTER,
         if name.is_empty() {
             String::from("This computer")
         } else {
@@ -213,8 +213,8 @@ fn advanced() -> Column {
     let host = settings.host_attr();
     const REPO: &str = "settings.system.repo";
     const HOST: &str = "settings.system.host";
-    amane_kit::app::fill_once(REPO, || repo_path.clone());
-    amane_kit::app::fill_once(HOST, || host.clone());
+    emaki_kit::app::fill_once(REPO, || repo_path.clone());
+    emaki_kit::app::fill_once(HOST, || host.clone());
     let keep_repo = |text: String| {
         let text = text.trim().to_string();
         let now = nixos().repo_path().to_string_lossy().into_owned();

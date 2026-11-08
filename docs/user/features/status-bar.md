@@ -5,7 +5,7 @@ top, see [Settings](#settings)) on the `Top` layer with `Zone::Reserve`. There i
 monitor (`App::window_per_monitor`): each shows the
 workspaces of its own monitor and hides on its own, and what it opens (Quick Settings, the
 notification center, menus and tooltips) opens on that monitor (`panel::on_output`, from
-`amane::pointer_monitor`). Namespace `amane.status-bar`. The root is a rounded
+`amane::pointer_monitor`). Namespace `emaki.status-bar`. The root is a rounded
 `Rectangle` holding one `Row` justified `SpaceBetween`: workspaces on the left and the status
 cluster on the right. The bar is one uniform frosted strip: its layer
 rule frosts the whole surface in niri's `frost` material (no lens, square corners), and the bar
@@ -17,7 +17,7 @@ focus from the active app.
 
 ## Size, height and the overview
 
-The bar comes in three sizes (`size`, Shell Settings' Status Bar → Size), all in
+The bar comes in three sizes (`size`, Emaki Settings' Status Bar → Size), all in
 `status_bar/size.rs` (`Metrics`):
 
 | Size | Height | Glyphs | Item width | Text |
@@ -34,7 +34,7 @@ and Comfortable's numbers wait for Penpot ([penpot-backlog.md](../../developer/d
 
 What keeps clear of the bar asks `status_bar::height()`: Quick Settings and the other cards
 (`panel::popover_margin`), the dock's gap, the widgets' canvas and gallery. Apps outside the shell
-(amane-drop) read `BarSize::height()` from the kit.
+(emaki-drop) read `BarSize::height()` from the kit.
 
 The bar keeps its height throughout, the overview included. The
 open apps are the [dock](dock.md)'s, which rises over the bar from the bottom edge and while niri's
@@ -79,7 +79,7 @@ wheel notch, or one per `SCROLL_STEP` lines of touchpad scroll, stopping at eith
 ### Right: the status cluster (`status`)
 
 Every item has a name (`indicators.rs`, `Item`), and `StatusBar::order` keeps their order by those
-names (`BAR_ITEMS` and `StatusBar::items` in kit's settings, shared with Shell Settings). Items it
+names (`BAR_ITEMS` and `StatusBar::items` in kit's settings, shared with Emaki Settings). Items it
 leaves out (such as ones added later) go back after the item they usually follow, and names it
 doesn't know are skipped. Over IPC: `status-bar move <item> <index>` and `status-bar reset-order`.
 
@@ -138,8 +138,8 @@ Connect's indicator with no phone, say) don't show.
   asked to show its own (`ContextMenu`).
 - **Middle click**: its second action. **Scrolling** goes to it.
 
-**Allow in the Status Bar**: Shell Settings lists every app seen in the tray
-(`~/.cache/amane-shell/tray-seen.json`), each with a switch; one switched off stays out of the bar
+**Allow in the Status Bar**: Emaki Settings lists every app seen in the tray
+(`~/.cache/emaki/tray-seen.json`), each with a switch; one switched off stays out of the bar
 (`StatusBar::tray_denied`, by the item's id) and keeps running.
 
 **Overflow**: when the right-hand items would be wider than the bar leaves them (its
@@ -150,7 +150,7 @@ Over IPC: `status-bar tray list`, `status-bar tray activate <id>` and `status-ba
 
 ## Programs' items
 
-Other programs put their own items in the bar over its bus service, `org.amane.StatusBar1`. Each
+Other programs put their own items in the bar over its bus service, `org.emaki.StatusBar1`. Each
 is a status item, put up with amane's `StatusItem` client or plain JSON over
 `busctl` ([status-apps.md](../../developer/integration/status-apps.md)). The server is
 `services/status_apps.rs` and the drawing is `apps.rs`.
@@ -168,8 +168,8 @@ is a status item, put up with amane's `StatusItem` client or plain JSON over
 - **Order and hiding.** Items keep their place in `order` as `app:<id>`. A new item goes just
   after the tray. Items drag and hide like the bar's own, and `hidden` keeps the hidden ones by
   the same name.
-- **Allow in the Status Bar.** Shell Settings lists every program seen
-  (`~/.cache/amane-shell/status-apps-seen.json`).
+- **Allow in the Status Bar.** Emaki Settings lists every program seen
+  (`~/.cache/emaki/status-apps-seen.json`).
 - **Ownership.** An item belongs to the program that registered it: no other program may use
   its id. It goes when that program leaves the bus.
 
@@ -186,7 +186,7 @@ What's going on now, shown in the bar until it ends (`activities.rs`).
     or pauses.
   - **Timer**: the launcher's timer counting down, in orange, with Cancel and Open in the Launcher.
   - **Screen Sharing**: purple, with what each niri cast shares and Stop Sharing for each.
-- Other programs' come over `org.amane.StatusBar1` and are kept in
+- Other programs' come over `org.emaki.StatusBar1` and are kept in
   `services/desktop/activities.rs`.
 
 **Presentation**
@@ -204,7 +204,7 @@ What's going on now, shown in the bar until it ends (`activities.rs`).
 **The expanded view**
 
 - A click opens the expanded view under the bar, an xdg-popup of the bar
-  (`amane.status-bar.activity`, frosted by the bar's layer rule). It shows the title and
+  (`emaki.status-bar.activity`, frosted by the bar's layer rule). It shows the title and
   subtitle, the trailing part large, a progress bar, and up to three buttons, whose presses go
   back to the program.
 - An update that alerts brings the view up for 4 s, without a grab, but not under Do Not
@@ -213,7 +213,7 @@ What's going on now, shown in the bar until it ends (`activities.rs`).
 **Limits**
 
 - An activity ends after 8 hours, or when its program leaves the bus.
-- Shell Settings' Status Bar › Activities has the switch, how many show compact, Now
+- Emaki Settings' Status Bar › Activities has the switch, how many show compact, Now
   Playing's "Always show", and which apps may show them (`activities_denied`, by the name they
   give). The bar's own three are always listed; others are listed once seen
   (`activities-seen.json`).
@@ -226,14 +226,14 @@ Every piece is rectangles, glyphs and arcs (the quad pipeline): `AMANE_FRAMES=1`
 Volume, Bluetooth, network, Tailscale, Keep Awake, the phone and battery are optional, and so are four
 groups: `activities` (the activities), `privacy` (camera, microphone), `status-icons` (Night
 Light, VPN, power mode, Airplane Mode) and `notifications` (the bell or the moon). Each Quick Settings page that has
-one ends in a **Show in Status Bar** switch; Shell Settings' Status Bar page has a switch for
+one ends in a **Show in Status Bar** switch; Emaki Settings' Status Bar page has a switch for
 each, and the `status-bar` IPC command does the same ([ipc.md](../../developer/integration/ipc.md#status-bar)).
 The hidden ones' names are `hidden` in `status-bar.json` (`indicators.rs`), which the bar follows
 live.
 
 ## Settings
 
-`~/.config/amane-shell/status-bar.json` (`amane_kit::settings::StatusBar`, Shell Settings' Status
+`~/.config/emaki/status-bar.json` (`emaki_kit::settings::StatusBar`, Emaki Settings' Status
 Bar page), followed live:
 
 | Field | Does |

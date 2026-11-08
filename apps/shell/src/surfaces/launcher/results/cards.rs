@@ -1,7 +1,7 @@
 //! The cards among the results: an answer, the scope chips, and what shows when nothing does.
 
 use super::*;
-use amane_kit::layout::frame;
+use emaki_kit::layout::frame;
 
 /// The answer to a sum or a conversion, or the assistant's command, in a
 /// card over the list, `width` wide; `selected` rings it as what Enter

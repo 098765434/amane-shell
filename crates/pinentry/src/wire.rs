@@ -1,4 +1,4 @@
-//! What amane-pinentry and the shell say over their socket: a request with what the prompt
+//! What emaki-pinentry and the shell say over their socket: a request with what the prompt
 //! says, and an answer with the pin, cancelled, or refused. Lengths are checked against fixed
 //! limits before anything is read, and the pin's buffers wipe themselves.
 

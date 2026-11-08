@@ -74,24 +74,24 @@ use crate::chrome::panel::{self, Panel, close, is_open, overlay};
 use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history;
 use crate::services::launcher::file_search::{self, FileKind};
-use amane_kit::divider::Divider;
-use amane_kit::kinetic::{Axis, AxisLock, Kinetic};
-use amane_kit::layout::{boxed, pad, track_cursor};
-use amane_kit::material::Material;
-use amane_kit::motion;
-use amane_kit::pager::{Pager, PagerMotion};
-use amane_kit::reveal::{self, Reveal, Swell};
-use amane_kit::scroll_view::ScrollbarFade;
-use amane_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
-use amane_kit::text_edit::{self, Field};
+use emaki_kit::divider::Divider;
+use emaki_kit::kinetic::{Axis, AxisLock, Kinetic};
+use emaki_kit::layout::{boxed, pad, track_cursor};
+use emaki_kit::material::Material;
+use emaki_kit::motion;
+use emaki_kit::pager::{Pager, PagerMotion};
+use emaki_kit::reveal::{self, Reveal, Swell};
+use emaki_kit::scroll_view::ScrollbarFade;
+use emaki_kit::settings::{AppsLayout, QuickKey, change_launcher, launcher};
+use emaki_kit::text_edit::{self, Field};
 
-use amane_kit::shell_ipc::{self, LauncherAction as Action};
+use emaki_kit::shell_ipc::{self, LauncherAction as Action};
 use entries::{Entry, Scope};
 pub use mode::Mode;
 use provider::{Found, Query};
 use shape::{Geometry, PILL_H, PILL_W};
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// The launcher's own state changed (what's picked, the mode, the
     /// page, a capture): only its window draws again.
     pub Launcher
@@ -99,7 +99,7 @@ amane_kit::marker! {
 
 /// Layer-surface namespace; the niri `layer-rule` matches it (a clear
 /// surface that says where to frost).
-pub const LAUNCHER_NS: &str = "amane.launcher";
+pub const LAUNCHER_NS: &str = "emaki.launcher";
 
 // TODO(token): `launcher.grid.*`, `launcher.panel.*`, `launcher.result.*`,
 // `launcher.open.scale` and `launcher.motion.*` once Penpot has them
@@ -301,7 +301,7 @@ fn hidden() {
     SCROLLBAR.with_borrow_mut(ScrollbarFade::reset);
 }
 
-/// `amane-shell` IPC: `launcher [toggle | open | close] [mode]`.
+/// `emaki` IPC: `launcher [toggle | open | close] [mode]`.
 /// Opens the launcher on `mode`, as `launcher open <mode>` does.
 pub fn open(mode: Mode) {
     switch_mode(mode);

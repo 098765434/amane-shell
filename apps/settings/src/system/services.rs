@@ -8,19 +8,19 @@ use std::thread;
 use std::time::Duration;
 
 use amane::{Column, Row, Service};
-use amane_kit::app::Dialog;
-use amane_kit::buttons::PushButton;
-use amane_kit::form::FormRow;
-use amane_kit::layout::{boxed, frame};
-use amane_kit::style;
+use emaki_kit::app::Dialog;
+use emaki_kit::buttons::PushButton;
+use emaki_kit::form::FormRow;
+use emaki_kit::layout::{boxed, frame};
+use emaki_kit::style;
 
 use super::busy::Busy;
 use super::controls::{self, Feedback};
 use super::job::BuildJob;
 use super::nixos::{Managed, Snapshot, run};
 use crate::{group, groups};
-use amane_kit::color::Accent;
-use amane_kit::service::ServiceExt as _;
+use emaki_kit::color::Accent;
+use emaki_kit::service::ServiceExt as _;
 
 /// A unit as systemd reports it.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -187,7 +187,7 @@ pub fn status_text(state: Option<&UnitState>) -> String {
     };
     match state.active.as_str() {
         "active" => match state.memory {
-            Some(bytes) => format!("Running · {}", amane_kit::format::bytes(bytes)),
+            Some(bytes) => format!("Running · {}", emaki_kit::format::bytes(bytes)),
             None => String::from("Running"),
         },
         "activating" => String::from("Starting…"),

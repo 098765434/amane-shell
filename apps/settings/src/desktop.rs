@@ -3,12 +3,12 @@
 //! shell follows at once.
 
 use amane::Column;
-use amane_kit::buttons::PushButton;
-use amane_kit::form::FormRow;
-use amane_kit::settings::{WidgetStyle, change_desktop, desktop};
-use amane_kit::shell_ipc::{ShellCommand, Widgets};
-use amane_kit::style;
-use amane_kit::thumbnail_picker::ThumbnailPicker;
+use emaki_kit::buttons::PushButton;
+use emaki_kit::form::FormRow;
+use emaki_kit::settings::{WidgetStyle, change_desktop, desktop};
+use emaki_kit::shell_ipc::{ShellCommand, Widgets};
+use emaki_kit::style;
+use emaki_kit::thumbnail_picker::ThumbnailPicker;
 
 use crate::{group, groups, previews, switch_row};
 

@@ -6,10 +6,10 @@ use amane::Service;
 use chrono::Local;
 
 use crate::services::do_not_disturb::{DoNotDisturb, Until, choices};
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{ContextMenu, MenuItem};
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{ContextMenu, MenuItem};
 
-const MENU_KEY: &str = "amane.notifications.dnd";
+const MENU_KEY: &str = "emaki.notifications.dnd";
 
 /// The menu of timed choices, hung under `parent_ns` at `point`.
 pub fn open(parent_ns: &'static str, point: (i32, i32)) {

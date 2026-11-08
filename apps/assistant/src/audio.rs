@@ -34,7 +34,7 @@ impl Recording {
         let flag = running.clone();
         let thread = std::thread::spawn(move || {
             // for tests: a recording played as the microphone
-            if let Some(path) = std::env::var_os("AMANE_ASSISTANT_FAKE_MIC") {
+            if let Some(path) = std::env::var_os("EMAKI_ASSISTANT_FAKE_MIC") {
                 return fake(&path, &flag, &mut heard, failed);
             }
             let simple = match open() {

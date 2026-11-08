@@ -2,7 +2,7 @@
 
 A magnifying dock, for the windows open on every workspace (`apps/shell/src/surfaces/dock/`). It's one
 frosted glass card over the bar on every monitor (`App::window_per_monitor`), namespace
-`amane.dock`.
+`emaki.dock`.
 
 ## What it shows
 
@@ -61,10 +61,10 @@ Every animation is in `DOCK` in `dock/motion.rs`, one `Anim` each (`Anim::spring
 | `spring_load` | how long files wait over an icon before its window comes into view; `None` waits for the drop |
 
 `motion::motion()` reads `DOCK` through the dock settings each time
-(`~/.config/amane-shell/dock.json`, Shell Settings' Dock page): `magnification` (`off`, `small`,
+(`~/.config/emaki/dock.json`, Emaki Settings' Dock page): `magnification` (`off`, `small`,
 `medium` as shipped, `large`) scales the swell and lift, `tooltips` and `rise_with_overview` turn
 the name and `follow_overview` off, and `animations: false` turns every animation off. A dock
-whose motion changes is made afresh. `AMANE_DOCK_ANIMATIONS=off` (or `0`, `false`, `no`) turns
+whose motion changes is made afresh. `EMAKI_DOCK_ANIMATIONS=off` (or `0`, `false`, `no`) turns
 every animation off whatever the settings say. The dock then jumps instead of moving, but still
 magnifies, names and hides as configured.
 
@@ -138,6 +138,6 @@ niri keeps after the last called "New Workspace". Workspaces are named as niri n
 - After spring-loading, the dock goes down once the files leave it, like after the pointer.
 - The name label is drawn inside the surface, not as a [tooltip](../../developer/kit/components.md#tooltip) popup.
   amane hangs a popup under the first surface with the parent's namespace, and every monitor's
-  dock shares `amane.dock`. For the same reason, an icon's menu opened from a dock on a second
+  dock shares `emaki.dock`. For the same reason, an icon's menu opened from a dock on a second
   monitor may open on the first.
 - A window that closes leaves at once; its neighbours slide together, but it doesn't shrink away.

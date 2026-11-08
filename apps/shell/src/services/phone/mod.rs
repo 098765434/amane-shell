@@ -1,4 +1,4 @@
-//! The shell's side of the phone, over amane-phone (KDE Connect and adb):
+//! The shell's side of the phone, over emaki-phone (KDE Connect and adb):
 //! what its surfaces show and do with it, kept here so they only draw.
 //!
 //! - the commands a paired phone's remote may run here ([`start`]);
@@ -14,15 +14,15 @@ pub mod pairing;
 pub mod screen;
 pub mod webcam;
 
-use amane_phone::{KdeConnect, RunCommand};
+use emaki_phone::{KdeConnect, RunCommand};
 
 use crate::services::installed;
 
 /// The app the phone's screen, its apps and its camera open in.
-pub const MIRROR_APP: &str = amane_kit::app_ids::MIRROR;
+pub const MIRROR_APP: &str = emaki_kit::app_ids::MIRROR;
 
 /// The app the phone's messages and remote input open in.
-pub const MESSAGES_APP: &str = amane_kit::app_ids::MESSAGES;
+pub const MESSAGES_APP: &str = emaki_kit::app_ids::MESSAGES;
 
 /// What the phone's "Run command" lists while its remote is on. The ids
 /// are the ones the old Quickshell version wrote, so a phone that already
@@ -50,18 +50,18 @@ const RUN_COMMANDS: [RunCommand; 4] = [
     },
 ];
 
-/// Hands the remote's commands to amane-phone; once, at start.
+/// Hands the remote's commands to emaki-phone; once, at start.
 pub fn start() {
     KdeConnect::set_run_command_list(&RUN_COMMANDS);
 }
 
 /// Whether KDE Connect is installed: its daemon is on `PATH` while it's on
-/// in Shell Settings → Services.
+/// in Emaki Settings → Services.
 pub fn available() -> bool {
     installed("kdeconnectd")
 }
 
-/// Opens `amane-messages` on `device`, at `view` ("messages" or "input").
+/// Opens `emaki-messages` on `device`, at `view` ("messages" or "input").
 pub fn open_messages(device: &str, view: &str) {
     amane::Launch::argv(&[MESSAGES_APP, "--device", device, "--view", view]).activated();
 }

@@ -14,14 +14,14 @@ use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::detail::page_width;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
-use amane_kit::buttons::{IconButton, Shape, Style, expect, optimistic};
-use amane_kit::icons::{
+use emaki_kit::buttons::{IconButton, Shape, Style, expect, optimistic};
+use emaki_kit::icons::{
     ICON_CHEVRON_RIGHT, ICON_MIC, ICON_MIC_OFF, ICON_VOLUME_OFF, audio_glyph, volume_glyph,
 };
-use amane_kit::layout::{boxed, caption, split_row};
-use amane_kit::list::{self, List, ListItem};
-use amane_kit::material;
-use amane_kit::slider::Slider;
+use emaki_kit::layout::{boxed, caption, split_row};
+use emaki_kit::list::{self, List, ListItem};
+use emaki_kit::material;
+use emaki_kit::slider::Slider;
 
 pub(in crate::surfaces::quick_settings) fn cell(
     span: Span,
@@ -53,7 +53,7 @@ pub(in crate::surfaces::quick_settings) fn cell(
     }))
     // the page has the microphone and the devices
     .trailing(
-        IconButton::new("amane.qs.volume.devices", ICON_CHEVRON_RIGHT)
+        IconButton::new("emaki.qs.volume.devices", ICON_CHEVRON_RIGHT)
             .style(Style::Plain)
             .shape(Shape::Round)
             .color(material::label(material::Level::Secondary))
@@ -69,9 +69,9 @@ pub(in crate::surfaces::quick_settings) fn cell(
     )
 }
 
-const MUTE_ID: &str = "amane.qs.volume.mute";
-const OUTPUT_MUTE_ID: &str = "amane.qs.sound.mute.output";
-const MIC_MUTE_ID: &str = "amane.qs.microphone.mute";
+const MUTE_ID: &str = "emaki.qs.volume.mute";
+const OUTPUT_MUTE_ID: &str = "emaki.qs.sound.mute.output";
+const MIC_MUTE_ID: &str = "emaki.qs.microphone.mute";
 
 /// The glyph before a track, which mutes.
 fn mute_button(
@@ -156,7 +156,7 @@ pub(in crate::surfaces::quick_settings) fn page() -> DetailPage {
     let inputs = audio.inputs().to_vec();
     drop(audio);
 
-    let page = DetailPage::new("amane.qs.sound.page", "Sound")
+    let page = DetailPage::new("emaki.qs.sound.page", "Sound")
         .subtitle(if output.muted {
             String::from("Muted")
         } else {
@@ -173,7 +173,7 @@ pub(in crate::surfaces::quick_settings) fn page() -> DetailPage {
             }
             vec![boxed(
                 ScrollArea::new(
-                    "amane.qs.sound.devices",
+                    "emaki.qs.sound.devices",
                     Column::new(sections)
                         .gap(sys::space::gap::xl())
                         .width(Parent),
@@ -203,7 +203,7 @@ fn device_item(device: &AudioDevice, input: bool) -> ListItem {
     let side = if input { "input" } else { "output" };
 
     let mut item = ListItem::new(
-        format!("amane.qs.sound.{side}.{name}"),
+        format!("emaki.qs.sound.{side}.{name}"),
         device.description(),
     )
     .leading(audio_glyph(device.kind(), input))

@@ -7,7 +7,7 @@
 use std::path::PathBuf;
 
 pub(crate) fn cache(folder: &str) -> PathBuf {
-    amane_base::paths::cache()
+    emaki_base::paths::cache()
         .join("amane")
         .join("messages")
         .join(folder)
@@ -31,7 +31,7 @@ pub(crate) fn write_once(folder: &str, name: &str, data: &str) -> Option<PathBuf
     }
 
     // written whole, so a half-written file is never drawn
-    amane_base::fs::write_whole(&path, bytes).ok()?;
+    emaki_base::fs::write_whole(&path, bytes).ok()?;
 
     Some(path)
 }

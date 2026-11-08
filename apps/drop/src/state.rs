@@ -7,12 +7,12 @@ use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
-use amane_status::BarEdge;
+use emaki_status::BarEdge;
 
 use crate::tasks::Job;
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// Anything the grid shows changed: it draws again.
     pub Changed
 }
@@ -190,8 +190,8 @@ pub type Shelves = BTreeMap<String, Vec<Vec<PathBuf>>>;
 static SHELVES: Mutex<Option<Shelves>> = Mutex::new(None);
 
 fn shelf_file() -> Option<PathBuf> {
-    let state = amane_kit::paths::state();
-    Some(state.join("amane-drop").join("dropbar.json"))
+    let state = emaki_kit::paths::state();
+    Some(state.join("emaki-drop").join("dropbar.json"))
 }
 
 fn with_shelves<R>(f: impl FnOnce(&mut Shelves) -> R) -> R {
@@ -209,7 +209,7 @@ fn save(shelves: &Shelves) {
     let Some(file) = shelf_file() else {
         return;
     };
-    if let Err(e) = amane_kit::fs::save_json(&file, shelves) {
+    if let Err(e) = emaki_kit::fs::save_json(&file, shelves) {
         log::warn!("couldn't save {}: {e}", file.display());
     }
 }

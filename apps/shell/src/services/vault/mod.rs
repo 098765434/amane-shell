@@ -1,9 +1,9 @@
 //! Bitwarden, through rbw: whether the vault is locked, its entries without their secrets, and
-//! the commands Shell Settings and the fill popup run. See `docs/user/features/passwords.md`.
+//! the commands Emaki Settings and the fill popup run. See `docs/user/features/passwords.md`.
 //!
 //! - [`rbw`]: the rbw commands, by store path, with no secret in an argument.
 //! - [`secret`]: a password or code on its way into a field, wiped when dropped.
-//! - [`pinentry`]: the shell's end of amane-pinentry, the master password in the shell's
+//! - [`pinentry`]: the shell's end of emaki-pinentry, the master password in the shell's
 //!   own dialog, only for an unlock the shell started.
 //! - [`identity`] and [`matching`]: which app owns a field, checked, and its entries.
 //!
@@ -29,7 +29,7 @@ pub use identity::Identity;
 pub use rbw::{Entry, Error, Status};
 
 // how soon after the last look a view's look_soon() looks again
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 const LOOK_AGAIN: Duration = Duration::from_secs(5);
 
 // past the agent's lock timeout, so the vault has locked by itself when it's looked at
@@ -223,9 +223,9 @@ pub fn pinentry_path() -> String {
     let home = std::env::var("HOME").unwrap_or_default();
 
     let profiles = [
-        format!("/etc/profiles/per-user/{user}/bin/amane-pinentry"),
-        format!("{home}/.nix-profile/bin/amane-pinentry"),
-        String::from("/run/current-system/sw/bin/amane-pinentry"),
+        format!("/etc/profiles/per-user/{user}/bin/emaki-pinentry"),
+        format!("{home}/.nix-profile/bin/emaki-pinentry"),
+        String::from("/run/current-system/sw/bin/emaki-pinentry"),
     ];
 
     if let Some(found) = profiles
@@ -237,10 +237,10 @@ pub fn pinentry_path() -> String {
 
     std::env::current_exe()
         .ok()
-        .and_then(|exe| Some(exe.parent()?.join("amane-pinentry")))
+        .and_then(|exe| Some(exe.parent()?.join("emaki-pinentry")))
         .filter(|path| path.exists())
         .map(|path| path.to_string_lossy().into_owned())
-        .unwrap_or_else(|| String::from("amane-pinentry"))
+        .unwrap_or_else(|| String::from("emaki-pinentry"))
 }
 
 // a command on a thread of its own, then a fresh look
@@ -333,7 +333,7 @@ fn watch_lock() {
 }
 
 fn wants_lock() -> bool {
-    amane_kit::settings::passwords().lock_with_screen
+    emaki_kit::settings::passwords().lock_with_screen
 }
 
 /// Which app owns each field seen, once checked; the check runs on a thread, as nix-store

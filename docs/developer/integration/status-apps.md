@@ -1,15 +1,15 @@
 # Status apps and Activities
 
-The bar serves `org.amane.StatusBar1` on the session bus. Through it, other programs put up
+The bar serves `org.emaki.StatusBar1` on the session bus. Through it, other programs put up
 their own items in the bar, and Activities: what's going on now, shown in the bar until it ends.
 This page is the whole of it: the protocol, how to write a status app, the rules for Activities,
-running one as a service, and how the pieces fit across the repositories. amane-drop
+running one as a service, and how the pieces fit across the repositories. emaki-drop
 ([drop.md](../../user/features/drop.md), `apps/drop`) is the worked example it points into. What
 the bar draws is in [status-bar.md](../../user/features/status-bar.md#programs-items).
 
-The protocol and its JSON types are one crate, [amane-status](../../../crates/status/README.md)
+The protocol and its JSON types are one crate, [emaki-status](../../../crates/status/README.md)
 (`crates/status`, with the `StatusItem` and `LiveActivity` clients), so a program and the bar
-share one definition. Depend on it with `amane-status = { workspace = true }` inside this
+share one definition. Depend on it with `emaki-status = { workspace = true }` inside this
 workspace, or by git from outside it. The server is `apps/shell/src/services/status_apps.rs`.
 
 ## Protocol
@@ -17,10 +17,10 @@ workspace, or by git from outside it. The server is `apps/shell/src/services/sta
 ### From Rust
 
 ```rust
-use amane_status::{ActivityContent, ItemEvent, ItemIcon, ItemSpec, Trailing};
+use emaki_status::{ActivityContent, ItemEvent, ItemIcon, ItemSpec, Trailing};
 use amane::{LiveActivity, StatusItem};
 
-let item = StatusItem::register(ItemSpec::new("org.amane.drop", ItemIcon::Glyph("tray".into())));
+let item = StatusItem::register(ItemSpec::new("org.emaki.drop", ItemIcon::Glyph("tray".into())));
 item.on_event(|event| { /* Activated, MenuSelected, DroppedFiles, DragHover … */ });
 
 let mut content = ActivityContent::new("Drop", ItemIcon::Glyph("upload".into()), "Uploading");
@@ -36,7 +36,7 @@ whole program.
 Every payload is one JSON string:
 
 ```sh
-bus() { busctl --user call org.amane.StatusBar1 /org/amane/StatusBar org.amane.StatusBar1 "$@"; }
+bus() { busctl --user call org.emaki.StatusBar1 /org/emaki/StatusBar org.emaki.StatusBar1 "$@"; }
 bus RegisterItem s '{"id":"demo","icon":{"glyph":"tray"},"title":"Demo","menu":[{"id":"quit","label":"Quit"}]}'
 bus StartActivity s '{"app":"Demo","title":"Tea","leading":{"glyph":"timer"},"trailing":{"countdown":1767225600000}}'
 ```
@@ -56,7 +56,7 @@ connection open, for example a Python `dbus-next` client ([below](#from-another-
 | `UpdateActivity` | `u` handle, `s` content, `b` alert | | `Error.Invalid`, `Error.Unknown` |
 | `EndActivity` | `u` handle, `s` dismiss (`"now"`, `{"after":5}`; empty is now) | | `Error.Invalid`, `Error.Unknown` |
 
-Errors are under `org.amane.StatusBar1.Error`.
+Errors are under `org.emaki.StatusBar1.Error`.
 
 The two signals go only to the program concerned (a unicast signal):
 
@@ -81,8 +81,8 @@ The events are JSON in serde's external tagging, in snake case:
 - **Signals out.** `status_apps::send(id, event)` sends an item's events off the event loop.
 - **Activities.** These go to `services/desktop/activities.rs`. It keeps their handles and
   owners, ends them after 8 hours or when dismissed, and sends `Dismissed` once one has gone.
-- **Seen lists.** Shell Settings lists programs once seen: items in
-  `~/.cache/amane-shell/status-apps-seen.json`, activities' app names in
+- **Seen lists.** Emaki Settings lists programs once seen: items in
+  `~/.cache/emaki/status-apps-seen.json`, activities' app names in
   `activities-seen.json`.
 - **When another program owns the name.** The shell logs it and leaves status apps to that
   program.
@@ -100,8 +100,8 @@ import asyncio, json, time
 from dbus_next.aio import MessageBus
 from dbus_next import Message, MessageType
 
-BAR = dict(destination="org.amane.StatusBar1", path="/org/amane/StatusBar",
-           interface="org.amane.StatusBar1")
+BAR = dict(destination="org.emaki.StatusBar1", path="/org/emaki/StatusBar",
+           interface="org.emaki.StatusBar1")
 
 async def main():
     bus = await MessageBus().connect()
@@ -134,7 +134,7 @@ asyncio.run(main())
 ## Writing a status app
 
 A status app is a program with its own item in the bar, and Activities while something is
-going on. It runs on its own and talks to the bar over `org.amane.StatusBar1`. This section
+going on. It runs on its own and talks to the bar over `org.emaki.StatusBar1`. This section
 covers how to build one that behaves like the bar's own items.
 
 ### Pick the right surface
@@ -152,7 +152,7 @@ recorder can show an activity while it records and have no item at all.
 ### 1. Put up an item
 
 ```rust
-use amane_status::{Accepts, ItemIcon, ItemSpec, MenuEntry, StatusItem};
+use emaki_status::{Accepts, ItemIcon, ItemSpec, MenuEntry, StatusItem};
 
 let mut spec = ItemSpec::new("org.example.shelf", ItemIcon::Glyph("tray".into()));
 spec.tooltip = "Shelf".into();
@@ -178,7 +178,7 @@ let item = StatusItem::register(spec);
 | `attention` | shows the icon in the accent | for something that wants the user (a failure), cleared once they look |
 | `badge` | a small count | |
 
-Glyph names (`amane_kit::icons::NAMED`): `dot`, `record`, `timer`, `music`, `play`, `pause`,
+Glyph names (`emaki_kit::icons::NAMED`): `dot`, `record`, `timer`, `music`, `play`, `pause`,
 `skip-next`, `skip-previous`, `screen-share`, `camera`, `mic`, `upload`, `download`,
 `cloud-upload`, `tray`, `share`, `send`, `phone`, `folder`, `image`, `mail`, `terminal`,
 `update`, `history`, `check`, `check-circle`, `close`, `warning`, `error`, `copy`, `package`,
@@ -230,7 +230,7 @@ LayerWindow::new()
 - **Frost.** Use a blur shape the size of the card, and a niri `layer-rule` for your namespace.
   For an app in this repo, add the namespace to `apps/shell/src/tokens/layer_rules.rs`, then regenerate the
   rules and splice them into niri's config ([layer-rules.md](layer-rules.md)). For one outside
-  it, copy the `amane.drop` rule from `niri-layer-rule.kdl`.
+  it, copy the `emaki.drop` rule from `niri-layer-rule.kdl`.
 - **Only quads.** Draw with `Rectangle`, `Text`, glyphs and `Arc`, so nothing goes through vello
   ([performance.md](../performance.md)). Check with `AMANE_FRAMES=1` and the
   `amane/vello-stats` feature: every frame should say `vello 0`.
@@ -315,7 +315,7 @@ These are the bar's rules for activities:
   hands its arguments to the copy already running (`on_activate`). Register the item only when
   no copy answers, as Drop's `main()` does.
 - **Commands.** Offer `toggle`, `open` and `close` over IPC, for a keybind. Drop's niri bind is
-  `printf 'toggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane-drop.sock`, falling back to starting its
+  `printf 'toggle\n' | nc -U -N $XDG_RUNTIME_DIR/emaki-drop.sock`, falling back to starting its
   service.
 - **Its own service.** Run it as a systemd user unit of its own, not spawned by the shell: a
   restart of the shell kills whatever is in its cgroup. The client puts your item and
@@ -324,13 +324,13 @@ These are the bar's rules for activities:
 - **Quitting.** Remove the item, give the worker a moment to send that, then exit 0. A unit with
   `Restart=on-failure` then stays stopped.
 - **The user decides.** An item can be hidden (you get `Shown(false)`), and an app's activities
-  can be turned off in Shell Settings › Status Bar › Activities. Keep working either way.
-- **Secrets.** Keep passwords in the keyring, with `amane_kit::secrets` in this repo or
+  can be turned off in Emaki Settings › Status Bar › Activities. Keep working either way.
+- **Secrets.** Keep passwords in the keyring, with `emaki_kit::secrets` in this repo or
   `secret-tool`. Never pass one as a program's argument, which `ps` shows: Drop gives curl its
   secrets on standard input (`-K -`).
 
 Shipping a status app in this repository is like any shell change: [release.md](../release.md),
-which also says how the flake builds and wraps `amane-drop`.
+which also says how the flake builds and wraps `emaki-drop`.
 
 ## The pieces across repos
 
@@ -340,13 +340,13 @@ touching the user's clipboard, keyring or phone.
 
 ```mermaid
 flowchart LR
-    subgraph app["a status app (amane-drop, a script, …)"]
-        client["amane_status::StatusItem and LiveActivity<br/>crates/status/client.rs: a worker thread, calls in order,<br/>registers again on a new bar"]
+    subgraph app["a status app (emaki-drop, a script, …)"]
+        client["emaki_status::StatusItem and LiveActivity<br/>crates/status/client.rs: a worker thread, calls in order,<br/>registers again on a new bar"]
         protocol["the protocol types<br/>crates/status/protocol.rs"]
         client --- protocol
     end
-    subgraph shell["amane-shell"]
-        server["services/status_apps.rs<br/>org.amane.StatusBar1: items by id,<br/>owner checks, NameOwnerChanged"]
+    subgraph shell["emaki"]
+        server["services/status_apps.rs<br/>org.emaki.StatusBar1: items by id,<br/>owner checks, NameOwnerChanged"]
         items["status_bar/apps.rs<br/>the app:&lt;id&gt; items"]
         registry["services/desktop/activities.rs<br/>the activities registry"]
         builtin["Now Playing, Timer, Screen Sharing"]
@@ -362,11 +362,11 @@ flowchart LR
 
 | Repo | Files | What |
 |---|---|---|
-| amane-status | `crates/status/src/protocol.rs` | the JSON types (`ItemSpec`, `ItemEvent`, `ActivityContent`, `Trailing`, `Tint`, `Dismiss`…), `encode`/`decode` with clamping and a version check |
-| amane-status | `crates/status/src/client.rs` | `StatusItem` and `LiveActivity`: calls in order on amane's control thread (`run_in_order`), events on their own thread, re-registration |
+| emaki-status | `crates/status/src/protocol.rs` | the JSON types (`ItemSpec`, `ItemEvent`, `ActivityContent`, `Trailing`, `Tint`, `Dismiss`…), `encode`/`decode` with clamping and a version check |
+| emaki-status | `crates/status/src/client.rs` | `StatusItem` and `LiveActivity`: calls in order on amane's control thread (`run_in_order`), events on their own thread, re-registration |
 | amane | `src/dbus/bus.rs` | `Bus::emit_to`: a signal to one destination |
 | amane | `src/wayland/dropped.rs` | drops read off the event loop (`Drags`, `read_later`, `handle_arrived_drags`), so a slow drag source can't stall the bar |
-| amane-phone | `crates/phone/src/kdeconnect/actions.rs` | `share_files_now`, `share_text_now`: KDE Connect sends that wait and report |
+| emaki-phone | `crates/phone/src/kdeconnect/actions.rs` | `share_files_now`, `share_text_now`: KDE Connect sends that wait and report |
 | shell | `apps/shell/src/services/status_apps.rs` | the bus server: methods, ownership, introspection, cleanup when a program leaves, the seen list |
 | shell | `apps/shell/src/services/desktop/activities.rs` | the activities registry: handles, owners, ending times, `Dismissed`, the 8-hour end |
 | shell | `apps/shell/src/surfaces/status_bar/activities.rs` | the built-in sources, ranking, compact and minimal chips, the expanded popup, alerts, its IPC |
@@ -375,9 +375,9 @@ flowchart LR
 | kit | `src/platform/settings/` | `StatusBar` (`activities_*`, `status_bar.rs`), `DropGrids`, `DropTile`, `UploadTo`, `DropSharing` (`drop.rs`), and the seen lists (`seen.rs`) |
 | kit | `src/platform/secrets.rs` | secrets through `secret-tool`, with a 0600 file as a fallback |
 | kit | `src/foundation/icons.rs` | `NAMED` and `named()`: the glyph names an `ItemIcon::Glyph` may use |
-| apps | `apps/drop/` | amane-drop: `main.rs`, `state.rs`, `grid.rs`, `tasks.rs`, `files.rs`, `share.rs`, `shared.rs` |
+| apps | `apps/drop/` | emaki-drop: `main.rs`, `state.rs`, `grid.rs`, `tasks.rs`, `files.rs`, `share.rs`, `shared.rs` |
 | apps | `apps/settings/src/status_bar.rs`, `drop.rs` | Status Bar › Activities, and the Drop page |
-| nixos-config | `home/home.nix`, `niri/config.kdl` | the `amane-drop` user unit, the Mod+Shift+D bind, the `amane.drop` layer rule |
+| nixos-config | `home/home.nix`, `niri/config.kdl` | the `emaki-drop` user unit, the Mod+Shift+D bind, the `emaki.drop` layer rule |
 
 ### How things travel
 
@@ -399,7 +399,7 @@ and the client maps it. The bar draws from the registry each frame, and a countd
 an `ActivityEvent` to the owner. `EndActivity` with `After(n)` keeps it dimmed for `n` seconds,
 then `Dismissed` is sent.
 
-**The bar restarts.** The client watches `owner_changes("org.amane.StatusBar1")`. When a new
+**The bar restarts.** The client watches `owner_changes("org.emaki.StatusBar1")`. When a new
 owner appears, it sends every item and activity again and maps the new handles. Drop
 doesn't notice. Tested: kill the test shell, start it again, and `status-bar apps list` shows
 Drop's item again.
@@ -418,7 +418,7 @@ program's items and activities (`forget`, `end_all_of`).
 | `secrets::known` lookups (Settings) | `secret-tool lookup` | `SecretsChanged` |
 
 The grids and accounts are amane `Config`s (`drop_grids()`, `drop_sharing()`), followed live
-by Drop and Shell Settings alike. The Drop Bar and Recently Shared are state files that only
+by Drop and Emaki Settings alike. The Drop Bar and Recently Shared are state files that only
 Drop writes.
 
 ### Testing
@@ -431,18 +431,18 @@ beside the user's running bar.
 ```sh
 T=$(mktemp -d)
 mkdir -p $T/config $T/state $T/bin
-cp -r ~/.config/amane-shell $T/config/          # then set auto_hide to "never" in status-bar.json
+cp -r ~/.config/emaki $T/config/          # then set auto_hide to "never" in status-bar.json
 printf '#!/bin/sh\ncat > %s/copied.txt\n' $T > $T/bin/wl-copy   # links land in a file
 printf '#!/bin/sh\nexit 1\n' > $T/bin/secret-tool              # secrets go to the 0600 file
 chmod +x $T/bin/*
 ENV="PATH=$T/bin:$PATH XDG_RUNTIME_DIR=$T WAYLAND_DISPLAY=/run/user/1000/wayland-1 \
      XDG_CONFIG_HOME=$T/config XDG_STATE_HOME=$T/state"
 env $ENV PULSE_SERVER=unix:/run/user/1000/pulse/native PIPEWIRE_RUNTIME_DIR=/run/user/1000 \
-    ./target/debug/amane-shell &
-env $ENV ./target/debug/amane-drop &
+    ./target/debug/emaki &
+env $ENV ./target/debug/emaki-drop &
 ```
 
-- **The bus.** The real shell build in use may not serve `org.amane.StatusBar1`, so the test bar
+- **The bus.** The real shell build in use may not serve `org.emaki.StatusBar1`, so the test bar
   takes the name on the real session bus. Only one copy can own it.
 - **Stopping them.** Find the test processes by the `XDG_RUNTIME_DIR` in `/proc/<pid>/environ`,
   never by name. `pkill -f` on a pattern also matches the shell running the command.
@@ -453,19 +453,19 @@ env $ENV ./target/debug/amane-drop &
 
 | Want | Command |
 |---|---|
-| Drop's item is up | `printf 'status-bar\napps\nlist\n' \| nc -U -N $T/amane.sock` |
-| Click it | `status-bar apps activate org.amane.drop` |
+| Drop's item is up | `printf 'status-bar\napps\nlist\n' \| nc -U -N $T/emaki.sock` |
+| Click it | `status-bar apps activate org.emaki.drop` |
 | Activities going on | `status-bar activities list` |
 | Press an activity's button | `status-bar activities press bus.<h> cancel` |
 | End one | `status-bar activities end bus.<h>` |
-| Open the grid, in edit mode | `printf 'open\n' \| nc -U -N $T/amane-drop.sock`, or `edit` |
-| What a drop on tile 2 does | `printf 'run\n2\n/path/file\n' \| nc -U -N $T/amane-drop.sock` |
-| Hold files on the Drop Bar | `printf 'hold\n/path/a\n/path/b\n' \| nc -U -N $T/amane-drop.sock` |
+| Open the grid, in edit mode | `printf 'open\n' \| nc -U -N $T/emaki-drop.sock`, or `edit` |
+| What a drop on tile 2 does | `printf 'run\n2\n/path/file\n' \| nc -U -N $T/emaki-drop.sock` |
+| Hold files on the Drop Bar | `printf 'hold\n/path/a\n/path/b\n' \| nc -U -N $T/emaki-drop.sock` |
 | No vello | build with `--features amane/vello-stats`, run with `AMANE_FRAMES=1`: only `vello 0` |
 
 #### Uploads without the internet
 
-`AMANE_DROP_0X0_URL` points the 0x0.st tile at a local server, and an S3 account's `endpoint`
+`EMAKI_DROP_0X0_URL` points the 0x0.st tile at a local server, and an S3 account's `endpoint`
 can be a local one (`http://127.0.0.1:8737`). A small Python `http.server` that answers a POST
 with a URL, and a PUT with 200, is enough to check:
 - the multipart form;
@@ -493,7 +493,7 @@ Make it read a path with `slow` in it slowly, to watch the progress ring and try
 
 | Where | Covers |
 |---|---|
-| amane-status `protocol.rs` | round trips, clamping, a newer `v` refused, an empty id refused |
+| emaki-status `protocol.rs` | round trips, clamping, a newer `v` refused, an empty id refused |
 | shell `services/status_apps.rs` | an id belongs to the program that registered it; a bad payload refused |
 | shell `services/desktop/activities.rs` | only the owner changes or ends one; ending later; a program leaving; staleness |
 | shell `surfaces/status_bar/activities.rs` | countdown and trailing text |

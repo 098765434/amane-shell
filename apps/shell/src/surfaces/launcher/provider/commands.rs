@@ -8,7 +8,7 @@ pub(super) fn listing(
     quick: &BTreeMap<String, QuickKey>,
     out: &mut Vec<Candidate>,
 ) {
-    let used = usage::read(|usage| usage.top("action:", SUGGESTED, amane_kit::time::unix_s()));
+    let used = usage::read(|usage| usage.top("action:", SUGGESTED, emaki_kit::time::unix_s()));
     let mut listed = |spec: &Spec, section: &str| {
         let mut entry = action_entry(spec, None, quick);
         entry.section = Some(section.to_string());

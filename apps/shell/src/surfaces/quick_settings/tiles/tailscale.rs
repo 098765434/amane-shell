@@ -13,11 +13,11 @@ use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::sys;
-use amane_kit::buttons::Switch;
-use amane_kit::icons::{Glyph, ICON_COMPUTER, os_glyph};
-use amane_kit::layout::{boxed, caption};
-use amane_kit::list::{self, List, ListItem};
-use amane_kit::material::{self, Level};
+use emaki_kit::buttons::Switch;
+use emaki_kit::icons::{Glyph, ICON_COMPUTER, os_glyph};
+use emaki_kit::layout::{boxed, caption};
+use emaki_kit::list::{self, List, ListItem};
+use emaki_kit::material::{self, Level};
 
 const ADMIN_CONSOLE: &str = "https://login.tailscale.com/admin";
 
@@ -47,7 +47,7 @@ pub(crate) fn toggle() -> Option<QuickToggle> {
     drop(tailscale);
 
     Some(
-        QuickToggle::new("amane.qs.tailscale", Glyph::Tailscale, "Tailscale")
+        QuickToggle::new("emaki.qs.tailscale", Glyph::Tailscale, "Tailscale")
             .subtitle(subtitle)
             .checked(active)
             .on_toggle(switch)
@@ -61,14 +61,14 @@ pub(crate) fn page() -> DetailPage {
     let subtitle = tailscale.describe();
     drop(tailscale);
 
-    DetailPage::new("amane.qs.tailscale.page", "Tailscale")
+    DetailPage::new("emaki.qs.tailscale.page", "Tailscale")
         .subtitle(subtitle)
         .switch(active, switch)
         .status_bar(Indicator::Tailscale)
         .body(|height| {
             vec![boxed(
                 ScrollArea::new(
-                    "amane.qs.tailscale.body",
+                    "emaki.qs.tailscale.body",
                     Column::new(sections())
                         .gap(sys::space::gap::xl())
                         .width(Parent),
@@ -78,7 +78,7 @@ pub(crate) fn page() -> DetailPage {
         })
         .footer("Admin Console…", || {
             close();
-            amane_kit::launch::open(ADMIN_CONSOLE);
+            emaki_kit::launch::open(ADMIN_CONSOLE);
         })
 }
 
@@ -116,7 +116,7 @@ fn notices(tailscale: &Tailscale) -> Vec<Box<dyn Widget>> {
         )));
         notes.push(boxed(
             List::new(vec![
-                ListItem::new("amane.qs.tailscale.operator", command)
+                ListItem::new("emaki.qs.tailscale.operator", command)
                     .trailing(caption("Copy"))
                     .on_press(move || Tailscale::copy(&copy)),
             ])
@@ -130,7 +130,7 @@ fn notices(tailscale: &Tailscale) -> Vec<Box<dyn Widget>> {
         };
         notes.push(boxed(
             List::new(vec![
-                ListItem::new("amane.qs.tailscale.login", label)
+                ListItem::new("emaki.qs.tailscale.login", label)
                     .trailing(list::chevron())
                     .on_press(Tailscale::login),
             ])
@@ -150,7 +150,7 @@ fn notices(tailscale: &Tailscale) -> Vec<Box<dyn Widget>> {
 /// This device and its address, which a click copies.
 fn this_device(tailscale: &Tailscale) -> Box<dyn Widget> {
     let ip = tailscale.ip().unwrap_or_default().to_string();
-    let mut item = ListItem::new("amane.qs.tailscale.self", tailscale.hostname())
+    let mut item = ListItem::new("emaki.qs.tailscale.self", tailscale.hostname())
         .leading(ICON_COMPUTER)
         .color(material::label(Level::Primary));
     if !ip.is_empty() {
@@ -178,7 +178,7 @@ fn exit_nodes(tailscale: &Tailscale) -> Box<dyn Widget> {
 
     let none = tailscale.exit_node().is_none();
     let mut items = vec![picked(
-        ListItem::new("amane.qs.tailscale.exit.none", "None").on_press(move || {
+        ListItem::new("emaki.qs.tailscale.exit.none", "None").on_press(move || {
             if !none {
                 Tailscale::set_exit_node(None);
             }
@@ -186,7 +186,7 @@ fn exit_nodes(tailscale: &Tailscale) -> Box<dyn Widget> {
         none,
     )];
     for peer in offered {
-        let item = ListItem::new(format!("amane.qs.tailscale.exit.{}", peer.name), &peer.name)
+        let item = ListItem::new(format!("emaki.qs.tailscale.exit.{}", peer.name), &peer.name)
             .leading(os_glyph(&peer.os));
         let item = match (&peer.ip, peer.online) {
             (_, false) => item
@@ -245,9 +245,9 @@ fn options(tailscale: &Tailscale) -> Box<dyn Widget> {
     let items = rows
         .into_iter()
         .map(|(id, label, on, set)| {
-            ListItem::new(format!("amane.qs.tailscale.{id}"), label)
+            ListItem::new(format!("emaki.qs.tailscale.{id}"), label)
                 .trailing(
-                    Switch::new(format!("amane.qs.tailscale.{id}.switch"), on)
+                    Switch::new(format!("emaki.qs.tailscale.{id}.switch"), on)
                         .on_toggle(set)
                         .build(),
                 )
@@ -263,7 +263,7 @@ fn devices(peers: &[Peer]) -> Box<dyn Widget> {
         .iter()
         .map(|peer| {
             let mut item = ListItem::new(
-                format!("amane.qs.tailscale.device.{}", peer.dns),
+                format!("emaki.qs.tailscale.device.{}", peer.dns),
                 &peer.name,
             )
             .leading(os_glyph(&peer.os))

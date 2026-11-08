@@ -1,5 +1,5 @@
 //! How well a few typed letters match a name: the launcher's results and
-//! Shell Settings' search both rank by it.
+//! Emaki Settings' search both rank by it.
 
 /// How well `needle` (already lowercased) matches `hay`, 0 … 1, or `None`
 /// when it doesn't: the whole name, then its start, a word's start, the

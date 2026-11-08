@@ -21,8 +21,8 @@ use crate::services::network::tailscale::Tailscale;
 use crate::services::power::keep_awake::KeepAwake;
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::surfaces::quick_settings::grid::Sizes as _;
-use amane_kit::grid::GridKey;
-use amane_kit::layout::boxed;
+use emaki_kit::grid::GridKey;
+use emaki_kit::layout::boxed;
 
 /// A control, by its place in [`SPECS`]: the default order, then the ones
 /// added since (a control's place keys its motion, so new ones go last).
@@ -287,7 +287,7 @@ pub const SPECS: [Spec; 22] = {
             Toggle(keep_awake::toggle),
             || KeepAwake::read().present(),
         )),
-        // addable with Shell Settings around; its cells stay empty until an update waits
+        // addable with Emaki Settings around; its cells stay empty until an update waits
         hidden(spec(
             C::SoftwareUpdate,
             "software-update",

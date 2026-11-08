@@ -12,21 +12,21 @@
 //! the accent's colour as it reaches them.
 
 use amane::{Blend, Center, Color, Rectangle, Row, Stack, Start, Text, Widget};
-use amane_kit::settings::{AppsLayout, change_launcher};
+use emaki_kit::settings::{AppsLayout, change_launcher};
 
 use crate::services::assistant as assistant_service;
 use crate::services::launcher::clipboard_history;
 use crate::tokens::{Styled, TextStyle, sys};
-use amane_kit::color::with_alpha;
-use amane_kit::icons::{ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MIC, ICON_MORE_HORIZ, ICON_SEARCH};
-use amane_kit::kinetic::Axis;
-use amane_kit::layout::{boxed, cursor, frame, icon, pad, slot, text_width};
-use amane_kit::material::{self, FillLevel, Level, Material};
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{ContextMenu, MenuItem};
-use amane_kit::motion;
-use amane_kit::scroll_view::ScrollView;
-use amane_kit::text_edit::Field;
+use emaki_kit::color::with_alpha;
+use emaki_kit::icons::{ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MIC, ICON_MORE_HORIZ, ICON_SEARCH};
+use emaki_kit::kinetic::Axis;
+use emaki_kit::layout::{boxed, cursor, frame, icon, pad, slot, text_width};
+use emaki_kit::material::{self, FillLevel, Level, Material};
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{ContextMenu, MenuItem};
+use emaki_kit::motion;
+use emaki_kit::scroll_view::ScrollView;
+use emaki_kit::text_edit::Field;
 
 use super::entries::Scope;
 use super::mode::Mode;
@@ -62,7 +62,7 @@ const RING_GAP: f32 = 2.0;
 const RING_ALPHA: f32 = 0.55;
 
 /// Registry key for a mode's ⋯ menu.
-const MORE_MENU_KEY: &str = "amane.launcher.more-menu";
+const MORE_MENU_KEY: &str = "emaki.launcher.more-menu";
 
 fn search_style() -> TextStyle {
     TextStyle {
@@ -140,7 +140,7 @@ pub(super) fn search_row(
     } else if view.mode == Mode::Apps {
         used += LEADING + gap;
         Some(boxed(round_button(ICON_MORE_HORIZ, more_menu)))
-    } else if view.mode == Mode::Clipboard && amane_kit::settings::launcher().clipboard.enabled {
+    } else if view.mode == Mode::Clipboard && emaki_kit::settings::launcher().clipboard.enabled {
         used += LEADING + gap;
         Some(boxed(round_button(ICON_MORE_HORIZ, clipboard_menu)))
     } else {
@@ -261,7 +261,7 @@ fn round_button(glyph: char, on_click: fn()) -> Rectangle {
 
 /// Applications' ⋯ menu: the apps as a grid or a list.
 fn more_menu() {
-    let picked = amane_kit::settings::launcher().apps_layout;
+    let picked = emaki_kit::settings::launcher().apps_layout;
     let item = |name: &str, layout: AppsLayout| {
         MenuItem::label(name)
             .checked(picked == layout)

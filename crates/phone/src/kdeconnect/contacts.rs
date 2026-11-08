@@ -164,7 +164,7 @@ impl Contacts {
 }
 
 fn folder(device: &str) -> PathBuf {
-    amane_base::paths::data()
+    emaki_base::paths::data()
         .join("kpeoplevcard")
         .join(format!("kdeconnect-{device}"))
 }

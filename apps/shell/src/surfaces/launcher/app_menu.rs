@@ -12,16 +12,16 @@ use crate::chrome::panel::close;
 use crate::chrome::workspace_menu;
 use crate::services::launcher::file_search;
 use crate::tokens::sys;
-use amane_kit::icons::{ICON_ADD, ICON_OPEN_IN_NEW};
-use amane_kit::layout::cursor;
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{ContextMenu, Icon, MenuItem};
+use emaki_kit::icons::{ICON_ADD, ICON_OPEN_IN_NEW};
+use emaki_kit::layout::cursor;
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{ContextMenu, Icon, MenuItem};
 
 use super::LAUNCHER_NS;
 use super::entries::{self, Entry};
 
 /// Registry key for the menu, built afresh for each app.
-const APP_MENU_KEY: &str = "amane.launcher.app-menu";
+const APP_MENU_KEY: &str = "emaki.launcher.app-menu";
 
 /// Opens `app`'s menu at the pointer.
 pub(super) fn open(app: &DesktopApp) {
@@ -67,7 +67,7 @@ fn glyph(glyph: char) -> Icon {
 }
 
 /// Registry key for a file's menu, built afresh for each file.
-const FILE_MENU_KEY: &str = "amane.launcher.file-menu";
+const FILE_MENU_KEY: &str = "emaki.launcher.file-menu";
 
 /// Opens a file's menu at the pointer: open it, open it with one of the
 /// apps that open its kind, or show it in the file manager.

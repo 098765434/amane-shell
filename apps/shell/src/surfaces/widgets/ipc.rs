@@ -4,7 +4,7 @@ use super::*;
 
 /// `widgets list`, `add <kind> [size] [output]`, `remove <id>`,
 /// `reset-layout [output]`, `edit [output]` and `done`, one argument a line:
-/// `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`.
+/// `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`.
 pub fn run(command: Command) -> String {
     match command {
         Command::List => store::with(|store| {

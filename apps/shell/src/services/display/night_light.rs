@@ -18,7 +18,7 @@
 //! Settings changes them over IPC ([`run`]).
 
 use amane::serde::{Deserialize, Serialize};
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
@@ -28,7 +28,7 @@ use amane::Service;
 
 use crate::services::state::{self, State};
 use crate::services::{Latest, run_now};
-use amane_kit::shell_ipc::NightLight as Ask;
+use emaki_kit::shell_ipc::NightLight as Ask;
 
 /// The file from before the state files, one line.
 const OLD_FILE: &str = "night-light";
@@ -230,7 +230,7 @@ impl NightLight {
 
 /// `night-light state | on | off | toggle | temperature <K> | schedule
 /// manual | schedule sun <lat> <lon> | schedule hours <HH:MM> <HH:MM>`:
-/// Shell Settings' Displays page. `state` answers like the state file.
+/// Emaki Settings' Displays page. `state` answers like the state file.
 pub fn run(command: Ask) -> String {
     let light = NightLight::read();
     if !light.present() {

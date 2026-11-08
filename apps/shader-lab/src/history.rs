@@ -3,7 +3,7 @@
 
 use std::time::{Duration, Instant};
 
-use amane_kit::lab::config::Config;
+use emaki_kit::lab::config::Config;
 
 /// Changes to one control this close together are one step.
 const TOGETHER: Duration = Duration::from_millis(400);

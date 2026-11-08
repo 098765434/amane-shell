@@ -130,10 +130,10 @@ struct Field {
 fn allowed(field: &Field, give: Give) -> Result<(), &'static str> {
     use super::identity::{self, Identity};
 
-    let settings = amane_kit::settings::passwords();
+    let settings = emaki_kit::settings::passwords();
 
     if settings.excludes(&field.owner.app_id) {
-        return Err("Fill isn't offered in this app (Shell Settings › Passwords).");
+        return Err("Fill isn't offered in this app (Emaki Settings › Passwords).");
     }
     drop(settings);
 

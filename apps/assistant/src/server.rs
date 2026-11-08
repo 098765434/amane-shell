@@ -11,11 +11,11 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use amane_assistant::protocol::{Envelope, Message, Request};
+use emaki_assistant::protocol::{Envelope, Message, Request};
 
 use crate::audio::{self, Recording};
 use crate::engine::{ENGINE, Engine};
-use amane_base::sync::Locked as _;
+use emaki_base::sync::Locked as _;
 
 /// How much is heard before Whistle hears it: half a second.
 const PASS: usize = audio::RATE as usize / 2;
@@ -63,10 +63,10 @@ impl Out {
 }
 
 /// When socket-activated, how long the daemon waits with nothing to do before it exits, giving
-/// its models' memory (80–140 MB once loaded) back: `AMANE_ASSISTANT_IDLE` seconds, 300 by
+/// its models' memory (80–140 MB once loaded) back: `EMAKI_ASSISTANT_IDLE` seconds, 300 by
 /// default, 0 to stay. systemd starts it again at the next connection.
 fn idle_exit() -> Option<Duration> {
-    let seconds = std::env::var("AMANE_ASSISTANT_IDLE")
+    let seconds = std::env::var("EMAKI_ASSISTANT_IDLE")
         .ok()
         .and_then(|value| value.parse().ok())
         .unwrap_or(300u64);
@@ -94,7 +94,7 @@ fn activated() -> Option<UnixListener> {
 }
 
 pub fn serve(engine: Engine) -> Result<(), String> {
-    let path = amane_assistant::socket_path();
+    let path = emaki_assistant::socket_path();
     let (listener, on_demand) = match activated() {
         Some(listener) => (listener, true),
         None => {

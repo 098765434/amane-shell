@@ -7,7 +7,7 @@ use amane::{Argument, Bus, BusError, run_in_order};
 use crate::protocol::{
     ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH, encode,
 };
-use amane_base::sync::Locked as _;
+use emaki_base::sync::Locked as _;
 
 type Handler<T> = Arc<dyn Fn(T) + Send + Sync>;
 
@@ -48,7 +48,7 @@ fn call(method: &str, arguments: &[Argument]) -> Result<amane::Value, BusError> 
 /// A program's own item in the bar:
 ///
 /// ```ignore
-/// let item = StatusItem::register(ItemSpec::new("org.amane.drop", icon));
+/// let item = StatusItem::register(ItemSpec::new("org.emaki.drop", icon));
 /// item.on_event(|event| ...);
 /// ```
 ///

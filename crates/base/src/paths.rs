@@ -1,6 +1,6 @@
 //! The XDG base folders, as the spec says to find them: the variable when it's
 //! an absolute path, else its default under `$HOME`. Each app adds its own
-//! name (`amane-shell`, `amane-drop`) below.
+//! name (`emaki`, `emaki-drop`) below.
 
 use std::path::PathBuf;
 

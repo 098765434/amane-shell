@@ -23,8 +23,8 @@ use serde_json::Value;
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use crate::services::state::{self, State};
-use amane_kit::grid::geometry::{Canvas, Place, Rect, Span};
-use amane_kit::grid::{Entry, GridKey, Layout};
+use emaki_kit::grid::geometry::{Canvas, Place, Rect, Span};
+use emaki_kit::grid::{Entry, GridKey, Layout};
 
 /// The file from before the state files, with the version inside.
 const OLD_FILE: &str = "widgets";

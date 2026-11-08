@@ -52,9 +52,9 @@ pub(super) fn clicked(index: usize, tile: &DropTile, editing: bool) {
     }
 }
 
-/// Shell Settings, on Drop's page.
+/// Emaki Settings, on Drop's page.
 pub(super) fn open_settings() {
-    amane::spawn("amane-settings --page drop");
+    amane::spawn("emaki-settings --page drop");
     state::close();
 }
 
@@ -73,7 +73,7 @@ pub(super) fn next_phone(now: Option<&str>) -> Option<String> {
 }
 
 pub(super) fn open_folder(folder: &Path) {
-    amane_kit::launch::open(folder.to_string_lossy());
+    emaki_kit::launch::open(folder.to_string_lossy());
     state::close();
 }
 
@@ -280,7 +280,7 @@ pub(super) fn new_grid() {
     let mut index = 0;
     change_drop_grids(|grids| {
         let name = format!("Grid {}", grids.grids.len() + 1);
-        grids.grids.push(amane_kit::settings::DropGrid {
+        grids.grids.push(emaki_kit::settings::DropGrid {
             name,
             tiles: Vec::new(),
         });
@@ -332,7 +332,7 @@ pub(super) fn offers(tiles: &[DropTile]) -> (Vec<Offer>, Vec<Offer>) {
 
 pub(super) fn offer_button(offer: Offer) -> Rectangle {
     let tile = offer.tile;
-    PushButton::new(format!("amane-drop.add.{}", offer.title), offer.title)
+    PushButton::new(format!("emaki-drop.add.{}", offer.title), offer.title)
         .icon(ICON_ADD)
         .style(Style::Tonal)
         .on_press(move || {
@@ -388,7 +388,7 @@ pub(super) fn edit_lines(tiles: &[DropTile], width: f32) -> Vec<Vec<Box<dyn Widg
         );
         let widths: Vec<f32> = items
             .iter()
-            .map(|item| amane_kit::layout::fixed_width(item.as_ref()))
+            .map(|item| emaki_kit::layout::fixed_width(item.as_ref()))
             .collect();
         let starts = wrap(&widths, width, 4.0);
         let mut items = items.into_iter();

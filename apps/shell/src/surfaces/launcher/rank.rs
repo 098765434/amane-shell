@@ -1,5 +1,5 @@
 //! How well a result matches, and how much its use lifts it: a fuzzy match
-//! on its name (the kit's [`amane_kit::fuzzy`]), then how often and how lately it was picked (frecency), and
+//! on its name (the kit's [`emaki_kit::fuzzy`]), then how often and how lately it was picked (frecency), and
 //! what was picked for the same few letters before. Pure, so the tests run
 //! it.
 
@@ -11,7 +11,7 @@ const HALF_LIFE: f64 = 7.0 * 24.0 * 3600.0;
 const FRECENCY_WEIGHT: f32 = 0.25;
 const LEARNED_WEIGHT: f32 = 0.4;
 
-pub(super) use amane_kit::fuzzy::fuzzy;
+pub(super) use emaki_kit::fuzzy::fuzzy;
 
 /// How much a result has been used: a score that halves every week, and
 /// when it was last counted, in seconds since the epoch.

@@ -1,6 +1,6 @@
 //! Saved looks: one `<name>.json` each in the configs folder, which is
 //! `apps/shader-lab/configs` when the lab reads a source tree, so they go
-//! into git and kit embeds them for the shell (`amane_kit::lab::look`).
+//! into git and kit embeds them for the shell (`emaki_kit::lab::look`).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 use std::time::{Duration, SystemTime};
 
 use amane::Service;
-use amane_kit::lab::config::{Config, slug};
+use emaki_kit::lab::config::{Config, slug};
 
 use crate::effects;
 
@@ -77,9 +77,9 @@ pub fn folder() -> &'static Path {
             return parent.join("configs");
         }
 
-        let config = amane_kit::paths::config();
+        let config = emaki_kit::paths::config();
 
-        config.join("amane-shader-lab").join("configs")
+        config.join("emaki-shader-lab").join("configs")
     })
 }
 
@@ -93,7 +93,7 @@ pub fn save(config: &Config) -> Result<String, String> {
     let slug = slug(&config.name);
     let path = folder().join(format!("{slug}.json"));
 
-    amane_kit::fs::save_json(&path, config).map_err(|error| error.to_string())?;
+    emaki_kit::fs::save_json(&path, config).map_err(|error| error.to_string())?;
 
     Ok(slug)
 }

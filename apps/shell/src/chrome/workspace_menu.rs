@@ -4,7 +4,7 @@
 
 use amane::{Service, Windows, Workspace, Workspaces};
 
-use amane_kit::menu::{ContextMenu, MenuItem};
+use emaki_kit::menu::{ContextMenu, MenuItem};
 
 /// What a workspace is called in a menu.
 fn label(workspace: &Workspace) -> String {

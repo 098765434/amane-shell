@@ -8,13 +8,13 @@ use std::fs;
 use std::path::PathBuf;
 
 use amane::{Column, Service, watch_file};
-use amane_kit::app::Dialog;
-use amane_kit::buttons::PushButton;
-use amane_kit::color::Accent;
-use amane_kit::form::FormRow;
-use amane_kit::icons::{Glyph, ICON_TUNE};
-use amane_kit::settings::QS_CONTROLS;
-use amane_kit::shell_ipc::{QuickSettings as Ask, ShellCommand};
+use emaki_kit::app::Dialog;
+use emaki_kit::buttons::PushButton;
+use emaki_kit::color::Accent;
+use emaki_kit::form::FormRow;
+use emaki_kit::icons::{Glyph, ICON_TUNE};
+use emaki_kit::settings::QS_CONTROLS;
+use emaki_kit::shell_ipc::{QuickSettings as Ask, ShellCommand};
 
 use crate::{group, groups, switch_row};
 
@@ -67,13 +67,13 @@ impl Service for QuickControls {
     }
 }
 
-/// Where the shell keeps the layout: `$XDG_STATE_HOME/amane-shell/
+/// Where the shell keeps the layout: `$XDG_STATE_HOME/emaki/
 /// quick-settings.json`.
 fn layout_file() -> PathBuf {
-    let state = amane_kit::paths::state();
+    let state = emaki_kit::paths::state();
 
     state
-        .join(amane_kit::app_ids::SHELL)
+        .join(emaki_kit::app_ids::SHELL)
         .join("quick-settings.json")
 }
 
@@ -126,8 +126,8 @@ pub fn page() -> Column {
             group().row(
                 FormRow::new("settings.quick.retry-row", "The shell isn't answering")
                     .icon(
-                        amane_kit::icons::ICON_WARNING,
-                        amane_kit::color::Accent::Orange,
+                        emaki_kit::icons::ICON_WARNING,
+                        emaki_kit::color::Accent::Orange,
                     )
                     .subtitle("Its Quick Settings can't be changed from here until it does")
                     .trailing(

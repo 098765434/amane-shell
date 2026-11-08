@@ -1,9 +1,9 @@
-//! Quick Settings' IPC (`quick-settings …`), and what Shell Settings' page asks.
+//! Quick Settings' IPC (`quick-settings …`), and what Emaki Settings' page asks.
 
 use super::*;
 
-/// `amane-shell` IPC: `quick-settings [toggle [<page>] | open [<page>] | close]`, and what
-/// Shell Settings asks.
+/// `emaki` IPC: `quick-settings [toggle [<page>] | open [<page>] | close]`, and what
+/// Emaki Settings asks.
 pub fn run(command: Command) -> String {
     match command {
         Command::Toggle => panel::toggle(Panel::QuickSettings),
@@ -30,7 +30,7 @@ pub fn run(command: Command) -> String {
             open(Page::Grid);
             edit::enter();
         }
-        // what Shell Settings' Quick Settings page lists: each control
+        // what Emaki Settings' Quick Settings page lists: each control
         // this machine has, and whether it's on the canvas
         Command::Controls => {
             load_layout();

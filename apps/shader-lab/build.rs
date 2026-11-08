@@ -1,7 +1,7 @@
 //! Embeds the lab's effect folders and saved configs: `FILES` in
 //! `OUT_DIR/lab_files.rs`, every file by its path here
 //! (`effects/chrome/chrome.wgsl`, `configs/dock-glass.json`). The lab hands
-//! it to `amane_kit::lab::register`, so its looks work in a binary that
+//! it to `emaki_kit::lab::register`, so its looks work in a binary that
 //! ships alone.
 
 use std::fmt::Write;

@@ -13,7 +13,7 @@ use serde_json::Value;
 
 use super::nixos::{SETTINGS_FILE, git, host, nix, repo};
 use super::state_dir;
-use amane_kit::service::ServiceExt as _;
+use emaki_kit::service::ServiceExt as _;
 
 /// Git, as of the last look: polled every few seconds, since any editor
 /// may change it.
@@ -118,7 +118,7 @@ impl Repo {
     }
 }
 
-pub use amane_nixos::repo::{short, version_of};
+pub use emaki_nixos::repo::{short, version_of};
 
 // ───── the running system ────────────────────────────────────────────────────
 

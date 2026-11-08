@@ -11,9 +11,9 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use amane::{Notify, Service};
-use amane_nixos::job::{NixLog, StepError, Steps, system_generation};
+use emaki_nixos::job::{NixLog, StepError, Steps, system_generation};
 
-pub use amane_nixos::job::{Built, Kind, Mode, Progress, Stage};
+pub use emaki_nixos::job::{Built, Kind, Mode, Progress, Stage};
 
 use super::generations::Generations;
 use super::nixos::{Managed, Snapshot, config, git};

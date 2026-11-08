@@ -10,8 +10,8 @@ use chrono::NaiveDate;
 use super::card::Place;
 use crate::services::clock::Clock;
 use crate::tokens::{notification, sys};
-use amane_kit::calendar::{Calendar, first_of};
-use amane_kit::material::{self, FillLevel, Level};
+use emaki_kit::calendar::{Calendar, first_of};
+use emaki_kit::material::{self, FillLevel, Level};
 
 thread_local! {
     // the month shown, when it isn't this one
@@ -32,7 +32,7 @@ pub(super) fn card() -> Rectangle {
 
     let width = Place::Center.width();
     let inset = sys::space::inset::m();
-    let calendar = Calendar::new("amane.notifications.calendar", month, today)
+    let calendar = Calendar::new("emaki.notifications.calendar", month, today)
         .width(width - inset * 2.0)
         .colors(
             material::label(Level::Primary),

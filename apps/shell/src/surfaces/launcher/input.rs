@@ -38,8 +38,8 @@ pub(super) fn heard() {
     let apps = Apps::read();
     let reading = assistant_service::read(&text, || assistant::snapshot(apps.list()));
     let sure = reading.filter(|reading| {
-        reading.source == amane_assistant::Source::Rules
-            && reading.command.risk() < amane_assistant::Risk::Destructive
+        reading.source == emaki_assistant::Source::Rules
+            && reading.command.risk() < emaki_assistant::Risk::Destructive
     });
     let entry = sure.and_then(|reading| assistant::entry(&reading, apps.list()));
     drop(apps);
@@ -242,7 +242,7 @@ pub(super) fn on_pill_scroll(scroll: Scroll) {
             } else {
                 scroll.y
             };
-            let to = pills.target() + lines * amane_kit::kinetic::WHEEL_STEP;
+            let to = pills.target() + lines * emaki_kit::kinetic::WHEEL_STEP;
             pills.go(to);
         }
     });

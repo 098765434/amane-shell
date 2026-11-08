@@ -10,7 +10,7 @@ written by anyone?
 ## The answer in short
 
 **Yes, and the shell is already half-way there.** One real extension interface exists today:
-`org.amane.StatusBar1` ([status-apps.md](integration/status-apps.md)). Separate programs put
+`org.emaki.StatusBar1` ([status-apps.md](integration/status-apps.md)). Separate programs put
 items in the bar and run Live Activities by sending JSON over D-Bus, the bar draws them in its own
 look, and the bar follows them off the bus when they quit. Drop and train-watch are built this way.
 Everything else (tiles, widgets, indicators, providers, pages) is a compile-time table inside the
@@ -38,9 +38,9 @@ Three things to be clear about up front:
 
 ```mermaid
 flowchart LR
-    subgraph shell["amane-shell (the host)"]
+    subgraph shell["emaki (the host)"]
         draw["draws everything<br/>tokens · materials · motion · idle rules"]
-        host["org.amane.Shell1<br/>items · activities · tiles · widgets · providers · pages"]
+        host["org.emaki.Shell1<br/>items · activities · tiles · widgets · providers · pages"]
         loader["extension loader<br/>manifests → units, layer rules, keybinds, settings"]
     end
     subgraph ext["extensions (own processes, own repos)"]
@@ -48,8 +48,8 @@ flowchart LR
         b["drop<br/>item + activities + app window"]
         c["gh-notifications<br/>launcher provider + activities"]
     end
-    store["Store<br/>(Shell Settings → Extensions)"]
-    cat["amane-extensions<br/>catalogue repo: index + flake"]
+    store["Store<br/>(Emaki Settings → Extensions)"]
+    cat["emaki-extensions<br/>catalogue repo: index + flake"]
     a & b & c -->|"JSON over D-Bus"| host
     host -->|"events: clicks, toggles, picks"| a & b & c
     store -->|"install / remove / update"| loader
@@ -68,7 +68,7 @@ The inventory, from the code ([status-apps.md](integration/status-apps.md),
 | **Quick Settings tile** | `controls.rs` `SPECS`, 22 compile-time | 19 of 22 are a `QuickToggle`: glyph, title, subtitle, checked, alert, sizes | a `TileSpec`, `Toggled(bool)`/`Opened` events, the optimistic `Pending` state shown by the host; a pages vocabulary (switch, list rows, segments, slider, footer link) |
 | **Widget** | `WidgetKind` enum, 8; fixed `Settings` struct | 7 of 8 are readings in fixed places: figure, label, caption, glyph, ring, bar, sparkline | typed *pieces* at slots per size; settings as a declared schema + JSON values; the host owns `frozen` and animation |
 | **Launcher provider** | `Provider` trait, 10 built in, synchronous | 8 of 10 are `Entry` rows: title, subtitle, icon, badge, action, preview | `Search(query, mode) → entries`, `Activate(key)`; results cached by query, never a bus call per frame |
-| **Settings page** | `SIDEBAR` table in Shell Settings; System pages already render a registry of controls | the System pages | a page = meta + form rows `{id, title, control, path}` over a `Config` file the shell also reads |
+| **Settings page** | `SIDEBAR` table in Emaki Settings; System pages already render a registry of controls | the System pages | a page = meta + form rows `{id, title, control, path}` over a `Config` file the shell also reads |
 | **Notification handler** | none (the phone's "Open on Phone" is hard-coded) | – | a hook: match on app name/hints → extra buttons `(label, argv)` |
 | **App** | own binary on `amane::App`, own unit, own layer rule, `StatusItem` | this *is* the working downloadable shape | a manifest, so the loader generates the unit, layer rule, keybind and Settings page instead of hand copies |
 
@@ -79,9 +79,9 @@ provider. The rest can leave.
 **Cost of an extension today:** train-watch is 611 lines, about 60 of them protocol; Drop is about
 1,840, about 50 of them item and menu wiring. A tile-only extension would be under 100.
 
-## 2. The protocol: `org.amane.Shell1`
+## 2. The protocol: `org.emaki.Shell1`
 
-`org.amane.StatusBar1` is renamed and grown, with the old name kept as an alias for one release.
+`org.emaki.StatusBar1` is renamed and grown, with the old name kept as an alias for one release.
 Every payload stays **one JSON string with a `v`**, as now (`protocol.rs:557`), so a shell script
 with `busctl` remains a valid extension.
 
@@ -92,7 +92,7 @@ with `busctl` remains a valid extension.
 | `RegisterTile(spec)` / `UpdateTile` / `RemoveTile` | tile | spec: `id, glyph, title, subtitle, checked, alert, available, sizes, page?` |
 | `RegisterWidget(kind)` / `UpdateWidget(id, face)` | widget | `kind`: name, title, blurb, glyph, category, sizes, settings schema; `face`: pieces per size |
 | `RegisterProvider(spec)` | launcher | the shell calls back `Search` on the owner's object; `Activate(key)` |
-| `RegisterPage(spec)` | Settings | rows over a named `Config` file; Shell Settings draws it |
+| `RegisterPage(spec)` | Settings | rows over a named `Config` file; Emaki Settings draws it |
 | `RegisterHandler(match)` | notifications | extra buttons for notifications matching `match` |
 | `Features() → s` | – | which kinds and protocol version this shell serves (like `amane::niri::features()`) |
 
@@ -115,7 +115,7 @@ PageAction)`, `WidgetEvent(id, Pressed|SettingsChanged)`, `ProviderEvent(Activat
   `glyph`, `ring`, `bar`, `sparkline`, `image`) at the slots a size offers. That covers 7 of 8
   built-in widgets. Custom drawing is not offered; a feature that needs it is a shell feature.
 
-One **Rust crate, `amane-extension`** (today's `amane-status`, grown), holds the types and the
+One **Rust crate, `emaki-extension`** (today's `emaki-status`, grown), holds the types and the
 client: `Tile::register`, `Widget::register`, `Provider::serve`. It re-registers everything when
 the shell restarts, as the status client does now. It depends on nothing of amane's rendering, so
 an extension binary is small and builds fast. Other languages use D-Bus directly.
@@ -126,17 +126,17 @@ Each extension ships an `extension.toml`. The loader reads it; nothing else is h
 
 ```toml
 [extension]
-id = "org.amane.weather"          # reverse-DNS; never changes (layouts, order and hiding key on it)
+id = "org.emaki.weather"          # reverse-DNS; never changes (layouts, order and hiding key on it)
 name = "Weather"
 version = "1.2.0"
 kind = "program"                  # or "look", "icons", "layout": content with no code
-protocol = "1"                    # the org.amane.Shell1 major it speaks
+protocol = "1"                    # the org.emaki.Shell1 major it speaks
 license = "MIT"
 summary = "Conditions and a forecast from Open-Meteo"
-homepage = "https://github.com/…/amane-weather"
+homepage = "https://github.com/…/emaki-weather"
 
 [program]
-exec = "amane-weather"            # started as a user unit, in its own scope, after the shell
+exec = "emaki-weather"            # started as a user unit, in its own scope, after the shell
 restart = "on-failure"
 network = true                    # declared, shown in the Store; hardening for the unit follows
 
@@ -145,34 +145,34 @@ tiles = ["weather"]
 widgets = ["weather.now", "weather.week"]
 items = ["weather"]
 providers = []
-pages = ["weather"]               # drawn by Shell Settings from the spec the program registers
+pages = ["weather"]               # drawn by Emaki Settings from the spec the program registers
 
 [[keybinds]]                      # offered, not imposed: the user accepts them in the Store
 action = "open-forecast"
 default = "Mod+Shift+W"
 
 [window]                          # only for an extension with a surface of its own
-namespace = "amane-weather"       # the loader generates the niri layer rule
+namespace = "emaki-weather"       # the loader generates the niri layer rule
 material = "panel"
 ```
 
 From the manifest the loader generates what today is copied by hand: the systemd user unit, the
 niri layer rule (`tokens/layer_rules.rs` becomes the one writer for extensions too), the keybind
-proposal, the Settings sidebar entry, and the "seen" lists Shell Settings keeps.
+proposal, the Settings sidebar entry, and the "seen" lists Emaki Settings keeps.
 
 ## 4. The loader (in the shell)
 
 A new service, `services/extensions/`, which names no surface (the boundary test holds):
 
-1. **Discover.** Manifests in `$XDG_DATA_DIRS/amane-shell/extensions/*/extension.toml` (system and
-   Nix profile), then `$XDG_DATA_HOME/amane-shell/extensions/` (user-installed), later wins.
+1. **Discover.** Manifests in `$XDG_DATA_DIRS/emaki/extensions/*/extension.toml` (system and
+   Nix profile), then `$XDG_DATA_HOME/emaki/extensions/` (user-installed), later wins.
 2. **Check.** Protocol major ≤ host's; id unique; `kind = "program"` has an `exec` on `PATH` or
    beside the manifest.
 3. **Enable.** Write `extensions.json` (`Config`, so Settings and the shell both follow it): which
-   are enabled, which keybinds accepted. Enabled programs get `amane-ext-<id>.service` under
-   `amane-extensions.target`, started after the shell, `Restart=on-failure`, in `app.slice` so a
+   are enabled, which keybinds accepted. Enabled programs get `emaki-ext-<id>.service` under
+   `emaki-extensions.target`, started after the shell, `Restart=on-failure`, in `app.slice` so a
    shell restart leaves them running (as `amane::launch` already does for apps).
-4. **Serve.** The program comes up, registers over `org.amane.Shell1`, and its tiles, widgets and
+4. **Serve.** The program comes up, registers over `org.emaki.Shell1`, and its tiles, widgets and
    items appear where the user had them (layouts already key on the name string, so an extension
    that was missing at boot takes its place back on arrival).
 5. **Disable / remove.** Stop the unit; the bus does the rest. Removing a look or icon set is a
@@ -180,12 +180,12 @@ A new service, `services/extensions/`, which names no surface (the boundary test
 
 **Content extensions** (`kind = "look" | "icons" | "layout"`) are files only: a saved Shader Lab look
 (`kit::lab::look` already loads these), a glyph set, a Quick Settings or widget layout. The loader
-makes them selectable in Shell Settings. They are the safe half of the catalogue and the Store
+makes them selectable in Emaki Settings. They are the safe half of the catalogue and the Store
 says so.
 
 ## 5. The Store
 
-A **Store** section in Shell Settings (not a new binary: one more sidebar group, built from the
+A **Store** section in Emaki Settings (not a new binary: one more sidebar group, built from the
 same `SIDEBAR` table), with four pages:
 
 - **Browse.** The catalogue index: name, summary, kind badge (*Look* / *Program*), what it provides
@@ -193,7 +193,7 @@ same `SIDEBAR` table), with four pages:
   with this shell, author, licence, last update. Search over words, as the Apps page does.
 - **Installed.** Enabled/disabled, version, "update available", the keybinds it offered, its
   Settings page link, Remove.
-- **Updates.** From the scheduled check that exists for NixOS (`amane-update-check`), extended to
+- **Updates.** From the scheduled check that exists for NixOS (`emaki-update-check`), extended to
   the catalogue index.
 - **An extension's page.** Screenshots from the catalogue, the full manifest, the repo link,
   *Install* / *Remove* / *Enable*.
@@ -208,8 +208,8 @@ extension (the Home Manager experience says the middle is fragile):
 
 | Path | How | For whom |
 |---|---|---|
-| **Imperative (default).** | `nix profile install github:…/amane-extensions#<id>` into a dedicated profile, `$XDG_STATE_HOME/amane-shell/extensions/profile`, whose `share/amane-shell/extensions/` the loader reads. No root, no rebuild, seconds. Updates are `nix profile upgrade` on that profile. | most users; what "a Store" means |
-| **Declarative.** | The Store writes `extensions: ["weather", …]` into `managed/settings.json`; `modules/managed.nix` maps it to `amane.extensions`, which installs the catalogue flake's packages system-wide. Apply builds and activates as today ([nixos.md](integration/nixos.md)). | users who want the machine reproducible from the repo |
+| **Imperative (default).** | `nix profile install github:…/emaki-extensions#<id>` into a dedicated profile, `$XDG_STATE_HOME/emaki/extensions/profile`, whose `share/emaki/extensions/` the loader reads. No root, no rebuild, seconds. Updates are `nix profile upgrade` on that profile. | most users; what "a Store" means |
+| **Declarative.** | The Store writes `extensions: ["weather", …]` into `managed/settings.json`; `modules/managed.nix` maps it to `emaki.extensions`, which installs the catalogue flake's packages system-wide. Apply builds and activates as today ([nixos.md](integration/nixos.md)). | users who want the machine reproducible from the repo |
 
 Both read the same catalogue flake, so an extension is one derivation either way, and the Store's
 index entry carries the flake output name.
@@ -217,12 +217,12 @@ index entry carries the flake output name.
 **Other distros** come later: the catalogue's CI publishes static binaries per release, signed with
 minisign; the loader's user directory accepts them. The protocol and manifest don't change.
 
-## 6. The catalogue: `amane-extensions`
+## 6. The catalogue: `emaki-extensions`
 
 A separate repo, modelled on Zed's and Flathub's indexes:
 
 ```
-amane-extensions/
+emaki-extensions/
   flake.nix            # packages.<system>.<id> for every extension, built from pinned sources
   index.json           # what the Store shows: generated by CI, signed with minisign
   extensions/<id>.toml # one entry per extension: repo, rev, sha256, manifest excerpt, screenshots
@@ -258,13 +258,13 @@ shell can't serve, and the loader refuses them, so a shell upgrade degrades an o
 
 | Phase | What | Size |
 |---|---|---|
-| **0. Pin the protocol** | `Features()`, the version rule (last two majors), rate limits and clamps as policy, `amane-status` → `amane-extension` with the old name re-exported. | S |
+| **0. Pin the protocol** | `Features()`, the version rule (last two majors), rate limits and clamps as policy, `emaki-status` → `emaki-extension` with the old name re-exported. | S |
 | **1. Tiles and bar items** | `RegisterTile` and the toggle vocabulary, `scroll` and `opens` on items. Move **Software Update** and **Weather** out as the first extensions in this repo's `extensions/` folder (still built by this flake), to prove the path with features that exist. | M |
 | **2. Manifest and loader** | `extension.toml`, `services/extensions/`, generated units and layer rules, `extensions.json`, the Store's *Installed* page. Drop and train-watch gain manifests and lose their hand-written units. | M |
-| **3. Widgets and pages** | widget kinds and faces as pieces; the settings schema; `RegisterPage` drawn by Shell Settings' existing registry renderer (`system/controls.rs`). Move the six readings widgets out. | L |
+| **3. Widgets and pages** | widget kinds and faces as pieces; the settings schema; `RegisterPage` drawn by Emaki Settings' existing registry renderer (`system/controls.rs`). Move the six readings widgets out. | L |
 | **4. Providers and handlers** | `RegisterProvider` with cached async results; the notification handler hook; the phone's "Open on Phone" becomes the phone extension's. | M |
-| **5. The catalogue and Store** | the `amane-extensions` repo, CI, signing, the Browse/Updates pages, `nix profile` install, the declarative `amane.extensions` option. | L |
-| **6. Contributors** | a `cargo generate` template (`amane-extension-template`: tile + widget + item in 80 lines), `docs/integration/writing-an-extension.md` replacing the status-app guide, the review rules, a *Submit* link in the Store. | S |
+| **5. The catalogue and Store** | the `emaki-extensions` repo, CI, signing, the Browse/Updates pages, `nix profile` install, the declarative `emaki.extensions` option. | L |
+| **6. Contributors** | a `cargo generate` template (`emaki-extension-template`: tile + widget + item in 80 lines), `docs/integration/writing-an-extension.md` replacing the status-app guide, the review rules, a *Submit* link in the Store. | S |
 | **7. Later** | static binaries for other distros; unit hardening from declared capabilities (`ProtectHome`, `RestrictAddressFamilies`); a WASM host for pure-logic providers (a unit converter, a dictionary) that need no process of their own. | – |
 
 Phases 1–4 each move a built-in out *and* keep it working, so the look stays checkable against the

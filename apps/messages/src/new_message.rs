@@ -9,14 +9,14 @@ use std::cell::RefCell;
 use amane::{
     Center, Color, Column, Radius, Rectangle, Row, Service, Size, Text, TextInput, Widget,
 };
-use amane_kit::app::{field_box, text_field};
-use amane_kit::buttons::{Actions, interactive, state_fill};
-use amane_kit::color::with_alpha;
-use amane_kit::layout::{boxed, caption, icon, pad, text_width};
-use amane_kit::material::{self, Level};
-use amane_kit::style;
-use amane_kit::tokens::{Styled, sys};
-use amane_phone::PhoneMessages;
+use emaki_kit::app::{field_box, text_field};
+use emaki_kit::buttons::{Actions, interactive, state_fill};
+use emaki_kit::color::with_alpha;
+use emaki_kit::layout::{boxed, caption, icon, pad, text_width};
+use emaki_kit::material::{self, Level};
+use emaki_kit::style;
+use emaki_kit::tokens::{Styled, sys};
+use emaki_phone::PhoneMessages;
 
 use crate::compose::{self, Draft};
 use crate::{Navigation, View, content_width, inbox, title};
@@ -66,7 +66,7 @@ fn pick(name: String, number: String) {
     PICKED.with_borrow_mut(|picked| {
         if !picked
             .iter()
-            .any(|(_, old)| amane_phone::digits(old) == amane_phone::digits(&number))
+            .any(|(_, old)| emaki_phone::digits(old) == emaki_phone::digits(&number))
         {
             picked.push((name, number));
         }
@@ -83,7 +83,7 @@ fn unpick(number: &str) {
 /// Whether `text` could be a phone number: digits, with the usual marks.
 fn number_like(text: &str) -> bool {
     let text = text.trim();
-    amane_phone::digits(text).len() >= 3
+    emaki_phone::digits(text).len() >= 3
         && text
             .chars()
             .all(|c| c.is_ascii_digit() || matches!(c, '+' | ' ' | '-' | '(' | ')'))
@@ -96,7 +96,7 @@ fn suggestions(query: &str) -> Vec<(String, String)> {
     if query.is_empty() {
         return Vec::new();
     }
-    let wanted_digits = amane_phone::digits(&query);
+    let wanted_digits = emaki_phone::digits(&query);
     let contacts = PhoneMessages::read().contacts();
     let mut found: Vec<(u8, (String, String))> = contacts
         .into_iter()
@@ -111,7 +111,7 @@ fn suggestions(query: &str) -> Vec<(String, String)> {
             } else if lower.contains(&query) {
                 1
             } else if wanted_digits.len() >= 3
-                && amane_phone::digits(&number).contains(&wanted_digits)
+                && emaki_phone::digits(&number).contains(&wanted_digits)
             {
                 2
             } else {

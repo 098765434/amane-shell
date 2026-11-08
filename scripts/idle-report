@@ -5,7 +5,7 @@
 #        sudo scripts/idle-report [seconds]     (exact count of programs started)
 #
 # Leave the desktop alone while it runs: no pointer, no keys, no notifications
-# you can help. It measures the amane-shell.service process:
+# you can help. It measures the emaki.service process:
 #
 #   - context switches per second over all its threads: each is the shell
 #     going to sleep and being woken again, so this is its wakeup rate. The
@@ -44,10 +44,10 @@ if ((EUID == 0)); then
     user_systemctl=(systemctl --user -M "$SUDO_USER@")
 fi
 
-pid=$("${user_systemctl[@]}" show amane-shell.service -p MainPID --value)
-cgroup=$("${user_systemctl[@]}" show amane-shell.service -p ControlGroup --value)
+pid=$("${user_systemctl[@]}" show emaki.service -p MainPID --value)
+cgroup=$("${user_systemctl[@]}" show emaki.service -p ControlGroup --value)
 if [[ -z $pid || $pid == 0 ]]; then
-    echo "idle-report: amane-shell.service isn't running" >&2
+    echo "idle-report: emaki.service isn't running" >&2
     exit 1
 fi
 procs_file=/sys/fs/cgroup$cgroup/cgroup.procs
@@ -137,7 +137,7 @@ window=$seconds
 if ((EUID == 0)); then
     window=$((seconds * 2))
 fi
-echo "idle-report: measuring amane-shell (pid $pid) for ${window}s; leave the desktop alone" >&2
+echo "idle-report: measuring emaki (pid $pid) for ${window}s; leave the desktop alone" >&2
 
 sample_threads
 switches_before=0

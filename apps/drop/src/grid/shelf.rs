@@ -26,7 +26,7 @@ pub(super) fn shelf(grid: &str, width: f32) -> Rectangle {
             .collect();
         let cleared = grid.to_string();
         chips.push(boxed(
-            IconButton::new("amane-drop.clear", ICON_CLOSE)
+            IconButton::new("emaki-drop.clear", ICON_CLOSE)
                 .on_press(move || state::let_go(&cleared, None))
                 .build(),
         ));
@@ -38,7 +38,7 @@ pub(super) fn shelf(grid: &str, width: f32) -> Rectangle {
         .height(SHELF)
         .radius(12.0)
         .fill(if hovered {
-            amane_kit::color::with_alpha(accent, 0.2)
+            emaki_kit::color::with_alpha(accent, 0.2)
         } else {
             material::fill_role(FillLevel::Tertiary)
         })
@@ -63,7 +63,7 @@ pub(super) fn shelf(grid: &str, width: f32) -> Rectangle {
 pub(super) fn stack_chip(grid: &str, index: usize, files: Vec<PathBuf>) -> Rectangle {
     let gone = files.iter().all(|file| !file.exists());
     let first = files.first().cloned().unwrap_or_default();
-    let picture: Box<dyn Widget> = if amane_kit::mime::is_image(&first) && Image::loaded(&first) {
+    let picture: Box<dyn Widget> = if emaki_kit::mime::is_image(&first) && Image::loaded(&first) {
         boxed(
             Rectangle::new()
                 .width(Size::Fixed(40.0))
@@ -74,7 +74,7 @@ pub(super) fn stack_chip(grid: &str, index: usize, files: Vec<PathBuf>) -> Recta
     } else {
         let glyph = if first.is_dir() {
             ICON_FOLDER_FILLED
-        } else if amane_kit::mime::is_image(&first) {
+        } else if emaki_kit::mime::is_image(&first) {
             ICON_IMAGE
         } else {
             ICON_DESCRIPTION

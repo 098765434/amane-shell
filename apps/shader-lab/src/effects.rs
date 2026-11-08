@@ -1,6 +1,6 @@
 //! The effect folders the lab can show, read from `--effects <dir>` or
 //! from the copies kit embeds, and read again when a manifest is saved.
-//! What a manifest says is kit's (`amane_kit::lab::manifest`), so the shell
+//! What a manifest says is kit's (`emaki_kit::lab::manifest`), so the shell
 //! reads saved looks the same way.
 
 use std::fs;
@@ -9,7 +9,7 @@ use std::sync::OnceLock;
 use std::time::{Duration, SystemTime};
 
 use amane::Service;
-use amane_kit::lab::manifest::{Manifest, read_manifest};
+use emaki_kit::lab::manifest::{Manifest, read_manifest};
 
 pub struct Entry {
     pub dir: PathBuf,
@@ -76,7 +76,7 @@ impl Service for Effects {
 /// The value after `name` on the command line.
 pub fn flag(name: &str) -> Option<String> {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    amane_kit::args::flag(&args, name)
+    emaki_kit::args::flag(&args, name)
 }
 
 /// Where the effect folders are: `--effects <dir>`, so edits to a source
@@ -89,9 +89,9 @@ pub fn folder() -> &'static Path {
             return PathBuf::from(dir);
         }
 
-        let root = amane_kit::paths::runtime().join("amane-shader-lab");
+        let root = emaki_kit::paths::runtime().join("emaki-shader-lab");
 
-        if let Err(error) = amane_kit::lab::write_effects(&root) {
+        if let Err(error) = emaki_kit::lab::write_effects(&root) {
             log::warn!("{}: {error}", root.display());
         }
 

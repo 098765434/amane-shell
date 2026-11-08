@@ -33,7 +33,7 @@ use crate::style::{self, px};
 use crate::symbol::{Symbol, symbol};
 use crate::tokens::{Styled, TextStyle, sys};
 
-/// How wide a group is unless told: Shell Settings' page.
+/// How wide a group is unless told: Emaki Settings' page.
 pub const DEFAULT_WIDTH: f32 = 504.0;
 
 thread_local! {
@@ -593,7 +593,7 @@ impl Group {
         self
     }
 
-    /// As wide as this (504 by default, Shell Settings' page).
+    /// As wide as this (504 by default, Emaki Settings' page).
     pub fn width(mut self, width: f32) -> Self {
         self.width = width;
         self

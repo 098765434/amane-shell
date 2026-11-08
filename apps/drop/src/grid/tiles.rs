@@ -159,12 +159,12 @@ pub(super) fn tile_cell(index: usize, tile: &DropTile, editing: bool) -> Rectang
         (None, Some(Outcome::Done), _) => boxed(icon(
             ICON_CHECK_CIRCLE,
             34.0,
-            amane_kit::color::Accent::Green.color(),
+            emaki_kit::color::Accent::Green.color(),
         )),
         (None, Some(Outcome::Failed), _) => boxed(icon(
             ICON_ERROR,
             34.0,
-            amane_kit::color::Accent::Red.color(),
+            emaki_kit::color::Accent::Red.color(),
         )),
         (None, None, Picture::Glyph(glyph)) => boxed(icon(glyph, 34.0, accent)),
         (None, None, Picture::File(path)) => boxed(
@@ -213,7 +213,7 @@ pub(super) fn tile_cell(index: usize, tile: &DropTile, editing: bool) -> Rectang
         .height(TILE_H)
         .radius(12.0)
         .fill(if hovered {
-            amane_kit::color::with_alpha(accent, 0.25)
+            emaki_kit::color::with_alpha(accent, 0.25)
         } else {
             material::fill_role(FillLevel::Tertiary)
         })
@@ -284,7 +284,7 @@ pub(super) fn ring(done: f32, diameter: f32, color: Color) -> Canvas {
 }
 
 /// `text` cut with an ellipsis to fit `width`.
-pub(super) fn clip(text: &str, style: amane_kit::tokens::TextStyle, width: f32) -> String {
+pub(super) fn clip(text: &str, style: emaki_kit::tokens::TextStyle, width: f32) -> String {
     if text_width(text, style) <= width {
         return text.to_string();
     }

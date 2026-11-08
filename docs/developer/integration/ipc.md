@@ -1,11 +1,11 @@
 # IPC and CLI
 
-Every command the `amane-shell` binary takes, on its command line and over its IPC socket
+Every command the `emaki` binary takes, on its command line and over its IPC socket
 (`apps/shell/src/main.rs`). The surface docs link here rather than repeat it.
 
 ## Command line
 
-`amane-shell` with no arguments runs the shell. The token and layer-rule tools are workspace
+`emaki` with no arguments runs the shell. The token and layer-rule tools are workspace
 tasks now, run from the repository:
 
 | Command | Does |
@@ -14,7 +14,7 @@ tasks now, run from the repository:
 | `cargo xtask tokens check <file>` | runs the manual's rules on a token file and prints how it differs from the committed tokens; fails when a rule does ([tokens.md](../design-system/tokens.md#103-developer-bring-an-export-in)) |
 | `cargo xtask layer-rules` | prints the niri layer rules generated from the tokens ([layer-rules.md](layer-rules.md)) |
 
-`cargo xtask layer-rules` runs `amane-shell layer-rules`, which prints them: the rules name the
+`cargo xtask layer-rules` runs `emaki layer-rules`, which prints them: the rules name the
 shell's own surfaces, so the shell builds them. The token tools are in the kit's `tools` feature,
 which the shell is built without, so they're `cargo xtask tokens …` only. Any other arguments run
 the shell.
@@ -24,21 +24,21 @@ Only one shell runs: amane hands a second launch to the one already running (it 
 
 ## The socket
 
-The shell listens on amane's IPC socket, `$XDG_RUNTIME_DIR/amane.sock`. A call is the command's
+The shell listens on amane's IPC socket, `$XDG_RUNTIME_DIR/emaki.sock`. A call is the command's
 name on the first line and each argument on a line of its own; the caller then closes its sending
 side, and the reply is text: `ok`, a usage line, or an error. A name the shell doesn't know
 answers `no handler named <name>`.
 
 ```sh
-printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
+printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock
 ```
 
 From Rust, send the kit's typed command, which writes the same lines:
 `ShellCommand::Launcher(Launcher { action: LauncherAction::Toggle, mode: None }).send()`
-(`amane_kit::shell_ipc`; `.tell()` sends it off the UI thread and logs a failure). The shell reads
+(`emaki_kit::shell_ipc`; `.tell()` sends it off the UI thread and logs a failure). The shell reads
 every verb into that type, in its one verb table (`apps/shell/src/ipc.rs`), so the two can't
 drift. Shell
-Settings (`amane-settings`) listens on `$XDG_RUNTIME_DIR/amane-settings.sock` and takes no
+Settings (`emaki-settings`) listens on `$XDG_RUNTIME_DIR/emaki-settings.sock` and takes no
 commands of its own; launching it again brings the open window forward.
 
 ## Commands
@@ -84,7 +84,7 @@ The modes also answer to `applications` (for `apps`) and `home` or `search` (the
 | `toggle <page>` | as `open <page>`, or closes it when that page is showing on its own |
 | `edit`, `customize` | opens the grid in edit mode with the Customize window |
 | `reset-layout` | puts back the default layout |
-| `controls` | one line a control this machine has: its name, a tab, and `shown` or `hidden` (Shell Settings' Quick Settings page lists these) |
+| `controls` | one line a control this machine has: its name, a tab, and `shown` or `hidden` (Emaki Settings' Quick Settings page lists these) |
 | `show <control>`, `hide <control>` | puts a control in the first free cells at its size (`no room for <control>: hide another control first` when none fit) or takes it off the canvas; the layout is saved |
 
 ### `notifications`
@@ -155,7 +155,7 @@ shows or hides one of the optional status icons, `activities`, `tray`, `volume`,
 ### `night-light`
 
 `night-light [state | on | off | toggle | temperature <K> | schedule <when>]`
-([displays.md](../../user/features/displays.md#night-light)), which Shell Settings' Displays page calls.
+([displays.md](../../user/features/displays.md#night-light)), which Emaki Settings' Displays page calls.
 No arguments is `state`.
 
 | Call | Does |
@@ -171,7 +171,7 @@ Without `wlsunset` it answers `wlsunset isn't installed`.
 
 ### `passwords`
 
-`passwords …` ([passwords.md](../../user/features/passwords.md)), for keybinds and Shell Settings' Passwords
+`passwords …` ([passwords.md](../../user/features/passwords.md)), for keybinds and Emaki Settings' Passwords
 page. Every call but `status` answers `ok`.
 
 | Call | Does |
@@ -208,15 +208,15 @@ A keybind spawns the call through a shell:
 ```kdl
 binds {
     Mod+Space hotkey-overlay-title="Launcher" {
-        spawn "sh" "-c" "printf 'launcher\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+        spawn "sh" "-c" "printf 'launcher\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock";
     }
     Mod+Ctrl+V hotkey-overlay-title="Clipboard" {
-        spawn "sh" "-c" "printf 'launcher\\ntoggle\\nclipboard\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+        spawn "sh" "-c" "printf 'launcher\\ntoggle\\nclipboard\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock";
     }
     Mod+Shift+Space hotkey-overlay-title="Assistant: listen" {
-        spawn "sh" "-c" "printf 'assistant\\nlisten\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+        spawn "sh" "-c" "printf 'assistant\\nlisten\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock";
     }
-    Mod+S { spawn "sh" "-c" "printf 'quick-settings\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock"; }
-    Mod+N { spawn "sh" "-c" "printf 'notifications\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock"; }
+    Mod+S { spawn "sh" "-c" "printf 'quick-settings\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock"; }
+    Mod+N { spawn "sh" "-c" "printf 'notifications\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock"; }
 }
 ```

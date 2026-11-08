@@ -6,8 +6,8 @@
 //! one. Without NetworkManager there's nothing, and the tiles stay hidden.
 
 use amane::{Network, NetworkProfile, Service};
-use amane_kit::service::ServiceExt as _;
-use amane_kit::sync::Locked as _;
+use emaki_kit::service::ServiceExt as _;
+use emaki_kit::sync::Locked as _;
 
 use crate::services::state::{self, State};
 

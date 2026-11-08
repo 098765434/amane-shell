@@ -1,4 +1,4 @@
-//! What every amane-shell program needs below its UI, written once.
+//! What every emaki program needs below its UI, written once.
 //!
 //! A leaf crate, std, serde and log only, so the crates without a window (the
 //! phone, the assistant, the pinentry, the NixOS model) share it with the

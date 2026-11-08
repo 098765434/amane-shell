@@ -22,8 +22,8 @@ use amane::{
 };
 
 use crate::tokens::sys;
-use amane_kit::buttons::DrawnButton;
-use amane_kit::material::{self, Level};
+use emaki_kit::buttons::DrawnButton;
+use emaki_kit::material::{self, Level};
 
 /// How many points go round every shape. 120 is a multiple of 3, 4, 5, 6
 /// and 8, so those shapes' corners fall on a point.
@@ -266,7 +266,7 @@ fn settle(position: f64, count: usize) -> f32 {
 
 fn spring(value: f32) -> Animation<f32> {
     // about as long as niri's own critically damped switch takes
-    amane_kit::motion::eased(
+    emaki_kit::motion::eased(
         value,
         Duration::from_millis(280),
         Easing::Spring { bounce: 0.0 },
@@ -323,7 +323,7 @@ pub fn indicator(output: &str, workspaces: &[&Workspace], width: f32) -> Rectang
         material::label(Level::Primary)
     };
 
-    super::item(DrawnButton::new("amane.bar.workspace", move |color| {
+    super::item(DrawnButton::new("emaki.bar.workspace", move |color| {
         let (outline, turn) = shape_at(at);
         Rectangle::new()
             .width(width)

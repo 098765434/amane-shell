@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Splice the amane layer-rules into the niri config from niri-layer-rule.kdl,
+# Splice the emaki layer-rules into the niri config from niri-layer-rule.kdl,
 # which `cargo xtask layer-rules` generates from the design tokens (see
 # apps/shell/src/tokens/layer_rules.rs). Replaces only the region between the markers
 #
-#     // >>> amane layer-rules (generated from shell/niri-layer-rule.kdl ...)
-#     // <<< amane layer-rules
+#     // >>> emaki layer-rules (generated from shell/niri-layer-rule.kdl ...)
+#     // <<< emaki layer-rules
 #
 # in the target config and leaves everything else untouched, so it is safe to
 # re-run after regenerating niri-layer-rule.kdl. Reload niri afterwards:
@@ -25,8 +25,8 @@ TARGET="${1:-$HOME/.config/niri/config.kdl}"
 TARGET="$(readlink -f "$TARGET")"
 # the same sentinel as apps/shell/src/tokens/layer_rules.rs (a test checks it)
 SENTINEL="//<<<GENERATED-RULES-BELOW>>>"
-BEGIN="// >>> amane layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)"
-END="// <<< amane layer-rules"
+BEGIN="// >>> emaki layer-rules (generated from shell/niri-layer-rule.kdl — do not edit by hand)"
+END="// <<< emaki layer-rules"
 
 [ -f "$SRC" ]    || { echo "error: source $SRC not found" >&2; exit 1; }
 [ -f "$TARGET" ] || { echo "error: target $TARGET not found" >&2; exit 1; }
@@ -61,4 +61,4 @@ awk -v b="$BEGIN" -v e="$END" -v bf="$block" '
 ' "$TARGET" > "$out"
 # copied over rather than moved, so the config keeps its own permissions
 cat "$out" > "$TARGET"
-echo "updated $TARGET (amane layer-rules regenerated from $SRC)"
+echo "updated $TARGET (emaki layer-rules regenerated from $SRC)"

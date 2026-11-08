@@ -6,11 +6,11 @@ use amane::{Center, Color, Rectangle, Service, Size, Widget};
 
 use crate::services::desktop::privacy::{Privacy, User};
 use crate::surfaces::quick_settings::{self, Page};
-use amane_kit::buttons::DrawnButton;
-use amane_kit::icons::{ICON_CAMERA, ICON_MIC};
-use amane_kit::layout::{boxed, cursor, icon};
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{ContextMenu, Icon, MenuItem};
+use emaki_kit::buttons::DrawnButton;
+use emaki_kit::icons::{ICON_CAMERA, ICON_MIC};
+use emaki_kit::layout::{boxed, cursor, icon};
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{ContextMenu, Icon, MenuItem};
 
 use super::{BAR_NS, item, menu_edge};
 
@@ -18,7 +18,7 @@ use super::{BAR_NS, item, menu_edge};
 const ORANGE: Color = Color::rgb(0xff, 0x9f, 0x0a);
 const GREEN: Color = Color::rgb(0x30, 0xd1, 0x58);
 
-const PRIVACY_KEY: &str = "amane.bar.privacy";
+const PRIVACY_KEY: &str = "emaki.bar.privacy";
 
 // ───── privacy ───────────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ pub fn privacy() -> Vec<Box<dyn Widget>> {
     let mut widgets = Vec::new();
     if camera {
         widgets.push(boxed(dot(
-            "amane.bar.privacy.camera",
+            "emaki.bar.privacy.camera",
             ICON_CAMERA,
             GREEN,
             camera_tip,
@@ -53,7 +53,7 @@ pub fn privacy() -> Vec<Box<dyn Widget>> {
     }
     if microphone {
         widgets.push(boxed(dot(
-            "amane.bar.privacy.microphone",
+            "emaki.bar.privacy.microphone",
             ICON_MIC,
             ORANGE,
             mic_tip,

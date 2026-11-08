@@ -392,7 +392,7 @@ fn regex_unescape(text: &str) -> String {
 /// niri's own config, where its symlink leads (into the nixos-config repo
 /// here), so `displays.kdl` lands beside the real file.
 pub fn niri_config() -> PathBuf {
-    let link = amane_kit::paths::config().join("niri/config.kdl");
+    let link = emaki_kit::paths::config().join("niri/config.kdl");
     fs::canonicalize(&link).unwrap_or(link)
 }
 
@@ -571,7 +571,7 @@ pub fn save(displays: &Displays, what: &str) -> Result<(), String> {
 /// Into place whole and durably, so niri never reads half a file and a
 /// crash can't leave it empty, which would lose every display's settings.
 fn write_atomic(path: &Path, text: &str) -> Result<(), String> {
-    amane_kit::fs::Whole::new()
+    emaki_kit::fs::Whole::new()
         .durable()
         .write(path, text)
         .map_err(|e| format!("{}: {e}", path.display()))

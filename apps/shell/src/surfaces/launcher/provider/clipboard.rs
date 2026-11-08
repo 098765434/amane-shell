@@ -7,7 +7,7 @@ pub(super) fn clip_entry(clip: Clip, now: u64) -> Entry {
     let (title, subtitle, icon, preview) = match clip.kind {
         ClipKind::Text => (
             entries::truncate(&clip.preview, CLIP_TITLE),
-            format!("Text · {}", amane_kit::format::bytes(clip.bytes as u64)),
+            format!("Text · {}", emaki_kit::format::bytes(clip.bytes as u64)),
             Icon::Glyph(ICON_CONTENT_COPY),
             Preview::Text(clip.preview.clone()),
         ),
@@ -20,7 +20,7 @@ pub(super) fn clip_entry(clip: Clip, now: u64) -> Entry {
                 } else {
                     "JPEG"
                 },
-                amane_kit::format::bytes(clip.bytes as u64)
+                emaki_kit::format::bytes(clip.bytes as u64)
             ),
             Icon::Image(clip.path()),
             Preview::Image(clip.path()),
@@ -38,7 +38,7 @@ pub(super) fn clip_entry(clip: Clip, now: u64) -> Entry {
     };
     let mut entry =
         Entry::new(format!("clip:{:016x}", clip.id), title, icon, Action::Hint).subtitle(subtitle);
-    entry.trailing = Some(amane_kit::format::ago(std::time::Duration::from_secs(
+    entry.trailing = Some(emaki_kit::format::ago(std::time::Duration::from_secs(
         now.saturating_sub(clip.at),
     )));
     entry.preview = Some(preview);
@@ -56,7 +56,7 @@ impl Provider for Clipboard {
     }
 
     fn find(&self, query: &Query, out: &mut Vec<Candidate>) {
-        let now = amane_kit::time::unix_s();
+        let now = emaki_kit::time::unix_s();
         for clip in clipboard_history::clips() {
             if !query.needle.is_empty() && !clip.preview.to_lowercase().contains(&query.needle) {
                 continue;

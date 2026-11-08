@@ -13,23 +13,23 @@ use amane::{
     Center, Color, Image, Radius, Rectangle, Scroll, Service, Tray, TrayMenuItem, TrayStatus,
     TrayToggle, Widget,
 };
-use amane_kit::settings::{remember_tray, status_bar};
+use emaki_kit::settings::{remember_tray, status_bar};
 
 use crate::tokens::sys;
-use amane_kit::buttons::DrawnButton;
-use amane_kit::layout::{boxed, cursor};
-use amane_kit::material::{self, Level};
-use amane_kit::menu::layer as context_menu;
-use amane_kit::menu::{Check, ContextMenu, Icon, MenuItem};
+use emaki_kit::buttons::DrawnButton;
+use emaki_kit::layout::{boxed, cursor};
+use emaki_kit::material::{self, Level};
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::menu::{Check, ContextMenu, Icon, MenuItem};
 
 use super::{BAR_NS, bar_icon, item, menu_edge};
-use amane_kit::shell_ipc::Listed;
+use emaki_kit::shell_ipc::Listed;
 
 /// `keyboard_double_arrow_right`: the items that didn't fit.
 const ICON_MORE: char = '\u{eac9}';
 
-const MENU_KEY: &str = "amane.bar.tray";
-const MORE_KEY: &str = "amane.bar.tray.more";
+const MENU_KEY: &str = "emaki.bar.tray";
+const MORE_KEY: &str = "emaki.bar.tray.more";
 
 /// One app's item as the bar shows it.
 #[derive(Clone)]
@@ -58,7 +58,7 @@ pub fn shown() -> Vec<Shown> {
     let tray = Tray::read();
     let items = tray.items();
 
-    // apps seen for the first time are remembered for Shell Settings' list
+    // apps seen for the first time are remembered for Emaki Settings' list
     if SEEN.replace(items.len()) != items.len() {
         for item in items {
             remember_tray(item.id(), item.title());
@@ -110,7 +110,7 @@ fn icon(shown: &Shown) -> Rectangle {
     );
 
     item(DrawnButton::new(
-        format!("amane.bar.tray.{}", shown.key),
+        format!("emaki.bar.tray.{}", shown.key),
         move |color| picture_of(picture, attention, color),
     ))
     .width(super::metrics().item_width)
@@ -244,7 +244,7 @@ fn menu_of(key: &str, items: &[TrayMenuItem]) -> ContextMenu {
 fn more(hidden: Vec<Shown>) -> Rectangle {
     let count = hidden.len();
     bar_icon(
-        "amane.bar.tray.more",
+        "emaki.bar.tray.more",
         ICON_MORE,
         material::label(Level::Secondary),
     )

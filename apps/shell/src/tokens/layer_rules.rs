@@ -15,8 +15,8 @@ use crate::surfaces::quick_settings::QS_NS;
 use crate::surfaces::status_bar::BAR_NS;
 use crate::surfaces::widgets::WIDGETS_NS;
 use crate::theme::{Density, Mode};
-use amane_kit::material::Material;
-use amane_kit::menu::layer::{ANCHOR_NS, MAX_DEPTH, level_ns};
+use emaki_kit::material::Material;
+use emaki_kit::menu::layer::{ANCHOR_NS, MAX_DEPTH, level_ns};
 
 use crate::tokens::{Key, Value, bar, dialog, library, notification, osd, resolved, sys, with_key};
 
@@ -74,8 +74,8 @@ const BANNER_SHADOW_SOFTNESS: f32 = 48.0;
 const ALERT_SHADOW_SOFTNESS: f32 = 48.0;
 const ALERT_SHADOW_Y: f32 = 18.0;
 
-/// amane-drop's grid; its own app, whose namespace is in the kit.
-const DROP_NS: &str = amane_kit::app_ids::DROP_NS;
+/// emaki-drop's grid; its own app, whose namespace is in the kit.
+const DROP_NS: &str = emaki_kit::app_ids::DROP_NS;
 
 /// One rule per frosted surface.
 pub fn rules() -> Vec<LayerRule> {
@@ -149,7 +149,7 @@ pub fn rules() -> Vec<LayerRule> {
             namespace: WIDGETS_NS,
             comment: String::from(
                 "Desktop widgets: a clear surface on the wallpaper, one a monitor\n\
-                      (`amane.widgets.<output>`, matched by the prefix), whose cards are frosted\n\
+                      (`emaki.widgets.<output>`, matched by the prefix), whose cards are frosted\n\
                       where the surface says (ext-background-effect). The desktop: still while\n\
                       workspaces switch, faded out with the overview. A card's menu is an\n\
                       xdg-popup of it.",
@@ -246,7 +246,7 @@ pub fn rules() -> Vec<LayerRule> {
         LayerRule {
             namespace: DROP_NS,
             comment: String::from(
-                "amane-drop's grid (apps/drop): a clear full-screen surface that frosts only\n\
+                "emaki-drop's grid (apps/drop): a clear full-screen surface that frosts only\n\
                       its card, with a blur shape of its own, as Quick Settings does.",
             ),
             card: None,
@@ -260,25 +260,25 @@ pub fn rules() -> Vec<LayerRule> {
 
 /// The amane apps whose windows are frosted behind, in the window
 /// material, their popups in the menu's (`kit::app::app` names them).
-pub const APP_IDS: &[&str] = &[amane_kit::app_ids::SETTINGS, amane_kit::app_ids::MESSAGES];
+pub const APP_IDS: &[&str] = &[emaki_kit::app_ids::SETTINGS, emaki_kit::app_ids::MESSAGES];
 
 /// The apps with no window rule, and why; the test holds every other app to one.
 #[cfg(test)]
 pub const NO_RULE: &[(&str, &str)] = &[
     (
-        amane_kit::app_ids::SHADER_LAB,
+        emaki_kit::app_ids::SHADER_LAB,
         "a developer tool, plain on purpose",
     ),
     (
-        amane_kit::app_ids::DROP,
+        emaki_kit::app_ids::DROP,
         "its grid is a layer surface, with a layer rule of its own",
     ),
 ];
 
 /// The phone's screen (`apps/mirror`): its own floating window, shaped
 /// like a phone, opaque so nothing frosts behind it; each of the phone's
-/// apps opened alone is `amane-mirror.<package>`.
-pub const PHONE_SCREEN_APP_ID: &str = amane_kit::app_ids::MIRROR;
+/// apps opened alone is `emaki-mirror.<package>`.
+pub const PHONE_SCREEN_APP_ID: &str = emaki_kit::app_ids::MIRROR;
 
 /// The line `gen-layer-rules.sh` looks for; everything after it goes into
 /// the niri config.
@@ -295,7 +295,7 @@ const HEADER: &str = "\
 //
 // Don't hand-copy these into the niri config. gen-layer-rules.sh injects
 // everything below the sentinel into the config between its
-// `>>> amane layer-rules` / `<<<` markers (see docs/developer/integration/layer-rules.md); then:
+// `>>> emaki layer-rules` / `<<<` markers (see docs/developer/integration/layer-rules.md); then:
 //
 //     niri validate -c ~/.config/niri/config.kdl
 //     niri msg action load-config-file
@@ -695,7 +695,7 @@ mod tests {
     }
 
     #[test]
-    fn every_amane_app_has_a_window_rule() {
+    fn every_emaki_app_has_a_window_rule() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
         // every app under apps/ that opens a window names itself from the kit
         for entry in std::fs::read_dir(&root).unwrap().flatten() {
@@ -707,16 +707,16 @@ mod tests {
             if folder == "shell" || !windowed {
                 continue;
             }
-            let Some((_, id)) = amane_kit::app_ids::APPS.iter().find(|(f, _)| *f == folder) else {
-                panic!("apps/{folder} opens a window but has no id in amane_kit::app_ids");
+            let Some((_, id)) = emaki_kit::app_ids::APPS.iter().find(|(f, _)| *f == folder) else {
+                panic!("apps/{folder} opens a window but has no id in emaki_kit::app_ids");
             };
             assert!(
                 !main.contains(&format!("\"{id}\"")),
-                "apps/{folder} types its id by hand; use amane_kit::app_ids"
+                "apps/{folder} types its id by hand; use emaki_kit::app_ids"
             );
         }
         // and each id has a rule, or a reason it has none
-        for (folder, id) in amane_kit::app_ids::APPS {
+        for (folder, id) in emaki_kit::app_ids::APPS {
             let ruled = APP_IDS.contains(&id) || id == PHONE_SCREEN_APP_ID;
             let excused = NO_RULE.iter().any(|(none, _)| *none == id);
             assert!(
@@ -733,8 +733,8 @@ mod tests {
     #[test]
     fn namespaces_are_escaped() {
         assert_eq!(
-            kdl_string(&anchored("amane.status-bar.wifi")),
-            r"^amane\\.status-bar\\.wifi$"
+            kdl_string(&anchored("emaki.status-bar.wifi")),
+            r"^emaki\\.status-bar\\.wifi$"
         );
         assert_eq!(anchored("a+b(c)"), r"^a\+b\(c\)$");
     }
@@ -742,23 +742,23 @@ mod tests {
     /// Namespaces with no rule of their own, and why they need none.
     const POPUPS: &[(&str, &str)] = &[
         (
-            "amane.context-menu.",
+            "emaki.context-menu.",
             "menu levels: popups under the anchor's rule (popups {})",
         ),
         (
-            "amane.status-bar.activity",
+            "emaki.status-bar.activity",
             "a popup of the status bar, under its rule",
         ),
         (
-            "amane.tooltip",
+            "emaki.tooltip",
             "a popup of whichever surface shows it, under that one's rule",
         ),
         (
-            "amane.menu",
+            "emaki.menu",
             "a popup of the window or surface that opens it",
         ),
         (
-            "amane.fill",
+            "emaki.fill",
             "an input-method popup over another app's window, not a layer surface",
         ),
     ];

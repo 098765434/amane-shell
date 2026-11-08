@@ -1,7 +1,7 @@
-//! amane-pinentry: rbw's `pinentry`. It asks for the master password in the shell's own
+//! emaki-pinentry: rbw's `pinentry`. It asks for the master password in the shell's own
 //! dialog, or runs pinentry-gnome3 in its place when the shell isn't there to ask.
 //!
-//! rbw config set pinentry /run/current-system/sw/bin/amane-pinentry
+//! rbw config set pinentry /run/current-system/sw/bin/emaki-pinentry
 
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Read, Write};
@@ -11,13 +11,13 @@ use std::os::unix::process::CommandExt;
 use std::process::{Command, ExitCode};
 use std::time::Duration;
 
-use amane_pinentry::assuan::{self, Command as Request, ParseError, Prompt};
-use amane_pinentry::peer::{self, Peer};
-use amane_pinentry::wire::{self, Answer};
+use emaki_pinentry::assuan::{self, Command as Request, ParseError, Prompt};
+use emaki_pinentry::peer::{self, Peer};
+use emaki_pinentry::wire::{self, Answer};
 use zeroize::Zeroizing;
 
 // set by the nix build to the store's pinentry-gnome3, so no PATH can swap it
-const FALLBACK: &str = match option_env!("AMANE_PINENTRY_FALLBACK") {
+const FALLBACK: &str = match option_env!("EMAKI_PINENTRY_FALLBACK") {
     Some(path) => path,
     None => "/run/current-system/sw/bin/pinentry-gnome3",
 };
@@ -26,8 +26,8 @@ const FALLBACK: &str = match option_env!("AMANE_PINENTRY_FALLBACK") {
 const ANSWER_TIME: Duration = Duration::from_secs(180);
 
 fn main() -> ExitCode {
-    amane_log::init(amane_base::app_ids::PINENTRY);
-    amane_base::migrate::from_amane();
+    emaki_log::init(emaki_base::app_ids::PINENTRY);
+    emaki_base::migrate::from_amane();
     let Some(shell) = shell() else {
         return fallback();
     };
@@ -50,7 +50,7 @@ fn shell() -> Option<UnixStream> {
 
     let exe = peer::exe(peer.pid)?;
 
-    if !peer::is_program(&exe, &[amane_base::app_ids::SHELL]) || !peer.still_there() {
+    if !peer::is_program(&exe, &[emaki_base::app_ids::SHELL]) || !peer.still_there() {
         return None;
     }
 

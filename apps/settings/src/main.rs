@@ -1,4 +1,4 @@
-//! Shell Settings: changes amane-shell's settings file, which the running
+//! Emaki Settings: changes emaki's settings file, which the running
 //! shell follows at once, and, under System, the NixOS configuration the
 //! machine is built from. One copy runs; launching it again brings it up.
 
@@ -21,17 +21,17 @@ mod system;
 use amane::{
     Center, Column, Key, Rectangle, Row, ScrollArea, Service, Size, Text, TextInput, Widget, Window,
 };
-use amane_kit::app::{
+use emaki_kit::app::{
     Dialog, app, app_window, field_box, sidebar_with, standard_shortcut, text_field,
 };
-use amane_kit::args::flag;
-use amane_kit::buttons::Switch;
-use amane_kit::color::Accent;
-use amane_kit::form::{FormRow, Group};
-use amane_kit::layout::boxed;
-use amane_kit::nav_buttons::NavButtons;
-use amane_kit::style;
-use amane_kit::tokens::{Styled, sys};
+use emaki_kit::args::flag;
+use emaki_kit::buttons::Switch;
+use emaki_kit::color::Accent;
+use emaki_kit::form::{FormRow, Group};
+use emaki_kit::layout::boxed;
+use emaki_kit::nav_buttons::NavButtons;
+use emaki_kit::style;
+use emaki_kit::tokens::{Styled, sys};
 
 use system::apply_bar;
 use system::job::BuildJob;
@@ -210,8 +210,8 @@ fn package_arg(args: &[String]) {
 }
 
 fn main() {
-    amane_log::init(amane_kit::app_ids::SETTINGS);
-    amane_kit::migrate::from_amane();
+    emaki_log::init(emaki_kit::app_ids::SETTINGS);
+    emaki_kit::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     if let Some(place) = page_arg(&args) {
         *Navigation::write() = Navigation {
@@ -221,7 +221,7 @@ fn main() {
         };
     }
     package_arg(&args);
-    app(amane_kit::app_ids::SETTINGS)
+    app(emaki_kit::app_ids::SETTINGS)
         .normal_window("main", main_window)
         // launched again (the launcher, a notification) while running: show that page
         .on_activate(|args| {
@@ -240,7 +240,7 @@ fn may_close() -> bool {
         return true;
     }
     Dialog::new("settings.close-dialog", "Stop the build?")
-        .message("Closing Shell Settings stops the build. Nothing has been applied yet.")
+        .message("Closing Emaki Settings stops the build. Nothing has been applied yet.")
         .button("Keep Building", || {})
         .destructive("Stop", || {
             BuildJob::cancel();
@@ -317,9 +317,9 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
             // a page that's gone shows the first
             let Some(def) = pages::def(page).or_else(|| pages::all().next().map(|(_, def)| def))
             else {
-                return (String::new(), amane_kit::layout::nothing());
+                return (String::new(), emaki_kit::layout::nothing());
             };
-            let scroll = amane_kit::intern::intern(&format!("settings.scroll.{}", def.name));
+            let scroll = emaki_kit::intern::intern(&format!("settings.scroll.{}", def.name));
             (
                 String::from(def.title),
                 scrolled(scroll, boxed((def.body)())),
@@ -331,7 +331,7 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
 /// The scroll id a sub-page keeps its offset under: one per page and name.
 fn sub_scroll(page: usize, name: &str) -> &'static str {
     let page = pages::def(page).map_or("", |def| def.name);
-    amane_kit::intern::intern(&format!("settings.scroll.{page}.{name}"))
+    emaki_kit::intern::intern(&format!("settings.scroll.{page}.{name}"))
 }
 
 fn main_window() -> Window {
@@ -375,7 +375,7 @@ fn main_window() -> Window {
         &shown,
     );
 
-    amane_kit::form::highlight_row(search::lit_row());
+    emaki_kit::form::highlight_row(search::lit_row());
     let (title, body) = if searching {
         (String::from("Search"), results(&query, &found))
     } else {
@@ -413,7 +413,7 @@ fn main_window() -> Window {
     .height(Size::Parent);
 
     app_window(content)
-        .title("Shell Settings")
+        .title("Emaki Settings")
         .size(760.0, 760.0)
         .min_size(
             SIDEBAR + MIN_PAGE + sys::space::gap::xl() + 2.0 * sys::space::inset::l(),
@@ -553,7 +553,7 @@ const MAX_PAGE: f32 = 680.0;
 /// window centres them.
 fn page_width_in(window: f32) -> f32 {
     if window <= 0.0 {
-        return amane_kit::form::DEFAULT_WIDTH;
+        return emaki_kit::form::DEFAULT_WIDTH;
     }
     let room = window - 2.0 * sys::space::inset::l() - SIDEBAR - sys::space::gap::xl();
     room.clamp(MIN_PAGE, MAX_PAGE)
@@ -596,11 +596,11 @@ pub fn problem_row(id: &str, title: &str, meaning: &str, details: &str) -> FormR
     let shown = details.trim().to_string();
     let heading = title.to_string();
     let mut row = FormRow::new(id, title)
-        .icon(amane_kit::icons::ICON_WARNING, Accent::Orange)
+        .icon(emaki_kit::icons::ICON_WARNING, Accent::Orange)
         .subtitle(meaning);
     if !shown.is_empty() {
         row = row.trailing(
-            amane_kit::buttons::PushButton::new(format!("{id}.details"), "Details…")
+            emaki_kit::buttons::PushButton::new(format!("{id}.details"), "Details…")
                 .on_press(move || {
                     Dialog::new("settings.problem-details", heading.clone())
                         .message(shown.clone())
@@ -655,7 +655,7 @@ mod tests {
 
     #[test]
     fn a_page_fills_the_room_between_its_limits() {
-        assert_eq!(page_width_in(0.0), amane_kit::form::DEFAULT_WIDTH);
+        assert_eq!(page_width_in(0.0), emaki_kit::form::DEFAULT_WIDTH);
         let room = 760.0 - 2.0 * sys::space::inset::l() - SIDEBAR - sys::space::gap::xl();
         assert_eq!(page_width_in(760.0), room.clamp(MIN_PAGE, MAX_PAGE));
         assert!(page_width_in(900.0) > page_width_in(760.0));

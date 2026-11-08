@@ -117,7 +117,7 @@ pub fn parse(line: &str) -> Result<Command, ParseError> {
 
 /// Undoes Assuan's percent escapes; none for a bad escape or text that isn't UTF-8.
 pub fn unescape(text: &str) -> Option<String> {
-    amane_base::percent::decode_strict(text)
+    emaki_base::percent::decode_strict(text)
 }
 
 /// Escapes data for a D line: percent, line breaks and carriage returns, as the protocol asks.

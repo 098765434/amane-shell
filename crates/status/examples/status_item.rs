@@ -1,20 +1,20 @@
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use amane_status::{
+use emaki_status::{
     Accepts, ActivityButton, ActivityContent, ActivityEvent, Dismiss, ItemEvent, ItemIcon,
     ItemSpec, MenuEntry, Tint, Trailing,
 };
-use amane_status::{LiveActivity, StatusItem};
+use emaki_status::{LiveActivity, StatusItem};
 
 /*
  * an item in the bar and a two-minute countdown activity, with no window
- * of its own; needs a bar serving org.amane.StatusBar1 (amane-shell does).
+ * of its own; needs a bar serving org.emaki.StatusBar1 (emaki does).
  * Click, right-click or drop files on the item, and press the activity's
  * buttons: what happens is printed. Restart the bar and both come back
  */
 fn main() {
-    let mut spec = ItemSpec::new("org.amane.example", ItemIcon::Glyph(String::from("tray")));
+    let mut spec = ItemSpec::new("org.emaki.example", ItemIcon::Glyph(String::from("tray")));
 
     spec.tooltip = String::from("amane's status item example");
     spec.accepts = Accepts {

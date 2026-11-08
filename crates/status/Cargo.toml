@@ -1,15 +1,15 @@
 [package]
-name = "amane-status"
+name = "emaki-status"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Status apps: a program's own item in amane-shell's status bar and its activities, over org.amane.StatusBar1."
+description = "Status apps: a program's own item in emaki's status bar and its activities, over org.emaki.StatusBar1."
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-amane-base = { workspace = true }
+emaki-base = { workspace = true }
 log = { workspace = true }
 # the session bus, and the one ordered thread for calls
 amane = { workspace = true }

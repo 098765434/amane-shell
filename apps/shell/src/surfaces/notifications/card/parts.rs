@@ -1,7 +1,7 @@
 //! What a notification card is made of: its icon or image, the app's name, its text and its age.
 
 use super::*;
-use amane_kit::layout::frame;
+use emaki_kit::layout::frame;
 
 /// The app's icon, centered in its frame as tall as the card's content.
 pub(super) fn leading(n: &Notification, height: f32) -> Box<dyn Widget> {
@@ -132,7 +132,7 @@ pub(super) fn one_line(text: &str) -> String {
 pub fn ago(received: SystemTime, now: SystemTime) -> String {
     let elapsed = now.duration_since(received).unwrap_or(Duration::ZERO);
     if elapsed < Duration::from_secs(24 * 60 * 60) {
-        amane_kit::format::ago(elapsed)
+        emaki_kit::format::ago(elapsed)
     } else {
         local(received, "%a %H:%M")
     }

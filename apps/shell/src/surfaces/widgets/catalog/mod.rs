@@ -14,8 +14,8 @@ use amane::{Arc, Canvas, Cap, Color, Path, Rectangle, Shape, Stack, Start, Text,
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use super::store::Settings;
 use crate::tokens::{Styled, TextStyle, sys};
-use amane_kit::layout::{boxed, frame, icon, text_height, text_width};
-use amane_kit::material::{self, FillLevel, Level};
+use emaki_kit::layout::{boxed, frame, icon, text_height, text_width};
+use emaki_kit::material::{self, FillLevel, Level};
 
 pub use battery::devices;
 pub use clock::settle as settle_clock;

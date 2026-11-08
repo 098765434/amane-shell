@@ -33,10 +33,10 @@
 {"text": "launch the terminal", "expect": {"do": "open", "app": "com.mitchellh.ghostty"}}
 {"text": "start vs code", "expect": {"do": "open", "app": "code"}}
 {"text": "I want to browse my files", "expect": {"do": "open", "app": "org.gnome.Nautilus"}}
-{"text": "open shell settings", "expect": {"do": "open", "app": "amane-settings"}}
+{"text": "open shell settings", "expect": {"do": "open", "app": "emaki-settings"}}
 {"text": "check my email", "expect": {"do": "open", "app": "thunderbird"}}
 {"text": "I need a calculator", "expect": {"do": "open", "app": "org.gnome.Calculator"}}
-{"text": "text someone", "expect": {"do": "open", "app": "amane-messages"}}
+{"text": "text someone", "expect": {"do": "open", "app": "emaki-messages"}}
 {"text": "put on some music", "expect": {"do": "open", "app": "spotify"}}
 {"text": "open ghostty", "expect": {"do": "open", "app": "com.mitchellh.ghostty"}}
 {"text": "skip this song", "expect": {"do": "media", "media": "next"}}
@@ -138,10 +138,10 @@
 {"text": "i want to listen to music", "expect": {"do": "open", "app": "spotify"}}
 {"text": "show my photos", "expect": {"do": "open", "app": "org.gnome.Loupe"}}
 {"text": "open the image viewer", "expect": {"do": "open", "app": "org.gnome.Loupe"}}
-{"text": "open messages", "expect": {"do": "open", "app": "amane-messages"}}
-{"text": "send a text message", "expect": {"do": "open", "app": "amane-messages"}}
-{"text": "change my desktop settings", "expect": {"do": "open", "app": "amane-settings"}}
-{"text": "open settings", "expect": {"do": "open", "app": "amane-settings"}}
+{"text": "open messages", "expect": {"do": "open", "app": "emaki-messages"}}
+{"text": "send a text message", "expect": {"do": "open", "app": "emaki-messages"}}
+{"text": "change my desktop settings", "expect": {"do": "open", "app": "emaki-settings"}}
+{"text": "open settings", "expect": {"do": "open", "app": "emaki-settings"}}
 {"text": "next track", "expect": {"do": "media", "media": "next"}}
 {"text": "skip", "expect": {"do": "media", "media": "next"}}
 {"text": "play the next one", "expect": {"do": "media", "media": "next"}}

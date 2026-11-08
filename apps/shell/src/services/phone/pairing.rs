@@ -5,10 +5,10 @@
 use std::sync::{Mutex, Once};
 
 use amane::Service;
-use amane_kit::sync::Locked as _;
-use amane_phone::KdeConnect;
+use emaki_kit::sync::Locked as _;
+use emaki_phone::KdeConnect;
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// A phone started or stopped asking to pair.
     pub Asked
 }

@@ -53,7 +53,7 @@ pub(super) fn chip(activity: Shown, compact: bool) -> Rectangle {
     let showing = OPEN.with_borrow(|open| open.as_ref().is_some_and(|open| open.key == key));
 
     let mut button = item(DrawnButton::new(
-        format!("amane.bar.activity.{}", activity.key),
+        format!("emaki.bar.activity.{}", activity.key),
         move |color| {
             let label = if dim {
                 material::label(Level::Secondary)
@@ -104,14 +104,14 @@ pub(super) fn trailing_text(
         }
         Trailing::Countdown(until) => {
             let left = Duration::from_millis(
-                until.saturating_sub(amane_kit::time::unix_ms()).max(0) as u64,
+                until.saturating_sub(emaki_kit::time::unix_ms()).max(0) as u64,
             );
             tick_in(Duration::from_nanos(u64::from(left.subsec_nanos())));
             Some((timer::format(left), super::super::metrics().numeric()))
         }
         Trailing::CountUp(since) => {
             let gone = Duration::from_millis(
-                amane_kit::time::unix_ms().saturating_sub(*since).max(0) as u64,
+                emaki_kit::time::unix_ms().saturating_sub(*since).max(0) as u64,
             );
             tick_in(Duration::from_secs(1) - Duration::from_nanos(u64::from(gone.subsec_nanos())));
             // whole seconds, as a recording's length shows

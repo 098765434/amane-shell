@@ -28,10 +28,10 @@ compositor, a GPU or the network.
     (`tests/fixtures/niri/material-ranges.json`).
 - **Rules about the code.** The shell's structure is held by tests in `surfaces/mod.rs`: no
   surface names another's modules, `services/` and `chrome/` name no surface, no surface file is
-  over 650 lines ([shell-structure.md](shell-structure.md)). Shell Settings' search index is
+  over 650 lines ([shell-structure.md](shell-structure.md)). Emaki Settings' search index is
   checked against its pages and rows, and `displays.kdl` has a single writer
   (`apps/settings/src/displays/kdl.rs`, which also round-trips the live file's shape).
-- **Fake programs.** `amane-nixos` runs its jobs (build, compare, activate, update, roll back)
+- **Fake programs.** `emaki-nixos` runs its jobs (build, compare, activate, update, roll back)
   against stand-in `nix`, `git` and `pkexec` scripts, whose paths come from its `Config`. Write a
   test for a new step the same way rather than calling the real tools.
 - **The token tools.** The kit checks the design tokens' contract and their contrast.
@@ -51,7 +51,7 @@ env -u LD_LIBRARY_PATH nix develop -c cargo test -p <package> -- --ignored
 |---|---|
 | amane's quad tests (`graphics/gpu/quads/draw.rs`, `draw/fork_tests.rs`), in amane | a GPU adapter |
 | `apps/settings/src/displays/caps.rs` | a running niri and a screen |
-| `apps/mirror/src/decode.rs` | `AMANE_MIRROR_TEST_H264` pointing at an H.264 file |
+| `apps/mirror/src/decode.rs` | `EMAKI_MIRROR_TEST_H264` pointing at an H.264 file |
 
 amane's GPU tests draw with the quads and with vello and compare the pixels. Run them after a
 change to the quads, shadows, arcs or the frame's encoder.
@@ -64,17 +64,17 @@ real bar's socket:
 ```sh
 T=$(mktemp -d)
 XDG_RUNTIME_DIR=$T WAYLAND_DISPLAY=/run/user/1000/wayland-1 \
-  env -u LD_LIBRARY_PATH nix develop -c ./target/debug/amane-shell
+  env -u LD_LIBRARY_PATH nix develop -c ./target/debug/emaki
 ```
 
 - With `XDG_CONFIG_HOME` and `XDG_STATE_HOME` pointed at copies, it doesn't touch your settings
   or state either. The full recipe, with Drop and stand-ins for `wl-copy` and `secret-tool`, is
   in [status-apps.md](integration/status-apps.md#a-test-bar-and-drop-isolated).
-- What it still shares: the session bus (only one program owns `org.amane.StatusBar1`), the
+- What it still shares: the session bus (only one program owns `org.emaki.StatusBar1`), the
   notification server, and niri itself.
 - Stop it by its runtime folder (look for it in `/proc/<pid>/environ`), never with `pkill` on a
   name, which also matches the real shell.
-- An app (Shell Settings, Messages, an amane example) can run beside the real one the same way,
+- An app (Emaki Settings, Messages, an amane example) can run beside the real one the same way,
   with its own `XDG_RUNTIME_DIR`, so it doesn't reach the running copy's single-instance socket.
 
 To build against an amane checkout you are changing, use the local override

@@ -1,8 +1,8 @@
-//! The phone's screen (`amane-mirror`) from Messages: whether it can be
+//! The phone's screen (`emaki-mirror`) from Messages: whether it can be
 //! shown, and the phone's own messaging app to show in a window.
 
 use amane::Service;
-use amane_phone::{Adb, PhoneDevice};
+use emaki_phone::{Adb, PhoneDevice};
 
 /// The phone's messaging apps, the one Samsung ships first.
 const MESSAGING: [&str; 2] = [
@@ -23,13 +23,13 @@ pub fn screen_available(device: &PhoneDevice) -> bool {
     }
     drop(adb);
 
-    amane_phone::shared::screen::set_up(device.id())
+    emaki_phone::shared::screen::set_up(device.id())
 }
 
 /// The phone's messaging app, its package and name, from the list of its
-/// apps `amane-mirror --list-apps` keeps.
+/// apps `emaki-mirror --list-apps` keeps.
 pub fn messaging_app(device: &PhoneDevice) -> Option<(String, String)> {
-    let list = amane_phone::shared::apps::read().filter(|list| list.device == device.id())?;
+    let list = emaki_phone::shared::apps::read().filter(|list| list.device == device.id())?;
     MESSAGING.iter().find_map(|wanted| {
         let app = list.apps.iter().find(|app| app.package == *wanted)?;
         Some((app.package.clone(), app.name.clone()))
@@ -39,7 +39,7 @@ pub fn messaging_app(device: &PhoneDevice) -> Option<(String, String)> {
 /// Opens `package` from the phone in a window of its own.
 pub fn open_app(device: &PhoneDevice, package: &str, name: &str) {
     amane::Launch::argv(&[
-        "amane-mirror",
+        "emaki-mirror",
         "--device",
         device.id(),
         "--app",

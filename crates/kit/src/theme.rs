@@ -48,7 +48,7 @@ impl Glass {
     /// Every level, clearest first.
     pub const ALL: [Glass; 3] = [Glass::Clear, Glass::Tinted, Glass::Solid];
 
-    /// The name in settings and `AMANE_GLASS`.
+    /// The name in settings and `EMAKI_GLASS`.
     pub fn name(self) -> &'static str {
         match self {
             Glass::Clear => "clear",
@@ -84,12 +84,12 @@ impl Density {
     }
 }
 
-/// `AMANE_THEME=light|dark`, else the settings file's, else the system
+/// `EMAKI_THEME=light|dark`, else the settings file's, else the system
 /// preference, else dark.
 pub fn mode() -> Mode {
     static OVERRIDE: OnceLock<Option<Mode>> = OnceLock::new();
     let forced = OVERRIDE.get_or_init(|| {
-        let var = std::env::var("AMANE_THEME").ok();
+        let var = std::env::var("EMAKI_THEME").ok();
         Mode::ALL
             .into_iter()
             .find(|m| var.as_deref() == Some(m.theme()))
@@ -117,11 +117,11 @@ pub fn accent() -> Option<Color> {
         .or_else(|| Appearance::read().accent())
 }
 
-/// `AMANE_GLASS=clear|tinted|solid`, else the settings file's.
+/// `EMAKI_GLASS=clear|tinted|solid`, else the settings file's.
 pub fn glass() -> Glass {
     static OVERRIDE: OnceLock<Option<Glass>> = OnceLock::new();
     let forced = OVERRIDE.get_or_init(|| {
-        let var = std::env::var("AMANE_GLASS").ok();
+        let var = std::env::var("EMAKI_GLASS").ok();
         Glass::ALL
             .into_iter()
             .find(|g| var.as_deref() == Some(g.name()))
@@ -130,27 +130,27 @@ pub fn glass() -> Glass {
     forced.unwrap_or_else(|| settings::appearance().glass)
 }
 
-/// `AMANE_HIGH_CONTRAST=1`, else whether the system asks for higher
+/// `EMAKI_HIGH_CONTRAST=1`, else whether the system asks for higher
 /// contrast.
 pub fn high_contrast() -> bool {
     static OVERRIDE: OnceLock<bool> = OnceLock::new();
-    *OVERRIDE.get_or_init(|| std::env::var("AMANE_HIGH_CONTRAST").as_deref() == Ok("1"))
+    *OVERRIDE.get_or_init(|| std::env::var("EMAKI_HIGH_CONTRAST").as_deref() == Ok("1"))
         || Appearance::read().high_contrast()
 }
 
-/// `AMANE_ADAPTIVE_GLASS=1`, else the settings file's: whether small glass
+/// `EMAKI_ADAPTIVE_GLASS=1`, else the settings file's: whether small glass
 /// turns light or dark with its backdrop.
 pub fn adaptive_glass() -> bool {
     static OVERRIDE: OnceLock<bool> = OnceLock::new();
-    *OVERRIDE.get_or_init(|| std::env::var("AMANE_ADAPTIVE_GLASS").as_deref() == Ok("1"))
+    *OVERRIDE.get_or_init(|| std::env::var("EMAKI_ADAPTIVE_GLASS").as_deref() == Ok("1"))
         || settings::appearance().adaptive_glass
 }
 
-/// `AMANE_VIBRANCY=1`, else the settings file's: whether labels on glass
+/// `EMAKI_VIBRANCY=1`, else the settings file's: whether labels on glass
 /// blend with the backdrop under them (niri's vibrancy).
 pub fn vibrancy() -> bool {
     static OVERRIDE: OnceLock<bool> = OnceLock::new();
-    *OVERRIDE.get_or_init(|| std::env::var("AMANE_VIBRANCY").as_deref() == Ok("1"))
+    *OVERRIDE.get_or_init(|| std::env::var("EMAKI_VIBRANCY").as_deref() == Ok("1"))
         || settings::appearance().vibrancy
 }
 
@@ -162,12 +162,12 @@ pub fn reduced_motion() -> bool {
         .unwrap_or_else(|| Appearance::read().reduced_motion())
 }
 
-/// `AMANE_TEXT_SCALE`, else the settings file's, else 1.
+/// `EMAKI_TEXT_SCALE`, else the settings file's, else 1.
 pub fn text_scale() -> f32 {
     static SCALE: OnceLock<Option<f32>> = OnceLock::new();
 
     let forced = SCALE.get_or_init(|| {
-        std::env::var("AMANE_TEXT_SCALE")
+        std::env::var("EMAKI_TEXT_SCALE")
             .ok()
             .map(|var| parse_text_scale(Some(&var)))
     });
@@ -190,12 +190,12 @@ fn parse_text_scale(var: Option<&str>) -> f32 {
         .map_or(1.0, |s| s.clamp(0.5, 3.0))
 }
 
-/// `AMANE_DENSITY=compact|comfortable`, else the settings file's.
+/// `EMAKI_DENSITY=compact|comfortable`, else the settings file's.
 pub fn density() -> Density {
     static DENSITY: OnceLock<Option<Density>> = OnceLock::new();
 
     let forced = DENSITY.get_or_init(|| {
-        let var = std::env::var("AMANE_DENSITY").ok();
+        let var = std::env::var("EMAKI_DENSITY").ok();
         Density::ALL
             .into_iter()
             .find(|d| var.as_deref() == Some(d.theme()))

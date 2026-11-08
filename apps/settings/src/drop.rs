@@ -1,25 +1,25 @@
-//! Drop: amane-drop's grids, what an upload's link does, and the accounts
-//! it uploads to. The grids are `~/.config/amane-drop/grids.json` and the
+//! Drop: emaki-drop's grids, what an upload's link does, and the accounts
+//! it uploads to. The grids are `~/.config/emaki-drop/grids.json` and the
 //! accounts `sharing.json`, both followed by the app at once; passwords
-//! and keys go in the keyring (`amane_kit::secrets`), never in a file
+//! and keys go in the keyring (`emaki_kit::secrets`), never in a file
 //! unless no keyring answers.
 
 use amane::{Center, Column, FileDialog, Row, TextInput, Widget};
-use amane_kit::app::{Dialog, commit_on_blur, field_box, text_field};
-use amane_kit::buttons::{IconButton, PushButton, Style};
-use amane_kit::dialog::Field;
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::FormRow;
-use amane_kit::icons::ICON_CLOSE;
-use amane_kit::layout::boxed;
-use amane_kit::secrets;
-use amane_kit::settings::{
+use emaki_kit::app::{Dialog, commit_on_blur, field_box, text_field};
+use emaki_kit::buttons::{IconButton, PushButton, Style};
+use emaki_kit::dialog::Field;
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::FormRow;
+use emaki_kit::icons::ICON_CLOSE;
+use emaki_kit::layout::boxed;
+use emaki_kit::secrets;
+use emaki_kit::settings::{
     DropSharing, UploadTo, change_drop_grids, change_drop_sharing, drop_grids, drop_sharing,
 };
 
 use crate::{group, groups, switch_row};
 
-const APP: &str = "amane-drop";
+const APP: &str = "emaki-drop";
 
 /// `expand_less` and `expand_more`, to move a grid up or down.
 const ICON_EARLIER: char = '\u{e5ce}';
@@ -39,7 +39,7 @@ pub fn page() -> Column {
 
 // ───── grids ─────────────────────────────────────────────────────────────────
 
-fn grids() -> amane_kit::form::Group {
+fn grids() -> emaki_kit::form::Group {
     let grids = drop_grids().clone();
     let last = grids.grids.len().saturating_sub(1);
     let many = grids.grids.len() > 1;
@@ -81,7 +81,7 @@ fn grids() -> amane_kit::form::Group {
                         .build(),
                 ));
             }
-            let tiles = amane_kit::format::count(grid.tiles.len(), "tile", "tiles");
+            let tiles = emaki_kit::format::count(grid.tiles.len(), "tile", "tiles");
             FormRow::new(id, &grid.name)
                 .subtitle(tiles)
                 .trailing(Row::new(trailing).gap(4.0).align(Center))
@@ -99,7 +99,7 @@ fn grids() -> amane_kit::form::Group {
         .on_press(|| {
             change_drop_grids(|grids| {
                 let name = format!("Grid {}", grids.grids.len() + 1);
-                grids.grids.push(amane_kit::settings::DropGrid {
+                grids.grids.push(emaki_kit::settings::DropGrid {
                     name,
                     tiles: Vec::new(),
                 });
@@ -107,7 +107,7 @@ fn grids() -> amane_kit::form::Group {
         })
         .build();
     let open = PushButton::new("settings.drop.open", "Open Drop")
-        .on_press(|| amane::spawn("amane-drop open"))
+        .on_press(|| amane::spawn("emaki-drop open"))
         .build();
 
     group()
@@ -168,7 +168,7 @@ fn delete(index: usize, name: &str) {
 
 // ───── links ─────────────────────────────────────────────────────────────────
 
-fn after(sharing: &DropSharing) -> amane_kit::form::Group {
+fn after(sharing: &DropSharing) -> emaki_kit::form::Group {
     group()
         .header("After an upload")
         .row(switch_row(
@@ -191,7 +191,7 @@ fn after(sharing: &DropSharing) -> amane_kit::form::Group {
 
 // ───── accounts ──────────────────────────────────────────────────────────────
 
-fn accounts(sharing: &DropSharing) -> Vec<amane_kit::form::Group> {
+fn accounts(sharing: &DropSharing) -> Vec<emaki_kit::form::Group> {
     let in_file = secrets::kept_in_file(APP);
     let mut s3_footer = String::from(
         "Any S3-compatible store: give its endpoint (R2's region is “auto”). The web address, \
@@ -199,7 +199,7 @@ fn accounts(sharing: &DropSharing) -> Vec<amane_kit::form::Group> {
     );
     if in_file {
         s3_footer.push_str(
-            " No keyring answered, so passwords are in ~/.config/amane-drop/secrets.json, \
+            " No keyring answered, so passwords are in ~/.config/emaki-drop/secrets.json, \
              readable only by you.",
         );
     }
@@ -361,7 +361,7 @@ fn field(
     get: fn(&DropSharing) -> String,
     set: fn(&mut DropSharing, String),
 ) -> FormRow {
-    amane_kit::app::fill_once(id, || get(&drop_sharing()));
+    emaki_kit::app::fill_once(id, || get(&drop_sharing()));
     let keep = move |text: String| {
         let text = text.trim().to_string();
         if text != get(&drop_sharing()) {

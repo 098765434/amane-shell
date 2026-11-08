@@ -3,7 +3,7 @@
 //! keyboard layout and the weather.
 
 use super::*;
-use amane_kit::layout::frame;
+use emaki_kit::layout::frame;
 
 pub(super) fn volume() -> Option<Box<dyn Widget>> {
     let audio = Audio::read();
@@ -20,7 +20,7 @@ pub(super) fn volume() -> Option<Box<dyn Widget>> {
     };
 
     let icon = status_icon(
-        "amane.bar.volume",
+        "emaki.bar.volume",
         glyph,
         material::label(Level::Secondary),
         Page::Sound,
@@ -61,7 +61,7 @@ pub(super) fn bluetooth() -> Option<Box<dyn Widget>> {
     };
     let color = status_color(!connected.is_empty());
     Some(boxed(
-        status_icon("amane.bar.bluetooth", glyph, color, Page::Bluetooth, tip).build(),
+        status_icon("emaki.bar.bluetooth", glyph, color, Page::Bluetooth, tip).build(),
     ))
 }
 
@@ -84,7 +84,7 @@ pub(super) fn network() -> Option<Box<dyn Widget>> {
     // grey like its neighbours: the glyph already shows the link
     Some(boxed(
         status_icon(
-            "amane.bar.network",
+            "emaki.bar.network",
             glyph,
             material::label(Level::Secondary),
             Page::Wifi,
@@ -107,7 +107,7 @@ pub(super) fn tailscale() -> Option<Box<dyn Widget>> {
 
     Some(boxed(
         status_icon(
-            "amane.bar.tailscale",
+            "emaki.bar.tailscale",
             Glyph::Tailscale,
             status_color(routed),
             Page::Tailscale,
@@ -127,7 +127,7 @@ pub(super) fn keep_awake() -> Option<Box<dyn Widget>> {
 
     Some(boxed(
         status_icon(
-            "amane.bar.keep-awake",
+            "emaki.bar.keep-awake",
             ICON_KEEP_AWAKE,
             status_color(true),
             Page::KeepAwake,
@@ -161,7 +161,7 @@ pub(super) fn battery() -> Option<Box<dyn Widget>> {
 
     Some(boxed(
         status_icon(
-            "amane.bar.battery",
+            "emaki.bar.battery",
             battery_glyph(pct, on_ac),
             color,
             Page::Power,
@@ -193,7 +193,7 @@ pub(super) fn phone() -> Option<Box<dyn Widget>> {
     };
 
     Some(boxed(
-        status_icon("amane.bar.phone", ICON_PHONE, color, Page::Phone, tip).build(),
+        status_icon("emaki.bar.phone", ICON_PHONE, color, Page::Phone, tip).build(),
     ))
 }
 
@@ -201,7 +201,7 @@ pub(super) fn phone() -> Option<Box<dyn Widget>> {
 pub(super) fn quick_settings_button() -> Box<dyn Widget> {
     boxed(
         bar_icon(
-            "amane.bar.quick-settings",
+            "emaki.bar.quick-settings",
             ICON_TUNE,
             material::label(Level::Secondary),
         )
@@ -225,10 +225,10 @@ pub(super) fn on_icons() -> Vec<Box<dyn Widget>> {
     let mut glyphs = Vec::new();
 
     if NightLight::read().on() {
-        glyphs.push(("amane.bar.night-light", ICON_NIGHT_LIGHT, "Night Light"));
+        glyphs.push(("emaki.bar.night-light", ICON_NIGHT_LIGHT, "Night Light"));
     }
     if Connections::read().vpns().iter().any(|vpn| vpn.active) {
-        glyphs.push(("amane.bar.vpn", ICON_VPN, "VPN"));
+        glyphs.push(("emaki.bar.vpn", ICON_VPN, "VPN"));
     }
     let profile = PowerProfile::read();
     if profile.present() && profile.active() != "balanced" {
@@ -238,14 +238,14 @@ pub(super) fn on_icons() -> Vec<Box<dyn Widget>> {
             "Power Saver"
         };
         glyphs.push((
-            "amane.bar.power-mode",
+            "emaki.bar.power-mode",
             power_profile_glyph(profile.active()),
             tip,
         ));
     }
     drop(profile);
     if Rfkill::read().airplane() {
-        glyphs.push(("amane.bar.airplane", ICON_AIRPLANE, "Airplane Mode"));
+        glyphs.push(("emaki.bar.airplane", ICON_AIRPLANE, "Airplane Mode"));
     }
 
     grid_icons(glyphs, material::label(Level::Secondary))
@@ -280,7 +280,7 @@ pub(super) fn notification_icon() -> Option<Box<dyn Widget>> {
     };
 
     Some(boxed(
-        bar_icon("amane.bar.notifications", glyph, color)
+        bar_icon("emaki.bar.notifications", glyph, color)
             .active(is_open(Panel::Notifications))
             .on_press(|| panel::toggle(Panel::Notifications))
             .on_secondary(|| notifications::dnd_menu(BAR_NS, (cursor().0, menu_edge())))
@@ -302,7 +302,7 @@ pub(super) fn clock(dated: bool) -> Box<dyn Widget> {
 
     if status_bar().clock_style == ClockStyle::Analog {
         return boxed(
-            item(DrawnButton::new("amane.bar.clock", move |color| {
+            item(DrawnButton::new("emaki.bar.clock", move |color| {
                 analog(hour, minute, color)
             }))
             .width(metrics().item_width)
@@ -319,7 +319,7 @@ pub(super) fn clock(dated: bool) -> Box<dyn Widget> {
     let width = widest + sys::space::inset::s() * 2.0;
 
     boxed(
-        item(PushButton::new("amane.bar.clock", time))
+        item(PushButton::new("emaki.bar.clock", time))
             .text(metrics().numeric())
             .width(width)
             .active(is_open(Panel::Notifications))
@@ -389,22 +389,22 @@ pub(super) fn keyboard() -> Option<Box<dyn Widget>> {
     let code = short(&name);
     let width = text_width(&code, metrics().label()) + sys::space::inset::s() * 2.0;
     Some(boxed(
-        item(PushButton::new("amane.bar.keyboard", code))
+        item(PushButton::new("emaki.bar.keyboard", code))
             .text(metrics().label())
             .width(width.max(metrics().item_width))
             .on_press(|| {
                 let layouts = KeyboardLayout::read();
                 let current = layouts.current_index();
-                let mut menu = amane_kit::menu::ContextMenu::new();
+                let mut menu = emaki_kit::menu::ContextMenu::new();
                 for (index, name) in layouts.names().iter().enumerate() {
-                    let row = amane_kit::menu::MenuItem::label(name.clone())
-                        .check(amane_kit::menu::Check::Radio(index == current))
+                    let row = emaki_kit::menu::MenuItem::label(name.clone())
+                        .check(emaki_kit::menu::Check::Radio(index == current))
                         .on_select(move || keyboard_layout::switch(index));
                     menu = menu.item(row);
                 }
                 drop(layouts);
-                amane_kit::menu::layer::show_under(
-                    "amane.bar.keyboard",
+                emaki_kit::menu::layer::show_under(
+                    "emaki.bar.keyboard",
                     menu,
                     BAR_NS,
                     (cursor().0 as i32, menu_edge()),
@@ -431,7 +431,7 @@ pub(super) fn weather() -> Option<Box<dyn Widget>> {
     let width =
         text_width(&text, metrics().numeric()) + metrics().item_width + sys::space::inset::s();
     Some(boxed(
-        item(PushButton::new("amane.bar.weather", text))
+        item(PushButton::new("emaki.bar.weather", text))
             .icon(glyph)
             .icon_size(metrics().icon)
             .text(metrics().numeric())

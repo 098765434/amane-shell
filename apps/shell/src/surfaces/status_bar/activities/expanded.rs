@@ -1,7 +1,7 @@
 //! An activity opened: the popup under its chip, with its buttons.
 
 use super::*;
-use amane_kit::layout::frame;
+use emaki_kit::layout::frame;
 
 /// Opens the expanded view of `key` under the pointer, or closes it.
 pub(super) fn toggle(key: &str) {
@@ -83,7 +83,7 @@ pub fn popup() -> Popup {
             .anchor_rect(0, 0, 1, 1)
             .parent(BAR_NS)
             .visible(false)
-            .child(amane_kit::layout::blank());
+            .child(emaki_kit::layout::blank());
     };
 
     let (card, height) = expanded(&activity);
@@ -211,7 +211,7 @@ pub(super) fn expanded(activity: &Shown) -> (Rectangle, f32) {
 pub(super) fn activity_button(activity: &Shown, button: &ActivityButton, width: f32) -> Rectangle {
     let act = activity.act.clone();
     let id = button.id.clone();
-    let key = format!("amane.bar.activity.{}.{}", activity.key, button.id);
+    let key = format!("emaki.bar.activity.{}.{}", activity.key, button.id);
     let style = if button.destructive {
         Style::Destructive
     } else {

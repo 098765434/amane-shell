@@ -5,15 +5,15 @@ shell's socket, and the shell answers `ok`. The same socket is what scripts use.
 
 ## The socket
 
-The shell listens on `$XDG_RUNTIME_DIR/amane.sock`. A call is the command's name on the first
+The shell listens on `$XDG_RUNTIME_DIR/emaki.sock`. A call is the command's name on the first
 line and each argument on a line of its own; the reply is `ok`, a usage line, or an error.
 
 ```sh
-printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
+printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock
 ```
 
-Drop and Shell Settings have sockets of their own, `amane-drop.sock` and
-`amane-settings.sock`, beside it.
+Drop and Emaki Settings have sockets of their own, `emaki-drop.sock` and
+`emaki-settings.sock`, beside it.
 
 ## The keybinds people copy
 
@@ -22,25 +22,25 @@ In niri's `binds {}` block. Every bind spawns the call through a shell:
 ```kdl
 binds {
     Mod+Space hotkey-overlay-title="Launcher" {
-        spawn "sh" "-c" "printf 'launcher\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+        spawn "sh" "-c" "printf 'launcher\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock";
     }
     Mod+Ctrl+V hotkey-overlay-title="Clipboard" {
-        spawn "sh" "-c" "printf 'launcher\\ntoggle\\nclipboard\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+        spawn "sh" "-c" "printf 'launcher\\ntoggle\\nclipboard\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock";
     }
     Mod+Shift+Space hotkey-overlay-title="Assistant: listen" {
-        spawn "sh" "-c" "printf 'assistant\\nlisten\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+        spawn "sh" "-c" "printf 'assistant\\nlisten\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock";
     }
     Mod+S hotkey-overlay-title="Quick Settings" {
-        spawn "sh" "-c" "printf 'quick-settings\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+        spawn "sh" "-c" "printf 'quick-settings\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock";
     }
     Mod+N hotkey-overlay-title="Notifications" {
-        spawn "sh" "-c" "printf 'notifications\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+        spawn "sh" "-c" "printf 'notifications\\ntoggle\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock";
     }
     Mod+P hotkey-overlay-title="Fill a password" {
-        spawn "sh" "-c" "printf 'passwords\\nsuggest\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock";
+        spawn "sh" "-c" "printf 'passwords\\nsuggest\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock";
     }
     Mod+Shift+D hotkey-overlay-title="Drop" {
-        spawn-sh "printf 'toggle\\n' | nc -U -N $XDG_RUNTIME_DIR/amane-drop.sock || systemctl --user start amane-drop.service";
+        spawn-sh "printf 'toggle\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki-drop.sock || systemctl --user start emaki-drop.service";
     }
 }
 ```
@@ -52,12 +52,12 @@ plain command unless the shell answers `ok`, so the keys work before the shell i
 
 ```kdl
 binds {
-    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nvolume\\nup\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock)\" = ok ] || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+ -l 1.0"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nvolume\\ndown\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock)\" = ok ] || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05-"; }
-    XF86AudioMute allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nvolume\\nmute\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock)\" = ok ] || wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
-    XF86AudioMicMute allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nmic\\nmute\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock)\" = ok ] || wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
-    XF86MonBrightnessUp allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nbrightness\\nup\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock)\" = ok ] || brightnessctl set 5%+"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nbrightness\\ndown\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock)\" = ok ] || brightnessctl set 5%-"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nvolume\\nup\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock)\" = ok ] || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+ -l 1.0"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nvolume\\ndown\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock)\" = ok ] || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05-"; }
+    XF86AudioMute allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nvolume\\nmute\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock)\" = ok ] || wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
+    XF86AudioMicMute allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nmic\\nmute\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock)\" = ok ] || wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+    XF86MonBrightnessUp allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nbrightness\\nup\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock)\" = ok ] || brightnessctl set 5%+"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nbrightness\\ndown\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock)\" = ok ] || brightnessctl set 5%-"; }
 }
 ```
 

@@ -6,7 +6,7 @@ use amane::Service;
 use super::on_off;
 use crate::services::network::rfkill::{self, Rfkill};
 use crate::surfaces::quick_settings::tile::QuickToggle;
-use amane_kit::icons::ICON_AIRPLANE;
+use emaki_kit::icons::ICON_AIRPLANE;
 
 pub(crate) fn toggle() -> Option<QuickToggle> {
     let rfkill = Rfkill::read();
@@ -17,7 +17,7 @@ pub(crate) fn toggle() -> Option<QuickToggle> {
     drop(rfkill);
 
     Some(
-        QuickToggle::new("amane.qs.airplane", ICON_AIRPLANE, "Airplane Mode")
+        QuickToggle::new("emaki.qs.airplane", ICON_AIRPLANE, "Airplane Mode")
             .subtitle(on_off(on))
             .checked(on)
             .on_toggle(rfkill::set_airplane),

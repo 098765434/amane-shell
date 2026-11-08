@@ -1,4 +1,4 @@
-//! What the fill popup does: filling the field, searching the vault, Shell Settings.
+//! What the fill popup does: filling the field, searching the vault, Emaki Settings.
 
 use super::*;
 
@@ -8,7 +8,7 @@ pub(super) fn search() {
 
 pub(super) fn open_settings() {
     crate::services::run(
-        "amane-settings",
+        "emaki-settings",
         vec![String::from("--page"), String::from("passwords")],
     );
 }

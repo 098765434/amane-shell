@@ -42,9 +42,9 @@ pub enum Source {
 }
 
 /// The name of the daemon's socket in `$XDG_RUNTIME_DIR`.
-pub const SOCKET: &str = "amane-assistant.sock";
+pub const SOCKET: &str = "emaki-assistant.sock";
 
-/// The daemon's socket: `$XDG_RUNTIME_DIR/amane-assistant.sock`.
+/// The daemon's socket: `$XDG_RUNTIME_DIR/emaki-assistant.sock`.
 pub fn socket_path() -> std::path::PathBuf {
-    amane_base::paths::runtime().join(SOCKET)
+    emaki_base::paths::runtime().join(SOCKET)
 }

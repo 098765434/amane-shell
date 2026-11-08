@@ -326,7 +326,7 @@ fn stream_stop() -> Result<String, String> {
 // Without Cactus in the build, every call says so.
 
 #[cfg(not(cactus))]
-const NO_ENGINE: &str = "this build of amane-assistant has no Cactus";
+const NO_ENGINE: &str = "this build of emaki-assistant has no Cactus";
 
 #[cfg(not(cactus))]
 fn load(_: &Path) -> Result<(), String> {

@@ -1,5 +1,5 @@
 {
-  description = "amane-shell — a Wayland desktop shell for niri, built on the amane library fork.";
+  description = "emaki — a Wayland desktop shell for niri, built on the amane library fork.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -51,10 +51,10 @@
           seatd
           vulkan-loader
           pam # amane links -lpam (session/seat); host-provided in the devShell
-          ffmpeg # amane-mirror decodes the phone's screen and sound (VAAPI on the GPU)
+          ffmpeg # emaki-mirror decodes the phone's screen and sound (VAAPI on the GPU)
         ];
 
-      # The programs amane-drop runs: curl for uploads, secret-tool (libsecret)
+      # The programs emaki-drop runs: curl for uploads, secret-tool (libsecret)
       # for the keyring, wl-copy for links.
       dropToolsFor =
         pkgs: with pkgs; [
@@ -63,9 +63,9 @@
           wl-clipboard
         ];
 
-      # scrcpy's server, alone: amane-mirror pushes it to the phone. Copied out
+      # scrcpy's server, alone: emaki-mirror pushes it to the phone. Copied out
       # of the scrcpy package so the closure doesn't keep scrcpy's own client
-      # and its libraries; its version is the protocol amane-mirror speaks.
+      # and its libraries; its version is the protocol emaki-mirror speaks.
       scrcpyServerFor =
         pkgs:
         pkgs.runCommand "scrcpy-server-${pkgs.scrcpy.version}" { } ''
@@ -77,7 +77,7 @@
         SCRCPY_VERSION = pkgs.scrcpy.version;
       };
 
-      # Cactus 4.0.0 for amane-assistant (the launcher's assistant): the prebuilt
+      # Cactus 4.0.0 for emaki-assistant (the launcher's assistant): the prebuilt
       # static library (Apache-2.0) and its header from Cactus's release, and
       # the Needle 3 (commands) and Whistle (speech) weights, every file pinned
       # to a Hugging Face commit and its hash; nothing is fetched at run time.
@@ -95,29 +95,29 @@
           install -Dm644 ${fetch "cactus" release "releases/4.0.0/linux-x86_64/libcactus.a" "sha256-nl56vhsL9mdbaaAKXF6HXoD95JbU55966G+urlyrj9Y="} $out/lib/libcactus.a
           install -Dm644 ${fetch "cactus" release "releases/4.0.0/linux-x86_64/cactus.h" "sha256-+s78oXoNXnFb2SqLDqJywaw0ogp5gAOx5pHI+6Ws5uI="} $out/include/cactus.h
           install -Dm644 ${fetch "cactus" release "releases/4.0.0/LICENSE" "sha256-z8d0m5b2O9McPEK1xHG/dWgUBT6EfBDz6wA0F7xSPTA="} $out/share/licenses/cactus/LICENSE
-          install -Dm644 ${fetch "needle3" "c95d25b4efa1e9601e785d92438e4ade0dbddbf8" "needle3.cact" "sha256-ydkV7KKC7ULRoJsUO1kq20zGdE/+LSlK31z8VUgXDDg="} $out/share/amane-assistant/models/needle3.cact
-          install -Dm644 ${fetch "whistle" "ad73f1468dd5203791e0cc81d31544c553563645" "whistle.cact" "sha256-tuAvBIVorF0BogQlVsZYBh5pmsvAqioUOfUvPUYd/+s="} $out/share/amane-assistant/models/whistle.cact
+          install -Dm644 ${fetch "needle3" "c95d25b4efa1e9601e785d92438e4ade0dbddbf8" "needle3.cact" "sha256-ydkV7KKC7ULRoJsUO1kq20zGdE/+LSlK31z8VUgXDDg="} $out/share/emaki-assistant/models/needle3.cact
+          install -Dm644 ${fetch "whistle" "ad73f1468dd5203791e0cc81d31544c553563645" "whistle.cact" "sha256-tuAvBIVorF0BogQlVsZYBh5pmsvAqioUOfUvPUYd/+s="} $out/share/emaki-assistant/models/whistle.cact
         '';
 
       hasCactus = pkgs: pkgs.stdenv.hostPlatform.system == "x86_64-linux";
 
-      # What the build reads to link Cactus into amane-assistant, and where its
+      # What the build reads to link Cactus into emaki-assistant, and where its
       # models are; empty where there's no Cactus.
       cactusEnvFor =
         pkgs:
         lib.optionalAttrs (hasCactus pkgs) {
           CACTUS_LIB_DIR = "${cactusFor pkgs}/lib";
           LIBCXX_DIR = "${pkgs.llvmPackages.libcxx}/lib";
-          AMANE_ASSISTANT_MODELS = "${cactusFor pkgs}/share/amane-assistant/models";
+          EMAKI_ASSISTANT_MODELS = "${cactusFor pkgs}/share/emaki-assistant/models";
         };
 
       # The system GPU driver dir goes first so wgpu's Vulkan loader finds the
       # system ICDs and the driver's own libwayland.
-      # Passwords: the rbw the shell runs and the pinentry amane-pinentry falls back to, by
+      # Passwords: the rbw the shell runs and the pinentry emaki-pinentry falls back to, by
       # store path, so no PATH can put another program in their place.
       vaultEnvFor = pkgs: {
-        AMANE_RBW = "${pkgs.rbw}/bin/rbw";
-        AMANE_PINENTRY_FALLBACK = "${pkgs.pinentry-gnome3}/bin/pinentry-gnome3";
+        EMAKI_RBW = "${pkgs.rbw}/bin/rbw";
+        EMAKI_PINENTRY_FALLBACK = "${pkgs.pinentry-gnome3}/bin/pinentry-gnome3";
       };
 
       ldLibraryPath = pkgs: "/run/opengl-driver/lib:${lib.makeLibraryPath (runtimeLibsFor pkgs)}";
@@ -153,8 +153,8 @@
             rustc = rustToolchain;
           };
 
-          amane-shell = rustPlatform.buildRustPackage ({
-            pname = "amane-shell";
+          emaki = rustPlatform.buildRustPackage ({
+            pname = "emaki";
             inherit ((lib.importTOML ./Cargo.toml).workspace.package) version;
 
             # only what the build and its tests read, so a docs change
@@ -188,11 +188,11 @@
               };
             };
 
-            # every program in the workspace: the shell (amane-shell), Shell Settings
-            # (amane-settings), Messages (amane-messages), Phone Screen (amane-mirror),
-            # Shader Lab (amane-shader-lab), Drop (amane-drop), the assistant's daemon
-            # (amane-assistant), train-watch (amane-train-watch) and rbw's pinentry
-            # (amane-pinentry). xtask is left out: it's the workspace's own tasks, a
+            # every program in the workspace: the shell (emaki), Emaki Settings
+            # (emaki-settings), Messages (emaki-messages), Phone Screen (emaki-mirror),
+            # Shader Lab (emaki-shader-lab), Drop (emaki-drop), the assistant's daemon
+            # (emaki-assistant), train-watch (emaki-train-watch) and rbw's pinentry
+            # (emaki-pinentry). xtask is left out: it's the workspace's own tasks, a
             # development tool, not something to install.
             cargoBuildFlags = [ "--workspace" "--exclude" "xtask" ];
             cargoTestFlags = [ "--workspace" "--exclude" "xtask" ];
@@ -209,49 +209,49 @@
             # (LD_LIBRARY_PATH + a Vulkan ICD fallback), with no hardcoded
             # /nix/store hashes beyond what makeLibraryPath computes.
             postInstall = ''
-              install -Dm644 apps/settings/amane-settings.desktop -t $out/share/applications
-              install -Dm644 apps/messages/amane-messages.desktop -t $out/share/applications
-              install -Dm644 apps/settings/amane-settings.png -t $out/share/icons/hicolor/512x512/apps
-              install -Dm644 apps/messages/amane-messages.png -t $out/share/icons/hicolor/512x512/apps
-              install -Dm644 apps/mirror/amane-mirror.desktop -t $out/share/applications
-              install -Dm644 apps/shader-lab/amane-shader-lab.desktop -t $out/share/applications
-              install -Dm644 apps/drop/amane-drop.desktop -t $out/share/applications
+              install -Dm644 apps/settings/emaki-settings.desktop -t $out/share/applications
+              install -Dm644 apps/messages/emaki-messages.desktop -t $out/share/applications
+              install -Dm644 apps/settings/emaki-settings.png -t $out/share/icons/hicolor/512x512/apps
+              install -Dm644 apps/messages/emaki-messages.png -t $out/share/icons/hicolor/512x512/apps
+              install -Dm644 apps/mirror/emaki-mirror.desktop -t $out/share/applications
+              install -Dm644 apps/shader-lab/emaki-shader-lab.desktop -t $out/share/applications
+              install -Dm644 apps/drop/emaki-drop.desktop -t $out/share/applications
             '';
 
             postFixup = ''
-              for program in amane-shell amane-settings amane-messages amane-mirror amane-shader-lab amane-drop; do
+              for program in emaki emaki-settings emaki-messages emaki-mirror emaki-shader-lab emaki-drop; do
                 wrapProgram $out/bin/$program \
                   --prefix LD_LIBRARY_PATH : "${ldLibraryPath pkgs}" \
                   --run ${lib.escapeShellArg vulkanIcdFallback}
               done
               # Drop uploads with curl, keeps passwords with secret-tool and
-              # copies links with wl-copy; Shell Settings keeps its passwords
+              # copies links with wl-copy; Emaki Settings keeps its passwords
               # too. After PATH, so the system's own copies win.
-              for program in amane-drop amane-settings; do
+              for program in emaki-drop emaki-settings; do
                 wrapProgram $out/bin/$program \
                   --suffix PATH : "${lib.makeBinPath (dropToolsFor pkgs)}"
               done
               # the assistant's daemon: no GPU, its models from the store, and
               # Cactus told not to report anything (it has no network code; this
               # is belt and braces, with the unit's RestrictAddressFamilies)
-              wrapProgram $out/bin/amane-assistant \
+              wrapProgram $out/bin/emaki-assistant \
                 --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [ pkgs.libpulseaudio ]}" \
-                ${lib.optionalString (hasCactus pkgs) "--set-default AMANE_ASSISTANT_MODELS ${cactusFor pkgs}/share/amane-assistant/models"} \
+                ${lib.optionalString (hasCactus pkgs) "--set-default EMAKI_ASSISTANT_MODELS ${cactusFor pkgs}/share/emaki-assistant/models"} \
                 --set CACTUS_TELEMETRY 0 \
                 --set DO_NOT_TRACK 1
             '';
 
             meta = {
               description = "A Wayland desktop shell for niri, built on the amane library fork";
-              mainProgram = "amane-shell";
+              mainProgram = "emaki";
               license = lib.licenses.mit;
               platforms = lib.platforms.linux;
             };
           } // scrcpyEnvFor pkgs // cactusEnvFor pkgs // vaultEnvFor pkgs);
         in
         {
-          default = amane-shell;
-          amane-shell = amane-shell;
+          default = emaki;
+          emaki = emaki;
         }
       );
 

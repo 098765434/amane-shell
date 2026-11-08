@@ -1,33 +1,33 @@
-//! Every kit control, to look at and try: `cargo run -p amane-kit --example controls`.
+//! Every kit control, to look at and try: `cargo run -p emaki-kit --example controls`.
 //!
 //! Each row shows one kind of control, with what it holds written after it.
-//! `AMANE_THEME=light|dark` and `AMANE_DENSITY=compact` show the other looks.
+//! `EMAKI_THEME=light|dark` and `EMAKI_DENSITY=compact` show the other looks.
 
 use amane::{
     Center, Column, Rectangle, Row, ScrollArea, Service, Size, Start, Text, Widget, Window,
 };
-use amane_kit::app::{Page, app, app_window, field_box, sidebar, standard_shortcut, text_field};
-use amane_kit::buttons::{
+use emaki_kit::app::{Page, app, app_window, field_box, sidebar, standard_shortcut, text_field};
+use emaki_kit::buttons::{
     Checkbox, PushButton, Radio, Segment, SegmentedButton, Shape, Style, Switch,
 };
-use amane_kit::calendar::{self, Calendar};
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::{FormRow, Group, SliderRow};
-use amane_kit::icons::{
+use emaki_kit::calendar::{self, Calendar};
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::{FormRow, Group, SliderRow};
+use emaki_kit::icons::{
     ICON_BLUETOOTH, ICON_DARK_MODE, ICON_DISPLAY, ICON_FOLDER, ICON_NOTIFICATIONS, ICON_SEARCH,
     ICON_SETTINGS, ICON_TUNE, ICON_VOLUME_UP, ICON_WIFI,
 };
-use amane_kit::layout::boxed;
-use amane_kit::leading_icon::LeadingIcon;
-use amane_kit::material::{self, Level};
-use amane_kit::menu::MenuItem;
-use amane_kit::nav_buttons::NavButtons;
-use amane_kit::pop_up_button::PopUpButton;
-use amane_kit::slider::Slider;
-use amane_kit::stepper::Stepper;
-use amane_kit::style::{self, Accent};
-use amane_kit::symbol::{Symbol, symbol};
-use amane_kit::tokens::{Styled, sys};
+use emaki_kit::layout::boxed;
+use emaki_kit::leading_icon::LeadingIcon;
+use emaki_kit::material::{self, Level};
+use emaki_kit::menu::MenuItem;
+use emaki_kit::nav_buttons::NavButtons;
+use emaki_kit::pop_up_button::PopUpButton;
+use emaki_kit::slider::Slider;
+use emaki_kit::stepper::Stepper;
+use emaki_kit::style::{self, Accent};
+use emaki_kit::symbol::{Symbol, symbol};
+use emaki_kit::tokens::{Styled, sys};
 use chrono::Datelike;
 
 struct Lab {
@@ -80,8 +80,8 @@ const SIZES: [&str; 3] = ["Small", "Medium", "Large"];
 const ACCENTS: [&str; 4] = ["Blue", "Purple", "Green", "Orange"];
 
 fn main() {
-    app("amane-kit-controls")
-        .popup(amane_kit::tooltip::popup)
+    app("emaki-kit-controls")
+        .popup(emaki_kit::tooltip::popup)
         .normal_window("controls", window)
         .run();
 }

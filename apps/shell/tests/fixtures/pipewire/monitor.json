@@ -67,7 +67,7 @@
       "state": "running",
       "props": {
         "media.class": "Stream/Input/Audio",
-        "application.name": "amane-shell",
+        "application.name": "emaki",
         "application.process.id": 4242
       }
     }

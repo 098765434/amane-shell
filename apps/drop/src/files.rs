@@ -193,7 +193,7 @@ mod tests {
 
     fn scratch(name: &str) -> PathBuf {
         let folder =
-            std::env::temp_dir().join(format!("amane-drop-test-{name}-{}", std::process::id()));
+            std::env::temp_dir().join(format!("emaki-drop-test-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&folder);
         fs::create_dir_all(&folder).unwrap();
         folder

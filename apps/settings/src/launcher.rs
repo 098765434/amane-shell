@@ -4,12 +4,12 @@
 //! Each control changes `launcher.json`, which the shell follows at once.
 
 use amane::Column;
-use amane_kit::app::Dialog;
-use amane_kit::buttons::PushButton;
-use amane_kit::form::FormRow;
-use amane_kit::settings::{AppsLayout, change_launcher, launcher};
-use amane_kit::style;
-use amane_kit::thumbnail_picker::ThumbnailPicker;
+use emaki_kit::app::Dialog;
+use emaki_kit::buttons::PushButton;
+use emaki_kit::form::FormRow;
+use emaki_kit::settings::{AppsLayout, change_launcher, launcher};
+use emaki_kit::style;
+use emaki_kit::thumbnail_picker::ThumbnailPicker;
 
 use crate::{group, groups, previews, switch_row};
 

@@ -13,11 +13,11 @@ use crate::services::display::night_light::{self, NightLight, Schedule};
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::surfaces::quick_settings::tile::QuickToggle;
-use amane_kit::icons::{
+use emaki_kit::icons::{
     ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_DARK_MODE, ICON_NIGHT_LIGHT,
 };
-use amane_kit::layout::{boxed, caption};
-use amane_kit::slider::Slider;
+use emaki_kit::layout::{boxed, caption};
+use emaki_kit::slider::Slider;
 
 pub(crate) fn brightness_cell(span: Span, inert: bool) -> Option<Box<dyn Widget>> {
     let brightness = Brightness::read();
@@ -59,7 +59,7 @@ pub(crate) fn night_light_toggle() -> Option<QuickToggle> {
     drop(light);
 
     Some(
-        QuickToggle::new("amane.qs.night-light", ICON_NIGHT_LIGHT, "Night Light")
+        QuickToggle::new("emaki.qs.night-light", ICON_NIGHT_LIGHT, "Night Light")
             .subtitle(subtitle)
             .checked(on)
             .on_toggle(NightLight::set)
@@ -73,7 +73,7 @@ pub(crate) fn night_light_page() -> DetailPage {
     let kelvin = light.temperature();
     drop(light);
 
-    DetailPage::new("amane.qs.night-light.page", "Night Light")
+    DetailPage::new("emaki.qs.night-light.page", "Night Light")
         .subtitle(if on {
             format!("{kelvin} K")
         } else {
@@ -106,7 +106,7 @@ pub(crate) fn dark_style_toggle() -> Option<QuickToggle> {
     let dark = dark_style::dark();
 
     Some(
-        QuickToggle::new("amane.qs.dark-style", ICON_DARK_MODE, "Dark Style")
+        QuickToggle::new("emaki.qs.dark-style", ICON_DARK_MODE, "Dark Style")
             .subtitle(on_off(dark))
             .checked(dark)
             .on_toggle(dark_style::set),

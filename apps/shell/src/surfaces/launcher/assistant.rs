@@ -9,16 +9,16 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use amane::{Audio, Brightness, DesktopApp, Media as Player, PowerProfile, Service};
-use amane_assistant::snapshot::{self, App, Snapshot, Switch};
-use amane_assistant::{Command, Level, Media, Power, Reading, Risk, Source, State, Target};
+use emaki_assistant::snapshot::{self, App, Snapshot, Switch};
+use emaki_assistant::{Command, Level, Media, Power, Reading, Risk, Source, State, Target};
 
 use crate::services::launcher::timer;
 use crate::services::power::session::Session;
 use crate::surfaces::alert;
 use crate::surfaces::osd;
 use crate::surfaces::quick_settings::{self, ControlId};
-use amane_kit::dialog::Dialog;
-use amane_kit::icons::{
+use emaki_kit::dialog::Dialog;
+use emaki_kit::icons::{
     Glyph, ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_LOCK, ICON_LOG_OUT, ICON_POWER,
     ICON_RESTART, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS, ICON_SLEEP, ICON_TIMER, ICON_TUNE,
     ICON_VOLUME_DOWN, ICON_VOLUME_OFF, ICON_VOLUME_UP, ICON_VPN,
@@ -55,7 +55,7 @@ pub(super) fn snapshot(apps: &[DesktopApp]) -> Snapshot {
         switches.push(Switch::new(id.name(), id.title(), on));
     }
 
-    let now = amane_kit::time::unix_s();
+    let now = emaki_kit::time::unix_s();
     let mut ranked: Vec<(f64, &DesktopApp)> = usage::read(|usage| {
         apps.iter()
             .map(|app| (usage.frecency(&app_key(app), now), app))
@@ -232,8 +232,8 @@ fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<Proposal> {
             let playing = Player::read().playing();
             let media = *media;
             let (title, glyph) = match media {
-                Media::Play => ("Play", amane_kit::icons::ICON_PLAY),
-                Media::Pause => ("Pause", amane_kit::icons::ICON_MUSIC),
+                Media::Play => ("Play", emaki_kit::icons::ICON_PLAY),
+                Media::Pause => ("Pause", emaki_kit::icons::ICON_MUSIC),
                 Media::Next => ("Next Track", ICON_SKIP_NEXT),
                 Media::Previous => ("Previous Track", ICON_SKIP_PREVIOUS),
             };
@@ -280,7 +280,7 @@ fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<Proposal> {
         }
         Command::Timer { seconds } => {
             let length = Duration::from_secs(*seconds);
-            let named = amane_kit::format::span_exact(length);
+            let named = emaki_kit::format::span_exact(length);
             (
                 format!("Start Timer · {named}"),
                 Icon::Glyph(ICON_TIMER),
@@ -310,7 +310,7 @@ fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<Proposal> {
 fn confirm(title: &str, run: Rc<dyn Fn()>) {
     let question = format!("{}?", title.trim_end_matches('…'));
     alert::show(
-        Dialog::new("amane.assistant.confirm", &question)
+        Dialog::new("emaki.assistant.confirm", &question)
             .message("The assistant was asked to. Apps that are open may lose what isn't saved.")
             .button("Cancel", || {})
             .destructive(title.trim_end_matches('…'), move || run()),

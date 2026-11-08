@@ -9,13 +9,13 @@
 use std::cell::Cell;
 
 use amane::{Button, Center, Column, Cursor, Key, Point, Radius, Rectangle, Row, Size, Text};
-use amane_kit::buttons::{PushButton, Style};
-use amane_kit::icons::ICON_KEYBOARD;
-use amane_kit::layout::{boxed, caption, icon};
-use amane_kit::material::{self, Level};
-use amane_kit::style;
-use amane_kit::tokens::{Styled, sys};
-use amane_phone::{KdeConnect, PhoneClick, PhoneDevice, PhoneKey, PhoneModifiers};
+use emaki_kit::buttons::{PushButton, Style};
+use emaki_kit::icons::ICON_KEYBOARD;
+use emaki_kit::layout::{boxed, caption, icon};
+use emaki_kit::material::{self, Level};
+use emaki_kit::style;
+use emaki_kit::tokens::{Styled, sys};
+use emaki_phone::{KdeConnect, PhoneClick, PhoneDevice, PhoneKey, PhoneModifiers};
 
 use crate::title;
 
@@ -63,10 +63,10 @@ pub fn view(device: &PhoneDevice) -> Column {
             Row::new(vec![
                 boxed(title("Phone Input")),
                 boxed(
-                    PushButton::new("amane.messages.input.screen", "Show Screen")
+                    PushButton::new("emaki.messages.input.screen", "Show Screen")
                         .style(Style::Tonal)
                         .on_press(move || {
-                            amane::Launch::argv(&["amane-mirror", "--device", &shown]).activated();
+                            amane::Launch::argv(&["emaki-mirror", "--device", &shown]).activated();
                         })
                         .build(),
                 ),

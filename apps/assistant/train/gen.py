@@ -15,11 +15,11 @@ machine. Four in ten rows ask for no call, each with a line of reasoning
 - a switch or an app this machine hasn't got;
 - a command whose tool isn't offered.
 
-The tools come from the daemon itself (`amane-assistant tools SNAPSHOT`), so
+The tools come from the daemon itself (`emaki-assistant tools SNAPSHOT`), so
 what's trained on is exactly what runs. Nothing leaves the machine: Cactus's
 own generator (`cactus generate-data`) would send all this to OpenRouter.
 
-    python3 -I gen.py AMANE_ASSISTANT_BIN OUT.jsonl [COUNT] [--seed N] [--dev DEV.jsonl]
+    python3 -I gen.py EMAKI_ASSISTANT_BIN OUT.jsonl [COUNT] [--seed N] [--dev DEV.jsonl]
                       [--paraphrases paraphrases.json]
     python3 -I gen.py --banks BANKS.json
 
@@ -78,7 +78,7 @@ APPS = [
     ("Messages", "texts"), ("Signal", "chat"), ("Telegram", "chat"), ("Discord", "chat"),
     ("Visual Studio Code", "code"), ("Zed", "code"), ("VSCodium", "code"),
     ("Text Editor", "notes"), ("Obsidian", "notes"),
-    ("Shell Settings", "settings"),
+    ("Emaki Settings", "settings"),
     ("Image Viewer", "photos"), ("Loupe", "photos"),
     ("Calendar", "calendar"), ("GNOME Calendar", "calendar"),
     ("VLC", "video"), ("mpv", "video"),

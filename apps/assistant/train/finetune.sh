@@ -8,8 +8,8 @@
 # WORK_DIR gets a Python venv with cactus-compute[train] (JAX on the CPU),
 # the base checkpoint and tokenizer at the commit the shipped needle3.cact
 # comes from, the data, the adapter and `needle3.cact`, the tuned archive.
-# Put that next to whistle.cact in a folder and point AMANE_ASSISTANT_MODELS
-# at it (or copy both to ~/.local/share/amane-assistant/models).
+# Put that next to whistle.cact in a folder and point EMAKI_ASSISTANT_MODELS
+# at it (or copy both to ~/.local/share/emaki-assistant/models).
 #
 # Run from the shell repo, in `nix develop` (for the daemon's build). On
 # NixOS the venv's wheels need libstdc++ and zlib, from the flake's nixpkgs.
@@ -42,8 +42,8 @@ done
 [ -f "$work/needle3.safetensors" ] || curl -sfL -o "$work/needle3.safetensors" "$needle/checkpoints/needle3.safetensors"
 [ -f "$work/whistle.cact" ] || curl -sfL -o "$work/whistle.cact" "$whistle/whistle.cact"
 
-cargo build --release -p amane-assistant-daemon
-daemon="$repo/target/release/amane-assistant"
+cargo build --release -p emaki-assistant-daemon
+daemon="$repo/target/release/emaki-assistant"
 python3 -I "$repo/apps/assistant/train/gen.py" "$daemon" "$work/data.jsonl" "$examples"
 
 cd "$work"
@@ -55,8 +55,8 @@ cd "$work"
 "$work/venv/bin/cactus" build needle3.safetensors --lora adapter.safetensors --out needle3.cact
 
 echo "--- tuned, Needle alone"
-AMANE_ASSISTANT_NO_RULES=1 AMANE_ASSISTANT_MODELS="$work" XDG_CACHE_HOME="$work/cache" \
+EMAKI_ASSISTANT_NO_RULES=1 EMAKI_ASSISTANT_MODELS="$work" XDG_CACHE_HOME="$work/cache" \
     "$daemon" eval "$repo/apps/assistant/eval/cases.jsonl" "$repo/apps/assistant/eval/laptop.json" | tail -1
 echo "--- tuned, with the rules"
-AMANE_ASSISTANT_MODELS="$work" XDG_CACHE_HOME="$work/cache" \
+EMAKI_ASSISTANT_MODELS="$work" XDG_CACHE_HOME="$work/cache" \
     "$daemon" eval "$repo/apps/assistant/eval/cases.jsonl" "$repo/apps/assistant/eval/laptop.json" | tail -1

@@ -1,4 +1,4 @@
-//! Phones, for amane-shell and its apps: KDE Connect (pairing, battery,
+//! Phones, for emaki and its apps: KDE Connect (pairing, battery,
 //! ringing, files, the clipboard, run commands, remote input, notifications
 //! and text messages) over `kdeconnectd`'s session-bus interface, and adb
 //! (USB and Wireless debugging, found over mDNS) for mirroring.

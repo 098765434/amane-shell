@@ -2,7 +2,7 @@
 
 use super::*;
 
-/// Where the NixOS configuration Shell Settings manages lives: its flake
+/// Where the NixOS configuration Emaki Settings manages lives: its flake
 /// repo and the `nixosConfigurations` attribute to build.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 #[serde(crate = "amane::serde", default)]
@@ -38,4 +38,4 @@ impl Nixos {
 
 settings_file!(Nixos, crate::app_ids::SHELL, "nixos", nixos, change_nixos);
 
-// ───── Drop (amane-drop) ────────────────────────────────────────────────────
+// ───── Drop (emaki-drop) ────────────────────────────────────────────────────

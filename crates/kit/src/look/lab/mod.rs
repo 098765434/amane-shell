@@ -7,7 +7,7 @@
 //! rectangle:
 //!
 //! ```rust,ignore
-//! use amane_kit::lab;
+//! use emaki_kit::lab;
 //!
 //! let card = Rectangle::new().width(320.0).height(200.0).radius(24.0);
 //!
@@ -37,7 +37,7 @@ use manifest::{Manifest, normal, read_manifest};
 static FILES: OnceLock<&'static [(&'static str, &'static str)]> = OnceLock::new();
 
 /// Gives the lab its files: Shader Lab's effects and saved configs, which its
-/// build script embeds (`amane_shader_lab`'s `FILES`). Call once, before the
+/// build script embeds (`emaki_shader_lab`'s `FILES`). Call once, before the
 /// first look; a second call is ignored. Without it the lab has no files.
 pub fn register(files: &'static [(&'static str, &'static str)]) {
     // documented: a second call is ignored
@@ -206,7 +206,7 @@ impl Look {
 }
 
 /// The embedded effects written out once, as amane loads shaders from
-/// files: `$XDG_RUNTIME_DIR/amane-shell/lab`; none if it can't be written.
+/// files: `$XDG_RUNTIME_DIR/emaki/lab`; none if it can't be written.
 fn written() -> Option<&'static Path> {
     static ROOT: OnceLock<Option<PathBuf>> = OnceLock::new();
 

@@ -1,18 +1,18 @@
-//! `amane-assistant`: the launcher's assistant's engine, a user service beside
+//! `emaki-assistant`: the launcher's assistant's engine, a user service beside
 //! the shell. It holds Cactus (Needle 3 for commands, Whistle for speech),
 //! listens to the microphone while asked to, and answers the shell over a
-//! Unix socket ([`amane_assistant::protocol`]). It never runs a command
+//! Unix socket ([`emaki_assistant::protocol`]). It never runs a command
 //! itself, and never touches the network: Cactus reads everything here.
 //!
 //! ```text
-//! amane-assistant                  serve the shell (the default)
-//! amane-assistant eval [--json] CASES SNAP
+//! emaki-assistant                  serve the shell (the default)
+//! emaki-assistant eval [--json] CASES SNAP
 //!                                  read each case's text, and score it
-//! amane-assistant tools SNAP       the tools Needle is offered for SNAP, as JSON
+//! emaki-assistant tools SNAP       the tools Needle is offered for SNAP, as JSON
 //! ```
 //!
-//! Its models come from `$AMANE_ASSISTANT_MODELS`, else
-//! `$XDG_DATA_HOME/amane-assistant/models`: `needle3.cact`, `whistle.cact`.
+//! Its models come from `$EMAKI_ASSISTANT_MODELS`, else
+//! `$XDG_DATA_HOME/emaki-assistant/models`: `needle3.cact`, `whistle.cact`.
 
 mod audio;
 mod engine;
@@ -22,8 +22,8 @@ mod server;
 use std::path::PathBuf;
 
 fn main() {
-    amane_log::init(amane_base::app_ids::ASSISTANT);
-    amane_base::migrate::from_amane();
+    emaki_log::init(emaki_base::app_ids::ASSISTANT);
+    emaki_base::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let engine = engine::Engine::new(models_dir(), cache_dir());
     let result = match args
@@ -38,14 +38,14 @@ fn main() {
         ["tools", snapshot] => eval::tools(snapshot),
         ["--version"] => {
             println!(
-                "amane-assistant {} ({})",
+                "emaki-assistant {} ({})",
                 env!("CARGO_PKG_VERSION"),
                 engine::ENGINE
             );
             Ok(())
         }
         _ => Err(String::from(
-            "usage: amane-assistant [serve] | eval [--json] CASES.jsonl SNAPSHOT.json | tools SNAPSHOT.json",
+            "usage: emaki-assistant [serve] | eval [--json] CASES.jsonl SNAPSHOT.json | tools SNAPSHOT.json",
         )),
     };
     if let Err(error) = result {
@@ -55,16 +55,16 @@ fn main() {
 }
 
 fn models_dir() -> PathBuf {
-    if let Some(dir) = std::env::var_os("AMANE_ASSISTANT_MODELS") {
+    if let Some(dir) = std::env::var_os("EMAKI_ASSISTANT_MODELS") {
         return PathBuf::from(dir);
     }
-    amane_base::paths::data()
-        .join(amane_base::app_ids::ASSISTANT)
+    emaki_base::paths::data()
+        .join(emaki_base::app_ids::ASSISTANT)
         .join("models")
 }
 
 fn cache_dir() -> PathBuf {
-    let dir = amane_base::paths::cache().join(amane_base::app_ids::ASSISTANT);
+    let dir = emaki_base::paths::cache().join(emaki_base::app_ids::ASSISTANT);
     // binding the socket below says so if the folder couldn't be made
     let _ = std::fs::create_dir_all(&dir);
     dir

@@ -4,13 +4,13 @@
 //! for Apply; a setting another file sets is shown locked, with where.
 
 use amane::{Row, Service};
-use amane_kit::app::{commit_on_blur, field_box, text_field};
-use amane_kit::buttons::{PushButton, Switch};
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::FormRow;
-use amane_kit::layout::boxed;
-use amane_kit::stepper::Stepper;
-use amane_kit::style;
+use emaki_kit::app::{commit_on_blur, field_box, text_field};
+use emaki_kit::buttons::{PushButton, Switch};
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::FormRow;
+use emaki_kit::layout::boxed;
+use emaki_kit::stepper::Stepper;
+use emaki_kit::style;
 use serde_json::Value;
 
 use super::adopt;
@@ -187,7 +187,7 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
             let id = field_id(&entry.id);
             let shown = show(&value);
             if !shown.is_empty() {
-                amane_kit::app::fill_once(id, || shown.clone());
+                emaki_kit::app::fill_once(id, || shown.clone());
             }
             // kept on Return, or when the field is left with something new
             let e = entry.clone();

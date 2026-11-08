@@ -1,9 +1,9 @@
 //! The shell's settings that a settings app changes and the shell follows
-//! live: `~/.config/amane-shell/appearance.json`, `desktop.json`,
+//! live: `~/.config/emaki/appearance.json`, `desktop.json`,
 //! `launcher.json`, `status-bar.json`, `dock.json`, `nixos.json` and
 //! `notifications.json`,
 //! through amane's `Config`. [`theme`](crate::theme) reads the appearance,
-//! between the `AMANE_*` overrides and what the system says.
+//! between the `EMAKI_*` overrides and what the system says.
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -252,14 +252,14 @@ mod bar_order_tests {
 
     #[test]
     fn a_new_program_goes_after_the_tray_and_keeps_its_place() {
-        let apps = [String::from("app:org.amane.drop")];
+        let apps = [String::from("app:org.emaki.drop")];
         let mut now = bar(&[]);
         let items = now.items_with(&apps);
         assert_eq!(items.len(), BAR_ITEMS.len() + 1);
-        assert_eq!(&items[..2], ["tray", "app:org.amane.drop"]);
+        assert_eq!(&items[..2], ["tray", "app:org.emaki.drop"]);
 
-        now.move_item_with("app:org.amane.drop", 5, &apps);
-        assert_eq!(now.items_with(&apps)[5], "app:org.amane.drop");
+        now.move_item_with("app:org.emaki.drop", 5, &apps);
+        assert_eq!(now.items_with(&apps)[5], "app:org.emaki.drop");
 
         // gone a while, it still has its place when it's back
         now.move_item_with("clock", 0, &[]);
@@ -267,7 +267,7 @@ mod bar_order_tests {
         let items = now.items_with(&apps);
         let at = |name: &str| items.iter().position(|item| item == name);
         // one on, as the clock went before it
-        assert_eq!(at("app:org.amane.drop"), Some(6));
+        assert_eq!(at("app:org.emaki.drop"), Some(6));
         assert_eq!(now.items().len(), BAR_ITEMS.len());
     }
 

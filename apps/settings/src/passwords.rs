@@ -3,24 +3,24 @@
 //! The vault's commands run in the shell (`passwords …` over its IPC), so an unlock is always
 //! the shell's own rbw command and its dialog may ask for the master password. This page only
 //! reads what the shell says, never a secret. The fill settings are
-//! `~/.config/amane-shell/passwords.json`, readable only by you.
+//! `~/.config/emaki/passwords.json`, readable only by you.
 
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
 use amane::{Center, Column, Row, Service, TextInput, Widget};
-use amane_kit::app::{Dialog, field_box, text_field};
-use amane_kit::buttons::{IconButton, PushButton, Style};
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::FormRow;
-use amane_kit::icons::ICON_CLOSE;
-use amane_kit::layout::boxed;
-use amane_kit::settings::{change_passwords, passwords};
+use emaki_kit::app::{Dialog, field_box, text_field};
+use emaki_kit::buttons::{IconButton, PushButton, Style};
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::FormRow;
+use emaki_kit::icons::ICON_CLOSE;
+use emaki_kit::layout::boxed;
+use emaki_kit::settings::{change_passwords, passwords};
 
 use crate::{group, groups, problem_row, switch_row};
-use amane_kit::service::ServiceExt as _;
-use amane_kit::shell_ipc::{Passwords as Ask, ShellCommand};
+use emaki_kit::service::ServiceExt as _;
+use emaki_kit::shell_ipc::{Passwords as Ask, ShellCommand};
 
 const SERVER: &str = "settings.passwords.server";
 const EMAIL: &str = "settings.passwords.email";
@@ -103,11 +103,11 @@ pub fn page() -> Column {
     groups(pages)
 }
 
-fn vault(status: &VaultStatus) -> amane_kit::form::Group {
+fn vault(status: &VaultStatus) -> emaki_kit::form::Group {
     if !status.reached {
         return group().header("Bitwarden").row(
             FormRow::new("settings.passwords.no-shell", "The shell isn't answering")
-                .subtitle("Passwords work through amane-shell; start it, then come back here."),
+                .subtitle("Passwords work through emaki; start it, then come back here."),
         );
     }
 
@@ -200,18 +200,18 @@ fn synced(status: &VaultStatus) -> String {
         return String::new();
     };
 
-    let elapsed = amane_kit::time::since_unix_s(at);
+    let elapsed = emaki_kit::time::since_unix_s(at);
     if elapsed < Duration::from_secs(2 * 60 * 60) {
-        format!(" · read {}", amane_kit::format::ago(elapsed))
+        format!(" · read {}", emaki_kit::format::ago(elapsed))
     } else {
         String::new()
     }
 }
 
-fn account(status: &VaultStatus) -> amane_kit::form::Group {
+fn account(status: &VaultStatus) -> emaki_kit::form::Group {
     if status.reached {
-        amane_kit::app::fill_once(SERVER, || status.get("server").to_string());
-        amane_kit::app::fill_once(EMAIL, || status.get("email").to_string());
+        emaki_kit::app::fill_once(SERVER, || status.get("server").to_string());
+        emaki_kit::app::fill_once(EMAIL, || status.get("email").to_string());
     }
 
     let had_account = !status.get("email").is_empty();
@@ -245,7 +245,7 @@ fn account(status: &VaultStatus) -> amane_kit::form::Group {
         shown = shown.row(problem_row(
             "settings.passwords.pinentry",
             "rbw asks for the password elsewhere",
-            "Save once to have rbw ask in the shell's dialog (amane-pinentry).",
+            "Save once to have rbw ask in the shell's dialog (emaki-pinentry).",
             "",
         ));
     }
@@ -297,7 +297,7 @@ fn save(had_account: bool) {
     }
 }
 
-fn security(status: &VaultStatus) -> amane_kit::form::Group {
+fn security(status: &VaultStatus) -> emaki_kit::form::Group {
     let minutes = status.get("lock_timeout").parse::<u64>().unwrap_or(900) / 60;
 
     let at = LOCK_MINUTES
@@ -340,7 +340,7 @@ fn security(status: &VaultStatus) -> amane_kit::form::Group {
         .footer("It also locks before the computer sleeps, when this is on.")
 }
 
-fn fill(status: &VaultStatus) -> amane_kit::form::Group {
+fn fill(status: &VaultStatus) -> emaki_kit::form::Group {
     let settings = passwords().clone();
 
     let mut shown = group()
@@ -400,7 +400,7 @@ fn fill(status: &VaultStatus) -> amane_kit::form::Group {
     )
 }
 
-fn apps() -> Vec<amane_kit::form::Group> {
+fn apps() -> Vec<emaki_kit::form::Group> {
     let settings = passwords().clone();
 
     let links: Vec<FormRow> = settings

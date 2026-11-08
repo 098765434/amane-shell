@@ -2,7 +2,7 @@
 
 use super::*;
 
-/// `amane-shell` IPC, for keybinds and Shell Settings' Passwords page:
+/// `emaki` IPC, for keybinds and Emaki Settings' Passwords page:
 ///
 /// - `passwords suggest`: the popup for the field that has the keyboard, even a username or
 ///   terminal field;

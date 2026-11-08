@@ -9,7 +9,7 @@
 //!
 //! Window titles and app names are never matched: an app or a web page sets those itself.
 
-use amane_kit::settings::Passwords;
+use emaki_kit::settings::Passwords;
 
 use super::identity::Verified;
 use super::rbw::Entry;
@@ -167,7 +167,7 @@ pub fn on_domain(host: &str, domain: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use amane_kit::settings::AppLink;
+    use emaki_kit::settings::AppLink;
 
     use super::*;
 

@@ -23,7 +23,7 @@
 //! frame costs a compositor round-trip and a second draw. It takes the
 //! pointer only where the card is, and along the bottom edge. Every
 //! animation is in [`motion::DOCK`], each with its own switch, and
-//! `AMANE_DOCK_ANIMATIONS=off` turns them all off. See `docs/user/features/dock.md`.
+//! `EMAKI_DOCK_ANIMATIONS=off` turns them all off. See `docs/user/features/dock.md`.
 
 mod drag;
 mod input;
@@ -53,19 +53,19 @@ use amane::{
     Workspaces, Zone,
 };
 
-use amane_kit::settings::dock as dock_settings;
+use emaki_kit::settings::dock as dock_settings;
 
 use crate::chrome::bar;
 use crate::chrome::per_output::PerOutput;
 use crate::tokens::sys;
-use amane_kit::app_icon;
-use amane_kit::divider::Divider;
-use amane_kit::edge_reveal::EdgeReveal;
-use amane_kit::glass_region;
-use amane_kit::layout::{blank, boxed};
-use amane_kit::material::{self, Material};
-use amane_kit::menu::layer as context_menu;
-use amane_kit::motion::redraw_after;
+use emaki_kit::app_icon;
+use emaki_kit::divider::Divider;
+use emaki_kit::edge_reveal::EdgeReveal;
+use emaki_kit::glass_region;
+use emaki_kit::layout::{blank, boxed};
+use emaki_kit::material::{self, Material};
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::motion::redraw_after;
 
 use drag::{Drag, Drop, Settle};
 use magnify::{Rest, Swollen};
@@ -73,7 +73,7 @@ use model::{Icon, Section, Space, Win};
 use motion::{DockMotion, anim};
 use window_menu::{open_pin_menu, open_window_menu};
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// The dock's own state changed (its pins, a spring-load running
     /// out): every monitor's dock draws again, nothing else.
     pub Docks
@@ -82,7 +82,7 @@ amane_kit::marker! {
 /// The dock's layer-surface namespace; the niri `layer-rule` matches it
 /// (a clear surface that says where to frost), and an icon's menu hangs
 /// under it.
-pub const DOCK_NS: &str = "amane.dock";
+pub const DOCK_NS: &str = "emaki.dock";
 
 // TODO(token): `dock.icon.least`, `dock.radius` and `dock.reveal.strip`
 // once Penpot has them (manual §1.1). How big an icon is at rest, with room
@@ -367,7 +367,7 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
      * hidden all the way, the surface is only the strip that brings it up, so
      * a dock that hides holds a few rows of pixels instead of a full-width
      * vibrant surface; touching the strip grows it back before it slides out
-     * (AMANE_DOCK_FULL_WHILE_HIDDEN=1 keeps it full size, as before)
+     * (EMAKI_DOCK_FULL_WHILE_HIDDEN=1 keeps it full size, as before)
      */
     if view.tucked && !full_while_hidden() {
         return LayerWindow::new()
@@ -447,8 +447,8 @@ impl Laid {
     }
 }
 
-/// Whether a hidden dock keeps its full surface (`AMANE_DOCK_FULL_WHILE_HIDDEN=1`).
+/// Whether a hidden dock keeps its full surface (`EMAKI_DOCK_FULL_WHILE_HIDDEN=1`).
 fn full_while_hidden() -> bool {
     static FULL: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *FULL.get_or_init(|| std::env::var_os("AMANE_DOCK_FULL_WHILE_HIDDEN").is_some_and(|v| v == "1"))
+    *FULL.get_or_init(|| std::env::var_os("EMAKI_DOCK_FULL_WHILE_HIDDEN").is_some_and(|v| v == "1"))
 }

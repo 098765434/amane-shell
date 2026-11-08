@@ -1,7 +1,7 @@
 # Materials
 
 The shell's glass is a set of materials, one for each role. A piece of glass
-asks for the **material of its role**, never for a color (`amane_kit::material::Material`). The
+asks for the **material of its role**, never for a color (`emaki_kit::material::Material`). The
 material then decides the rest:
 
 - which of niri's materials frosts it;
@@ -145,7 +145,7 @@ A piece of glass is built with its material's methods:
 - **Reduced motion.** Glass asks for its material's `-still` twin, so the lens appears at once
   instead of building up: blurs don't animate in or out.
 - **Vibrant labels** (an experiment, off by default: `vibrancy` in `appearance.json`, the
-  Settings switch, or `AMANE_VIBRANCY=1`) makes every shell surface, popup and app window
+  Settings switch, or `EMAKI_VIBRANCY=1`) makes every shell surface, popup and app window
   vibrant (`material::vibrant`, amane's `.vibrant(true)`). On niri with `niri-vibrancy-v1`
   ([`effects/vibrancy.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/vibrancy.md)),
   light grey labels, glyphs and fills are then added to the frosted backdrop and dark grey ones

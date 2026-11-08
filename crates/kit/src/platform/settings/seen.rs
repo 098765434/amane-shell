@@ -1,4 +1,4 @@
-//! What the shell has seen, kept in its cache folder so Shell Settings can list it when it
+//! What the shell has seen, kept in its cache folder so Emaki Settings can list it when it
 //! isn't there: tray apps, programs with their own item, apps that showed an activity, and
 //! apps that sent a notification.
 //! Each file is read again only when it changed, and written only when something is new.
@@ -35,7 +35,7 @@ fn remember_named(name: &'static str, id: &str, called: &str) {
 }
 
 /// A cache file's contents, read again only when the file changed: the shell remembers into
-/// these on every status-item update, and Shell Settings lists them on every rebuild.
+/// these on every status-item update, and Emaki Settings lists them on every rebuild.
 fn seen_cached<T>(name: &'static str) -> T
 where
     T: amane::serde::de::DeserializeOwned + Clone + Default + Send + 'static,
@@ -79,7 +79,7 @@ pub fn remember_status_app(id: &str, name: &str) {
     remember_named(STATUS_APPS, id, name);
 }
 
-/// Every app seen showing an activity, by name, so Shell Settings can
+/// Every app seen showing an activity, by name, so Emaki Settings can
 /// list them when none is going on.
 pub fn activities_seen() -> std::collections::BTreeSet<String> {
     seen_cached(ACTIVITIES)

@@ -13,11 +13,11 @@ use std::thread;
 use std::time::SystemTime;
 
 use amane::{DesktopApp, Service, TextInput};
-use amane_kit::app::{Dialog, field_box, text_field};
-use amane_kit::buttons::PushButton;
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::{FormRow, Group};
-use amane_kit::layout::boxed;
+use emaki_kit::app::{Dialog, field_box, text_field};
+use emaki_kit::buttons::PushButton;
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::{FormRow, Group};
+use emaki_kit::layout::boxed;
 
 use super::adopt;
 use super::apps::Found;
@@ -29,7 +29,7 @@ use super::controls::{self, Feedback};
 use super::nixos::{Entry, MANAGED_MODULE, Managed, Snapshot, repo, strings};
 use super::package::Details;
 use crate::group;
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 /// The filter field, which keeps its text under this id.
 const FILTER: &str = "settings.system.apps.filter";

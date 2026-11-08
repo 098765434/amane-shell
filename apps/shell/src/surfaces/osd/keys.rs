@@ -5,7 +5,7 @@
 //! commands as a fallback for when the shell isn't running:
 //!
 //! ```text
-//! printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock
+//! printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock
 //! ```
 
 use std::cell::Cell;
@@ -18,9 +18,9 @@ use crate::services::display::hdr_white;
 use crate::services::network::rfkill::{self, Rfkill};
 use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::surfaces::launcher::profile_name;
-use amane_kit::icons::{ICON_AIRPLANE, power_profile_glyph};
-use amane_kit::shell_ipc::{self, Osd};
-use amane_kit::slider::STEP;
+use emaki_kit::icons::{ICON_AIRPLANE, power_profile_glyph};
+use emaki_kit::shell_ipc::{self, Osd};
+use emaki_kit::slider::STEP;
 
 /// How long a level a key set outranks what its service still says, and
 /// how long the services' own reports of it are left unshown.

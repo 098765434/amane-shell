@@ -159,7 +159,7 @@ impl Run {
                 if let Some(left) = self.left() {
                     parts.push(format!(
                         "{} left",
-                        amane_base::format::span(std::time::Duration::from_secs(left.into()))
+                        emaki_base::format::span(std::time::Duration::from_secs(left.into()))
                     ));
                 }
                 parts.join(" · ")

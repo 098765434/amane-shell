@@ -2,7 +2,7 @@
 //! clipboard history on.
 
 use super::*;
-use amane_kit::layout::frame;
+use emaki_kit::layout::frame;
 
 /// The copy picked in Clipboard, `width` by `height` beside the list: its
 /// text wrapped, or its image fitted.
@@ -178,7 +178,7 @@ pub(crate) fn ask_clipboard(width: f32, height: f32) -> Rectangle {
     lines.push(boxed(
         Row::new(vec![
             boxed(
-                PushButton::new("amane.launcher.clipboard.not-now", "Not Now")
+                PushButton::new("emaki.launcher.clipboard.not-now", "Not Now")
                     .style(Style::Tonal)
                     .on_press(|| {
                         super::super::switch_mode(Mode::Home);
@@ -187,7 +187,7 @@ pub(crate) fn ask_clipboard(width: f32, height: f32) -> Rectangle {
                     .build(),
             ),
             boxed(
-                PushButton::new("amane.launcher.clipboard.enable", "Enable")
+                PushButton::new("emaki.launcher.clipboard.enable", "Enable")
                     .style(Style::Filled)
                     .on_press(|| change_launcher(|settings| settings.clipboard.enabled = true))
                     .build(),

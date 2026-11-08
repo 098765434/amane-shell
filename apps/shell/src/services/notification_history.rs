@@ -6,7 +6,7 @@
 //! At startup [`restore`] hands the file to amane, which puts the
 //! notifications back without their actions, since their senders may be
 //! gone. [`watch`] then saves the list whenever it changes, and remembers
-//! each sending app for Shell Settings' Notifications page.
+//! each sending app for Emaki Settings' Notifications page.
 
 use std::path::Path;
 use std::sync::Mutex;
@@ -14,7 +14,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use amane::serde::{Deserialize, Serialize};
 use amane::{KeptNotification, Notification, Notifications, Service};
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 use super::state::{self, State};
 
@@ -71,8 +71,8 @@ pub fn watch() {
 }
 
 fn remember(n: &Notification) {
-    let key = amane_kit::settings::notification_app_key(n.desktop_entry(), n.app_name());
-    amane_kit::settings::remember_notifier(&key, n.app_name());
+    let key = emaki_kit::settings::notification_app_key(n.desktop_entry(), n.app_name());
+    emaki_kit::settings::remember_notifier(&key, n.app_name());
 }
 
 fn now() -> u64 {
@@ -153,7 +153,7 @@ mod tests {
     #[test]
     fn a_lost_image_is_dropped_and_others_stay() {
         let mut gone = note("gone", 1);
-        gone.image = String::from("/nonexistent/amane-notifications/1-0.png");
+        gone.image = String::from("/nonexistent/emaki-notifications/1-0.png");
         assert!(without_lost_image(gone).image.is_empty());
 
         let mut here = note("here", 1);

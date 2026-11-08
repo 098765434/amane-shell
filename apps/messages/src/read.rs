@@ -2,24 +2,24 @@
 //! read on the phone, so the phone's own flag stays "unread" until it's
 //! opened there; opening a conversation here keeps the newest message it
 //! showed, and only a newer one is unread again. Kept in
-//! `~/.cache/amane-shell/messages/read.json`, as thread id to the date of
+//! `~/.cache/emaki/messages/read.json`, as thread id to the date of
 //! the newest message seen.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use amane_phone::SmsThread;
+use emaki_phone::SmsThread;
 
 thread_local! {
     static SEEN: RefCell<Option<HashMap<i64, i64>>> = const { RefCell::new(None) };
 }
 
 fn path() -> Option<PathBuf> {
-    let cache = amane_kit::paths::cache();
+    let cache = emaki_kit::paths::cache();
     Some(
         cache
-            .join(amane_kit::app_ids::SHELL)
+            .join(emaki_kit::app_ids::SHELL)
             .join("messages")
             .join("read.json"),
     )

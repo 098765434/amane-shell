@@ -1,7 +1,7 @@
-//! Shell Settings' NixOS model and jobs, with no UI.
+//! Emaki Settings' NixOS model and jobs, with no UI.
 //!
 //! - [`settings`]: the settings the configuration has (the flake's
-//!   `amaneSettings` output) and `managed/settings.json`, the one file
+//!   `emakiSettings` output) and `managed/settings.json`, the one file
 //!   Settings writes.
 //! - [`job`]: build the system as the user, compare it with the running
 //!   one, activate it as root through polkit; a fresh `flake.lock` for an
@@ -21,7 +21,7 @@
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
-use amane_process::Cmd;
+use emaki_process::Cmd;
 
 pub mod catalog;
 pub mod generations;
@@ -71,7 +71,7 @@ impl Config {
             nix: OsString::from("nix"),
             git: OsString::from("git"),
             pkexec: OsString::from("pkexec"),
-            helper: PathBuf::from("/run/current-system/sw/bin/amane-nixos-activate"),
+            helper: PathBuf::from("/run/current-system/sw/bin/emaki-nixos-activate"),
             profiles: PathBuf::from("/nix/var/nix/profiles"),
             current_system: PathBuf::from("/run/current-system"),
             booted_system: PathBuf::from("/run/booted-system"),

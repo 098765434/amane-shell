@@ -279,7 +279,7 @@ fn popup(id: &str) -> Popup {
     });
     let Some((items, shown, active, open, opened, keyed, origin, size, parent, at_pointer)) = state
     else {
-        return Popup::new("amane.menu")
+        return Popup::new("emaki.menu")
             .size(1, 1)
             .anchor_rect(0, 0, 1, 1)
             .visible(false);
@@ -341,7 +341,7 @@ fn popup(id: &str) -> Popup {
     let escaped = id.to_string();
     let dismissed = id.to_string();
 
-    let popup = Popup::new("amane.menu")
+    let popup = Popup::new("emaki.menu")
         .size(
             (width + MARGIN * 2.0).ceil() as u32,
             (height + MARGIN * 2.0).ceil() as u32,

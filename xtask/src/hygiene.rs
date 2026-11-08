@@ -17,35 +17,35 @@ mod tests {
         Rule {
             spelling: ".lock().unwrap_or_else(",
             allowed: &["crates/base/src/sync.rs"],
-            instead: "amane_base::sync::Locked::locked()",
+            instead: "emaki_base::sync::Locked::locked()",
         },
         Rule {
             spelling: ".read().unwrap_or_else(",
             allowed: &["crates/base/src/sync.rs"],
-            instead: "amane_base::sync::Shared::reading()",
+            instead: "emaki_base::sync::Shared::reading()",
         },
         Rule {
             spelling: ".write().unwrap_or_else(",
             allowed: &["crates/base/src/sync.rs"],
-            instead: "amane_base::sync::Shared::writing()",
+            instead: "emaki_base::sync::Shared::writing()",
         },
         Rule {
             spelling: "Box::leak(",
             allowed: &["crates/base/src/intern.rs", "crates/kit/src/tokens/mod.rs"],
-            instead: "amane_base::intern::intern",
+            instead: "emaki_base::intern::intern",
         },
         Rule {
             spelling: "var_os(\"XDG_",
             allowed: &["crates/base/src/paths.rs"],
-            instead: "amane_base::paths",
+            instead: "emaki_base::paths",
         },
         Rule {
-            spelling: ".join(\"amane-shell\")",
+            spelling: ".join(\"emaki\")",
             allowed: &[],
             instead: "app_ids::SHELL",
         },
         Rule {
-            spelling: "amane_log::init(\"",
+            spelling: "emaki_log::init(\"",
             allowed: &[],
             instead: "an app_ids constant",
         },

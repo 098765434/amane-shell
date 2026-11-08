@@ -8,7 +8,7 @@
 //
 // Don't hand-copy these into the niri config. gen-layer-rules.sh injects
 // everything below the sentinel into the config between its
-// `>>> amane layer-rules` / `<<<` markers (see docs/developer/integration/layer-rules.md); then:
+// `>>> emaki layer-rules` / `<<<` markers (see docs/developer/integration/layer-rules.md); then:
 //
 //     niri validate -c ~/.config/niri/config.kdl
 //     niri msg action load-config-file
@@ -22,7 +22,7 @@
 // the wallpaper is behind it and niri's xray blur is enough. Its xdg-popups
 // (tooltips, Do Not Disturb's menu) are frosted cards.
 layer-rule {
-    match namespace="^amane\\.status-bar$"
+    match namespace="^emaki\\.status-bar$"
     geometry-corner-radius 0
     background-effect {
         blur true
@@ -41,9 +41,9 @@ layer-rule {
 // Context menu. The anchor is an invisible 1×1 layer-surface; the visible
 // cards (menu + nested submenus) are xdg-popups of it, so the `popups {}`
 // block styles every level uniformly. Namespaces: the anchor is
-// `amane.context-menu-anchor`; each depth level is `amane.context-menu.0`..`7`.
+// `emaki.context-menu-anchor`; each depth level is `emaki.context-menu.0`..`7`.
 layer-rule {
-    match namespace="^amane\\.context-menu-anchor$"
+    match namespace="^emaki\\.context-menu-anchor$"
 
     popups {
         geometry-corner-radius 10
@@ -58,7 +58,7 @@ layer-rule {
 // surface saying where (ext-background-effect). Toggled by the status bar's
 // Quick Settings button. A Bluetooth device's menu is an xdg-popup of it.
 layer-rule {
-    match namespace="^amane\\.quick-settings$"
+    match namespace="^emaki\\.quick-settings$"
     background-effect {
         xray false
     }
@@ -76,7 +76,7 @@ layer-rule {
 // where the surface says (ext-background-effect). It comes up from the
 // bottom edge; a window's menu is an xdg-popup of it.
 layer-rule {
-    match namespace="^amane\\.dock$"
+    match namespace="^emaki\\.dock$"
     background-effect {
         xray false
     }
@@ -91,12 +91,12 @@ layer-rule {
 }
 
 // Desktop widgets: a clear surface on the wallpaper, one a monitor
-// (`amane.widgets.<output>`, matched by the prefix), whose cards are frosted
+// (`emaki.widgets.<output>`, matched by the prefix), whose cards are frosted
 // where the surface says (ext-background-effect). The desktop: still while
 // workspaces switch, faded out with the overview. A card's menu is an
 // xdg-popup of it.
 layer-rule {
-    match namespace="^amane\\.widgets\\."
+    match namespace="^emaki\\.widgets\\."
     desktop true
     background-effect {
         xray false
@@ -115,7 +115,7 @@ layer-rule {
 // is frosted where the surface says (ext-background-effect). Toggled over IPC
 // from a keybind. An app's menu is an xdg-popup of it.
 layer-rule {
-    match namespace="^amane\\.launcher$"
+    match namespace="^emaki\\.launcher$"
     background-effect {
         xray false
     }
@@ -133,7 +133,7 @@ layer-rule {
 // at the top-right. Each frosts its card itself (blur shapes, in the glass
 // material); the rule rounds it and gives it niri's shadow.
 layer-rule {
-    match namespace="^amane\\.notifications\\.toast$"
+    match namespace="^emaki\\.notifications\\.toast$"
     geometry-corner-radius 20
     shadow {
         on
@@ -151,7 +151,7 @@ layer-rule {
 // rule rounds it and gives it niri's shadow. Its Do Not Disturb menu is an
 // xdg-popup of it.
 layer-rule {
-    match namespace="^amane\\.notifications\\.center$"
+    match namespace="^emaki\\.notifications\\.center$"
     geometry-corner-radius 30
     shadow {
         on
@@ -176,7 +176,7 @@ layer-rule {
 // as big as its card, which frosts itself (a blur shape, in thick glass); the
 // rule rounds it and gives it niri's shadow, spread wide and falling far.
 layer-rule {
-    match namespace="^amane\\.alert$"
+    match namespace="^emaki\\.alert$"
     geometry-corner-radius 34
     shadow {
         on
@@ -194,7 +194,7 @@ layer-rule {
 // frosts itself (a blur shape, in small glass); the rule rounds it and gives
 // it niri's shadow.
 layer-rule {
-    match namespace="^amane\\.osd$"
+    match namespace="^emaki\\.osd$"
     geometry-corner-radius 26
     shadow {
         on
@@ -207,10 +207,10 @@ layer-rule {
     }
 }
 
-// amane-drop's grid (apps/drop): a clear full-screen surface that frosts only
+// emaki-drop's grid (apps/drop): a clear full-screen surface that frosts only
 // its card, with a blur shape of its own, as Quick Settings does.
 layer-rule {
-    match namespace="^amane\\.drop$"
+    match namespace="^emaki\\.drop$"
     background-effect {
         xray false
     }
@@ -227,7 +227,7 @@ layer-rule {
 // An amane app's windows: frosted behind, the window drawing its own tint
 // over the frost (the window material), and its popups like the shell's.
 window-rule {
-    match app-id="^amane-settings$"
+    match app-id="^emaki-settings$"
     background-effect {
         blur true
         material "frost"
@@ -245,7 +245,7 @@ window-rule {
 // Its dialogs, which float over their window: thick glass, the alert's corners
 // and shadow. (A window floated by hand takes this look too.)
 window-rule {
-    match app-id="^amane-settings$" is-floating=true
+    match app-id="^emaki-settings$" is-floating=true
     geometry-corner-radius 34
     clip-to-geometry true
     shadow {
@@ -263,7 +263,7 @@ window-rule {
 // An amane app's windows: frosted behind, the window drawing its own tint
 // over the frost (the window material), and its popups like the shell's.
 window-rule {
-    match app-id="^amane-messages$"
+    match app-id="^emaki-messages$"
     background-effect {
         blur true
         material "frost"
@@ -281,7 +281,7 @@ window-rule {
 // Its dialogs, which float over their window: thick glass, the alert's corners
 // and shadow. (A window floated by hand takes this look too.)
 window-rule {
-    match app-id="^amane-messages$" is-floating=true
+    match app-id="^emaki-messages$" is-floating=true
     geometry-corner-radius 34
     clip-to-geometry true
     shadow {
@@ -299,7 +299,7 @@ window-rule {
 // The phone's screen, and its apps opened alone: floating windows shaped like
 // the phone, with the alert's corners and shadow.
 window-rule {
-    match app-id="^amane-mirror(\\..+)?$"
+    match app-id="^emaki-mirror(\\..+)?$"
     open-floating true
     geometry-corner-radius 34
     clip-to-geometry true

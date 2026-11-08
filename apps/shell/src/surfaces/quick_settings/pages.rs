@@ -92,7 +92,7 @@ impl Page {
 /// The page itself. The grid isn't one, so it gets an empty page.
 pub(super) fn page(page: Page) -> DetailPage {
     match page {
-        Page::Grid => DetailPage::new("amane.qs.grid", ""),
+        Page::Grid => DetailPage::new("emaki.qs.grid", ""),
         Page::Sound => sound::page(),
         Page::Wifi => network::wifi_page(),
         Page::Vpn => network::vpn_page(),

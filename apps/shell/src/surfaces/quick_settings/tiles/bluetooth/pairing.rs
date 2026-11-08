@@ -58,11 +58,11 @@ pub(super) fn digits(passkey: u32) -> String {
 pub(super) fn confirm_row(request: &PairingRequest, code: &str, yes: &str) -> Box<dyn Widget> {
     let id = request.id();
     let refused = request.clone();
-    let cancel = PushButton::new("amane.qs.bluetooth.pair.cancel", "Cancel")
+    let cancel = PushButton::new("emaki.qs.bluetooth.pair.cancel", "Cancel")
         .style(Style::Tonal)
         .on_press(move || refuse(&refused))
         .build();
-    let accept = PushButton::new("amane.qs.bluetooth.pair.accept", yes)
+    let accept = PushButton::new("emaki.qs.bluetooth.pair.accept", yes)
         .style(Style::Filled)
         .on_press(move || Bluetooth::answer(id, PairingAnswer::Accept))
         .build();
@@ -84,12 +84,12 @@ pub(super) fn confirm_row(request: &PairingRequest, code: &str, yes: &str) -> Bo
 /// A field for the code and Pair, with Cancel.
 pub(super) fn code_row(request: &PairingRequest, placeholder: &str, max: usize) -> Box<dyn Widget> {
     let refused = request.clone();
-    let cancel = PushButton::new("amane.qs.bluetooth.pair.cancel", "Cancel")
+    let cancel = PushButton::new("emaki.qs.bluetooth.pair.cancel", "Cancel")
         .style(Style::Tonal)
         .on_press(move || refuse(&refused))
         .build();
     let sent = request.clone();
-    let pair = PushButton::new("amane.qs.bluetooth.pair.send", "Pair")
+    let pair = PushButton::new("emaki.qs.bluetooth.pair.send", "Pair")
         .style(Style::Filled)
         .on_press(move || send_code(&sent))
         .build();
@@ -121,7 +121,7 @@ pub(super) fn code_row(request: &PairingRequest, placeholder: &str, max: usize) 
 /// Cancel.
 pub(super) fn shown_row(request: &PairingRequest, code: &str, entered: usize) -> Box<dyn Widget> {
     let refused = request.clone();
-    let cancel = PushButton::new("amane.qs.bluetooth.pair.cancel", "Cancel")
+    let cancel = PushButton::new("emaki.qs.bluetooth.pair.cancel", "Cancel")
         .style(Style::Tonal)
         .on_press(move || refuse(&refused))
         .build();

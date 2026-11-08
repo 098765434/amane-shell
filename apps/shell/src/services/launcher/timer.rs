@@ -7,9 +7,9 @@ use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 
 use amane::{Notify, Timer, TimerHandle};
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// The timer started, ran out or was stopped: what asked how long
     /// is left draws again.
     pub Countdown

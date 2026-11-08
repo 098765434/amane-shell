@@ -11,10 +11,10 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use amane::{Canvas, Color, Gradient, Path, Rectangle, Shape, Stack, Text};
-use amane_kit::color::{over, with_alpha};
-use amane_kit::layout::{boxed, pad, text_height, text_width};
-use amane_kit::style;
-use amane_kit::tokens::{Styled, TextStyle, sys};
+use emaki_kit::color::{over, with_alpha};
+use emaki_kit::layout::{boxed, pad, text_height, text_width};
+use emaki_kit::style;
+use emaki_kit::tokens::{Styled, TextStyle, sys};
 
 /// The text size the SVG was drawn for: its geometry is in these units.
 const SVG_TEXT: f32 = 17.0;

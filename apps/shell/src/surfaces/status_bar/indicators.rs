@@ -1,14 +1,14 @@
 //! Which status icons the bar shows: volume, Bluetooth, network, Tailscale,
 //! battery and Keep Awake are each optional, switched from their Quick
-//! Settings page ("Show in Status Bar"), from Shell Settings or over IPC;
+//! Settings page ("Show in Status Bar"), from Emaki Settings or over IPC;
 //! so are the privacy icons, the icons for what's switched on, and the
 //! notification bell. Kept as the hidden ones' names in
-//! `~/.config/amane-shell/status-bar.json` (`StatusBar::hidden`), which the
+//! `~/.config/emaki/status-bar.json` (`StatusBar::hidden`), which the
 //! bar follows live.
 
-use amane_kit::shell_ipc::{StatusBar as Command, Switch};
+use emaki_kit::shell_ipc::{StatusBar as Command, Switch};
 
-use amane_kit::settings::{change_status_bar, status_bar};
+use emaki_kit::settings::{change_status_bar, status_bar};
 
 use crate::services::status_apps::{self, AppItem};
 
@@ -150,7 +150,7 @@ impl Item {
 
     pub fn named(name: &str) -> Option<Self> {
         if name.starts_with("app:") {
-            return Some(Self::App(amane_kit::intern::intern(name)));
+            return Some(Self::App(emaki_kit::intern::intern(name)));
         }
         Self::ALL.into_iter().find(|item| item.name() == name)
     }
@@ -236,7 +236,7 @@ pub fn reset_order() {
     change_status_bar(|now| now.order.clear());
 }
 
-/// `amane-shell` IPC: `status-bar (show | hide | toggle) <indicator>`,
+/// `emaki` IPC: `status-bar (show | hide | toggle) <indicator>`,
 /// `status-bar move <item> <index>`, `status-bar reset-order`, and the
 /// tray's, programs' items' and activities' own.
 pub fn run(command: Command) -> String {

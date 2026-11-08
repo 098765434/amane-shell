@@ -1,4 +1,4 @@
-//! The phone's camera as this computer's webcam: `amane-mirror --camera
+//! The phone's camera as this computer's webcam: `emaki-mirror --camera
 //! front|back` runs without a window, takes the camera's stream from
 //! scrcpy's server (Android 12 and later) and writes each frame, raw
 //! YUV 4:2:0, to the v4l2loopback device named "Phone Camera", where any

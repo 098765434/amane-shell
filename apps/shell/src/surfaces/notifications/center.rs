@@ -24,17 +24,17 @@ use crate::chrome::panel::{self, Panel, dismissable, is_open, overlay};
 use crate::services::clock::{self, Clock};
 use crate::services::do_not_disturb::{DoNotDisturb, Until};
 use crate::tokens::{Styled, notification, sys};
-use amane_kit::app_bar::TopAppBar;
-use amane_kit::buttons::{IconButton, PushButton, Shape, Style};
-use amane_kit::card::Card;
-use amane_kit::icons::ICON_DND;
-use amane_kit::layout::{blank, boxed, cursor, frame, split_row};
-use amane_kit::material::{self, Level, Material};
-use amane_kit::motion::{self, Arrive, Item, Pose};
+use emaki_kit::app_bar::TopAppBar;
+use emaki_kit::buttons::{IconButton, PushButton, Shape, Style};
+use emaki_kit::card::Card;
+use emaki_kit::icons::ICON_DND;
+use emaki_kit::layout::{blank, boxed, cursor, frame, split_row};
+use emaki_kit::material::{self, Level, Material};
+use emaki_kit::motion::{self, Arrive, Item, Pose};
 
 /// Layer-surface namespace; the niri `layer-rule` matches it for blur, and
 /// the Do Not Disturb menu hangs under it.
-pub const CENTER_NS: &str = "amane.notifications.center";
+pub const CENTER_NS: &str = "emaki.notifications.center";
 
 /// Every list of cards in the center is a `motion` scope under this.
 const SCOPE: &str = "center.";
@@ -103,7 +103,7 @@ struct Group {
 /// What groups a notification: its desktop entry, else its app name, the
 /// key its app's rule is kept under too.
 fn group_key(desktop_entry: &str, app_name: &str) -> String {
-    amane_kit::settings::notification_app_key(desktop_entry, app_name)
+    emaki_kit::settings::notification_app_key(desktop_entry, app_name)
 }
 
 /// Groups newest first, each newest card first. `list` is oldest first,
@@ -135,7 +135,7 @@ fn click(id: u32) {
         .map(|n| String::from(n.desktop_entry()));
     match restored {
         Some(entry) => {
-            amane_kit::app_icon::with_entry(&entry, amane::DesktopApp::launch);
+            emaki_kit::app_icon::with_entry(&entry, amane::DesktopApp::launch);
             Notifications::dismiss(id);
         }
         None => Notifications::click(id),
@@ -252,7 +252,7 @@ fn sheet() -> Rectangle {
         ));
     } else {
         rows.push(boxed(ScrollArea::new(
-            "amane.notifications.center.list",
+            "emaki.notifications.center.list",
             Column::new(views).gap(sys::space::gap::l()).width(Parent),
         )));
     }
@@ -272,7 +272,7 @@ fn header(any: bool) -> amane::Row {
     let until = DoNotDisturb::read().until();
 
     let open_menu = || super::dnd_menu(CENTER_NS, cursor());
-    let dnd = IconButton::new("amane.notifications.dnd", ICON_DND)
+    let dnd = IconButton::new("emaki.notifications.dnd", ICON_DND)
         .style(Style::Tonal)
         .color(material::label(Level::Secondary))
         .selected(until.is_some())
@@ -283,7 +283,7 @@ fn header(any: bool) -> amane::Row {
     let mut trailing: Vec<Box<dyn Widget>> = Vec::new();
     if any {
         trailing.push(boxed(text_button(
-            "amane.notifications.clear-all",
+            "emaki.notifications.clear-all",
             "Clear All",
             Notifications::clear,
         )));
@@ -489,7 +489,7 @@ fn stack_poses(heights: &[f32], expanded: bool, top: f32) -> Vec<Pose> {
 fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32) -> Rectangle {
     let collapse = group.to_string();
     let clear = card::close_button(
-        format!("amane.notifications.group.{group}.clear"),
+        format!("emaki.notifications.group.{group}.clear"),
         height,
         material::label(Level::Primary),
         move || {
@@ -499,7 +499,7 @@ fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32)
         },
     );
     let less = text_button(
-        format!("amane.notifications.group.{group}.collapse"),
+        format!("emaki.notifications.group.{group}.collapse"),
         "Show Less",
         move || {
             EXPANDED.with_borrow_mut(|open| open.remove(&collapse));

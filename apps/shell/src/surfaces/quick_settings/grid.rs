@@ -5,11 +5,11 @@
 //! holes and all; the layout (`layout.rs`) keeps them, and edit mode moves
 //! them.
 //!
-//! The geometry is the shared grid's (`amane_kit::grid`); what's Quick
+//! The geometry is the shared grid's (`emaki_kit::grid`); what's Quick
 //! Settings' own is the sizes its controls come in and the canvas and cell
 //! its tokens give.
 
-pub use amane_kit::grid::geometry::*;
+pub use emaki_kit::grid::geometry::*;
 
 use crate::tokens::quick;
 

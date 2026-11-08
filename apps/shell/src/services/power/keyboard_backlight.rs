@@ -131,7 +131,7 @@ mod tests {
 
     #[test]
     fn finds_the_keyboard_light_among_the_leds() {
-        let root = std::env::temp_dir().join(format!("amane-leds-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("emaki-leds-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         for name in [
             "input3::capslock",

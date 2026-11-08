@@ -2,7 +2,7 @@
 
 ## The question
 
-Could amane-shell be rewritten so the codebase is smaller and simpler, while keeping every feature
+Could emaki be rewritten so the codebase is smaller and simpler, while keeping every feature
 and the look and feel exactly as they are?
 
 ## The answer in short
@@ -18,14 +18,14 @@ What's left is mostly domain logic that a rewrite would have to carry over line 
 - the pinentry trust chain;
 - view code that really does differ from one surface to the next.
 
-Five read-only sweeps (surfaces, services, kit, Shell Settings, the other apps and crates) found
+Five read-only sweeps (surfaces, services, kit, Emaki Settings, the other apps and crates) found
 **about 5,000 lines that can be deleted (about 7% of the code)**, plus about **2,100 lines that
 belong somewhere other than the kit**. Most of the savings come from a few structural moves, not
 from tidying:
 
 1. **Drags handled once, in amane, rather than in every surface** (§1).
 2. **The design tokens worked out when the kit is built, not at run time** (§2).
-3. **Shell Settings and the shell sharing typed files instead of IPC round trips** (§3).
+3. **Emaki Settings and the shell sharing typed files instead of IPC round trips** (§3).
 4. **Settings rows that bind to their setting and feed the search index** (§4).
 5. **One controller each for grid editing, catalogs and overlays** (§5).
 
@@ -135,7 +135,7 @@ Only xtask calls them, through the `tools` feature.
 **Today.**
 
 - **Night light:**
-  - Shell Settings works out the shell's state-file path (`displays/night.rs:92`).
+  - Emaki Settings works out the shell's state-file path (`displays/night.rs:92`).
   - It sends `night-light state`, gets back a line like `on 4000 hours 21:00 07:00`, and parses
     it with its own copy of `Schedule` (`night.rs:98-162`).
   - The shell has the other half: `night_light.rs:58-90` and `:230-380`.
@@ -310,7 +310,7 @@ slide.
   the "wait for a deadline or a nudge" loops in Do Not Disturb, keep-awake, the clock and weather.
   The vault's own Condvar wake goes too, and `wake.rs` moves into amane. *−60 net, amane +30, low
   risk.*
-- **A typed D-Bus server for `org.amane.StatusBar1`.** zbus `#[interface]` replaces the
+- **A typed D-Bus server for `org.emaki.StatusBar1`.** zbus `#[interface]` replaces the
   hand-written introspection XML and method dispatch (`status_apps.rs:29-230`). It needs
   `Bus::zbus()`, a one-line amane change. *−100. Medium risk: it shares amane's connection.*
 - **One helper for short actions**, so fire-and-forget calls log their failures the same way.
@@ -347,12 +347,12 @@ objection doesn't carry over.
     (`session.rs:183-206`, `protocol.rs:348-388`).
   - One `read_packet` serves video and audio.
   - It uses `app_window` and its token background.
-- **Crates (−60, two crates fewer):** `amane_base::{log, process}` takes `crates/log` (87 lines) and
+- **Crates (−60, two crates fewer):** `emaki_base::{log, process}` takes `crates/log` (87 lines) and
   `crates/process` (421). `status`, `assistant` and `pinentry` stay separate, for train-watch,
   the daemon protocol and auditing.
 - **Leftovers (−40):** Drop's identical `run`/`hold` handlers, its own percent encoder and
   weather's; the status crate's five `decode`s.
-- **Shell Settings and nixos (−300):**
+- **Emaki Settings and nixos (−300):**
   - **`displays/kdl.rs` on the `kdl` crate.** It saves −150, and it fixes a real fragility: the
     line-based reader breaks on one-line nodes, multi-line strings or `/-` comments. *Medium risk:
     niri's knuffel reads KDL v1 and the crate defaults to v2. The round-trip tests guard it.*

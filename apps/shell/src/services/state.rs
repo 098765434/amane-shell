@@ -1,4 +1,4 @@
-//! The shell's state folder (`$XDG_STATE_HOME/amane-shell`) and the one way
+//! The shell's state folder (`$XDG_STATE_HOME/emaki`) and the one way
 //! its state files are kept there.
 //!
 //! A state file is JSON with its format's version beside the data:
@@ -23,8 +23,8 @@ pub fn state_file(name: &str) -> PathBuf {
     if let Some(folder) = tests::FOLDER.with_borrow(Clone::clone) {
         return folder.join(name);
     }
-    let state = amane_kit::paths::state();
-    state.join(amane_kit::app_ids::SHELL).join(name)
+    let state = emaki_kit::paths::state();
+    state.join(emaki_kit::app_ids::SHELL).join(name)
 }
 
 /// Something the shell keeps in a state file of its own.
@@ -106,7 +106,7 @@ fn save_to<T: State>(file: &Path, value: &T) {
     };
     let result = serde_json::to_string_pretty(&written)
         .map_err(std::io::Error::other)
-        .and_then(|text| amane_kit::fs::write_whole(file, text + "\n"));
+        .and_then(|text| emaki_kit::fs::write_whole(file, text + "\n"));
     if let Err(error) = result {
         log::warn!("couldn't save {}: {error}", file.display());
     }
@@ -164,7 +164,7 @@ pub(crate) mod tests {
     /// A folder of its own for one test.
     pub(crate) fn folder(test: &str) -> PathBuf {
         let folder =
-            std::env::temp_dir().join(format!("amane-state-{test}-{}", std::process::id()));
+            std::env::temp_dir().join(format!("emaki-state-{test}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         folder
     }

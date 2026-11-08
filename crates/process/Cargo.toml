@@ -1,15 +1,15 @@
 [package]
-name = "amane-process"
+name = "emaki-process"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Running a program and reading what it said: the one runner amane-shell's programs share."
+description = "Running a program and reading what it said: the one runner emaki's programs share."
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-amane-base = { workspace = true }
+emaki-base = { workspace = true }
 
 [lints]
 workspace = true

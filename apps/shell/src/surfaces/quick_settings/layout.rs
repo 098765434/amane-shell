@@ -7,7 +7,7 @@
 //! list rather than tearing a hole in the canvas.
 //!
 //! The layout itself, and the moves and resizes edit mode previews and
-//! commits, are the shared grid's (`amane_kit::grid::layout`); what's
+//! commits, are the shared grid's (`emaki_kit::grid::layout`); what's
 //! Quick Settings' own is the default, the file, and that every control
 //! has an entry.
 
@@ -20,7 +20,7 @@ use super::controls::ControlId;
 use super::grid::{Canvas, Place, Span};
 use crate::services::state::{self, State};
 use crate::surfaces::quick_settings::grid::FromTokens as _;
-use amane_kit::grid::{self, GridKey};
+use emaki_kit::grid::{self, GridKey};
 
 /// The file from before the state files, with the version inside.
 const OLD_FILE: &str = "quick-settings";

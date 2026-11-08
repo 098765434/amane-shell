@@ -1,10 +1,10 @@
-//! amane-drop: a drop shelf in the status bar. Its
+//! emaki-drop: a drop shelf in the status bar. Its
 //! item in the bar (an amane status item) opens a grid of folders, apps and
 //! actions to let files go on, and a Drop Bar to hold them; dragging files
 //! over the item opens it at once, so the drag carries on into it. Work
 //! shows on its tile and as an activity in the bar.
 //!
-//! `amane-drop` runs it; launched again, `amane-drop toggle | open | close`
+//! `emaki-drop` runs it; launched again, `emaki-drop toggle | open | close`
 //! goes to the copy running (a keybind's way in), as does the same over its
 //! IPC socket.
 
@@ -19,18 +19,18 @@ use std::os::unix::net::UnixStream;
 use std::sync::OnceLock;
 
 use amane::App;
-use amane_kit::settings::drop_grids;
-use amane_status::StatusItem;
-use amane_status::{Accepts, ItemButton, ItemEvent, ItemIcon, ItemSpec, MenuEntry};
+use emaki_kit::settings::drop_grids;
+use emaki_status::StatusItem;
+use emaki_status::{Accepts, ItemButton, ItemEvent, ItemIcon, ItemSpec, MenuEntry};
 
-const APP_ID: &str = amane_kit::app_ids::DROP;
-const ITEM_ID: &str = "org.amane.drop";
+const APP_ID: &str = emaki_kit::app_ids::DROP;
+const ITEM_ID: &str = "org.emaki.drop";
 
 static ITEM: OnceLock<StatusItem> = OnceLock::new();
 
 fn main() {
-    amane_log::init(APP_ID);
-    amane_kit::migrate::from_amane();
+    emaki_log::init(APP_ID);
+    emaki_kit::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     // a copy already running takes this launch: `App::run` hands it over
     let running = UnixStream::connect(amane::ipc_socket_for(APP_ID)).is_ok();
@@ -213,7 +213,7 @@ fn event(event: ItemEvent) {
             }
             "clear" => state::let_go(&current_grid_name(), None),
             "clear-shared" => shared::clear(),
-            "settings" => amane::spawn("amane-settings --page drop"),
+            "settings" => amane::spawn("emaki-settings --page drop"),
             "quit" => {
                 if let Some(item) = ITEM.get() {
                     item.clone().remove();

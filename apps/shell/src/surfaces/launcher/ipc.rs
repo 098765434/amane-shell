@@ -36,7 +36,7 @@ pub fn run(command: shell_ipc::Launcher) -> String {
     String::from("ok")
 }
 
-/// `amane-shell` IPC: `assistant listen [start | stop | toggle | cancel]`
+/// `emaki` IPC: `assistant listen [start | stop | toggle | cancel]`
 /// (niri binds a key to it: held, or pressed to start and again to stop)
 /// and `assistant status`.
 pub fn run_assistant(command: shell_ipc::Assistant) -> String {

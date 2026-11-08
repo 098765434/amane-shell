@@ -152,7 +152,7 @@ impl SmsAttachment {
 
     // a file on this computer, to be sent
     pub(crate) fn from_file(path: &Path) -> Self {
-        let mime = amane_base::mime::of(path);
+        let mime = emaki_base::mime::of(path);
 
         let image = mime.starts_with("image/") && mime != "image/heic";
 
@@ -852,7 +852,7 @@ impl PhoneMessages {
             thread,
             body: text.to_string(),
             addresses,
-            date: amane_base::time::unix_ms(),
+            date: emaki_base::time::unix_ms(),
             kind: SmsKind::Outbox,
             read: true,
             attachments: files

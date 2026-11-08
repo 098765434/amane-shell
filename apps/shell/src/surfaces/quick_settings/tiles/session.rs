@@ -10,10 +10,10 @@ use crate::chrome::panel::close;
 use crate::services::power::session::Session;
 use crate::surfaces::alert;
 use crate::surfaces::quick_settings::detail::DetailPage;
-use amane_kit::dialog::Dialog;
-use amane_kit::icons::{ICON_LOG_OUT, ICON_POWER, ICON_RESTART, ICON_SLEEP};
-use amane_kit::layout::boxed;
-use amane_kit::list::{List, ListItem};
+use emaki_kit::dialog::Dialog;
+use emaki_kit::icons::{ICON_LOG_OUT, ICON_POWER, ICON_RESTART, ICON_SLEEP};
+use emaki_kit::layout::boxed;
+use emaki_kit::list::{List, ListItem};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Action {
@@ -83,7 +83,7 @@ impl Action {
             self.run();
             return;
         };
-        let ask = Dialog::new(format!("amane.alert.session.{self:?}"), title)
+        let ask = Dialog::new(format!("emaki.alert.session.{self:?}"), title)
             .message(message)
             .button("Cancel", || {});
         // logging out quits every app, so it's said in red
@@ -109,11 +109,11 @@ pub(crate) fn page() -> DetailPage {
     .collect();
     drop(session);
 
-    DetailPage::new("amane.qs.session.page", "Power Off").body(move |_| {
+    DetailPage::new("emaki.qs.session.page", "Power Off").body(move |_| {
         let items: Vec<ListItem> = actions
             .iter()
             .map(|&action| {
-                ListItem::new(format!("amane.qs.session.{action:?}"), action.label())
+                ListItem::new(format!("emaki.qs.session.{action:?}"), action.label())
                     .leading(action.glyph())
                     .on_press(move || action.press())
             })

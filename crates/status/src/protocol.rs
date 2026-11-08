@@ -8,14 +8,14 @@ use serde::{Deserialize, Serialize};
 ///
 /// What a program and the bar say to each other over the session bus: every
 /// payload is one JSON string, so a script can send it with busctl too.
-pub const BUS_NAME: &str = "org.amane.StatusBar1";
+pub const BUS_NAME: &str = "org.emaki.StatusBar1";
 
 /// The object path the bar serves its interface at.
-pub const PATH: &str = "/org/amane/StatusBar";
+pub const PATH: &str = "/org/emaki/StatusBar";
 
 /// The interface for registering items and starting activities, and the one
 /// the bar's `ItemEvent` and `ActivityEvent` signals come from.
-pub const INTERFACE: &str = "org.amane.StatusBar1";
+pub const INTERFACE: &str = "org.emaki.StatusBar1";
 
 /// The payloads' version; a bar refuses one newer than it knows.
 pub const VERSION: u32 = 1;
@@ -122,7 +122,7 @@ impl MenuEntry {
 }
 
 /// A program's item in the bar: its id is unique on
-/// the desktop, like a reverse-DNS app id ("org.amane.drop"), and the bar
+/// the desktop, like a reverse-DNS app id ("org.emaki.drop"), and the bar
 /// keeps its place and whether it's shown by it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ItemSpec {
@@ -522,7 +522,7 @@ mod tests {
 
     #[test]
     fn an_item_comes_back_the_same() {
-        let mut spec = ItemSpec::new("org.amane.drop", ItemIcon::Glyph(String::from("tray")));
+        let mut spec = ItemSpec::new("org.emaki.drop", ItemIcon::Glyph(String::from("tray")));
 
         spec.title = Some(String::from("Drop"));
         spec.accepts = Accepts {

@@ -7,12 +7,12 @@ preview, over a dark, light, grey or wallpaper backdrop, with a control for ever
 effect lists.
 
 ```sh
-nix develop -c cargo run -p amane-shader-lab -- --effects apps/shader-lab/effects
+nix develop -c cargo run -p emaki-shader-lab -- --effects apps/shader-lab/effects
 ```
 
 With `--effects`, the lab reads the source tree, so saving a `.wgsl` file or an `effect.json`
 shows the change straight away. Without it, the built-in effects are written to
-`$XDG_RUNTIME_DIR/amane-shader-lab/`. Shader compile errors and manifest errors show in red under
+`$XDG_RUNTIME_DIR/emaki-shader-lab/`. Shader compile errors and manifest errors show in red under
 the controls. A broken shader keeps its last good version on screen.
 
 `--effect <folder>`, `--subject <n>`, `--backdrop <n>` and `--config <name>` set what it starts
@@ -29,13 +29,13 @@ The top of the panel lists the saved looks. Clicking one loads it.
 | **Update** (Ctrl+S) | writes the look over the file it came from |
 | **Rename** | saves under a new name and removes the old file |
 | **Delete** | asks, then removes the file; the look stays in the lab |
-| **Copy loader line** | copies `amane_kit::lab::look("<name>", w, h, radius)` for this subject's size |
+| **Copy loader line** | copies `emaki_kit::lab::look("<name>", w, h, radius)` for this subject's size |
 
 A saved file has every param and color written out, the gradient (a preset or the look's own
 stops), the subject, its position, the backdrop and the shadows. It's plain JSON for git; see
 [kit/lab.md](kit/lab.md) for the format and the loader. The build embeds every file in
 `configs/`, so a saved look reaches the shell with no copying. Without `--effects`, looks save to
-`~/.config/amane-shader-lab/configs`, and the panel says the shell won't see them.
+`~/.config/emaki-shader-lab/configs`, and the panel says the shell won't see them.
 
 ## Editing a look
 

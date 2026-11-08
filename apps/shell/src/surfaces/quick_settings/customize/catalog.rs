@@ -3,7 +3,7 @@
 //! Brightness, …), and what a
 //! category, or a search, shows. Pure, so it's tested.
 
-use amane_kit::icons::{
+use emaki_kit::icons::{
     ICON_APPS, ICON_BATTERY_FULL, ICON_BRIGHTNESS_HIGH, ICON_DND, ICON_KEYBOARD, ICON_LOCK,
     ICON_MUSIC, ICON_POWER, ICON_SCREENSHOT, ICON_TUNE, ICON_VOLUME_UP, ICON_WIFI,
 };

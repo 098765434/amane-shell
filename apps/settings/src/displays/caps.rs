@@ -80,7 +80,7 @@ mod tests {
     use crate::displays::outputs;
 
     /// Reads this machine's screens through niri, sysfs and DRM:
-    /// `cargo test -p amane-settings -- --ignored --nocapture live`.
+    /// `cargo test -p emaki-settings -- --ignored --nocapture live`.
     #[test]
     #[ignore = "needs niri and a screen"]
     fn live_screens() {

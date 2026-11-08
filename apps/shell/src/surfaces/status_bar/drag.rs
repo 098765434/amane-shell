@@ -15,8 +15,8 @@ use crate::chrome::per_output::PerOutput;
 use amane::{Center, Parent, Point, Rectangle, Row, Stack, Widget};
 
 use crate::tokens::sys;
-use amane_kit::buttons::swallow_click;
-use amane_kit::layout::{boxed, fixed_width};
+use emaki_kit::buttons::swallow_click;
+use emaki_kit::layout::{boxed, fixed_width};
 
 use super::indicators::{Item, move_item};
 

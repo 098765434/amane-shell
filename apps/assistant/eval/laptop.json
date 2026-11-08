@@ -94,14 +94,14 @@
       ]
     },
     {
-      "id": "amane-settings",
-      "name": "Shell Settings",
+      "id": "emaki-settings",
+      "name": "Emaki Settings",
       "kinds": [
         "settings"
       ]
     },
     {
-      "id": "amane-messages",
+      "id": "emaki-messages",
       "name": "Messages",
       "kinds": [
         "chat",

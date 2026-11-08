@@ -310,9 +310,9 @@ mod tests {
      * read back through ffmpeg's demuxer into packets, decoded on the processor and on the GPU
      */
     #[test]
-    #[ignore = "needs AMANE_MIRROR_TEST_H264 pointing at an H.264 file"]
+    #[ignore = "needs EMAKI_MIRROR_TEST_H264 pointing at an H.264 file"]
     fn decodes_h264_to_nv12() {
-        let Ok(path) = std::env::var("AMANE_MIRROR_TEST_H264") else {
+        let Ok(path) = std::env::var("EMAKI_MIRROR_TEST_H264") else {
             return;
         };
 

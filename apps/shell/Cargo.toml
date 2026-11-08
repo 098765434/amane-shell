@@ -1,5 +1,5 @@
 [package]
-name = "amane-shell"
+name = "emaki"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,7 +12,7 @@ keywords = ["wayland", "niri", "bar", "status-bar", "desktop"]
 categories = ["gui"]
 
 [[bin]]
-name = "amane-shell"
+name = "emaki"
 path = 'src/main.rs'
 
 [lints]
@@ -20,15 +20,15 @@ workspace = true
 
 [dependencies]
 log = { workspace = true }
-amane-log = { workspace = true }
+emaki-log = { workspace = true }
 # pinned in [workspace.dependencies], shared with the kit
 amane = { workspace = true }
-amane-phone = { workspace = true }
-amane-status = { workspace = true }
-amane-kit = { workspace = true }
+emaki-phone = { workspace = true }
+emaki-status = { workspace = true }
+emaki-kit = { workspace = true }
 # the assistant's commands, rules and protocol; its daemon (Cactus) is apps/assistant
-amane-assistant = { workspace = true }
-amane-nixos = { workspace = true }
+emaki-assistant = { workspace = true }
+emaki-nixos = { workspace = true }
 serde_json = { workspace = true }
 # for the one bus call that hands back a file descriptor (logind's Inhibit),
 # which amane's Bus can't carry; the same zbus amane already pulls in
@@ -40,4 +40,4 @@ qrcode = { version = "0.14", default-features = false }
 # passwords: wiped from every buffer they pass through
 zeroize = { workspace = true }
 # rbw's pinentry: the wire format and peer checks the shell shares with it
-amane-pinentry = { workspace = true }
+emaki-pinentry = { workspace = true }

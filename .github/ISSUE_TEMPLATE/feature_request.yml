@@ -28,9 +28,9 @@ body:
       description: Compositor changes go to the niri fork, library-level changes to the amane fork (see CONTRIBUTING's scope notes). Pick the closest.
       options:
         - the shell (bar, dock, launcher, notifications, Quick Settings, widgets, OSD)
-        - an app (Shell Settings, Messages, Phone Screen, Shader Lab, Drop, the assistant)
-        - amane-kit (the look as a library)
-        - the status-app protocol (org.amane.StatusBar1)
+        - an app (Emaki Settings, Messages, Phone Screen, Shader Lab, Drop, the assistant)
+        - emaki-kit (the look as a library)
+        - the status-app protocol (org.emaki.StatusBar1)
         - not sure
     validations:
       required: true

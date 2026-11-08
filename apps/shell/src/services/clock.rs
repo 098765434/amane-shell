@@ -1,7 +1,7 @@
 use std::time::{Duration, SystemTime};
 
 use amane::{Config, Logind, Service};
-use amane_kit::settings::{StatusBar, status_bar};
+use emaki_kit::settings::{StatusBar, status_bar};
 use chrono::{DateTime, Local, Timelike};
 
 use crate::services::Wake;

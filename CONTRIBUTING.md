@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest! `amane-shell` is a Wayland desktop shell for the
+Thanks for your interest! `emaki` is a Wayland desktop shell for the
 [niri](https://github.com/YaLTeR/niri) compositor, built on the
 [amane](https://github.com/098765434/amane) library fork.
 
@@ -26,7 +26,7 @@ typing it). Cargo then builds against your local `../amane` checkout instead of 
 ### The workspace
 
 `apps/shell` is the shell, and `cargo run` with no `-p` runs it. The programs beside it are in
-`apps/` (the assistant's daemon is the package `amane-assistant-daemon`), the crates they share in
+`apps/` (the assistant's daemon is the package `emaki-assistant-daemon`), the crates they share in
 `crates/`: the kit (with the design tokens, `crates/kit/design-tokens/`), rbw's pinentry and the
 assistant's library. `cargo xtask` runs the workspace's tasks:
 
@@ -65,10 +65,10 @@ CI runs the same in the devShell (`fmt --check`, and clippy and the tests with `
 shellcheck on `gen-layer-rules.sh` and the scripts, then `nix build`, which runs the tests again.
 
 The workspace lints are in the root `Cargo.toml` (`[workspace.lints]`); `unwrap` is allowed only in
-tests (`clippy.toml`). A public item without a doc comment is an error in the kit, `amane-status`,
-`amane-phone` and `amane-nixos` (`missing_docs` is `deny`), and a warning that clippy's
-`-D warnings` turns into one in `amane-process`, `amane-log`, `amane-assistant` and
-`amane-pinentry`. Rustdoc's own warnings fail CI too. Some tests check the code against the
+tests (`clippy.toml`). A public item without a doc comment is an error in the kit, `emaki-status`,
+`emaki-phone` and `emaki-nixos` (`missing_docs` is `deny`), and a warning that clippy's
+`-D warnings` turns into one in `emaki-process`, `emaki-log`, `emaki-assistant` and
+`emaki-pinentry`. Rustdoc's own warnings fail CI too. Some tests check the code against the
 docs and the compositor: every IPC verb is in `docs/developer/integration/ipc.md`, every layer namespace
 has a niri rule, every material setting is in niri's range, and the service parsers read the
 recorded output in `apps/shell/tests/fixtures/`. When one fails, the message says which side to fix.

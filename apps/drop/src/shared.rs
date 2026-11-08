@@ -1,5 +1,5 @@
 //! Recently Shared, as the menu keeps it: the last links uploads
-//! gave, in `$XDG_STATE_HOME/amane-drop/shared.json`, the newest first. A
+//! gave, in `$XDG_STATE_HOME/emaki-drop/shared.json`, the newest first. A
 //! link goes on the clipboard and a notification says so, as Settings has
 //! it.
 
@@ -9,7 +9,7 @@ use std::sync::Mutex;
 
 use amane::serde::{Deserialize, Serialize};
 use amane::{Clipboard, Notify};
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 /// How many links are kept.
 pub const KEPT: usize = 10;
@@ -27,8 +27,8 @@ pub struct Shared {
 static LIST: Mutex<Option<Vec<Shared>>> = Mutex::new(None);
 
 fn file() -> Option<PathBuf> {
-    let state = amane_kit::paths::state();
-    Some(state.join("amane-drop").join("shared.json"))
+    let state = emaki_kit::paths::state();
+    Some(state.join("emaki-drop").join("shared.json"))
 }
 
 fn with_list<R>(f: impl FnOnce(&mut Vec<Shared>) -> R) -> R {
@@ -46,7 +46,7 @@ fn save(list: &[Shared]) {
     let Some(file) = file() else {
         return;
     };
-    if let Err(e) = amane_kit::fs::save_json(&file, list) {
+    if let Err(e) = emaki_kit::fs::save_json(&file, list) {
         log::warn!("couldn't save {}: {e}", file.display());
     }
 }
@@ -117,7 +117,7 @@ pub fn delivered(title: &str, links: &[String]) -> bool {
         remember(title, link);
     }
     let (copy_link, notify) = {
-        let sharing = amane_kit::settings::drop_sharing();
+        let sharing = emaki_kit::settings::drop_sharing();
         (sharing.copy_link, sharing.notify)
     };
     let all = links.join("\n");
@@ -140,5 +140,5 @@ pub fn delivered(title: &str, links: &[String]) -> bool {
 
 /// Opens `link` in the browser.
 pub fn open(link: &str) {
-    amane_kit::launch::open(link);
+    emaki_kit::launch::open(link);
 }

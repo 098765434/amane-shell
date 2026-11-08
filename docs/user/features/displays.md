@@ -1,10 +1,10 @@
 # Displays
 
-Shell Settings' **Displays** page (`apps/settings/src/displays/`) shows each screen niri drives,
+Emaki Settings' **Displays** page (`apps/settings/src/displays/`) shows each screen niri drives,
 with what the screen can do found out from the screen itself, and changes its resolution, refresh
 rate, variable refresh, scale, rotation, place and HDR. It also holds brightness (a monitor's
 own over DDC/CI), lowering the refresh rate on battery, Night Light's schedule and, on an OLED
-panel, OLED care. `amane-settings --page displays` opens it.
+panel, OLED care. `emaki-settings --page displays` opens it.
 
 ## What a screen can do
 
@@ -24,7 +24,7 @@ ThinkPad T14 Gen 7's panel they are:
 
 The EDID parser covers what the page shows and nothing more. A block that's cut short is left out,
 never guessed. It's tested against that panel's EDID (`displays/atna40hq10.edid`). To print what
-the three sources say on this machine, run `cargo test -p amane-settings -- --ignored --nocapture live`.
+the three sources say on this machine, run `cargo test -p emaki-settings -- --ignored --nocapture live`.
 
 The screens are polled every two seconds, and only while the page shows: niri announces no change
 of outputs, so a monitor plugged in shows up on the next poll.
@@ -37,7 +37,7 @@ it reads its config again. So a lasting change is written to **`displays.kdl`**,
 includes it:
 
 ```kdl
-// Displays are set in Shell Settings, which writes this file:
+// Displays are set in Emaki Settings, which writes this file:
 include optional=true "/home/ocbk/nixos-config/niri/displays.kdl"
 ```
 
@@ -129,7 +129,7 @@ and:
   steps of the eye, each percent the same factor brighter. So the keys, Quick Settings, this page
   and hypridle's dimming all work the same in and out of HDR. niri holds that change only until
   its config is read again, so the shell (`services/display/hdr_white.rs`) keeps a level that
-  has rested for a second in its own `$XDG_STATE_HOME/amane-shell/hdr-white.json`, and sets it in
+  has rested for a second in its own `$XDG_STATE_HOME/emaki/hdr-white.json`, and sets it in
   niri again when it starts and after each config read (amane's `niri::follow_config_loads`).
   It never writes `displays.kdl`. This page saves the level niri shows into the panel's
   `sdr-brightness` with its next change, so niri starts a new session close to it.

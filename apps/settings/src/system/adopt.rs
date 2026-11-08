@@ -14,7 +14,7 @@ use std::path::Path;
 use std::thread;
 
 use amane::Service;
-use amane_kit::app::Dialog;
+use emaki_kit::app::Dialog;
 use serde_json::Value;
 
 use super::controls::Feedback;
@@ -84,7 +84,7 @@ pub fn plan(entry: &Entry) -> Result<Move, String> {
         file: file.clone(),
         line: *line,
         replacement: format!(
-            "{indent}# {attr} is `{}` in managed/settings.json (Shell Settings).",
+            "{indent}# {attr} is `{}` in managed/settings.json (Emaki Settings).",
             entry.id
         ),
         text,
@@ -129,7 +129,7 @@ fn plan_package_in(content: &str, file: &str, attr: &str) -> Result<Move, String
         file: file.to_string(),
         line,
         replacement: format!(
-            "{indent}# {attr} is in `packages` in managed/settings.json (Shell Settings)."
+            "{indent}# {attr} is in `packages` in managed/settings.json (Emaki Settings)."
         ),
         text,
     })
@@ -310,7 +310,7 @@ mod tests {
     /// A throwaway repo with one configuration file and no settings yet.
     fn temp_repo() -> std::path::PathBuf {
         let root = std::env::temp_dir().join(format!(
-            "amane-adopt-{}-{}",
+            "emaki-adopt-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -378,7 +378,7 @@ mod tests {
             line: 4,
             text: String::from("    layout = \"no\";"),
             replacement: String::from(
-                "    # layout is `keyboardLayout` in managed/settings.json (Shell Settings).",
+                "    # layout is `keyboardLayout` in managed/settings.json (Emaki Settings).",
             ),
         };
         let mut map = BTreeMap::new();
@@ -447,7 +447,7 @@ mod tests {
         assert_eq!(planned.line, 4);
         assert_eq!(
             planned.replacement,
-            "    # foot is in `packages` in managed/settings.json (Shell Settings)."
+            "    # foot is in `packages` in managed/settings.json (Emaki Settings)."
         );
         apply_package_in(&root, &entry, &planned, "foot", BTreeMap::new()).unwrap();
 

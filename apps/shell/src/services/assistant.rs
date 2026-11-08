@@ -1,5 +1,5 @@
 //! The launcher's assistant, the shell's end: reading a query as a command,
-//! by the rules at once or by Needle 3 in `amane-assistant` a moment after
+//! by the rules at once or by Needle 3 in `emaki-assistant` a moment after
 //! the last key, and listening for one while the shell asks.
 //!
 //! The daemon is optional: without it (not installed, not running, its
@@ -11,12 +11,12 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
-use amane_assistant::client::{self, Receiver, Sender};
-use amane_assistant::protocol::{Message, Request};
-use amane_assistant::{Reading, Snapshot, Source, rules, tools};
-use amane_kit::sync::Locked as _;
+use emaki_assistant::client::{self, Receiver, Sender};
+use emaki_assistant::protocol::{Message, Request};
+use emaki_assistant::{Reading, Snapshot, Source, rules, tools};
+use emaki_kit::sync::Locked as _;
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// An answer came, or what's being heard changed.
     pub Assistant
 }
@@ -160,7 +160,7 @@ fn send_then(request: Request, sent: impl FnOnce(u64)) -> Option<u64> {
         if state.retry_at.is_some_and(|at| Instant::now() < at) {
             return None;
         }
-        match client::connect(&amane_assistant::socket_path()) {
+        match client::connect(&emaki_assistant::socket_path()) {
             Ok((connected, receiver)) => {
                 state.retry_at = None;
                 *sender = Some(connected);

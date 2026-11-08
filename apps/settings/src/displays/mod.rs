@@ -27,10 +27,10 @@ use std::thread;
 use std::time::Duration;
 
 use amane::{Column, Service};
-use amane_kit::buttons::PushButton;
-use amane_kit::form::{FormRow, Group};
-use amane_kit::layout::boxed;
-use amane_kit::tokens::sys;
+use emaki_kit::buttons::PushButton;
+use emaki_kit::form::{FormRow, Group};
+use emaki_kit::layout::boxed;
+use emaki_kit::tokens::sys;
 
 use crate::{group, groups};
 use caps::Caps;
@@ -305,8 +305,8 @@ pub fn page() -> Column {
             group().row(
                 FormRow::new("settings.displays.silent", "The compositor isn't answering")
                     .icon(
-                        amane_kit::icons::ICON_WARNING,
-                        amane_kit::color::Accent::Orange,
+                        emaki_kit::icons::ICON_WARNING,
+                        emaki_kit::color::Accent::Orange,
                     )
                     .subtitle("The displays can't be read until it does")
                     .trailing(

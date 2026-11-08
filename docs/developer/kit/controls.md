@@ -1,6 +1,6 @@
 # Controls
 
-amane-kit's buttons and controls (`crates/kit/src/controls/buttons/`, `amane_kit::buttons`): the
+emaki-kit's buttons and controls (`crates/kit/src/controls/buttons/`, `emaki_kit::buttons`): the
 shell's own, in its glass look, each with its variants, shapes, a hover layer and a disabled
 state, and sized like its other controls. They read `sys.*` tokens only, so any component can
 use them.
@@ -13,7 +13,7 @@ use them.
 | `DrawnButton` | the bar's workspace shape: content of its own, drawn in the button's color |
 | `SegmentedButton` | the power profile, the keyboard light's level, Keep Awake's limit |
 | `Checkbox` | choices confirmed together, like a dialog's; nothing in the shell yet |
-| `Radio` | Shell Settings' choices: appearance, density, glass, motion, widget style, the apps' layout |
+| `Radio` | Emaki Settings' choices: appearance, density, glass, motion, widget style, the apps' layout |
 
 ## Style and shape
 
@@ -50,7 +50,7 @@ still read `sys.*` only.
 amane rebuilds the view every frame, so a button can't hold state of its own. Hover, and the
 switch's and segmented button's motion, are kept in tables in the module, keyed by each
 control's **id**. Ids must be unique and stable,
-for example `amane.qs.wifi.connect` or `amane.notification.{id}.close`. While hovered, the fill
+for example `emaki.qs.wifi.connect` or `emaki.notification.{id}.close`. While hovered, the fill
 is `sys.color.state.hover` composited over it (`over()`). This is the state-layer rule from
 the token manual (§6.1, §11.3), and it also works on `Plain` buttons and translucent
 surfaces. Disabled buttons are drawn at 38 % opacity and take no input. Segments show the same
@@ -80,7 +80,7 @@ as its mark and label and `style::control_height()` (24) tall.
   applies at once reads better as a `Switch`; a checkbox suits choices confirmed together.
 - **Radio**: a group is radios sharing what's chosen, each `selected` when the setting equals
   its value. Chosen, the circle fills with the accent around a 4.8 px white dot; choosing the
-  chosen one does nothing. Shell Settings puts a group under its row's title
+  chosen one does nothing. Emaki Settings puts a group under its row's title
   (`FormRow::detail`).
 
 ## Dropdown
@@ -132,12 +132,12 @@ value; an inert slider, a meter, has none.
 The kit's `Radio`, `Checkbox`, `Dropdown`, `field_box`, `ListItem::leading_tile` and the
 sidebar's tiles draw in one look, ported from an older Quickshell set: its colors, sizes and
 fonts are [`style`](../../../crates/kit/src/look/style.rs), and a few controls are their own types.
-`cargo run -p amane-kit --example controls` shows every kit control (app_id `amane-kit-controls`,
+`cargo run -p emaki-kit --example controls` shows every kit control (app_id `emaki-kit-controls`,
 so it runs beside the bar; `CONTROLS_PAGE=<n>` opens on a page).
 
 - `stepper::Stepper` (a number field with up and down halves; hold to repeat, reported on
-  release; the wheel steps), used for Shell Settings' whole-number settings.
-- `nav_buttons::NavButtons`, the back/forward pill, before Shell Settings' title in a sub-view.
+  release; the wheel steps), used for Emaki Settings' whole-number settings.
+- `nav_buttons::NavButtons`, the back/forward pill, before Emaki Settings' title in a sub-view.
 - `leading_icon::LeadingIcon`, a 20 px (28 large) tile of an `Accent` (or any color) with a
   white glyph.
 - `pop_up_button::PopUpButton`, an 18 px circle that opens a menu.

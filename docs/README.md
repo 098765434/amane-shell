@@ -1,12 +1,12 @@
-# amane-shell docs
+# emaki docs
 
-amane-shell is a Wayland desktop shell for niri: a status bar, a dock, the launcher,
-notifications, Quick Settings and desktop widgets, the apps beside them, and **amane-kit**
+emaki is a Wayland desktop shell for niri: a status bar, a dock, the launcher,
+notifications, Quick Settings and desktop widgets, the apps beside them, and **emaki-kit**
 (`crates/kit/`), the look as a library that the shell and its apps share. It sits on two forks:
 
 ```mermaid
 flowchart BT
-    shell["amane-shell (this repo)<br/>apps/shell the shell, crates/kit amane-kit, apps/ the programs beside it"]
+    shell["emaki (this repo)<br/>apps/shell the shell, crates/kit emaki-kit, apps/ the programs beside it"]
     amane["amane fork<br/>Rust UI library: layer windows, popups, services, blur regions"]
     niri["niri fork<br/>compositor: materials, blur shapes, vibrancy, the desktop layer, gesture IPC"]
     shell -->|"Cargo git dependency"| amane
@@ -31,7 +31,7 @@ page; contributing is in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 The docs use one name for each thing:
 
-- **Shell Settings** is the settings app; its program is `amane-settings`, named once per doc.
+- **Emaki Settings** is the settings app; its program is `emaki-settings`, named once per doc.
 - **Quick Settings** is the panel of controls in the bar.
 - A **status app** is a program that puts something in the bar; its **status item** is what shows
   there.
@@ -40,7 +40,7 @@ The docs use one name for each thing:
 - Features are named for what they are ("the launcher", "glass"), never with another vendor's
   platform terms; `scripts/lint-terms` checks it.
 
-## Using amane-shell
+## Using emaki
 
 ### Setting it up
 
@@ -57,22 +57,22 @@ The docs use one name for each thing:
 | Surface | What it does | Doc |
 |---|---|---|
 | Status bar | the bar in three sizes: the workspace's shape, status icons, programs' items, Activities, Quick Settings, notifications and the clock | [user/features/status-bar.md](user/features/status-bar.md) |
-| Drop | `amane-drop`, a drop shelf in the bar: a grid of folders, apps and actions, and a Drop Bar | [user/features/drop.md](user/features/drop.md) |
+| Drop | `emaki-drop`, a drop shelf in the bar: a grid of folders, apps and actions, and a Drop Bar | [user/features/drop.md](user/features/drop.md) |
 | Dock | every workspace's windows and pins, rising from the bottom edge and with the overview | [user/features/dock.md](user/features/dock.md) |
 | Launcher | a search pill: search, Applications, Files, Actions, Clipboard | [user/features/launcher.md](user/features/launcher.md) |
 | Passwords | Bitwarden (rbw) fill: a popup by any app's password field, checked by niri; the launcher's Passwords mode | [user/features/passwords.md](user/features/passwords.md) |
-| Assistant | system commands typed or spoken in the launcher, read on this machine by Cactus (Needle 3, Whistle) in the `amane-assistant` daemon | [user/features/assistant.md](user/features/assistant.md) |
+| Assistant | system commands typed or spoken in the launcher, read on this machine by Cactus (Needle 3, Whistle) in the `emaki-assistant` daemon | [user/features/assistant.md](user/features/assistant.md) |
 | Notifications | the notification daemon's toasts, the notification center and Do Not Disturb | [user/features/notifications.md](user/features/notifications.md) |
 | Quick Settings | GNOME's quick settings as a grid of glass modules, with Edit Controls | [user/features/quick-settings.md](user/features/quick-settings.md) |
 | Desktop widgets | readings and a clock on the wallpaper, on Quick Settings' grid | [user/features/widgets.md](user/features/widgets.md) |
 | On-screen display | the capsule that shows volume, brightness, the keyboard light, a lock key or a switch as it changes | [user/features/osd.md](user/features/osd.md) |
 | Alert | the shell's alert in the middle of the screen, for questions like "Restart now?" | [user/features/quick-settings.md#the-alert](user/features/quick-settings.md#the-alert) |
-| Shell Settings | the settings app: appearance, the desktop's widgets, the launcher, and the System pages that manage the NixOS configuration | [user/features/settings-app.md](user/features/settings-app.md) |
-| Displays | Shell Settings' page for the screens: what each can do (OLED, HDR, VRR range), resolution, refresh (lower on battery), scale, rotation, arrangement, HDR, a monitor's brightness over DDC/CI, Night Light's schedule | [user/features/displays.md](user/features/displays.md) |
-| Phone | KDE Connect drawn by the shell: Quick Settings' Phone page, the bar's phone battery, Messages (`amane-messages`) for texts and remote input, and the phone's screen, sound, apps and camera through scrcpy (`amane-mirror`) | [user/features/phone.md](user/features/phone.md) |
+| Emaki Settings | the settings app: appearance, the desktop's widgets, the launcher, and the System pages that manage the NixOS configuration | [user/features/settings-app.md](user/features/settings-app.md) |
+| Displays | Emaki Settings' page for the screens: what each can do (OLED, HDR, VRR range), resolution, refresh (lower on battery), scale, rotation, arrangement, HDR, a monitor's brightness over DDC/CI, Night Light's schedule | [user/features/displays.md](user/features/displays.md) |
+| Phone | KDE Connect drawn by the shell: Quick Settings' Phone page, the bar's phone battery, Messages (`emaki-messages`) for texts and remote input, and the phone's screen, sound, apps and camera through scrcpy (`emaki-mirror`) | [user/features/phone.md](user/features/phone.md) |
 | Context menu | nested xdg-popup menus: the dock's, the launcher's, the widgets', Do Not Disturb's and a Bluetooth device's | [user/features/context-menu.md](user/features/context-menu.md) |
 
-## Developing amane-shell
+## Developing emaki
 
 ### Start here
 
@@ -100,7 +100,7 @@ The docs use one name for each thing:
 | Where a rewrite could still make the shell smaller, and where it couldn't | [developer/rewrite-plan.md](developer/rewrite-plan.md) |
 | The shell as a framework: extensions in their own processes and repos, a protocol, a Store and a catalogue | [developer/extensions-plan.md](developer/extensions-plan.md) |
 
-### amane-kit
+### emaki-kit
 
 | Topic | Doc |
 |---|---|
@@ -125,11 +125,11 @@ The docs use one name for each thing:
 | Topic | Doc | The forks' side |
 |---|---|---|
 | niri layer rules and surface namespaces, generated from the tokens | [developer/integration/layer-rules.md](developer/integration/layer-rules.md) | niri [materials](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md), [desktop layer](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md); amane [blur](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md) |
-| Status apps over `org.amane.StatusBar1`: the protocol, writing one (an item, a window under it, drags through it), Activities, running as a service, and the pieces across amane, the shell and nixos-config with how to test them beside the desktop | [developer/integration/status-apps.md](developer/integration/status-apps.md) | [amane-status](../crates/status/README.md) |
+| Status apps over `org.emaki.StatusBar1`: the protocol, writing one (an item, a window under it, drags through it), Activities, running as a service, and the pieces across amane, the shell and nixos-config with how to test them beside the desktop | [developer/integration/status-apps.md](developer/integration/status-apps.md) | [emaki-status](../crates/status/README.md) |
 | Every CLI and IPC command, and the socket they go over | [developer/integration/ipc.md](developer/integration/ipc.md) | niri [IPC events](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/events.md), [actions](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/actions.md) |
 | The shell's services and amane's, the settings files and the state files | [developer/integration/services.md](developer/integration/services.md) | amane [compositor services](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md), [system services](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/idle.md) (`system/`) |
-| The NixOS configuration from Shell Settings: the registry and `managed/settings.json`, the `amaneSettings` output, build → compare → activate through polkit, the commit, "up to date" | [developer/integration/nixos.md](developer/integration/nixos.md) | nixos-config `modules/managed.nix` |
-| What the shell relies on from niri, amane and the kit, with the revisions that have it; `cargo xtask contract` | [developer/integration/contract.md](developer/integration/contract.md) | niri [Features](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/features.md), [what amane-shell relies on](https://github.com/098765434/niri/blob/ocbk/docs/fork/maintaining.md#what-amane-shell-relies-on) |
+| The NixOS configuration from Emaki Settings: the registry and `managed/settings.json`, the `emakiSettings` output, build → compare → activate through polkit, the commit, "up to date" | [developer/integration/nixos.md](developer/integration/nixos.md) | nixos-config `modules/managed.nix` |
+| What the shell relies on from niri, amane and the kit, with the revisions that have it; `cargo xtask contract` | [developer/integration/contract.md](developer/integration/contract.md) | niri [Features](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/features.md), [what emaki relies on](https://github.com/098765434/niri/blob/ocbk/docs/fork/maintaining.md#what-amane-shell-relies-on) |
 
 ## Archive
 

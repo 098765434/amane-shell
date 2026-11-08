@@ -1,5 +1,5 @@
 //! The NixOS configuration as Settings sees it: the [`Snapshot`] the flake's
-//! `amaneSettings` output gives (every setting in `managed/registry.nix`
+//! `emakiSettings` output gives (every setting in `managed/registry.nix`
 //! with its effective value, how it's set and which files set it), and
 //! [`Managed`], `managed/settings.json`, the one file Settings writes.
 //! `modules/managed.nix` turns that file into option definitions, so the
@@ -13,12 +13,12 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use amane::{Service, watch_file};
-use amane_kit::settings::nixos;
+use emaki_kit::settings::nixos;
 
 use serde_json::Value;
 
-use amane_kit::service::ServiceExt as _;
-pub use amane_nixos::{MANAGED_MODULE, SETTINGS_FILE, run};
+use emaki_kit::service::ServiceExt as _;
+pub use emaki_nixos::{MANAGED_MODULE, SETTINGS_FILE, run};
 
 /// The flake repo, from `nixos.json`.
 pub fn repo() -> PathBuf {
@@ -31,11 +31,11 @@ pub fn host() -> String {
 }
 
 /// The configuration as `nixos.json` names it, for the jobs.
-pub fn config() -> amane_nixos::Config {
-    amane_nixos::Config::new(repo(), host())
+pub fn config() -> emaki_nixos::Config {
+    emaki_nixos::Config::new(repo(), host())
 }
 
-/// Runs git in the repo (see [`amane_nixos::Config::git`]).
+/// Runs git in the repo (see [`emaki_nixos::Config::git`]).
 pub fn git(args: &[&str]) -> Result<String, String> {
     config().git(args)
 }
@@ -45,7 +45,7 @@ pub fn nix(args: &[&str]) -> Result<String, String> {
     config().nix(args)
 }
 
-pub use amane_nixos::settings::{
+pub use emaki_nixos::settings::{
     Change, Control, Entry, SystemPackage, Tier, parse_map, parse_snapshot, save, show, show_as,
     strings,
 };
@@ -111,7 +111,7 @@ impl Snapshot {
 }
 
 fn take(take_number: u64) {
-    let flake = format!("{}#amaneSettings", repo().display());
+    let flake = format!("{}#emakiSettings", repo().display());
     let result = nix(&["eval", "--json", &flake]).and_then(|json| parse_snapshot(&json));
 
     if TAKE.load(Ordering::SeqCst) != take_number {
@@ -205,13 +205,13 @@ impl Managed {
 
     /// What differs from HEAD.
     pub fn changes(&self) -> Vec<Change> {
-        amane_nixos::settings::changes(&self.current, &self.committed)
+        emaki_nixos::settings::changes(&self.current, &self.committed)
     }
 
     /// Each change as a few words, with the registry's labels where the
     /// snapshot has them: "Time zone → Europe/Oslo", "Tailscale off".
     pub fn summary(&self, snapshot: &Snapshot) -> Vec<String> {
-        amane_nixos::settings::summary(&self.changes(), &snapshot.entries)
+        emaki_nixos::settings::summary(&self.changes(), &snapshot.entries)
     }
 
     /// A setting's list value as strings (empty when it's not a list).
@@ -221,7 +221,7 @@ impl Managed {
 
     /// The commit's subject for the changes.
     pub fn commit_message(&self, snapshot: &Snapshot) -> String {
-        amane_nixos::settings::commit_message(&self.changes(), &snapshot.entries)
+        emaki_nixos::settings::commit_message(&self.changes(), &snapshot.entries)
     }
 
     /// Writes one setting and stages the file, so the flake sees it. The

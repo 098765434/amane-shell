@@ -18,7 +18,7 @@ use crate::services::launcher::timer;
 use crate::services::power::keep_awake::KeepAwake;
 use crate::services::power::session::Session;
 use crate::surfaces::quick_settings::{self, ControlId};
-use amane_kit::icons::{
+use emaki_kit::icons::{
     Glyph, ICON_KEEP_AWAKE, ICON_LOCK, ICON_LOG_OUT, ICON_PACKAGE, ICON_POWER, ICON_RESTART,
     ICON_SLEEP, ICON_TIMER, ICON_TUNE, ICON_UPDATE, ICON_VPN,
 };
@@ -113,7 +113,7 @@ impl Spec {
                 format!(
                     "{} · {}",
                     self.title,
-                    amane_kit::format::span_exact(*length)
+                    emaki_kit::format::span_exact(*length)
                 )
             }
             Value::Choice(choice) => {
@@ -310,11 +310,11 @@ fn session(specs: &mut Vec<Spec>) {
     }
 }
 
-/// The NixOS configuration, through Shell Settings' System pages: checking
+/// The NixOS configuration, through Emaki Settings' System pages: checking
 /// for updates, applying what's changed, installing software. Only with
-/// Shell Settings installed.
+/// Emaki Settings installed.
 fn nixos(specs: &mut Vec<Spec>) {
-    if !crate::services::installed("amane-settings") {
+    if !crate::services::installed("emaki-settings") {
         return;
     }
     let pages: [(&str, &str, &str, &[&str], char); 3] = [
@@ -350,7 +350,7 @@ fn nixos(specs: &mut Vec<Spec>) {
             )
             .keywords(keywords)
             .run(move |_| {
-                amane::Launch::argv(&["amane-settings", "--page", page]).activated();
+                amane::Launch::argv(&["emaki-settings", "--page", page]).activated();
             }),
         );
     }
@@ -371,7 +371,7 @@ fn clock(specs: &mut Vec<Spec>) {
             if let Value::Duration(length) = value {
                 timer::start(
                     length,
-                    format!("{} timer", amane_kit::format::span_exact(length)),
+                    format!("{} timer", emaki_kit::format::span_exact(length)),
                 );
             }
         }),

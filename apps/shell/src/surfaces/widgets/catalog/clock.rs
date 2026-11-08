@@ -19,10 +19,10 @@ use super::{Face, accent, caption_style, line, place};
 use crate::services::clock::Clock;
 use crate::surfaces::widgets::kind::WidgetSize;
 use crate::theme;
-use amane_kit::layout::{text_height, text_width};
-use amane_kit::motion;
+use emaki_kit::layout::{text_height, text_width};
+use emaki_kit::motion;
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// A second turned over, for clocks that show seconds.
     pub ClockSecond
 }

@@ -10,7 +10,7 @@
 //!   the keyboard. Nothing is typed with a virtual keyboard, and the popup never takes the
 //!   keyboard: the app keeps its keys.
 //! - **Where it stays away.** The shell's own fields, terminals, browsers (their Bitwarden
-//!   extension checks the site), apps set aside in Shell Settings, and while the screen is
+//!   extension checks the site), apps set aside in Emaki Settings, and while the screen is
 //!   shared. Username fields only get it when asked for in Settings, and only with a
 //!   remembered or named entry.
 //!
@@ -21,33 +21,33 @@ mod ipc;
 mod view;
 
 use actions::*;
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 pub use ipc::run;
 #[cfg(test)]
 use ipc::{valid_email, valid_server};
 use view::*;
 
-use amane_kit::shell_ipc::Passwords as Command;
+use emaki_kit::shell_ipc::Passwords as Command;
 use std::sync::Mutex;
 
 use amane::{
     Center, Color, Column, FieldPurpose, FillError, FocusedField, Popup, Rectangle, Row, Service,
     Size, Text, Widget,
 };
-use amane_kit::buttons::{Actions, hovered, interactive};
-use amane_kit::layout::{boxed, icon, pad};
-use amane_kit::settings::{self, AppLink, Passwords};
-use amane_kit::style::{self as theme, px};
-use amane_kit::tokens::Styled;
+use emaki_kit::buttons::{Actions, hovered, interactive};
+use emaki_kit::layout::{boxed, icon, pad};
+use emaki_kit::settings::{self, AppLink, Passwords};
+use emaki_kit::style::{self as theme, px};
+use emaki_kit::tokens::Styled;
 
 use crate::services::desktop::privacy::Privacy;
 use crate::services::vault::identity::{Identity, Verified};
 use crate::services::vault::matching::{self, Match, Reason};
 use crate::services::vault::secret::Secret;
 use crate::services::vault::{self, Identities, Status, Vault, rbw};
-use amane_kit::icons::{ICON_CLOSE, ICON_LOCK, ICON_SEARCH, ICON_WARNING};
+use emaki_kit::icons::{ICON_CLOSE, ICON_LOCK, ICON_SEARCH, ICON_WARNING};
 
-const NS: &str = "amane.fill";
+const NS: &str = "emaki.fill";
 
 /// The most entries a popup shows.
 const ROWS: usize = 5;
@@ -91,7 +91,7 @@ static STATE: Mutex<State> = Mutex::new(State {
     remember: true,
 });
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// Something the popup shows changed outside a service.
     pub FillChanged
 }

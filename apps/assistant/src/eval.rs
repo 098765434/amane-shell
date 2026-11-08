@@ -3,16 +3,16 @@
 //! isn't one). The cases are JSON lines, `{"text": …, "expect": Command |
 //! null}`; the snapshot is what the machine is taken to have.
 //!
-//! `AMANE_ASSISTANT_NO_RULES=1` leaves the rules out, scoring Needle alone.
+//! `EMAKI_ASSISTANT_NO_RULES=1` leaves the rules out, scoring Needle alone.
 //!
 //! ```text
-//! amane-assistant eval apps/assistant/eval/cases.jsonl apps/assistant/eval/laptop.json
+//! emaki-assistant eval apps/assistant/eval/cases.jsonl apps/assistant/eval/laptop.json
 //! ```
 
 use std::time::Instant;
 
-use amane_assistant::command::Risk;
-use amane_assistant::{Command, Snapshot, Source, rules, tools};
+use emaki_assistant::command::Risk;
+use emaki_assistant::{Command, Snapshot, Source, rules, tools};
 use serde::Deserialize;
 
 use crate::engine::Engine;
@@ -67,8 +67,8 @@ pub fn run(mut engine: Engine, cases: &str, snapshot: &str, json: bool) -> Resul
     let (mut right, mut wrong, mut missed, mut by_rules) = (0, 0, 0, 0);
     let (mut commands, mut clean, mut negatives, mut destructive_wrong) = (0, 0, 0, 0);
     let mut times = Vec::new();
-    // `AMANE_ASSISTANT_NO_RULES=1` scores Needle alone
-    let rules_on = std::env::var_os("AMANE_ASSISTANT_NO_RULES").is_none();
+    // `EMAKI_ASSISTANT_NO_RULES=1` scores Needle alone
+    let rules_on = std::env::var_os("EMAKI_ASSISTANT_NO_RULES").is_none();
     for case in &cases {
         let started = Instant::now();
         let ruled = rules_on
@@ -80,7 +80,7 @@ pub fn run(mut engine: Engine, cases: &str, snapshot: &str, json: bool) -> Resul
             None if !rules::worth_asking(&case.text, &snapshot) => None,
             None => {
                 let answer = engine.complete(system, &offered, &case.text)?;
-                if std::env::var_os("AMANE_ASSISTANT_DEBUG").is_some() {
+                if std::env::var_os("EMAKI_ASSISTANT_DEBUG").is_some() {
                     eprintln!("   {answer}");
                 }
                 tools::read(&answer, &snapshot)

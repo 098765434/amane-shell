@@ -1,21 +1,21 @@
 //! The phone's apps, for the launcher to find by name; each opens in a
-//! window of its own (`amane-mirror --app`, a virtual display on the
-//! phone). The list comes from `~/.cache/amane-shell/phone-apps.json`,
-//! which `amane-mirror --list-apps` writes; it's asked for again when adb
+//! window of its own (`emaki-mirror --app`, a virtual display on the
+//! phone). The list comes from `~/.cache/emaki/phone-apps.json`,
+//! which `emaki-mirror --list-apps` writes; it's asked for again when adb
 //! has the phone and the list is missing, another phone's, or a day old.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use amane_phone::PhoneDevice;
+use emaki_phone::PhoneDevice;
 
 use super::{MIRROR_APP, screen};
 
 /// How long a list is kept before it's asked for again.
 const FRESH: Duration = Duration::from_secs(24 * 60 * 60);
 
-pub use amane_phone::shared::apps::App;
-use amane_phone::shared::apps::{self as shared, List};
+pub use emaki_phone::shared::apps::App;
+use emaki_phone::shared::apps::{self as shared, List};
 
 // a listing under way, so another isn't started
 static LISTING: AtomicBool = AtomicBool::new(false);
@@ -24,7 +24,7 @@ static LISTING: AtomicBool = AtomicBool::new(false);
 fn refresh(device: &str, serial: &str, list: Option<&List>) {
     let fresh = list.is_some_and(|list| {
         list.device == device
-            && amane_kit::time::unix_s().saturating_sub(list.updated) < FRESH.as_secs()
+            && emaki_kit::time::unix_s().saturating_sub(list.updated) < FRESH.as_secs()
     });
     if fresh || LISTING.swap(true, Ordering::SeqCst) {
         return;
@@ -35,8 +35,8 @@ fn refresh(device: &str, serial: &str, list: Option<&List>) {
             .args(["--list-apps", "--serial", &serial, "--device", &device])
             .status();
         match listed {
-            Ok(status) if !status.success() => log::warn!("amane-mirror --list-apps: {status}"),
-            Err(error) => log::warn!("amane-mirror --list-apps: {error}"),
+            Ok(status) if !status.success() => log::warn!("emaki-mirror --list-apps: {status}"),
+            Err(error) => log::warn!("emaki-mirror --list-apps: {error}"),
             Ok(_) => {}
         }
         LISTING.store(false, Ordering::SeqCst);

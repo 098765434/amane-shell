@@ -17,7 +17,7 @@ use amane::serde::{Deserialize, Serialize};
 use amane::{Windows, Workspaces};
 
 use crate::services::state::{self, State};
-use amane_kit::app_icon;
+use emaki_kit::app_icon;
 
 /// The file from before the state files, a pin a line.
 const OLD_FILE: &str = "dock-pins";

@@ -4,14 +4,14 @@
 //! redraws in the new look while this window shows it too.
 
 use amane::{Color, Column};
-use amane_kit::buttons::Switch;
-use amane_kit::color_picker::ColorWells;
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::FormRow;
-use amane_kit::settings::{ACCENTS, appearance, change_appearance};
-use amane_kit::style;
-use amane_kit::theme::{Density, Glass, Mode};
-use amane_kit::thumbnail_picker::ThumbnailPicker;
+use emaki_kit::buttons::Switch;
+use emaki_kit::color_picker::ColorWells;
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::FormRow;
+use emaki_kit::settings::{ACCENTS, appearance, change_appearance};
+use emaki_kit::style;
+use emaki_kit::theme::{Density, Glass, Mode};
+use emaki_kit::thumbnail_picker::ThumbnailPicker;
 
 use crate::{group, groups, previews};
 

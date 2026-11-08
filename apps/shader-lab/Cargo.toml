@@ -1,5 +1,5 @@
 [package]
-name = "amane-shader-lab"
+name = "emaki-shader-lab"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,9 +10,9 @@ authors.workspace = true
 
 [dependencies]
 log = { workspace = true }
-amane-log = { workspace = true }
+emaki-log = { workspace = true }
 amane = { workspace = true }
-amane-kit = { workspace = true }
+emaki-kit = { workspace = true }
 serde_json = { workspace = true }
 
 [lints]

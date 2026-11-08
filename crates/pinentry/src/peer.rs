@@ -13,10 +13,10 @@ const SO_PEERPIDFD: libc::c_int = 77;
 
 /// The socket the shell answers on: in the runtime directory, which only this user can enter.
 pub fn socket_path() -> Option<PathBuf> {
-    let runtime = amane_base::paths::private_runtime()?;
+    let runtime = emaki_base::paths::private_runtime()?;
     Some(
         runtime
-            .join(amane_base::app_ids::SHELL)
+            .join(emaki_base::app_ids::SHELL)
             .join("pinentry.sock"),
     )
 }
@@ -181,7 +181,7 @@ mod tests {
         let store = |name: &str| PathBuf::from(format!("/nix/store/abc-rbw-1.15.0/bin/{name}"));
 
         assert!(is_program(&store("rbw-agent"), &["rbw-agent"]));
-        assert!(is_program(&store(".amane-shell-wrapped"), &["amane-shell"]));
+        assert!(is_program(&store(".emaki-wrapped"), &["emaki"]));
         assert!(!is_program(&store("rbw-agent-evil"), &["rbw-agent"]));
         assert!(!is_program(
             Path::new("/home/me/bin/rbw-agent"),
@@ -197,7 +197,7 @@ mod tests {
         assert!(exe(me).is_some());
         assert!(parent(me).is_some());
         assert!(
-            environment(me, "AMANE_SURELY_UNSET_VARIABLE").is_some_and(|value| value.is_none())
+            environment(me, "EMAKI_SURELY_UNSET_VARIABLE").is_some_and(|value| value.is_none())
         );
     }
 

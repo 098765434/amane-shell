@@ -11,7 +11,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::protocol::{self, App};
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 /// Where the jar goes on the phone; `/data/local/tmp` is the shell user's.
 const ON_PHONE: &str = "/data/local/tmp/scrcpy-server.jar";
@@ -19,9 +19,9 @@ const ON_PHONE: &str = "/data/local/tmp/scrcpy-server.jar";
 /// How long the server gets to connect back.
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 
-/// The server's jar on this computer, from the build, or `AMANE_SCRCPY_SERVER`.
+/// The server's jar on this computer, from the build, or `EMAKI_SCRCPY_SERVER`.
 fn server_jar() -> Option<String> {
-    std::env::var("AMANE_SCRCPY_SERVER")
+    std::env::var("EMAKI_SCRCPY_SERVER")
         .ok()
         .or_else(|| option_env!("SCRCPY_SERVER").map(String::from))
 }
@@ -182,7 +182,7 @@ impl Log {
 }
 
 fn adb(serial: &str, arguments: &[&str]) -> Result<String, String> {
-    amane_phone::adb(Some(serial), arguments).map_err(|error| error.to_string())
+    emaki_phone::adb(Some(serial), arguments).map_err(|error| error.to_string())
 }
 
 fn push(serial: &str) -> Result<(), String> {

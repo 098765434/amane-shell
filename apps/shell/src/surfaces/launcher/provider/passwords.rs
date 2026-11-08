@@ -18,7 +18,7 @@ impl Provider for Passwords {
 
         let needle = match query.mode {
             Mode::Vault => query.needle.clone(),
-            Mode::Home if amane_kit::settings::passwords().show_in_launcher => {
+            Mode::Home if emaki_kit::settings::passwords().show_in_launcher => {
                 match query.needle.strip_prefix(PASSWORDS_PREFIX) {
                     Some(needle) => needle.trim().to_string(),
                     None => return,
@@ -28,7 +28,7 @@ impl Provider for Passwords {
         };
 
         // nothing of the vault while the screen is shared, as with the popup
-        if amane_kit::settings::passwords().hide_while_sharing
+        if emaki_kit::settings::passwords().hide_while_sharing
             && crate::services::desktop::privacy::Privacy::read().screen()
         {
             out.push(Candidate {
@@ -73,9 +73,9 @@ impl Provider for Passwords {
             }
             Status::NotConfigured => {
                 return push(
-                    only("set-up", "Set up Passwords in Shell Settings…", || {
+                    only("set-up", "Set up Passwords in Emaki Settings…", || {
                         crate::services::run(
-                            "amane-settings",
+                            "emaki-settings",
                             vec![String::from("--page"), String::from("passwords")],
                         );
                     })

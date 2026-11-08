@@ -8,9 +8,9 @@ in any app. niri's fork checks every fill before it lets the text in.
 
 ## Usage
 
-**Setting up.** Open Shell Settings › Passwords.
+**Setting up.** Open Emaki Settings › Passwords.
 1. Give the **server** (`https://…`; plain `http` only to `localhost`) and the **email**, then
-   **Save**. This also points rbw's `pinentry` at `amane-pinentry`.
+   **Save**. This also points rbw's `pinentry` at `emaki-pinentry`.
 2. **Sign In…** opens the shell's dialog for the master password, and a two-factor code if the
    account has one.
 3. bitwarden.com may ask to register the device. **Register…** then appears and asks for the
@@ -53,7 +53,7 @@ a copy from the focused app. It's marked `x-kde-passwordManagerHint`, which wl-c
 into `CLIPBOARD_STATE=sensitive`, so cliphist and the shell's own history leave it out. It's
 cleared after 30 seconds.
 
-**Settings** (Shell Settings › Passwords):
+**Settings** (Emaki Settings › Passwords):
 
 | Setting | Default | |
 |---|---|---|
@@ -66,9 +66,9 @@ cleared after 30 seconds.
 
 The page also lists the entries remembered for apps, each with ×, and the apps never offered
 fill. Those are browsers by default, as their Bitwarden extension checks the website itself.
-The settings are `~/.config/amane-shell/passwords.json`, mode 0600.
+The settings are `~/.config/emaki/passwords.json`, mode 0600.
 
-**IPC.** `printf 'passwords\nsuggest\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock` shows the
+**IPC.** `printf 'passwords\nsuggest\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock` shows the
 popup for the field with the keyboard, even a username or terminal field. Bind it in niri for
 a keyboard way in. Also: `status`, `unlock`, `sign-in`, `register`, `sync`, `lock`,
 `configure <server> <email> [forget]` and `lock-timeout <seconds>`. `status` prints `key=value`
@@ -105,7 +105,7 @@ lines and never a secret.
   - *Undo history:* none for password fields.
   - *Other input methods:* amane's password fields send them no surrounding text.
 - **Phishing with the shell's own dialog.** It comes up only for an rbw command the shell
-  started, asked by `amane-pinentry` under that user's `rbw-agent` (see
+  started, asked by `emaki-pinentry` under that user's `rbw-agent` (see
   [The master password](#the-master-password)).
 - **Screen sharing.** Passwords are never drawn, and the popup hides while the screen is shared.
 
@@ -184,12 +184,12 @@ address at all, so remembering does most of the work over time.
 
 ### The master password
 
-rbw asks a `pinentry` program over the Assuan protocol. `amane-pinentry` (`crates/pinentry`) is
+rbw asks a `pinentry` program over the Assuan protocol. `emaki-pinentry` (`crates/pinentry`) is
 that program.
-1. It connects to `$XDG_RUNTIME_DIR/amane-shell/pinentry.sock` (folder 0700, socket 0600) and
-   checks the other end: the same user, running `amane-shell` from the Nix store.
+1. It connects to `$XDG_RUNTIME_DIR/emaki/pinentry.sock` (folder 0700, socket 0600) and
+   checks the other end: the same user, running `emaki` from the Nix store.
 2. The shell (`apps/shell/src/services/vault/pinentry.rs`) answers a caller only if all of these hold:
-   - the caller is `amane-pinentry` from the store;
+   - the caller is `emaki-pinentry` from the store;
    - its parent is `rbw-agent` from the store;
    - that agent has the shell's own `HOME`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`,
      `XDG_RUNTIME_DIR` and `RBW_PROFILE`, so it signs in to the account the page shows;
@@ -208,7 +208,7 @@ D-Bus isn't used, as any program of yours can watch the session bus.
 ### rbw
 
 `apps/shell/src/services/vault/rbw.rs`:
-- **Commands.** rbw runs by its store path (`AMANE_RBW`, set by the flake), with no secret in
+- **Commands.** rbw runs by its store path (`EMAKI_RBW`, set by the flake), with no secret in
   an argument, and an entry's id checked to be a UUID so it can't pass for an option.
 - **Errors.** What rbw prints on failure is matched to an error and dropped, never logged.
 - **State, from disk:**

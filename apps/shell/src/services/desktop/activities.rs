@@ -1,6 +1,6 @@
 //! Activities other programs put in the bar: a timer, an upload, a
 //! recording. They arrive over the bar's
-//! bus service (`org.amane.StatusBar1`) and are kept here, each by a handle;
+//! bus service (`org.emaki.StatusBar1`) and are kept here, each by a handle;
 //! the bar draws them beside its own (Now Playing, the timer, screen
 //! sharing), which it reads straight from their services.
 //!
@@ -11,11 +11,11 @@
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
-use amane_kit::settings::remember_activity;
-use amane_kit::sync::Locked as _;
-use amane_status::{ActivityContent, ActivityEvent, Dismiss};
+use emaki_kit::settings::remember_activity;
+use emaki_kit::sync::Locked as _;
+use emaki_status::{ActivityContent, ActivityEvent, Dismiss};
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// An activity started, changed or ended: the bar draws again.
     pub Activities
 }
@@ -244,7 +244,7 @@ fn after(wait: Duration, then: impl FnOnce() + Send + 'static) {
 mod tests {
     use std::sync::atomic::{AtomicU32, Ordering};
 
-    use amane_status::ItemIcon;
+    use emaki_status::ItemIcon;
 
     use super::*;
 

@@ -3,10 +3,10 @@
 //! `dock.json`, which the shell follows at once.
 
 use amane::Column;
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::{FormRow, SliderRow};
-use amane_kit::settings::{DOCK_ICON_SIZES, Dock, Magnify, change_dock, dock};
-use amane_kit::slider::Slider;
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::{FormRow, SliderRow};
+use emaki_kit::settings::{DOCK_ICON_SIZES, Dock, Magnify, change_dock, dock};
+use emaki_kit::slider::Slider;
 
 use crate::{group, groups, switch_row};
 

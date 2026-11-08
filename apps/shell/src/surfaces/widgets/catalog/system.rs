@@ -11,7 +11,7 @@ use super::{
 use crate::services::desktop::system_stats::{Series, SystemStats};
 use crate::surfaces::widgets::kind::{WidgetKind, WidgetSize};
 use crate::tokens::sys;
-use amane_kit::layout::{icon, text_height};
+use emaki_kit::layout::{icon, text_height};
 
 /// Hotter than this reads in the critical colour.
 const HOT: f32 = 85.0;
@@ -20,7 +20,7 @@ const BUSY: f32 = 0.9;
 
 /// "1.2 MB/s".
 pub fn rate(per_second: f32) -> String {
-    format!("{}/s", amane_kit::format::bytes(per_second.max(0.0) as u64))
+    format!("{}/s", emaki_kit::format::bytes(per_second.max(0.0) as u64))
 }
 
 fn recent(series: &Series) -> Vec<f32> {
@@ -155,8 +155,8 @@ pub(super) fn memory(face: &Face) -> Vec<Box<dyn Widget>> {
     let memory = stats.memory;
     let caption = format!(
         "{} of {}",
-        amane_kit::format::bytes(memory.used),
-        amane_kit::format::bytes(memory.total)
+        emaki_kit::format::bytes(memory.used),
+        emaki_kit::format::bytes(memory.total)
     );
     let mut out = reading(
         face,
@@ -176,8 +176,8 @@ pub(super) fn memory(face: &Face) -> Vec<Box<dyn Widget>> {
         out.push(line(
             format!(
                 "Swap {} of {}",
-                amane_kit::format::bytes(memory.swap_used),
-                amane_kit::format::bytes(memory.swap_total)
+                emaki_kit::format::bytes(memory.swap_used),
+                emaki_kit::format::bytes(memory.swap_total)
             ),
             caption,
             secondary(),
@@ -365,7 +365,7 @@ pub(super) fn disk(face: &Face) -> Vec<Box<dyn Widget>> {
                 false,
             ));
             out.push(line(
-                format!("{} free", amane_kit::format::bytes(disk.total - disk.used)),
+                format!("{} free", emaki_kit::format::bytes(disk.total - disk.used)),
                 caption,
                 secondary(),
                 (0.0, y),
@@ -430,7 +430,7 @@ pub(super) fn disk(face: &Face) -> Vec<Box<dyn Widget>> {
         format!(
             "{} · {} free",
             disk.mount,
-            amane_kit::format::bytes(disk.total - disk.used)
+            emaki_kit::format::bytes(disk.total - disk.used)
         ),
         caption,
         secondary(),
@@ -471,8 +471,8 @@ pub(super) fn overview(face: &Face) -> Vec<Box<dyn Widget>> {
             memory,
             format!(
                 "{} of {}",
-                amane_kit::format::bytes(stats.memory.used),
-                amane_kit::format::bytes(stats.memory.total)
+                emaki_kit::format::bytes(stats.memory.used),
+                emaki_kit::format::bytes(stats.memory.total)
             ),
             Some(recent(&stats.memory_history)),
         ),
@@ -481,7 +481,7 @@ pub(super) fn overview(face: &Face) -> Vec<Box<dyn Widget>> {
             "Disk",
             disk,
             stats.disk(None).map_or_else(String::new, |d| {
-                format!("{} free", amane_kit::format::bytes(d.total - d.used))
+                format!("{} free", emaki_kit::format::bytes(d.total - d.used))
             }),
             None,
         ),
@@ -518,7 +518,7 @@ pub(super) fn overview(face: &Face) -> Vec<Box<dyn Widget>> {
                 kind.glyph(),
             )
         } else {
-            amane::Stack::new(vec![amane_kit::layout::boxed(icon(
+            amane::Stack::new(vec![emaki_kit::layout::boxed(icon(
                 kind.glyph(),
                 diameter * 0.5,
                 primary(),

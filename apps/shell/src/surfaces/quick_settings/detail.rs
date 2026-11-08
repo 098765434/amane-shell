@@ -24,12 +24,12 @@ use super::{ALONE, back, ramp};
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{quick, sys};
-use amane_kit::app_bar::TopAppBar;
-use amane_kit::buttons::Switch;
-use amane_kit::control_size;
-use amane_kit::divider::Divider;
-use amane_kit::layout::boxed;
-use amane_kit::list::{self, ListItem};
+use emaki_kit::app_bar::TopAppBar;
+use emaki_kit::buttons::Switch;
+use emaki_kit::control_size;
+use emaki_kit::divider::Divider;
+use emaki_kit::layout::boxed;
+use emaki_kit::list::{self, ListItem};
 
 /// How wide a page's content is: the grid's width less the sheet's padding
 /// either side.

@@ -22,7 +22,7 @@ use crate::material::{self, Level, Material};
 use crate::tokens::{Styled, sys};
 
 /// The tooltip's xdg-popup namespace.
-pub const TOOLTIP_NS: &str = "amane.tooltip";
+pub const TOOLTIP_NS: &str = "emaki.tooltip";
 
 /// How long the pointer rests on a control before its tooltip shows.
 /// TODO(token): `sys.motion.duration.tooltip` once Penpot has it.
@@ -188,15 +188,15 @@ mod tests {
 
     #[test]
     fn offering_again_keeps_the_delay_and_updates_the_text() {
-        offer("a", "amane.bar", "Volume 40%");
+        offer("a", "emaki.bar", "Volume 40%");
         let (_, _, since) = shown().unwrap();
 
-        offer("a", "amane.bar", "Volume 45%");
+        offer("a", "emaki.bar", "Volume 45%");
         let (id, text, again) = shown().unwrap();
         assert_eq!((id.as_str(), text.as_str()), ("a", "Volume 45%"));
         assert_eq!(since, again);
 
-        offer("b", "amane.bar", "Battery 80%");
+        offer("b", "emaki.bar", "Battery 80%");
         let (id, _, other) = shown().unwrap();
         assert_eq!(id, "b");
         assert!(other >= since);
@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn dismissing_another_control_keeps_the_tooltip() {
-        offer("a", "amane.bar", "Volume 40%");
+        offer("a", "emaki.bar", "Volume 40%");
         dismiss("b");
         assert!(shown().is_some());
 
@@ -214,15 +214,15 @@ mod tests {
 
     #[test]
     fn a_click_hides_the_tooltip_until_the_pointer_leaves() {
-        offer("a", "amane.bar", "Volume 40%");
+        offer("a", "emaki.bar", "Volume 40%");
         suppress("a");
         assert!(shown().is_none());
 
-        offer("a", "amane.bar", "Volume 40%");
+        offer("a", "emaki.bar", "Volume 40%");
         assert!(shown().is_none());
 
         dismiss("a");
-        offer("a", "amane.bar", "Volume 40%");
+        offer("a", "emaki.bar", "Volume 40%");
         assert!(shown().is_some());
     }
 }

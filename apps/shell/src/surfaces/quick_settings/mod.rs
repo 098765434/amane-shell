@@ -76,14 +76,14 @@ use crate::chrome::panel::{self, Panel, close, is_open, overlay, popover_margin}
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::surfaces::quick_settings::layout::Stored as _;
 use crate::tokens::quick;
-use amane_kit::glass_region;
-use amane_kit::layout::{boxed, pad, track_cursor};
-use amane_kit::material::Material;
-use amane_kit::motion;
-use amane_kit::reveal::Reveal;
-use amane_kit::shell_ipc::QuickSettings as Command;
+use emaki_kit::glass_region;
+use emaki_kit::layout::{boxed, pad, track_cursor};
+use emaki_kit::material::Material;
+use emaki_kit::motion;
+use emaki_kit::reveal::Reveal;
+use emaki_kit::shell_ipc::QuickSettings as Command;
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// Quick Settings' own state changed (its page, editing, Customize):
     /// only its window draws again.
     pub QuickSettings
@@ -95,7 +95,7 @@ pub(crate) use tiles::keep_awake::status as keep_awake_status;
 
 /// Layer-surface namespace; the niri `layer-rule` matches it for blur, and
 /// the Bluetooth device menu hangs under it.
-pub const QS_NS: &str = "amane.quick-settings";
+pub const QS_NS: &str = "emaki.quick-settings";
 
 thread_local! {
     // where it's going: the grid or a page
@@ -312,7 +312,7 @@ impl Sheet {
 
     /// Where the compositor frosts behind it.
     fn frost(self) -> BlurShape {
-        let area = amane_kit::area::Area::new(self.x, self.y, self.width, self.height);
+        let area = emaki_kit::area::Area::new(self.x, self.y, self.width, self.height);
         Material::Popover.shape_tinted(area, self.radius, 1.0, self.tint)
     }
 }

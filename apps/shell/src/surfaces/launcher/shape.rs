@@ -6,7 +6,7 @@
 
 use amane::{Blend, BlurShape};
 
-use amane_kit::material::Material;
+use emaki_kit::material::Material;
 
 // TODO(token): `launcher.pill.*`, `launcher.mode-button.*`,
 // `launcher.sheet.radius` and `launcher.top` once Penpot has them
@@ -24,7 +24,7 @@ const TOP: f32 = 0.2;
 /// The least room between the glass and the screen's edges.
 const MARGIN: f32 = 16.0;
 
-pub(super) use amane_kit::area::Area;
+pub(super) use emaki_kit::area::Area;
 
 /// The glass this moment, in the surface's coordinates.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]

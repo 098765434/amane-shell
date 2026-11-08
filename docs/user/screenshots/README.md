@@ -8,14 +8,14 @@ The pictures the [README](../../../README.md) shows, one per slot, in both theme
 | `dock-dark.png`, `dock-light.png` | the dock risen, with a few windows and pins |
 | `launcher-dark.png`, `launcher-light.png` | the launcher with a search typed and results |
 | `quick-settings-dark.png`, `quick-settings-light.png` | the Quick Settings grid |
-| `settings-dark.png`, `settings-light.png` | Shell Settings on the Appearance page |
+| `settings-dark.png`, `settings-light.png` | Emaki Settings on the Appearance page |
 
 ## Taking one
 
 - **`grim`**, on the region, at **2× scale**: `grim -s 2 -g "$(slurp)" bar-dark.png`. Don't use
   `niri msg action screenshot-window`: it puts the picture on the clipboard, and layer surfaces
   such as the bar aren't windows.
-- **Both themes.** Take the dark one, switch in Shell Settings › Appearance (or set
+- **Both themes.** Take the dark one, switch in Emaki Settings › Appearance (or set
   `"mode": "light"` in `appearance.json`), and take the light one from the same place.
 - **Crop** to the surface and a little wallpaper around it; the full screen shows whatever else
   is open.

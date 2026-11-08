@@ -9,10 +9,10 @@ use std::thread;
 use std::time::Duration;
 
 use amane::{Column, Service, watch_file};
-use amane_kit::buttons::{PushButton, Style};
-use amane_kit::color::Accent;
-use amane_kit::form::FormRow;
-use amane_kit::icons::{ICON_CHECK, ICON_UPDATE};
+use emaki_kit::buttons::{PushButton, Style};
+use emaki_kit::color::Accent;
+use emaki_kit::form::FormRow;
+use emaki_kit::icons::{ICON_CHECK, ICON_UPDATE};
 use chrono::Utc;
 
 use super::controls;
@@ -22,8 +22,8 @@ use super::repo::short;
 use crate::View;
 use crate::{group, groups};
 
-use amane_kit::service::ServiceExt as _;
-pub use amane_nixos::lock::{
+use emaki_kit::service::ServiceExt as _;
+pub use emaki_nixos::lock::{
     Check, Input, InputChange, check_path, message, parse_lock, read_check,
 };
 
@@ -60,7 +60,7 @@ impl Checked {
     /// check found everything current), so the tile and the card clear
     /// before the timer's next run.
     pub fn clear() {
-        if let Err(error) = amane_nixos::lock::clear_check() {
+        if let Err(error) = emaki_nixos::lock::clear_check() {
             log::warn!("couldn't keep the update check: {error}");
         }
     }
@@ -68,7 +68,7 @@ impl Checked {
     /// "2 h ago", "yesterday".
     fn ago(&self) -> String {
         match self.0.checked {
-            Some(when) => amane_kit::format::ago((Utc::now() - when).to_std().unwrap_or_default()),
+            Some(when) => emaki_kit::format::ago((Utc::now() - when).to_std().unwrap_or_default()),
             None => String::from("never"),
         }
     }
@@ -287,7 +287,7 @@ fn friendly(input: &str) -> Option<&'static str> {
         "nixpkgs" => "NixOS packages",
         "home-manager" => "Home Manager",
         "niri" | "niri-fork" => "Compositor",
-        "amane-shell" => "Shell",
+        "emaki" => "Shell",
         "amane" => "Shell toolkit",
         "lanzaboote" => "Secure Boot",
         "disko" => "Disk layout",

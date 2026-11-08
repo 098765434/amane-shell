@@ -1,10 +1,10 @@
 //! A phone's screen: whether it can be shown (adb has the phone, or it was
-//! set up before), and opening it in `amane-mirror`. A phone set up once is
-//! remembered in the file Messages reads too (`amane_phone::shared::screen`).
+//! set up before), and opening it in `emaki-mirror`. A phone set up once is
+//! remembered in the file Messages reads too (`emaki_phone::shared::screen`).
 
 use amane::Service;
-use amane_phone::shared::screen as shared;
-use amane_phone::{Adb, PhoneDevice};
+use emaki_phone::shared::screen as shared;
+use emaki_phone::{Adb, PhoneDevice};
 
 use super::MIRROR_APP;
 

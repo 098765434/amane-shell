@@ -15,12 +15,12 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use amane_process::{Cmd, Failure, Stopper};
+use emaki_process::{Cmd, Failure, Stopper};
 use serde_json::Value;
 
 use crate::Config;
 use crate::lock::{InputChange, diff_locks};
-use amane_base::sync::Locked as _;
+use emaki_base::sync::Locked as _;
 
 /// How many of the last lines nix said a failed build's message keeps.
 const FAILED_LINES: usize = 15;
@@ -92,7 +92,7 @@ pub struct Progress {
     pub running: u64,
     /// Builds and downloads that failed.
     pub failed: u64,
-    /// What nix is on: "building amane-shell", "fetching linux-7.2.10".
+    /// What nix is on: "building emaki", "fetching linux-7.2.10".
     pub current: Option<String>,
     /// Before anything builds or downloads: nix is still evaluating.
     pub evaluating: bool,
@@ -217,7 +217,7 @@ impl Steps {
         command: &Cmd,
         stage: Stage,
         each_stderr_line: &mut dyn FnMut(&str),
-    ) -> Result<amane_process::Output, StepError> {
+    ) -> Result<emaki_process::Output, StepError> {
         if self.cancelled() {
             return Err(StepError::Cancelled);
         }
@@ -362,7 +362,7 @@ impl Steps {
     pub fn activate(&self, config: &Config, out: &Path, mode: Mode) -> Result<(), String> {
         let helper = fs::canonicalize(&config.helper).map_err(|_| {
             String::from(
-                "amane-nixos-activate isn't in the running system yet: switch once by hand \
+                "emaki-nixos-activate isn't in the running system yet: switch once by hand \
                  (sudo nixos-rebuild switch) to a configuration with modules/managed.nix",
             )
         })?;
@@ -598,7 +598,7 @@ mod tests {
         static STUB: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
         STUB.get_or_init(|| {
             let path =
-                std::env::temp_dir().join(format!("amane-nixos-stub-{}", std::process::id()));
+                std::env::temp_dir().join(format!("emaki-nixos-stub-{}", std::process::id()));
             let script = "#!/bin/sh\nhere=$(dirname \"$0\"); name=$(basename \"$0\")\n\
                           echo \"$name $*\" >> \"$here/calls\"\n. \"$here/$name.body\"\n";
             fs::write(&path, script).unwrap();
@@ -616,7 +616,7 @@ mod tests {
     impl Fakes {
         fn new(name: &str) -> Self {
             let dir =
-                std::env::temp_dir().join(format!("amane-nixos-{name}-{}", std::process::id()));
+                std::env::temp_dir().join(format!("emaki-nixos-{name}-{}", std::process::id()));
             let _ = fs::remove_dir_all(&dir);
             fs::create_dir_all(dir.join("repo")).unwrap();
             fs::create_dir_all(dir.join("profiles")).unwrap();
@@ -639,7 +639,7 @@ mod tests {
         /// another test's thread forks can't be run until that child execs
         /// ("text file busy"), so no test writes one.
         fn program(&self, name: &str, body: &str) {
-            amane_base::fs::write_whole(&self.dir.join(format!("{name}.body")), body).unwrap();
+            emaki_base::fs::write_whole(&self.dir.join(format!("{name}.body")), body).unwrap();
         }
 
         fn config(&self) -> Config {
@@ -858,11 +858,11 @@ echo "• Updated input 'nixpkgs'" >&2"#,
         assert!(!log.progress.evaluating);
 
         log.event(
-            r#"{"action":"start","id":2,"level":4,"parent":1,"text":"building '/nix/store/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-amane-shell-0.1.0.drv'","type":105}"#,
+            r#"{"action":"start","id":2,"level":4,"parent":1,"text":"building '/nix/store/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-emaki-0.1.0.drv'","type":105}"#,
         );
         assert_eq!(
             log.progress.current.as_deref(),
-            Some("building amane-shell-0.1.0")
+            Some("building emaki-0.1.0")
         );
 
         log.event(r#"{"action":"result","id":1,"type":105,"fields":[3,7,1,0]}"#);

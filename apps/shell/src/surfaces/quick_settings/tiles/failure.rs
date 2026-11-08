@@ -6,12 +6,12 @@ use std::cell::Cell;
 use std::time::{Duration, Instant};
 
 use amane::{Service, ServiceError};
-use amane_kit::motion;
+use emaki_kit::motion;
 
 /// How long a row shows a failure after it happened.
 pub const SHOWN_FOR: Duration = Duration::from_secs(10);
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// A failure's time to show ran out: the rows that showed it draw again.
     Expired
 }

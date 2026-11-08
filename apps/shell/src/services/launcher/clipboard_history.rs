@@ -1,6 +1,6 @@
 //! The launcher's clipboard history: what's been copied, newest first, for
 //! its Clipboard mode to paste again. Off until it's turned on, and then
-//! kept in `$XDG_STATE_HOME/amane-shell/clipboard/`, an index and a file a
+//! kept in `$XDG_STATE_HOME/emaki/clipboard/`, an index and a file a
 //! copy.
 //!
 //! It follows the clipboard through amane's `ClipboardWatcher` (the
@@ -22,13 +22,13 @@ use std::time::Duration;
 
 use amane::serde::{Deserialize, Serialize};
 use amane::{ClipboardWatcher, Service, Subscription, Windows};
-use amane_kit::settings::ClipboardHistory as Settings;
+use emaki_kit::settings::ClipboardHistory as Settings;
 
 use crate::services::run_now;
 use crate::services::state::{self, State, state_file};
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// The history changed: what read the clips draws again.
     pub Clips
 }
@@ -224,13 +224,13 @@ fn take(settings: &Settings, types: &[String]) {
         mime,
         preview,
         bytes: bytes.len(),
-        at: amane_kit::time::unix_s(),
+        at: emaki_kit::time::unix_s(),
         app,
     };
     let path = clip.path();
     if !path.exists() {
         // written whole: named by what it holds, a half-written one would never be redone
-        if let Err(e) = amane_kit::fs::write_whole(&path, &bytes) {
+        if let Err(e) = emaki_kit::fs::write_whole(&path, &bytes) {
             log::warn!("clipboard history: {}: {e}", path.display());
             return;
         }

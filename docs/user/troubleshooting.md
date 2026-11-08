@@ -3,12 +3,12 @@
 **Start with the log.** The shell and its apps log to the journal:
 
 ```sh
-journalctl --user -u amane-shell -b          # the shell, this boot
-journalctl --user -u amane-drop -b           # Drop
-journalctl --user -u amane-assistant -b      # the assistant's daemon
+journalctl --user -u emaki -b          # the shell, this boot
+journalctl --user -u emaki-drop -b           # Drop
+journalctl --user -u emaki-assistant -b      # the assistant's daemon
 ```
 
-`AMANE_LOG=debug` in the unit's environment says more
+`EMAKI_LOG=debug` in the unit's environment says more
 ([configure.md](configure.md#environment-variables)). Run from a terminal, the shell logs to
 stderr instead.
 
@@ -19,7 +19,7 @@ generates. Plain, square, unblurred surfaces mean the rules aren't in niri's con
 stale.
 
 1. Check the marker lines are in your niri config and filled:
-   `grep -c 'amane layer-rules' ~/.config/niri/config.kdl` should say `2`, with rules between.
+   `grep -c 'emaki layer-rules' ~/.config/niri/config.kdl` should say `2`, with rules between.
 2. Run `./gen-layer-rules.sh ~/.config/niri/config.kdl` from the repository, then
    `niri msg action load-config-file`. If your config is generated (home-manager), pass the
    source file instead and rebuild.
@@ -31,15 +31,15 @@ so on it the shell lights its edges itself and goes without blur
 
 ## A program's item is missing from the bar
 
-Status apps (Drop, train-watch, your own) put their items up over `org.amane.StatusBar1`.
+Status apps (Drop, train-watch, your own) put their items up over `org.emaki.StatusBar1`.
 
 - **Drop started before the shell.** Its item comes back by itself once the bar owns the name;
-  nothing to do but wait a second. If it doesn't, `systemctl --user restart amane-drop`.
+  nothing to do but wait a second. If it doesn't, `systemctl --user restart emaki-drop`.
 - **Another program owns the name.** The shell logs `another program serves
-  org.amane.StatusBar1; status apps go there` and leaves them to it. `busctl --user status org.amane.StatusBar1` says who.
-- **The item is hidden.** Shell Settings › Status Bar lists programs' items with a switch each;
+  org.emaki.StatusBar1; status apps go there` and leaves them to it. `busctl --user status org.emaki.StatusBar1` says who.
+- **The item is hidden.** Emaki Settings › Status Bar lists programs' items with a switch each;
   `status-bar apps list` over the socket says `hidden`.
-- **It's an Activity, not an item**, and the app's Activities are off in Shell Settings › Status
+- **It's an Activity, not an item**, and the app's Activities are off in Emaki Settings › Status
   Bar › Activities.
 
 Testing a status app beside the running desktop is in
@@ -63,11 +63,11 @@ there is one (the others cost memory).
 ## The assistant doesn't answer
 
 The launcher's assistant is a daemon beside the shell, started by a **socket unit** on
-`$XDG_RUNTIME_DIR/amane-assistant.sock` and stopped after five minutes idle.
+`$XDG_RUNTIME_DIR/emaki-assistant.sock` and stopped after five minutes idle.
 
-- `systemctl --user status amane-assistant.socket amane-assistant.service`: the socket should be
+- `systemctl --user status emaki-assistant.socket emaki-assistant.service`: the socket should be
   active (listening) even while the service is stopped.
-- `printf 'assistant\nstatus\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock` answers what the daemon
+- `printf 'assistant\nstatus\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock` answers what the daemon
   runs (`cactus 4.0.0 (3)`), or `not connected`.
 - The models come from the flake on x86_64-linux only; elsewhere the daemon builds without an
   engine and only the rules answer ([assistant.md](features/assistant.md#the-daemon)).
@@ -76,8 +76,8 @@ The launcher's assistant is a daemon beside the shell, started by a **socket uni
 
 ## Passwords don't fill
 
-- `printf 'passwords\nstatus\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock` says whether the vault
-  is configured, unlocked and synced; Shell Settings › Passwords does the same.
+- `printf 'passwords\nstatus\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock` says whether the vault
+  is configured, unlocked and synced; Emaki Settings › Passwords does the same.
 - Fill needs the niri fork, which tells the shell which window has the field. Browsers are left
   out on purpose: their Bitwarden extension checks the website itself
   ([passwords.md](features/passwords.md)).
@@ -91,7 +91,7 @@ shares its cgroup and goes with it: give it a unit of its own
 
 ## Settings don't take
 
-The shell follows `~/.config/amane-shell/*.json` as they change. A file that fails to parse
+The shell follows `~/.config/emaki/*.json` as they change. A file that fails to parse
 is logged (`couldn't read appearance.json: …`) and the defaults are used until it parses
-again. `AMANE_*` variables in the unit's environment win over the file while set
+again. `EMAKI_*` variables in the unit's environment win over the file while set
 ([configure.md](configure.md)).

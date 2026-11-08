@@ -12,10 +12,10 @@ use crate::services::power::keyboard_backlight::KeyboardBacklight;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::surfaces::quick_settings::tile::QuickToggle;
-use amane_kit::buttons::{Segment, SegmentedButton};
-use amane_kit::icons::ICON_KEYBOARD_LIGHT;
-use amane_kit::layout::boxed;
-use amane_kit::slider::Slider;
+use emaki_kit::buttons::{Segment, SegmentedButton};
+use emaki_kit::icons::ICON_KEYBOARD_LIGHT;
+use emaki_kit::layout::boxed;
+use emaki_kit::slider::Slider;
 
 thread_local! {
     // what turning it back on restores; none means the brightest
@@ -55,7 +55,7 @@ pub(crate) fn toggle() -> Option<QuickToggle> {
     let restore = LAST.get().unwrap_or(max);
 
     Some(
-        QuickToggle::new("amane.qs.keyboard", ICON_KEYBOARD_LIGHT, "Keyboard")
+        QuickToggle::new("emaki.qs.keyboard", ICON_KEYBOARD_LIGHT, "Keyboard")
             .subtitle(describe(level, max))
             .checked(level > 0)
             .on_toggle(move |on| KeyboardBacklight::set(if on { restore } else { 0 }))
@@ -69,7 +69,7 @@ pub(crate) fn page() -> DetailPage {
     drop(light);
     let restore = LAST.get().unwrap_or(max);
 
-    DetailPage::new("amane.qs.keyboard.page", "Keyboard Brightness")
+    DetailPage::new("emaki.qs.keyboard.page", "Keyboard Brightness")
         .subtitle(describe(level, max))
         .switch(level > 0, move |on| {
             KeyboardBacklight::set(if on { restore } else { 0 })
@@ -78,7 +78,7 @@ pub(crate) fn page() -> DetailPage {
             let picker = match steps(max) {
                 Some(names) => {
                     let segments = names.iter().map(|name| Segment::new(*name)).collect();
-                    SegmentedButton::new("amane.qs.keyboard.level", segments, Some(level as usize))
+                    SegmentedButton::new("emaki.qs.keyboard.level", segments, Some(level as usize))
                         .on_select(|index, _| KeyboardBacklight::set(index as u32))
                         .build()
                 }

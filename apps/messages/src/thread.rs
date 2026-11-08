@@ -19,14 +19,14 @@ use amane::{
     Button, Center, Clipboard, Color, Column, End, Image, Radius, Rectangle, Row, ScrollArea,
     Service, Shadow, Size, Stack, Start, Text, Widget,
 };
-use amane_kit::buttons::{Actions, PushButton, Style, interactive, state_fill};
-use amane_kit::color::with_alpha;
-use amane_kit::layout::{boxed, caption, pad, text_height, text_width};
-use amane_kit::material::{self, Level};
-use amane_kit::menu::{self, MenuItem};
-use amane_kit::style;
-use amane_kit::tokens::{Styled, sys};
-use amane_phone::{
+use emaki_kit::buttons::{Actions, PushButton, Style, interactive, state_fill};
+use emaki_kit::color::with_alpha;
+use emaki_kit::layout::{boxed, caption, pad, text_height, text_width};
+use emaki_kit::material::{self, Level};
+use emaki_kit::menu::{self, MenuItem};
+use emaki_kit::style;
+use emaki_kit::tokens::{Styled, sys};
+use emaki_phone::{
     PhoneDevice, PhoneMessages, SMS_PAGE, SmsAttachment, SmsKind, SmsMessage, SmsThread,
 };
 
@@ -214,7 +214,7 @@ fn new_below() -> Rectangle {
             .align_child(Center, Center)
             .child(
                 Row::new(vec![
-                    boxed(amane_kit::layout::icon(
+                    boxed(emaki_kit::layout::icon(
                         ICON_DOWN,
                         16.0,
                         sys::color::accent::fg(),
@@ -468,7 +468,7 @@ fn context_menu(message: &SmsMessage) {
                 {
                     PhoneMessages::download(part);
                 } else {
-                    amane_kit::launch::open(&target);
+                    emaki_kit::launch::open(&target);
                 }
             }
             Some(Pick::Retry) => retry(&message),
@@ -552,7 +552,7 @@ fn attachment(part: &SmsAttachment) -> Rectangle {
                     .color(Color::WHITE),
             )
         } else {
-            boxed(amane_kit::layout::icon(ICON_PLAY, 28.0, Color::WHITE))
+            boxed(emaki_kit::layout::icon(ICON_PLAY, 28.0, Color::WHITE))
         };
         over.push(boxed(
             Rectangle::new()
@@ -613,7 +613,7 @@ fn file_chip(part: &SmsAttachment, key: &str, fetching: bool) -> Rectangle {
         .align_child(Start, Center)
         .child(
             Row::new(vec![
-                boxed(amane_kit::layout::icon(
+                boxed(emaki_kit::layout::icon(
                     ICON_FILE,
                     20.0,
                     style::label_primary(),
@@ -651,7 +651,7 @@ fn link_chip(link: &str) -> Rectangle {
             .align_child(Start, Center)
             .child(
                 Row::new(vec![
-                    boxed(amane_kit::layout::icon(
+                    boxed(emaki_kit::layout::icon(
                         ICON_LINK,
                         16.0,
                         sys::color::accent::bg(),
@@ -668,7 +668,7 @@ fn link_chip(link: &str) -> Rectangle {
         key,
         false,
         Actions::press(move || {
-            amane_kit::launch::open(&url);
+            emaki_kit::launch::open(&url);
         }),
     )
 }

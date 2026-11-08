@@ -23,7 +23,7 @@ pub(super) fn actions(n: &Notification, width: f32, color: Color) -> Row {
             let key = action.key().to_string();
             boxed(
                 PushButton::new(
-                    format!("amane.notification.{id}.action.{key}"),
+                    format!("emaki.notification.{id}.action.{key}"),
                     action.label(),
                 )
                 .width(each)
@@ -38,7 +38,7 @@ pub(super) fn actions(n: &Notification, width: f32, color: Color) -> Row {
     for (label, command) in phone {
         buttons.push(boxed(
             PushButton::new(
-                format!("amane.notification.{id}.action.phone.{label}"),
+                format!("emaki.notification.{id}.action.phone.{label}"),
                 label,
             )
             .width(each)

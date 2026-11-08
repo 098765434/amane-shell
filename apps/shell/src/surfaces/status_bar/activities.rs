@@ -21,7 +21,7 @@ pub use expanded::popup;
 use expanded::*;
 use sources::*;
 
-use amane_kit::shell_ipc::Activities;
+use emaki_kit::shell_ipc::Activities;
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -31,13 +31,13 @@ use amane::{
     Apps, Arc, Canvas, Cap, Center, Color, ConstraintAdjustment, Gravity, Image, Media, Parent,
     Popup, Rectangle, Row, Service, Shape, Start, Text, Widget, window_size,
 };
-use amane_kit::color::Accent;
-use amane_kit::icons::{
+use emaki_kit::color::Accent;
+use emaki_kit::icons::{
     ICON_MUSIC, ICON_PAUSE, ICON_PLAY, ICON_RECORD, ICON_SCREEN_SHARE, ICON_SKIP_NEXT,
     ICON_SKIP_PREVIOUS, ICON_TIMER, named,
 };
-use amane_kit::settings::{BUILTIN_ACTIVITIES, status_bar};
-use amane_status::{ActivityButton, ActivityContent, ItemIcon, Tint, Trailing};
+use emaki_kit::settings::{BUILTIN_ACTIVITIES, status_bar};
+use emaki_status::{ActivityButton, ActivityContent, ItemIcon, Tint, Trailing};
 
 use crate::services::desktop::activities::{self as registry, Live};
 use crate::services::desktop::privacy::{CastTarget, Privacy, stop_cast};
@@ -46,17 +46,17 @@ use crate::services::launcher::timer;
 use crate::surfaces::launcher;
 use crate::surfaces::quick_settings::{self, Page};
 use crate::tokens::{Styled, sys};
-use amane_kit::buttons::{DrawnButton, IconButton, PushButton, Style};
-use amane_kit::card::{Card, Variant};
-use amane_kit::layout::{boxed, cursor, icon, text_width};
-use amane_kit::material::{self, FillLevel, Level, Material};
-use amane_kit::motion;
+use emaki_kit::buttons::{DrawnButton, IconButton, PushButton, Style};
+use emaki_kit::card::{Card, Variant};
+use emaki_kit::layout::{boxed, cursor, icon, text_width};
+use emaki_kit::material::{self, FillLevel, Level, Material};
+use emaki_kit::motion;
 
 use super::{BAR_NS, item, menu_edge};
 
 /// The expanded view's popup namespace; it hangs under the bar, whose
 /// layer rule frosts its popups.
-pub const POPUP_NS: &str = "amane.status-bar.activity";
+pub const POPUP_NS: &str = "emaki.status-bar.activity";
 
 /// How long a paused player keeps its activity.
 const PAUSED_FOR: Duration = Duration::from_secs(5 * 60);
@@ -87,7 +87,7 @@ pub const NOW_PLAYING: &str = BUILTIN_ACTIVITIES[0];
 pub const TIMER: &str = BUILTIN_ACTIVITIES[1];
 pub const SHARING: &str = BUILTIN_ACTIVITIES[2];
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// A countdown's second turned over, or the expanded view opened or
     /// closed: the bar and the view draw again.
     pub Tick

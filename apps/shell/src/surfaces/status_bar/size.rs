@@ -5,7 +5,7 @@
 //! Regular and Comfortable are held here until Penpot has them
 //! (`docs/developer/design-system/penpot-backlog.md`).
 
-use amane_kit::settings::{BarSize, status_bar};
+use emaki_kit::settings::{BarSize, status_bar};
 
 use crate::tokens::{TextStyle, bar, sys};
 

@@ -3,20 +3,20 @@
 //! it went. Its Changes and Log views take the page's place.
 
 use amane::{Center, Column, Row, ScrollArea, Service, Size, Text, Widget};
-use amane_kit::app::Dialog;
-use amane_kit::buttons::{PushButton, Style};
-use amane_kit::card::Card;
-use amane_kit::layout::boxed;
-use amane_kit::list::{List, ListItem, trailing_text, with_row_width};
-use amane_kit::material::{self, Level};
-use amane_kit::spinner::{ProgressBar, Spinner};
-use amane_kit::tokens::{Styled, sys};
+use emaki_kit::app::Dialog;
+use emaki_kit::buttons::{PushButton, Style};
+use emaki_kit::card::Card;
+use emaki_kit::layout::boxed;
+use emaki_kit::list::{List, ListItem, trailing_text, with_row_width};
+use emaki_kit::material::{self, Level};
+use emaki_kit::spinner::{ProgressBar, Spinner};
+use emaki_kit::tokens::{Styled, sys};
 
 use super::job::{BuildJob, Kind, Mode, Phase, Target};
 use super::nixos::{Managed, Snapshot};
 use super::repo::short;
 use crate::{View, page_width};
-use amane_kit::layout::caption;
+use emaki_kit::layout::caption;
 
 fn button(id: &str, label: &str, style: Style, press: impl Fn() + 'static) -> Box<dyn Widget> {
     boxed(
@@ -68,7 +68,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
         Phase::Idle => (
             boxed(line(format!(
                 "{} waiting · {}",
-                amane_kit::format::count(changes.len(), "change", "changes"),
+                emaki_kit::format::count(changes.len(), "change", "changes"),
                 changes.join(" · ")
             ))),
             vec![

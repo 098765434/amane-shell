@@ -13,14 +13,14 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 use amane::{Apps, Column, DesktopApp, MimeApps, Rectangle, Service, TextInput, Widget};
-use amane_kit::app::{Dialog, field_box, text_field};
-use amane_kit::buttons::PushButton;
-use amane_kit::color::Accent;
-use amane_kit::dropdown::Dropdown;
-use amane_kit::form::FormRow;
-use amane_kit::icons::{ICON_MUSIC, ICON_TERMINAL};
-use amane_kit::layout::boxed;
-use amane_kit::menu::MenuItem;
+use emaki_kit::app::{Dialog, field_box, text_field};
+use emaki_kit::buttons::PushButton;
+use emaki_kit::color::Accent;
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::form::FormRow;
+use emaki_kit::icons::{ICON_MUSIC, ICON_TERMINAL};
+use emaki_kit::layout::boxed;
+use emaki_kit::menu::MenuItem;
 
 use crate::{View, group, groups};
 
@@ -384,7 +384,7 @@ fn terminal_exec() -> bool {
 }
 
 fn terminals_file() -> PathBuf {
-    amane_kit::paths::config().join("xdg-terminals.list")
+    emaki_kit::paths::config().join("xdg-terminals.list")
 }
 
 /// The ids `xdg-terminals.list` lists, most wanted first.
@@ -403,12 +403,12 @@ fn choose_terminal(id: &str) -> Result<(), String> {
     let mut lines = vec![String::from(id)];
     lines.extend(terminals_listed().into_iter().filter(|line| line != id));
     let file = terminals_file();
-    amane_kit::fs::write_whole(&file, lines.join("\n") + "\n")
+    emaki_kit::fs::write_whole(&file, lines.join("\n") + "\n")
         .map_err(|e| format!("{}: {e}", file.display()))
 }
 
 /// The terminal row, while `xdg-terminal-exec` is installed.
-fn terminal() -> Option<amane_kit::form::Group> {
+fn terminal() -> Option<emaki_kit::form::Group> {
     if !terminal_exec() {
         return None;
     }

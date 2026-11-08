@@ -1,14 +1,14 @@
 # App scaffolding
 
 What an app beside the shell needs to look like the shell (`crates/kit/src/platform/app.rs`,
-`amane_kit::app`): its window, text fields, a dialog and a sidebar to move between pages. Shell
+`emaki_kit::app`): its window, text fields, a dialog and a sidebar to move between pages. Shell
 Settings is built from it ([settings-app.md](../../user/features/settings-app.md)).
 
 ```rust
-use amane_kit::app::{app, app_window, standard_shortcut};
+use emaki_kit::app::{app, app_window, standard_shortcut};
 
 fn main() {
-    app("amane-example").normal_window("main", main_window).run();
+    app("emaki-example").normal_window("main", main_window).run();
 }
 
 fn main_window() -> amane::Window {
@@ -33,7 +33,7 @@ fn main_window() -> amane::Window {
 | `Dialog` | the kit's alert, re-exported; `.open(parent)` shows it in a modal window over the app's ([components.md](components.md#dialog)) |
 
 The other controls (buttons, switch, radio, dropdown) are in [controls.md](controls.md); the
-settings files a shell app changes are `amane_kit::settings` ([settings-app.md](../../user/features/settings-app.md#the-files)).
+settings files a shell app changes are `emaki_kit::settings` ([settings-app.md](../../user/features/settings-app.md#the-files)).
 
 ## Sidebar
 
@@ -64,5 +64,5 @@ amane's side, its normal windows, is [`windows/app-windows.md`](https://github.c
 Whether the window is frosted is read from the config: the shell's generated niri config defines
 the window material with the `window-rule` that frosts an amane app's windows
 (`layer_rules::APP_IDS`; see [layer-rules.md](../integration/layer-rules.md)). An app's id is a
-constant in `amane_kit::app_ids`, which the app names itself with; one that should be frosted is
+constant in `emaki_kit::app_ids`, which the app names itself with; one that should be frosted is
 added to `APP_IDS`, and one that shouldn't to `NO_RULE`, with why.

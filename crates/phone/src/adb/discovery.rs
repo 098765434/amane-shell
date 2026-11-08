@@ -10,7 +10,7 @@ use std::net::IpAddr;
 use std::sync::{Mutex, mpsc};
 use std::thread;
 
-use amane_base::sync::Locked as _;
+use emaki_base::sync::Locked as _;
 use mdns_sd::{ServiceDaemon, ServiceEvent};
 
 const PAIRING: &str = "_adb-tls-pairing._tcp.local.";

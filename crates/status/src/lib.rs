@@ -1,6 +1,6 @@
-//! Status apps: a program's own item in amane-shell's status bar, and its
+//! Status apps: a program's own item in emaki's status bar, and its
 //! activities (something going on now, like a download or a train on its
-//! way), over the bar's session-bus service `org.amane.StatusBar1`.
+//! way), over the bar's session-bus service `org.emaki.StatusBar1`.
 //!
 //! The wire types ([`ItemSpec`], [`ActivityContent`] and the rest, sent as
 //! versioned JSON) are shared with the bar, which serves the interface. A

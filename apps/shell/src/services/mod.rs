@@ -74,7 +74,7 @@ pub mod vault;
 pub mod state;
 mod wake;
 
-pub use amane_kit::process::{Latest, installed, run, run_now};
+pub use emaki_kit::process::{Latest, installed, run, run_now};
 pub use wake::Wake;
 
 /// Starts `argv` (a program and its arguments, as they are) without waiting, in a scope of

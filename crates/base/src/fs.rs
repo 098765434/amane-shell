@@ -111,7 +111,7 @@ mod tests {
     use std::os::unix::fs::PermissionsExt as _;
 
     fn folder(name: &str) -> PathBuf {
-        std::env::temp_dir().join(format!("amane-base-{name}-{}", std::process::id()))
+        std::env::temp_dir().join(format!("emaki-base-{name}-{}", std::process::id()))
     }
 
     #[test]

@@ -30,7 +30,7 @@ widgets.
 | `timer` | the launcher's one countdown; a timer on amane's event loop runs it out, then a notification says so | Start Timer / Cancel Timer |
 | `clipboard_history` | amane's `ClipboardWatcher` while it's on (data-control, no program started); the copies under `clipboard/` | `wl-copy`, then `wtype` Ctrl+V (Ctrl+Shift+V in a terminal) |
 | `file_search` | LocalSearch's index through `tinysparql`, else `fd` over the home folder, off the UI thread | — |
-| `status_apps` | `org.amane.StatusBar1` on the session bus: other programs' items and Activities, each kept with its owner's unique name, dropped when that name leaves ([status-apps.md](status-apps.md)) | the programs' own calls; clicks, picks and drops go back as unicast signals |
+| `status_apps` | `org.emaki.StatusBar1` on the session bus: other programs' items and Activities, each kept with its owner's unique name, dropped when that name leaves ([status-apps.md](status-apps.md)) | the programs' own calls; clicks, picks and drops go back as unicast signals |
 | `desktop/activities` | the Activities from the bus, by handle: owner, content, when last updated, when it goes (a kit `marker!`) | `status-bar activities end` / `press`, a button in the expanded view, its program leaving, 8 hours |
 | `system_stats` | `/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, `/proc/net/route`, `/sys/class/hwmon`, `/proc/mounts` and `statvfs`, on one 2 s tick, only while a system widget shows (asleep otherwise) | — |
 
@@ -43,7 +43,7 @@ without a probe write), and the page has the command to copy. The shell never es
 **Night light owns `wlsunset`.** The compositor gives the color ramps to one program at a time,
 so turning night light on stops any other `wlsunset`. A `spawn-at-startup "wlsunset" …` line in
 the niri config would fight the shell's, so remove it. By default it's on at the chosen
-temperature until turned off; Shell Settings' Displays page can give it a schedule (sunset to
+temperature until turned off; Emaki Settings' Displays page can give it a schedule (sunset to
 sunrise, or set hours), which `wlsunset` follows by itself. Its state is kept in the state file
 `night-light.json`, so it comes back on after a restart; the IPC `state` verb still answers the old
 one-line form (`on 4000 manual`). A last-used VPN is kept beside it, in `vpn.json`.
@@ -83,17 +83,17 @@ backdrop readings in [`graphics/blur.md`](https://github.com/098765434/amane/blo
 | `Notifications` | toasts and the notification center; amane owns `org.freedesktop.Notifications` ([`system/notifications.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md)) |
 | `Audio` | the bar's volume, the Sound card and page ([`system/audio.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/audio.md)) |
 | `Network`, `Bluetooth` | the bar's icons, the Wi‑Fi and Bluetooth tiles and pages; `Bluetooth` also the pairing alert and the low-battery notices, and the shell serves its pairing agent |
-| `KdeConnect`, `PhoneMessages` | the Phone control and page, the bar's phone icon, the pairing alert and the phone's low-battery notices; `PhoneMessages` only in `amane-messages` ([amane-phone](../../../crates/phone/README.md), [phone.md](../../user/features/phone.md)) |
+| `KdeConnect`, `PhoneMessages` | the Phone control and page, the bar's phone icon, the pairing alert and the phone's low-battery notices; `PhoneMessages` only in `emaki-messages` ([emaki-phone](../../../crates/phone/README.md), [phone.md](../../user/features/phone.md)) |
 | `Battery`, `PowerProfile` | the bar's battery, the Battery page, power mode, the battery widgets ([`system/battery.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/battery.md), [`system/power-profile.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/power-profile.md)) |
 | `Brightness`, `Media` | the Display slider, Now Playing |
-| `Appearance` | the system's light/dark, accent, contrast and reduced motion (`amane_kit::theme`), Dark Style ([`system/appearance.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/appearance.md)) |
+| `Appearance` | the system's light/dark, accent, contrast and reduced motion (`emaki_kit::theme`), Dark Style ([`system/appearance.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/appearance.md)) |
 | `Backdrop` | adaptive glass: how bright the backdrop behind a blur shape is ([materials.md](../design-system/materials.md)) |
 
 ## Settings and state
 
-**Settings** live in `$XDG_CONFIG_HOME/amane-shell/` (else `~/.config/amane-shell/`), as JSON
-through amane's `Config` (`amane_kit::settings`). The running shell follows each file at once,
-whether [Shell Settings](../../user/features/settings-app.md), the launcher or a text editor changed it:
+**Settings** live in `$XDG_CONFIG_HOME/emaki/` (else `~/.config/emaki/`), as JSON
+through amane's `Config` (`emaki_kit::settings`). The running shell follows each file at once,
+whether [Emaki Settings](../../user/features/settings-app.md), the launcher or a text editor changed it:
 
 | File | Holds |
 |---|---|
@@ -102,7 +102,7 @@ whether [Shell Settings](../../user/features/settings-app.md), the launcher or a
 | `launcher.json` | the apps' layout, the search sources left out, quick keys, the clipboard history's settings |
 | `notifications.json` | each app's notification rule (banners and list, list only, off), by its desktop entry else its name |
 
-**State** lives in `$XDG_STATE_HOME/amane-shell/` (else `~/.local/state/amane-shell/`). A missing
+**State** lives in `$XDG_STATE_HOME/emaki/` (else `~/.local/state/emaki/`). A missing
 file means the default. Each state file is JSON with its format's version beside the data,
 `{"version": 1, "data": …}`, written whole through a part file and a rename
 (`services/state.rs`). A file from before this format, under the old name in the last column, is
@@ -124,22 +124,22 @@ again. The old readers go after 2027-01.
 
 Keep Awake keeps nothing: its holds are inhibitors tied to the running shell.
 
-**Caches** in `$XDG_CACHE_HOME/amane-shell/`, so Shell Settings can list what isn't running:
+**Caches** in `$XDG_CACHE_HOME/emaki/`, so Emaki Settings can list what isn't running:
 `tray-seen.json`, `status-apps-seen.json` (programs' items: id → name),
 `activities-seen.json` (the names activities gave) and `notifiers-seen.json` (apps that sent a
 notification: key → name).
 
-### amane-drop's files
+### emaki-drop's files
 
-[Drop](../../user/features/drop.md) keeps its own, followed live by Drop and Shell Settings alike:
+[Drop](../../user/features/drop.md) keeps its own, followed live by Drop and Emaki Settings alike:
 
 | File | Holds |
 |---|---|
-| `~/.config/amane-drop/grids.json` | the grids, their tiles, and tiles a row (`DropGrids`) |
-| `~/.config/amane-drop/sharing.json` | the SFTP and S3 accounts, Imgur's client ID, and what an upload's link does (`DropSharing`) |
-| `~/.config/amane-drop/secrets.json` | passwords and keys, mode 0600, only when no keyring answered `secret-tool` (`amane_kit::secrets`); otherwise they're in the keyring under `application amane-drop` |
-| `$XDG_STATE_HOME/amane-drop/dropbar.json` | each grid's Drop Bar: stacks of paths, by the grid's name |
-| `$XDG_STATE_HOME/amane-drop/shared.json` | Recently Shared: the last 10 links, with what they were and when |
+| `~/.config/emaki-drop/grids.json` | the grids, their tiles, and tiles a row (`DropGrids`) |
+| `~/.config/emaki-drop/sharing.json` | the SFTP and S3 accounts, Imgur's client ID, and what an upload's link does (`DropSharing`) |
+| `~/.config/emaki-drop/secrets.json` | passwords and keys, mode 0600, only when no keyring answered `secret-tool` (`emaki_kit::secrets`); otherwise they're in the keyring under `application emaki-drop` |
+| `$XDG_STATE_HOME/emaki-drop/dropbar.json` | each grid's Drop Bar: stacks of paths, by the grid's name |
+| `$XDG_STATE_HOME/emaki-drop/shared.json` | Recently Shared: the last 10 links, with what they were and when |
 
 ## While idle
 

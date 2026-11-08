@@ -10,7 +10,7 @@ use amane::{Horizontal, Key, Keyboard, Layer, LayerWindow, Margin, Vertical, Zon
 
 use super::bar;
 use crate::tokens::sys;
-use amane_kit::material;
+use emaki_kit::material;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Panel {
@@ -141,7 +141,7 @@ pub(crate) fn empty(window: LayerWindow) -> LayerWindow {
     window
         .visible(false)
         .blur_shapes(Vec::new())
-        .child(amane_kit::layout::blank())
+        .child(emaki_kit::layout::blank())
 }
 
 /// Takes keys as `keyboard` says, and closes the open panel on Escape.

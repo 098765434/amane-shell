@@ -15,7 +15,7 @@ pub(super) fn device_page(device: BluetoothDevice) -> DetailPage {
         None => String::from("Not Connected"),
     };
 
-    DetailPage::new("amane.qs.bluetooth.device", device.name())
+    DetailPage::new("emaki.qs.bluetooth.device", device.name())
         .subtitle(status)
         .on_back(close_device)
         .body(move |height| device_body(&device, operation, failure, height))
@@ -27,7 +27,7 @@ pub(super) fn device_body(
     failure: Option<String>,
     height: f32,
 ) -> Vec<Box<dyn Widget>> {
-    let id = |part: &str| format!("amane.qs.bluetooth.device.page.{part}");
+    let id = |part: &str| format!("emaki.qs.bluetooth.device.page.{part}");
     let mut rows: Vec<ListItem> = Vec::new();
 
     let label = if device.connected() {
@@ -89,7 +89,7 @@ pub(super) fn device_body(
 
     let column = Column::new(body).gap(sys::space::gap::l()).width(Parent);
     vec![boxed(
-        ScrollArea::new("amane.qs.bluetooth.device.page", column).height(height.max(1.0)),
+        ScrollArea::new("emaki.qs.bluetooth.device.page", column).height(height.max(1.0)),
     )]
 }
 
@@ -157,7 +157,7 @@ pub(super) fn open_device_menu(device: &BluetoothDevice) {
 pub(super) fn ask_forget(device: &BluetoothDevice) {
     let path = device.path().to_string();
     let ask = Dialog::new(
-        "amane.alert.bluetooth.forget",
+        "emaki.alert.bluetooth.forget",
         format!("Forget “{}”?", device.name()),
     )
     .message("It will have to pair again before it can connect.")

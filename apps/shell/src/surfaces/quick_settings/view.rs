@@ -2,8 +2,8 @@
 //! the sheet behind them, and the surface that holds it.
 
 use super::*;
-use amane_kit::layout::frame;
-use amane_kit::reveal::{self, Swell};
+use emaki_kit::layout::frame;
+use emaki_kit::reveal::{self, Swell};
 
 /// Steps the card's opening towards `open` and gives how far it is, a
 /// little past 1 on the spring. Closing is quicker than opening, and a

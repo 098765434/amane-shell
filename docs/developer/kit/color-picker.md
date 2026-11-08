@@ -1,10 +1,10 @@
 # Color picker
 
-`amane_kit::color_picker::ColorPicker` picks a color by dragging, by hex, or from the colors
+`emaki_kit::color_picker::ColorPicker` picks a color by dragging, by hex, or from the colors
 picked last.
 
 ```rust,ignore
-use amane_kit::color_picker::ColorPicker;
+use emaki_kit::color_picker::ColorPicker;
 
 ColorPicker::new("lab.tint", [0.11, 0.11, 0.12, 0.5])
     .width(260.0)

@@ -157,7 +157,7 @@ fn shader() -> Option<&'static Path> {
 
     PATH.get_or_init(|| {
         let dir = crate::paths::runtime().join(crate::app_ids::SHELL);
-        // named for its text, so the shell and Shell Settings of different builds don't
+        // named for its text, so the shell and Emaki Settings of different builds don't
         // overwrite each other's, and written to a part file first, so neither ever loads
         // half of one
         let mut hasher = std::collections::hash_map::DefaultHasher::new();

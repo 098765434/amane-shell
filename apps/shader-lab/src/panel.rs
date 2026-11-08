@@ -5,19 +5,19 @@
 use std::fmt::Write;
 
 use amane::{Clipboard, Color, Column, Rectangle, Row, Service, Text, TextInput, Widget};
-use amane_kit::app::{field_box, text_field};
-use amane_kit::buttons::{PushButton, Switch};
-use amane_kit::color_picker::{ColorPicker, parse_hex, to_color, to_hex};
-use amane_kit::dialog::Dialog;
-use amane_kit::dropdown::Dropdown;
-use amane_kit::kinetic::Axis;
-use amane_kit::lab::config::{Backdrop, Config, Kind};
-use amane_kit::lab::manifest::{ColorParam, Manifest, Param};
-use amane_kit::layout::{boxed, pad, text_height};
-use amane_kit::material::{self, Level};
-use amane_kit::scroll_view::ScrollView;
-use amane_kit::slider::Slider;
-use amane_kit::tokens::{Styled, sys};
+use emaki_kit::app::{field_box, text_field};
+use emaki_kit::buttons::{PushButton, Switch};
+use emaki_kit::color_picker::{ColorPicker, parse_hex, to_color, to_hex};
+use emaki_kit::dialog::Dialog;
+use emaki_kit::dropdown::Dropdown;
+use emaki_kit::kinetic::Axis;
+use emaki_kit::lab::config::{Backdrop, Config, Kind};
+use emaki_kit::lab::manifest::{ColorParam, Manifest, Param};
+use emaki_kit::layout::{boxed, pad, text_height};
+use emaki_kit::material::{self, Level};
+use emaki_kit::scroll_view::ScrollView;
+use emaki_kit::slider::Slider;
+use emaki_kit::tokens::{Styled, sys};
 
 use crate::configs::{self, Configs};
 use crate::effects::Effects;
@@ -443,7 +443,7 @@ fn copy_loader_line() {
     let radius = preview::radius_of(&lab, manifest);
 
     Clipboard::copy(format!(
-        "amane_kit::lab::look({slug:?}, {width:.1}, {height:.1}, {radius:.1})"
+        "emaki_kit::lab::look({slug:?}, {width:.1}, {height:.1}, {radius:.1})"
     ));
 }
 
@@ -562,7 +562,7 @@ fn time_section(lab: &Lab, manifest: Option<&Manifest>) -> (Column, f32) {
 
 /// The manifest's named sets of values; "Custom" while the values match none.
 fn presets(manifest: &Manifest, lab: &Lab) -> Rectangle {
-    let matches = |preset: &amane_kit::lab::manifest::ParamPreset| {
+    let matches = |preset: &emaki_kit::lab::manifest::ParamPreset| {
         let values = preset.values.iter().all(|(key, value)| {
             let param = manifest.params.iter().find(|param| &param.key == key);
 
@@ -640,7 +640,7 @@ fn color_row(manifest: &Manifest, param: &ColorParam, lab: &Lab) -> (Column, f32
     let id = format!("color.{}", param.key);
     let open = lab.picking.as_deref() == Some(id.as_str());
 
-    let field_id = amane_kit::intern::intern(&format!("lab.{}.{}", manifest.name, param.key));
+    let field_id = emaki_kit::intern::intern(&format!("lab.{}.{}", manifest.name, param.key));
 
     show(field_id, &to_hex(color));
 
@@ -760,7 +760,7 @@ pub fn number_row(number: Number, set: impl Fn(f32) + Clone + 'static) -> Row {
     let span = (max - min).max(f32::EPSILON);
     let position = ((value - min) / span * 100.0).round().clamp(0.0, 100.0) as u8;
 
-    let field_id = amane_kit::intern::intern(&id);
+    let field_id = emaki_kit::intern::intern(&id);
 
     show(field_id, &format_value(value, step, &unit));
 
@@ -940,7 +940,7 @@ fn setting(name: &str, control: impl Widget + 'static) -> Column {
     Column::new(vec![boxed(caption(name)), boxed(control)]).gap(sys::space::gap::xs())
 }
 
-pub use amane_kit::layout::caption;
+pub use emaki_kit::layout::caption;
 
 pub fn caption_height() -> f32 {
     text_height(sys::r#type::caption())

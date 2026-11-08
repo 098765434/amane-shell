@@ -2,7 +2,7 @@
 //! and where it lands.
 
 use super::*;
-use amane_kit::layout::frame;
+use emaki_kit::layout::frame;
 
 /// The surface says where the canvas is this frame.
 pub(crate) fn set_canvas_origin(x: f32, y: f32) {

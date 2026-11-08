@@ -1,7 +1,7 @@
 //! How the dock draws: the card, the highlights, the icons and their tooltip, the frost.
 
 use super::*;
-use amane_kit::reveal;
+use emaki_kit::reveal;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn build(
@@ -292,5 +292,5 @@ pub(super) fn icon_layers(
 /// The id of monitor `output`'s dock glass, for niri's readings of its
 /// backdrop.
 pub(super) fn glass_id(output: &str) -> u32 {
-    glass_region::shape_id(&format!("amane.dock.{output}"))
+    glass_region::shape_id(&format!("emaki.dock.{output}"))
 }

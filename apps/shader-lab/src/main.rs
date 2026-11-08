@@ -4,7 +4,7 @@
 //!
 //! Run it with `--effects apps/shader-lab/effects` to edit the source tree:
 //! shaders and manifests reload when saved, and looks are saved into
-//! `apps/shader-lab/configs`, where `amane_kit::lab::look` finds them.
+//! `apps/shader-lab/configs`, where `emaki_kit::lab::look` finds them.
 //! `--effect <folder>`, `--subject <n>`, `--backdrop <n>` and `--config
 //! <name>` set what it starts on, `--open <picker>` opens a colour picker;
 //! `--configs <dir>` saves looks elsewhere.
@@ -22,11 +22,11 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 use amane::{Key, Point, Row, Service, Size, Window, modifiers};
-use amane_kit::app::{app, app_window, standard_shortcut};
-use amane_kit::lab::config::{Backdrop, Config, Kind};
-use amane_kit::lab::manifest::{Manifest, Param};
-use amane_kit::layout::boxed;
-use amane_kit::tokens::sys;
+use emaki_kit::app::{app, app_window, standard_shortcut};
+use emaki_kit::lab::config::{Backdrop, Config, Kind};
+use emaki_kit::lab::manifest::{Manifest, Param};
+use emaki_kit::layout::boxed;
+use emaki_kit::tokens::sys;
 
 use effects::{Effects, flag};
 use history::History;
@@ -293,10 +293,10 @@ mod files {
 }
 
 fn main() {
-    amane_log::init(amane_kit::app_ids::SHADER_LAB);
-    amane_kit::migrate::from_amane();
-    amane_kit::lab::register(files::FILES);
-    app(amane_kit::app_ids::SHADER_LAB)
+    emaki_log::init(emaki_kit::app_ids::SHADER_LAB);
+    emaki_kit::migrate::from_amane();
+    emaki_kit::lab::register(files::FILES);
+    app(emaki_kit::app_ids::SHADER_LAB)
         .normal_window("main", main_window)
         .run();
 }

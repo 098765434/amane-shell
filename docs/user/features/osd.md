@@ -42,7 +42,7 @@ The niri config binds them to the socket, with the plain commands as a fallback 
 answers `ok` (it isn't running, or is older than this command):
 
 ```kdl
-XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nvolume\\nup\\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock)\" = ok ] || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+ -l 1.0"; }
+XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "[ \"$(printf 'osd\\nvolume\\nup\\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock)\" = ok ] || wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+ -l 1.0"; }
 ```
 
 hypridle dims through the same socket, `osd brightness dim 10` and `osd brightness restore`, so
@@ -56,7 +56,7 @@ handler already acts on it, and the display shows the change.
 
 ## The surface
 
-One overlay-layer surface (`amane.osd`), as big as the capsule, placed by niri on the focused
+One overlay-layer surface (`emaki.osd`), as big as the capsule, placed by niri on the focused
 output, `osd.offset` above the bottom edge and clear of the bar's zone. It takes neither keys nor
 the pointer. It frosts itself with one blur shape in `Material::Control`, light or dark with its
 backdrop; its layer rule rounds it (`osd.radius`) and gives it the banner's shadow. Hidden, it's

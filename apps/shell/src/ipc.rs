@@ -1,11 +1,11 @@
 //! The shell's IPC: the one table of the verbs it answers on its socket
-//! (`$XDG_RUNTIME_DIR/amane.sock`). Each verb's lines are read into the kit's
+//! (`$XDG_RUNTIME_DIR/emaki.sock`). Each verb's lines are read into the kit's
 //! [`ShellCommand`], which other programs send too, and handed to the surface
 //! or service it's for. See `docs/developer/integration/ipc.md`.
 
 use amane::App;
-use amane_kit::menu::layer as context_menu;
-use amane_kit::shell_ipc::ShellCommand;
+use emaki_kit::menu::layer as context_menu;
+use emaki_kit::shell_ipc::ShellCommand;
 
 use crate::services::display::night_light;
 use crate::surfaces::{
@@ -25,29 +25,29 @@ macro_rules! handlers {
 /// Every verb and its handler, which reads the lines and runs them.
 const HANDLERS: [(&str, Handler); 13] = handlers![
     // the next right-click opens a menu with a working grab:
-    // `printf 'arm\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    // `printf 'arm\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "arm",
     "open",
     "close",
     // Do Not Disturb from a keybind:
-    // `printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    // `printf 'notifications\ndnd\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "notifications",
-    // `printf 'quick-settings\nopen\nwifi\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    // `printf 'quick-settings\nopen\nwifi\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "quick-settings",
-    // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    // a niri keybind: `printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "launcher",
     "assistant",
     // the media and brightness keys, each acting and showing the new level:
-    // `printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    // `printf 'osd\nvolume\nup\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "osd",
-    // `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    // `printf 'widgets\nadd\ncpu\nmedium\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "widgets",
-    // `printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    // `printf 'status-bar\nhide\nbattery\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "status-bar",
-    // Shell Settings' Displays page:
-    // `printf 'night-light\nschedule\nhours\n21:00\n07:00\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    // Emaki Settings' Displays page:
+    // `printf 'night-light\nschedule\nhours\n21:00\n07:00\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "night-light",
-    // a niri keybind: `printf 'passwords\nsuggest\n' | nc -U -N $XDG_RUNTIME_DIR/amane.sock`
+    // a niri keybind: `printf 'passwords\nsuggest\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "passwords",
     // a sample alert, in debug builds: `printf 'alert-test\nstacked\n' | nc -U -N …`
     "alert-test",
@@ -109,8 +109,8 @@ pub fn run(command: ShellCommand) -> String {
 /// nothing: for seeing the alert without ending the session. Debug builds
 /// only.
 fn alert_test(stacked: bool) -> String {
-    use amane_kit::dialog::Dialog;
-    let sample = Dialog::new("amane.alert.test", "Discard changes?")
+    use emaki_kit::dialog::Dialog;
+    let sample = Dialog::new("emaki.alert.test", "Discard changes?")
         .message("Your changes to this document will be lost if you don't save them.")
         .button("Cancel", || log::info!("alert-test: cancel"));
     let sample = if stacked {
@@ -171,6 +171,6 @@ mod tests {
     #[test]
     fn the_table_answers_every_verb_the_command_has() {
         let table: Vec<&str> = HANDLERS.iter().map(|(v, _)| *v).collect();
-        assert_eq!(table, amane_kit::shell_ipc::VERBS);
+        assert_eq!(table, emaki_kit::shell_ipc::VERBS);
     }
 }

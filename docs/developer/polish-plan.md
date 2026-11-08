@@ -8,7 +8,7 @@ The cleanup roadmap (`docs/archive/ROADMAP.md`, Phases 0–13, finished 2026-11-
 2. **Missing primitives.** The kit lacks a few small building blocks, so every surface rebuilds them: a fixed-size frame (~108 sites), a reveal "swell" (6 sites), a press action (18 sites), a pressable row, a scroll pane, edit-mode chrome, and a catalog sheet. Customize and the widget gallery are near-copies of each other.
 3. **Hand-mirrored tables.** One fact is written several times and kept in step by hand:
    - IPC: `parse` and `to_lines` mirror each other, ~390 lines.
-   - Shell Settings: the page list is written in 7 places, and `search.rs` copies the titles.
+   - Emaki Settings: the page list is written in 7 places, and `search.rs` copies the titles.
    - Quick Settings: the controls are spread over 7 parallel `match`es.
    - Choice enums: 22 `ALL` arrays.
 4. **Missing service helpers.** The same plumbing is repeated across services, and it hides a real bug: listeners call `read()` where they should call `peek()`, which counts as being watched and defeats idle-stop. Affected: weather, background apps, tailscale, Do Not Disturb, night light, keep-awake.
@@ -16,7 +16,7 @@ The cleanup roadmap (`docs/archive/ROADMAP.md`, Phases 0–13, finished 2026-11-
 **Outcome:** one copy of each helper, data-driven tables where facts used to be mirrored, the kit as the single place for UI idioms, and lints that keep it this way.
 
 **Decisions:**
-- **New crate:** a std-only `amane-base`.
+- **New crate:** a std-only `emaki-base`.
 - **Visible changes:** allowed where copies disagree today. Each one is listed in §Visible changes.
 - **Constraints:**
   - Forks stay cheap to rebase, so no new amane API: service helpers are kit extension traits.
@@ -28,14 +28,14 @@ The cleanup roadmap (`docs/archive/ROADMAP.md`, Phases 0–13, finished 2026-11-
 
 ```mermaid
 graph TD
-  base[amane-base<br/>paths · fs · time · format · sync · args · mime · intern]
-  process[amane-process] --> base
-  log[amane-log]
-  phone[amane-phone] --> base
-  assistant[amane-assistant] --> base
-  pinentry[amane-pinentry] --> base
-  nixos[amane-nixos] --> base
-  kit[amane-kit<br/>re-exports base] --> base
+  base[emaki-base<br/>paths · fs · time · format · sync · args · mime · intern]
+  process[emaki-process] --> base
+  log[emaki-log]
+  phone[emaki-phone] --> base
+  assistant[emaki-assistant] --> base
+  pinentry[emaki-pinentry] --> base
+  nixos[emaki-nixos] --> base
+  kit[emaki-kit<br/>re-exports base] --> base
   kit --> amane[amane fork]
   apps[shell + apps] --> kit
 ```
@@ -63,11 +63,11 @@ graph TD
 - Record the metrics: line counts per crate and files over 400 lines. Confirm that `cargo clippy --workspace --all-targets -D warnings` and `cargo test --workspace` are green.
 - Take screenshots for later comparison:
   - the bar, Quick Settings (grid, Customize, the Bluetooth and Phone pages), the widget gallery and edit mode, the launcher, and the OSD;
-  - the Shell Settings pages (Appearance, Status Bar, Displays, System → Apps);
+  - the Emaki Settings pages (Appearance, Status Bar, Displays, System → Apps);
   - Drop, Messages and Shader Lab.
 - Land this plan as `shell/docs/development/polish-plan.md`. It moves to `docs/archive/` when finished, as the roadmap did.
 
-## Phase 1: `amane-base`, the one copy of each helper (M)
+## Phase 1: `emaki-base`, the one copy of each helper (M)
 
 **New crate `crates/base` (std only, plus `serde`/`serde_json` for `fs::save_json`):**
 
@@ -83,7 +83,7 @@ graph TD
 | `percent` | `encode` / `decode` | `media_art.rs:91`, `file_search.rs:423`, `rbw.rs:180`, `launcher/model.rs:263` |
 | `intern` | `intern(String) -> &'static str`: one bounded leak, deduped through a set | `shader-lab/panel.rs:1031`, `settings/main.rs:552`, `settings/system/controls.rs:82`, `kit/color_picker/mod.rs:390`, `status_bar/indicators.rs:120`, `widgets/mod.rs:222` |
 
-- **`app_ids`:** move from the kit to base, so that `amane_log::init(app_ids::SHELL)` works in the crates that don't use the kit. This replaces the 9+ `"amane-shell"` literals.
+- **`app_ids`:** move from the kit to base, so that `emaki_log::init(app_ids::SHELL)` works in the crates that don't use the kit. This replaces the 9+ `"emaki"` literals.
 - **Hex colours:** keep the kit's `tokens::color` parser as the only one. `color_picker` and `settings/appearance.rs:73` call it.
 - **Opening files:** add `kit::open(path_or_uri)` on one launch API, for the 12 `xdg-open` sites.
 
@@ -101,7 +101,7 @@ graph TD
   - `format::span` rounds to the nearest minute and shows seconds under one, so keep-awake no longer needs to round up.
   - `kit::launch::open` takes the eight UI-side `xdg-open`s. The rest stay: the service threads run off the event loop, and the phone crate and train-watch don't use the kit.
   - The media-art download (a `curl` into a part file) and the nixpkgs catalog (streamed) still write their own part files.
-- **Found along the way:** `amane-nixos`'s `the_steps_of_an_apply_run_in_order` failed about one run in three ("text file busy": a fake rewritten while another test forked). Its fakes are now links to one stub (`86b759f`).
+- **Found along the way:** `emaki-nixos`'s `the_steps_of_an_apply_run_in_order` failed about one run in three ("text file busy": a fake rewritten while another test forked). Its fakes are now links to one stub (`86b759f`).
 - **Asked for during the phase:** the last Material 3 traces (component docs written as departures from Material's, the counterpart columns in `docs/kit`) and Messages' copy of the kit's `Avatar` (`16ee963`).
 
 ## Phase 2: Kit interaction core (M)
@@ -137,7 +137,7 @@ graph TD
 - **Kept, on a second look:**
   - **`look/style.rs`'s aliases:** they are the form controls' vocabulary, written once; inlining them would spread `material::label(Level::Primary)` and the like over about 110 call sites.
   - **One `pressable` row for the list, the form row, the app sidebar and the menu:** they share only the last three lines. Each has its own fill, hover colour and radius, so a helper would save little and hide more.
-  - **The round glyph buttons as an `IconButton` variant:** the pop-up, nav and stepper buttons are drawn in the form controls' look, which `IconButton` isn't. Folding them would change how Shell Settings looks.
+  - **The round glyph buttons as an `IconButton` variant:** the pop-up, nav and stepper buttons are drawn in the form controls' look, which `IconButton` isn't. Folding them would change how Emaki Settings looks.
   - **`NavButtons`' `back_enabled`/`forward_enabled`:** it has two sides, and one `disabled(bool)` can't say which.
 
 ## Phase 3: Layout, motion and container primitives (M)
@@ -207,7 +207,7 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 - **What it removes:** the 7 `match`es in `quick_settings/controls.rs:82-270` and the third copy of availability in `pages.rs:116`.
 - **Tiles:** they stop re-checking `present()` themselves.
 
-### 4d. Shell Settings pages and search
+### 4d. Emaki Settings pages and search
 - **`const PAGES: &[PageDef]`**, where each `PageDef` holds `name`, `aliases`, `title`, `icon`, `accent`, `words`, `body`, `subs`, `toolbar`. Everything else is derived from it:
   - the index constants, `page_named`, `PAGE_NAMES`, `SUBS` and `sub_page`;
   - the sidebar and `content()`'s scroll ids;
@@ -225,9 +225,9 @@ Each table becomes the single source; parsers, lists, usage text and search are 
   - `Dropdown::choice(id, options, now, pick)` takes `(label, value)` pairs, which serves both the enums' `ALL` and the hand-made tables. So no `Choice` trait was needed.
   - `SeenFile<T>` went in Phase 1, as `remember_named`.
 - **4c, Quick Settings:** `controls::SPECS`, with `ControlId` in its order. A page's availability is its control's.
-- **4d, Shell Settings:**
+- **4d, Emaki Settings:**
   - `pages::SIDEBAR` holds each page once; the search index builds its page entries from it.
-  - One visible change: the search shows the shell's About page under its sidebar title, "About", rather than "About Shell Settings".
+  - One visible change: the search shows the shell's About page under its sidebar title, "About", rather than "About Emaki Settings".
   - **Not done: `RowSpec`.** The 63 rows the index copies from the pages still have their own titles there, and the source-grepping test still checks them. Moving every page's rows onto shared constants is a change to each page; it fits best with Phase 6's form helpers.
 
 ## Phase 5: Service helpers, and the idle bug (M)
@@ -249,7 +249,7 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 **Status (2026-11-07).** Done for what paid (shell `d3c23f6`, `e1b589d`).
 - **The idle bug:** the weather, background-apps, Tailscale, Do Not Disturb, night-light, keep-awake and adb listeners read themselves through `peek()`.
 - **`ServiceExt::replace`:** the listener's "keep it if it changed", in place of eleven copies.
-- **`Busy<K>`:** Shell Settings' uninstalls and service actions.
+- **`Busy<K>`:** Emaki Settings' uninstalls and service actions.
 - **Left, on a second look:**
   - **`state_service!`:** the empty-listener services build their `new()` by hand and don't all derive `Default`, so a macro would save three lines each and impose `Default`.
   - **`alert::sync_request`:** the four alerts each differ in the middle (the Phone page asks first, polkit clears its field on a new request and rebuilds on a new version).
@@ -258,7 +258,7 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 
 ## Phase 6: Apps (M)
 
-**Shell Settings:**
+**Emaki Settings:**
 - `form::choice(id, now).on_pick(..)` built on `Choice`. It replaces about 15 eleven-line dropdowns, and the 14 literal widths become one `Width::Menu` token.
 - `form::picker_row(..)` replaces the 6 `ThumbnailPicker` sequences.
 - `form::bound_field` is promoted from `drop.rs:368` and replaces the four ways of filling a field from a setting. **This fixes the refill-on-clear bug** in `about.rs:216`, `controls.rs:201` and `night.rs:347`.
@@ -282,7 +282,7 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 **Phone, Messages and Mirror:**
 - **One D-Bus call helper:** `kc::call(device, sub, iface, method, args)`. The 8 raw `try_call`s in `sms.rs` and `get_all` move onto it.
 - **Shared phone files and matching:**
-  - `amane_phone::{apps, screen}` own the `phone-apps.json` and `phone-screen.json` formats, which mirror, the shell and Messages each read or write today.
+  - `emaki_phone::{apps, screen}` own the `phone-apps.json` and `phone-screen.json` formats, which mirror, the shell and Messages each read or write today.
   - `same_number` and `digits` become public, along with a new `thread_named`. Messages' 3 re-implementations and their different threshold go.
 - **Shared input and selection:**
   - `PhoneKey::from_key` and `android_keycode` serve both Messages and Mirror.
@@ -290,21 +290,21 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 - **Getters:** `Value::string(k)` for the 11 property reads. The trivial getters become public fields where nothing guards them.
 - **Mirror:** uses `app_window` and its token background.
 
-**`amane-nixos` and `amane-status`:**
+**`emaki-nixos` and `emaki-status`:**
 - `nixos/settings.rs:262-420` uses serde derives (lenient: `Vec<Value>`, then `from_value` per entry).
 - `status/protocol.rs` gets a `Payload` trait for its five `decode`s.
 
 **train-watch:** `mod log` is renamed to `run_log`, so `::log::` isn't needed.
 
 **Status (2026-11-07).** Done for the larger items (shell `27d2797` … the caption commit).
-- **Shell Settings:**
+- **Emaki Settings:**
   - `app::fill_once` replaces the six ways of filling a field from its setting, and fixes the fields that refilled themselves when emptied.
   - Seven dropdowns are on `Dropdown::choice` (Phase 4b).
   - The literal colours are accents.
   - `note` is the kit's `caption`.
 - **Drop:** `grid.rs` is a folder (`mod`, `tiles`, `actions`, `prompt`, `shelf`); its prompt has one `dismiss()`; its copies of `with_alpha` and `fixed_width` are gone.
 - **Phone, Messages and Mirror:**
-  - `amane_phone::shared::{apps, screen}` own the two shared files.
+  - `emaki_phone::shared::{apps, screen}` own the two shared files.
   - `same_phone_number` and `digits` are public, and Messages uses them.
 - **train-watch:** `run_log`.
 - **Not done yet:**
@@ -359,21 +359,21 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 **Lints:**
 - `clippy::too_many_lines` warns at a threshold of 120 (`too-many-lines-threshold` in `clippy.toml`), so no new long function lands.
 - **Workspace hygiene test** (a `#[test]` in xtask, beside the boundary tests). It fails on:
-  - `PoisonError::into_inner` outside `amane-base`;
+  - `PoisonError::into_inner` outside `emaki-base`;
   - `Size::Fixed(` with a literal;
   - `Box::leak` outside `intern`;
-  - `"amane-shell"` literals outside `app_ids`;
+  - `"emaki"` literals outside `app_ids`;
   - a hand-written part-file rename outside `fs`;
   - `Service::read()` inside a `listen`.
 
 **Docs:**
 - Update `docs/development/shell-structure.md` (the primitives a surface uses, the tables) and the kit docs (`docs/kit/`).
-- Add `amane-base` to `docs/architecture.md` with the mermaid graph above.
+- Add `emaki-base` to `docs/architecture.md` with the mermaid graph above.
 - Archive this plan with a status per phase.
 
 **Status (2026-11-07).** Done, but for the lint on long functions:
 - **The hygiene test:** `xtask/src/hygiene.rs` covers poison-tolerant locks, leaked strings, raw XDG lookups, the shell's id typed out, a log named by hand, and transparent fills. It found three more fills and the vault's own XDG lookup.
-- **Docs:** `architecture.md` has `amane-base`, and `shell-structure.md` has "What a surface builds with" and "Tables".
+- **Docs:** `architecture.md` has `emaki-base`, and `shell-structure.md` has "What a surface builds with" and "Tables".
 - **Not done: `too_many_lines`.** With CI's `-D warnings` it would fail on the long functions Phase 7 leaves, so it waits for them.
 
 ## Phase 9: Where things live (research, S)
@@ -393,7 +393,7 @@ the finding and the moves it recommends, with their order.
 | Question | What the code says |
 |---|---|
 | Is it separable? | Yes, cleanly. Its 10.2k lines (23% of the shell) import nothing from `surfaces/`, `chrome/` or `tokens/`, only each other and the shared crates (kit, phone, status, assistant, pinentry, nixos), and the boundary test in `surfaces/mod.rs` already holds that. |
-| Would anything else use it? | No. The apps reach the shell's state through its IPC and its files on purpose: Shell Settings asks `night-light state` and only watches the state file for a change, and its Quick Settings page asks `quick-settings controls`. The one program that would share a service's *data* already shares it through a crate (`amane_phone::shared`, now `amane_nixos::lock::Check`). |
+| Would anything else use it? | No. The apps reach the shell's state through its IPC and its files on purpose: Emaki Settings asks `night-light state` and only watches the state file for a change, and its Quick Settings page asks `quick-settings controls`. The one program that would share a service's *data* already shares it through a crate (`emaki_phone::shared`, now `emaki_nixos::lock::Check`). |
 | Would it build faster? | Not noticeably. After an edit, the shell rebuilds in 1.9 s for a surface file and 2.0 s for a service file; rustc's incremental build already recompiles only what changed, and a crate split would save a fraction of that. |
 | Would it test better? | No. Its tests already run without a window, in the shell's test binary. |
 | What would it cost? | About 150 items go from `pub(super)`/`pub(crate)` to `pub`, under `missing_docs`; about 200 `crate::services::` paths change; the crate would be named for the shell and used only by it. |
@@ -404,14 +404,14 @@ Splitting it now buys a compiler-checked boundary that a test already checks, an
 
 | Candidate | Verdict |
 |---|---|
-| `nixos/check.json`, parsed by both Shell Settings and the shell | **Moved** to `amane_nixos::lock` (shell `d617190`): one format, one path, one reader; each program wraps it in its own service. |
-| The phone's two shared files (`phone-apps.json`, `phone-screen.json`) | **Moved** to `amane_phone::shared` (Phase 6). |
-| `services/vault` (2.1k lines: the rbw client, matching, the identity check) | **Stays.** Its only user is the shell; Shell Settings' Passwords page asks the shell. It's the first candidate for a crate if a second user appears. |
+| `nixos/check.json`, parsed by both Emaki Settings and the shell | **Moved** to `emaki_nixos::lock` (shell `d617190`): one format, one path, one reader; each program wraps it in its own service. |
+| The phone's two shared files (`phone-apps.json`, `phone-screen.json`) | **Moved** to `emaki_phone::shared` (Phase 6). |
+| `services/vault` (2.1k lines: the rbw client, matching, the identity check) | **Stays.** Its only user is the shell; Emaki Settings' Passwords page asks the shell. It's the first candidate for a crate if a second user appears. |
 | `services/launcher` (file search, clipboard history, timers) | **Stays.** Only the launcher uses it; it's a service because it runs programs and keeps state, not because it draws. |
 | `tokens/layer_rules.rs` | **Stays.** It names the shell's surfaces; `cargo xtask layer-rules` runs it through the shell (roadmap Phase 10). |
 | `chrome/catalog.rs`, `chrome/edit_marks.rs` | **Stay in `chrome`.** They are shell-only, and the kit's grid is pure by design. |
 | `kit::platform::shell_ipc` | **Stays in the kit.** It's std-only and could sit lower, but every program that sends a shell command already uses the kit. |
-| Shell Settings' `displays/kdl.rs` | **Stays.** It's the one writer of `displays.kdl`, and only Settings writes it. |
+| Emaki Settings' `displays/kdl.rs` | **Stays.** It's the one writer of `displays.kdl`, and only Settings writes it. |
 
 The moves that remain are the ones in Phases 6 and 7's "not done yet".
 
@@ -435,7 +435,7 @@ The moves that remain are the ones in Phases 6 and 7's "not done yet".
 - IPC: the `LINES` round-trip test (4a).
 - Settings search: the structural spec test (4d).
 - Quick Settings: a table test checks every `ControlId` has exactly one spec (4c).
-- `amane-base`: unit tests per module, and the `ago`/`span`/`bytes` outputs are pinned.
+- `emaki-base`: unit tests per module, and the `ago`/`span`/`bytes` outputs are pinned.
 
 **Visual check:** after Phases 2, 3 and 6, run the examples and apps beside the running bar, and compare against the Phase 0 screenshots. Only the visible changes listed above should differ.
 

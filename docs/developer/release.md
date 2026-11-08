@@ -9,9 +9,9 @@ upstream are in their `maintaining.md` (linked at the end).
 ```mermaid
 flowchart LR
     vello["vello fork"] -->|"rev in [patch.crates-io]"| shell
-    amane["amane fork"] -->|"rev in Cargo.toml"| shell["amane-shell"]
+    amane["amane fork"] -->|"rev in Cargo.toml"| shell["emaki"]
     vello -->|rev| amane
-    shell -->|"flake input amane-shell"| config["nixos-config"]
+    shell -->|"flake input emaki"| config["nixos-config"]
     niri["niri fork"] -->|"flake input niri-fork"| config
     config -->|"nixos-rebuild, then a switch"| system["the NixOS system"]
 ```
@@ -52,35 +52,35 @@ niri is built by nixos-config, not by the shell. After pushing niri's `ocbk`:
 
 ## nixos-config and the switch
 
-1. In `~/nixos-config`, `nix flake update amane-shell` once the shell is pushed (`niri-fork`
+1. In `~/nixos-config`, `nix flake update emaki` once the shell is pushed (`niri-fork`
    for niri).
-2. Build: `nixos-rebuild build --flake .#nixos-niri` (the host, as `nixos.json` names it for Shell Settings), which leaves `./result`.
+2. Build: `nixos-rebuild build --flake .#nixos-niri` (the host, as `nixos.json` names it for Emaki Settings), which leaves `./result`.
 3. Commit and push `flake.lock`.
 4. **Back up** what the shell keeps before a switch that changes a file format:
 
    ```sh
-   b=~/amane-shell-backup-$(date +%F-%H%M); mkdir -p "$b" && cp -a ~/.config/amane-shell "$b"/config && cp -a ~/.local/state/amane-shell "$b"/state
+   b=~/emaki-backup-$(date +%F-%H%M); mkdir -p "$b" && cp -a ~/.config/emaki "$b"/config && cp -a ~/.local/state/emaki "$b"/state
    ```
 
 5. **Switch**, without sudo, through the activation helper the system ships:
 
    ```sh
-   systemd-run --wait --pipe --collect $(readlink -f /run/current-system/sw/bin/amane-nixos-activate) switch $(readlink -f result)
+   systemd-run --wait --pipe --collect $(readlink -f /run/current-system/sw/bin/emaki-nixos-activate) switch $(readlink -f result)
    ```
 
-   Shell Settings' System pages do the same: build, compare, then switch
+   Emaki Settings' System pages do the same: build, compare, then switch
    ([nixos.md](integration/nixos.md)).
 
-A switch that restarts `amane-shell.service` restarts the bar. Programs started from the dock or
+A switch that restarts `emaki.service` restarts the bar. Programs started from the dock or
 the launcher live in scopes of their own (amane's `Launch`), so they survive it.
 
 ### Drop
 
-The flake builds `amane-drop` with the workspace. It wraps Drop, and Shell Settings, with `curl`,
+The flake builds `emaki-drop` with the workspace. It wraps Drop, and Emaki Settings, with `curl`,
 `secret-tool` (libsecret) and `wl-copy` (wl-clipboard) after the system's `PATH`, and installs
-`amane-drop.desktop`. nixos-config runs it as its own user unit
+`emaki-drop.desktop`. nixos-config runs it as its own user unit
 ([drop.md](../user/features/drop.md#installing)). A switch to a system whose shell input doesn't carry
-`amane-drop` yet leaves that unit failing to start, and does no other harm.
+`emaki-drop` yet leaves that unit failing to start, and does no other harm.
 
 ## The forks' own routines
 

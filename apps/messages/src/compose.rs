@@ -13,14 +13,14 @@ use amane::{
     Center, Color, Column, FileDialog, Radius, Rectangle, Row, ScrollArea, Size, Text, TextInput,
     Widget,
 };
-use amane_kit::app::text_field;
-use amane_kit::buttons::{Actions, IconButton, PushButton, Style, interactive, state_fill};
-use amane_kit::color::with_alpha;
-use amane_kit::control_size::ControlSize;
-use amane_kit::layout::{boxed, caption, fixed_width, icon, pad, text_width};
-use amane_kit::material::{self, Level};
-use amane_kit::style;
-use amane_kit::tokens::{Styled, sys};
+use emaki_kit::app::text_field;
+use emaki_kit::buttons::{Actions, IconButton, PushButton, Style, interactive, state_fill};
+use emaki_kit::color::with_alpha;
+use emaki_kit::control_size::ControlSize;
+use emaki_kit::layout::{boxed, caption, fixed_width, icon, pad, text_width};
+use emaki_kit::material::{self, Level};
+use emaki_kit::style;
+use emaki_kit::tokens::{Styled, sys};
 
 /// The field's id, which keeps its text.
 pub const FIELD: &str = "messages.compose";
@@ -261,7 +261,7 @@ fn chip(draft: Draft, path: &PathBuf) -> Rectangle {
         name
     };
     let big = std::fs::metadata(path).is_ok_and(|meta| meta.len() > BIG);
-    let image = amane_kit::mime::is_image(path);
+    let image = emaki_kit::mime::is_image(path);
 
     let style = sys::r#type::caption();
     let label = if big {

@@ -10,8 +10,8 @@ use super::{Page, open};
 use crate::chrome::battery;
 use crate::chrome::panel::close;
 use crate::services::power::session::Session;
-use amane_kit::icons::{ICON_LOCK, ICON_POWER, ICON_SCREENSHOT, battery_glyph};
-use amane_kit::motion;
+use emaki_kit::icons::{ICON_LOCK, ICON_POWER, ICON_SCREENSHOT, battery_glyph};
+use emaki_kit::motion;
 
 /// The battery, when there is one: its charge and how long it lasts.
 pub(super) fn battery_toggle() -> Option<QuickToggle> {
@@ -35,7 +35,7 @@ pub(super) fn battery_toggle() -> Option<QuickToggle> {
     let charging = state == BatteryState::Charging;
     Some(
         QuickToggle::new(
-            "amane.qs.battery",
+            "emaki.qs.battery",
             battery_glyph(percent, charging),
             "Battery",
         )
@@ -46,7 +46,7 @@ pub(super) fn battery_toggle() -> Option<QuickToggle> {
 }
 
 pub(super) fn screenshot_toggle() -> QuickToggle {
-    QuickToggle::new("amane.qs.screenshot", ICON_SCREENSHOT, "Screenshot").on_press(|| {
+    QuickToggle::new("emaki.qs.screenshot", ICON_SCREENSHOT, "Screenshot").on_press(|| {
         close();
         // the card has to have faded away before the screenshot UI
         // freezes the screen, so the card isn't in it
@@ -58,12 +58,12 @@ pub(super) fn screenshot_toggle() -> QuickToggle {
 }
 
 pub(super) fn lock_toggle() -> QuickToggle {
-    QuickToggle::new("amane.qs.lock", ICON_LOCK, "Lock Screen").on_press(|| {
+    QuickToggle::new("emaki.qs.lock", ICON_LOCK, "Lock Screen").on_press(|| {
         close();
         Session::lock();
     })
 }
 
 pub(super) fn power_off_toggle() -> QuickToggle {
-    QuickToggle::new("amane.qs.power", ICON_POWER, "Power Off…").on_open(|| open(Page::Session))
+    QuickToggle::new("emaki.qs.power", ICON_POWER, "Power Off…").on_open(|| open(Page::Session))
 }

@@ -1,5 +1,5 @@
 [package]
-name = "amane-assistant"
+name = "emaki-assistant"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,7 +10,7 @@ authors.workspace = true
 
 # The daemon that listens and runs the model (Cactus) is apps/assistant.
 [dependencies]
-amane-base = { workspace = true }
+emaki-base = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 

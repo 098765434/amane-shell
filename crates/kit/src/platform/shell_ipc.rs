@@ -1,4 +1,4 @@
-//! The shell's IPC as a type: every command `amane-shell` answers on its
+//! The shell's IPC as a type: every command `emaki` answers on its
 //! socket ([`ShellCommand`]), written as the same lines (a verb, then one
 //! argument a line) that scripts and keybinds send with `nc`. The shell reads
 //! them into this type, and other programs send this type, so neither builds
@@ -129,7 +129,7 @@ pub enum QuickSettings {
     Close,
     /// `edit`: edit mode.
     Edit,
-    /// `customize`: the same, as Shell Settings asks.
+    /// `customize`: the same, as Emaki Settings asks.
     Customize,
     /// `controls`: each control this machine has, and whether it shows.
     Controls,
@@ -817,7 +817,7 @@ mod tests {
         &["status-bar", "reset-order"],
         &["status-bar", "tray", "list"],
         &["status-bar", "tray", "menu", "nm-applet"],
-        &["status-bar", "apps", "activate", "org.amane.drop"],
+        &["status-bar", "apps", "activate", "org.emaki.drop"],
         &["status-bar", "activities", "end", "bus.4"],
         &["status-bar", "activities", "press", "bus.4", "stop"],
         &["night-light", "state"],

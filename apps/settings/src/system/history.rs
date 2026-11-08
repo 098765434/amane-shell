@@ -1,12 +1,12 @@
 //! History: the system generations, and Restore to go back to one.
 
 use amane::{Center, Column, Row, Service};
-use amane_kit::app::Dialog;
-use amane_kit::buttons::{PushButton, Style};
-use amane_kit::form::FormRow;
-use amane_kit::layout::boxed;
-use amane_kit::style;
-use amane_kit::tokens::sys;
+use emaki_kit::app::Dialog;
+use emaki_kit::buttons::{PushButton, Style};
+use emaki_kit::form::FormRow;
+use emaki_kit::layout::boxed;
+use emaki_kit::style;
+use emaki_kit::tokens::sys;
 
 use super::generations::Generations;
 use super::job::{BuildJob, Mode};

@@ -4,22 +4,22 @@
 //! name, number or message, and New Message starts one. Phone Input sits
 //! under them.
 
-use amane_kit::avatar::Avatar;
+use emaki_kit::avatar::Avatar;
 
 use amane::{
     Center, Color, Column, Radius, Rectangle, Row, ScrollArea, Service, Size, Text, TextInput,
     Widget,
 };
-use amane_kit::app::{field_box, sidebar_label, text_field};
-use amane_kit::buttons::{Actions, IconButton, interactive, state_fill};
-use amane_kit::buttons::{PushButton, Style};
-use amane_kit::color::Accent;
-use amane_kit::control_size::ControlSize;
-use amane_kit::icons::ICON_KEYBOARD;
-use amane_kit::layout::{boxed, caption, icon, pad, text_height};
-use amane_kit::material::{self, Level};
-use amane_kit::tokens::{Styled, sys};
-use amane_phone::{PhoneDevice, PhoneMessages, SmsState, SmsThread};
+use emaki_kit::app::{field_box, sidebar_label, text_field};
+use emaki_kit::buttons::{Actions, IconButton, interactive, state_fill};
+use emaki_kit::buttons::{PushButton, Style};
+use emaki_kit::color::Accent;
+use emaki_kit::control_size::ControlSize;
+use emaki_kit::icons::ICON_KEYBOARD;
+use emaki_kit::layout::{boxed, caption, icon, pad, text_height};
+use emaki_kit::material::{self, Level};
+use emaki_kit::tokens::{Styled, sys};
+use emaki_phone::{PhoneDevice, PhoneMessages, SmsState, SmsThread};
 
 use crate::{Navigation, View, read, thread, time};
 
@@ -136,7 +136,7 @@ fn header(device: Option<&PhoneDevice>) -> Row {
 fn badge(count: usize) -> Rectangle {
     let text = count.to_string();
     let style = sys::r#type::caption();
-    let width = (amane_kit::layout::text_width(&text, style) + 12.0).max(20.0);
+    let width = (emaki_kit::layout::text_width(&text, style) + 12.0).max(20.0);
     Rectangle::new()
         .width(width)
         .height(Size::Fixed(20.0))
@@ -260,7 +260,7 @@ fn empty(state: SmsState, any: bool) -> Vec<Box<dyn Widget>> {
 }
 
 /// What a message shows as in the list: its words, else what's attached.
-fn snippet(latest: &amane_phone::SmsMessage) -> String {
+fn snippet(latest: &emaki_phone::SmsMessage) -> String {
     let attached = latest.attachments();
     let words = match (latest.body().trim(), attached.first()) {
         ("", None) => return String::new(),

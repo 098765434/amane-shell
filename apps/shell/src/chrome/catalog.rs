@@ -7,19 +7,19 @@
 use amane::{Center, Rectangle, Row, Scroll, Start, Widget};
 
 use crate::tokens::sys;
-use amane_kit::area::Area;
-use amane_kit::buttons::{PushButton, Shape, Style};
-use amane_kit::divider::Divider;
-use amane_kit::kinetic::Axis;
-use amane_kit::layout::{boxed, caption, frame, pad, split_row};
-use amane_kit::list::{self, List, ListItem};
-use amane_kit::scroll_view::ScrollView;
-use amane_kit::search_field::SearchField;
-use amane_kit::text_edit::Field;
+use emaki_kit::area::Area;
+use emaki_kit::buttons::{PushButton, Shape, Style};
+use emaki_kit::divider::Divider;
+use emaki_kit::kinetic::Axis;
+use emaki_kit::layout::{boxed, caption, frame, pad, split_row};
+use emaki_kit::list::{self, List, ListItem};
+use emaki_kit::scroll_view::ScrollView;
+use emaki_kit::search_field::SearchField;
+use emaki_kit::text_edit::Field;
 
 /// A sheet's measures and the prefix its controls' ids share.
 pub struct Sheet {
-    /// What the ids start with: `amane.qs.customize`.
+    /// What the ids start with: `emaki.qs.customize`.
     pub id: &'static str,
     /// The sidebar's width.
     pub sidebar: f32,

@@ -36,14 +36,14 @@ use crate::chrome::panel::close;
 use crate::services::installed;
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{Styled, quick, sys};
-use amane_kit::glass::{self, Rim};
-use amane_kit::glass_region;
-use amane_kit::layout::{boxed, frame};
-use amane_kit::material::{self, Level, Material};
-use amane_kit::motion::{self, Arrive, Item, Pose};
+use emaki_kit::glass::{self, Rim};
+use emaki_kit::glass_region;
+use emaki_kit::layout::{boxed, frame};
+use emaki_kit::material::{self, Level, Material};
+use emaki_kit::motion::{self, Arrive, Item, Pose};
 
 /// Every control's motion is kept under this scope.
-pub(super) const SCOPE: &str = "amane.qs.grid";
+pub(super) const SCOPE: &str = "emaki.qs.grid";
 
 // TODO(token): `quick.open.cascade`, `quick.open.cascade-scale` and
 // `quick.open.cascade-rise` once Penpot has them (manual §1.1).
@@ -325,7 +325,7 @@ pub(super) fn grid(look: Motion) -> Grid {
             .scale(pose.scale)
             .opacity(pose.opacity)
             .child(capsule_button(
-                "amane.qs.edit",
+                "emaki.qs.edit",
                 None,
                 label,
                 editing,
@@ -363,12 +363,12 @@ pub(super) fn grid(look: Motion) -> Grid {
 
 /// The id the panel's labels are decided under.
 fn panel_id() -> u32 {
-    glass_region::shape_id("amane.quick-settings")
+    glass_region::shape_id("emaki.quick-settings")
 }
 
 /// The id of control `id`'s glass, for niri's readings of its backdrop.
 fn glass_id(id: ControlId) -> u32 {
-    glass_region::shape_id(&format!("amane.quick-settings.{id:?}"))
+    glass_region::shape_id(&format!("emaki.quick-settings.{id:?}"))
 }
 
 /// The frost behind a module, where it's drawn.

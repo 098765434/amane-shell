@@ -19,17 +19,17 @@ use amane::{Horizontal, Keyboard, LayerWindow, Rectangle, Vertical};
 
 use crate::chrome::panel::{self, overlay};
 use crate::tokens::dialog;
-use amane_kit::dialog::Dialog;
-use amane_kit::glass_region;
-use amane_kit::material::Material;
-use amane_kit::reveal::{self, Reveal, Swell};
+use emaki_kit::dialog::Dialog;
+use emaki_kit::glass_region;
+use emaki_kit::material::Material;
+use emaki_kit::reveal::{self, Reveal, Swell};
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// The alert showed or closed: only its window draws again.
     pub Alert
 }
 
-amane_kit::marker! {
+emaki_kit::marker! {
     /// A pairing request came or went: the alert window syncs again. Bluetooth and KDE Connect
     /// change all the time (battery levels, device lists), so the view reads this rather than
     /// them.
@@ -37,7 +37,7 @@ amane_kit::marker! {
 }
 
 /// Layer-surface namespace; the niri `layer-rule` matches it.
-pub const ALERT_NS: &str = "amane.alert";
+pub const ALERT_NS: &str = "emaki.alert";
 
 /// How small the card swells in from, as the launcher's glass does.
 const OPEN_SCALE: f32 = 0.96;

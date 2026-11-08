@@ -4,8 +4,8 @@
 //! phones on the network that could pair, with a phone's request to pair
 //! under them (an alert asks instead while the page isn't showing,
 //! `alert::phone`). A paired phone's page: battery, Ring, Send Files…,
-//! Messages and Phone Input (in `amane-messages`), its Screen (in
-//! `amane-mirror`, set up by `phone_screen`), the clipboard, the phone's
+//! Messages and Phone Input (in `emaki-messages`), its Screen (in
+//! `emaki-mirror`, set up by `phone_screen`), the clipboard, the phone's
 //! remote for this computer, and Forget.
 //!
 //! The phone's notifications and media need nothing here: the shell is the
@@ -18,7 +18,7 @@
 use std::cell::{Cell, RefCell};
 
 use amane::{Center, Column, FileDialog, Parent, Row, ScrollArea, Service, Text, Widget};
-use amane_phone::{KdeConnect, PhoneDevice, PhonePairState as PairState};
+use emaki_phone::{KdeConnect, PhoneDevice, PhonePairState as PairState};
 
 use super::super::{Page, open};
 use crate::chrome::battery;
@@ -31,15 +31,15 @@ use crate::surfaces::quick_settings::detail::{DetailPage, page_width};
 use crate::surfaces::quick_settings::tile::QuickToggle;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
-use amane_kit::buttons::{IconButton, PushButton, Style, Switch};
-use amane_kit::control_size::ControlSize;
-use amane_kit::dialog::Dialog;
-use amane_kit::icons::{
+use emaki_kit::buttons::{IconButton, PushButton, Style, Switch};
+use emaki_kit::control_size::ControlSize;
+use emaki_kit::dialog::Dialog;
+use emaki_kit::icons::{
     ICON_COMPUTER, ICON_CONTENT_PASTE, ICON_DEVICE_OTHER, ICON_INFO, ICON_KEYBOARD, ICON_PHONE,
 };
-use amane_kit::layout::{boxed, caption, fixed_width, text_height};
-use amane_kit::list::{self, List, ListItem};
-use amane_kit::material::{self, Level};
+use emaki_kit::layout::{boxed, caption, fixed_width, text_height};
+use emaki_kit::list::{self, List, ListItem};
+use emaki_kit::material::{self, Level};
 
 /// `ring_volume`, `upload_file` and `chat`, for the device page's rows.
 const ICON_RING: char = '\u{e0d1}';
@@ -92,7 +92,7 @@ pub(crate) fn toggle() -> Option<QuickToggle> {
     let (connected, subtitle) = summary(&KdeConnect::read());
 
     Some(
-        QuickToggle::new("amane.qs.phone", ICON_PHONE, "Phone")
+        QuickToggle::new("emaki.qs.phone", ICON_PHONE, "Phone")
             .subtitle(subtitle)
             .checked(connected)
             .on_open(|| open(Page::Phone)),
@@ -114,7 +114,7 @@ pub(crate) fn page() -> DetailPage {
     }
 
     let (_, subtitle) = summary(&KdeConnect::read());
-    DetailPage::new("amane.qs.phone.page", "Phone")
+    DetailPage::new("emaki.qs.phone.page", "Phone")
         .subtitle(subtitle)
         .status_bar(Indicator::Phone)
         .body(devices)
@@ -142,7 +142,7 @@ fn close_device() {
 fn ask_forget(device: &PhoneDevice) {
     let id = device.id().to_string();
     let ask = Dialog::new(
-        "amane.alert.phone.forget",
+        "emaki.alert.phone.forget",
         format!("Forget “{}”?", device.name()),
     )
     .message("It will have to pair again before it can connect.")
@@ -204,7 +204,7 @@ fn devices(height: f32) -> Vec<Box<dyn Widget>> {
         .gap(sys::space::gap::xl())
         .width(Parent);
     let mut body = vec![boxed(
-        ScrollArea::new("amane.qs.phone.devices", column).height(list_h),
+        ScrollArea::new("emaki.qs.phone.devices", column).height(list_h),
     )];
     body.extend(sheet);
     body
@@ -212,7 +212,7 @@ fn devices(height: f32) -> Vec<Box<dyn Widget>> {
 
 /// The daemon isn't running (stopped, or not started yet): a way to start it.
 fn off_note() -> Box<dyn Widget> {
-    let start = PushButton::new("amane.qs.phone.start", "Turn On")
+    let start = PushButton::new("emaki.qs.phone.start", "Turn On")
         .style(Style::Tonal)
         .on_press(KdeConnect::start)
         .build();
@@ -244,7 +244,7 @@ fn paired_trailing(device: &PhoneDevice) -> Text {
 
 fn paired_item(device: &PhoneDevice) -> ListItem {
     let id = device.id();
-    let mut item = ListItem::new(format!("amane.qs.phone.device.{id}"), device.name())
+    let mut item = ListItem::new(format!("emaki.qs.phone.device.{id}"), device.name())
         .leading(kind_glyph(device.kind()))
         .selected(device.connected())
         .trailing(paired_trailing(device));
@@ -259,7 +259,7 @@ fn paired_item(device: &PhoneDevice) -> ListItem {
     let details = device.clone();
     let pressed = device.clone();
     item.trailing(
-        IconButton::new(format!("amane.qs.phone.device.{id}.info"), ICON_INFO)
+        IconButton::new(format!("emaki.qs.phone.device.{id}.info"), ICON_INFO)
             .size(sys::size::icon::s())
             .height(ControlSize::Medium.height())
             .width(ControlSize::Medium.height())
@@ -273,7 +273,7 @@ fn paired_item(device: &PhoneDevice) -> ListItem {
 /// code both screens show until the phone answers.
 fn other_item(device: &PhoneDevice) -> ListItem {
     let id = device.id().to_string();
-    let mut item = ListItem::new(format!("amane.qs.phone.other.{id}"), device.name())
+    let mut item = ListItem::new(format!("emaki.qs.phone.other.{id}"), device.name())
         .leading(kind_glyph(device.kind()));
 
     if device.pair_state() == PairState::Requested {
@@ -309,11 +309,11 @@ fn sheet_height() -> f32 {
 fn pairing_sheet(device: &PhoneDevice) -> Box<dyn Widget> {
     let id = device.id().to_string();
     let declined = id.clone();
-    let decline = PushButton::new("amane.qs.phone.pair.decline", "Decline")
+    let decline = PushButton::new("emaki.qs.phone.pair.decline", "Decline")
         .style(Style::Tonal)
         .on_press(move || KdeConnect::cancel_pairing(&declined))
         .build();
-    let accept = PushButton::new("amane.qs.phone.pair.accept", "Pair")
+    let accept = PushButton::new("emaki.qs.phone.pair.accept", "Pair")
         .style(Style::Filled)
         .on_press(move || KdeConnect::accept_pairing(&id))
         .build();
@@ -356,7 +356,7 @@ fn device_page(device: PhoneDevice) -> DetailPage {
         (false, _) => String::from("Not Connected"),
     };
 
-    DetailPage::new("amane.qs.phone.device", device.name())
+    DetailPage::new("emaki.qs.phone.device", device.name())
         .subtitle(status)
         .on_back(close_device)
         .body(move |height| device_body(&device, height))
@@ -418,7 +418,7 @@ fn device_body(device: &PhoneDevice, height: f32) -> Vec<Box<dyn Widget>> {
     let forgotten = device.clone();
     body.push(boxed(
         List::new(vec![
-            ListItem::new("amane.qs.phone.device.forget", "Forget This Phone…")
+            ListItem::new("emaki.qs.phone.device.forget", "Forget This Phone…")
                 .color(sys::color::status::critical::text())
                 .on_press(move || ask_forget(&forgotten)),
         ])
@@ -427,7 +427,7 @@ fn device_body(device: &PhoneDevice, height: f32) -> Vec<Box<dyn Widget>> {
 
     let column = Column::new(body).gap(sys::space::gap::l()).width(Parent);
     vec![boxed(
-        ScrollArea::new("amane.qs.phone.device.page", column).height(height.max(1.0)),
+        ScrollArea::new("emaki.qs.phone.device.page", column).height(height.max(1.0)),
     )]
 }
 
@@ -435,7 +435,7 @@ fn device_body(device: &PhoneDevice, height: f32) -> Vec<Box<dyn Widget>> {
 /// phone offers them.
 fn action_rows(device: &PhoneDevice) -> Vec<ListItem> {
     let row =
-        |part: &str, title: &str| ListItem::new(format!("amane.qs.phone.device.{part}"), title);
+        |part: &str, title: &str| ListItem::new(format!("emaki.qs.phone.device.{part}"), title);
     let mut rows = Vec::new();
     if !device.connected() {
         return rows;
@@ -518,14 +518,14 @@ fn clipboard_rows(device: &PhoneDevice) -> Vec<ListItem> {
     let toggled = id.clone();
     let pressed = id.clone();
     vec![
-        ListItem::new("amane.qs.phone.clipboard.auto", "Share Automatically")
+        ListItem::new("emaki.qs.phone.clipboard.auto", "Share Automatically")
             .trailing(
-                Switch::new("amane.qs.phone.clipboard.auto.switch", auto)
+                Switch::new("emaki.qs.phone.clipboard.auto.switch", auto)
                     .on_toggle(move |on| KdeConnect::set_clipboard_auto_sync(&toggled, on))
                     .build(),
             )
             .on_press(move || KdeConnect::set_clipboard_auto_sync(&pressed, !auto)),
-        ListItem::new("amane.qs.phone.clipboard.send", "Send Clipboard to Phone")
+        ListItem::new("emaki.qs.phone.clipboard.send", "Send Clipboard to Phone")
             .leading(ICON_CONTENT_PASTE)
             .on_press(move || KdeConnect::send_clipboard(&id)),
     ]
@@ -537,9 +537,9 @@ fn remote_rows(device: &PhoneDevice) -> Vec<ListItem> {
     let toggled = device.id().to_string();
     let pressed = toggled.clone();
     vec![
-        ListItem::new("amane.qs.phone.remote", "Control This Computer")
+        ListItem::new("emaki.qs.phone.remote", "Control This Computer")
             .trailing(
-                Switch::new("amane.qs.phone.remote.switch", on)
+                Switch::new("emaki.qs.phone.remote.switch", on)
                     .on_toggle(move |on| KdeConnect::set_run_commands(&toggled, on))
                     .build(),
             )

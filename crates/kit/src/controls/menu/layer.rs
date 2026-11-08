@@ -35,19 +35,19 @@ pub const MAX_DEPTH: usize = 8;
 
 /// The anchor layer-surface namespace. The niri `layer-rule` matches this and
 /// its `popups { }` block styles every descendant popup (all menu levels).
-pub const ANCHOR_NS: &str = "amane.context-menu-anchor";
+pub const ANCHOR_NS: &str = "emaki.context-menu-anchor";
 
 /// One namespace per depth level. Level `k`'s popup is parented to level
 /// `k-1` (level 0 to the anchor).
 const NS: [&str; MAX_DEPTH] = [
-    "amane.context-menu.0",
-    "amane.context-menu.1",
-    "amane.context-menu.2",
-    "amane.context-menu.3",
-    "amane.context-menu.4",
-    "amane.context-menu.5",
-    "amane.context-menu.6",
-    "amane.context-menu.7",
+    "emaki.context-menu.0",
+    "emaki.context-menu.1",
+    "emaki.context-menu.2",
+    "emaki.context-menu.3",
+    "emaki.context-menu.4",
+    "emaki.context-menu.5",
+    "emaki.context-menu.6",
+    "emaki.context-menu.7",
 ];
 
 /// The popup namespace of menu level `k`.

@@ -3,24 +3,24 @@
 //! ends with how it scored, and Stop and Log buttons. `--plain` prints the
 //! same to the terminal instead.
 //!
-//!     amane-train-watch HOST RUN [--plain]
+//!     emaki-train-watch HOST RUN [--plain]
 //!
 //! The run is one `apps/assistant/train/remote.sh run` started on HOST: its
 //! log is read over Tailscale SSH (`~/needle-ft/runs/RUN/train.log`) from the
 //! start, again after a dropped connection. A copy is kept in
-//! `$XDG_CACHE_HOME/amane-train-watch/RUN.log`, which Log opens.
+//! `$XDG_CACHE_HOME/emaki-train-watch/RUN.log`, which Log opens.
 
 mod run_log;
 
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 
-use amane_process::Cmd;
+use emaki_process::Cmd;
 use std::path::PathBuf;
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::time::{Duration, Instant};
 
-use amane_status::{
+use emaki_status::{
     ActivityButton, ActivityContent, ActivityEvent, Dismiss, ItemIcon, LiveActivity, Tint, Trailing,
 };
 
@@ -39,20 +39,20 @@ enum Message {
 }
 
 fn main() {
-    amane_log::init(amane_base::app_ids::TRAIN_WATCH);
-    amane_base::migrate::from_amane();
+    emaki_log::init(emaki_base::app_ids::TRAIN_WATCH);
+    emaki_base::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let plain = args.iter().any(|a| a == "--plain");
     let names: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
     let [host, name] = names[..] else {
-        eprintln!("usage: amane-train-watch HOST RUN [--plain]");
+        eprintln!("usage: emaki-train-watch HOST RUN [--plain]");
         std::process::exit(2);
     };
     if !name
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || "._-".contains(c))
     {
-        eprintln!("amane-train-watch: {name:?} isn't a run name");
+        eprintln!("emaki-train-watch: {name:?} isn't a run name");
         std::process::exit(2);
     }
     let watch = Watch::new(host.clone(), name.clone(), plain);
@@ -72,7 +72,7 @@ struct Watch {
 
 impl Watch {
     fn new(host: String, name: String, plain: bool) -> Self {
-        let cache = amane_base::paths::cache().join(amane_base::app_ids::TRAIN_WATCH);
+        let cache = emaki_base::paths::cache().join(emaki_base::app_ids::TRAIN_WATCH);
         // the log is written below, which says so if the folder couldn't be made
         let _ = std::fs::create_dir_all(&cache);
         let copy = cache.join(format!("{name}.log"));

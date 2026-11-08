@@ -1,6 +1,6 @@
 //! A `flake.lock`'s root inputs, and what a fresh lock moves: what Check
 //! for Updates shows and an update's commit says; and what the scheduled
-//! check last found ([`Check`]), which Shell Settings and the shell's
+//! check last found ([`Check`]), which Emaki Settings and the shell's
 //! Software Update tile both read.
 
 use std::io;
@@ -28,7 +28,7 @@ impl Input {
     /// "12 days ago", "3 h ago", "3 months ago".
     pub fn ago(&self) -> String {
         match self.modified {
-            Some(when) => amane_base::format::ago((Utc::now() - when).to_std().unwrap_or_default()),
+            Some(when) => emaki_base::format::ago((Utc::now() - when).to_std().unwrap_or_default()),
             None => String::from("unknown"),
         }
     }
@@ -169,7 +169,7 @@ mod tests {
     }
 }
 
-/// What the scheduled check (`amane-update-check`, a user timer from the
+/// What the scheduled check (`emaki-update-check`, a user timer from the
 /// configuration) last found, from `check.json` in the shell's state folder.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Check {
@@ -183,10 +183,10 @@ pub struct Check {
     pub present: bool,
 }
 
-/// Where the check is kept: `$XDG_STATE_HOME/amane-shell/nixos/check.json`.
+/// Where the check is kept: `$XDG_STATE_HOME/emaki/nixos/check.json`.
 pub fn check_path() -> PathBuf {
-    amane_base::paths::state()
-        .join(amane_base::app_ids::SHELL)
+    emaki_base::paths::state()
+        .join(emaki_base::app_ids::SHELL)
         .join("nixos")
         .join("check.json")
 }
@@ -232,7 +232,7 @@ pub fn read_check() -> Check {
 pub fn clear_check() -> io::Result<()> {
     let now = Utc::now().timestamp();
     let json = format!("{{\n  \"checked\": {now},\n  \"changes\": []\n}}\n");
-    amane_base::fs::write_whole(&check_path(), json)
+    emaki_base::fs::write_whole(&check_path(), json)
 }
 
 #[cfg(test)]
@@ -242,10 +242,10 @@ mod check_tests {
     #[test]
     fn a_check_lists_what_moved() {
         let found = parse_check(
-            r#"{"checked": 1761500000, "changes": [{"name": "nixpkgs", "from": "a", "to": "b"}, {"name": "amane-shell"}]}"#,
+            r#"{"checked": 1761500000, "changes": [{"name": "nixpkgs", "from": "a", "to": "b"}, {"name": "emaki"}]}"#,
         );
         let names: Vec<&str> = found.changes.iter().map(|c| c.name.as_str()).collect();
-        assert_eq!(names, ["nixpkgs", "amane-shell"]);
+        assert_eq!(names, ["nixpkgs", "emaki"]);
         assert_eq!(found.changes[0].to.as_deref(), Some("b"));
         let moved = parse_check(
             r#"{"checked": 1, "changes": [{"name": "nixpkgs", "from": "1111111aaaaaaa", "to": "2222222bbbbbbb"}]}"#,

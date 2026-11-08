@@ -12,10 +12,10 @@ use super::grid::{Metrics, Span};
 use super::tile::module;
 use crate::surfaces::quick_settings::grid::FromTokens as _;
 use crate::tokens::{Styled, quick, sys};
-use amane_kit::color::with_alpha;
-use amane_kit::layout::{boxed, frame, icon, pad};
-use amane_kit::material::{self, Level};
-use amane_kit::slider::Slider;
+use emaki_kit::color::with_alpha;
+use emaki_kit::layout::{boxed, frame, icon, pad};
+use emaki_kit::material::{self, Level};
+use emaki_kit::slider::Slider;
 
 /// One slider in a card: its title, the glyphs either side of the track,
 /// the slider made for the width it gets, and what follows it (a chevron

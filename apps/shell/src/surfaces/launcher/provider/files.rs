@@ -16,7 +16,7 @@ pub(super) fn files(
         folder,
     };
     let (hits, _) = file_search::find(&request);
-    let now = amane_kit::time::unix_s();
+    let now = emaki_kit::time::unix_s();
     for hit in hits {
         let mut entry = file_entry(hit, now);
         if query.text.is_empty() && kind.is_none() {
@@ -64,7 +64,7 @@ pub(super) fn file_entry(hit: Hit, now: u64) -> Entry {
     };
     let mut line = vec![kind_name(&hit)];
     if !hit.dir {
-        line.push(amane_kit::format::bytes(hit.size));
+        line.push(emaki_kit::format::bytes(hit.size));
     }
     if let Some(parent) = hit
         .path
@@ -82,7 +82,7 @@ pub(super) fn file_entry(hit: Hit, now: u64) -> Entry {
     )
     .subtitle(line.join(" · "))
     .detail(hit.path.display().to_string());
-    entry.trailing = Some(amane_kit::format::ago(std::time::Duration::from_secs(
+    entry.trailing = Some(emaki_kit::format::ago(std::time::Duration::from_secs(
         now.saturating_sub(hit.modified),
     )));
     entry.preview = Some(Preview::File(hit.path.clone()));
@@ -139,7 +139,7 @@ impl Provider for Files {
                 ..Request::default()
             };
             let (hits, _) = file_search::find(&request);
-            let now = amane_kit::time::unix_s();
+            let now = emaki_kit::time::unix_s();
             let mut matched: Vec<(f32, Hit)> = hits
                 .into_iter()
                 .filter_map(|hit| Some((rank::fuzzy(&query.needle, &hit.name)?, hit)))

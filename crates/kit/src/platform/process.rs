@@ -1,9 +1,9 @@
 //! Running programs off the UI thread, and the newest of a run of values
-//! applied on a worker. The runner itself is [`amane_process`], whose
+//! applied on a worker. The runner itself is [`emaki_process`], whose
 //! [`Cmd`] is here too.
 
 use crate::sync::Locked as _;
-pub use amane_process::{Cmd, Failure, Output, Running, Stopper};
+pub use emaki_process::{Cmd, Failure, Output, Running, Stopper};
 
 use std::cell::RefCell;
 use std::collections::HashMap;

@@ -1,6 +1,6 @@
-# amane-shell
+# emaki
 
-**A complete desktop for niri.** amane-shell is a Wayland desktop shell built for the
+**A complete desktop for niri.** emaki is a Wayland desktop shell built for the
 [niri](https://github.com/niri-wm/niri) scrollable-tiling compositor. It covers everything a
 desktop needs beyond window management — bar, dock, launcher, notifications, settings — plus a
 set of first-party apps, all drawn with the same GPU-rendered design library. The shell is
@@ -11,8 +11,8 @@ relies on.
 
 - **Shell:** a status bar on every monitor, a dock that rises with the overview, a launcher,
   notifications, Quick Settings, desktop widgets and an on-screen display
-- **Apps:** Shell Settings, Messages, Phone Screen, Shader Lab, Drop and an on-device assistant
-- **amane-kit:** the shell's look as a library, so any app can match it
+- **Apps:** Emaki Settings, Messages, Phone Screen, Shader Lab, Drop and an on-device assistant
+- **emaki-kit:** the shell's look as a library, so any app can match it
 
 ## Screenshots
 
@@ -23,7 +23,7 @@ Coming soon. The slots, and how they're taken, are in
 |---|---|---|
 | *bar, Regular, Frosted* | *the dock risen* | *a search and its results* |
 
-| Quick Settings | Shell Settings |
+| Quick Settings | Emaki Settings |
 |---|---|
 | *the grid of controls* | *the Appearance page* |
 
@@ -33,7 +33,7 @@ The shell is built and run through its Nix flake, and needs the niri fork.
 
 ```sh
 nix develop -c cargo run    # in a niri session
-nix build                   # ./result/bin/amane-shell and the apps
+nix build                   # ./result/bin/emaki and the apps
 ```
 
 On NixOS, add `github:098765434/amane-shell` as a flake input, run the shell as a user service,
@@ -46,9 +46,9 @@ and let `gen-layer-rules.sh` put the shell's layer rules into niri's config. The
 
 ## Configure
 
-Settings are JSON files under `~/.config/amane-shell/`, written by Shell Settings and followed
+Settings are JSON files under `~/.config/emaki/`, written by Emaki Settings and followed
 live by the running shell. Theme, density, text size, the bar's position and size, the dock,
-the launcher's sources and the notification rules are all there, with `AMANE_*` variables to
+the launcher's sources and the notification rules are all there, with `EMAKI_*` variables to
 override them: [docs/user/configure.md](docs/user/configure.md). The niri keybinds to copy are
 in [docs/user/keyboard-and-ipc.md](docs/user/keyboard-and-ipc.md).
 

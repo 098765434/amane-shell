@@ -30,9 +30,9 @@ pub(super) fn ask(prompt: Prompt, width: f32) -> Rectangle {
                 String::from("Keep both, with a number after the new one's name, or replace?"),
                 None,
                 vec![
-                    boxed(button("amane-drop.stop", "Stop", Style::Plain, dismiss)),
+                    boxed(button("emaki-drop.stop", "Stop", Style::Plain, dismiss)),
                     boxed(button(
-                        "amane-drop.replace",
+                        "emaki-drop.replace",
                         "Replace",
                         Style::Destructive,
                         move || {
@@ -41,7 +41,7 @@ pub(super) fn ask(prompt: Prompt, width: f32) -> Rectangle {
                         },
                     )),
                     boxed(button(
-                        "amane-drop.keep",
+                        "emaki-drop.keep",
                         "Keep Both",
                         Style::Filled,
                         move || {
@@ -58,7 +58,7 @@ pub(super) fn ask(prompt: Prompt, width: f32) -> Rectangle {
             tile,
         } => {
             let mut buttons: Vec<Box<dyn Widget>> = vec![boxed(button(
-                "amane-drop.cancel",
+                "emaki-drop.cancel",
                 "Cancel",
                 Style::Plain,
                 dismiss,
@@ -66,7 +66,7 @@ pub(super) fn ask(prompt: Prompt, width: f32) -> Rectangle {
             for (id, device_name) in devices.iter().take(3) {
                 let (what, device, device_name) = (what.clone(), id.clone(), device_name.clone());
                 buttons.push(boxed(
-                    PushButton::new(format!("amane-drop.phone.{id}"), &device_name)
+                    PushButton::new(format!("emaki-drop.phone.{id}"), &device_name)
                         .icon(ICON_PHONE)
                         .style(Style::Filled)
                         .on_press(move || {
@@ -115,9 +115,9 @@ pub(super) fn ask(prompt: Prompt, width: f32) -> Rectangle {
                 detail,
                 Some(boxed(field_box(RENAME, input, width))),
                 vec![
-                    boxed(button("amane-drop.cancel", "Cancel", Style::Plain, dismiss)),
+                    boxed(button("emaki-drop.cancel", "Cancel", Style::Plain, dismiss)),
                     boxed(button(
-                        "amane-drop.rename",
+                        "emaki-drop.rename",
                         "Move",
                         Style::Filled,
                         move || {

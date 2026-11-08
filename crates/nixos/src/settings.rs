@@ -1,4 +1,4 @@
-//! The settings the NixOS configuration has, as the flake's `amaneSettings`
+//! The settings the NixOS configuration has, as the flake's `emakiSettings`
 //! output gives them (every setting in `managed/registry.nix` with its
 //! effective value, how it's set and which files set it), and
 //! `managed/settings.json`, the one file Settings writes:
@@ -370,7 +370,7 @@ fn system_package(value: &Value) -> Option<SystemPackage> {
     })
 }
 
-/// What `nix eval --json .#amaneSettings` gave.
+/// What `nix eval --json .#emakiSettings` gave.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Parsed {
     /// Every setting in the registry.
@@ -386,15 +386,15 @@ pub struct Parsed {
     pub missing_packages: Vec<String>,
 }
 
-/// Reads `nix eval --json .#amaneSettings`; settings that don't parse are
+/// Reads `nix eval --json .#emakiSettings`; settings that don't parse are
 /// left out, and it fails only when the JSON or its `entries` list is bad.
 pub fn parse_snapshot(json: &str) -> Result<Parsed, String> {
     let value: Value =
-        serde_json::from_str(json).map_err(|error| format!("amaneSettings: {error}"))?;
+        serde_json::from_str(json).map_err(|error| format!("emakiSettings: {error}"))?;
     let entries = value
         .get("entries")
         .and_then(Value::as_array)
-        .ok_or("amaneSettings has no entries")?
+        .ok_or("emakiSettings has no entries")?
         .iter()
         .filter_map(entry)
         .collect();
@@ -514,7 +514,7 @@ pub fn commit_message(changes: &[Change], entries: &[Entry]) -> String {
 
 /// Writes the map as the file, whole.
 pub fn save(path: &Path, map: &BTreeMap<String, Value>) -> Result<(), String> {
-    amane_base::fs::save_json(path, map).map_err(|error| error.to_string())
+    emaki_base::fs::save_json(path, map).map_err(|error| error.to_string())
 }
 
 #[cfg(test)]

@@ -16,7 +16,7 @@ use crate::audio::{self, Sound};
 use crate::decode;
 use crate::protocol::{self, Control, DeviceMessage};
 use crate::server::{self, Options};
-use amane_kit::sync::Locked as _;
+use emaki_kit::sync::Locked as _;
 
 /// Where a session stands.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -151,7 +151,7 @@ fn run(options: &Options) -> Result<(), String> {
         return Ok(());
     };
 
-    let hardware = std::env::var_os("AMANE_MIRROR_SOFTWARE").is_none();
+    let hardware = std::env::var_os("EMAKI_MIRROR_SOFTWARE").is_none();
 
     let result = decode::run(video, &FEED, hardware, |width, height, on_gpu| {
         let mut mirror = Mirror::write();

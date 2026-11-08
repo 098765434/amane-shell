@@ -1,5 +1,5 @@
 //! rbw asking for the master password (or a two-factor code, or an API key) through
-//! amane-pinentry, for an unlock the shell started: the shell's alert, with a title the shell
+//! emaki-pinentry, for an unlock the shell started: the shell's alert, with a title the shell
 //! sets and rbw's words under it as plain text. The answer is taken out of the field, which is
 //! left empty, and goes back over the private socket, wiped once sent.
 //!
@@ -12,13 +12,13 @@ use amane::{Service, TextInput};
 
 use crate::services::vault::pinentry::{self, PinEntry, PinQuestion};
 use crate::surfaces::alert;
-use amane_kit::dialog::{Dialog, Field, Icon};
-use amane_kit::icons::ICON_LOCK;
+use emaki_kit::dialog::{Dialog, Field, Icon};
+use emaki_kit::icons::ICON_LOCK;
 
-const NAME: &str = "amane.alert.vault";
+const NAME: &str = "emaki.alert.vault";
 
 /// The field's id; its text is taken out when the dialog answers.
-const FIELD: &str = "amane.vault.pin";
+const FIELD: &str = "emaki.vault.pin";
 
 thread_local! {
     // the question shown

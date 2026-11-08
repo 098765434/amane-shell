@@ -10,13 +10,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::time::Duration;
 
-use amane_kit::settings::{DropSharing, UploadTo};
+use emaki_kit::settings::{DropSharing, UploadTo};
 
-const APP: &str = amane_kit::app_ids::DROP;
+const APP: &str = emaki_kit::app_ids::DROP;
 
-/// 0x0.st's address; `AMANE_DROP_0X0_URL` points it elsewhere, for tests.
+/// 0x0.st's address; `EMAKI_DROP_0X0_URL` points it elsewhere, for tests.
 fn zero_x0() -> String {
-    std::env::var("AMANE_DROP_0X0_URL").unwrap_or_else(|_| String::from("https://0x0.st"))
+    std::env::var("EMAKI_DROP_0X0_URL").unwrap_or_else(|_| String::from("https://0x0.st"))
 }
 
 /// How the link is found once curl is done.
@@ -112,10 +112,10 @@ fn request(
             Link::Answer
         }
         UploadTo::Imgur => {
-            if !amane_kit::mime::is_image(file) && !amane_kit::mime::is_video(file) {
+            if !emaki_kit::mime::is_image(file) && !emaki_kit::mime::is_video(file) {
                 return Err(String::from("Imgur takes pictures and videos"));
             }
-            let field = if amane_kit::mime::is_video(file) {
+            let field = if emaki_kit::mime::is_video(file) {
                 "video"
             } else {
                 "image"
@@ -212,7 +212,7 @@ fn request(
                 String::from("-H"),
                 String::from("x-amz-content-sha256: UNSIGNED-PAYLOAD"),
                 String::from("-H"),
-                format!("Content-Type: {}", amane_kit::mime::of(file)),
+                format!("Content-Type: {}", emaki_kit::mime::of(file)),
             ]);
             if account.public {
                 args.extend([String::from("-H"), String::from("x-amz-acl: public-read")]);
@@ -235,8 +235,8 @@ fn request(
 /// The secret `to` logs in with, if it has one.
 fn secret_for(to: UploadTo) -> Option<String> {
     match to {
-        UploadTo::Sftp => amane_kit::secrets::lookup(APP, "sftp"),
-        UploadTo::S3 => amane_kit::secrets::lookup(APP, "s3"),
+        UploadTo::Sftp => emaki_kit::secrets::lookup(APP, "sftp"),
+        UploadTo::S3 => emaki_kit::secrets::lookup(APP, "s3"),
         UploadTo::ZeroX0 | UploadTo::Imgur => None,
     }
 }
@@ -252,7 +252,7 @@ pub fn upload(
     if file.is_dir() {
         return Err(io::Error::other("folders can't be uploaded"));
     }
-    let sharing = amane_kit::settings::drop_sharing().clone();
+    let sharing = emaki_kit::settings::drop_sharing().clone();
     let secret = secret_for(to);
     let request = request(file, to, &sharing, secret.as_deref()).map_err(io::Error::other)?;
     let answer = run_curl(&request, cancel, tell)?;
@@ -279,7 +279,7 @@ pub fn upload_text(
     cancel: &AtomicBool,
     tell: &mut dyn FnMut(f32),
 ) -> io::Result<Option<String>> {
-    let folder = amane_kit::paths::runtime().join("amane-drop");
+    let folder = emaki_kit::paths::runtime().join("emaki-drop");
     std::fs::create_dir_all(&folder)?;
     let file = folder.join(format!("Text {}.txt", std::process::id()));
     std::fs::write(&file, text)?;
