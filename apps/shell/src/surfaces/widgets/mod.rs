@@ -418,16 +418,22 @@ fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
     let heat = layout
         .placed()
         .any(|(key, _)| key.kind == WidgetKind::Temperature);
-    // the gallery and the settings' sensor list read every sensor
-    watching(name, editing || system, editing || heat);
-
     /*
      * nothing under the windows shows (niri's overview fully open, or windows
      * over the whole screen): the surface keeps its last frame and draws
-     * nothing, reading only what says when it shows again, while the
-     * readings go on gathering history for then
+     * nothing, reading only what says when it shows again. The readings pause
+     * too, so a covered desktop costs no wake-ups; the graphs carry on from
+     * where they were when it shows again (AMANE_STATS_WHILE_HIDDEN=1 keeps
+     * gathering history under the windows, as before)
      */
     let hidden = !editing && Desktop::read().obscured(&output);
+    let gather = !hidden || stats_while_hidden();
+    // the gallery and the settings' sensor list read every sensor
+    watching(
+        name,
+        (editing || system) && gather,
+        (editing || heat) && gather,
+    );
     let thawed = with_desk(&output, |desk| std::mem::replace(&mut desk.frozen, hidden)) && !hidden;
     if hidden {
         return window
@@ -476,3 +482,9 @@ const WIDGET_MENU_KEY: &str = "amane.widgets.widget-menu";
 const DESKTOP_MENU_KEY: &str = "amane.widgets.desktop-menu";
 
 type Field = fn(&mut Settings) -> &mut Option<String>;
+
+/// Whether the system readings go on while the desktop is covered (`AMANE_STATS_WHILE_HIDDEN=1`).
+fn stats_while_hidden() -> bool {
+    static KEEP: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *KEEP.get_or_init(|| std::env::var_os("AMANE_STATS_WHILE_HIDDEN").is_some_and(|v| v == "1"))
+}
