@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+# The one-time move from amane-shell's names to emaki's, by hand. Every
+# program does the folder moves itself on its first start
+# (crates/base/src/migrate.rs), and renames the ids its settings keep; this
+# is for doing them first, and for the niri config, which no program edits.
+#
+# Usage: scripts/migrate-from-amane [--apply] [path-to-niri-config.kdl]
+#
+# Without --apply it only says what it would do. With a niri config it
+# renames the layer-rules markers (`// >>> amane layer-rules`), the
+# sockets (`amane.sock`, `amane-drop.sock`) and Drop's unit in it.
+set -euo pipefail
+
+apply=0
+niri=""
+for arg in "$@"; do
+    case $arg in
+        --apply) apply=1 ;;
+        -h | --help)
+            sed -n '2,/^set -/p' "$0" | sed '$d; s/^# \{0,1\}//'
+            exit 0
+            ;;
+        -*)
+            echo "migrate-from-amane: unknown flag $arg" >&2
+            exit 2
+            ;;
+        *) niri=$arg ;;
+    esac
+done
+
+# an XDG base folder: the variable when it's an absolute path, else under $HOME
+base() {
+    local value=${!1:-}
+    if [[ $value == /* ]]; then
+        printf '%s' "$value"
+    else
+        printf '%s/%s' "$HOME" "$2"
+    fi
+}
+
+config=$(base XDG_CONFIG_HOME .config)
+state=$(base XDG_STATE_HOME .local/state)
+cache=$(base XDG_CACHE_HOME .cache)
+data=$(base XDG_DATA_HOME .local/share)
+
+run() {
+    if ((apply)); then
+        "$@"
+    else
+        printf 'would run:'
+        printf ' %q' "$@"
+        printf '\n'
+    fi
+}
+
+# old moved to new: whole when new isn't there, else each entry new lacks
+move() {
+    local old=$1 new=$2 entry
+    [[ -d $old ]] || return 0
+    if [[ ! -e $new && ! -L $new ]]; then
+        [[ -d ${new%/*} ]] || run mkdir -p "${new%/*}"
+        run mv -T "$old" "$new"
+        return 0
+    fi
+    shopt -s nullglob dotglob
+    for entry in "$old"/*; do
+        if [[ -e $new/${entry##*/} || -L $new/${entry##*/} ]]; then
+            echo "keeping $entry: $new has one too"
+        else
+            run mv -T "$entry" "$new/${entry##*/}"
+        fi
+    done
+    shopt -u nullglob dotglob
+    if ((apply)); then
+        rmdir "$old" 2>/dev/null || true
+    fi
+}
+
+programs=(
+    amane-shell:emaki
+    amane-assistant:emaki-assistant
+    amane-pinentry:emaki-pinentry
+    amane-train-watch:emaki-train-watch
+    amane-settings:emaki-settings
+    amane-messages:emaki-messages
+    amane-mirror:emaki-mirror
+    amane-shader-lab:emaki-shader-lab
+    amane-drop:emaki-drop
+)
+
+for root in "$config" "$state" "$cache" "$data"; do
+    for pair in "${programs[@]}"; do
+        move "$root/${pair%%:*}" "$root/${pair##*:}"
+    done
+done
+# the phone's message pictures, from under the library's cache folder
+move "$cache/amane/messages" "$cache/emaki/phone/messages"
+
+if [[ -n $niri ]]; then
+    # through a symlink (home-manager links config.kdl into a repo)
+    target=$(readlink -f "$niri")
+    [[ -f $target ]] || {
+        echo "migrate-from-amane: $niri not found" >&2
+        exit 1
+    }
+    rename=(
+        -e 's/amane layer-rules/emaki layer-rules/g'
+        -e 's/\bamane\.sock\b/emaki.sock/g'
+        -e 's/\bamane-drop\.sock\b/emaki-drop.sock/g'
+        -e 's/\bamane-drop\.service\b/emaki-drop.service/g'
+    )
+    if ((apply)); then
+        renamed=$(sed -E "${rename[@]}" "$target")
+        # written over rather than moved, so the config keeps its permissions
+        printf '%s\n' "$renamed" >"$target"
+        echo "renamed the markers and sockets in $target"
+    else
+        echo "would change $target:"
+        sed -E "${rename[@]}" "$target" | diff -u "$target" - || true
+    fi
+fi
+
+if ((!apply)); then
+    echo
+    echo "nothing was changed: run again with --apply"
+fi
+
+cat <<EOF
+
+Then:
+  - the layer rules, for the new namespaces (emaki.dock, emaki.status-bar, ...):
+      ./gen-layer-rules.sh ${niri:-~/.config/niri/config.kdl}
+      niri msg action load-config-file
+  - anything else of yours that names amane-shell, its sockets or its
+    programs: binds, scripts, window rules matching app-id="^amane-settings\$"
+  - NixOS: the flake input amane-shell is now emaki, the options amane.* are
+    emaki.*, and the units amane-shell.service, amane-drop.service and
+    amane-update-check are emaki.service, emaki-drop.service and
+    emaki-update-check (docs/user/troubleshooting.md, "Migrating from
+    amane-shell")
+EOF

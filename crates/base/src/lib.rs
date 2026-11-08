@@ -1,6 +1,6 @@
 //! What every amane-shell program needs below its UI, written once.
 //!
-//! A leaf crate, std and serde only, so the crates without a window (the
+//! A leaf crate, std, serde and log only, so the crates without a window (the
 //! phone, the assistant, the pinentry, the NixOS model) share it with the
 //! kit, which re-exports it:
 //!
@@ -16,6 +16,7 @@
 //! | [`percent`] | `%20` escapes |
 //! | [`intern`] | a string that lives for the program's run |
 //! | [`app_ids`] | the programs' ids |
+//! | [`migrate`] | the one-time move from the names before emaki |
 
 #![warn(missing_docs)]
 
@@ -24,6 +25,7 @@ pub mod args;
 pub mod format;
 pub mod fs;
 pub mod intern;
+pub mod migrate;
 pub mod mime;
 pub mod paths;
 pub mod percent;

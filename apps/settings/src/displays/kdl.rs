@@ -70,8 +70,11 @@ pub struct Displays {
 const HEADER: &str = "// Written by Shell Settings (Displays), which reads it back; lines it\n\
                       // doesn't know are kept. niri's config.kdl includes it.\n";
 
-/// The header an older Settings wrote, read as the header too.
-const OLD_HEADER: [&str; 2] = [
+/// The headers an older Settings wrote, read as the header too: before the
+/// rename to emaki, and before that before lines it didn't know were kept.
+const OLD_HEADER: [&str; 4] = [
+    "// Written by Shell Settings (Displays), which reads it back; lines it",
+    "// doesn't know are kept. niri's config.kdl includes it.",
     "// Written by Shell Settings (Displays), which reads it back: edits by",
     "// hand may be lost. niri's config.kdl includes it.",
 ];
@@ -763,6 +766,23 @@ window-rule {
             LIVE.lines().skip(2).collect::<Vec<_>>()
         );
         assert_eq!(Displays::read_kdl(&written).write_kdl(), written);
+    }
+
+    #[test]
+    fn every_header_reads_as_the_header() {
+        for header in OLD_HEADER
+            .chunks(2)
+            .chain([&HEADER.lines().collect::<Vec<_>>()[..]])
+        {
+            let text = format!(
+                "{}\n\noutput \"eDP-1\" {{\n    scale 2\n}}\n",
+                header.join("\n")
+            );
+            let displays = Displays::read_kdl(&text);
+            assert!(displays.extra.is_empty(), "{header:?}");
+            assert_eq!(displays.outputs[0].scale, Some(2.0));
+            assert!(displays.write_kdl().starts_with(HEADER));
+        }
     }
 
     #[test]

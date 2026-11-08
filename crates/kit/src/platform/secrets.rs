@@ -43,8 +43,18 @@ fn remember(app: &str, name: &str, kept: bool) {
 }
 
 /// The secret `name` of `app`, from the keyring or else the app's file.
+/// One kept under the app's name from before the rename to emaki
+/// ([`crate::migrate::old_id`]) is found too.
 pub fn lookup(app: &str, name: &str) -> Option<String> {
-    let found = Command::new("secret-tool")
+    let found = keyring(app, name)
+        .or_else(|| crate::migrate::old_id(app).and_then(|old| keyring(old, name)))
+        .or_else(|| file_secrets(app).remove(name));
+    remember(app, name, found.is_some());
+    found
+}
+
+fn keyring(app: &str, name: &str) -> Option<String> {
+    Command::new("secret-tool")
         .args(["lookup", "application", app, "account", name])
         .stderr(Stdio::null())
         .output()
@@ -52,9 +62,6 @@ pub fn lookup(app: &str, name: &str) -> Option<String> {
         .filter(|output| output.status.success())
         .map(|output| String::from_utf8_lossy(&output.stdout).into_owned())
         .filter(|secret| !secret.is_empty())
-        .or_else(|| file_secrets(app).remove(name));
-    remember(app, name, found.is_some());
-    found
 }
 
 /// Keeps `secret` as `name` of `app`, labelled `label` in the keyring;
@@ -103,12 +110,15 @@ pub fn store(app: &str, name: &str, label: &str, secret: &str) -> Kept {
 
 /// Forgets `name` of `app`, from the keyring and the file.
 pub fn forget(app: &str, name: &str) {
-    if let Err(error) = Command::new("secret-tool")
-        .args(["clear", "application", app, "account", name])
-        .stderr(Stdio::null())
-        .status()
-    {
-        log::warn!("secret-tool clear: {error}");
+    // and the copy under the name from before the rename, which lookup finds
+    for app in std::iter::once(app).chain(crate::migrate::old_id(app)) {
+        if let Err(error) = Command::new("secret-tool")
+            .args(["clear", "application", app, "account", name])
+            .stderr(Stdio::null())
+            .status()
+        {
+            log::warn!("secret-tool clear: {error}");
+        }
     }
     let mut file = file_secrets(app);
     if file.remove(name).is_some() {

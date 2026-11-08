@@ -103,4 +103,6 @@ pub use look::{glass, glass_region, lab, material, style};
 pub use platform::{app, app_icon, launch, marker, process, secrets, service, settings, shell_ipc};
 
 // what's below the UI, from amane-base, so an app needs only the kit
-pub use amane_base::{app_ids, args, format, fs, intern, mime, paths, percent, sync, time};
+pub use amane_base::{
+    app_ids, args, format, fs, intern, migrate, mime, paths, percent, sync, time,
+};

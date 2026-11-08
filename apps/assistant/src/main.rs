@@ -23,6 +23,7 @@ use std::path::PathBuf;
 
 fn main() {
     amane_log::init(amane_base::app_ids::ASSISTANT);
+    amane_base::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let engine = engine::Engine::new(models_dir(), cache_dir());
     let result = match args

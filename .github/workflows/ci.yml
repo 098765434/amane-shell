@@ -38,11 +38,11 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
       - name: shellcheck
-        run: nix run nixpkgs#shellcheck -- gen-layer-rules.sh scripts/check-pins scripts/idle-report scripts/lint-terms
+        run: nix run nixpkgs#shellcheck -- gen-layer-rules.sh scripts/check-pins scripts/idle-report scripts/lint-terms scripts/migrate-from-amane
 
       # no other vendor's platform terms in the text (docs/archive/ROADMAP.md, ground rules)
       - name: lint-terms
-        run: scripts/lint-terms
+        run: scripts/lint-terms scripts/migrate-from-amane
 
       # every relative link in the Markdown names a file that exists
       - name: links

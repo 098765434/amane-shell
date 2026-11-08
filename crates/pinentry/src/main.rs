@@ -27,6 +27,7 @@ const ANSWER_TIME: Duration = Duration::from_secs(180);
 
 fn main() -> ExitCode {
     amane_log::init(amane_base::app_ids::PINENTRY);
+    amane_base::migrate::from_amane();
     let Some(shell) = shell() else {
         return fallback();
     };

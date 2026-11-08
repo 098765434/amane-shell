@@ -156,6 +156,7 @@ fn want(phone: &Phone) {
 
 fn main() {
     amane_log::init(amane_kit::app_ids::MIRROR);
+    amane_kit::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
 
     if args.iter().any(|arg| arg == "--list-apps") {

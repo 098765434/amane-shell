@@ -30,6 +30,7 @@ static ITEM: OnceLock<StatusItem> = OnceLock::new();
 
 fn main() {
     amane_log::init(APP_ID);
+    amane_kit::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     // a copy already running takes this launch: `App::run` hands it over
     let running = UnixStream::connect(amane::ipc_socket_for(APP_ID)).is_ok();

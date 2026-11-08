@@ -40,6 +40,7 @@ enum Message {
 
 fn main() {
     amane_log::init(amane_base::app_ids::TRAIN_WATCH);
+    amane_base::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let plain = args.iter().any(|a| a == "--plain");
     let names: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
