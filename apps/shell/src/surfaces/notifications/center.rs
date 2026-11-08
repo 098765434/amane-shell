@@ -79,10 +79,14 @@ fn closed() {
     EXPANDED.with_borrow_mut(HashSet::clear);
 }
 
-/// Whether something arrived since the center was last opened.
+/// Whether something arrived since the center was last opened; what was
+/// restored from before a restart was there already.
 pub fn unseen() -> bool {
     let seen = SEEN.with(Cell::get);
-    Notifications::read().list().iter().any(|n| n.id() > seen)
+    Notifications::read()
+        .list()
+        .iter()
+        .any(|n| n.id() > seen && !n.restored())
 }
 
 // ───── groups ────────────────────────────────────────────────────────────────
@@ -94,14 +98,10 @@ struct Group {
     cards: Vec<Notification>,
 }
 
-/// What groups a notification: its desktop entry, else its app name.
+/// What groups a notification: its desktop entry, else its app name, the
+/// key its app's rule is kept under too.
 fn group_key(desktop_entry: &str, app_name: &str) -> String {
-    let key = if desktop_entry.is_empty() {
-        app_name
-    } else {
-        desktop_entry
-    };
-    key.to_lowercase()
+    amane_kit::settings::notification_app_key(desktop_entry, app_name)
 }
 
 /// Groups newest first, each newest card first. `list` is oldest first,
@@ -120,6 +120,24 @@ fn groups(list: &[Notification]) -> Vec<Group> {
         }
     }
     groups
+}
+
+/// A card was clicked: its default action, or for one restored from
+/// before a restart, whose sender can't hear it, its app opens.
+fn click(id: u32) {
+    let restored = Notifications::read()
+        .list()
+        .iter()
+        .find(|n| n.id() == id)
+        .filter(|n| n.restored())
+        .map(|n| String::from(n.desktop_entry()));
+    match restored {
+        Some(entry) => {
+            amane_kit::app_icon::with_entry(&entry, amane::DesktopApp::launch);
+            Notifications::dismiss(id);
+        }
+        None => Notifications::click(id),
+    }
 }
 
 // ───── view ──────────────────────────────────────────────────────────────────
@@ -395,7 +413,7 @@ fn group_view(
                             if many && !expanded {
                                 EXPANDED.with_borrow_mut(|open| open.insert(group.clone()));
                             } else {
-                                Notifications::click(id);
+                                click(id);
                             }
                         },
                     )
@@ -496,13 +514,6 @@ fn group_header(name: &str, group: &str, ids: Vec<u32>, width: f32, height: f32)
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn groups_by_desktop_entry_then_app_name() {
-        assert_eq!(group_key("firefox", "Firefox Nightly"), "firefox");
-        assert_eq!(group_key("", "Slack"), "slack");
-        assert_eq!(group_key("Org.Gnome.Nautilus", ""), "org.gnome.nautilus");
-    }
 
     #[test]
     fn a_stack_peeks_and_an_open_group_lists() {

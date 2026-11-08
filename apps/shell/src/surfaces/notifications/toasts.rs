@@ -31,6 +31,7 @@ use amane_kit::glass_region;
 use amane_kit::layout::blank;
 use amane_kit::material::Material;
 use amane_kit::motion::{self, Arrive, Item, Pose, Shown};
+use amane_kit::settings::{AppRule, NotificationRules, notification_app_key, notification_rules};
 
 /// Layer-surface namespace of every toast; the niri `layer-rule` matches it.
 pub const TOAST_NS: &str = "amane.notifications.toast";
@@ -107,6 +108,7 @@ impl Service for Toasts {
     fn update(&mut self) -> bool {
         let now = SystemTime::now();
         let dnd = DoNotDisturb::read().on();
+        let rules = notification_rules().clone();
 
         let (shown, finished) = {
             let notifications = Notifications::read();
@@ -119,13 +121,14 @@ impl Service for Toasts {
 
             let shown: Vec<u32> = list
                 .iter()
-                .filter(|n| self.shows(n, now, dnd))
+                .filter(|n| self.shows(n, now, dnd, &rules))
                 .map(Notification::id)
                 .collect();
-            // a transient notification is done once its toast is
+            // a transient notification is done once its toast is, and one
+            // from an app that's turned off as it comes
             let finished: Vec<u32> = list
                 .iter()
-                .filter(|n| n.transient() && !self.alive(n, now))
+                .filter(|n| (n.transient() && !self.alive(n, now)) || silenced(n, &rules))
                 .map(Notification::id)
                 .collect();
             (shown, finished)
@@ -163,9 +166,16 @@ impl Toasts {
         alive(Toast::from(n), now, self)
     }
 
-    /// Whether `n`'s toast is up: alive, and let through Do Not Disturb.
-    fn shows(&self, n: &Notification, now: SystemTime, dnd: bool) -> bool {
-        self.alive(n, now) && (!dnd || critical(n))
+    /// Whether `n`'s toast is up: alive, and let through Do Not Disturb
+    /// and its app's rule.
+    fn shows(
+        &self,
+        n: &Notification,
+        now: SystemTime,
+        dnd: bool,
+        rules: &NotificationRules,
+    ) -> bool {
+        banner(n, rules) && self.alive(n, now) && (!dnd || critical(n))
     }
 
     /// The pointer came onto a toast (`true`) or left them.
@@ -226,6 +236,25 @@ impl From<&Notification> for Toast {
     }
 }
 
+/// Whether `n` may have a banner: not one restored from before a restart,
+/// and its app's rule allows one, unless it's critical.
+fn banner(n: &Notification, rules: &NotificationRules) -> bool {
+    if n.restored() {
+        return false;
+    }
+    critical(n) || rule(n, rules) == AppRule::Allow
+}
+
+/// Whether `n` is from an app that's turned off, so it goes as it comes;
+/// a critical one still shows.
+fn silenced(n: &Notification, rules: &NotificationRules) -> bool {
+    !n.restored() && !critical(n) && rule(n, rules) == AppRule::Off
+}
+
+fn rule(n: &Notification, rules: &NotificationRules) -> AppRule {
+    rules.rule(&notification_app_key(n.desktop_entry(), n.app_name()))
+}
+
 /// How long a toast shows: what the sender asked for, the shell's default,
 /// or (`None`) until the user acts — always so for a critical one.
 fn lifetime(timeout: Timeout, urgency: Urgency) -> Option<Duration> {
@@ -266,6 +295,7 @@ fn end(toast: Toast, state: &Toasts) -> Option<SystemTime> {
 fn frame(now: SystemTime) -> Vec<(usize, Shown<Measured>)> {
     let dnd = DoNotDisturb::read().on();
     let center = is_open(Panel::Notifications);
+    let rules = notification_rules().clone();
 
     // one service lock at a time: the Toasts tick holds its own while it
     // reads and expires notifications
@@ -280,7 +310,7 @@ fn frame(now: SystemTime) -> Vec<(usize, Shown<Measured>)> {
         let toasts = Toasts::read();
         all.into_iter()
             .rev()
-            .filter(|n| !center && toasts.shows(n, now, dnd))
+            .filter(|n| !center && toasts.shows(n, now, dnd, &rules))
             .take(max_visible)
             .collect()
     };

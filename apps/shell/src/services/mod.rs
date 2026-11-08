@@ -40,6 +40,10 @@
 //! - [`launcher::file_search`] — files by name and content for the launcher's
 //!   Files (LocalSearch's index, or `fd`).
 //!
+//! Notifications:
+//!
+//! - [`notification_history`] — the notification center's history, kept across restarts.
+//!
 //! Passwords (`vault/`):
 //!
 //! - [`vault`] — Bitwarden through rbw: locked or not, its entries without their
@@ -61,6 +65,7 @@ pub mod do_not_disturb;
 pub mod launcher;
 pub mod media_art;
 pub mod network;
+pub mod notification_history;
 pub mod phone;
 pub mod power;
 pub mod status_apps;

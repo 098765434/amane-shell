@@ -1,5 +1,6 @@
 //! What the shell has seen, kept in its cache folder so Shell Settings can list it when it
-//! isn't there: tray apps, programs with their own item, and apps that showed an activity.
+//! isn't there: tray apps, programs with their own item, apps that showed an activity, and
+//! apps that sent a notification.
 //! Each file is read again only when it changed, and written only when something is new.
 
 use super::*;
@@ -64,6 +65,7 @@ where
 const STATUS_APPS: &str = "status-apps-seen.json";
 const ACTIVITIES: &str = "activities-seen.json";
 const TRAY: &str = "tray-seen.json";
+const NOTIFIERS: &str = "notifiers-seen.json";
 
 /// Every program seen with its own item in the bar (`ItemSpec`), as (id,
 /// what it calls itself), by id.
@@ -100,4 +102,18 @@ pub fn tray_seen() -> BTreeMap<String, String> {
 /// now has none.
 pub fn remember_tray(id: &str, title: &str) {
     remember_named(TRAY, id, title);
+}
+
+/// Every app seen sending a notification, as (key, name), by its
+/// [`notification_app_key`](super::notification_app_key).
+pub fn notifiers_seen() -> BTreeMap<String, String> {
+    seen_cached(NOTIFIERS)
+}
+
+/// Remembers an app that sent a notification, once; a name it had before
+/// is kept when it now has none.
+pub fn remember_notifier(key: &str, name: &str) {
+    if !key.is_empty() {
+        remember_named(NOTIFIERS, key, name);
+    }
 }

@@ -150,6 +150,11 @@ fn main() -> ExitCode {
     // and rbw's pinentry: the master password asked in the shell's own dialog
     services::vault::pinentry::serve();
 
+    // the notification center's history from before the shell last stopped, then kept as it
+    // changes
+    services::notification_history::restore();
+    services::notification_history::watch();
+
     // a sample menu for `arm` and `open`, in debug builds
     if cfg!(debug_assertions) {
         context_menu::register("file", sample_menu());

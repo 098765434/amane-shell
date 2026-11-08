@@ -1,6 +1,7 @@
 //! The shell's settings that a settings app changes and the shell follows
 //! live: `~/.config/amane-shell/appearance.json`, `desktop.json`,
-//! `launcher.json`, `status-bar.json`, `dock.json` and `nixos.json`,
+//! `launcher.json`, `status-bar.json`, `dock.json`, `nixos.json` and
+//! `notifications.json`,
 //! through amane's `Config`. [`theme`](crate::theme) reads the appearance,
 //! between the `AMANE_*` overrides and what the system says.
 
@@ -45,6 +46,7 @@ mod dock;
 mod drop;
 mod launcher;
 mod nixos;
+mod notifications;
 mod passwords;
 mod seen;
 mod status_bar;
@@ -56,6 +58,7 @@ pub use dock::*;
 pub use drop::*;
 pub use launcher::*;
 pub use nixos::*;
+pub use notifications::*;
 pub use passwords::*;
 pub use seen::*;
 pub use status_bar::*;

@@ -100,6 +100,7 @@ whether [Shell Settings](../shell/settings-app.md), the launcher or a text edito
 | `appearance.json` | mode, accent, density, text scale, glass, reduced motion, adaptive glass, vibrancy |
 | `desktop.json` | whether the widgets show, and how they dim |
 | `launcher.json` | the apps' layout, the search sources left out, quick keys, the clipboard history's settings |
+| `notifications.json` | each app's notification rule (banners and list, list only, off), by its desktop entry else its name |
 
 **State** lives in `$XDG_STATE_HOME/amane-shell/` (else `~/.local/state/amane-shell/`). A missing
 file means the default. Each state file is JSON with its format's version beside the data,
@@ -118,13 +119,15 @@ again. The old readers go after 2027-01.
 | `vpn.json` | the last VPN used | `services/network/connections.rs` | `vpn` |
 | `hdr-white.json` | each panel's SDR white in HDR, in nits, set in niri again after a config read | `services/display/hdr_white.rs` | nothing: it was the `sdr-brightness` line of `displays.kdl` |
 | `launcher-usage.json` | how much each result was used, and the last searches | `launcher/usage.rs` | the same file without a version |
+| `notifications.json` | the notification center's history: up to 100, none older than 14 days, without actions | `services/notification_history.rs` | nothing: history lasted the session |
 | `clipboard/index.json` | the clipboard history; each copy is a file of its own beside it | `services/launcher/clipboard_history.rs` | the same file without a version |
 
 Keep Awake keeps nothing: its holds are inhibitors tied to the running shell.
 
 **Caches** in `$XDG_CACHE_HOME/amane-shell/`, so Shell Settings can list what isn't running:
-`tray-seen.json`, `status-apps-seen.json` (programs' items: id → name) and
-`activities-seen.json` (the names activities gave).
+`tray-seen.json`, `status-apps-seen.json` (programs' items: id → name),
+`activities-seen.json` (the names activities gave) and `notifiers-seen.json` (apps that sent a
+notification: key → name).
 
 ### amane-drop's files
 

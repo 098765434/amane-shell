@@ -72,8 +72,9 @@ springs in when the **clock** is clicked and closes with Escape, the clock, or t
 shares Quick Settings' one-open-at-a-time state (`Panel::Notifications`). Its header shows Do Not
 Disturb's state, **Clear All**, and the Do Not Disturb button, which opens the timed menu.
 
-Notifications are grouped by app (`desktop-entry`, else the app name), newest group first.
-History lasts the session: a notification stays until it is dismissed or the shell restarts.
+Notifications are grouped by app (`desktop-entry`, else the app name, lowercased:
+`amane_kit::settings::notification_app_key`), newest group first. A notification stays until it
+is dismissed, across restarts of the shell (see [History](#history)).
 
 - **One notification** is a plain card.
 - **Several** form a **stack**: the newest card in front, and up to
@@ -85,6 +86,41 @@ History lasts the session: a notification stays until it is dismissed or the she
   went keeps drawing until it has slid out.
 
 Times read "now", "5m ago", "2h ago", then the day. They tick with the bar's `Clock`.
+
+## History (`services/notification_history.rs`)
+
+The center's list outlives the shell. Whenever the notifications change, the shell saves each
+one's words, icon, image path, sender and time (amane's `Notification::kept()`) to the state file
+`notifications.json`, oldest first: at most 100, none older than 14 days, and no transient ones.
+An unchanged list isn't written again. Nothing is saved while another daemon has the
+notifications.
+
+At startup, before the surfaces come up, the file goes back to amane (`Notifications::restore`):
+
+- A restored notification has a new id and **no actions**, since its sender may be gone and
+  couldn't hear them. Clicking it opens its app (its desktop entry, as the dock finds it) and
+  dismisses it.
+- It never shows a toast, even a critical one, and it doesn't light the bar's bell: it was there
+  before.
+- Its image is kept by path. One amane saved from raw pixels lives in
+  `$XDG_RUNTIME_DIR/amane-notifications`, which a reboot empties, so after a reboot the card
+  shows the app's icon instead.
+
+## Per-app rules
+
+Shell Settings' **Notifications** page sets a rule for each app that has sent one
+(`notifications.json` in the settings folder, keyed like the groups; the apps are remembered in
+the cache's `notifiers-seen.json`):
+
+| Rule | Toast | Center |
+|---|---|---|
+| **Banners and List** (the default) | yes | yes |
+| **List Only** | no | yes |
+| **Off** | no | no: it's expired as it arrives |
+
+A critical notification shows whatever its app's rule, as it does through Do Not Disturb. The
+toasts read the rules (`toasts.rs`: `banner`, `silenced`), so a change applies to the next
+notification.
 
 ## Do Not Disturb (`dnd.rs`)
 
@@ -140,4 +176,5 @@ softness 48, the design's `0 8 48`; see [layer-rules.md](../integration/layer-ru
 
 - Toasts look see-through until the generated layer rules are in niri's config (see
   [layer-rules.md](../integration/layer-rules.md)).
-- No sounds, inline reply, per-app settings, or Focus schedules.
+- No sounds, inline reply, or Focus schedules.
+- A restored notification can't run its sender's actions.
