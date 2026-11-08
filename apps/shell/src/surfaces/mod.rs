@@ -1,6 +1,6 @@
 //! The shell's surfaces: the status bar, the dock, the launcher,
 //! notifications, Quick Settings, the desktop widgets, the password fill, the
-//! alert and the on-screen display. Each is documented in `docs/shell/`.
+//! alert and the on-screen display. Each is documented in `docs/user/features/`.
 //!
 //! Each is a folder whose `mod.rs` is its only face to the others: its
 //! surface, and the functions and types it offers. What it keeps and draws
@@ -25,7 +25,7 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     /// How long a surface's file may be. Past this it gets split along what
-    /// it does (docs/development/shell-structure.md).
+    /// it does (docs/developer/shell-structure.md).
     const MOST_LINES: usize = 650;
 
     fn root() -> PathBuf {

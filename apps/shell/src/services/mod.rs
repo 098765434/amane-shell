@@ -47,12 +47,12 @@
 //! Passwords (`vault/`):
 //!
 //! - [`vault`] — Bitwarden through rbw: locked or not, its entries without their
-//!   secrets, the shell's pinentry, and which app owns a field (`docs/shell/passwords.md`).
+//!   secrets, the shell's pinentry, and which app owns a field (`docs/user/features/passwords.md`).
 //!
 //! Shared helpers: [`state`] (the state files),
 //! [`run`], [`run_now`], [`installed`] and [`Latest`] (`process.rs`), and [`Wake`] (`wake.rs`).
 //!
-//! See `docs/shell/quick-settings.md` and `docs/shell/widgets.md`.
+//! See `docs/user/features/quick-settings.md` and `docs/user/features/widgets.md`.
 //!
 //! [`Service`]: amane::Service
 

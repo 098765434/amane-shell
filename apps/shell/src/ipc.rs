@@ -1,7 +1,7 @@
 //! The shell's IPC: the one table of the verbs it answers on its socket
 //! (`$XDG_RUNTIME_DIR/amane.sock`). Each verb's lines are read into the kit's
 //! [`ShellCommand`], which other programs send too, and handed to the surface
-//! or service it's for. See `docs/integration/ipc.md`.
+//! or service it's for. See `docs/developer/integration/ipc.md`.
 
 use amane::App;
 use amane_kit::menu::layer as context_menu;
@@ -130,10 +130,10 @@ mod tests {
 
     use super::*;
 
-    /// The verbs `docs/integration/ipc.md` documents: its `` ### `verb` ``
+    /// The verbs `docs/developer/integration/ipc.md` documents: its `` ### `verb` ``
     /// headings under Commands, and the calls in the Context menus table.
     fn documented() -> BTreeSet<String> {
-        let doc = include_str!("../../../docs/integration/ipc.md");
+        let doc = include_str!("../../../docs/developer/integration/ipc.md");
         let commands = doc
             .split_once("\n## Commands\n")
             .map(|(_, rest)| rest.split("\n## ").next().unwrap_or(rest))
@@ -164,7 +164,7 @@ mod tests {
         let missing: Vec<_> = doc.difference(&code).collect();
         assert!(
             undocumented.is_empty() && missing.is_empty(),
-            "not in docs/integration/ipc.md: {undocumented:?}; documented but not registered: {missing:?}"
+            "not in docs/developer/integration/ipc.md: {undocumented:?}; documented but not registered: {missing:?}"
         );
     }
 

@@ -6,7 +6,7 @@
 //! temperature all day (its day and night temperatures a degree apart), and
 //! turning off stops it, which gives the screens their colours back. A
 //! `wlsunset` the compositor starts by itself would fight this one, so it
-//! shouldn't (see `docs/shell/quick-settings.md`).
+//! shouldn't (see `docs/user/features/quick-settings.md`).
 //!
 //! A [`Schedule`] lets `wlsunset` do what it's for instead: warm from sunset
 //! to sunrise where the machine is, or between two set times, and the

@@ -89,7 +89,7 @@ open, for example with `gdbus` in a loop or a small Python `dbus-next` client.
 
 At `/org/amane/StatusBar`, interface `org.amane.StatusBar1`. The methods, signals and errors
 are listed once, in amane-shell's
-[status-apps.md](../../docs/integration/status-apps.md#the-interface). What the client relies on:
+[status-apps.md](../../docs/developer/integration/status-apps.md#the-interface). What the client relies on:
 
 - **Versions.** Payloads carry `v` (now `1`; left out means `1`). The bar
   refuses a payload newer than it knows.
@@ -111,10 +111,10 @@ are listed once, in amane-shell's
 
 ## Related
 
-- amane-shell's [writing a status app](https://github.com/098765434/amane-shell/blob/main/docs/integration/writing-a-status-app.md):
+- amane-shell's [writing a status app](https://github.com/098765434/amane-shell/blob/main/docs/developer/integration/status-apps.md#writing-a-status-app):
   a window under the item, drags through it, what to put in an activity, running as a
   service. amane-drop is the worked example.
-- amane-shell's [status apps internals](https://github.com/098765434/amane-shell/blob/main/docs/development/status-apps.md):
+- amane-shell's [status apps internals](https://github.com/098765434/amane-shell/blob/main/docs/developer/integration/status-apps.md#the-pieces-across-repos):
   how the bar serves this, and testing beside a running desktop.
 - amane's [tray](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/tray.md): the StatusNotifierItem tray, for programs that already speak it.
 - amane's [notifications](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md): `Notify`, for what is over rather than going on.

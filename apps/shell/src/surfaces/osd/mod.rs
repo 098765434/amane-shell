@@ -7,7 +7,7 @@
 //! The keys come to the shell over IPC ([`keys`]), which changes the level
 //! and shows it at once; changes made anywhere else (a script, a headset's
 //! buttons, the keyboard light's own key) show too, noticed by the services
-//! they change ([`watch`]). See `docs/shell/osd.md`.
+//! they change ([`watch`]). See `docs/user/features/osd.md`.
 //!
 //! One surface, placed by niri on the focused output, as big as the
 //! capsule and taking no input. Hidden, it's `visible(false)` and holds

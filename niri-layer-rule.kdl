@@ -8,7 +8,7 @@
 //
 // Don't hand-copy these into the niri config. gen-layer-rules.sh injects
 // everything below the sentinel into the config between its
-// `>>> amane layer-rules` / `<<<` markers (see docs/integration/layer-rules.md); then:
+// `>>> amane layer-rules` / `<<<` markers (see docs/developer/integration/layer-rules.md); then:
 //
 //     niri validate -c ~/.config/niri/config.kdl
 //     niri msg action load-config-file

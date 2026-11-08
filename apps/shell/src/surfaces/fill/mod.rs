@@ -1,6 +1,6 @@
 //! Password fill in other apps: the shell is the seat's input method, so when an app's
 //! password field has the keyboard a small popup by the field offers that app's Bitwarden
-//! entries, and a click fills one in. See `docs/shell/passwords.md`.
+//! entries, and a click fills one in. See `docs/user/features/passwords.md`.
 //!
 //! - **What it trusts.** Who owns the field comes from the compositor, and the app id the
 //!   window claims is only believed once [`identity`] checked it against what's installed. An

@@ -83,7 +83,7 @@
       # to a Hugging Face commit and its hash; nothing is fetched at run time.
       # Only x86_64-linux here; elsewhere the daemon builds without an engine.
       # The library is linked statically, with the LLVM libc++ it was built
-      # against, so the daemon needs nothing more. See docs/shell/assistant.md.
+      # against, so the daemon needs nothing more. See docs/user/features/assistant.md.
       cactusFor =
         pkgs:
         let
@@ -128,7 +128,7 @@
       # costs about 6.5 MB of RSS per amane process, so on a machine with a
       # Radeon only its driver is named; others get the whole dir. The backend
       # is pinned to Vulkan so wgpu doesn't probe GL as well.
-      # See docs/development/memory.md.
+      # See docs/developer/memory.md.
       vulkanIcdFallback = ''
         if [ -z "''${VK_ICD_FILENAMES:-}" ] && [ -d /run/opengl-driver/share/vulkan/icd.d ]; then
           if [ -e /run/opengl-driver/share/vulkan/icd.d/radeon_icd.x86_64.json ]; then
@@ -169,7 +169,7 @@
                 ./crates
                 ./xtask
                 # the IPC test checks the verbs against it
-                ./docs/integration/ipc.md
+                ./docs/developer/integration/ipc.md
                 ./niri-layer-rule.kdl
                 ./gen-layer-rules.sh
               ];

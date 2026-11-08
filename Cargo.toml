@@ -92,7 +92,7 @@ amane = { git = "https://github.com/098765434/amane", rev = "4ef7616cff36ce7358b
 # instead of 165, vello_encoding) that are let go when idle (vello). A patch
 # only applies from the root manifest, so amane's own entries do nothing for
 # this build; these must match them. The nix build needs the fork's hash in
-# flake.nix outputHashes, once per crate. See docs/development/memory.md.
+# flake.nix outputHashes, once per crate. See docs/developer/memory.md.
 [patch.crates-io]
 vello = { git = "https://github.com/098765434/vello", rev = "8b61bd281d2d3be32f4de66b1e3c05b10fe7b8e6" }
 vello_encoding = { git = "https://github.com/098765434/vello", rev = "8b61bd281d2d3be32f4de66b1e3c05b10fe7b8e6" }

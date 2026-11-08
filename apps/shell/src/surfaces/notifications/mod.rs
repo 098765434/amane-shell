@@ -12,7 +12,7 @@
 //! - [`card`] — the card both draw; [`motion`](amane_kit::motion)
 //!   moves their cards.
 //!
-//! See `docs/shell/notifications.md`.
+//! See `docs/user/features/notifications.md`.
 
 mod calendar_card;
 pub mod card;

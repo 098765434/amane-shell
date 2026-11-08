@@ -28,7 +28,7 @@
 //! one-open-at-a-time state ([`Panel::QuickSettings`]), opened from the
 //! bar's Quick Settings button, a status icon, or over IPC:
 //! `quick-settings [toggle [<page>] | open [<page>] | close]`. See
-//! `docs/shell/quick-settings.md`.
+//! `docs/user/features/quick-settings.md`.
 //!
 //! A status icon opens its page on its own (`open_alone`): no grid behind
 //! it and no back chevron, Escape closes it, and the icon again closes it.

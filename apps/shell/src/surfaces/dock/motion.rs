@@ -17,7 +17,7 @@ use amane::{Animation, Blend, Easing};
 use amane_kit::settings::{self, dock};
 
 // TODO(token): these become `dock.motion.*` tokens once Penpot has them
-// (manual §1.1; docs/design-system/penpot-backlog.md).
+// (manual §1.1; docs/developer/design-system/penpot-backlog.md).
 /// The dock's motion as shipped.
 pub const DOCK: DockMotion = DockMotion {
     enabled: true,

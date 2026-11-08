@@ -1,5 +1,5 @@
 //! Bitwarden, through rbw: whether the vault is locked, its entries without their secrets, and
-//! the commands Shell Settings and the fill popup run. See `docs/shell/passwords.md`.
+//! the commands Shell Settings and the fill popup run. See `docs/user/features/passwords.md`.
 //!
 //! - [`rbw`]: the rbw commands, by store path, with no secret in an argument.
 //! - [`secret`]: a password or code on its way into a field, wiped when dropped.

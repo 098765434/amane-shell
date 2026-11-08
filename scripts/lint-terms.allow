@@ -9,3 +9,6 @@ path Cargo.lock
 # this list and the script name the terms
 path scripts/lint-terms
 path scripts/lint-terms.allow
+
+# a plan that compares other platforms' extension systems by name
+path docs/developer/extensions-plan.md

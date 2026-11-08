@@ -55,7 +55,7 @@ pub struct Card {
     pub y: f32,
 }
 
-// TODO(token): `sys.shadow.popover` once Penpot has it (docs/design-system/penpot-backlog.md).
+// TODO(token): `sys.shadow.popover` once Penpot has it (docs/developer/design-system/penpot-backlog.md).
 // The rules are static, so the shadow can't follow the mode: this is the
 // dark one, which also reads in light (the banner design's light shadow is
 // lighter, `#00000040`).
@@ -295,7 +295,7 @@ const HEADER: &str = "\
 //
 // Don't hand-copy these into the niri config. gen-layer-rules.sh injects
 // everything below the sentinel into the config between its
-// `>>> amane layer-rules` / `<<<` markers (see docs/integration/layer-rules.md); then:
+// `>>> amane layer-rules` / `<<<` markers (see docs/developer/integration/layer-rules.md); then:
 //
 //     niri validate -c ~/.config/niri/config.kdl
 //     niri msg action load-config-file

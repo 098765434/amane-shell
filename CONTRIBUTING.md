@@ -37,12 +37,12 @@ assistant's library. `cargo xtask` runs the workspace's tasks:
 | `cargo xtask tokens check <file>` | runs the manual's rules on a token file |
 | `cargo xtask lint-terms` | `scripts/lint-terms` |
 | `cargo xtask links` | fails on a relative Markdown link to a file that isn't there |
-| `cargo xtask contract` | amane and niri agree at the pinned revisions ([contract.md](docs/integration/contract.md)); reads `../amane` and `../niri` |
+| `cargo xtask contract` | amane and niri agree at the pinned revisions ([contract.md](docs/developer/integration/contract.md)); reads `../amane` and `../niri` |
 
 ### Bumping revs
 
 Bumping amane, vello or niri, the hashes Nix needs, nixos-config and the switch are in
-[docs/development/release.md](docs/development/release.md).
+[docs/developer/release.md](docs/developer/release.md).
 
 `scripts/check-pins` tells you when that local build differs from the Nix build: `../amane` isn't
 at the pinned rev, has uncommitted changes, or pins a different vello rev than the shell does.
@@ -50,7 +50,7 @@ at the pinned rev, has uncommitted changes, or pins a different vello rev than t
 
 `scripts/idle-report [seconds]` measures what the running shell costs while nothing happens:
 wakeups, CPU time, memory and the programs it starts. Run it with `sudo` for an exact count of
-programs and PSS instead of RSS. [docs/development/idle-baseline.md](docs/development/idle-baseline.md)
+programs and PSS instead of RSS. [docs/developer/idle-baseline.md](docs/developer/idle-baseline.md)
 holds the numbers to compare against.
 
 ## Before a PR
@@ -69,7 +69,7 @@ tests (`clippy.toml`). A public item without a doc comment is an error in the ki
 `amane-phone` and `amane-nixos` (`missing_docs` is `deny`), and a warning that clippy's
 `-D warnings` turns into one in `amane-process`, `amane-log`, `amane-assistant` and
 `amane-pinentry`. Rustdoc's own warnings fail CI too. Some tests check the code against the
-docs and the compositor: every IPC verb is in `docs/integration/ipc.md`, every layer namespace
+docs and the compositor: every IPC verb is in `docs/developer/integration/ipc.md`, every layer namespace
 has a niri rule, every material setting is in niri's range, and the service parsers read the
 recorded output in `apps/shell/tests/fixtures/`. When one fails, the message says which side to fix.
 
@@ -78,7 +78,7 @@ what it is ("the launcher", "Quick Settings", "glass"). Names kept on purpose ar
 `scripts/lint-terms.allow`, or carry a `lint-terms: allow` comment. The forks' CI runs it on the
 lines they add, with `--diff`.
 
-Before adding a component, read [docs/development/performance.md](docs/development/performance.md):
+Before adding a component, read [docs/developer/performance.md](docs/developer/performance.md):
 what makes a window draw, and the rules that keep an idle desktop from drawing at all. Every doc
 is listed in [docs/README.md](docs/README.md).
 
@@ -93,7 +93,7 @@ is listed in [docs/README.md](docs/README.md).
   `cargo xtask tokens check design-tokens/tokens.json`; never hand-edit the file or hardcode a
   value. Code reads tokens through functions generated from the file
   (`sys::color::surface::popover::bg()`), so a renamed token is a compile error. Rules and
-  workflow: [docs/design-system/tokens.md](docs/design-system/tokens.md).
+  workflow: [docs/developer/design-system/tokens.md](docs/developer/design-system/tokens.md).
 
 ## License
 

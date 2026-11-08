@@ -1,6 +1,6 @@
 //! What the polish plan made one copy of stays one copy: each rule names a
 //! spelling that belongs in one place only, and `cargo test` fails on it
-//! anywhere else. See `docs/development/polish-plan.md`.
+//! anywhere else. See `docs/developer/polish-plan.md`.
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,7 @@
 //! The System pages: the NixOS configuration in `~/nixos-config`, read
 //! through the flake's `amaneSettings` output, changed through
 //! `managed/settings.json`, built as the user and activated through polkit
-//! ([nixos.md](../../../../docs/integration/nixos.md)).
+//! ([nixos.md](../../../../docs/developer/integration/nixos.md)).
 
 pub mod about;
 pub mod adopt;

@@ -1,8 +1,8 @@
 # amane-shell docs
 
 amane-shell is a Wayland desktop shell for niri: a status bar, a dock, the launcher,
-notifications, Quick Settings and desktop widgets, plus **amane-kit** (`crates/kit/`), the look as a
-library that the shell and its apps (Shell Settings) share. It sits on two forks:
+notifications, Quick Settings and desktop widgets, the apps beside them, and **amane-kit**
+(`crates/kit/`), the look as a library that the shell and its apps share. It sits on two forks:
 
 ```mermaid
 flowchart BT
@@ -22,17 +22,10 @@ flowchart BT
 A feature's docs live where its code lives: these docs link to the forks' rather than repeat
 them.
 
-Building and running are in the [README](../README.md); contributing in
-[CONTRIBUTING.md](../CONTRIBUTING.md).
-
-## Start here
-
-| Doc | What |
-|---|---|
-| [architecture.md](architecture.md) | the layers, the running shell, how a surface is built, how status apps plug in |
-| [integration/contract.md](integration/contract.md) | what the shell relies on from niri, amane and the kit |
-| [development/release.md](development/release.md) | bumping the forks, the hashes, nixos-config and the switch |
-| [development/testing.md](development/testing.md) | the tests, a second shell beside the live one, measuring |
+The docs are in two halves. `user/` is for someone running the desktop: installing it, setting
+it up, and what each surface does. `developer/` is for someone changing it: the architecture,
+the kit, the integration points, testing and releasing. The [README](../README.md) is the front
+page; contributing is in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## Words
 
@@ -47,98 +40,86 @@ The docs use one name for each thing:
 - Features are named for what they are ("the launcher", "glass"), never with another vendor's
   platform terms; `scripts/lint-terms` checks it.
 
-## Source layout
+## Using amane-shell
 
-A module's folder says what kind of thing it is. A new one goes where its kind is.
-
-| Folder | What goes there |
-|---|---|
-| `apps/shell/src/surfaces/` | a surface of its own, a folder each: the status bar, dock, launcher, notifications, Quick Settings, widgets, alert, on-screen display and the password-fill popup (`fill/`), each with its doc in `shell/`; how a surface is laid out is in [shell-structure.md](development/shell-structure.md) |
-| `apps/shell/src/chrome/` | what several surfaces share and only the shell has (`panel`, `bar`, `per_output`, `battery`, `workspace_menu`); the rest is the kit's |
-| `apps/shell/src/services/` | the shell's services, by domain: `power/`, `network/`, `display/`, `desktop/`, `launcher/`; `vault/` (rbw, for passwords); the assistant's client (`assistant.rs`); the status apps' bus server (`status_apps.rs`); helpers in `process.rs` and `state.rs` |
-| `apps/` | the programs beside the shell (`apps/shell`): Shell Settings, Messages, Phone Screen, Shader Lab (with its effects and saved looks), Drop, the assistant's daemon, and `train-watch`, which follows a training run from the status bar |
-| `crates/` | what they share: the kit (`crates/kit`, with the design tokens in `design-tokens/`), the status-item client (`status`), the phone (`phone`), the NixOS model (`nixos`), a process runner (`process`), logging (`log`), rbw's pinentry and the assistant's library |
-| `apps/shell/tests/fixtures/` | recorded output the shell's parsers are tested on |
-| `xtask/` | the workspace's tasks: `cargo xtask layer-rules`, `tokens`, `lint-terms`, `links` |
-| `apps/shell/src/tokens/` | what the shell generates from the tokens (niri's layer rules) |
-| `crates/kit/src/controls/` | what's pressed, dragged or picked: buttons, slider, dropdown, color picker, tag, control sizes |
-| `crates/kit/src/containers/` | what content sits in: card, list, divider, app bar, dialog, tooltip, scroll view, flow, arrangement |
-| `crates/kit/src/look/` | the look of glass: materials, the edge shader, glass regions, Shader Lab's looks |
-| `crates/kit/src/animation/` | motion, kinetic, pager, edge reveal |
-| `crates/kit/src/foundation/` | layout primitives, icons, color arithmetic |
-| `crates/kit/src/platform/` | an app's window, app icons, the settings files, markers, secrets |
-| `crates/kit/src/tokens/`, `theme.rs` | the design tokens and the theme they resolve with |
-
-The kit's folders don't show in its paths: every module is re-exported at the root, so it's
-`amane_kit::card`, not `amane_kit::containers::card`.
-
-## Shell surfaces
+### Features
 
 | Surface | What it does | Doc |
 |---|---|---|
-| Status bar | the bar in three sizes: the workspace's shape, status icons, programs' items, Activities, Quick Settings, notifications and the clock | [shell/status-bar.md](shell/status-bar.md) |
-| Drop | `amane-drop`, a drop shelf in the bar: a grid of folders, apps and actions, and a Drop Bar | [shell/drop.md](shell/drop.md) |
-| Dock | every workspace's windows and pins, rising from the bottom edge and with the overview | [shell/dock.md](shell/dock.md) |
-| Launcher | a search pill: search, Applications, Files, Actions, Clipboard | [shell/launcher.md](shell/launcher.md) |
-| Passwords | Bitwarden (rbw) fill: a popup by any app's password field, checked by niri; the launcher's Passwords mode | [shell/passwords.md](shell/passwords.md) |
-| Assistant | system commands typed or spoken in the launcher, read on this machine by Cactus (Needle 3, Whistle) in the `amane-assistant` daemon | [shell/assistant.md](shell/assistant.md) |
-| Notifications | the notification daemon's toasts, the notification center and Do Not Disturb | [shell/notifications.md](shell/notifications.md) |
-| Quick Settings | GNOME's quick settings as a grid of glass modules, with Edit Controls | [shell/quick-settings.md](shell/quick-settings.md) |
-| Desktop widgets | readings and a clock on the wallpaper, on Quick Settings' grid | [shell/widgets.md](shell/widgets.md) |
-| On-screen display | the capsule that shows volume, brightness, the keyboard light, a lock key or a switch as it changes | [shell/osd.md](shell/osd.md) |
-| Alert | the shell's alert in the middle of the screen, for questions like "Restart now?" | [shell/quick-settings.md#the-alert](shell/quick-settings.md#the-alert) |
-| Shell Settings | the settings app: appearance, the desktop's widgets, the launcher, and the System pages that manage the NixOS configuration | [shell/settings-app.md](shell/settings-app.md) |
-| Displays | Shell Settings' page for the screens: what each can do (OLED, HDR, VRR range), resolution, refresh (lower on battery), scale, rotation, arrangement, HDR, a monitor's brightness over DDC/CI, Night Light's schedule | [shell/displays.md](shell/displays.md) |
-| Phone | KDE Connect drawn by the shell: Quick Settings' Phone page, the bar's phone battery, Messages (`amane-messages`) for texts and remote input, and the phone's screen, sound, apps and camera through scrcpy (`amane-mirror`) | [shell/phone.md](shell/phone.md) |
-| Context menu | nested xdg-popup menus: the dock's, the launcher's, the widgets', Do Not Disturb's and a Bluetooth device's | [shell/context-menu.md](shell/context-menu.md) |
+| Status bar | the bar in three sizes: the workspace's shape, status icons, programs' items, Activities, Quick Settings, notifications and the clock | [user/features/status-bar.md](user/features/status-bar.md) |
+| Drop | `amane-drop`, a drop shelf in the bar: a grid of folders, apps and actions, and a Drop Bar | [user/features/drop.md](user/features/drop.md) |
+| Dock | every workspace's windows and pins, rising from the bottom edge and with the overview | [user/features/dock.md](user/features/dock.md) |
+| Launcher | a search pill: search, Applications, Files, Actions, Clipboard | [user/features/launcher.md](user/features/launcher.md) |
+| Passwords | Bitwarden (rbw) fill: a popup by any app's password field, checked by niri; the launcher's Passwords mode | [user/features/passwords.md](user/features/passwords.md) |
+| Assistant | system commands typed or spoken in the launcher, read on this machine by Cactus (Needle 3, Whistle) in the `amane-assistant` daemon | [user/features/assistant.md](user/features/assistant.md) |
+| Notifications | the notification daemon's toasts, the notification center and Do Not Disturb | [user/features/notifications.md](user/features/notifications.md) |
+| Quick Settings | GNOME's quick settings as a grid of glass modules, with Edit Controls | [user/features/quick-settings.md](user/features/quick-settings.md) |
+| Desktop widgets | readings and a clock on the wallpaper, on Quick Settings' grid | [user/features/widgets.md](user/features/widgets.md) |
+| On-screen display | the capsule that shows volume, brightness, the keyboard light, a lock key or a switch as it changes | [user/features/osd.md](user/features/osd.md) |
+| Alert | the shell's alert in the middle of the screen, for questions like "Restart now?" | [user/features/quick-settings.md#the-alert](user/features/quick-settings.md#the-alert) |
+| Shell Settings | the settings app: appearance, the desktop's widgets, the launcher, and the System pages that manage the NixOS configuration | [user/features/settings-app.md](user/features/settings-app.md) |
+| Displays | Shell Settings' page for the screens: what each can do (OLED, HDR, VRR range), resolution, refresh (lower on battery), scale, rotation, arrangement, HDR, a monitor's brightness over DDC/CI, Night Light's schedule | [user/features/displays.md](user/features/displays.md) |
+| Phone | KDE Connect drawn by the shell: Quick Settings' Phone page, the bar's phone battery, Messages (`amane-messages`) for texts and remote input, and the phone's screen, sound, apps and camera through scrcpy (`amane-mirror`) | [user/features/phone.md](user/features/phone.md) |
+| Context menu | nested xdg-popup menus: the dock's, the launcher's, the widgets', Do Not Disturb's and a Bluetooth device's | [user/features/context-menu.md](user/features/context-menu.md) |
 
-## amane-kit
+## Developing amane-shell
 
-| Topic | Doc |
+### Start here
+
+| Doc | What |
 |---|---|
-| Buttons, switch, checkbox, radio, dropdown, control sizes | [kit/controls.md](kit/controls.md) |
-| Card, list, slider, dialog, tag, arrangement, scroll view and the other building blocks; the modules under them | [kit/components.md](kit/components.md) |
-| An app's window, text fields and sidebar | [kit/app.md](kit/app.md) |
-| The color picker, and hex and HSV helpers | [kit/color-picker.md](kit/color-picker.md) |
-| Saved Shader Lab looks, and putting one on a rectangle | [kit/lab.md](kit/lab.md) |
-| Springs and fades, keyed list motion, `Kinetic`, `Pager` | [kit/motion.md](kit/motion.md) |
+| [developer/architecture.md](developer/architecture.md) | the layers, the running shell, how a surface is built, how status apps plug in |
+| [developer/integration/contract.md](developer/integration/contract.md) | what the shell relies on from niri, amane and the kit |
+| [developer/release.md](developer/release.md) | bumping the forks, the hashes, nixos-config and the switch |
+| [developer/testing.md](developer/testing.md) | the tests, a second shell beside the live one, measuring |
 
-## Design system
-
-| Topic | Doc |
-|---|---|
-| Design tokens: tiers, naming, Penpot workflow, CI checks | [design-system/tokens.md](design-system/tokens.md) |
-| Materials: glass by role, its tints, vibrant labels | [design-system/materials.md](design-system/materials.md) |
-| Typography: the type roles, font stacks, text scale | [design-system/typography.md](design-system/typography.md) |
-| Tokens still waiting on Penpot | [design-system/penpot-backlog.md](design-system/penpot-backlog.md) |
-
-## Integration
-
-| Topic | Doc | The forks' side |
-|---|---|---|
-| niri layer rules and surface namespaces, generated from the tokens | [integration/layer-rules.md](integration/layer-rules.md) | niri [materials](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md), [desktop layer](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md); amane [blur](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md) |
-| Other programs' items in the bar and their Activities, over `org.amane.StatusBar1` | [integration/status-apps.md](integration/status-apps.md) | [amane-status](../crates/status/README.md) |
-| Writing a status app: an item, a window under it, drags through it, Activities, running as a service | [integration/writing-a-status-app.md](integration/writing-a-status-app.md) | |
-| Every CLI and IPC command, and the socket they go over | [integration/ipc.md](integration/ipc.md) | niri [IPC events](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/events.md), [actions](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/actions.md) |
-| The shell's services and amane's, the settings files and the state files | [integration/services.md](integration/services.md) | amane [compositor services](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md), [system services](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/idle.md) (`system/`) |
-| The NixOS configuration from Shell Settings: the registry and `managed/settings.json`, the `amaneSettings` output, build → compare → activate through polkit, the commit, "up to date" | [integration/nixos.md](integration/nixos.md) | nixos-config `modules/managed.nix` |
-| What the shell relies on from niri, amane and the kit, with the revisions that have it; `cargo xtask contract` | [integration/contract.md](integration/contract.md) | niri [Features](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/features.md), [what amane-shell relies on](https://github.com/098765434/niri/blob/ocbk/docs/fork/maintaining.md#what-amane-shell-relies-on) |
-
-## Development
+### The code
 
 | Topic | Doc |
 |---|---|
 | Dev shell, checks, the token workflow | [CONTRIBUTING.md](../CONTRIBUTING.md) |
-| How `apps/shell/src` is laid out, and the tests that keep it so | [development/shell-structure.md](development/shell-structure.md) |
-| Bumping amane, vello and niri, `outputHashes`, nixos-config, the switch | [development/release.md](development/release.md) |
-| Fixtures, golden tests, `--ignored` tests, a second shell beside the live one, a fork rebase's checks | [development/testing.md](development/testing.md) |
-| What makes a window draw, and the rules that keep an idle desktop still | [development/performance.md](development/performance.md) |
-| What the desktop holds in GPU memory, how to measure it, and what has been cut (the vello fork) | [development/memory.md](development/memory.md) |
-| Trying shader effects live, and porting Figma shaders | [development/shader-lab.md](development/shader-lab.md) |
-| Status apps, Activities and Drop: the pieces across amane, the shell and nixos-config, their threads, testing beside the desktop | [development/status-apps.md](development/status-apps.md) |
-| What the shell costs while idle, measured, to compare later work against | [development/idle-baseline.md](development/idle-baseline.md) |
-| Features the shell doesn't have yet, by how often they'd be missed | [development/backlog.md](development/backlog.md) |
-| The polish plan under way: one copy of each helper, one table per fact | [development/polish-plan.md](development/polish-plan.md) |
+| The workspace folder by folder, how `apps/shell/src` is laid out, and the tests that keep it so | [developer/shell-structure.md](developer/shell-structure.md) |
+| Bumping amane, vello and niri, `outputHashes`, nixos-config, the switch | [developer/release.md](developer/release.md) |
+| Fixtures, golden tests, `--ignored` tests, a second shell beside the live one, a fork rebase's checks | [developer/testing.md](developer/testing.md) |
+| What makes a window draw, and the rules that keep an idle desktop still | [developer/performance.md](developer/performance.md) |
+| What the desktop holds in GPU memory, how to measure it, and what has been cut (the vello fork) | [developer/memory.md](developer/memory.md) |
+| Trying shader effects live, and porting Figma shaders | [developer/shader-lab.md](developer/shader-lab.md) |
+| What the shell costs while idle, measured, to compare later work against | [developer/idle-baseline.md](developer/idle-baseline.md) |
+| Features the shell doesn't have yet, by how often they'd be missed | [developer/backlog.md](developer/backlog.md) |
+| The polish plan under way: one copy of each helper, one table per fact | [developer/polish-plan.md](developer/polish-plan.md) |
+| Where a rewrite could still make the shell smaller, and where it couldn't | [developer/rewrite-plan.md](developer/rewrite-plan.md) |
+| The shell as a framework: extensions in their own processes and repos, a protocol, a Store and a catalogue | [developer/extensions-plan.md](developer/extensions-plan.md) |
+
+### amane-kit
+
+| Topic | Doc |
+|---|---|
+| Buttons, switch, checkbox, radio, dropdown, control sizes | [developer/kit/controls.md](developer/kit/controls.md) |
+| Card, list, slider, dialog, tag, arrangement, scroll view and the other building blocks; the modules under them | [developer/kit/components.md](developer/kit/components.md) |
+| An app's window, text fields and sidebar | [developer/kit/app.md](developer/kit/app.md) |
+| The color picker, and hex and HSV helpers | [developer/kit/color-picker.md](developer/kit/color-picker.md) |
+| Saved Shader Lab looks, and putting one on a rectangle | [developer/kit/lab.md](developer/kit/lab.md) |
+| Springs and fades, keyed list motion, `Kinetic`, `Pager` | [developer/kit/motion.md](developer/kit/motion.md) |
+
+### Design system
+
+| Topic | Doc |
+|---|---|
+| Design tokens: tiers, naming, Penpot workflow, CI checks | [developer/design-system/tokens.md](developer/design-system/tokens.md) |
+| Materials: glass by role, its tints, vibrant labels | [developer/design-system/materials.md](developer/design-system/materials.md) |
+| Typography: the type roles, font stacks, text scale | [developer/design-system/typography.md](developer/design-system/typography.md) |
+| Tokens still waiting on Penpot | [developer/design-system/penpot-backlog.md](developer/design-system/penpot-backlog.md) |
+
+### Integration
+
+| Topic | Doc | The forks' side |
+|---|---|---|
+| niri layer rules and surface namespaces, generated from the tokens | [developer/integration/layer-rules.md](developer/integration/layer-rules.md) | niri [materials](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md), [desktop layer](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md); amane [blur](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md) |
+| Status apps over `org.amane.StatusBar1`: the protocol, writing one (an item, a window under it, drags through it), Activities, running as a service, and the pieces across amane, the shell and nixos-config with how to test them beside the desktop | [developer/integration/status-apps.md](developer/integration/status-apps.md) | [amane-status](../crates/status/README.md) |
+| Every CLI and IPC command, and the socket they go over | [developer/integration/ipc.md](developer/integration/ipc.md) | niri [IPC events](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/events.md), [actions](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/actions.md) |
+| The shell's services and amane's, the settings files and the state files | [developer/integration/services.md](developer/integration/services.md) | amane [compositor services](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md), [system services](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/idle.md) (`system/`) |
+| The NixOS configuration from Shell Settings: the registry and `managed/settings.json`, the `amaneSettings` output, build → compare → activate through polkit, the commit, "up to date" | [developer/integration/nixos.md](developer/integration/nixos.md) | nixos-config `modules/managed.nix` |
+| What the shell relies on from niri, amane and the kit, with the revisions that have it; `cargo xtask contract` | [developer/integration/contract.md](developer/integration/contract.md) | niri [Features](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/features.md), [what amane-shell relies on](https://github.com/098765434/niri/blob/ocbk/docs/fork/maintaining.md#what-amane-shell-relies-on) |
 
 ## Archive
 
@@ -146,6 +127,6 @@ Implemented specs, kept as history and not kept up to date.
 
 | Spec | Superseded by |
 |---|---|
-| [archive/ROADMAP.md](archive/ROADMAP.md): the 14-phase cleanup of the shell and its forks, finished 2026-11-07 | [architecture.md](architecture.md), [development/release.md](development/release.md), and each fork's `maintaining.md` |
-| [archive/spec-design-tokens-v2.md](archive/spec-design-tokens-v2.md): Penpot tokens, the resolver, CI checks | [design-system/tokens.md](design-system/tokens.md) |
-| [archive/spec-system-colour-variables.md](archive/spec-system-colour-variables.md): the design kit's labels, fills, materials and control sizes | [design-system/materials.md](design-system/materials.md), [kit/controls.md](kit/controls.md) |
+| [developer/archive/ROADMAP.md](developer/archive/ROADMAP.md): the 14-phase cleanup of the shell and its forks, finished 2026-11-07 | [developer/architecture.md](developer/architecture.md), [developer/release.md](developer/release.md), and each fork's `maintaining.md` |
+| [developer/archive/spec-design-tokens-v2.md](developer/archive/spec-design-tokens-v2.md): Penpot tokens, the resolver, CI checks | [developer/design-system/tokens.md](developer/design-system/tokens.md) |
+| [developer/archive/spec-system-colour-variables.md](developer/archive/spec-system-colour-variables.md): the design kit's labels, fills, materials and control sizes | [developer/design-system/materials.md](developer/design-system/materials.md), [developer/kit/controls.md](developer/kit/controls.md) |

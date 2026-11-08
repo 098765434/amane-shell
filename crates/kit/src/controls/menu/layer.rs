@@ -2,7 +2,7 @@
 //! desktop or hung under one of the shell's surfaces, with submenus each a
 //! popup of their own (up to [`MAX_DEPTH`] deep). Its panel is a glass card
 //! niri frosts; its rows are [`rows`](super::rows)' with [`Look::Layer`].
-//! See `docs/shell/context-menu.md`.
+//! See `docs/user/features/context-menu.md`.
 //!
 //! The shell registers [`anchor`] as a window and every one of [`LEVELS`] as
 //! a popup, once; then [`show_under`] opens a menu built for what was

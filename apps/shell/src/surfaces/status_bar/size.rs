@@ -3,7 +3,7 @@
 //!
 //! Compact is the bar it always was, read from the tokens it always read.
 //! Regular and Comfortable are held here until Penpot has them
-//! (`docs/design-system/penpot-backlog.md`).
+//! (`docs/developer/design-system/penpot-backlog.md`).
 
 use amane_kit::settings::{BarSize, status_bar};
 

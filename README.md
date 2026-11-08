@@ -18,26 +18,26 @@ the forks add is in their docs: [niri](https://github.com/098765434/niri/blob/oc
 
 - **Status bar**: workspace pips, the status icons, Quick Settings, notifications and the clock,
   one bar a monitor, top or bottom, in three sizes and four styles
-  ([docs/shell/status-bar.md](docs/shell/status-bar.md)).
+  ([docs/shell/status-bar.md](docs/user/features/status-bar.md)).
 - **Status apps and Activities**: other programs' items in the bar and what's going on now
   (Now Playing, the timer, screen sharing, uploads), over `org.amane.StatusBar1`
-  ([docs/integration/status-apps.md](docs/integration/status-apps.md), and
-  [writing one](docs/integration/writing-a-status-app.md)).
+  ([docs/developer/integration/status-apps.md](docs/developer/integration/status-apps.md), and
+  [writing one](docs/developer/integration/status-apps.md#writing-a-status-app)).
 - **Drop**: `amane-drop`, a drop shelf in the bar: drop files on folders, apps, your phone
   or an upload (0x0.st, Imgur, SFTP, S3), with a Drop Bar to hold them
-  ([docs/shell/drop.md](docs/shell/drop.md)).
+  ([docs/shell/drop.md](docs/user/features/drop.md)).
 - **Dock**: every workspace's windows and pinned apps, rising from the bottom edge and with the
-  overview; drag to reorder or move, drop files to open them ([docs/shell/dock.md](docs/shell/dock.md)).
+  overview; drag to reorder or move, drop files to open them ([docs/shell/dock.md](docs/user/features/dock.md)).
 - **Launcher**: a search pill, with Applications, Files, Actions and a clipboard
-  history ([docs/shell/launcher.md](docs/shell/launcher.md)).
+  history ([docs/shell/launcher.md](docs/user/features/launcher.md)).
 - **Notifications**: the shell is the notification daemon: toasts, a notification center and
-  Do Not Disturb ([docs/shell/notifications.md](docs/shell/notifications.md)).
+  Do Not Disturb ([docs/shell/notifications.md](docs/user/features/notifications.md)).
 - **Quick Settings**: GNOME's quick settings as a grid of glass modules, with a page per
-  control and Edit Controls ([docs/shell/quick-settings.md](docs/shell/quick-settings.md)).
+  control and Edit Controls ([docs/shell/quick-settings.md](docs/user/features/quick-settings.md)).
 - **Desktop widgets**: a stroke-drawn clock, batteries and the system's readings on the wallpaper
-  ([docs/shell/widgets.md](docs/shell/widgets.md)).
-- **Context menus**: nested menus on xdg-popups ([docs/shell/context-menu.md](docs/shell/context-menu.md)).
-- **Shell Settings**: a settings app the shell follows live ([docs/shell/settings-app.md](docs/shell/settings-app.md)).
+  ([docs/shell/widgets.md](docs/user/features/widgets.md)).
+- **Context menus**: nested menus on xdg-popups ([docs/shell/context-menu.md](docs/user/features/context-menu.md)).
+- **Shell Settings**: a settings app the shell follows live ([docs/shell/settings-app.md](docs/user/features/settings-app.md)).
 - **amane-kit**: the look as a library: controls, components and the design tokens from Penpot,
   for the shell and apps like Shell Settings ([kit/README.md](crates/kit/README.md)).
 
@@ -80,7 +80,7 @@ cargo xtask layer-rules > niri-layer-rule.kdl
 ./gen-layer-rules.sh /path/to/your/niri/config.kdl   # e.g. ~/.config/niri/config.kdl
 ```
 
-See [docs/integration/layer-rules.md](docs/integration/layer-rules.md).
+See [docs/integration/layer-rules.md](docs/developer/integration/layer-rules.md).
 
 ## Running it persistently
 
@@ -103,7 +103,7 @@ Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery
 
 Run status apps such as `amane-drop` as units of their own, not from the shell: a restart of the
 shell kills what's in its cgroup, and they put their items back by themselves once the bar is
-there ([docs/shell/drop.md](docs/shell/drop.md#installing)).
+there ([docs/shell/drop.md](docs/user/features/drop.md#installing)).
 
 ## Shell Settings
 
@@ -112,9 +112,9 @@ there ([docs/shell/drop.md](docs/shell/drop.md#installing)).
 desktop's widgets and the launcher. It writes `~/.config/amane-shell/*.json`, which the running shell
 follows at once. Its **System** pages manage the NixOS configuration the machine is built from
 (the computer's name, language and keyboard; apps, services, idle timeouts, storage, history,
-updates with a scheduled check), through [docs/integration/nixos.md](docs/integration/nixos.md),
+updates with a scheduled check), through [docs/integration/nixos.md](docs/developer/integration/nixos.md),
 and the shell is the session's polkit agent, so the password prompt is its own. See
-[docs/shell/settings-app.md](docs/shell/settings-app.md).
+[docs/shell/settings-app.md](docs/user/features/settings-app.md).
 
 ## Layout
 

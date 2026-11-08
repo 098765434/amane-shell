@@ -3,7 +3,7 @@
 Shell Settings' NixOS model and jobs, with no UI. Settings' System pages
 (`apps/settings/src/system/`) hold the state and draw it; this crate does what they
 ask, off their UI thread, and keeps nothing between calls. The contract with the
-repo is in [nixos.md](../../docs/integration/nixos.md).
+repo is in [nixos.md](../../docs/developer/integration/nixos.md).
 
 | Module | What |
 |---|---|

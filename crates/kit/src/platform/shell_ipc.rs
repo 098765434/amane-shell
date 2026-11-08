@@ -2,7 +2,7 @@
 //! socket ([`ShellCommand`]), written as the same lines (a verb, then one
 //! argument a line) that scripts and keybinds send with `nc`. The shell reads
 //! them into this type, and other programs send this type, so neither builds
-//! a verb by hand. See `docs/integration/ipc.md`.
+//! a verb by hand. See `docs/developer/integration/ipc.md`.
 //!
 //! Names the shell knows (pages, controls, indicators, widget kinds) stay
 //! text here: the shell checks them and answers with what it knows.

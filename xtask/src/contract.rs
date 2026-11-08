@@ -10,7 +10,7 @@
 //! It reads both repositories with `git show <rev>:<path>`, from checkouts at `../amane` and
 //! `../niri` (or `--amane <dir>`, `--niri <dir>`), so the working trees can be anywhere. The
 //! amane revision comes from the root `Cargo.toml`, niri's from `contract.toml`
-//! (docs/integration/contract.md).
+//! (docs/developer/integration/contract.md).
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};

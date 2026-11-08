@@ -6,7 +6,7 @@
 //! versioned JSON) are shared with the bar, which serves the interface. A
 //! program uses the client: [`StatusItem::register`] and
 //! [`LiveActivity::start`], which register again whenever the bar restarts.
-//! See `docs/integration/writing-a-status-app.md`.
+//! See `docs/developer/integration/status-apps.md#writing-a-status-app`.
 
 #![deny(missing_docs)]
 

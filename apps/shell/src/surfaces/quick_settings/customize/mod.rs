@@ -18,7 +18,7 @@
 //!
 //! Opening edit mode opens the window (`edit::enter`), and Done, Escape or
 //! anything else that leaves edit mode closes it. See
-//! `docs/shell/quick-settings.md`.
+//! `docs/user/features/quick-settings.md`.
 
 mod catalog;
 mod drag;
