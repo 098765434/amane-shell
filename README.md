@@ -90,10 +90,14 @@ Autostart the bar with your compositor/session. A **systemd user service** is th
 ```nix
 systemd.user.services.amane-shell = {
   Unit = { Description = "amane-shell bar"; PartOf = [ "graphical-session.target" ]; After = [ "graphical-session.target" ]; };
-  Service = { ExecStart = "${pkgs.amane-shell}/bin/amane-shell"; Restart = "on-failure"; };
+  Service = { ExecStart = "${inputs.amane-shell.packages.${pkgs.system}.default}/bin/amane-shell"; Restart = "on-failure"; };
   Install.WantedBy = [ "graphical-session.target" ];
 };
 ```
+
+The package comes from this repository's flake, as the input `amane-shell` of your own flake
+(`inputs.amane-shell.url = "github:098765434/amane-shell"`); there is no nixpkgs overlay, so
+`pkgs.amane-shell` doesn't exist.
 
 Or, more simply, a niri `spawn-at-startup "amane-shell"` line (no crash recovery).
 

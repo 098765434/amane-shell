@@ -1,5 +1,5 @@
 {
-  description = "amane-shell — a Wayland desktop bar for niri, built on the amane library fork.";
+  description = "amane-shell — a Wayland desktop shell for niri, built on the amane library fork.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -39,7 +39,7 @@
           ];
         };
 
-      # Native libraries the bar links against at build time (via pkg-config)
+      # Native libraries the shell links against at build time (via pkg-config)
       # and dlopens at run time. Shared by the devShell and the package.
       runtimeLibsFor =
         pkgs: with pkgs; [
@@ -188,8 +188,12 @@
               };
             };
 
-            # the shell, and the apps beside it (Shell Settings, Messages, Phone Screen,
-            # Shader Lab, Drop); not xtask, the workspace's own tasks
+            # every program in the workspace: the shell (amane-shell), Shell Settings
+            # (amane-settings), Messages (amane-messages), Phone Screen (amane-mirror),
+            # Shader Lab (amane-shader-lab), Drop (amane-drop), the assistant's daemon
+            # (amane-assistant), train-watch (amane-train-watch) and rbw's pinentry
+            # (amane-pinentry). xtask is left out: it's the workspace's own tasks, a
+            # development tool, not something to install.
             cargoBuildFlags = [ "--workspace" "--exclude" "xtask" ];
             cargoTestFlags = [ "--workspace" "--exclude" "xtask" ];
 
@@ -238,7 +242,7 @@
             '';
 
             meta = {
-              description = "A Wayland desktop bar for niri, built on the amane library fork";
+              description = "A Wayland desktop shell for niri, built on the amane library fork";
               mainProgram = "amane-shell";
               license = lib.licenses.mit;
               platforms = lib.platforms.linux;

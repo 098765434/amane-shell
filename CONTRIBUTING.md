@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest! `amane-shell` is a Wayland bar for the
+Thanks for your interest! `amane-shell` is a Wayland desktop shell for the
 [niri](https://github.com/YaLTeR/niri) compositor, built on the
 [amane](https://github.com/098765434/amane) library fork.
 
