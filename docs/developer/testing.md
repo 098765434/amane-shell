@@ -99,4 +99,4 @@ git rebase -x 'cargo check --all-targets; git checkout -q -- Cargo.lock' fork-ba
 
 `cargo check` rewrites `Cargo.lock` on older commits, and putting it back keeps the rebase going.
 The whole routine, with the reference merge the rebase is checked against, is in amane's
-[maintaining.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/maintaining.md#rebasing-onto-newer-upstream).
+[maintaining.md](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/maintaining.md#rebasing-onto-newer-upstream).

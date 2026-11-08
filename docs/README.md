@@ -13,11 +13,11 @@ flowchart BT
     amane -->|"Wayland protocols + niri IPC"| niri
 ```
 
-- niri fork: <https://github.com/098765434/niri> (branch `ocbk`); what it adds:
-  [docs/fork/README.md](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md). Not the shell's, but part of the same desktop: the workspace
-  mat, a backing niri paints behind the scrolling layout's windows ([layout/workspace-mat.md](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/workspace-mat.md)).
-- amane fork: <https://github.com/098765434/amane> (branch `ocbk`); what it adds:
-  [docs/fork/README.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md).
+- niri fork: <https://github.com/emaki-desktop/niri> (branch `emaki`); what it adds:
+  [docs/fork/README.md](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/README.md). Not the shell's, but part of the same desktop: the workspace
+  mat, a backing niri paints behind the scrolling layout's windows ([layout/workspace-mat.md](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/layout/workspace-mat.md)).
+- amane fork: <https://github.com/emaki-desktop/amane> (branch `emaki`); what it adds:
+  [docs/fork/README.md](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/README.md).
 
 A feature's docs live where its code lives: these docs link to the forks' rather than repeat
 them. How the four repositories pin each other is in [STACK.md](../STACK.md).
@@ -126,12 +126,12 @@ The docs use one name for each thing:
 
 | Topic | Doc | The forks' side |
 |---|---|---|
-| niri layer rules and surface namespaces, generated from the tokens | [developer/integration/layer-rules.md](developer/integration/layer-rules.md) | niri [materials](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md), [desktop layer](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md); amane [blur](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md) |
+| niri layer rules and surface namespaces, generated from the tokens | [developer/integration/layer-rules.md](developer/integration/layer-rules.md) | niri [materials](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/effects/materials.md), [desktop layer](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/layout/desktop-layer.md); amane [blur](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/graphics/blur.md) |
 | Status apps over `org.emaki.StatusBar1`: the protocol, writing one (an item, a window under it, drags through it), Activities, running as a service, and the pieces across amane, the shell and nixos-config with how to test them beside the desktop | [developer/integration/status-apps.md](developer/integration/status-apps.md) | [emaki-status](../crates/status/README.md) |
-| Every CLI and IPC command, and the socket they go over | [developer/integration/ipc.md](developer/integration/ipc.md) | niri [IPC events](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/events.md), [actions](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/actions.md) |
-| The shell's services and amane's, the settings files and the state files | [developer/integration/services.md](developer/integration/services.md) | amane [compositor services](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md), [system services](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/idle.md) (`system/`) |
+| Every CLI and IPC command, and the socket they go over | [developer/integration/ipc.md](developer/integration/ipc.md) | niri [IPC events](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/ipc/events.md), [actions](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/ipc/actions.md) |
+| The shell's services and amane's, the settings files and the state files | [developer/integration/services.md](developer/integration/services.md) | amane [compositor services](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/compositor/services.md), [system services](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/system/idle.md) (`system/`) |
 | The NixOS configuration from Emaki Settings: the registry and `managed/settings.json`, the `emakiSettings` output, build → compare → activate through polkit, the commit, "up to date" | [developer/integration/nixos.md](developer/integration/nixos.md) | nixos-config `modules/managed.nix` |
-| What the shell relies on from niri, amane and the kit, with the revisions that have it; `cargo xtask contract` | [developer/integration/contract.md](developer/integration/contract.md) | niri [Features](https://github.com/098765434/niri/blob/ocbk/docs/fork/ipc/features.md), [what emaki relies on](https://github.com/098765434/niri/blob/ocbk/docs/fork/maintaining.md#what-amane-shell-relies-on) |
+| What the shell relies on from niri, amane and the kit, with the revisions that have it; `cargo xtask contract` | [developer/integration/contract.md](developer/integration/contract.md) | niri [Features](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/ipc/features.md), [what emaki relies on](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/maintaining.md#what-emaki-relies-on) |
 
 ## Archive
 

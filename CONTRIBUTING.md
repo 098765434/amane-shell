@@ -2,7 +2,7 @@
 
 Thanks for your interest! `emaki` is a Wayland desktop shell for the
 [niri](https://github.com/YaLTeR/niri) compositor, built on the
-[amane](https://github.com/098765434/amane) library fork.
+[amane](https://github.com/emaki-desktop/amane) library fork.
 
 ## Development
 
@@ -85,9 +85,9 @@ is listed in [docs/README.md](docs/README.md).
 ## Scope notes
 
 - Library-level changes (popups, compositor services) belong in
-  [amane](https://github.com/098765434/amane), not here; compositor changes in
-  [niri](https://github.com/098765434/niri). Each fork documents what it adds
-  ([amane](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md), [niri](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md)).
+  [amane](https://github.com/emaki-desktop/amane), not here; compositor changes in
+  [niri](https://github.com/emaki-desktop/niri). Each fork documents what it adds
+  ([amane](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/README.md), [niri](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/README.md)).
 - Design values (sizing/color/type) are Penpot tokens. Change them in Penpot, export, then
   `cargo xtask tokens normalize export.json > design-tokens/tokens.json` and
   `cargo xtask tokens check design-tokens/tokens.json`; never hand-edit the file or hardcode a

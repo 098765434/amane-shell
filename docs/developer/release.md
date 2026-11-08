@@ -21,7 +21,7 @@ only records the revision it was checked against (`contract.toml`).
 
 ## Bumping amane or vello in the shell
 
-Push the fork first (amane's `ocbk`, vello's `ocbk`), then:
+Push the fork first (amane's `emaki`, vello's `emaki`), then:
 
 1. **The revisions.** Set amane's `rev` in the root `Cargo.toml`'s `[workspace.dependencies]`.
    vello is patched in `[patch.crates-io]` (`vello` and `vello_encoding`). The patch only works
@@ -43,7 +43,7 @@ When amane bumps its vello, both move together: the shell's `[patch.crates-io]` 
 
 ## Bumping niri
 
-niri is built by nixos-config, not by the shell. After pushing niri's `ocbk`:
+niri is built by nixos-config, not by the shell. After pushing niri's `emaki`:
 
 1. In nixos-config, `nix flake update niri-fork`.
 2. In the shell, set `contract.toml` to the same revision; `cargo xtask contract` says when they
@@ -84,12 +84,12 @@ The flake builds `emaki-drop` with the workspace. It wraps Drop, and Emaki Setti
 
 ## The forks' own routines
 
-- amane: [docs/fork/maintaining.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/maintaining.md),
+- amane: [docs/fork/maintaining.md](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/maintaining.md),
   rebased onto upstream `main`: a reference merge first, then the rebase resolved toward it, then
   a check that every commit builds.
-- niri: [docs/fork/maintaining.md](https://github.com/098765434/niri/blob/ocbk/docs/fork/maintaining.md),
+- niri: [docs/fork/maintaining.md](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/maintaining.md),
   rebased onto upstream's release tags.
-- vello: [docs/fork/README.md](https://github.com/098765434/vello/blob/ocbk/docs/fork/README.md#maintaining).
+- vello: [docs/fork/README.md](https://github.com/emaki-desktop/vello/blob/emaki/docs/fork/README.md#maintaining).
 
 Each keeps its commits from before the last rebase on `ocbk-pre-tidy`, so a shell commit that
 pinned an older revision still builds. What the shell relies on from each, and since which

@@ -429,7 +429,7 @@ flowchart TD
 - **Each step:** one commit that builds and passes CI:
   `cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace`,
   plus `cargo xtask layer-rules`, `lint-terms` and `links`.
-- **The amane steps (E):** they go on the `ocbk` branch as small, separate commits, so rebases stay
+- **The amane steps (E):** they go on the `emaki` branch as small, separate commits, so rebases stay
   cheap. Each is listed in [contract.md](integration/contract.md).
 
 ## Checking that nothing changed

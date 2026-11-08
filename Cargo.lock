@@ -26,7 +26,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amane"
 version = "0.1.2"
-source = "git+https://github.com/098765434/amane?rev=4ef7616cff36ce7358b133bbb9e72d30fbc73ae9#4ef7616cff36ce7358b133bbb9e72d30fbc73ae9"
+source = "git+https://github.com/emaki-desktop/amane?rev=473a7b94553db29174092ba0b665845f1986bca5#473a7b94553db29174092ba0b665845f1986bca5"
 dependencies = [
  "bitflags",
  "blocking",
@@ -802,7 +802,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2312,7 +2312,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2638,7 +2638,7 @@ dependencies = [
  "getrandom",
  "once_cell",
  "rustix 1.1.5",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2858,7 +2858,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 [[package]]
 name = "vello"
 version = "0.11.0"
-source = "git+https://github.com/098765434/vello?rev=8b61bd281d2d3be32f4de66b1e3c05b10fe7b8e6#8b61bd281d2d3be32f4de66b1e3c05b10fe7b8e6"
+source = "git+https://github.com/emaki-desktop/vello?rev=ea3fb9eac96c4dea33e1537395d1622edcc7669d#ea3fb9eac96c4dea33e1537395d1622edcc7669d"
 dependencies = [
  "bytemuck",
  "futures-intrusive",
@@ -2876,7 +2876,7 @@ dependencies = [
 [[package]]
 name = "vello_encoding"
 version = "0.11.0"
-source = "git+https://github.com/098765434/vello?rev=8b61bd281d2d3be32f4de66b1e3c05b10fe7b8e6#8b61bd281d2d3be32f4de66b1e3c05b10fe7b8e6"
+source = "git+https://github.com/emaki-desktop/vello?rev=ea3fb9eac96c4dea33e1537395d1622edcc7669d#ea3fb9eac96c4dea33e1537395d1622edcc7669d"
 dependencies = [
  "bytemuck",
  "guillotiere",
@@ -2888,7 +2888,7 @@ dependencies = [
 [[package]]
 name = "vello_shaders"
 version = "0.11.0"
-source = "git+https://github.com/098765434/vello?rev=8b61bd281d2d3be32f4de66b1e3c05b10fe7b8e6#8b61bd281d2d3be32f4de66b1e3c05b10fe7b8e6"
+source = "git+https://github.com/emaki-desktop/vello?rev=ea3fb9eac96c4dea33e1537395d1622edcc7669d#ea3fb9eac96c4dea33e1537395d1622edcc7669d"
 dependencies = [
  "bytemuck",
  "log",
@@ -3310,7 +3310,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

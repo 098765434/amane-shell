@@ -60,7 +60,7 @@ title while any of its pages shows.
 `sidebar_panel(content)` is that panel around any content, for a sidebar that isn't a list of
 pages, like Messages' inbox; draw its labels in `sidebar_label()`, which greys them the same way.
 
-amane's side, its normal windows, is [`windows/app-windows.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/windows/app-windows.md).
+amane's side, its normal windows, is [`windows/app-windows.md`](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/windows/app-windows.md).
 Whether the window is frosted is read from the config: the shell's generated niri config defines
 the window material with the `window-rule` that frosts an emaki app's windows
 (`layer_rules::APP_IDS`; see [layer-rules.md](../integration/layer-rules.md)). An app's id is a

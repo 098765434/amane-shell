@@ -111,10 +111,10 @@ are listed once, in emaki's
 
 ## Related
 
-- emaki's [writing a status app](https://github.com/098765434/amane-shell/blob/main/docs/developer/integration/status-apps.md#writing-a-status-app):
+- emaki's [writing a status app](https://github.com/emaki-desktop/emaki/blob/main/docs/developer/integration/status-apps.md#writing-a-status-app):
   a window under the item, drags through it, what to put in an activity, running as a
   service. emaki-drop is the worked example.
-- emaki's [status apps internals](https://github.com/098765434/amane-shell/blob/main/docs/developer/integration/status-apps.md#the-pieces-across-repos):
+- emaki's [status apps internals](https://github.com/emaki-desktop/emaki/blob/main/docs/developer/integration/status-apps.md#the-pieces-across-repos):
   how the bar serves this, and testing beside a running desktop.
-- amane's [tray](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/tray.md): the StatusNotifierItem tray, for programs that already speak it.
-- amane's [notifications](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/notifications.md): `Notify`, for what is over rather than going on.
+- amane's [tray](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/system/tray.md): the StatusNotifierItem tray, for programs that already speak it.
+- amane's [notifications](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/system/notifications.md): `Notify`, for what is over rather than going on.

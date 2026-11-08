@@ -60,7 +60,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.89"
 license = "MIT"
-repository = "https://github.com/098765434/amane-shell"
+repository = "https://github.com/emaki-desktop/emaki"
 authors = ["ocbk"]
 
 [workspace.dependencies]
@@ -86,7 +86,7 @@ libpulse-simple-binding = "2"
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/local.toml` with `paths = ["../amane"]` overrides it with a sibling
 # checkout during local co-development. See CONTRIBUTING.
-amane = { git = "https://github.com/098765434/amane", rev = "4ef7616cff36ce7358b133bbb9e72d30fbc73ae9", features = ["polkit-agent"] }
+amane = { git = "https://github.com/emaki-desktop/amane", rev = "473a7b94553db29174092ba0b665845f1986bca5", features = ["polkit-agent"] }
 
 # amane's vello fork: scratch buffers sized for a shell (about 29 MB a set
 # instead of 165, vello_encoding) that are let go when idle (vello). A patch
@@ -94,5 +94,5 @@ amane = { git = "https://github.com/098765434/amane", rev = "4ef7616cff36ce7358b
 # this build; these must match them. The nix build needs the fork's hash in
 # flake.nix outputHashes, once per crate. See docs/developer/memory.md.
 [patch.crates-io]
-vello = { git = "https://github.com/098765434/vello", rev = "8b61bd281d2d3be32f4de66b1e3c05b10fe7b8e6" }
-vello_encoding = { git = "https://github.com/098765434/vello", rev = "8b61bd281d2d3be32f4de66b1e3c05b10fe7b8e6" }
+vello = { git = "https://github.com/emaki-desktop/vello", rev = "ea3fb9eac96c4dea33e1537395d1622edcc7669d" }
+vello_encoding = { git = "https://github.com/emaki-desktop/vello", rev = "ea3fb9eac96c4dea33e1537395d1622edcc7669d" }

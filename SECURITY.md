@@ -37,6 +37,6 @@ in scope, whichever program of this repository has them:
   the phone, and the assistant's microphone.
 
 Out of scope: the niri and amane forks (report to
-[098765434/niri](https://github.com/098765434/niri/security) and
-[098765434/amane](https://github.com/098765434/amane/security)), and a bug that needs the
+[emaki-desktop/niri](https://github.com/emaki-desktop/niri/security) and
+[emaki-desktop/amane](https://github.com/emaki-desktop/amane/security)), and a bug that needs the
 user's own account on the machine to already be compromised.

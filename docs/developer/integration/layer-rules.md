@@ -11,8 +11,8 @@ backdrop blur and corner rounding. Two things must agree:
 
 Every glass surface but the bar says where to frost itself, through blur shapes
 (`LayerWindow::blur_shapes`, niri-blur-shapes; `glass_region` in the kit; see amane's
-[`graphics/blur.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md) and niri's
-[`effects/blur-shapes.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/blur-shapes.md)), each shape naming the
+[`graphics/blur.md`](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/graphics/blur.md) and niri's
+[`effects/blur-shapes.md`](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/effects/blur-shapes.md)), each shape naming the
 `glass` material and carrying the glass's tint: Quick Settings' modules, the dock, the launcher,
 the toasts and the notification center. Their rules are `clear` ones: `xray false`, since niri's
 blur would otherwise show the wallpaper alone, and no blur of their own. Toasts and the center are
@@ -22,7 +22,7 @@ it niri's `shadow`.
 
 xdg-popups (menus, tooltips, the dropdowns) can't send blur shapes, so their `popups {}` blocks
 frost them and name the same `glass` material (`background-effect { material "glass" }`, a rule
-option of our niri fork, [`effects/materials.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md)): niri draws them as glass in the shape of their geometry, and the popup
+option of our niri fork, [`effects/materials.md`](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/effects/materials.md)): niri draws them as glass in the shape of their geometry, and the popup
 draws its own tint over it. niri's `popups {}` block has no shadow, so they go without one.
 
 The bar is the one plain-frost surface (`frost`): in its default style, Frosted, niri frosts all
@@ -47,7 +47,7 @@ generated from (2), not hand-edited, so neither can drift.
 | `emaki.status-bar` | the bar: frosted whole, square, without a shadow or `xray false` (`frost`: it reserves its zone, so only the wallpaper is behind it); its xdg-popups, tooltips and Do Not Disturb's menu, are frosted too |
 | `emaki.quick-settings` | Quick Settings: a clear surface that frosts its own modules through blur shapes; only `xray false` (a Bluetooth device's menu is a frosted xdg-popup of it) |
 | `emaki.dock` | the dock, one surface a monitor over the bar: a clear surface that frosts its card through a blur shape; `xray false`, and its popups (a window's or pinned app's menu) frosted |
-| `emaki.widgets.<output>` | the desktop widgets, one surface a monitor on the background layer (matched by the prefix `^emaki\.widgets\.`): a clear surface that frosts its own cards; `desktop true` (niri fork, [`layout/desktop-layer.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/layout/desktop-layer.md): on the wallpaper, still while workspaces switch, faded out with the overview), `xray false`, and its popups (a card's menu) frosted |
+| `emaki.widgets.<output>` | the desktop widgets, one surface a monitor on the background layer (matched by the prefix `^emaki\.widgets\.`): a clear surface that frosts its own cards; `desktop true` (niri fork, [`layout/desktop-layer.md`](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/layout/desktop-layer.md): on the wallpaper, still while workspaces switch, faded out with the overview), `xray false`, and its popups (a card's menu) frosted |
 | `emaki.launcher` | the app launcher: a clear surface over the output that frosts its glass panel through a blur shape; `xray false`, and its popups (an app's menu) frosted |
 | `emaki.notifications.toast` | each notification toast: one surface per banner, frosting its card itself; `clear`, rounded `notification.card.radius`, with niri's shadow at softness 48 (the banner design's `0 8 48`; other surfaces use 16) |
 | `emaki.alert` | the shell's alert in the middle of the screen, as big as its card, frosting itself in thick glass; `clear`, rounded `dialog.radius`, with niri's shadow at softness 48 and offset 18 (the dialog design's `0 18 48`) |
@@ -79,7 +79,7 @@ niri material per `material.<name>.*` token group: `glass`, `glass-small`, `glas
 `glass-clear` and `frost`, each with a `-still` twin (`materialize false`) for reduced motion;
 which the shell asks for where is in [materials.md](../design-system/materials.md). What each
 material setting does, and how niri combines `materials {}` blocks, is niri's
-([`effects/materials.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md)). The shell asks for these by name
+([`effects/materials.md`](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/effects/materials.md)). The shell asks for these by name
 (`emaki_kit::material`), so the niri config must not define them by hand as well.
 
 First bring the KDL up to date with the tokens (needed whenever a radius or a material changes in

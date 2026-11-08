@@ -6,11 +6,11 @@ is needed on the machine but niri.
 
 ## Before you start
 
-- **The niri fork**, [098765434/niri](https://github.com/098765434/niri) (branch `ocbk`).
+- **The niri fork**, [emaki-desktop/niri](https://github.com/emaki-desktop/niri) (branch `emaki`).
   The shell asks niri which fork features exist and leaves out what stock niri can't do,
   but the frost, the desktop layer the widgets sit on, the dock rising with the overview and
   reordering windows from the dock all need the fork. What it adds is in
-  [its docs](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md).
+  [its docs](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/README.md).
 - **A Vulkan driver.** Everything is drawn on the GPU through wgpu. On NixOS the system's
   drivers are under `/run/opengl-driver`, and the installed programs find them by themselves.
 - **Nix with flakes** on.
@@ -43,7 +43,7 @@ The package comes from this repository's flake. There is no nixpkgs overlay, so
 ### 1. The flake input
 
 ```nix
-inputs.emaki.url = "github:098765434/amane-shell";
+inputs.emaki.url = "github:emaki-desktop/emaki";
 ```
 
 Pass `inputs` to your home-manager module (`extraSpecialArgs = { inherit inputs; }`), so the

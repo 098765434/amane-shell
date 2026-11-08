@@ -5,7 +5,7 @@ guide is the memory side of [Keeping It Cheap](performance.md): what the desktop
 why GPU memory is the number to watch, how to measure it, and what has been done about it. Each
 fix says what it cost, what changed, how to switch it off and how to check it. How amane's
 fixes work is written once, in amane's
-[memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md); this
+[memory.md](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/internals/memory.md); this
 doc keeps the shell's side: its readings, its switches and its build.
 
 ## Why GPU memory
@@ -52,9 +52,9 @@ paid 130–360 MB of GPU memory for vello's bump-allocated scratch buffers, size
 Settings and the Shader Lab while they run.
 
 **What changed.** amane's vello comes from the fork
-[098765434/vello](https://github.com/098765434/vello) (branch `ocbk`, on upstream `main`), whose
+[emaki-desktop/vello](https://github.com/emaki-desktop/vello) (branch `emaki`, on upstream `main`), whose
 buffers are sized for a shell: about 29 MB a set instead of 165. How, and the limits, are in
-amane's [memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#vellos-scratch-buffers-fork-of-vello). For the shell's side: the root
+amane's [memory.md](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/internals/memory.md#vellos-scratch-buffers-fork-of-vello). For the shell's side: the root
 `Cargo.toml` carries the same `[patch.crates-io]` entries as amane's (a patch only applies from
 the root manifest), and `flake.nix` has the fork's hash in `outputHashes`
 ([release.md](release.md#bumping-amane-or-vello-in-the-shell)).
@@ -82,7 +82,7 @@ Frames are slow with the feature on; it is for checking, not for running.
 none failed; the largest took 38.7k tiles and 104k ptcl entries (Quick Settings), 3.5k segments
 and 1.1k lines (the widgets layer), 7× or more under every limit. The desktop's figures before
 and after go in the table below as each phase lands. See amane's
-[memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md) for the
+[memory.md](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/internals/memory.md) for the
 mechanism and the per-example baseline.
 
 ### vello's scratch is let go when idle
@@ -93,7 +93,7 @@ the rest of the session: most of what the hide release left behind.
 
 **What changed.** amane lets vello's pool go once no window drew through vello for 30 s; the next
 run allocates again and the shaders stay, so there is no visible cost
-([how](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#vellos-scratch-is-let-go-when-idle-fork-of-vello)).
+([how](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/internals/memory.md#vellos-scratch-is-let-go-when-idle-fork-of-vello)).
 
 **Switching it off.** `AMANE_VELLO_IDLE=0` keeps the pool for life; another value is the idle
 seconds.
@@ -113,7 +113,7 @@ frame per shadowed scene, each a scene upload, a dozen compute passes and a scra
 allocated the scratch pool, and left 96 MB behind until the idle release.
 
 **What changed.** amane's quads draw drop shadows with vello's own closed form for a blurred
-rounded rectangle ([how](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#drop-shadows-are-quads)), so a window whose only vector content
+rounded rectangle ([how](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/internals/memory.md#drop-shadows-are-quads)), so a window whose only vector content
 was its shadows is now quads-only. Quick Settings, the launcher, the dock, toasts and dialogs
 all are. The widgets' graphs and the stroke clock still go through vello, as do gradients,
 inner shadows and anything rotated.
@@ -190,7 +190,7 @@ instead of Mailbox with four images. `AMANE_KEEP_HIDDEN=1`, `AMANE_KEEP_SPARES=1
 and closed twice, then Quick Settings): 354 MB before, 128 MB after, and reopening no longer
 grows. What Quick Settings left behind turned out to be mostly vello's pool (the section
 above); its GTT is still open. Details in amane's
-[memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#a-hidden-window-holds-nothing-on-the-gpu).
+[memory.md](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/internals/memory.md#a-hidden-window-holds-nothing-on-the-gpu).
 
 ### The widgets surface is the cards, not the monitor
 
@@ -225,7 +225,7 @@ rebuilt the whole chain every frame), and a swiped tile's offscreen cleared.
 
 - **A window's GPU is made at its first frame**, and once every window of a program has been
   hidden for a minute all of them go, the Vulkan device and vello with them (amane's
-  [memory.md](https://github.com/098765434/amane/blob/ocbk/docs/fork/internals/memory.md#a-windows-gpu-is-made-when-it-first-draws-and-the-device-goes-with-the-last-one)).
+  [memory.md](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/internals/memory.md#a-windows-gpu-is-made-when-it-first-draws-and-the-device-goes-with-the-last-one)).
   A hidden-only emaki-drop: 12.4 MB VRAM, 3.3 MB GTT, 66 MB RSS before; no GPU client and
   15 MB after. `AMANE_DEVICE_IDLE=0` keeps the device.
 - **Images are decoded as big as they're drawn** (at least 256 pixels, a power of two), with

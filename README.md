@@ -4,9 +4,9 @@
 [niri](https://github.com/niri-wm/niri) scrollable-tiling compositor. It covers everything a
 desktop needs beyond window management — bar, dock, launcher, notifications, settings — plus a
 set of first-party apps, all drawn with the same GPU-rendered design library. The shell is
-written in Rust on top of [amane](https://github.com/098765434/amane) and
-[vello](https://github.com/098765434/vello), and ships with a
-[niri fork](https://github.com/098765434/niri) that adds the compositor features the shell
+written in Rust on top of [amane](https://github.com/emaki-desktop/amane) and
+[vello](https://github.com/emaki-desktop/vello), and ships with a
+[niri fork](https://github.com/emaki-desktop/niri) that adds the compositor features the shell
 relies on.
 
 - **Shell:** a status bar on every monitor, a dock that rises with the overview, a launcher,
@@ -36,7 +36,7 @@ nix develop -c cargo run    # in a niri session
 nix build                   # ./result/bin/emaki and the apps
 ```
 
-On NixOS, add `github:098765434/amane-shell` as a flake input, run the shell as a user service,
+On NixOS, add `github:emaki-desktop/emaki` as a flake input, run the shell as a user service,
 and let `gen-layer-rules.sh` put the shell's layer rules into niri's config. The steps are in
 [docs/user/install.md](docs/user/install.md).
 
@@ -65,10 +65,10 @@ in [docs/user/keyboard-and-ipc.md](docs/user/keyboard-and-ipc.md).
 Four repositories make the desktop, each pinning the one below it; the chart and the bump order
 are in [STACK.md](STACK.md).
 
-- **[niri fork](https://github.com/098765434/niri)** (branch `ocbk`): materials and blur shapes,
+- **[niri fork](https://github.com/emaki-desktop/niri)** (branch `emaki`): materials and blur shapes,
   vibrancy, HDR, the workspace mat, the desktop layer the widgets sit on, gesture IPC.
-- **[amane fork](https://github.com/098765434/amane)** (branch `ocbk`): the UI library the shell
-  is written in, with the [vello fork](https://github.com/098765434/vello) as its renderer.
+- **[amane fork](https://github.com/emaki-desktop/amane)** (branch `emaki`): the UI library the shell
+  is written in, with the [vello fork](https://github.com/emaki-desktop/vello) as its renderer.
 
 ## Contributing
 

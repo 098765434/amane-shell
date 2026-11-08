@@ -280,6 +280,6 @@ the layouts with a tick on the current one; picking one runs `niri msg action sw
 ## Related
 
 - Window actions and the `Windows`/`Gestures` services are documented in the library:
-  [amane `compositor/services.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/compositor/services.md).
+  [amane `compositor/services.md`](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/compositor/services.md).
 - Sizes and colors are Penpot design tokens: [tokens.md](../../developer/design-system/tokens.md).
 - Surface namespaces & niri layer-rules: [layer-rules.md](../../developer/integration/layer-rules.md).

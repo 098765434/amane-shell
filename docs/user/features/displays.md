@@ -111,7 +111,7 @@ On demand suits them.
 ## HDR
 
 niri drives an output in HDR10 when its EDID says it decodes PQ (see niri's
-[hdr.md](https://github.com/098765434/niri/blob/ocbk/docs/fork/display/hdr.md)). The page shows
+[hdr.md](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/display/hdr.md)). The page shows
 what the screen can do (HDR10 support and peak, from the EDID and from niri's `peak_luminance`),
 and:
 

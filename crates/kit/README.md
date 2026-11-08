@@ -4,8 +4,8 @@ The look of [emaki](../../README.md) as a library: the design tokens from Penpot
 
 ```toml
 [dependencies]
-amane = { git = "https://github.com/098765434/amane", rev = "…" }
-emaki-kit = { git = "https://github.com/098765434/amane-shell" }
+amane = { git = "https://github.com/emaki-desktop/amane", rev = "…" }
+emaki-kit = { git = "https://github.com/emaki-desktop/emaki" }
 ```
 
 ```rust

@@ -131,7 +131,7 @@ A piece of glass is built with its material's methods:
   material that draws the tint, and again untoned and thickened by `UNTONED`, the tint the kit
   uses without niri's material.
 - `material.<name>.*` (component tokens) are niri's material settings (niri's
-  [`effects/materials.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/materials.md) says what each does). `cargo xtask layer-rules`
+  [`effects/materials.md`](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/effects/materials.md) says what each does). `cargo xtask layer-rules`
   writes one niri material for each of them into `niri-layer-rule.kdl`, with a `-still` twin
   (`materialize false`) for reduced motion; see [layer-rules.md](../integration/layer-rules.md).
 
@@ -147,13 +147,13 @@ A piece of glass is built with its material's methods:
 - **Vibrant labels** (an experiment, off by default: `vibrancy` in `appearance.json`, the
   Settings switch, or `EMAKI_VIBRANCY=1`) makes every shell surface, popup and app window
   vibrant (`material::vibrant`, amane's `.vibrant(true)`). On niri with `niri-vibrancy-v1`
-  ([`effects/vibrancy.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/effects/vibrancy.md)),
+  ([`effects/vibrancy.md`](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/effects/vibrancy.md)),
   light grey labels, glyphs and fills are then added to the frosted backdrop and dark grey ones
   subtracted from it (plus-lighter and plus-darker), so they take on its color.
   Solid glass and higher
   contrast turn it off. Elsewhere the translucent label colors stand in.
 - **Adaptive glass** (an experiment, off by default) lets `Control` and `Banner` follow niri's
-  readings of their backdrop (amane's `Backdrop`, [`graphics/blur.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/graphics/blur.md)); see `glass_region` and [components.md](../kit/components.md).
+  readings of their backdrop (amane's `Backdrop`, [`graphics/blur.md`](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/graphics/blur.md)); see `glass_region` and [components.md](../kit/components.md).
 
 ## Look test
 

@@ -319,7 +319,7 @@ packages in `settings.json` and not in HEAD's copy) just before it commits.
 ### Default Apps
 
 Which app opens links, folders and each kind of file, through amane's `MimeApps`
-([apps-and-processes](https://github.com/098765434/amane/blob/ocbk/docs/fork/system/apps-and-processes.md)),
+([apps-and-processes](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/system/apps-and-processes.md)),
 which reads every `mimeapps.list` as `xdg-open` does and writes only `~/.config/mimeapps.list`.
 
 - **Open With** has one dropdown per role, each with a tile:

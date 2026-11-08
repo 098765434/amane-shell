@@ -142,8 +142,8 @@ crate rather than speaking D-Bus themselves.
 
 ## Where to read next
 
-- The forks: [amane's docs](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md) and
-  [niri's docs](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md).
+- The forks: [amane's docs](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/README.md) and
+  [niri's docs](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/README.md).
 - Making a change reach the desktop: [release.md](release.md).
 - Testing it: [testing.md](testing.md).
 - Every doc: [docs/README.md](../README.md).

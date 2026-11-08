@@ -70,7 +70,7 @@ line. An override wins over the settings file while it's set.
 | `EMAKI_MIRROR_SOFTWARE=1` | Phone Screen decodes on the CPU instead of VAAPI |
 
 The `AMANE_*` variables belong to the **amane library**, not the shell, and are documented in
-[its docs](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md): `AMANE_DEBUG`,
+[its docs](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/README.md): `AMANE_DEBUG`,
 `AMANE_FRAMES`, `AMANE_VELLO_*`, `AMANE_IMAGE_*`, `AMANE_KEEP_*`, `AMANE_DEVICE_IDLE` and
 `AMANE_PRESENT`. They tune rendering and are for measuring, not for daily use.
 

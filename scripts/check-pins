@@ -30,8 +30,8 @@ pinned_rev() {
     grep -m1 -F "$1" "$2" | grep -oE 'rev = "[0-9a-f]{40}"' | grep -oE '[0-9a-f]{40}' || true
 }
 
-amane_pin=$(pinned_rev 'github.com/098765434/amane"' Cargo.toml)
-vello_pin=$(pinned_rev 'github.com/098765434/vello"' Cargo.toml)
+amane_pin=$(pinned_rev 'github.com/emaki-desktop/amane"' Cargo.toml)
+vello_pin=$(pinned_rev 'github.com/emaki-desktop/vello"' Cargo.toml)
 
 if [[ -z $amane_pin ]]; then
     warn "no amane rev found in Cargo.toml"
@@ -55,7 +55,7 @@ fi
 # a patch only applies from the root manifest, so the shell repeats amane's
 # vello pin; the two should name the same rev
 if [[ -n $vello_pin && -f ../amane/Cargo.toml ]]; then
-    amane_vello=$(pinned_rev 'github.com/098765434/vello"' ../amane/Cargo.toml)
+    amane_vello=$(pinned_rev 'github.com/emaki-desktop/vello"' ../amane/Cargo.toml)
     if [[ -n $amane_vello && $amane_vello != "$vello_pin" ]]; then
         warn "vello: Cargo.toml pins ${vello_pin:0:8}, ../amane pins ${amane_vello:0:8}"
     fi

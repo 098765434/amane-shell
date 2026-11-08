@@ -12,9 +12,9 @@ The pins live in two places:
 
 | Repository | Pinned in | Checked by |
 |---|---|---|
-| amane (`098765434/amane`, branch `ocbk`) | the root `Cargo.toml`, `[workspace.dependencies]` | `cargo build`, `scripts/check-pins` |
-| niri (`098765434/niri`, branch `ocbk`) | `contract.toml`, and nixos-config's `flake.lock` (`niri-fork`), which builds it | `cargo xtask contract` |
-| vello (`098765434/vello`, branch `ocbk`) | the root `Cargo.toml`, `[patch.crates-io]` | `scripts/check-pins` |
+| amane (`emaki-desktop/amane`, branch `emaki`) | the root `Cargo.toml`, `[workspace.dependencies]` | `cargo build`, `scripts/check-pins` |
+| niri (`emaki-desktop/niri`, branch `emaki`) | `contract.toml`, and nixos-config's `flake.lock` (`niri-fork`), which builds it | `cargo xtask contract` |
+| vello (`emaki-desktop/vello`, branch `emaki`) | the root `Cargo.toml`, `[patch.crates-io]` | `scripts/check-pins` |
 
 `cargo xtask contract` (also in CI) reads both forks at their pinned revisions, from checkouts at
 `../amane` and `../niri` (or `--amane <dir>`, `--niri <dir>`). It checks that:
@@ -27,7 +27,7 @@ The pins live in two places:
 ## niri
 
 The fork's own list is in niri's
-[`docs/fork/maintaining.md`](https://github.com/098765434/niri/blob/ocbk/docs/fork/maintaining.md#what-amane-shell-relies-on).
+[`docs/fork/maintaining.md`](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/maintaining.md#what-emaki-relies-on).
 Since `bebe757d` niri answers `Features` with each one's contract version (stock niri answers with
 an error), so a client can tell what is there before using it.
 

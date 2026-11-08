@@ -5,10 +5,10 @@ and the library's renderer; the machine's configuration pins the shell and the c
 
 ```mermaid
 flowchart BT
-    vello["vello fork<br/>098765434/vello, branch ocbk<br/>the GPU renderer, sized for a shell"]
-    amane["amane fork<br/>098765434/amane, branch ocbk<br/>Rust UI library: Wayland, rendering, services, the niri client"]
-    shell["emaki (this repo)<br/>098765434/amane-shell, main<br/>the shell, its apps, emaki-kit"]
-    niri["niri fork<br/>098765434/niri, branch ocbk<br/>the compositor: materials, blur shapes, the desktop layer, IPC additions"]
+    vello["vello fork<br/>emaki-desktop/vello, branch emaki<br/>the GPU renderer, sized for a shell"]
+    amane["amane fork<br/>emaki-desktop/amane, branch emaki<br/>Rust UI library: Wayland, rendering, services, the niri client"]
+    shell["emaki (this repo)<br/>emaki-desktop/emaki, main<br/>the shell, its apps, emaki-kit"]
+    niri["niri fork<br/>emaki-desktop/niri, branch emaki<br/>the compositor: materials, blur shapes, the desktop layer, IPC additions"]
     config["nixos-config<br/>the machine: builds the shell and niri, runs the services"]
     vello -->|"rev in Cargo.toml, [patch.crates-io]"| amane
     vello -->|"the same rev, in the shell's [patch.crates-io]"| shell
@@ -22,10 +22,10 @@ flowchart BT
   [linebender/vello](https://github.com/linebender/vello).
 - **amane fork:** the UI library the shell is written in: layer windows, popups, blur regions,
   system services, the niri client. Upstream is amane; what the fork adds is in
-  [its docs](https://github.com/098765434/amane/blob/ocbk/docs/fork/README.md).
+  [its docs](https://github.com/emaki-desktop/amane/blob/emaki/docs/fork/README.md).
 - **niri fork:** materials and blur shapes, vibrancy, HDR, the workspace mat, the desktop layer,
   gesture IPC. Upstream is now [niri-wm/niri](https://github.com/niri-wm/niri); what the fork
-  adds is in [its docs](https://github.com/098765434/niri/blob/ocbk/docs/fork/README.md).
+  adds is in [its docs](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/README.md).
 - **nixos-config:** the user's machine, a flake. Not published here; what the shell expects of
   it is in [nixos.md](docs/developer/integration/nixos.md).
 

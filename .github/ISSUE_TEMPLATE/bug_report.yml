@@ -28,8 +28,8 @@ body:
     id: niri
     attributes:
       label: niri fork revision
-      description: The output of `niri --version`. The shell needs the fork (098765434/niri, branch `ocbk`); say so if you run stock niri.
-      placeholder: niri 25.xx (ocbk abc1234)
+      description: The output of `niri --version`. The shell needs the fork (emaki-desktop/niri, branch `emaki`); say so if you run stock niri.
+      placeholder: niri 25.xx (emaki abc1234)
     validations:
       required: true
   - type: input

@@ -52,8 +52,8 @@ jobs:
       # every niri IPC name amane uses exists (docs/integration/contract.md)
       - name: checkout amane and niri for the contract
         run: |
-          git clone --filter=blob:none -q https://github.com/098765434/amane .contract/amane
-          git clone --filter=blob:none -q https://github.com/098765434/niri .contract/niri
+          git clone --filter=blob:none -q https://github.com/emaki-desktop/amane .contract/amane
+          git clone --filter=blob:none -q https://github.com/emaki-desktop/niri .contract/niri
       - name: contract
         run: nix develop -c cargo xtask contract --amane .contract/amane --niri .contract/niri
 

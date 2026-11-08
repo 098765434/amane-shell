@@ -90,5 +90,5 @@ The first tagged release: the desktop as it runs today.
 - The shell's IPC socket (`$XDG_RUNTIME_DIR/amane.sock`), niri layer rules generated from the
   tokens, and a Nix flake that builds every program with its runtime wiring.
 
-[Unreleased]: https://github.com/098765434/amane-shell/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/098765434/amane-shell/releases/tag/v0.1.0
+[Unreleased]: https://github.com/emaki-desktop/emaki/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/emaki-desktop/emaki/releases/tag/v0.1.0
