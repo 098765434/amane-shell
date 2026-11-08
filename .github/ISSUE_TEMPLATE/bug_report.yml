@@ -1,0 +1,66 @@
+name: Bug report
+description: Something the shell or one of its apps does wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and which surface or app it was in (the bar, the dock, the launcher, Quick Settings, Shell Settings, Drop, Messages, …).
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: niri
+    attributes:
+      label: niri fork revision
+      description: The output of `niri --version`. The shell needs the fork (098765434/niri, branch `ocbk`); say so if you run stock niri.
+      placeholder: niri 25.xx (ocbk abc1234)
+    validations:
+      required: true
+  - type: input
+    id: shell
+    attributes:
+      label: Shell revision
+      description: The commit you built, or the `amane-shell` input's `rev` in your nixos-config `flake.lock`.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: An excerpt of `journalctl --user -u amane-shell -b` around the time it happened (`-u amane-drop`, `-u amane-assistant` for those). `AMANE_LOG=debug` in the unit's environment says more.
+      render: text
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU and driver
+      description: The GPU, its Vulkan driver (RADV, ANV, NVK, …) and the Mesa or driver version; `vulkaninfo --summary` has them.
+    validations:
+      required: true
+  - type: input
+    id: monitors
+    attributes:
+      label: Monitor setup
+      description: How many monitors, their scales, and whether HDR or VRR is on (`niri msg outputs`).
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: Settings that matter (`~/.config/amane-shell/*.json`), a screenshot, or what you already tried.

@@ -1,0 +1,36 @@
+name: Feature request
+description: Something the shell or one of its apps should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you want to do
+      description: The task, in your words, and where it fails you today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: How the shell could do it
+      description: Which surface or app it belongs in, and how it would look or behave. Name the feature for what it is, not after another desktop's.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do instead today
+      description: Scripts, other programs, or a niri keybind that stands in for it.
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where it belongs
+      description: Compositor changes go to the niri fork, library-level changes to the amane fork (see CONTRIBUTING's scope notes). Pick the closest.
+      options:
+        - the shell (bar, dock, launcher, notifications, Quick Settings, widgets, OSD)
+        - an app (Shell Settings, Messages, Phone Screen, Shader Lab, Drop, the assistant)
+        - amane-kit (the look as a library)
+        - the status-app protocol (org.amane.StatusBar1)
+        - not sure
+    validations:
+      required: true

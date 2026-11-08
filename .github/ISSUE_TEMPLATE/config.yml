@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: niri fork
+    url: https://github.com/098765434/niri/issues
+    about: Compositor behavior (materials, blur, the desktop layer, HDR, gestures) is the niri fork's.
+  - name: amane fork
+    url: https://github.com/098765434/amane/issues
+    about: Library-level behavior (Wayland, rendering, popups, system services) is the amane fork's.
