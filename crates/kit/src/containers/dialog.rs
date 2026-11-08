@@ -592,7 +592,7 @@ fn message(text: &str, color: Color) -> Text {
 }
 
 /// The app dialog's window: the card on the dialog's glass, where niri
-/// draws it (its generated window rule frosts a floating amane window in
+/// draws it (its generated window rule frosts a floating emaki window in
 /// thick glass), else on the window background.
 fn window(name: &str, parent: &str) -> Window {
     let shown = OPEN

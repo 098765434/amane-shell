@@ -2,7 +2,7 @@
 // design tokens (radii: sys.radius.popover, notification.card.radius,
 // notification.center.radius) — do not edit by hand.
 //
-// The amane shell's niri layer-rules (compositor-side blur, rounding and
+// emaki's niri layer-rules (compositor-side blur, rounding and
 // shadow on its surfaces). Each rule matches an anchored regex on a
 // layer-surface namespace that a component sets via LayerWindow::namespace(...).
 //
@@ -13,7 +13,7 @@
 //     niri validate -c ~/.config/niri/config.kdl
 //     niri msg action load-config-file
 //
-// Verify the surfaces are up:  niri msg layers | grep amane
+// Verify the surfaces are up:  niri msg layers | grep emaki
 
 //<<<GENERATED-RULES-BELOW>>>  (gen-layer-rules.sh injects everything past this line)
 
@@ -224,7 +224,7 @@ layer-rule {
     }
 }
 
-// An amane app's windows: frosted behind, the window drawing its own tint
+// An emaki app's windows: frosted behind, the window drawing its own tint
 // over the frost (the window material), and its popups like the shell's.
 window-rule {
     match app-id="^emaki-settings$"
@@ -260,7 +260,7 @@ window-rule {
     }
 }
 
-// An amane app's windows: frosted behind, the window drawing its own tint
+// An emaki app's windows: frosted behind, the window drawing its own tint
 // over the frost (the window material), and its popups like the shell's.
 window-rule {
     match app-id="^emaki-messages$"

@@ -105,7 +105,7 @@ fn serve(mut shell: UnixStream) -> io::Result<()> {
 
             Ok(Request::GetInfo(what)) => Zeroizing::new(match what.as_str() {
                 "pid" => format!("D {}\nOK", std::process::id()),
-                "flavor" => String::from("D amane\nOK"),
+                "flavor" => String::from("D emaki\nOK"),
                 "version" => format!("D {}\nOK", env!("CARGO_PKG_VERSION")),
                 _ => String::from("OK"),
             }),

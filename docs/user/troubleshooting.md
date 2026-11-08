@@ -23,7 +23,7 @@ stale.
 2. Run `./gen-layer-rules.sh ~/.config/niri/config.kdl` from the repository, then
    `niri msg action load-config-file`. If your config is generated (home-manager), pass the
    source file instead and rebuild.
-3. `niri msg layers | grep amane` lists the shell's surfaces; each should have a rule.
+3. `niri msg layers | grep emaki` lists the shell's surfaces; each should have a rule.
 
 The frost itself needs the niri fork: stock niri has no `materials {}` and no `desktop` layer,
 so on it the shell lights its edges itself and goes without blur
@@ -95,3 +95,46 @@ The shell follows `~/.config/emaki/*.json` as they change. A file that fails to 
 is logged (`couldn't read appearance.json: …`) and the defaults are used until it parses
 again. `EMAKI_*` variables in the unit's environment win over the file while set
 ([configure.md](configure.md)).
+
+## Migrating from amane-shell
+
+Until 2026-11 the shell was amane-shell and its programs `amane-*`; they are emaki and
+`emaki-*` now (amane, the UI library underneath, keeps its name). Every program moves its own
+folders on its first start, once:
+
+| Before | Now |
+|---|---|
+| `~/.config/amane-shell`, `~/.local/state/amane-shell`, `~/.cache/amane-shell` | `~/.config/emaki`, `~/.local/state/emaki`, `~/.cache/emaki` |
+| `~/.config/amane-drop`, `~/.local/state/amane-drop`, the other `amane-*` folders | `emaki-drop` and the other `emaki-*` |
+| `~/.cache/amane/messages` (the phone's pictures) | `~/.cache/emaki/phone/messages` |
+| `~/.local/share/amane-assistant/models` | `~/.local/share/emaki-assistant/models` |
+
+When both a folder and its new name are there, what the new one lacks moves in and the rest
+stays where it was, named in the log (`journalctl --user -u emaki | grep migrate`). The ids the
+settings keep are renamed with them (`org.amane.drop` in the bar's order, `amane-settings.desktop`
+in the dock's pins), and `~/.config/emaki/.migrated-from-amane` marks it done. Passwords kept in
+the keyring under the old names are still found.
+
+`scripts/migrate-from-amane` does the same moves by hand, saying what it would do unless given
+`--apply`. Given the niri config, it also renames what no program edits there:
+
+```sh
+scripts/migrate-from-amane --apply ~/.config/niri/config.kdl
+./gen-layer-rules.sh ~/.config/niri/config.kdl
+niri msg action load-config-file
+```
+
+- the layer-rules markers, `// >>> amane layer-rules` and `// <<< amane layer-rules`, are
+  `emaki layer-rules`; `gen-layer-rules.sh` then writes the rules for the new namespaces
+  (`emaki.dock`, `emaki.status-bar`, …) and app ids (`emaki-settings`)
+- the sockets in binds and scripts, `amane.sock` and `amane-drop.sock`, are `emaki.sock` and
+  `emaki-drop.sock`
+- the `AMANE_*` variables the shell reads are `EMAKI_*` (`EMAKI_THEME`, `EMAKI_LOG`, …); the
+  library's own, like `AMANE_DEBUG`, keep their names ([configure.md](configure.md))
+- the bar's D-Bus name is `org.emaki.StatusBar1`, with no alias: a status app of your own
+  changes its destination
+
+On NixOS, nixos-config renames along with it: the flake input `amane-shell` is `emaki`, its
+package `inputs.emaki.packages.${system}.default`, the `amane.*` options are `emaki.*`, and the
+units `amane-shell.service`, `amane-drop.service` and `amane-update-check` are `emaki.service`,
+`emaki-drop.service` and `emaki-update-check` ([install.md](install.md)).

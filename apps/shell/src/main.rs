@@ -125,11 +125,13 @@ fn sample_menu() -> ContextMenu {
 
 fn main() -> ExitCode {
     emaki_log::init(emaki_kit::app_ids::SHELL);
-    emaki_kit::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     if let Some(code) = cli(&args) {
         return code;
     }
+    // after the one-shot commands, so `emaki layer-rules` (cargo xtask
+    // layer-rules) and `emaki --help` move nothing
+    emaki_kit::migrate::from_amane();
 
     // no core dump of the shell, which passes passwords on their way into a field; rbw and
     // its agent are started with none too
@@ -168,7 +170,10 @@ fn main() -> ExitCode {
     notifications::register_panel();
     chrome::panel::on_switch(context_menu::close);
 
+    // its IPC socket goes by the id, which the other programs call
+    // (`shell_ipc::SHELL`); the library's default id is "amane"
     let mut app = App::new()
+        .app_id(emaki_kit::shell_ipc::SHELL)
         .window(quick_settings::surface)
         .window(notifications::side_sheet)
         .window(launcher::surface)

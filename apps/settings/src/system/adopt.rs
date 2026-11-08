@@ -428,7 +428,7 @@ mod tests {
 
         let entry = Entry {
             id: String::from("packages"),
-            path: vec!["amane".into(), "packages".into()],
+            path: vec!["emaki".into(), "packages".into()],
             page: String::from("apps"),
             label: String::from("Added in Settings"),
             control: Control::Packages,

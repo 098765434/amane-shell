@@ -31,6 +31,8 @@ page; contributing is in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 The docs use one name for each thing:
 
+- **emaki** is the shell and this project, in lowercase; **amane** is the UI library fork it's
+  built on, which keeps its name (and its `AMANE_*` variables).
 - **Emaki Settings** is the settings app; its program is `emaki-settings`, named once per doc.
 - **Quick Settings** is the panel of controls in the bar.
 - A **status app** is a program that puts something in the bar; its **status item** is what shows

@@ -201,7 +201,7 @@ They're 32 tall, with cancel on the left and the default on the right. Otherwise
 so it's as tall as its content: 152 for the design's side-by-side sample, 216 stacked.
 
 An app shows it with `.open(parent)`, in a modal window over the app's window. niri's generated
-rule for a floating window of an amane app (a dialog floats) gives it the corners, the shadow
+rule for a floating window of an emaki app (a dialog floats) gives it the corners, the shadow
 (`0 18 48`) and the thick glass. Without that rule it's on the window background. The shell shows
 the same card as its alert, in the middle of the screen
 ([quick-settings.md](../../user/features/quick-settings.md#the-alert)).

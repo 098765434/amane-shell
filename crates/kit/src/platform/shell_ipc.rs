@@ -10,7 +10,7 @@
 use std::io;
 
 /// The program name the shell's socket is known by.
-pub const SHELL: &str = "amane";
+pub const SHELL: &str = "emaki";
 
 /// Gives a keyword enum the one spelling both ways: `word()` writes a
 /// variant, `from_word()` reads one.

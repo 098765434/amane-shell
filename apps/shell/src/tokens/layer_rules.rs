@@ -258,7 +258,7 @@ pub fn rules() -> Vec<LayerRule> {
     ]
 }
 
-/// The amane apps whose windows are frosted behind, in the window
+/// The emaki apps whose windows are frosted behind, in the window
 /// material, their popups in the menu's (`kit::app::app` names them).
 pub const APP_IDS: &[&str] = &[emaki_kit::app_ids::SETTINGS, emaki_kit::app_ids::MESSAGES];
 
@@ -289,7 +289,7 @@ const HEADER: &str = "\
 // design tokens (radii: sys.radius.popover, notification.card.radius,
 // notification.center.radius) — do not edit by hand.
 //
-// The amane shell's niri layer-rules (compositor-side blur, rounding and
+// emaki's niri layer-rules (compositor-side blur, rounding and
 // shadow on its surfaces). Each rule matches an anchored regex on a
 // layer-surface namespace that a component sets via LayerWindow::namespace(...).
 //
@@ -300,7 +300,7 @@ const HEADER: &str = "\
 //     niri validate -c ~/.config/niri/config.kdl
 //     niri msg action load-config-file
 //
-// Verify the surfaces are up:  niri msg layers | grep amane
+// Verify the surfaces are up:  niri msg layers | grep emaki
 
 {SENTINEL}  (gen-layer-rules.sh injects everything past this line)
 ";
@@ -362,7 +362,7 @@ pub fn render(rules: &[LayerRule]) -> String {
     out
 }
 
-/// A rule for each amane app's windows: frost behind them in the window
+/// A rule for each emaki app's windows: frost behind them in the window
 /// material, which the window tints itself (`kit::app::window_bg`), and
 /// its popups (dropdowns, menus) frosted like the shell's. A second rule
 /// makes its floating windows, its dialogs (a window with a parent floats),
@@ -377,7 +377,7 @@ fn render_windows(app_ids: &[&str]) -> String {
     let mut out = String::new();
     for app_id in app_ids {
         out.push_str(
-            "\n// An amane app's windows: frosted behind, the window drawing its own tint\n\
+            "\n// An emaki app's windows: frosted behind, the window drawing its own tint\n\
              // over the frost (the window material), and its popups like the shell's.\n",
         );
         out.push_str("window-rule {\n");
@@ -776,7 +776,7 @@ mod tests {
         }
     }
 
-    /// The `amane.…` namespaces the shell's surfaces and popups use: the
+    /// The `emaki.…` namespaces the shell's surfaces and popups use: the
     /// `…NS` constants (one, or an array of them), and literal
     /// `Popup::new("…")` and `.namespace("…")` calls.
     fn namespaces_in_code() -> std::collections::BTreeMap<String, String> {
@@ -814,7 +814,7 @@ mod tests {
                     continue;
                 }
                 for literal in line.split('"').skip(1).step_by(2) {
-                    if literal.starts_with("amane.") {
+                    if literal.starts_with("emaki.") {
                         let at = format!("{}:{}", path.display(), n + 1);
                         found.entry(literal.to_string()).or_insert(at);
                     }

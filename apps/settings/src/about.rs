@@ -169,10 +169,7 @@ mod tests {
     fn home_reads_as_a_tilde() {
         let home = Path::new("/home/me");
         assert_eq!(
-            tidy(
-                Path::new("/home/me/.config/emaki/dock.json"),
-                Some(home)
-            ),
+            tidy(Path::new("/home/me/.config/emaki/dock.json"), Some(home)),
             "~/.config/emaki/dock.json"
         );
         assert_eq!(tidy(Path::new("/etc/x"), Some(home)), "/etc/x");

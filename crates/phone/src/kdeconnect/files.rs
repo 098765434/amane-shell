@@ -1,14 +1,15 @@
 /*
  * what the messages leave on disk: a message's thumbnails and a contact's
  * photo come inside the data as base64 and are written out once, under
- * $XDG_CACHE_HOME/amane/messages, so they draw like any other image
+ * $XDG_CACHE_HOME/emaki/phone/messages, so they draw like any other image
  */
 
 use std::path::PathBuf;
 
 pub(crate) fn cache(folder: &str) -> PathBuf {
     emaki_base::paths::cache()
-        .join("amane")
+        .join(emaki_base::app_ids::SHELL)
+        .join("phone")
         .join("messages")
         .join(folder)
 }

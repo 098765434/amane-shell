@@ -7,6 +7,8 @@ running one as a service, and how the pieces fit across the repositories. emaki-
 ([drop.md](../../user/features/drop.md), `apps/drop`) is the worked example it points into. What
 the bar draws is in [status-bar.md](../../user/features/status-bar.md#programs-items).
 
+Before 2026-11 the bus name was `org.amane.StatusBar1`.
+
 The protocol and its JSON types are one crate, [emaki-status](../../../crates/status/README.md)
 (`crates/status`, with the `StatusItem` and `LiveActivity` clients), so a program and the bar
 share one definition. Depend on it with `emaki-status = { workspace = true }` inside this

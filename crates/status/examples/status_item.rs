@@ -16,7 +16,7 @@ use emaki_status::{LiveActivity, StatusItem};
 fn main() {
     let mut spec = ItemSpec::new("org.emaki.example", ItemIcon::Glyph(String::from("tray")));
 
-    spec.tooltip = String::from("amane's status item example");
+    spec.tooltip = String::from("emaki's status item example");
     spec.accepts = Accepts {
         files: true,
         text: true,

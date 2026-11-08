@@ -25,9 +25,9 @@ use std::time::Duration;
 
 use amane::{Argument, Bus, Service, ServiceError};
 
-use emaki_base::sync::Locked as _;
 pub use config::RunCommand;
 pub use device::{PairState, PhoneBattery, PhoneDevice, PhoneNotification};
+use emaki_base::sync::Locked as _;
 pub use input::{PhoneClick, PhoneKey, PhoneModifiers};
 pub use sms::{
     PAGE as SMS_PAGE, PhoneMessages, SmsAttachment, SmsKind, SmsMessage, SmsState, SmsThread,

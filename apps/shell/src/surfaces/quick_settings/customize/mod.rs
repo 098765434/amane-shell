@@ -26,9 +26,9 @@ mod drag;
 mod tests;
 mod view;
 
-use emaki_kit::reveal;
 use drag::*;
 pub(super) use drag::{drag_layer, ghost, place, set_canvas_origin};
+use emaki_kit::reveal;
 pub(super) use view::view;
 
 use std::cell::{Cell, RefCell};

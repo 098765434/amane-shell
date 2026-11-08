@@ -104,7 +104,7 @@ on the phone), `addresses` (where it is on the network, IPv4 first, for adb),
 
 `SmsMessage::attachments()` are `SmsAttachment`s: `part`, `unique`, `mime`,
 `thumbnail()` (the small picture the phone sends with the message, written to
-`$XDG_CACHE_HOME/amane/messages/thumbnails/`), and `local()` for a file sent from
+`$XDG_CACHE_HOME/emaki/phone/messages/thumbnails/`), and `local()` for a file sent from
 here. `sender()` is the first address of a received message, the person who
 wrote it in a group.
 
@@ -148,7 +148,7 @@ wrote it in a group.
   `~/.local/share/kpeoplevcard/kdeconnect-<id>/*.vcf`. A number matches by its
   digits, or one ending the other with 7 or more digits, so a local number
   matches its `+country` form. A card's `PHOTO` (base64, any vCard version) is
-  written once to `$XDG_CACHE_HOME/amane/messages/contacts/`.
+  written once to `$XDG_CACHE_HOME/emaki/phone/messages/contacts/`.
 - **Sending:** `replyToConversation(x, s, av)` and
   `sendWithoutConversation(av, s, av)`. Each attachment is a plain path as a
   string (the daemon opens it with `QFile`, so not a `file://` URL). Each address

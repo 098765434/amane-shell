@@ -64,7 +64,7 @@ A piece of glass is built with its material's methods:
 
 ## App windows
 
-- **Window frost.** An amane app's window frosts what's behind it in niri's `frost` material.
+- **Window frost.** An emaki app's window frosts what's behind it in niri's `frost` material.
   The rule comes from `layer-rules`, which writes a `window-rule` for each app in
   `layer_rules::APP_IDS`. Only the sidebar shows it: the window
   draws its content on the opaque `sys.color.window.bg`, and the sidebar cuts itself out of that

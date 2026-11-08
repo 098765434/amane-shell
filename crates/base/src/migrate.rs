@@ -70,10 +70,6 @@ struct Bases {
 
 /// Moves the folders and ids from before the rename to emaki, once.
 pub fn from_amane() {
-    // until the rename lands every pair is the same name: nothing to do
-    if PROGRAMS.iter().all(|(old, new)| old == new) {
-        return;
-    }
     let bases = Bases {
         config: crate::paths::config(),
         state: crate::paths::state(),
@@ -333,7 +329,7 @@ mod tests {
         assert!(!bases.cache.join("amane/messages").exists());
         // the library's own folder stays
         assert!(bases.cache.join("amane/library/kept").exists());
-        assert!(bases.config.join("emaki").join(MARKER).exists());
+        assert!(bases.config.join(NAMES[0].1).join(MARKER).exists());
 
         fs::remove_dir_all(home).unwrap();
     }
@@ -358,7 +354,7 @@ mod tests {
         write(&bases.state.join("amane-shell/late.json"), "{}");
         assert!(!run(&bases, &NAMES));
         assert!(bases.state.join("amane-shell/late.json").exists());
-        assert!(!bases.state.join("emaki").exists());
+        assert!(!bases.state.join(NAMES[0].1).exists());
 
         fs::remove_dir_all(home).unwrap();
     }
@@ -367,9 +363,16 @@ mod tests {
     fn nothing_to_move_only_marks() {
         let (home, bases) = home("fresh");
         assert!(run(&bases, &NAMES));
-        assert!(bases.config.join("emaki").join(MARKER).exists());
+        assert!(bases.config.join(NAMES[0].1).join(MARKER).exists());
         assert!(!bases.state.exists());
         fs::remove_dir_all(home).unwrap();
+    }
+
+    #[test]
+    fn old_ids_are_the_names_before_the_rename() {
+        assert_eq!(old_id(app_ids::SHELL), Some("amane-shell"));
+        assert_eq!(old_id(app_ids::DROP), Some("amane-drop"));
+        assert_eq!(old_id("firefox"), None);
     }
 
     #[test]

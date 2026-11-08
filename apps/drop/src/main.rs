@@ -1,5 +1,5 @@
 //! emaki-drop: a drop shelf in the status bar. Its
-//! item in the bar (an amane status item) opens a grid of folders, apps and
+//! item in the bar (an emaki status item) opens a grid of folders, apps and
 //! actions to let files go on, and a Drop Bar to hold them; dragging files
 //! over the item opens it at once, so the drag carries on into it. Work
 //! shows on its tile and as an activity in the bar.

@@ -35,7 +35,7 @@ impl Log for Logger {
             return;
         }
 
-        let app = APP.get().copied().unwrap_or("amane");
+        let app = APP.get().copied().unwrap_or("emaki");
         let line = format!(
             "[{app}] {} {}: {}\n",
             record.level(),

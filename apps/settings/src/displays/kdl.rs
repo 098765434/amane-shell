@@ -67,7 +67,7 @@ pub struct Displays {
     pub extra: Vec<String>,
 }
 
-const HEADER: &str = "// Written by Shell Settings (Displays), which reads it back; lines it\n\
+const HEADER: &str = "// Written by Emaki Settings (Displays), which reads it back; lines it\n\
                       // doesn't know are kept. niri's config.kdl includes it.\n";
 
 /// The headers an older Settings wrote, read as the header too: before the
@@ -496,7 +496,7 @@ pub fn moved(config: &str, blocks: &[Block], file: &Path) -> String {
     for (index, line) in config.lines().enumerate() {
         if blocks.first().is_some_and(|block| block.first == index) {
             out.push(String::from(
-                "// Displays are set in Shell Settings, which writes this file:",
+                "// Displays are set in Emaki Settings, which writes this file:",
             ));
             out.push(include_line(file));
         }
@@ -515,7 +515,7 @@ pub fn moved(config: &str, blocks: &[Block], file: &Path) -> String {
     }
     if blocks.is_empty() {
         text.push_str(&format!(
-            "\n// Displays are set in Shell Settings, which writes this file:\n{}\n",
+            "\n// Displays are set in Emaki Settings, which writes this file:\n{}\n",
             include_line(file)
         ));
     }
@@ -555,7 +555,7 @@ pub fn migrate() -> Result<Displays, String> {
     commit(
         &folder,
         &[&config_path, &file],
-        "move: displays from niri/config.kdl to displays.kdl (Shell Settings)",
+        "move: displays from niri/config.kdl to displays.kdl (Emaki Settings)",
     )?;
     Ok(displays)
 }
@@ -728,7 +728,7 @@ output \"eDP-1\" {
 }
 ";
 
-    const BY_HAND: &str = r#"// Written by Shell Settings (Displays), which reads it back; lines it
+    const BY_HAND: &str = r#"// Written by Emaki Settings (Displays), which reads it back; lines it
 // doesn't know are kept. niri's config.kdl includes it.
 
 output "eDP-1" {

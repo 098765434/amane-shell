@@ -9,11 +9,11 @@ use std::thread;
 use std::time::Duration;
 
 use amane::{Column, Service, watch_file};
+use chrono::Utc;
 use emaki_kit::buttons::{PushButton, Style};
 use emaki_kit::color::Accent;
 use emaki_kit::form::FormRow;
 use emaki_kit::icons::{ICON_CHECK, ICON_UPDATE};
-use chrono::Utc;
 
 use super::controls;
 use super::job::{BuildJob, Phase, Target};

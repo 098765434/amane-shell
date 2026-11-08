@@ -62,7 +62,7 @@ pages, like Messages' inbox; draw its labels in `sidebar_label()`, which greys t
 
 amane's side, its normal windows, is [`windows/app-windows.md`](https://github.com/098765434/amane/blob/ocbk/docs/fork/windows/app-windows.md).
 Whether the window is frosted is read from the config: the shell's generated niri config defines
-the window material with the `window-rule` that frosts an amane app's windows
+the window material with the `window-rule` that frosts an emaki app's windows
 (`layer_rules::APP_IDS`; see [layer-rules.md](../integration/layer-rules.md)). An app's id is a
 constant in `emaki_kit::app_ids`, which the app names itself with; one that should be frosted is
 added to `APP_IDS`, and one that shouldn't to `NO_RULE`, with why.

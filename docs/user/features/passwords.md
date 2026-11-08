@@ -78,7 +78,7 @@ lines and never a secret.
 
 | App | Fill |
 |---|---|
-| GTK 3/4, Qt 6, amane apps | yes |
+| GTK 3/4, Qt 6, emaki apps | yes |
 | Firefox | yes (text-input-v3), but set aside by default |
 | Chromium, Electron (Signal, Element, VS Code…) | with `--enable-wayland-ime --wayland-text-input-version=3` |
 | X11 apps (xwayland-satellite) | no input method: the launcher copies instead |

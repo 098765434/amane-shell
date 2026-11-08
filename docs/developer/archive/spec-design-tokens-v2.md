@@ -788,7 +788,7 @@ PRs 1–2 change no pixels; 3–7 each change one thing.
    radii and font sizes don't change.
 7. **Fonts (PR 5):** with the UI font absent and Inter installed, the debug log names Inter.
 8. **Layer rules (PR 6):** `./gen-layer-rules.sh`, `niri validate`, reload; a Wi-Fi card
-   corner's blur and edge line up; `niri msg layers | grep amane` lists the same namespaces.
+   corner's blur and edge line up; `niri msg layers | grep emaki` lists the same namespaces.
 ---
  
 ## 15. Fit against the Amane rubric

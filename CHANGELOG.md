@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to amane-shell are recorded here.
+All notable changes to emaki (amane-shell until 2026-11) are recorded here.
 
 The format is [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -10,6 +10,45 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 <!-- one line per change, newest last -->
+
+- **BREAKING: amane-shell is emaki.** The amane library underneath keeps its name, and its
+  own `AMANE_*` variables (`AMANE_DEBUG`, `AMANE_FRAMES`, `AMANE_VELLO_*`, …). Renamed:
+  - binaries: `amane-shell` is `emaki`; `amane-settings`, `amane-messages`, `amane-mirror`,
+    `amane-shader-lab`, `amane-drop`, `amane-assistant`, `amane-pinentry` and
+    `amane-train-watch` are `emaki-…`
+  - packages and crates: `amane-shell` is `emaki`, `amane-kit` is `emaki-kit`, and the other
+    `amane-*` crates are `emaki-*` (`emaki_kit::` in Rust); the flake's package is
+    `packages.<system>.emaki` (and `default`)
+  - app ids and desktop files: `amane-settings.desktop` and the others are `emaki-*.desktop`,
+    the icons `emaki-settings` and `emaki-messages`
+  - environment variables the shell reads: `AMANE_THEME`, `AMANE_DENSITY`, `AMANE_LOG`,
+    `AMANE_RBW`, `AMANE_ASSISTANT_MODELS` and the rest are `EMAKI_*`
+  - sockets: `$XDG_RUNTIME_DIR/amane.sock`, `amane-drop.sock`, `amane-assistant.sock` and
+    `amane-drop/` are `emaki.sock`, `emaki-drop.sock`, `emaki-assistant.sock` and `emaki-drop/`
+  - D-Bus: `org.amane.StatusBar1` at `/org/amane/StatusBar` is `org.emaki.StatusBar1` at
+    `/org/emaki/StatusBar`, with no alias; item ids `org.amane.*` are `org.emaki.*`
+  - layer namespaces: `amane.dock`, `amane.status-bar`, `amane.launcher` and the others are
+    `emaki.*`; the niri config's markers are `// >>> emaki layer-rules` and
+    `// <<< emaki layer-rules`
+  - folders: `~/.config/amane-shell`, `~/.local/state/amane-shell` and `~/.cache/amane-shell`
+    are `…/emaki`, the `amane-*` ones `emaki-*`, `~/.cache/amane/messages` is
+    `~/.cache/emaki/phone/messages`, `~/.local/share/amane-assistant` is
+    `~/.local/share/emaki-assistant`
+  - the settings app: Shell Settings is **Emaki Settings**
+  - NixOS: the flake input `amane-shell` is `emaki`, the options `amane.*` are `emaki.*`, the
+    flake output `amaneSettings` is `emakiSettings`, `amane-nixos-activate` and its polkit
+    action `org.amane.nixos-activate` are `emaki-nixos-activate` and `org.emaki.nixos-activate`,
+    the units `amane-shell.service`, `amane-drop.service` and `amane-update-check` are
+    `emaki.service`, `emaki-drop.service` and `emaki-update-check`
+
+### Added
+
+- The move from amane-shell, once, on each program's first start: the old folders move to the
+  new names, the ids the settings keep (`org.amane.*`, `amane-*.desktop`) are renamed, and
+  `~/.config/emaki/.migrated-from-amane` marks it done; keyring passwords under the old names
+  are still found. `scripts/migrate-from-amane` does the moves by hand and renames the niri
+  config's markers and sockets ([troubleshooting](docs/user/troubleshooting.md#migrating-from-amane-shell)).
+- Emaki Settings reads back a `displays.kdl` that Shell Settings wrote.
 
 ## [0.1.0] - 2026-11-08
 

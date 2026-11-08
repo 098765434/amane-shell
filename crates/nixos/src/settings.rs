@@ -539,9 +539,9 @@ mod tests {
          "type":"boolean","value":false,"unit":"sunshine.service","scope":"user"},
         {"control":"choice","choices":[{"label":"1 minute","value":60},{"label":"Never","value":0}],
          "default":180,"id":"dimAfter","label":"Dim the screen after","page":"power",
-         "path":["amane","idle","dimAfter"],"setIn":[],"tier":"rebuild","type":"unsigned integer","value":180},
+         "path":["emaki","idle","dimAfter"],"setIn":[],"tier":"rebuild","type":"unsigned integer","value":180},
         {"control":"packages","default":[],"id":"packages","label":"Added in Settings","page":"apps",
-         "path":["amane","packages"],"setIn":[],"tier":"rebuild","type":"list of string","value":[]}
+         "path":["emaki","packages"],"setIn":[],"tier":"rebuild","type":"list of string","value":[]}
     ],"host":"nixos-niri","revision":"5d056b8-dirty",
     "systemPackages":[{"name":"foot","version":"1.2","file":"modules/apps.nix"}],
     "missingPackages":["youtube-music"]}"#;

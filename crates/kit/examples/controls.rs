@@ -6,6 +6,7 @@
 use amane::{
     Center, Column, Rectangle, Row, ScrollArea, Service, Size, Start, Text, Widget, Window,
 };
+use chrono::Datelike;
 use emaki_kit::app::{Page, app, app_window, field_box, sidebar, standard_shortcut, text_field};
 use emaki_kit::buttons::{
     Checkbox, PushButton, Radio, Segment, SegmentedButton, Shape, Style, Switch,
@@ -28,7 +29,6 @@ use emaki_kit::stepper::Stepper;
 use emaki_kit::style::{self, Accent};
 use emaki_kit::symbol::{Symbol, symbol};
 use emaki_kit::tokens::{Styled, sys};
-use chrono::Datelike;
 
 struct Lab {
     page: usize,

@@ -66,7 +66,7 @@ code has a rule or is on that list.
 
 ## Generating the rules
 
-The generated file holds the layer rules, two `window-rule`s for each amane app (`APP_IDS`:
+The generated file holds the layer rules, two `window-rule`s for each emaki app (`APP_IDS`:
 `emaki-settings` and `emaki-messages`; its
 window frosted behind in `frost`, its popups in `glass`; and its floating windows, its dialogs,
 in `glass-large` with the alert's 34 corners and `0 18 48` shadow, which a window floated by hand
@@ -112,14 +112,14 @@ into the Nix store is read-only, so then pass the source file you edit instead (
 
 ```sh
 # then check the surfaces are up
-niri msg layers | grep amane
+niri msg layers | grep emaki
 ```
 
 The script is idempotent — re-run it after every edit to `niri-layer-rule.kdl`.
 
 ### One-time setup (per target config)
 
-The target needs the two marker lines once. Replace the hand-written amane `layer-rule` blocks in
+The target needs the two marker lines once. Replace the hand-written emaki `layer-rule` blocks in
 the niri config with just:
 
 ```kdl
@@ -132,7 +132,7 @@ setup hint and makes no changes.)
 
 ## Adding or renaming a surface
 
-1. set its `.namespace("amane.…")` in the Rust source, as a `pub const`;
+1. set its `.namespace("emaki.…")` in the Rust source, as a `pub const`;
 2. add a `LayerRule` for it in `rules()` in `apps/shell/src/tokens/layer_rules.rs`, taking its radius from
    a `sys.radius.*` token;
 3. `cargo xtask layer-rules > niri-layer-rule.kdl`, then `./gen-layer-rules.sh` and reload

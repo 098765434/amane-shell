@@ -39,7 +39,7 @@ if ! grep -qF "$BEGIN" "$TARGET" || ! grep -qF "$END" "$TARGET"; then
   cat >&2 <<EOF
 error: generation markers not found in $TARGET.
 
-One-time setup: replace the hand-written amane layer-rule section of the niri
+One-time setup: replace the hand-written emaki layer-rule section of the niri
 config with these two marker lines, then re-run this script to fill them:
 
 $BEGIN
