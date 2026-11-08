@@ -36,7 +36,8 @@ impl Service for BackgroundApps {
     }
 
     fn listen() {
-        let changes = Bus::session().signals(PROPERTIES, "PropertiesChanged");
+        // only the portal's object: the bus keeps every other program's changes away
+        let changes = Bus::session().signals_at(PATH, PROPERTIES, "PropertiesChanged");
 
         // a change between new() and watching would otherwise wait for the next one
         refresh();
