@@ -40,8 +40,8 @@ fn step() -> usize {
 fn next_step() {
     Tick::watch();
     if !PENDING.swap(true, Ordering::AcqRel) {
-        std::thread::spawn(|| {
-            std::thread::sleep(STEP);
+        // a timer on the event loop, not a thread per step
+        amane::Timer::after(STEP, || {
             PENDING.store(false, Ordering::Release);
             Tick::changed();
         });
