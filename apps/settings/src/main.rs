@@ -9,6 +9,7 @@ mod displays;
 mod dock;
 mod drop;
 mod launcher;
+mod notifications;
 mod pages;
 mod passwords;
 mod previews;

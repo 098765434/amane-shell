@@ -135,6 +135,15 @@ Writes `dock.json` (`dock.rs`); see [dock.md](dock.md).
 | Hiding | switches: hide until the pointer meets the edge, and under it show with the overview | `auto_hide`, `rise_with_overview` |
 | Icons | switches: dots under open apps, an app's name over its icon, animate | `running_dots`, `tooltips`, `animations` |
 
+### Notifications
+
+Writes `notifications.json` (`notifications.rs`); see
+[notifications.md](notifications.md#per-app-rules).
+
+| Setting | Control | Field |
+|---|---|---|
+| Apps | a row per app that has sent a notification (from the cache's `notifiers-seen.json`), with its icon and a menu: Banners and List, List Only, Off | `apps` (an allowed app is left out) |
+
 ### Quick Settings
 
 The layout is the shell's own state, so this page (`quick_settings.rs`) has no file of its own: it

@@ -7,13 +7,13 @@ use amane_kit::app::Page;
 use amane_kit::color::Accent;
 use amane_kit::icons::{
     ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO,
-    ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_OPEN_IN_NEW, ICON_PACKAGE, ICON_SEARCH,
-    ICON_SETTINGS, ICON_STORAGE, ICON_TRAY, ICON_TUNE, ICON_UPDATE,
+    ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_NOTIFICATIONS, ICON_OPEN_IN_NEW, ICON_PACKAGE,
+    ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TRAY, ICON_TUNE, ICON_UPDATE,
 };
 
 use crate::{
-    about, appearance, desktop, displays, dock, drop, launcher, passwords, quick_settings,
-    status_bar, system,
+    about, appearance, desktop, displays, dock, drop, launcher, notifications, passwords,
+    quick_settings, status_bar, system,
 };
 
 /// A page's sub-page by name: its title and body, or none for a name it
@@ -112,7 +112,7 @@ const fn with_toolbar(entry: Entry, toolbar: Toolbar) -> Entry {
 }
 
 /// The sidebar, top to bottom; a page is its place in this list.
-pub const SIDEBAR: [Entry; 21] = [
+pub const SIDEBAR: [Entry; 22] = [
     Entry::Section("Shell"),
     found_by(
         page(
@@ -165,6 +165,16 @@ pub const SIDEBAR: [Entry; 21] = [
     found_by(
         page("dock", "Dock", ICON_LAYERS, Accent::Indigo, dock::page),
         &["taskbar", "launcher bar"],
+    ),
+    found_by(
+        page(
+            "notifications",
+            "Notifications",
+            ICON_NOTIFICATIONS,
+            Accent::Red,
+            notifications::page,
+        ),
+        &["banners", "alerts", "toasts", "notification center"],
     ),
     with_toolbar(
         found_by(
