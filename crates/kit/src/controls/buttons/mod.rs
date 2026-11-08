@@ -415,7 +415,7 @@ pub fn hovered(id: &str) -> bool {
 }
 
 /// Whether the button `id` is held down now: pressed and not yet let go.
-/// A hold that hasn't reported for [`HOLD_LAPSE`] counts as let go, since a
+/// A hold that hasn't reported for `HOLD_LAPSE` counts as let go, since a
 /// release can go unseen.
 pub fn held(id: &str) -> bool {
     HELD.with_borrow(|held| {

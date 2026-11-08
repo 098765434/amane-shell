@@ -9,7 +9,7 @@
 //! | [`paths`] | the XDG base folders |
 //! | [`fs`] | writing a file whole, and JSON to a file |
 //! | [`time`] | now, as Unix time |
-//! | [`format`] | times, lengths, sizes and counts in words |
+//! | [`format`](mod@format) | times, lengths, sizes and counts in words |
 //! | [`sync`] | locks that outlive a panic |
 //! | [`args`] | a `--flag value` from the command line |
 //! | [`mime`] | a file's type from its name |

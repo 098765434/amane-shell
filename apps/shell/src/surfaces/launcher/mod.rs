@@ -21,7 +21,8 @@
 //!
 //! The surface covers the output, clear outside the glass, so a click
 //! anywhere else closes it. The compositor frosts behind the sheet and the
-//! buttons where the surface says ([`glass_region`], [`shape`]); one spring
+//! buttons where the surface says
+//! ([`glass_region`](emaki_kit::glass_region), [`shape`]); one spring
 //! carries both between the pill and the panel, the frost with them.
 //!
 //! It shares the notification center's and Quick Settings'
