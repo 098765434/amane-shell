@@ -21,7 +21,7 @@ fn main_window() -> amane::Window {
 
 | Item | Does |
 |---|---|
-| `app(app_id)` | `amane::App` with this app-id: its windows, its IPC socket (`$XDG_RUNTIME_DIR/<app_id>.sock` for an id starting `amane-`, else `amane-<app_id>.sock`) and its settings folder go by it, and only one copy runs: a second launch hands over to the first |
+| `app(app_id)` | `amane::App` with this app-id: its windows, its IPC socket (`$XDG_RUNTIME_DIR/<app_id>.sock` for a plain name such as `emaki-settings`, else `amane-<app_id>.sock`) and its settings folder go by it, and only one copy runs: a second launch hands over to the first |
 | `app_window(content)` | a normal `Window` in the shell's look: `window_bg()` behind `content`, a `sys.space.inset.l` padding, vibrant labels where they're on. Set the title, size and shortcuts on the `Window` it returns |
 | `window_bg()` | the opaque window background, `sys.color.window.bg`, behind a window's content |
 | `standard_shortcut(key)` | the shortcuts every window has: Ctrl+W closes it. Call it from your own `on_shortcut` and handle what it leaves (`false`) |
