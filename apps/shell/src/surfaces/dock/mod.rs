@@ -363,6 +363,32 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
         Zone::Thickness((at.height - at.top) as u32)
     };
 
+    /*
+     * hidden all the way, the surface is only the strip that brings it up, so
+     * a dock that hides holds a few rows of pixels instead of a full-width
+     * vibrant surface; touching the strip grows it back before it slides out
+     * (AMANE_DOCK_FULL_WHILE_HIDDEN=1 keeps it full size, as before)
+     */
+    if view.tucked && !full_while_hidden() {
+        return LayerWindow::new()
+            .width(Full)
+            .height(STRIP)
+            .anchor_vertical(Vertical::Bottom)
+            .layer(Layer::Overlay)
+            .space(zone)
+            .keyboard(Keyboard::None)
+            .namespace(DOCK_NS)
+            .visible(true)
+            .input_region(vec![InputArea {
+                x: 0,
+                y: 0,
+                width: at.width.max(1.0) as i32,
+                height: STRIP as i32,
+            }])
+            .blur_shapes(Vec::new())
+            .child(view.root);
+    }
+
     LayerWindow::new()
         .width(Full)
         .height(at.height)
@@ -394,6 +420,8 @@ struct View {
     root: Stack,
     frost: Vec<BlurShape>,
     input: Vec<InputArea>,
+    /// All the way in and nothing bringing it out: the surface shrinks to the strip.
+    tucked: bool,
 }
 
 /// The row laid out: its places, each at rest and how far grown in, and
@@ -417,4 +445,10 @@ impl Laid {
                 entry.pointable() && along >= rest.slot && along < rest.slot + entry.width
             })
     }
+}
+
+/// Whether a hidden dock keeps its full surface (`AMANE_DOCK_FULL_WHILE_HIDDEN=1`).
+fn full_while_hidden() -> bool {
+    static FULL: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *FULL.get_or_init(|| std::env::var_os("AMANE_DOCK_FULL_WHILE_HIDDEN").is_some_and(|v| v == "1"))
 }

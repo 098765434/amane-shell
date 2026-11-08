@@ -248,6 +248,7 @@ pub(super) fn build(
         root: Stack::new(layers).width(Parent).height(Parent),
         frost,
         input,
+        tucked: progress <= 0.001 && !dock.reveal.wanted(),
     }
 }
 
