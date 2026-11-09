@@ -10,12 +10,16 @@
 
 #![deny(missing_docs)]
 
+pub mod budget;
 mod client;
+mod lenient;
 mod protocol;
 
 pub use client::{LiveActivity, StatusItem};
+#[allow(deprecated)]
+pub use protocol::VERSION;
 pub use protocol::{
     Accepts, ActivityButton, ActivityContent, ActivityEvent, BUS_NAME, BarEdge, Dismiss, INTERFACE,
-    ItemButton, ItemEvent, ItemIcon, ItemSpec, MenuEntry, PATH, ProtocolError, Tint, Trailing,
-    VERSION, encode,
+    ItemButton, ItemEvent, ItemIcon, ItemSpec, LEVEL, MenuEntry, OLDEST_LEVEL, PATH, ProtocolError,
+    Tint, Trailing, encode,
 };

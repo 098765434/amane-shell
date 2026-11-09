@@ -11,9 +11,9 @@
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
+use emaki_extension::{ActivityContent, ActivityEvent, Dismiss};
 use emaki_kit::settings::remember_activity;
 use emaki_kit::sync::Locked as _;
-use emaki_extension::{ActivityContent, ActivityEvent, Dismiss};
 
 emaki_kit::marker! {
     /// An activity started, changed or ended: the bar draws again.
@@ -21,7 +21,7 @@ emaki_kit::marker! {
 }
 
 /// The longest an activity lasts.
-pub const MAX_AGE: Duration = Duration::from_secs(8 * 60 * 60);
+pub const MAX_AGE: Duration = emaki_extension::budget::MAX_ACTIVITY_AGE;
 
 /// How long an alerting update keeps the expanded view up.
 pub const ALERT_FOR: Duration = Duration::from_secs(4);

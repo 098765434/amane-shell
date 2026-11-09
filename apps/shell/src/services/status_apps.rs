@@ -13,10 +13,11 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 
 use amane::{Argument, Bus, Method};
-use emaki_kit::settings::remember_status_app;
 use emaki_extension::{
-    ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH, encode,
+    ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH,
+    ProtocolError, encode,
 };
+use emaki_kit::settings::remember_status_app;
 
 use super::desktop::activities;
 use emaki_kit::sync::Locked as _;
@@ -61,6 +62,19 @@ const INTROSPECTION: &str = r#"<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS 
 const INVALID: &str = "org.emaki.StatusBar1.Error.Invalid";
 const TAKEN: &str = "org.emaki.StatusBar1.Error.IdTaken";
 const UNKNOWN: &str = "org.emaki.StatusBar1.Error.Unknown";
+const LEVEL: &str = "org.emaki.StatusBar1.Error.Level";
+const TOO_LARGE: &str = "org.emaki.StatusBar1.Error.TooLarge";
+
+/// The error a refused payload is answered with: a level or a size have names
+/// of their own, so a program can tell "needs a newer shell" from a bug.
+fn refused(error: ProtocolError) -> (&'static str, String) {
+    let name = match error {
+        ProtocolError::Level(_) => LEVEL,
+        ProtocolError::TooLarge(_) => TOO_LARGE,
+        ProtocolError::Malformed(_) | ProtocolError::NoId => INVALID,
+    };
+    (name, error.to_string())
+}
 
 /// A program's item in the bar.
 #[derive(Clone, Debug, PartialEq)]
@@ -206,7 +220,7 @@ fn answer(method: &Method) {
                 let dismiss = text(1)
                     .filter(|json| !json.trim().is_empty())
                     .map_or(Ok(Dismiss::Now), |json| {
-                        Dismiss::decode(&json).map_err(|error| (INVALID, error.to_string()))
+                        Dismiss::decode(&json).map_err(refused)
                     });
                 dismiss.and_then(|dismiss| {
                     activities::end(&sender, handle, dismiss)
@@ -232,7 +246,7 @@ fn missing(what: &str) -> (&'static str, String) {
 
 /// Puts up (or, `update`, changes) the item a spec describes.
 fn register(sender: &str, json: &str, update: bool) -> Answer {
-    let spec = ItemSpec::decode(json).map_err(|error| (INVALID, error.to_string()))?;
+    let spec = ItemSpec::decode(json).map_err(refused)?;
     let name = spec.title.clone().unwrap_or_else(|| spec.tooltip.clone());
     let id = spec.id.clone();
     {
@@ -276,7 +290,7 @@ fn remove(sender: &str, id: &str) -> Answer {
 
 /// Starts an activity whose buttons and leaving are told to `sender`.
 fn start(sender: &str, json: &str) -> Answer<u32> {
-    let content = ActivityContent::decode(json).map_err(|error| (INVALID, error.to_string()))?;
+    let content = ActivityContent::decode(json).map_err(refused)?;
     // the handle is only known once it has started
     let numbered = Arc::new(AtomicU32::new(0));
     let owner = sender.to_string();
@@ -299,7 +313,7 @@ fn start(sender: &str, json: &str) -> Answer<u32> {
 }
 
 fn update(sender: &str, handle: u32, json: &str, alert: bool) -> Answer {
-    let content = ActivityContent::decode(json).map_err(|error| (INVALID, error.to_string()))?;
+    let content = ActivityContent::decode(json).map_err(refused)?;
     activities::update(sender, handle, content, alert)
         .then_some(())
         .ok_or_else(|| (UNKNOWN, format!("no activity {handle} of yours")))
@@ -327,6 +341,11 @@ mod tests {
     #[test]
     fn a_bad_payload_is_refused() {
         assert_eq!(register(":9.3", "{", false).map_err(|e| e.0), Err(INVALID));
-        assert_eq!(start(":9.3", r#"{"v":99}"#).map_err(|e| e.0), Err(INVALID));
+        assert_eq!(start(":9.3", r#"{"v":99}"#).map_err(|e| e.0), Err(LEVEL));
+        let huge = format!(r#"{{"id":"test.huge","tooltip":"{}"}}"#, "x".repeat(70_000));
+        assert_eq!(
+            register(":9.3", &huge, false).map_err(|e| e.0),
+            Err(TOO_LARGE)
+        );
     }
 }

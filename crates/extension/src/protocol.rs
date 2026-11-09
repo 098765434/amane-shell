@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
+use crate::{budget, lenient};
+
 /// The bar's well-known name on the session bus.
 ///
 /// What a program and the bar say to each other over the session bus: every
@@ -17,11 +19,19 @@ pub const PATH: &str = "/org/emaki/StatusBar";
 /// the bar's `ItemEvent` and `ActivityEvent` signals come from.
 pub const INTERFACE: &str = "org.emaki.StatusBar1";
 
-/// The payloads' version; a bar refuses one newer than it knows.
-pub const VERSION: u32 = 1;
+/// The protocol's level: every payload carries it as `v`, and a bar refuses one above the
+/// level it serves. A level is served for two shell minor releases after the next one ships.
+pub const LEVEL: u32 = 1;
 
-fn version() -> u32 {
-    VERSION
+/// The oldest level this bar still serves; a payload below it is refused.
+pub const OLDEST_LEVEL: u32 = 1;
+
+/// The old name of [`LEVEL`].
+#[deprecated(note = "use LEVEL")]
+pub const VERSION: u32 = LEVEL;
+
+fn level() -> u32 {
+    LEVEL
 }
 
 fn yes() -> bool {
@@ -92,11 +102,11 @@ pub struct MenuEntry {
     pub destructive: bool,
 
     /// A picture before the label.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::or_none")]
     pub icon: Option<ItemIcon>,
 
     /// A submenu.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::each")]
     pub children: Vec<MenuEntry>,
 }
 
@@ -126,15 +136,15 @@ impl MenuEntry {
 /// keeps its place and whether it's shown by it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ItemSpec {
-    /// The payload's version, [`VERSION`] when left out.
-    #[serde(default = "version")]
+    /// The payload's level, [`LEVEL`] when left out.
+    #[serde(default = "level")]
     pub v: u32,
 
     /// Unique on the desktop, like a reverse-DNS app id; it can't be empty.
     pub id: String,
 
     /// What the bar draws for it.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::or_default")]
     pub icon: ItemIcon,
 
     /// Text after the icon, kept short by the bar.
@@ -146,7 +156,7 @@ pub struct ItemSpec {
     pub tooltip: String,
 
     /// Shown on a right-click; a click is the program's own to answer.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::each")]
     pub menu: Vec<MenuEntry>,
 
     /// What can be dropped on it.
@@ -170,7 +180,7 @@ impl ItemSpec {
     /// An item with this id and icon and nothing else.
     pub fn new(id: &str, icon: ItemIcon) -> Self {
         Self {
-            v: VERSION,
+            v: LEVEL,
             id: String::from(id),
             icon,
             title: None,
@@ -312,7 +322,7 @@ pub struct ActivityButton {
     pub label: String,
 
     /// A picture on the button.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::or_none")]
     pub icon: Option<ItemIcon>,
 
     /// Drawn in the critical status color, for something like stop or cancel.
@@ -336,8 +346,8 @@ impl ActivityButton {
 /// and `trailing`; minimal, `leading` alone; expanded, everything.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ActivityContent {
-    /// The payload's version, [`VERSION`] when left out.
-    #[serde(default = "version")]
+    /// The payload's level, [`LEVEL`] when left out.
+    #[serde(default = "level")]
     pub v: u32,
 
     /// The program's name for the permission list, like "Drop".
@@ -345,11 +355,11 @@ pub struct ActivityContent {
     pub app: String,
 
     /// The picture on the left, shown in every view.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::or_default")]
     pub leading: ItemIcon,
 
     /// What's on the right of the compact view.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::or_default")]
     pub trailing: Trailing,
 
     /// The main line of the expanded view.
@@ -365,11 +375,11 @@ pub struct ActivityContent {
     pub progress: Option<f32>,
 
     /// At most three are shown.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::each")]
     pub buttons: Vec<ActivityButton>,
 
     /// The color it's drawn in, from the bar's palette.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "lenient::or_none")]
     pub tint: Option<Tint>,
 
     /// 0 to 1: with several going on, the most relevant show compact first.
@@ -385,7 +395,7 @@ impl ActivityContent {
     /// An activity for `app` with this picture and title, at middling relevance and nothing else.
     pub fn new(app: &str, leading: ItemIcon, title: &str) -> Self {
         Self {
-            v: VERSION,
+            v: LEVEL,
             app: String::from(app),
             leading,
             trailing: Trailing::None,
@@ -429,8 +439,11 @@ pub enum ProtocolError {
     /// The JSON didn't read, with serde's reason.
     Malformed(String),
 
-    /// Newer than this bar knows.
-    Version(u32),
+    /// A level this bar doesn't serve: above [`LEVEL`] or below [`OLDEST_LEVEL`].
+    Level(u32),
+
+    /// More bytes than [`budget::MAX_PAYLOAD`](crate::budget::MAX_PAYLOAD).
+    TooLarge(usize),
 
     /// An empty id.
     NoId,
@@ -440,7 +453,15 @@ impl fmt::Display for ProtocolError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Malformed(reason) => write!(f, "malformed payload: {reason}"),
-            Self::Version(v) => write!(f, "payload version {v} is newer than {VERSION}"),
+            Self::Level(v) => write!(
+                f,
+                "payload level {v} isn't served: this bar serves {OLDEST_LEVEL} to {LEVEL}"
+            ),
+            Self::TooLarge(bytes) => write!(
+                f,
+                "payload of {bytes} bytes is over the {} allowed",
+                budget::MAX_PAYLOAD
+            ),
             Self::NoId => write!(f, "an item needs an id"),
         }
     }
@@ -454,34 +475,87 @@ pub fn encode<T: Serialize>(payload: &T) -> String {
 }
 
 fn read<T: DeserializeOwned>(json: &str) -> Result<T, ProtocolError> {
+    if json.len() > budget::MAX_PAYLOAD {
+        return Err(ProtocolError::TooLarge(json.len()));
+    }
+
     serde_json::from_str(json).map_err(|error| ProtocolError::Malformed(error.to_string()))
 }
 
-impl ItemSpec {
-    /// Reads an item from the bus, refusing one newer than [`VERSION`] or without an id.
-    pub fn decode(json: &str) -> Result<Self, ProtocolError> {
-        let spec: Self = read(json)?;
+/// Refuses a level this bar doesn't serve.
+fn served(v: u32) -> Result<(), ProtocolError> {
+    if (OLDEST_LEVEL..=LEVEL).contains(&v) {
+        Ok(())
+    } else {
+        Err(ProtocolError::Level(v))
+    }
+}
 
-        if spec.v > VERSION {
-            return Err(ProtocolError::Version(spec.v));
+/// Cuts text to at most `max` characters.
+fn clip(text: &mut String, max: usize) {
+    if let Some((cut, _)) = text.char_indices().nth(max) {
+        text.truncate(cut);
+    }
+}
+
+/// Keeps a menu within [`budget::MAX_MENU_ENTRIES`] a level and [`budget::MAX_MENU_DEPTH`] deep.
+fn clip_menu(menu: &mut Vec<MenuEntry>, depth: usize) {
+    menu.truncate(budget::MAX_MENU_ENTRIES);
+
+    for entry in menu {
+        clip(&mut entry.label, budget::MAX_TEXT);
+
+        if depth + 1 >= budget::MAX_MENU_DEPTH {
+            entry.children.clear();
+        } else {
+            clip_menu(&mut entry.children, depth + 1);
         }
+    }
+}
+
+impl ItemSpec {
+    /// Reads an item from the bus, refusing a level this bar doesn't serve or no id; text and
+    /// menus past the [`budget`](crate::budget) are cut.
+    pub fn decode(json: &str) -> Result<Self, ProtocolError> {
+        let mut spec: Self = read(json)?;
+
+        served(spec.v)?;
 
         if spec.id.trim().is_empty() {
             return Err(ProtocolError::NoId);
         }
+
+        if let Some(title) = &mut spec.title {
+            clip(title, budget::MAX_TEXT);
+        }
+        if let Some(badge) = &mut spec.badge {
+            clip(badge, budget::MAX_TEXT);
+        }
+        clip(&mut spec.tooltip, budget::MAX_TOOLTIP);
+        clip_menu(&mut spec.menu, 0);
 
         Ok(spec)
     }
 }
 
 impl ActivityContent {
-    /// Reads an activity from the bus, refusing one newer than [`VERSION`]; relevance and
-    /// progress outside 0 to 1 are brought back into it.
+    /// Reads an activity from the bus, refusing a level this bar doesn't serve; relevance and
+    /// progress outside 0 to 1 are brought back into it, and text and buttons past the
+    /// [`budget`](crate::budget) are cut.
     pub fn decode(json: &str) -> Result<Self, ProtocolError> {
         let mut content: Self = read(json)?;
 
-        if content.v > VERSION {
-            return Err(ProtocolError::Version(content.v));
+        served(content.v)?;
+
+        for text in [&mut content.app, &mut content.title, &mut content.subtitle] {
+            clip(text, budget::MAX_TEXT);
+        }
+        if let Trailing::Text(text) = &mut content.trailing {
+            clip(text, budget::MAX_TEXT);
+        }
+        content.buttons.truncate(budget::MAX_ACTIVITY_BUTTONS);
+        for button in &mut content.buttons {
+            clip(&mut button.label, budget::MAX_TEXT);
         }
 
         content.relevance = content.relevance.clamp(0.0, 1.0);
@@ -542,7 +616,7 @@ mod tests {
     fn a_script_can_leave_out_almost_everything() {
         let spec = ItemSpec::decode(r#"{"id":"demo"}"#).expect("failed to read a short item");
 
-        assert_eq!(spec.v, VERSION);
+        assert_eq!(spec.v, LEVEL);
         assert_eq!(spec.icon, ItemIcon::default());
         assert!(!spec.accepts.files);
 
@@ -554,10 +628,14 @@ mod tests {
     }
 
     #[test]
-    fn refuses_newer_versions_and_missing_ids() {
+    fn refuses_levels_not_served_and_missing_ids() {
         assert_eq!(
             ItemSpec::decode(r#"{"v":2,"id":"demo"}"#),
-            Err(ProtocolError::Version(2))
+            Err(ProtocolError::Level(2))
+        );
+        assert_eq!(
+            ItemSpec::decode(r#"{"v":0,"id":"demo"}"#),
+            Err(ProtocolError::Level(0))
         );
 
         assert_eq!(ItemSpec::decode(r#"{"id":"  "}"#), Err(ProtocolError::NoId));
@@ -600,5 +678,84 @@ mod tests {
 
         assert_eq!(Dismiss::decode(r#"{"after":5}"#), Ok(Dismiss::After(5)));
         assert_eq!(Dismiss::decode(r#""now""#), Ok(Dismiss::Now));
+    }
+
+    #[test]
+    fn drops_what_it_does_not_know_and_keeps_the_rest() {
+        let spec = ItemSpec::decode(
+            r#"{"id":"demo","title":"Kept","icon":{"pixmap":[1,2]},"later":true,
+                "menu":[{"id":"a","label":"A"},{"id":"b","icon":{"hologram":1}},"nonsense",
+                        {"id":"c","label":"C"}]}"#,
+        )
+        .expect("failed to read an item with newer parts");
+
+        assert_eq!(spec.title.as_deref(), Some("Kept"));
+        assert_eq!(spec.icon, ItemIcon::default());
+        let ids: Vec<&str> = spec.menu.iter().map(|entry| entry.id.as_str()).collect();
+        assert_eq!(ids, ["a", "b", "c"]);
+        assert_eq!(spec.menu[1].icon, None);
+
+        let content = ActivityContent::decode(
+            r#"{"title":"Tea","trailing":{"sparkline":[1]},"tint":"ultraviolet",
+                "buttons":[{"id":"stop","label":"Stop"},{"label":"no id"}]}"#,
+        )
+        .expect("failed to read an activity with newer parts");
+
+        assert_eq!(content.title, "Tea");
+        assert_eq!(content.trailing, Trailing::None);
+        assert_eq!(content.tint, None);
+        assert_eq!(content.buttons, [ActivityButton::new("stop", "Stop")]);
+    }
+
+    #[test]
+    fn refuses_a_payload_over_the_budget() {
+        let tooltip = "x".repeat(budget::MAX_PAYLOAD);
+        let json = format!(r#"{{"id":"demo","tooltip":"{tooltip}"}}"#);
+
+        assert_eq!(
+            ItemSpec::decode(&json),
+            Err(ProtocolError::TooLarge(json.len()))
+        );
+    }
+
+    #[test]
+    fn cuts_text_buttons_and_menus_to_the_budget() {
+        let mut spec = ItemSpec::new("demo", ItemIcon::default());
+        spec.title = Some("é".repeat(budget::MAX_TEXT + 10));
+        spec.menu = (0..budget::MAX_MENU_ENTRIES + 5)
+            .map(|n| MenuEntry::new(&n.to_string(), "entry"))
+            .collect();
+
+        let mut deep = MenuEntry::new("deep", "deep");
+        for _ in 0..budget::MAX_MENU_DEPTH + 2 {
+            let mut parent = MenuEntry::new("deep", "deep");
+            parent.children = vec![deep];
+            deep = parent;
+        }
+        spec.menu[0] = deep;
+
+        let spec = ItemSpec::decode(&encode(&spec)).expect("failed to read a long item");
+
+        assert_eq!(
+            spec.title.map(|title| title.chars().count()),
+            Some(budget::MAX_TEXT)
+        );
+        assert_eq!(spec.menu.len(), budget::MAX_MENU_ENTRIES);
+
+        let mut depth = 1;
+        let mut entry = &spec.menu[0];
+        while let Some(child) = entry.children.first() {
+            depth += 1;
+            entry = child;
+        }
+        assert_eq!(depth, budget::MAX_MENU_DEPTH);
+
+        let mut content = ActivityContent::new("Demo", ItemIcon::default(), "Tea");
+        content.buttons = (0..5)
+            .map(|n| ActivityButton::new(&n.to_string(), "Go"))
+            .collect();
+
+        let content = ActivityContent::decode(&encode(&content)).expect("failed to read");
+        assert_eq!(content.buttons.len(), budget::MAX_ACTIVITY_BUTTONS);
     }
 }
