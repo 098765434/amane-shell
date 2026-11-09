@@ -153,6 +153,18 @@ on Phone.
 Contact names and photos come from the vCards the phone's Contacts plugin
 syncs. Without it, conversations show numbers.
 
+Its sizes are the `messages.*` tokens, drawn in Penpot on "Messages — Components" and
+"Messages":
+- **The layout:** the sidebar's width, the avatars (36 in the rows and the header, 28 beside a
+  group's runs, 32 in the suggestions), the unread dot, the badge and the stamp's inset.
+- **The bubble:** its text size, padding, one-line height, radius, tail and narrowest width (the
+  SVG's measures at 15 px), and the widest it gets (`bubble.max-width`, 0.7 of the pane).
+- **The reply field and pills:** the reply field's five lines and its corner cap, and the pills'
+  height.
+
+They're fixed pixels; Messages doesn't follow the density. The bubble's text follows the text
+scale, while its outline stays put. The received bubble's grey is `sys.color.bubble.received`.
+
 ## Phone Screen (scrcpy)
 
 KDE Connect can't show the phone's screen, play its sound or use its camera.

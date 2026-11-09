@@ -111,15 +111,10 @@ pub fn row_press() -> Color {
     )
 }
 
-/// A received message's bubble, as Messages greys it: #3B3B3D in dark
-/// mode, #E9E9EB in light.
-// TODO(token): a Messages component token
+/// A received message's bubble, as Messages greys it
+/// (`sys.color.bubble.received`: #3B3B3D in dark mode, #E9E9EB in light).
 pub fn bubble_received() -> Color {
-    if dark() {
-        Color::rgb(0x3b, 0x3b, 0x3d)
-    } else {
-        Color::rgb(0xe9, 0xe9, 0xeb)
-    }
+    sys::color::bubble::received()
 }
 
 /// `divider`: the kit's separator (white @ 0.10).

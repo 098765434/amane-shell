@@ -15,7 +15,7 @@ use emaki_kit::color::with_alpha;
 use emaki_kit::layout::{boxed, caption, icon, pad, text_width};
 use emaki_kit::material::{self, Level};
 use emaki_kit::style;
-use emaki_kit::tokens::{Styled, sys};
+use emaki_kit::tokens::{Styled, messages, sys};
 use emaki_phone::PhoneMessages;
 
 use crate::compose::{self, Draft};
@@ -237,7 +237,7 @@ fn token(name: &str, number: &str) -> Rectangle {
     );
     Rectangle::new()
         .width(10.0 + text_width(name, style) + 4.0 + 18.0 + 6.0)
-        .height(Size::Fixed(26.0))
+        .height(Size::Fixed(messages::pill::height()))
         .radius(Radius::Full)
         .fill(sys::color::accent::bg())
         .padding(pad(10.0, 0.0))
@@ -285,7 +285,7 @@ fn suggestion(name: String, number: String) -> Rectangle {
             .align_child(amane::Start, Center)
             .child(
                 Row::new(vec![
-                    boxed(inbox::avatar_of(&number, 32.0)),
+                    boxed(inbox::avatar_of(&number, messages::avatar::suggestion())),
                     boxed(Column::new(text).gap(1.0).width(Size::Parent)),
                 ])
                 .gap(sys::space::gap::s())

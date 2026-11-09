@@ -25,7 +25,7 @@ use emaki_kit::layout::{boxed, caption, pad, text_height, text_width};
 use emaki_kit::material::{self, Level};
 use emaki_kit::menu::{self, MenuItem};
 use emaki_kit::style;
-use emaki_kit::tokens::{Styled, sys};
+use emaki_kit::tokens::{Styled, messages, sys};
 use emaki_phone::{
     PhoneDevice, PhoneMessages, SMS_PAGE, SmsAttachment, SmsKind, SmsMessage, SmsThread,
 };
@@ -37,13 +37,17 @@ use crate::{content_width, inbox, links, phone, read, time, title};
 const SCROLL: &str = "messages.thread";
 
 /// How far a run's time sits in from its bubbles' edge.
-const STAMP_INSET: f32 = 6.0;
+fn stamp_inset() -> f32 {
+    messages::stamp::inset()
+}
 
 /// Messages of one side further apart than this get their own time.
 const RUN_GAP_MS: i64 = 10 * 60 * 1000;
 
 /// The small avatar beside a group's received runs.
-const SMALL_AVATAR: f32 = 28.0;
+fn small_avatar() -> f32 {
+    messages::avatar::small()
+}
 
 /// How big a photo is drawn at most.
 const PHOTO_WIDTH: f32 = 240.0;
@@ -272,7 +276,7 @@ fn header(device: &PhoneDevice, conversation: &SmsThread) -> Row {
     }
 
     let mut parts: Vec<Box<dyn Widget>> = vec![
-        boxed(inbox::avatar_for(conversation, 36.0)),
+        boxed(inbox::avatar_for(conversation, messages::avatar::row())),
         boxed(Column::new(text).gap(2.0).width(Size::Parent)),
     ];
 
@@ -338,7 +342,7 @@ fn bubbles(history: &[SmsMessage], group: bool) -> Vec<Box<dyn Widget>> {
                 Rectangle::new()
                     .width(Size::Parent)
                     .height(text_height(sys::r#type::caption()) + 2.0)
-                    .padding(pad(SMALL_AVATAR + sys::space::gap::s() + 12.0, 0.0))
+                    .padding(pad(small_avatar() + sys::space::gap::s() + 12.0, 0.0))
                     .align_child(Start, Center)
                     .child(
                         Text::new(messages.name(sender).to_string())
@@ -395,7 +399,7 @@ fn parts(message: &SmsMessage, tail: bool) -> Vec<Rectangle> {
             _ if message.outgoing() => Look::Sent,
             _ => Look::Received,
         };
-        let widest = (content_width() * 0.7).max(120.0);
+        let widest = (content_width() * messages::bubble::max_width()).max(120.0);
         parts.push(bubble::bubble(message.uid(), body, look, tail, widest));
     }
 
@@ -504,10 +508,10 @@ fn side(outgoing: bool, beside: Option<Option<&String>>, child: Rectangle) -> Re
         return row.align_child(Start, Center).child(child);
     };
     let avatar: Box<dyn Widget> = match avatar {
-        Some(address) => boxed(inbox::avatar_of(address, SMALL_AVATAR)),
+        Some(address) => boxed(inbox::avatar_of(address, small_avatar())),
         None => boxed(
             Rectangle::new()
-                .width(SMALL_AVATAR)
+                .width(small_avatar())
                 .height(Size::Fixed(1.0)),
         ),
     };
@@ -640,7 +644,7 @@ fn link_chip(link: &str) -> Rectangle {
     interactive(
         Rectangle::new()
             .width(width)
-            .height(Size::Fixed(26.0))
+            .height(Size::Fixed(messages::pill::height()))
             .radius(Radius::Full)
             .fill(state_fill(
                 &key,
@@ -678,9 +682,9 @@ fn link_chip(link: &str) -> Rectangle {
 fn stamp(message: &SmsMessage, beside_avatar: bool) -> Rectangle {
     let height = text_height(sys::r#type::caption()) + 4.0;
     let inset = if beside_avatar {
-        SMALL_AVATAR + sys::space::gap::s() + STAMP_INSET
+        small_avatar() + sys::space::gap::s() + stamp_inset()
     } else {
-        STAMP_INSET
+        stamp_inset()
     };
     let row = Rectangle::new()
         .width(Size::Parent)

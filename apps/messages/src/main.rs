@@ -31,11 +31,13 @@ use emaki_kit::app::{app, app_window, sidebar_panel, standard_shortcut};
 use emaki_kit::args::flag;
 use emaki_kit::layout::{boxed, caption};
 use emaki_kit::style;
-use emaki_kit::tokens::{Styled, sys};
+use emaki_kit::tokens::{Styled, messages, sys};
 use emaki_phone::{KdeConnect, PhoneDevice, PhoneMessages};
 
 /// How wide the inbox is.
-pub const SIDEBAR_WIDTH: f32 = 280.0;
+pub fn sidebar_width() -> f32 {
+    messages::sidebar::width()
+}
 
 /// What the content shows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -262,7 +264,7 @@ fn main_window() -> Window {
                 device.as_ref(),
                 view,
             )))])
-            .width(SIDEBAR_WIDTH)
+            .width(sidebar_width())
             .height(Size::Parent),
         ),
         boxed(
@@ -301,7 +303,7 @@ fn main_window() -> Window {
 /// gap between.
 pub fn content_width() -> f32 {
     let (width, _) = amane::window_size();
-    (width - 2.0 * sys::space::inset::l() - SIDEBAR_WIDTH - sys::space::gap::xl()).max(1.0)
+    (width - 2.0 * sys::space::inset::l() - sidebar_width() - sys::space::gap::xl()).max(1.0)
 }
 
 /// A view's title, in the page title's type.

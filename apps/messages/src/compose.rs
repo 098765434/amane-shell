@@ -20,7 +20,7 @@ use emaki_kit::control_size::ControlSize;
 use emaki_kit::layout::{boxed, caption, fixed_width, icon, pad, text_width};
 use emaki_kit::material::{self, Level};
 use emaki_kit::style;
-use emaki_kit::tokens::{Styled, sys};
+use emaki_kit::tokens::{Styled, messages, sys};
 
 /// The field's id, which keeps its text.
 pub const FIELD: &str = "messages.compose";
@@ -32,7 +32,9 @@ const ICON_FILE: char = '\u{e873}';
 const ICON_IMAGE: char = '\u{e3f4}';
 
 /// How many lines the field grows to before it scrolls.
-const MOST_LINES: usize = 5;
+fn most_lines() -> usize {
+    messages::compose::lines() as usize
+}
 
 /// Bigger than this, a carrier may refuse the message (MMS limits).
 const BIG: u64 = 1024 * 1024;
@@ -190,7 +192,7 @@ pub fn view(
         .width(Size::Parent)
 }
 
-/// The field's rounded box, as tall as its lines up to `MOST_LINES`, then
+/// The field's rounded box, as tall as its lines up to `most_lines()`, then
 /// scrolling; ringed in the accent while it has the keys.
 fn frame(input: TextInput, width: f32) -> Rectangle {
     let lines = TextInput::text(FIELD).matches('\n').count() + 1;
@@ -199,9 +201,9 @@ fn frame(input: TextInput, width: f32) -> Rectangle {
         Size::Parent => 18.0,
     };
     let inset = ((ControlSize::Large.height() - line) / 2.0).max(4.0);
-    let shown = lines.min(MOST_LINES) as f32 * line;
+    let shown = lines.min(most_lines()) as f32 * line;
 
-    let inner: Box<dyn Widget> = if lines > MOST_LINES {
+    let inner: Box<dyn Widget> = if lines > most_lines() {
         boxed(
             ScrollArea::new("messages.compose.scroll", input)
                 .width(Size::Parent)
@@ -220,7 +222,9 @@ fn frame(input: TextInput, width: f32) -> Rectangle {
     Rectangle::new()
         .width(width)
         .height(shown + 2.0 * inset)
-        .radius(Radius::Fixed((line / 2.0 + inset).min(18.0)))
+        .radius(Radius::Fixed(
+            (line / 2.0 + inset).min(messages::compose::radius_max()),
+        ))
         .fill(style::field_fill())
         .border(1.0, edge)
         .padding(pad(12.0, inset))

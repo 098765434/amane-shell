@@ -14,23 +14,16 @@ use amane::{Canvas, Color, Gradient, Path, Rectangle, Shape, Stack, Text};
 use emaki_kit::color::{over, with_alpha};
 use emaki_kit::layout::{boxed, pad, text_height, text_width};
 use emaki_kit::style;
-use emaki_kit::tokens::{Styled, TextStyle, sys};
+use emaki_kit::tokens::{Styled, TextStyle, messages, sys};
 
-/// The text size the SVG was drawn for: its geometry is in these units.
-const SVG_TEXT: f32 = 17.0;
+/// The corner radius in the SVG's units, which the tail's geometry is in.
+const SVG_RADIUS: f32 = 20.0;
 
-/// A bubble's text size.
-const TEXT_SIZE: f32 = 15.0;
-
-/// The SVG's measures, in its units: the padding across, a one-line
-/// bubble's height and the corner radius, and how far the tail hangs below.
-const PAD_X: f32 = 13.0;
-const LINE_HEIGHT: f32 = 40.0;
-const RADIUS: f32 = 20.0;
-const TAIL_BELOW: f32 = 7.0;
-
-/// A bubble is never narrower than this, so its tail has room.
-const MIN_WIDTH: f32 = 48.0;
+// A bubble's text size, its padding across, a one-line bubble's height,
+// the corner radius, how far the tail hangs below and the narrowest a
+// bubble gets (so its tail has room) are `messages.bubble.*`: the SVG's
+// measures (13, 40, 20, 7 and 48 of its units, drawn for 17 px text) at
+// 15 px. The text follows the text scale; the outline doesn't.
 
 /// How much of the way to white a sent bubble's gradient starts (#0088FF
 /// to #4EBAFF in the SVG).
@@ -84,14 +77,14 @@ impl Look {
     }
 }
 
-/// One SVG unit at the bubble's text size.
+/// One SVG unit, as the bubble is drawn: its radius over the SVG's.
 fn unit() -> f32 {
-    TEXT_SIZE / SVG_TEXT
+    messages::bubble::radius() / SVG_RADIUS
 }
 
 fn text_style() -> TextStyle {
     TextStyle {
-        size: TEXT_SIZE,
+        size: messages::bubble::text(),
         ..sys::r#type::label()
     }
 }
@@ -99,16 +92,17 @@ fn text_style() -> TextStyle {
 /// How big a bubble for `text` is at most `widest` across: its width and
 /// the pill's height (the tail hangs below that).
 pub fn size(text: &str, widest: f32) -> (f32, f32) {
-    let s = unit();
-    let pad_x = PAD_X * s;
+    let pad_x = messages::bubble::padding();
+    let narrowest = messages::bubble::min_width();
     let width = (text_width(text, text_style()) + 2.0 * pad_x + 1.0)
-        .clamp(MIN_WIDTH * s, widest.max(MIN_WIDTH * s));
+        .clamp(narrowest, widest.max(narrowest));
     let lines = Text::new(text.to_string())
         .style(text_style())
         .wrap()
         .height_in(width - 2.0 * pad_x);
-    let pad_y = (LINE_HEIGHT * s - text_height(text_style())) / 2.0;
-    (width, (lines + 2.0 * pad_y).max(LINE_HEIGHT * s))
+    let one_line = messages::bubble::height();
+    let pad_y = (one_line - text_height(text_style())) / 2.0;
+    (width, (lines + 2.0 * pad_y).max(one_line))
 }
 
 thread_local! {
@@ -149,7 +143,9 @@ enum Step {
 /// hanging below it when `tail`; mirrored for a received one.
 fn steps(width: f32, height: f32, side: Side, tail: bool) -> Vec<Step> {
     let s = unit();
-    let r = (RADIUS * s).min(height / 2.0).min(width / 2.0);
+    let r = messages::bubble::radius()
+        .min(height / 2.0)
+        .min(width / 2.0);
     let (w, h) = (width, height);
     // received bubbles are sent ones seen in a mirror
     let x = |x: f32| match side {
@@ -210,9 +206,8 @@ fn lighter(color: Color, amount: f32) -> Color {
 /// across, with its tail when it ends a run: a `width` × `height + tail`
 /// widget.
 pub fn bubble(key: i64, text: &str, look: Look, tail: bool, widest: f32) -> Rectangle {
-    let s = unit();
     let (width, height) = cached_size(key, text, widest);
-    let total = height + if tail { TAIL_BELOW * s } else { 0.0 };
+    let total = height + if tail { messages::bubble::tail() } else { 0.0 };
     let side = look.side();
 
     let path = outline(width, height, side, tail);
@@ -237,11 +232,11 @@ pub fn bubble(key: i64, text: &str, look: Look, tail: bool, widest: f32) -> Rect
         Look::Received => style::label_primary(),
         _ => sys::color::accent::fg(),
     };
-    let pad_y = (LINE_HEIGHT * s - text_height(text_style())) / 2.0;
+    let pad_y = (messages::bubble::height() - text_height(text_style())) / 2.0;
     let words = Rectangle::new()
         .width(width)
         .height(height)
-        .padding(pad(PAD_X * s, pad_y))
+        .padding(pad(messages::bubble::padding(), pad_y))
         .child(
             Text::new(text.to_string())
                 .style(text_style())
@@ -348,8 +343,9 @@ mod tests {
     fn the_tail_leaves_the_corner_on_its_circle() {
         // the join is on the 20-unit corner circle, so the outline doesn't step there
         let (jx, jy) = JOIN;
-        let distance = (jx + RADIUS).hypot(jy + RADIUS);
-        assert!((distance - RADIUS).abs() < 0.05, "{distance}");
+        let radius = messages::bubble::radius() / unit();
+        let distance = (jx + radius).hypot(jy + radius);
+        assert!((distance - radius).abs() < 0.05, "{distance}");
 
         // and the corner's arc ends right on it
         let s = unit();
@@ -375,8 +371,8 @@ mod tests {
         // the same message at the same width isn't measured again
         assert_eq!(cached_size(1, "changed", 400.0), (short_w, short_h));
         let (long_w, long_h) = size(&"word ".repeat(80), 400.0);
-        assert!((short_h - LINE_HEIGHT * unit()).abs() < 0.01);
-        assert!(short_w >= MIN_WIDTH * unit());
+        assert!((short_h - messages::bubble::height()).abs() < 0.01);
+        assert!(short_w >= messages::bubble::min_width());
         assert!(long_w <= 400.0);
         assert!(long_h > short_h * 2.0);
     }

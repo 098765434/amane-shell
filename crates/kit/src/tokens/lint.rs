@@ -730,8 +730,12 @@ mod tests {
     /// Penpot; fixed pixels, as the launcher doesn't follow the density).
     /// Then component by 3 for `calendar.*` (the kit Calendar's row cap,
     /// weekday-letter height and row gap, `px()` constants in its code), for
-    /// drawing the notification center in Penpot.
-    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 165), ("component", 287)];
+    /// drawing the notification center in Penpot. Then component by 17 for
+    /// `messages.*` (the Messages app's sidebar width, avatars, badge, unread
+    /// dot, bubble measures, stamp inset, reply field and pills, constants in
+    /// its code until then) and sys by 1 for `sys.color.bubble.received`,
+    /// the received bubble's grey, which differs by mode.
+    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 166), ("component", 304)];
 
     #[test]
     fn no_tier_grows_past_its_ceiling() {

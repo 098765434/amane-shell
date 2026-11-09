@@ -18,7 +18,7 @@ use emaki_kit::control_size::ControlSize;
 use emaki_kit::icons::ICON_KEYBOARD;
 use emaki_kit::layout::{boxed, caption, icon, pad, text_height};
 use emaki_kit::material::{self, Level};
-use emaki_kit::tokens::{Styled, sys};
+use emaki_kit::tokens::{Styled, messages, sys};
 use emaki_phone::{PhoneDevice, PhoneMessages, SmsState, SmsThread};
 
 use crate::{Navigation, View, read, thread, time};
@@ -42,7 +42,9 @@ pub fn focus_search() {
     amane::mark_all();
 }
 
-const AVATAR: f32 = 36.0;
+fn avatar() -> f32 {
+    messages::avatar::row()
+}
 
 pub fn view(device: Option<&PhoneDevice>, view: View) -> Column {
     let mut parts: Vec<Box<dyn Widget>> = vec![boxed(header(device))];
@@ -136,10 +138,10 @@ fn header(device: Option<&PhoneDevice>) -> Row {
 fn badge(count: usize) -> Rectangle {
     let text = count.to_string();
     let style = sys::r#type::caption();
-    let width = (emaki_kit::layout::text_width(&text, style) + 12.0).max(20.0);
+    let width = (emaki_kit::layout::text_width(&text, style) + 12.0).max(messages::badge::height());
     Rectangle::new()
         .width(width)
-        .height(Size::Fixed(20.0))
+        .height(Size::Fixed(messages::badge::height()))
         .radius(Radius::Full)
         .fill(sys::color::accent::bg())
         .align_child(Center, Center)
@@ -234,7 +236,7 @@ fn conversations(view: View) -> ScrollArea {
 /// How tall a conversation's row is: its name over one line of message.
 fn row_height() -> f32 {
     (text_height(sys::r#type::label()) + text_height(sys::r#type::caption()) + 14.0)
-        .max(AVATAR + 12.0)
+        .max(avatar() + 12.0)
 }
 
 /// Why there's no conversation to list, and what to do.
@@ -340,7 +342,7 @@ fn row(thread: &SmsThread, chosen: bool) -> Rectangle {
         .child(
             Row::new(vec![
                 boxed(unread_dot(unread && !chosen)),
-                boxed(avatar_for(thread, AVATAR)),
+                boxed(avatar_for(thread, avatar())),
                 boxed(
                     Column::new(vec![boxed(top), boxed(bottom)])
                         .gap(2.0)
@@ -364,8 +366,8 @@ fn one_line(body: &str) -> String {
 /// The accent's dot before an unread conversation, or room for it.
 fn unread_dot(shown: bool) -> Rectangle {
     Rectangle::new()
-        .width(Size::Fixed(8.0))
-        .height(Size::Fixed(8.0))
+        .width(Size::Fixed(messages::unread::dot()))
+        .height(Size::Fixed(messages::unread::dot()))
         .radius(Radius::Full)
         .fill(if shown {
             sys::color::accent::bg()
