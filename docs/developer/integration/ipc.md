@@ -29,6 +29,17 @@ name on the first line and each argument on a line of its own; the caller then c
 side, and the reply is text: `ok`, a usage line, or an error. A name the shell doesn't know
 answers `no handler named <name>`.
 
+Any program of the user's can write to the socket, so amane holds it to a few rules
+(`amane/src/wayland/socket.rs`, `amane/src/ipc.rs`):
+- **Who:** the socket is 0600, in the runtime directory, and a caller must be the same user
+  (`SO_PEERCRED`); another is closed unanswered.
+- **How much:** a whole call within 2 seconds, at most 64 KiB and 256 arguments; a bigger or
+  slower one is dropped. Calls are read on a thread of their own, at most 8 at a time, so a
+  client that sends a byte a second can't hold up the shell; the handler runs on the UI thread
+  once the call is all there, and its answer is written within a second.
+- **What:** no verb runs a command or opens a link, and one that hands over a secret's
+  destination asks the user itself (`passwords configure`, below).
+
 ```sh
 printf 'launcher\ntoggle\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock
 ```
@@ -181,14 +192,14 @@ Without `wlsunset` it answers `wlsunset isn't installed`.
 ### `passwords`
 
 `passwords …` ([passwords.md](../../user/features/passwords.md)), for keybinds and Emaki Settings' Passwords
-page. Every call but `status` answers `ok`.
+page. Every call but `status` answers `ok`, except a `configure` that changes the server.
 
 | Call | Does |
 |---|---|
 | `suggest` | opens the fill popup for the field that has the keyboard, even a username or terminal field |
 | `status` | the vault's state, one `key=value` a line, never a secret |
 | `unlock`, `sign-in`, `register`, `sync`, `lock` | the same as rbw's commands, through the shell's own dialog |
-| `configure <server> <email> [forget]` | sets the server (`https://`, or `http://localhost`) and the account; with `forget`, a change also removes the old server's copy of the vault |
+| `configure <server> <email> [forget]` | sets the server (`https://`, or `http://localhost`) and the account; with `forget`, a change also removes the old server's copy of the vault. A server other than the current one isn't set at once: the shell asks in its own dialog, naming the host, and the call answers `confirm` |
 | `lock-timeout <seconds>` | how long the vault stays unlocked |
 
 ### Context menus

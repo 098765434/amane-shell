@@ -3,12 +3,15 @@
 //! (`-K -`), never in its arguments, where `ps` would show them. Progress
 //! comes from curl's progress bar; a cancel kills curl.
 
+use std::fmt::Write as _;
 use std::io::{self, Read, Write};
+
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::time::Duration;
+use zeroize::Zeroizing;
 
 use emaki_kit::settings::{DropSharing, UploadTo};
 
@@ -36,7 +39,8 @@ enum Link {
 #[derive(Clone, Debug, PartialEq)]
 struct Request {
     args: Vec<String>,
-    config: String,
+    // curl's config, with the secret in it: wiped when dropped
+    config: Zeroizing<String>,
     link: Link,
 }
 
@@ -105,7 +109,7 @@ fn request(
     let mut args: Vec<String> = ["-f", "-#", "--connect-timeout", "20", "-K", "-"]
         .map(String::from)
         .to_vec();
-    let mut config = String::new();
+    let mut config = Zeroizing::new(String::new());
     let link = match to {
         UploadTo::ZeroX0 => {
             args.extend([String::from("-F"), form_file("file", file), zero_x0()]);
@@ -120,7 +124,7 @@ fn request(
             } else {
                 "image"
             };
-            config.push_str(&format!(
+            let _ = config.write_fmt(format_args!(
                 "header = {}\n",
                 quoted(&format!(
                     "Authorization: Client-ID {}",
@@ -154,18 +158,21 @@ fn request(
             );
             match &account.key {
                 Some(key) => {
-                    config.push_str(&format!(
+                    let _ = config.write_fmt(format_args!(
                         "user = {}\n",
                         quoted(&format!("{}:", account.user))
                     ));
-                    config.push_str(&format!("key = {}\n", quoted(&key.display().to_string())));
+                    let _ = config.write_fmt(format_args!(
+                        "key = {}\n",
+                        quoted(&key.display().to_string())
+                    ));
                     if let Some(passphrase) = secret {
-                        config.push_str(&format!("pass = {}\n", quoted(passphrase)));
+                        let _ = config.write_fmt(format_args!("pass = {}\n", quoted(passphrase)));
                     }
                 }
                 None => {
                     let password = secret.ok_or("SFTP: no password kept")?;
-                    config.push_str(&format!(
+                    let _ = config.write_fmt(format_args!(
                         "user = {}\n",
                         quoted(&format!("{}:{password}", account.user))
                     ));
@@ -202,7 +209,7 @@ fn request(
                 ),
                 endpoint => join(endpoint, &format!("{bucket}/{}", encode(&key, true))),
             };
-            config.push_str(&format!(
+            let _ = config.write_fmt(format_args!(
                 "user = {}\n",
                 quoted(&format!("{}:{secret}", account.key_id.trim()))
             ));
@@ -233,7 +240,7 @@ fn request(
 }
 
 /// The secret `to` logs in with, if it has one.
-fn secret_for(to: UploadTo) -> Option<String> {
+fn secret_for(to: UploadTo) -> Option<Zeroizing<String>> {
     match to {
         UploadTo::Sftp => emaki_kit::secrets::lookup(APP, "sftp"),
         UploadTo::S3 => emaki_kit::secrets::lookup(APP, "s3"),
@@ -254,7 +261,13 @@ pub fn upload(
     }
     let sharing = emaki_kit::settings::drop_sharing().clone();
     let secret = secret_for(to);
-    let request = request(file, to, &sharing, secret.as_deref()).map_err(io::Error::other)?;
+    let request = request(
+        file,
+        to,
+        &sharing,
+        secret.as_ref().map(|secret| secret.as_str()),
+    )
+    .map_err(io::Error::other)?;
     let answer = run_curl(&request, cancel, tell)?;
     match request.link {
         Link::Answer => Ok(Some(answer.trim().to_string()).filter(|link| !link.is_empty())),
@@ -282,7 +295,8 @@ pub fn upload_text(
     let folder = emaki_kit::paths::runtime().join("emaki-drop");
     std::fs::create_dir_all(&folder)?;
     let file = folder.join(format!("Text {}.txt", std::process::id()));
-    std::fs::write(&file, text)?;
+    // a new file only this user reads, never through a link left in its place
+    emaki_kit::fs::Whole::new().private().write(&file, text)?;
     let result = upload(&file, to, cancel, tell);
     // a file of its own for this upload; a leftover is only space
     let _ = std::fs::remove_file(file);
@@ -305,7 +319,7 @@ fn run_curl(
     cancel: &AtomicBool,
     tell: &mut dyn FnMut(f32),
 ) -> io::Result<String> {
-    let mut child = Command::new("curl")
+    let mut child = Command::new(emaki_kit::tools::path("curl"))
         .args(&request.args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

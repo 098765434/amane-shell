@@ -115,13 +115,16 @@ binds {
 `emaki-assistant` ([`apps/assistant`](../../../apps/assistant)) is a user service beside
 the shell:
 - It holds Cactus, listens to the microphone while asked to, and answers over
-  `$XDG_RUNTIME_DIR/emaki-assistant.sock` (mode 0600).
+  `$XDG_RUNTIME_DIR/emaki-assistant.sock` (mode 0600; the socket unit's `SocketMode=0600`).
+  It answers only the shell of its own build, by its executable, so no other program can
+  take what the microphone hears. A request line is at most 1 MiB.
 - It runs no command itself.
 - It runs as its own process because Cactus keeps one model set and one conversation for
   the whole process, and its calls block. Restarting the shell doesn't reload the
   models, and a crash in Cactus can't take the shell down.
 - The shell works without it: rules still read what they can, and nothing waits.
-- It starts when it's first asked for. Given its socket by systemd (a socket unit on
+- It starts when it's first asked for (`programs.emaki.assistant.enable` in the
+  home-manager module sets up both units). Given its socket by systemd (a socket unit on
   `%t/emaki-assistant.sock`; `LISTEN_FDS`), it exits after 5 minutes with nothing asked,
   connected or heard (`EMAKI_ASSISTANT_IDLE` seconds, 0 to stay), so its models' 80–140 MB
   go back; systemd starts it again at the next connection, and loading the models takes
@@ -165,7 +168,15 @@ others get `superseded`.
   chat engine (`cactus-engine` 2.x) is ARM only.
 - **Network:** `libcactus.a` has no network code (no `socket` or `connect` among its
   symbols). The wrapper still sets `CACTUS_TELEMETRY=0` and `DO_NOT_TRACK=1`, and the
-  unit can be held to `RestrictAddressFamilies=AF_UNIX`.
+  home-manager module's unit holds it to `RestrictAddressFamilies=AF_UNIX`.
+- **Sandbox:** the unit (`nix/home-module.nix`) adds no-new-privileges, a system-call filter
+  and no core dumps; the daemon also keeps other processes of yours from reading its memory
+  (`PR_SET_DUMPABLE`). It takes connections only from the shell of its own build (checked
+  by its executable), and the threads that read requests, run Cactus and record confine their
+  file access with Landlock: the store and system files read only, its models, and its cache.
+  The unit uses no namespace options (ProtectHome and the like): in a user unit they'd keep the
+  daemon from reading the connecting program's executable, so it couldn't tell the shell from
+  another program.
 
 ### Measured (Ryzen AI 7 PRO 450, 2026-11-06)
 

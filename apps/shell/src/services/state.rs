@@ -126,7 +126,12 @@ fn save_to<T: State>(file: &Path, value: &T) {
     };
     let result = serde_json::to_string_pretty(&written)
         .map_err(std::io::Error::other)
-        .and_then(|text| emaki_kit::fs::write_whole(file, text + "\n"));
+        // only this user's: the clipboard's and notifications' history are in these
+        .and_then(|text| {
+            emaki_kit::fs::Whole::new()
+                .private()
+                .write(file, text + "\n")
+        });
     if let Err(error) = result {
         log::warn!("couldn't save {}: {error}", file.display());
     }

@@ -80,10 +80,16 @@ impl Whole {
     }
 
     fn write_part(self, part: &Path, contents: &[u8]) -> io::Result<()> {
+        use std::os::unix::fs::OpenOptionsExt as _;
+
         let mut options = std::fs::OpenOptions::new();
-        options.write(true).create(true).truncate(true);
+        // never through a link someone put where the part file goes
+        options
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .custom_flags(libc::O_NOFOLLOW);
         if self.private {
-            use std::os::unix::fs::OpenOptionsExt as _;
             // a part file left by another run may have other modes
             let _ = std::fs::remove_file(part);
             options.create_new(true).mode(0o600);
@@ -145,4 +151,31 @@ mod tests {
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "[\n  1,\n  2\n]\n");
         std::fs::remove_dir_all(folder).unwrap();
     }
+}
+
+/// How big a file system is and how much of it is free to use, in bytes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Space {
+    /// All of it.
+    pub total: u64,
+    /// What an ordinary program may still write (not what's kept for root).
+    pub available: u64,
+}
+
+/// The file system `path` is on, as `statvfs` says; none when it can't be asked.
+pub fn space(path: &Path) -> Option<Space> {
+    use std::os::unix::ffi::OsStrExt as _;
+
+    let path = std::ffi::CString::new(path.as_os_str().as_bytes()).ok()?;
+    // SAFETY: a zeroed statvfs is a valid one for the call to fill
+    let mut stat: libc::statvfs = unsafe { std::mem::zeroed() };
+    // SAFETY: `path` is a NUL-terminated string that outlives the call, and `stat` is ours
+    if unsafe { libc::statvfs(path.as_ptr(), &mut stat) } != 0 {
+        return None;
+    }
+    let block = stat.f_frsize as u64;
+    Some(Space {
+        total: (stat.f_blocks as u64).saturating_mul(block),
+        available: (stat.f_bavail as u64).saturating_mul(block),
+    })
 }

@@ -81,6 +81,8 @@
 //! mode, density, accent and text scale they resolve with.
 
 #![deny(missing_docs)]
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 
 mod animation;
 mod containers;
@@ -110,5 +112,6 @@ pub use platform::{
 
 // what's below the UI, from emaki-base, so an app needs only the kit
 pub use emaki_base::{
-    app_ids, args, format, fs, intern, migrate, mime, paths, percent, sync, time,
+    app_ids, args, format, fs, harden, intern, migrate, mime, nix, paths, peer, percent, sync,
+    time, tools,
 };

@@ -78,17 +78,24 @@ pub(super) fn open_folder(folder: &Path) {
 }
 
 /// Tile `index` of the grid showing does with `files` what a drop on it
-/// would.
+/// would, asked for over IPC or by a launch. Any program of the session can
+/// ask, so a tile that sends files off this computer (an upload, a phone)
+/// doesn't run: the files are held on the Drop Bar and Drop opens, for the
+/// user to drop them on it themselves.
 pub fn run_tile(index: usize, files: Vec<PathBuf>) {
-    let grid = state::ui().grid;
-    let tile = drop_grids()
-        .grids
-        .get(grid)
-        .and_then(|grid| grid.tiles.get(index))
-        .cloned();
-    if let Some(tile) = tile {
-        dropped_on(index, &tile, files);
+    let grids = drop_grids();
+    let grid = grids.grids.get(state::ui().grid);
+    let tile = grid.and_then(|grid| grid.tiles.get(index)).cloned();
+    let Some(tile) = tile else {
+        return;
+    };
+    if matches!(tile, DropTile::Upload { .. } | DropTile::Phone { .. }) {
+        let name = grid.map(|grid| grid.name.clone()).unwrap_or_default();
+        state::hold(&name, files);
+        state::open(None, amane::pointer_monitor(), None, false);
+        return;
     }
+    dropped_on(index, &tile, files);
 }
 
 pub(super) fn dropped_on(index: usize, tile: &DropTile, files: Vec<PathBuf>) {

@@ -230,7 +230,8 @@ fn take(settings: &Settings, types: &[String]) {
     let path = clip.path();
     if !path.exists() {
         // written whole: named by what it holds, a half-written one would never be redone
-        if let Err(e) = emaki_kit::fs::write_whole(&path, &bytes) {
+        // only this user's: what was copied may be private
+        if let Err(e) = emaki_kit::fs::Whole::new().private().write(&path, &bytes) {
             log::warn!("clipboard history: {}: {e}", path.display());
             return;
         }
@@ -254,7 +255,7 @@ pub fn put_back(clip: &Clip, paste: bool) {
             return;
         };
         // wl-copy serves the copy from the background, and returns at once
-        let copied = Command::new("wl-copy")
+        let copied = Command::new(emaki_kit::tools::path("wl-copy"))
             .args(["--type", &clip.mime])
             .stdin(file)
             .stdout(Stdio::null())

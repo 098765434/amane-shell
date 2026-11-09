@@ -25,14 +25,19 @@ impl Nixos {
         })
     }
 
-    /// The attribute to build, `nixos-niri` unless set (it's the flake's
-    /// name for the machine, not its hostname).
-    pub fn host_attr(&self) -> String {
-        if self.host.trim().is_empty() {
-            String::from("nixos-niri")
-        } else {
-            self.host.trim().to_string()
+    /// The machine's name in the flake as typed, `nixos-niri` unless set: for showing.
+    pub fn host_name(&self) -> String {
+        match self.host.trim() {
+            "" => String::from("nixos-niri"),
+            host => host.to_string(),
         }
+    }
+
+    /// The attribute to build, `nixos-niri` unless set (it's the flake's
+    /// name for the machine, not its hostname), quoted for nix when it isn't
+    /// a plain name, so the setting can't change the rest of the flake reference.
+    pub fn host_attr(&self) -> String {
+        emaki_base::nix::attr_part(&self.host_name())
     }
 }
 

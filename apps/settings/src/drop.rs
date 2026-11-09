@@ -15,6 +15,7 @@ use emaki_kit::secrets;
 use emaki_kit::settings::{
     DropSharing, UploadTo, change_drop_grids, change_drop_sharing, drop_grids, drop_sharing,
 };
+use emaki_kit::sync::Locked as _;
 
 use crate::{group, groups, switch_row};
 
@@ -399,17 +400,49 @@ fn field(
     FormRow::new(format!("{id}.row"), title).trailing(field_box(id, input, FIELD_WIDTH))
 }
 
+// a secret no keyring took, waiting for the user to say whether a file may keep it
+static ASK_FILE: std::sync::Mutex<Option<(&'static str, zeroize::Zeroizing<String>)>> =
+    std::sync::Mutex::new(None);
+
+/// No keyring answered: keep `secret` in a plain-text file only the user can read, if they
+/// agree, else let it go.
+fn ask_file(name: &'static str, secret: zeroize::Zeroizing<String>) {
+    Dialog::new("settings.drop.secret.file", "Keep it in a file?")
+        .message(
+            "No keyring (GNOME Keyring, KWallet) answered. Drop can keep it in \
+             ~/.config/emaki-drop/secrets.json instead: readable only by you, but not encrypted.",
+        )
+        .button("Don't Keep", || {})
+        .destructive("Keep in File", move || {
+            let secret = secret.clone();
+            std::thread::spawn(move || {
+                secrets::store_in_file(APP, name, &secret);
+            });
+        })
+        .open("main");
+}
+
 /// A password or key, typed and then kept in the keyring: the field
 /// empties once it's kept, and Forget lets it go.
 fn secret_row(id: &'static str, title: &str, name: &'static str, label: &'static str) -> FormRow {
     let kept = secrets::known(APP, name);
+    let asking = ASK_FILE.locked().take();
+    if let Some((name, secret)) = asking {
+        ask_file(name, secret);
+    }
     let keep = move |text: String| {
         if text.is_empty() {
             return;
         }
         TextInput::set_text(id, "");
+        let text = zeroize::Zeroizing::new(text);
         std::thread::spawn(move || {
-            secrets::store(APP, name, label, &text);
+            if secrets::store(APP, name, label, &text) == secrets::Kept::Nowhere {
+                // asked from the view, on the UI thread; the typed secret waits, wiped if
+                // declined
+                *ASK_FILE.locked() = Some((name, text));
+                secrets::SecretsChanged::changed();
+            }
         });
     };
     commit_on_blur(id, keep);

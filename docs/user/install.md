@@ -53,7 +53,25 @@ builds Emaki Settings, Messages, Phone Screen, Shader Lab, Drop and the assistan
 ### 2. The service
 
 A **systemd user service** is the robust way to run the shell: it restarts after a crash and
-the journal keeps its log.
+the journal keeps its log. The flake's home-manager module sets it up, with Drop's and the
+assistant's (sandboxed) units beside it:
+
+```nix
+{ inputs, ... }:
+{
+  imports = [ inputs.emaki.homeManagerModules.default ];
+  programs.emaki = {
+    enable = true;          # the shell, and the apps' desktop entries and icons
+    drop.enable = true;     # Drop, as a unit of its own
+    assistant.enable = true; # the assistant's daemon, started by its socket
+  };
+}
+```
+
+Emaki Settings' System pages also need the activation helper, from the NixOS module:
+`imports = [ inputs.emaki.nixosModules.default ];` and
+`programs.emaki.nixosActivate.enable = true;` (see
+[the NixOS integration](../developer/integration/nixos.md)). Or, by hand:
 
 ```nix
 { inputs, pkgs, ... }:

@@ -36,7 +36,46 @@ in scope, whichever program of this repository has them:
 - **The apps' secrets.** Drop's upload accounts, Messages' and Phone Screen's pairing with
   the phone, and the assistant's microphone.
 
-Out of scope: the niri and amane forks (report to
-[emaki-desktop/niri](https://github.com/emaki-desktop/niri/security) and
-[emaki-desktop/amane](https://github.com/emaki-desktop/amane/security)), and a bug that needs the
-user's own account on the machine to already be compromised.
+- **amane's part in these.** The polkit agent and the PAM conversation the shell runs come from
+  the amane fork, and a bug there that reaches any of the above counts here too (or report it
+  to [emaki-desktop/amane](https://github.com/emaki-desktop/amane/security)).
+
+Out of scope: the niri fork (report to
+[emaki-desktop/niri](https://github.com/emaki-desktop/niri/security)), amane's code that none of
+the above reaches, and a bug that needs the user's own account on the machine to already be
+compromised. A program running as the user is not by itself a compromised account: one should
+not be able to get root through Emaki Settings' helper, read the vault's master password, or
+take the assistant's microphone.
+
+## What's trusted
+
+- **The Nix store, by exact path.** The shell, emaki-pinentry and the assistant's daemon trust
+  each other only from the same build, and rbw-agent only from the rbw the shell was built with,
+  by store path. Anyone can put a program of any name in the store, so being in it proves
+  nothing.
+- **Cactus.** The assistant links Cactus's prebuilt `libcactus.a` (pinned by hash in
+  `flake.nix`), which isn't built from source. The daemon that runs it has no network, takes
+  connections only from the shell, and confines its file access (Landlock).
+- **The system's tools.** nix, git, systemctl and the rest are run from the system or user
+  profile, never from `PATH`; the tools that handle secrets or untrusted data (curl,
+  secret-tool, wl-copy) are pinned by store path (`crates/base/src/tools.rs`).
+
+## How the code holds up
+
+The defences a report may find a way around, so a reporter knows what was meant to stop it:
+
+- **Root.** The activation helper (`nix/nixos-module.nix`) only activates a valid NixOS system
+  path, asks for the password every time (`auth_admin`), and the shell's polkit dialog shows the
+  command line, store path included.
+- **Secrets.** Kept in memory that's wiped when dropped, never in an argument or a log; no core
+  dumps of the programs holding them; a plain-text fallback for Drop's passwords only when the
+  user agrees.
+- **Other programs' input.** The IPC socket, the status bar's D-Bus API, notifications, tray
+  icons, images, the clipboard, drops, Phone Screen's stream and album art from the web each
+  have a size cap, and a peer check where one is possible; a dropped file's name is never read
+  by a shell; a new Bitwarden server is confirmed in the shell's own dialog.
+- **Sandboxing.** The assistant's unit (`nix/home-module.nix`) and the threads that decode
+  another device's data are confined; the shell and Drop are not, as the apps they open would
+  inherit it.
+- **Checks.** `cargo deny check` (advisories, licences, sources) and fuzzing of the parsers in
+  `fuzz/` run in CI.

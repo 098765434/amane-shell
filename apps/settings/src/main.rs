@@ -2,6 +2,8 @@
 //! shell follows at once, and, under System, the NixOS configuration the
 //! machine is built from. One copy runs; launching it again brings it up.
 
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 mod about;
 mod appearance;
 mod cursor;
@@ -231,6 +233,8 @@ fn package_arg(args: &[String]) {
 
 fn main() {
     emaki_log::init(emaki_kit::app_ids::SETTINGS);
+    // Drop's upload passwords are typed here
+    emaki_kit::harden::private_memory();
     emaki_kit::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     if let Some(place) = page_arg(&args) {

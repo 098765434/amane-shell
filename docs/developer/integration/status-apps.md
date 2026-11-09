@@ -60,6 +60,15 @@ connection open, for example a Python `dbus-next` client ([below](#from-another-
 
 Errors are under `org.emaki.StatusBar1.Error`.
 
+Any program on the session bus may call, so the bar bounds what one can put up
+(`apps/shell/src/services/status_apps.rs`):
+- a call's text (a spec, an activity's content) is at most 64 KiB, else `Error.Invalid`;
+- a program has at most 8 items and 8 activities going (`Error.Invalid` past that);
+- ids under `org.emaki.` are for emaki's own programs, from the same build as the shell (by the
+  caller's executable, as the bus daemon gives its process): another gets `Error.IdTaken`;
+- the lists of programs seen, which Emaki Settings shows, keep at most 256, with names of at
+  most 256 bytes.
+
 The two signals go only to the program concerned (a unicast signal):
 
 - `ItemEvent(s id, s event)`
@@ -170,7 +179,7 @@ let item = StatusItem::register(spec);
 
 | Field | What it does | Advice |
 |---|---|---|
-| `id` | unique on the desktop; the bar keeps its place in `order` as `app:<id>` | a reverse-DNS name; never change it, or the user's ordering and hiding are lost |
+| `id` | unique on the desktop; the bar keeps its place in `order` as `app:<id>` | a reverse-DNS name, not under `org.emaki.` (kept for emaki's own programs); never change it, or the user's ordering and hiding are lost |
 | `icon` | `Glyph` (a bar symbol by name), `Theme` (an icon-theme name), or `File` (png or svg) | prefer a `Glyph`: it takes the bar's color, size and attention tint. The names are below |
 | `title` | text after the icon, cut at 120 px | leave it empty unless the text *is* the item (a reading, a count) |
 | `tooltip` | the hover text | the app's name |

@@ -130,8 +130,9 @@ pub fn open_with(app_id: &str, workspace: i64, files: &[PathBuf]) -> bool {
     // all go through amane's one worker thread, in order: niri opens the
     // window on the workspace that has just been focused
     Workspaces::focus(workspace);
+    // as argument lists: a file's name is never text a shell reads
     for command in app.commands_with(files) {
-        Windows::spawn(vec![String::from("sh"), String::from("-c"), command]);
+        Windows::spawn(command);
     }
     // a slow app may map after the pointer has gone to another workspace
     placing(app_id, workspace);

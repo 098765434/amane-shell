@@ -8,6 +8,8 @@
 //! goes to the copy running (a keybind's way in), as does the same over its
 //! IPC socket.
 
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 mod files;
 mod grid;
 mod share;
@@ -30,6 +32,9 @@ static ITEM: OnceLock<StatusItem> = OnceLock::new();
 
 fn main() {
     emaki_log::init(APP_ID);
+    // it holds the upload passwords; the shell reads /proc/<pid>/exe to check its bar item,
+    // so it stays dumpable
+    emaki_kit::harden::no_core_dumps();
     emaki_kit::migrate::from_amane();
     let args: Vec<String> = std::env::args().skip(1).collect();
     // a copy already running takes this launch: `App::run` hands it over

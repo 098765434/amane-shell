@@ -187,7 +187,7 @@ fn read_forecast(json: &str) -> Option<Now> {
 }
 
 fn fetch(url: &str) -> Option<String> {
-    let output = Command::new("curl")
+    let output = Command::new(emaki_kit::tools::path("curl"))
         .args(["-fsSL", "--max-time", "15", url])
         .output()
         .ok()?;

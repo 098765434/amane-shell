@@ -70,6 +70,15 @@ fn registry() -> MutexGuard<'static, Registry> {
     REGISTRY.locked()
 }
 
+/// How many activities `owner` has going.
+pub fn count_of(owner: &str) -> usize {
+    registry()
+        .live
+        .iter()
+        .filter(|live| live.owner == owner && live.leaving.is_none())
+        .count()
+}
+
 /// Starts an activity for `owner`, telling `sink` of its buttons; its
 /// handle.
 pub fn start(owner: &str, content: ActivityContent, sink: Option<Sink>) -> u32 {

@@ -31,20 +31,18 @@ pub fn run_now(program: &str, args: &[String]) -> Option<String> {
     }
 }
 
-/// Whether `program` is on `PATH`, for a link to an app that may not be
-/// installed.
+/// Whether `program` is installed (see [`crate::tools`]), for a link to an app that may not
+/// be.
 pub fn installed(program: &str) -> bool {
     thread_local! {
-        // asked every frame a page shows its settings link; PATH doesn't
+        // asked every frame a page shows its settings link; the profiles don't
         // change under a running shell
         static KNOWN: RefCell<HashMap<String, bool>> = RefCell::new(HashMap::new());
     }
     KNOWN.with_borrow_mut(|known| {
-        *known.entry(program.to_string()).or_insert_with(|| {
-            std::env::var_os("PATH").is_some_and(|path| {
-                std::env::split_paths(&path).any(|dir| dir.join(program).is_file())
-            })
-        })
+        *known
+            .entry(program.to_string())
+            .or_insert_with(|| crate::tools::installed(program))
     })
 }
 

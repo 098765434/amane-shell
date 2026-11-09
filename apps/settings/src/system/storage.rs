@@ -1,6 +1,5 @@
 //! Storage: how full /nix and /boot are, and what a clean-up would free.
 
-use std::ffi::CString;
 use std::thread;
 
 use amane::{Column, Service};
@@ -13,17 +12,8 @@ use crate::{group, groups};
 
 /// Used and total bytes of the file system at `path`.
 fn disk(path: &str) -> Option<(u64, u64)> {
-    let path = CString::new(path).ok()?;
-    // SAFETY: a zeroed statvfs is a valid one for the call to fill, and
-    // `path` is a NUL-terminated string that outlives it.
-    let mut stat: libc::statvfs = unsafe { std::mem::zeroed() };
-    if unsafe { libc::statvfs(path.as_ptr(), &mut stat) } != 0 {
-        return None;
-    }
-    let block = stat.f_frsize as u64;
-    let total = stat.f_blocks as u64 * block;
-    let free = stat.f_bavail as u64 * block;
-    (total > 0).then(|| (total.saturating_sub(free), total))
+    let space = emaki_kit::fs::space(std::path::Path::new(path))?;
+    (space.total > 0).then(|| (space.total.saturating_sub(space.available), space.total))
 }
 
 /// What a clean-up would remove, and what the last one freed.

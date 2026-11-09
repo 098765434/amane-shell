@@ -41,6 +41,13 @@ compositor, a GPU or the network.
   against stand-in `nix`, `git` and `pkexec` scripts, whose paths come from its `Config`. Write a
   test for a new step the same way rather than calling the real tools.
 - **The token tools.** The kit checks the design tokens' contract and their contrast.
+- **The limits.** What another program sends is checked against its caps: the peer checks
+  (`emaki_base::peer`, the mirror's `/proc/net/tcp` owner), the Nix quoting
+  (`emaki_base::nix`), the tool paths (`emaki_base::tools`), a Landlock-confined thread reading
+  only what it was given (`emaki_base::harden`, which asserts it only where the kernel has
+  Landlock), the status bar's per-program limits, and album art only from public addresses.
+  amane has the rest (images, notifications, the IPC reader, Exec lines), some of them
+  randomized from a fixed seed, so a failure is the same every run.
 
 When a test that compares the code with a doc or the compositor fails, its message says which
 side to fix.
@@ -57,10 +64,35 @@ env -u LD_LIBRARY_PATH nix develop -c cargo test -p <package> -- --ignored
 |---|---|
 | amane's quad tests (`graphics/gpu/quads/draw.rs`, `draw/fork_tests.rs`), in amane | a GPU adapter |
 | `apps/settings/src/displays/caps.rs` | a running niri and a screen |
-| `apps/mirror/src/decode.rs` | `EMAKI_MIRROR_TEST_H264` pointing at an H.264 file |
+| `apps/mirror/src/decode.rs` | `EMAKI_MIRROR_TEST_H264` pointing at an H.264 file; one test decodes it on a thread confined as the mirror's is |
 
 amane's GPU tests draw with the quads and with vello and compare the pixels. Run them after a
 change to the quads, shadows, arcs or the frame's encoder.
+
+An H.264 file to try: `nix run nixpkgs#ffmpeg -- -f lavfi -i testsrc=size=320x240:rate=10 -t 1
+-c:v libx264 -pix_fmt yuv420p test.h264`.
+
+## Fuzzing
+
+`fuzz/` is a workspace of its own with cargo-fuzz targets for the parsers that read another
+program's bytes: `assuan` (rbw's lines to emaki-pinentry), `pinentry_wire` (the shell's and the
+pinentry's socket), `percent` (%-escapes) and `nix_attr` (a name quoted for Nix, checked never to
+end its string or splice in `${`). They need nightly, which the flake's `fuzz` shell has:
+
+```sh
+cd fuzz
+nix develop ..#fuzz -c cargo fuzz run -O assuan -- -max_total_time=60
+```
+
+A crash or a broken property stops it and leaves the input in `fuzz/artifacts/`. CI runs each
+for a minute.
+
+## The dependencies and the Nix modules
+
+- `nix develop -c nix run nixpkgs#cargo-deny -- check`: no crate with a known vulnerability
+  or yanked, only the licences `deny.toml` allows, and git only from the emaki-desktop forks.
+- `nix build .#checks.x86_64-linux.nixos-activate`: the NixOS module's activation helper and
+  polkit action build on a minimal system, and the helper refuses what isn't a NixOS system.
 
 ## Beside the running desktop
 

@@ -60,9 +60,16 @@ item's menu; picking one copies it again. They're kept in
 `$XDG_STATE_HOME/emaki-drop/shared.json`.
 
 Uploads run `curl`. Passwords and keys go to curl on its standard input, never as arguments
-(which `ps` would show). They're kept in the keyring through `secret-tool`, or in
-`~/.config/emaki-drop/secrets.json` (mode 0600) when no keyring answers. Folders aren't
-uploaded.
+(which `ps` would show), in memory wiped once the upload is done. They're kept in the keyring
+through `secret-tool`. When no keyring answers, Emaki Settings asks first (**Keep it in a
+file?**) and only then keeps them in `~/.config/emaki-drop/secrets.json` (mode 0600, plain
+text); declined, nothing is kept. Text is uploaded from a file of its own, 0600, in the runtime
+directory. Folders aren't uploaded.
+
+Any program of yours can ask Drop over its socket, so `run` on a tile that sends files off this
+computer (an upload, a phone) doesn't send them: it holds them on the Drop Bar and opens Drop,
+for you to drop them on the tile yourself. A file opened with an app tile goes to the app as
+one argument of its own, never as text a shell reads, whatever its name.
 
 ## Editing
 
@@ -95,7 +102,7 @@ A launch while it runs goes to the copy running, as does the same over its socke
 | `emaki-drop open [n]` | opens it, on grid `n` (from 1) |
 | `emaki-drop close` | closes it |
 | `emaki-drop edit` | opens it, editing |
-| `emaki-drop run <tile> <file>…` | what letting the files go on tile `<tile>` (from 1, in the grid showing) does |
+| `emaki-drop run <tile> <file>…` | what letting the files go on tile `<tile>` (from 1, in the grid showing) does; an upload or phone tile instead holds the files on the Drop Bar and opens Drop, for you to drop them on it, since any program could ask |
 | `emaki-drop hold <file>…` | puts the files on the Drop Bar as a stack |
 
 ```sh
@@ -125,10 +132,12 @@ A fresh install starts with ~/Downloads and ~/Desktop (when they're there) and t
 
 ## Installing
 
-The shell's flake builds `emaki-drop` with the rest of the workspace. Its wrapper puts `curl`,
-`secret-tool` (libsecret) and `wl-copy` (wl-clipboard) after the system's `PATH`, so they're
-there even when the system lacks them, and it installs `emaki-drop.desktop`, so the launcher finds
-"Drop". nixos-config runs it as a user service and binds a key:
+The shell's flake builds `emaki-drop` with the rest of the workspace. `curl`, `secret-tool`
+(libsecret) and `wl-copy` (wl-clipboard) are pinned by store path at build time (`EMAKI_TOOLS`,
+`crates/base/src/tools.rs`), so no folder put in front of `PATH` can swap them; the wrapper
+also puts them after the system's `PATH`. It installs `emaki-drop.desktop`, so the launcher
+finds "Drop". The home-manager module runs it as a user service
+(`programs.emaki.drop.enable`, see [install.md](../install.md)); by hand, the unit and a key:
 
 ```nix
 # home.nix: a unit of its own, outside emaki's cgroup, so a restart of

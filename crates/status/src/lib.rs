@@ -9,6 +9,8 @@
 //! See `docs/developer/integration/status-apps.md#writing-a-status-app`.
 
 #![deny(missing_docs)]
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 
 mod client;
 mod protocol;

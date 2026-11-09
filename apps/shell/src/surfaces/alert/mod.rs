@@ -10,6 +10,7 @@
 pub mod bluetooth;
 pub mod phone;
 pub mod polkit;
+pub mod vault_server;
 pub mod vault_unlock;
 
 use std::cell::{Cell, RefCell};
@@ -56,6 +57,11 @@ pub fn show(alert: Dialog) {
     SHOWN.set(Some(alert));
     OPEN.set(true);
     Alert::changed();
+}
+
+/// Asks the user, in the shell's own alert, before rbw is pointed at a new Bitwarden server.
+pub fn confirm_vault_server(server: String, email: String, forget: bool) {
+    vault_server::ask(server, email, forget);
 }
 
 /// Whether the alert showing is the one named `name`.

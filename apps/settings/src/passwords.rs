@@ -279,6 +279,8 @@ fn save(had_account: bool) {
             if answer.starts_with("error") {
                 log::warn!("passwords: {answer}");
                 emaki_kit::toast::post("Couldn't save the account");
+            } else if answer == "confirm" {
+                emaki_kit::toast::post("Confirm the server in the dialog");
             } else {
                 emaki_kit::toast::post("Saved");
             }

@@ -10,7 +10,9 @@ in any app. niri's fork checks every fill before it lets the text in.
 
 **Setting up.** Open Emaki Settings › Passwords.
 1. Give the **server** (`https://…`; plain `http` only to `localhost`) and the **email**, then
-   **Save**. This also points rbw's `pinentry` at `emaki-pinentry`.
+   **Save**. This also points rbw's `pinentry` at `emaki-pinentry`. A new server is confirmed in
+   the shell's own dialog (**Use This Bitwarden Server?**, naming its host), since it's where the
+   next unlock sends the master password; Return doesn't answer it, so **Use Server** is a click.
 2. **Sign In…** opens the shell's dialog for the master password, and a two-factor code if the
    account has one.
 3. bitwarden.com may ask to register the device. **Register…** then appears and asks for the
@@ -72,7 +74,8 @@ The settings are `~/.config/emaki/passwords.json`, mode 0600.
 popup for the field with the keyboard, even a username or terminal field. Bind it in niri for
 a keyboard way in. Also: `status`, `unlock`, `sign-in`, `register`, `sync`, `lock`,
 `configure <server> <email> [forget]` and `lock-timeout <seconds>`. `status` prints `key=value`
-lines and never a secret.
+lines and never a secret. Any program of yours can write to the socket, so `configure` with a
+server other than the current one answers `confirm` and asks in the shell's dialog instead.
 
 ### Apps that work
 
@@ -187,21 +190,30 @@ address at all, so remembering does most of the work over time.
 rbw asks a `pinentry` program over the Assuan protocol. `emaki-pinentry` (`crates/pinentry`) is
 that program.
 1. It connects to `$XDG_RUNTIME_DIR/emaki/pinentry.sock` (folder 0700, socket 0600) and
-   checks the other end: the same user, running `emaki` from the Nix store.
+   checks the other end: the same user, running `emaki` from the same Nix store package as this
+   pinentry (the same build).
 2. The shell (`apps/shell/src/services/vault/pinentry.rs`) answers a caller only if all of these hold:
-   - the caller is `emaki-pinentry` from the store;
-   - its parent is `rbw-agent` from the store;
+   - the caller is `emaki-pinentry` from the shell's own store package;
+   - its parent is `rbw-agent` from the store package of the rbw the shell runs (`EMAKI_RBW`);
    - that agent has the shell's own `HOME`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`,
      `XDG_RUNTIME_DIR` and `RBW_PROFILE`, so it signs in to the account the page shows;
    - an rbw command the shell started, that can ask, is still running (for at most two
      minutes; the window closes as the command ends);
    - the caller's pidfd (SO_PEERPIDFD) still points at it once all that was read.
 3. The dialog (`apps/shell/src/surfaces/alert/vault_unlock.rs`) has a title the shell sets, with rbw's
-   words under it as plain text. Its field is taken out (`TextInput::take_secret`) and left
+   words under it as plain text, and names the server's host, so a changed server can't pass
+   unseen. Its field is taken out (`TextInput::take_secret`) and left
    empty. The answer goes back over the socket and is wiped.
 4. If the shell isn't there or says no, the pinentry runs pinentry-gnome3 in its place,
    before it has answered rbw at all. The store path of pinentry-gnome3 is fixed when it's
-   built.
+   built. After a rebuild, until the shell restarts, the profile's pinentry is a newer build than
+   the running shell, so the two don't trust each other and unlocking uses pinentry-gnome3.
+5. Being in the Nix store proves nothing by itself (anyone can `nix build` a program of any
+   name there), so only the exact package counts. A debug build from a checkout, which has no
+   package, also takes its own `target` folder and the store.
+6. Once the shell has agreed, the pinentry confines its file access (Landlock) to nothing: it
+   only passes the pin between rbw and the socket, which are open already. It turns its core
+   dumps off; it stays readable to the shell, which checks it through `/proc`.
 
 D-Bus isn't used, as any program of yours can watch the session bus.
 

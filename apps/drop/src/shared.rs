@@ -89,7 +89,7 @@ pub fn clear() {
 /// `wl-copy` (the data-control protocol, which needs none) goes first, and
 /// amane's own clipboard when it isn't there.
 pub fn copy(text: &str) {
-    let copied = Command::new("wl-copy")
+    let copied = Command::new(emaki_kit::tools::path("wl-copy"))
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::null())

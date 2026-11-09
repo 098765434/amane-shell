@@ -28,6 +28,7 @@ unsafe extern "C" fn vaapi_format(
     formats: *const ffi::AVPixelFormat,
 ) -> ffi::AVPixelFormat {
     let mut format = formats;
+    // SAFETY: ffmpeg passes a list ended by AV_PIX_FMT_NONE, read only up to that end
     unsafe {
         while *format != ffi::AVPixelFormat::AV_PIX_FMT_NONE {
             if *format == ffi::AVPixelFormat::AV_PIX_FMT_VAAPI {
@@ -56,6 +57,8 @@ impl Decoder {
 
         let mut on_gpu = false;
 
+        // SAFETY: the context is ours and not yet opened, so its fields may be set; the device
+        // made here is handed to it, which then owns it
         unsafe {
             let raw = context.as_mut_ptr();
 
@@ -132,6 +135,8 @@ impl Decoder {
 
         while self.decoder.receive_frame(&mut self.decoded).is_ok() {
             let frame = if self.decoded.format() == Pixel::VAAPI {
+                // SAFETY: both frames are ours and allocated; the decoded one holds a VAAPI
+                // surface, which ffmpeg copies into the other
                 let copied = unsafe {
                     ffi::av_hwframe_transfer_data(
                         self.copied.as_mut_ptr(),
@@ -142,6 +147,7 @@ impl Decoder {
                 if copied < 0 {
                     return Err("The GPU's frame couldn't be read back.".into());
                 }
+                // SAFETY: both frames are ours and allocated; only plain fields are copied
                 unsafe {
                     (*self.copied.as_mut_ptr()).color_range = (*self.decoded.as_ptr()).color_range;
                     (*self.copied.as_mut_ptr()).colorspace = (*self.decoded.as_ptr()).colorspace;
@@ -178,7 +184,7 @@ pub fn nv12(frame: &ffmpeg::frame::Video) -> Option<VideoFrame> {
         _ => VideoColors::Bt709,
     };
 
-    let mut y = Vec::with_capacity((width * height) as usize);
+    let mut y = Vec::with_capacity(width as usize * height as usize);
     let stride = frame.stride(0);
     let plane = frame.data(0);
     for row in 0..height as usize {
@@ -271,6 +277,9 @@ pub fn run_frames(
                 key,
                 pts,
             } => {
+                if size > protocol::MAX_PACKET {
+                    return Err("The phone sent a packet too big to be video.".into());
+                }
                 let mut data = vec![0u8; size as usize];
                 if stream.read_exact(&mut data).is_err() {
                     return Ok(());
@@ -343,6 +352,41 @@ mod tests {
                 decoder.hardware,
                 frames.len()
             );
+        }
+    }
+
+    #[test]
+    #[ignore = "needs EMAKI_MIRROR_TEST_H264 pointing at an H.264 file"]
+    fn decodes_h264_on_a_confined_thread() {
+        let Ok(path) = std::env::var("EMAKI_MIRROR_TEST_H264") else {
+            return;
+        };
+
+        for hardware in [false, true] {
+            ffmpeg::init().expect("ffmpeg");
+            // opened first, as the phone's socket is before the thread is confined
+            let mut input = ffmpeg::format::input(&path).expect("the file opens");
+            let packets: Vec<(Vec<u8>, bool)> = input
+                .packets()
+                .map(|(_, packet)| (packet.data().expect("data").to_vec(), packet.is_key()))
+                .collect();
+
+            let (frames, used) = std::thread::spawn(move || {
+                crate::session::confine(crate::session::Media::Video);
+                let mut decoder = Decoder::new(Codec::H264, hardware).expect("a decoder");
+                let mut frames = 0;
+                for (data, key) in &packets {
+                    decoder
+                        .decode(data, None, *key, |_| frames += 1)
+                        .expect("decodes");
+                }
+                (frames, decoder.hardware)
+            })
+            .join()
+            .expect("the thread");
+
+            assert!(frames > 0, "hardware {hardware}: no frames when confined");
+            eprintln!("confined, hardware asked {hardware}, used {used}: {frames} frames");
         }
     }
 }

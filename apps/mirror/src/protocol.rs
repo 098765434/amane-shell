@@ -52,6 +52,13 @@ pub enum Header {
 
 pub const HEADER_SIZE: usize = 12;
 
+/// The biggest media packet read: a 4K key frame is a few MB. The size comes from the other
+/// end, so a bigger one ends the stream rather than being allocated.
+pub const MAX_PACKET: u32 = 16 * 1024 * 1024;
+
+/// The biggest clipboard text taken from the phone.
+pub const MAX_DEVICE_CLIPBOARD: usize = 1024 * 1024;
+
 const CONFIG: u64 = 1 << 62;
 const KEY_FRAME: u64 = 1 << 61;
 const PTS: u64 = KEY_FRAME - 1;
@@ -356,6 +363,10 @@ pub fn device_message(bytes: &[u8]) -> Result<Option<(DeviceMessage, usize)>, u8
                 return Ok(None);
             }
             let len = be32(&bytes[1..5]) as usize;
+            // too big to keep reading towards: the stream can't be read in step any more
+            if len > MAX_DEVICE_CLIPBOARD {
+                return Err(kind);
+            }
             if bytes.len() < 5 + len {
                 return Ok(None);
             }
@@ -452,6 +463,21 @@ fn is_package(word: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_clipboard_too_big_ends_the_stream() {
+        let mut huge = vec![0u8];
+        huge.extend(((MAX_DEVICE_CLIPBOARD + 1) as u32).to_be_bytes());
+        assert_eq!(device_message(&huge).map(|_| ()), Err(0));
+
+        let mut small = vec![0u8];
+        small.extend(2u32.to_be_bytes());
+        small.extend(b"hi");
+        assert!(matches!(
+            device_message(&small),
+            Ok(Some((DeviceMessage::Clipboard(text), 7))) if text == "hi"
+        ));
+    }
 
     // the byte layouts from scrcpy's app/tests/test_control_msg_serialize.c
 

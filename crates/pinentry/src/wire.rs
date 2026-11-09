@@ -16,8 +16,8 @@ pub const FIELD_LIMIT: usize = 1024;
 /// The longest pin, in bytes.
 pub const PIN_LIMIT: usize = 1024;
 
-/// The shell's answer to a request.
-#[derive(Debug, PartialEq, Eq)]
+/// The shell's answer to a request. Its `Debug` never shows the pin.
+#[derive(PartialEq, Eq)]
 pub enum Answer {
     /// The pin, at most [`PIN_LIMIT`] bytes; its buffer wipes itself.
     Pin(Zeroizing<String>),
@@ -25,6 +25,17 @@ pub enum Answer {
     Cancelled,
     /// The shell wouldn't ask: the caller failed its checks, or nothing of the shell's asked.
     Refused,
+}
+
+impl std::fmt::Debug for Answer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            // Zeroizing's own Debug would print it
+            Self::Pin(_) => f.write_str("Pin(<redacted>)"),
+            Self::Cancelled => f.write_str("Cancelled"),
+            Self::Refused => f.write_str("Refused"),
+        }
+    }
 }
 
 const HELLO: &[u8; 6] = b"AMPH1\n";
@@ -172,6 +183,12 @@ mod tests {
     use proptest::prelude::*;
 
     use super::*;
+
+    #[test]
+    fn a_pin_never_shows_in_debug() {
+        let answer = Answer::Pin(Zeroizing::new(String::from("hunter2")));
+        assert!(!format!("{answer:?}").contains("hunter2"));
+    }
 
     #[test]
     fn requests_and_answers_round_trip() {

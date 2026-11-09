@@ -14,7 +14,7 @@ Three files in the repo, and one flake output, are what Settings reads and write
 |---|---|
 | `managed/settings.json` | the values Settings owns, `{ "timeZone": "Europe/Oslo", "openssh": true, "sshdOnDemand": true, "dimAfter": 180, "packages": ["ripgrep"], "bootEntries": 10, … }`. The one file Settings writes (whole, through a rename), and the one it commits (with `flake.lock` after an update). Hand edits are fine. |
 | `managed/registry.nix` | which settings may be there: a list of `{ id, path, page, label, control, tier, … }`. `path` is the NixOS option (`[ "services" "tailscale" "enable" ]`), `page` the Settings page that shows it (`general`, `keyboard`, `services`, `power`, `apps`, `history`, `update`; Settings itself draws `keyboardLayout` and `keyboardVariant` on `keyboard`, `bootEntries` on `history`, and anything on `about` on `general`, by `system::nixos::placed`), `control` how (`switch`; `int` with `min`/`max`; `choice` with `choices = [ { label; value; } … ]`; `timezone`; `text`, with `check` naming what Settings checks it against: `hostname`, `xkbLayout`, `xkbVariant` (`localectl list-x11-keymap-*`); `packages`, a list of attribute paths the Apps page draws), `tier` when it takes effect (`rebuild`, `restart`). A service entry may name its `unit` (`"sshd.service"`), `scope = "user"` for a user unit, and `onDemand`, the id of its "only when needed" switch. |
-| `modules/managed.nix` | turns each key in the file into an option definition (`lib.mkIf (settings ? id)`), so a missing key leaves the option to the other modules. Also ships the activation helper and its polkit action. |
+| `modules/managed.nix` | turns each key in the file into an option definition (`lib.mkIf (settings ? id)`), so a missing key leaves the option to the other modules. The activation helper and its polkit action now come from this flake's `nixosModules.default` (`programs.emaki.nixosActivate.enable`); a `managed.nix` that still ships its own collides with it. |
 | `modules/options.nix` | the repo's own options for what has no option path of its own, so the registry can point at them: `emaki.idle.{dimAfter,lockAfter,screenOffAfter}` (seconds, 0 = never) build hypridle's listener list; `emaki.services.<unit>.onDemand` empties the unit's `wantedBy` (`mkIf` round `mkForce`, so an unset flag leaves the unit alone); `emaki.packages` (dotted nixpkgs attribute paths) adds to `environment.systemPackages`, leaving out (with a NixOS warning) one this nixpkgs doesn't have, or has only as an alias that throws, so a nixpkgs update that drops a package doesn't fail the build; `emaki.missingPackages` (read-only) lists those; `emaki.updates.check` (`daily`, `weekly`, `never`) is the scheduled check's timer (below). |
 | `emakiSettings` (flake output) | `nix eval --json .#emakiSettings`: `{ host, revision, entries, systemPackages }`, each entry the registry's fields plus `value` (effective), `default`, `type`, `description`, `setIn`, the repo files that define the option (`modules/managed.nix` when it's ours; empty when nothing sets it, since an option's default doesn't count), and `setAt`, `[ { file, line } ]` for each other repo file's definition, read off the module with `builtins.unsafeGetAttrPos` (empty when the module's shape hides it). `systemPackages` is what the repo's own files install, `{ name, version, file }` each; `missingPackages` is `emaki.missingPackages`. |
 
@@ -40,6 +40,11 @@ modules/apps.nix`; `emaki.packages` installs it the same, so nothing changes. `s
 
 The repo's path and the `nixosConfigurations` attribute come from `nixos.json`
 (`repo`, `host`; `~/nixos-config` and `nixos-niri` unless set), editable on About › Configuration folder.
+A `host` that isn't a plain Nix name is quoted (`emaki_base::nix::attr_part`), and so is each
+part of a package's attribute path, so neither can change the rest of the flake reference or
+splice code into an expression. `nix`, `git`, `systemctl`, `nix-store` and the rest run from the
+system or user profile, and `pkexec` from `/run/wrappers/bin`, never from `PATH`
+(`crates/base/src/tools.rs`).
 
 ## Apply
 
@@ -56,12 +61,18 @@ flowchart TB
     activate -->|"switch or boot: a generation<br/>(test records nothing; a restart undoes it)"| commit
 ```
 
-`emaki-nixos-activate` (from `modules/managed.nix`) takes exactly a mode and a path, resolves
-the path, and refuses with exit 2 anything that isn't a built NixOS system
-(`/nix/store/<hash>-nixos-system-*` with a `bin/switch-to-configuration`); then `nix-env --set`s
-the system profile (not for `test`) and runs `switch-to-configuration <mode>`. Polkit's action
-`org.emaki.nixos-activate` names its store path (`org.freedesktop.policykit.exec.path`), asks
-`auth_admin_keep`, and says "Emaki Settings wants to apply system settings". Root never
+`emaki-nixos-activate` (from this flake's `nixosModules.default`, with
+`programs.emaki.nixosActivate.enable = true`; see `nix/nixos-module.nix`) takes exactly a mode and
+a path, and refuses with exit 2 anything that isn't a valid, registered NixOS system
+(`/nix/store/<hash>-nixos-system-*` with a `bin/switch-to-configuration`, checked with
+`nix-store --check-validity`); it logs each activation to the journal (`emaki-nixos-activate`,
+with `PKEXEC_UID`), then `nix-env --set`s the system profile (not for `test`) and runs
+`switch-to-configuration <mode>`. Polkit's action `org.emaki.nixos-activate` names its store path
+(`org.freedesktop.policykit.exec.path`) and asks `auth_admin` every time, never `auth_admin_keep`:
+anything running as the user can call the helper with a system it built itself, so each
+activation needs the password, and the prompt shows the command line with the store path
+(the agent shows polkit's `command_line` detail, and the action's message carries
+`$(command_line)` for other agents). Root never
 evaluates the repo. pkexec's exit 126 is a dismissed prompt, 127 not authorised.
 
 A build runs on the app's own threads. Closing the window would end it (nix stops a build
@@ -119,8 +130,11 @@ one now.
 The shell is the session's polkit authentication agent (`amane::Polkit::serve_agent()`, from
 `emaki`'s start), so the password prompt for `pkexec emaki-nixos-activate`, `systemctl
 start`, Flatpak and every other privileged action is the shell's own alert: the action's
-message, a password field, "Sorry, that didn't work" after a wrong one (three tries), Cancel
-or Escape to refuse. It registers `/org/emaki/PolicyKit1/AuthenticationAgent` for the
+message, the command line that will run (pkexec's, with its arguments, so the store path
+`emaki-nixos-activate` is given shows; else the asking process's), a password field, "Sorry,
+that didn't work" after a wrong one (three tries), Cancel or Escape to refuse. Only the bus name
+that owns `org.freedesktop.PolicyKit1` may ask or cancel, and an answer with a line break in it
+is refused (each line would answer another PAM prompt). It registers `/org/emaki/PolicyKit1/AuthenticationAgent` for the
 `unix-session` logind names as the user's display (the shell runs as a user service, outside
 the session's scope), and registers again when polkitd restarts. Polkit 124+ runs its PAM
 helper as a system service behind `/run/polkit/agent-helper.socket`; the agent connects, writes

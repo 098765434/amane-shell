@@ -191,7 +191,7 @@ fn push(serial: &str) -> Result<(), String> {
 }
 
 fn run_server(serial: &str, arguments: &[String], log: &Log) -> Result<Child, String> {
-    let mut command = Command::new("adb");
+    let mut command = Command::new(emaki_kit::tools::path("adb"));
     command.args([
         "-s",
         serial,
@@ -281,6 +281,12 @@ fn start_reverse(
     while sockets.len() < wanted(options) {
         match listener.accept() {
             Ok((stream, _)) => {
+                // the port is on localhost, where any user's program can reach it before the
+                // phone does: only adb, run as this user, is taken
+                if !same_user(&stream) {
+                    log::warn!("a connection to the mirror's port from another user, refused");
+                    continue;
+                }
                 stream
                     .set_nonblocking(false)
                     .map_err(|error| error.to_string())?;
@@ -304,6 +310,44 @@ fn start_reverse(
     }
 
     connection(options, sockets, process, log)
+}
+
+/// Whether the program at the other end of a localhost connection runs as this user: its own
+/// end of the connection is in /proc/net/tcp, with the user it belongs to.
+fn same_user(stream: &TcpStream) -> bool {
+    let (Ok(ours), Ok(theirs)) = (stream.local_addr(), stream.peer_addr()) else {
+        return false;
+    };
+    let Ok(table) = std::fs::read_to_string("/proc/net/tcp") else {
+        return false;
+    };
+    // SAFETY: getuid can't fail
+    let uid = unsafe { libc::getuid() };
+
+    table.lines().skip(1).any(|line| {
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        let (Some(local), Some(remote), Some(owner)) =
+            (fields.get(1), fields.get(2), fields.get(7))
+        else {
+            return false;
+        };
+        // their end: their address here, ours as the other end
+        tcp_address(local) == Some(theirs)
+            && tcp_address(remote) == Some(ours)
+            && owner.parse::<u32>().is_ok_and(|owner| owner == uid)
+    })
+}
+
+/// An IPv4 address as /proc/net/tcp writes it: the address in hex, in the machine's byte
+/// order, then the port in hex.
+fn tcp_address(text: &str) -> Option<std::net::SocketAddr> {
+    let (address, port) = text.split_once(':')?;
+    let address = u32::from_str_radix(address, 16).ok()?;
+    let port = u16::from_str_radix(port, 16).ok()?;
+    Some(std::net::SocketAddr::from((
+        Ipv4Addr::from(address.to_ne_bytes()),
+        port,
+    )))
 }
 
 fn start_forward(options: &Options, scid: u32, socket: &str) -> Result<Connection, String> {
@@ -420,4 +464,28 @@ pub fn list_apps(serial: &str) -> Result<Vec<App>, String> {
     }
 
     Ok(apps)
+}
+
+#[cfg(test)]
+mod peer_tests {
+    use super::*;
+
+    #[test]
+    fn our_own_connection_is_ours() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).expect("a port");
+        let port = listener.local_addr().expect("its address").port();
+        let _client = TcpStream::connect((Ipv4Addr::LOCALHOST, port)).expect("a connection");
+        let (accepted, _) = listener.accept().expect("the connection");
+
+        assert!(same_user(&accepted));
+    }
+
+    #[test]
+    fn proc_addresses_are_read() {
+        assert_eq!(
+            tcp_address("0100007F:1F90"),
+            Some(std::net::SocketAddr::from((Ipv4Addr::LOCALHOST, 8080)))
+        );
+        assert_eq!(tcp_address("zz:1"), None);
+    }
 }

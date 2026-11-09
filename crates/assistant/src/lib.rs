@@ -9,6 +9,8 @@
 //! proposal, with how sure it is and how much care running it needs.
 
 #![warn(missing_docs)]
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 
 pub mod client;
 pub mod command;

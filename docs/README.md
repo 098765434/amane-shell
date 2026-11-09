@@ -87,7 +87,7 @@ The docs use one name for each thing:
 | [developer/architecture.md](developer/architecture.md) | the layers, the running shell, how a surface is built, how status apps plug in |
 | [developer/integration/contract.md](developer/integration/contract.md) | what the shell relies on from niri, amane and the kit |
 | [developer/release.md](developer/release.md) | bumping the forks, the hashes, nixos-config and the switch |
-| [developer/testing.md](developer/testing.md) | the tests, a second shell beside the live one, measuring |
+| [developer/testing.md](developer/testing.md) | the tests, fuzzing, the dependency and Nix module checks, a second shell beside the live one, measuring |
 
 ### The code
 
@@ -97,6 +97,7 @@ The docs use one name for each thing:
 | The workspace folder by folder, how `apps/shell/src` is laid out, and the tests that keep it so | [developer/shell-structure.md](developer/shell-structure.md) |
 | Bumping amane, vello and niri, `outputHashes`, nixos-config, the switch | [developer/release.md](developer/release.md) |
 | Fixtures, golden tests, `--ignored` tests, a second shell beside the live one, a fork rebase's checks | [developer/testing.md](developer/testing.md) |
+| What's in scope for a security report, what's trusted, and what each defence is meant to stop | [../SECURITY.md](../SECURITY.md) |
 | What makes a window draw, and the rules that keep an idle desktop still | [developer/performance.md](developer/performance.md) |
 | What the desktop holds in GPU memory, how to measure it, and what has been cut (the vello fork) | [developer/memory.md](developer/memory.md) |
 | Trying shader effects live, and porting Figma shaders | [developer/shader-lab.md](developer/shader-lab.md) |
@@ -126,6 +127,8 @@ The docs use one name for each thing:
 | Typography: the type roles, font stacks, text scale | [developer/design-system/typography.md](developer/design-system/typography.md) |
 | Copy: case, ellipses, one verb per action, plain words, how each state is said | [developer/design-system/copy.md](developer/design-system/copy.md) |
 | Tokens still waiting on Penpot | [developer/design-system/penpot-backlog.md](developer/design-system/penpot-backlog.md) |
+| What's left to draw in Penpot | [developer/design-system/penpot-todo.md](developer/design-system/penpot-todo.md) |
+| Working with Penpot's tools | [developer/design-system/penpot-tooling.md](developer/design-system/penpot-tooling.md) |
 
 ### Integration
 

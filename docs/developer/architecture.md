@@ -12,7 +12,7 @@ flowchart TB
     vello["vello fork<br/>memory tuning only"]
     amane["amane fork<br/>Wayland, rendering, widgets, text,<br/>the niri client, system services"]
     crates["crates/*<br/>emaki-kit, emaki-status, emaki-phone,<br/>emaki-nixos, emaki-process, emaki-log, …"]
-    base["emaki-base<br/>folders, whole files, times and sizes in words,<br/>locks, flags, file types, ids"]
+    base["emaki-base<br/>folders, whole files, times and sizes in words,<br/>locks, flags, file types, ids,<br/>peers, tools, Nix quoting, hardening"]
     shell["apps/shell<br/>the surfaces, and state only the shell has"]
     apps["apps/*<br/>Emaki Settings, Messages, Phone Screen,<br/>Drop, Shader Lab, train-watch, the assistant"]
 
@@ -32,13 +32,13 @@ flowchart TB
 | **vello fork** | memory tuning only (scratch sizes, releasing idle buffers) | anything else |
 | **amane fork** | a generic shell library: Wayland, rendering, widgets, text, the niri client, generic system services, timers, subscriptions, services that stop when unwatched, launching programs in their own systemd scope | UI strings, display timings, `org.emaki.*` interfaces, product features |
 | **`crates/*`** | what the shell and its apps share: the kit (the look), the status-item wire types, the phone, the NixOS model, a process runner, logging | surfaces or windows of their own |
-| **`crates/base`** | what every program needs below its UI, written once: the XDG folders, writing a file whole, times, lengths and sizes in words, poison-tolerant locks, `--flag` parsing, file types, `%` escapes, interned ids, the programs' ids. std and serde only, so the crates without a window use it; the kit re-exports it | anything that draws or talks to a service |
+| **`crates/base`** | what every program needs below its UI, written once: the XDG folders, writing a file whole, times, lengths and sizes in words, poison-tolerant locks, `--flag` parsing, file types, `%` escapes, interned ids, the programs' ids; and what keeps a program safe from the others: who is at a socket's other end and from which build (`peer`), the programs it runs found where only root or the build put them (`tools`), text quoted for Nix (`nix`), and no core dumps and Landlock confinement (`harden`). std, serde, libc and landlock only, so the crates without a window use it; the kit re-exports it | anything that draws or talks to a service |
 | **`apps/shell`** | the surfaces and the state only the shell has | generic UI, generic system clients |
 | **`apps/*`** | one program each, built on the kit | their own niri, IPC or process clients |
 
 How to decide where new code goes: if a second program could use it and it has no emaki look,
 it goes in amane. If it has the look, it goes in the kit. If two of our programs share it but it
-isn't UI, it gets a crate, or `emaki-base` when it's a small std-only helper. Otherwise it stays in
+isn't UI, it gets a crate, or `emaki-base` when it's a small helper with no UI. Otherwise it stays in
 the program. `cargo test` holds the line: a hygiene test (`xtask/src/hygiene.rs`) fails on a
 helper written again outside its one place.
 

@@ -319,7 +319,7 @@ impl Steps {
         match result {
             Ok(output) => {
                 let path = output.stdout.lines().last().unwrap_or("").trim();
-                if path.starts_with("/nix/store/") {
+                if is_system_path(path) {
                     Ok(PathBuf::from(path))
                 } else {
                     Err(StepError::Failed(
@@ -374,7 +374,8 @@ impl Steps {
         let helper = fs::canonicalize(&config.helper).map_err(|_| {
             String::from(
                 "emaki-nixos-activate isn't in the running system yet: switch once by hand \
-                 (sudo nixos-rebuild switch) to a configuration with modules/managed.nix",
+                 (sudo nixos-rebuild switch) to a configuration with emaki's nixosModules.default \
+                 and programs.emaki.nixosActivate.enable",
             )
         })?;
         match Cmd::new(&config.pkexec)
@@ -401,6 +402,26 @@ impl Steps {
             .map_err(|e| format!("flake.lock not written: {e}"))?;
         config.git(&["add", "--", "flake.lock"]).map(|_| ())
     }
+}
+
+/// Whether `path` is exactly a NixOS system's store path, as the activation helper wants
+/// it: `/nix/store/<32-letter hash>-nixos-system-<name>`, nothing after it.
+pub fn is_system_path(path: &str) -> bool {
+    let Some(rest) = path.strip_prefix("/nix/store/") else {
+        return false;
+    };
+    let Some((hash, name)) = rest.split_at_checked(32) else {
+        return false;
+    };
+    // nix's base-32 has no e, o, t or u
+    hash.bytes()
+        .all(|b| b.is_ascii_digit() || (b.is_ascii_lowercase() && !b"eotu".contains(&b)))
+        && name.strip_prefix("-nixos-system-").is_some_and(|name| {
+            !name.is_empty()
+                && name
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"._+-".contains(&b))
+        })
 }
 
 /// The generation the system profile points at now.
@@ -593,6 +614,31 @@ pub fn parse_diff(text: &str) -> Vec<DiffLine> {
             })
         })
         .collect()
+}
+
+#[cfg(test)]
+mod system_path_tests {
+    use super::is_system_path;
+
+    #[test]
+    fn only_a_systems_own_path_is_one() {
+        assert!(is_system_path(
+            "/nix/store/0123456789abcdfghijklmnpqrsvwxyz-nixos-system-host-26.05.20261101.abcdef"
+        ));
+        assert!(!is_system_path(
+            "/nix/store/0123456789abcdfghijklmnpqrsvwxyz-evil"
+        ));
+        assert!(!is_system_path(
+            "/nix/store/0123456789abcdfghijklmnpqrsvwxyz-nixos-system-x/../../etc"
+        ));
+        assert!(!is_system_path("/nix/store/short-nixos-system-x"));
+        assert!(!is_system_path(
+            "/nix/store/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-nixos-system-x"
+        ));
+        assert!(!is_system_path(
+            "/tmp/0123456789abcdfghijklmnpqrsvwxyz-nixos-system-x"
+        ));
+    }
 }
 
 #[cfg(test)]

@@ -33,9 +33,54 @@ pub fn data() -> PathBuf {
     base("XDG_DATA_HOME", ".local/share")
 }
 
-/// `$XDG_RUNTIME_DIR`, else the temporary folder: sockets and files for this session only.
+/// `$XDG_RUNTIME_DIR`, else a folder of this user's own in the temporary folder: sockets and
+/// files for this session only, never reachable by another user.
 pub fn runtime() -> PathBuf {
-    private_runtime().unwrap_or_else(std::env::temp_dir)
+    private_runtime().unwrap_or_else(|| {
+        static FALLBACK: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+        FALLBACK.get_or_init(private_temp).clone()
+    })
+}
+
+/*
+ * without a runtime directory: /tmp/emaki-<uid>, made 0700, and taken only when it's a real
+ * folder of this user's that no one else can enter; another user could have made it first (to
+ * read or swap what's put there), so then a fresh folder with a name nobody can guess
+ */
+fn private_temp() -> PathBuf {
+    use std::os::unix::fs::{DirBuilderExt, MetadataExt};
+
+    // SAFETY: getuid can't fail
+    let uid = unsafe { libc::getuid() };
+    let temp = std::env::temp_dir();
+    let folder = temp.join(format!("emaki-{uid}"));
+
+    let _ = std::fs::DirBuilder::new().mode(0o700).create(&folder);
+
+    let ours = std::fs::symlink_metadata(&folder)
+        .is_ok_and(|meta| meta.is_dir() && meta.uid() == uid && meta.mode() & 0o077 == 0);
+    if ours {
+        return folder;
+    }
+
+    log::warn!(
+        "{} isn't this user's own; using a fresh folder",
+        folder.display()
+    );
+    let mut template = temp
+        .join("emaki-XXXXXX")
+        .into_os_string()
+        .into_encoded_bytes();
+    template.push(0);
+    // SAFETY: a writable, NUL-ended template ending in XXXXXX, which mkdtemp fills in
+    let made = unsafe { libc::mkdtemp(template.as_mut_ptr().cast()) };
+    if made.is_null() {
+        // nowhere private at all: the runtime directory's place, which won't exist
+        return PathBuf::from(format!("/run/user/{uid}"));
+    }
+    template.pop();
+    // SAFETY: mkdtemp gave back the template, now naming a 0700 folder
+    PathBuf::from(unsafe { std::ffi::OsString::from_encoded_bytes_unchecked(template) })
 }
 
 /// `$XDG_RUNTIME_DIR` alone, which only this user can enter: for a socket
@@ -65,6 +110,7 @@ mod tests {
         assert_eq!(config(), PathBuf::from("/home/someone/.config"));
         assert_eq!(state(), PathBuf::from("/home/someone/.local/state"));
         assert_eq!(cache(), PathBuf::from("/var/cache/someone"));
+        // SAFETY: as above, this test alone touches these variables
         unsafe {
             std::env::remove_var("XDG_CONFIG_HOME");
             std::env::remove_var("XDG_CACHE_HOME");

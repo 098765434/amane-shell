@@ -237,7 +237,7 @@ fn index_runs() -> bool {
     if let Some((on, _)) = known {
         return on;
     }
-    let on = Command::new("tinysparql")
+    let on = Command::new(emaki_kit::tools::path("tinysparql"))
         .args(["query", "-b", LOCALSEARCH, "-q", "ASK { }"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())

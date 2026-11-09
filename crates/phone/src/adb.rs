@@ -173,7 +173,9 @@ impl Adb {
         let code = String::from(code);
 
         in_background(AdbAction::Pairing, target.clone(), move || {
-            run(None, &["pair", &target, &code]).and_then(|said| {
+            // the code on stdin, where adb asks for it, so no other program sees it in a
+            // command line
+            run_with_input(&["pair", &target], &format!("{code}\n")).and_then(|said| {
                 // adb exits 0 even when pairing fails
                 if said.contains("Successfully paired") {
                     Ok(())
@@ -203,10 +205,43 @@ impl Adb {
     }
 }
 
+/// `adb arguments`, with `input` written to its stdin.
+fn run_with_input(arguments: &[&str], input: &str) -> Result<String, ServiceError> {
+    use std::io::Write as _;
+
+    let mut child = Command::new(emaki_base::tools::path(ADB))
+        .args(arguments)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(ServiceError::from)?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(input.as_bytes())
+            .map_err(ServiceError::from)?;
+    }
+
+    let output = child.wait_with_output().map_err(ServiceError::from)?;
+    let said = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+    if output.status.success() {
+        return Ok(said);
+    }
+
+    let complaint = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    Err(refused(if complaint.is_empty() {
+        said
+    } else {
+        complaint
+    }))
+}
+
 /// Runs adb for one phone (by serial) or for adb itself, waiting for it;
 /// what it printed, or why it failed.
 pub fn run(serial: Option<&str>, arguments: &[&str]) -> Result<String, ServiceError> {
-    let mut command = Command::new(ADB);
+    let mut command = Command::new(emaki_base::tools::path(ADB));
 
     if let Some(serial) = serial {
         command.args(["-s", serial]);
@@ -239,7 +274,7 @@ fn refused(said: String) -> ServiceError {
 }
 
 fn installed() -> bool {
-    Command::new(ADB)
+    Command::new(emaki_base::tools::path(ADB))
         .arg("version")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -289,7 +324,7 @@ fn in_background(
 
 // one run of `adb track-devices`, until the server goes away
 fn track() {
-    let Ok(mut child) = Command::new(ADB)
+    let Ok(mut child) = Command::new(emaki_base::tools::path(ADB))
         .args(["track-devices", "-l"])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())

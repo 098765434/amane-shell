@@ -10,6 +10,7 @@ use std::cell::Cell;
 
 use amane::{Service, TextInput};
 
+use crate::services::vault::Vault;
 use crate::services::vault::pinentry::{self, PinEntry, PinQuestion};
 use crate::surfaces::alert;
 use emaki_kit::dialog::{Dialog, Field, Icon};
@@ -83,7 +84,15 @@ fn dialog(question: &PinQuestion) -> Dialog {
         shown = shown.error(question.error.as_str());
     }
 
-    shown = shown.note("Asked for by rbw, which the shell started");
+    // the server the password goes to, so a changed one can't pass unseen
+    let server = Vault::read()
+        .config()
+        .map(|config| super::vault_server::host(&config.base_url).to_string())
+        .filter(|host| !host.is_empty());
+    shown = shown.note(match server {
+        Some(host) => format!("Server: {host} · asked for by rbw, which the shell started"),
+        None => String::from("Asked for by rbw, which the shell started"),
+    });
 
     shown
         .field(Field {

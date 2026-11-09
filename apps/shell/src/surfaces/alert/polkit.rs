@@ -71,9 +71,8 @@ fn dialog(request: &AuthRequest) -> Dialog {
         Polkit::cancel(id);
     };
     let answer = move || {
-        // taken out, so the field holds no copy; polkit's own call takes a plain String
-        let typed = TextInput::take_secret(FIELD);
-        Polkit::answer(id, String::from(typed.as_str()));
+        // taken out, so the field holds no copy, and wiped once polkit's helper has it
+        Polkit::answer(id, TextInput::take_secret(FIELD));
     };
 
     let (placeholder, secret) = match request.prompt() {
@@ -105,6 +104,11 @@ fn dialog(request: &AuthRequest) -> Dialog {
         });
     } else if request.busy() {
         shown = shown.note("Checking…");
+    }
+    // what will run, so a privileged helper's arguments (like the system it activates) are
+    // seen before the password is given
+    if let Some(command) = request.command() {
+        shown = shown.note(command);
     }
     shown = shown.note(format!("{} · as {}", request.action_id(), request.user()));
     shown

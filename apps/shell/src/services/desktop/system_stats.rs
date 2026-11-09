@@ -14,7 +14,6 @@
 //! a slow sensor or a stalled network mount never holds up drawing.
 
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::ffi::CString;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -686,21 +685,13 @@ fn disks(mounts: Vec<String>, stalled: &mut HashMap<String, u32>) -> Vec<DiskUse
                 }
                 return None;
             }
-            let path = CString::new(mount.as_bytes()).ok()?;
             let started = Instant::now();
-            // SAFETY: a zeroed statvfs is a valid one for the call to fill,
-            // and `path` is a NUL-terminated string that outlives it.
-            let mut stat: libc::statvfs = unsafe { std::mem::zeroed() };
-            let failed = unsafe { libc::statvfs(path.as_ptr(), &mut stat) } != 0;
+            let space = emaki_kit::fs::space(Path::new(&mount));
             if started.elapsed() >= STALLED {
                 stalled.insert(mount.clone(), STALLED_SKIP);
             }
-            if failed {
-                return None;
-            }
-            let block = stat.f_frsize as u64;
-            let total = stat.f_blocks as u64 * block;
-            let free = stat.f_bavail as u64 * block;
+            let space = space?;
+            let (total, free) = (space.total, space.available);
             (total > 0).then(|| DiskUse {
                 mount,
                 used: total.saturating_sub(free),

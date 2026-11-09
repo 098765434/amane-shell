@@ -221,7 +221,8 @@ impl Search {
             let child = Cmd::new("nix")
                 .args(["search", "--json", "--no-warn-dirty", "--inputs-from"])
                 .arg(&repo)
-                .args(["nixpkgs", &query])
+                // the query is the user's text, never an option
+                .args(["--", "nixpkgs", &query])
                 .dir(&repo)
                 .spawn();
             let result = match child {

@@ -15,6 +15,8 @@
 //! Ctrl+Tab) move through the conversations, Escape leaves the search or
 //! the new message.
 
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 mod bubble;
 mod compose;
 mod inbox;

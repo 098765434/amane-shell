@@ -1,0 +1,47 @@
+# Fuzz targets for the parsers that read another program's bytes: rbw's Assuan lines and the
+# shell's and pinentry's wire, both in emaki-pinentry, and emaki-base's decoders. A workspace
+# of its own, built with nightly: `nix develop .#fuzz -c cargo fuzz run <target>` from here.
+[package]
+name = "emaki-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+emaki-base = { path = "../crates/base" }
+emaki-pinentry = { path = "../crates/pinentry" }
+
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "assuan"
+path = "fuzz_targets/assuan.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pinentry_wire"
+path = "fuzz_targets/pinentry_wire.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "percent"
+path = "fuzz_targets/percent.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "nix_attr"
+path = "fuzz_targets/nix_attr.rs"
+test = false
+doc = false
+bench = false

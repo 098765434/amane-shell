@@ -35,6 +35,12 @@ Toasts and the center share one card, laid out as a banner in three columns:
   The image is the `image-data`/`image-path` hint, else the app icon when the sender sent it as a
   file or `file://` url rather than a theme name: the spec ranks it after the hints, and niri
   sends its screenshots that way. Such an icon then isn't drawn on the left as well.
+  Any program can notify, so what it sends is held to limits (amane's notification server): an
+  image file is only read if it's a regular file of at most 64 MiB, an image at most 16384
+  pixels a side and 72 megapixels (`image-data` up to 4096 a side, checked against the bytes it
+  carries before anything is allocated), an SVG never reads another file, the summary is cut at
+  1 KiB and the body at 16 KiB, a notification has at most 8 buttons, and one program may show
+  30 notifications every 10 seconds (more are answered but not shown).
 
 The insets are `card.padding-block` above and below, `card.padding-start` on the leading side and
 the wider `card.padding-end` on the trailing side, where the time sits. Actions run in a row of

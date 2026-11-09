@@ -14,6 +14,9 @@ pub(crate) fn cache(folder: &str) -> PathBuf {
         .join(folder)
 }
 
+// the most base64 decoded into a picture: 8 MiB of text
+const MAX_ENCODED: usize = 8 * 1024 * 1024;
+
 /*
  * `data` decoded into `folder/name`, unless it's already there; the path,
  * or none when it isn't base64 or can't be written
@@ -23,6 +26,11 @@ pub(crate) fn write_once(folder: &str, name: &str, data: &str) -> Option<PathBuf
 
     if path.exists() {
         return Some(path);
+    }
+
+    // a thumbnail or a contact's photo is a few kB; the phone says how big
+    if data.len() > MAX_ENCODED {
+        return None;
     }
 
     let bytes = decode(data)?;

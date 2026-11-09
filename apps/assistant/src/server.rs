@@ -4,7 +4,7 @@
 //! answers asked for while it was busy, only the newest is worked out (the
 //! others were for what's since been typed over).
 
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::sync::mpsc::{self, Receiver, Sender};
@@ -142,10 +142,18 @@ pub fn serve(engine: Engine) -> Result<(), String> {
     let (jobs, queue) = mpsc::channel();
     {
         let out = out.clone();
-        std::thread::spawn(move || work(engine, queue, &out));
+        std::thread::spawn(move || {
+            crate::confine();
+            work(engine, queue, &out)
+        });
     }
     for stream in listener.incoming() {
         let Ok(stream) = stream else { continue };
+        // what's heard goes to whoever is connected: only the shell of this same build
+        if !is_the_shell(&stream) {
+            log::warn!("a connection from a program other than the shell, refused");
+            continue;
+        }
         busy();
         let Ok(writer) = stream.try_clone() else {
             continue;
@@ -158,10 +166,32 @@ pub fn serve(engine: Engine) -> Result<(), String> {
         }
         *out.0.locked() = Some(writer);
         let (jobs, out, recording) = (jobs.clone(), out.clone(), recording.clone());
-        std::thread::spawn(move || read(stream, &jobs, &out, &recording));
+        // the recording it starts runs on a thread of this one's, confined too
+        std::thread::spawn(move || {
+            crate::confine();
+            read(stream, &jobs, &out, &recording)
+        });
     }
     Ok(())
 }
+
+/// Whether the program at the other end of `stream` is this user's shell, from the same build
+/// as this daemon (or, in a checkout's debug build, its target folder).
+fn is_the_shell(stream: &UnixStream) -> bool {
+    use emaki_base::peer::{self, Peer};
+
+    let Ok(caller) = Peer::of(stream) else {
+        return false;
+    };
+    let ours = peer::own_package();
+    caller.uid == peer::current_uid()
+        && peer::exe(caller.pid).is_some_and(|exe| {
+            peer::is_program(&exe, &[emaki_base::app_ids::SHELL], ours.as_deref())
+        })
+}
+
+// a request is a line of JSON; one longer than this ends the connection
+const MAX_LINE: u64 = 1024 * 1024;
 
 /// Reads one shell's requests until it goes.
 fn read(
@@ -170,9 +200,19 @@ fn read(
     out: &Arc<Out>,
     recording: &Arc<Mutex<Option<Recording>>>,
 ) {
-    for line in BufReader::new(stream).lines() {
-        let Ok(line) = line else { break };
-        let envelope: Envelope = match serde_json::from_str(&line) {
+    let mut reader = BufReader::new(stream);
+    loop {
+        let mut line = String::new();
+        match (&mut reader).take(MAX_LINE + 1).read_line(&mut line) {
+            Ok(0) | Err(_) => break,
+            Ok(_) => {}
+        }
+        if !line.ends_with('\n') && line.len() as u64 > MAX_LINE {
+            log::warn!("a request longer than {MAX_LINE} bytes; closing");
+            break;
+        }
+        let line = line.trim_end_matches(['\n', '\r']);
+        let envelope: Envelope = match serde_json::from_str(line) {
             Ok(envelope) => envelope,
             Err(error) => {
                 out.send(&Message::Error {

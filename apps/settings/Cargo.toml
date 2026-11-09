@@ -1,6 +1,7 @@
 [package]
 name = "emaki-settings"
 version.workspace = true
+publish.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 description = "Settings for emaki: how it looks, changed live while it runs."
@@ -9,6 +10,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+zeroize = { workspace = true }
 log = { workspace = true }
 emaki-log = { workspace = true }
 emaki-process = { workspace = true }

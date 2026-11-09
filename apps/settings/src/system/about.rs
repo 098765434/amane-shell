@@ -221,7 +221,7 @@ fn advanced() -> Column {
     let snapshot = Snapshot::read();
     let settings = nixos();
     let repo_path = settings.repo_path().to_string_lossy().into_owned();
-    let host = settings.host_attr();
+    let host = settings.host_name();
     const REPO: &str = "settings.system.repo";
     const HOST: &str = "settings.system.host";
     emaki_kit::app::fill_once(REPO, || repo_path.clone());
@@ -238,7 +238,7 @@ fn advanced() -> Column {
     };
     let keep_host = |text: String| {
         let text = text.trim().to_string();
-        if text != nixos().host_attr() {
+        if text != nixos().host_name() {
             change_nixos(|n| n.host = text.clone());
             refresh();
         }

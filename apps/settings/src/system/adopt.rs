@@ -227,6 +227,16 @@ fn apply(entry: &Entry, planned: &Move) -> Result<(), String> {
 
 /// Turns the line into its comment, in the file at `root`.
 fn rewrite(root: &Path, planned: &Move) -> Result<(), String> {
+    // the file comes from nix's own output: it must name a file inside the repo
+    let inside = Path::new(&planned.file)
+        .components()
+        .all(|part| matches!(part, std::path::Component::Normal(_)));
+    if !inside || planned.replacement.contains(['\n', '\r']) {
+        return Err(format!(
+            "{} isn't a file of the configuration",
+            planned.file
+        ));
+    }
     let path = root.join(&planned.file);
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let mut lines: Vec<&str> = content.lines().collect();

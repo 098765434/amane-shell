@@ -27,10 +27,17 @@ const ANSWER_TIME: Duration = Duration::from_secs(180);
 
 fn main() -> ExitCode {
     emaki_log::init(emaki_base::app_ids::PINENTRY);
+    // the master password passes through; the shell reads /proc/<pid>/exe to check this
+    // program, so it stays dumpable
+    emaki_base::harden::no_core_dumps();
     emaki_base::migrate::from_amane();
     let Some(shell) = shell() else {
         return fallback();
     };
+
+    // from here it only passes the pin between rbw (stdin, stdout) and the shell (the socket),
+    // which are open already: it needs no file at all, so it may open none
+    emaki_base::harden::confine(&[], &[]);
 
     match serve(shell) {
         Ok(()) => ExitCode::SUCCESS,
@@ -50,7 +57,11 @@ fn shell() -> Option<UnixStream> {
 
     let exe = peer::exe(peer.pid)?;
 
-    if !peer::is_program(&exe, &[emaki_base::app_ids::SHELL]) || !peer.still_there() {
+    // the shell must come from the same build as this pinentry
+    let package = peer::own_package();
+    if !peer::is_program(&exe, &[emaki_base::app_ids::SHELL], package.as_deref())
+        || !peer.still_there()
+    {
         return None;
     }
 
@@ -174,8 +185,19 @@ fn read_line(from: &mut impl BufRead) -> io::Result<Option<String>> {
 
     // a line that went past the limit is read to its end and refused
     if !bytes.ends_with(b"\n") && bytes.len() > assuan::LINE_LIMIT {
-        let mut rest = Vec::new();
-        from.read_until(b'\n', &mut rest)?;
+        // what's left of it is skipped as it comes, never kept, however long it is
+        loop {
+            let buffer = from.fill_buf()?;
+            if buffer.is_empty() {
+                break;
+            }
+            if let Some(end) = buffer.iter().position(|byte| *byte == b'\n') {
+                from.consume(end + 1);
+                break;
+            }
+            let length = buffer.len();
+            from.consume(length);
+        }
 
         return Ok(Some("X".repeat(assuan::LINE_LIMIT)));
     }

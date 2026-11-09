@@ -41,7 +41,48 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     the units `amane-shell.service`, `amane-drop.service` and `amane-update-check` are
     `emaki.service`, `emaki-drop.service` and `emaki-update-check`
 
+### Security
+
+- Emaki Settings' activation helper ships in this flake (`nixosModules.default`,
+  `programs.emaki.nixosActivate.enable`): it activates only a valid, registered NixOS system's
+  store path, logs each activation to the journal, and asks for the password every time
+  (`auth_admin`, no longer `auth_admin_keep`). **Remove the helper from `modules/managed.nix`**
+  when you enable it.
+- The polkit dialog shows the command line that will run, store path included; only polkitd may
+  call the agent, and an answer with a line break is refused.
+- A new Bitwarden server, asked for over the IPC socket, is confirmed in the shell's own dialog
+  (`passwords configure` answers `confirm`), and the unlock dialog names the server.
+- The shell, emaki-pinentry and the assistant's daemon trust each other only from the same
+  build, and rbw-agent only from the rbw the shell runs; being in the Nix store no longer counts.
+  After a rebuild, until the shell restarts, unlocking uses pinentry-gnome3.
+- The programs emaki runs (nix, git, pkexec, curl, secret-tool, wl-copy, xdg-open, adb, …) come
+  from the system or user profile, or pinned store paths, never from `PATH`.
+- Drop's passwords no longer go to a plain-text file without asking: Emaki Settings asks when no
+  keyring answers. Secrets are wiped from memory after use; Settings and Drop turn off their core
+  dumps, and Settings and the assistant keep other processes from reading their memory.
+- Limits on what other programs send: images (file size, pixels, no outside files in an SVG),
+  notification images and text, a rate per sender, the IPC socket (2 s, 64 KiB, the same user
+  only, read off the UI thread), the status bar API (8 items and 8 activities a program, 64 KiB
+  calls, `org.emaki.*` ids for emaki's own programs), tray icons, drops and pastes, Phone
+  Screen's packets and clipboard, base64 thumbnails, and album art (public addresses only, no
+  redirects, 10 MB).
+- A dropped file's name goes to the app as one argument, never through `sh -c`; `emaki-drop
+  run` on an upload or phone tile holds the files instead of sending them.
+- Phone Screen takes only this user's connections on its localhost port; its decoding threads
+  are confined with Landlock. The assistant's daemon takes connections only from the shell, runs
+  with no network, a system-call filter and no new privileges, and confines its workers with
+  Landlock.
+- Nix input is quoted: a package's attribute path and the configuration's host can't splice
+  code into an expression; options end before the user's search text.
+- Runtime files never fall back to a shared `/tmp`; the clipboard history and the shell's state
+  are written 0600, and no write follows a link left in its place.
+- CI checks the dependencies (`cargo deny`, `deny.toml`), fuzzes the parsers in `fuzz/`, pins
+  actions by commit and gives the token read access only.
+
 ### Added
+
+- A home-manager module (`homeManagerModules.default`, `programs.emaki`) with user units for the
+  shell, Drop and the assistant's socket-activated, sandboxed daemon.
 
 - The move from amane-shell, once, on each program's first start: the old folders move to the
   new names, the ids the settings keep (`org.amane.*`, `amane-*.desktop`) are renamed, and

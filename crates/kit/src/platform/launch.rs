@@ -4,5 +4,11 @@
 /// activation token so the app that shows it is focused. A failure is
 /// logged; there's nothing else to tell the person who pressed.
 pub fn open(target: impl AsRef<str>) {
-    amane::Launch::argv(&["xdg-open", target.as_ref()]).activated();
+    // a target starting with `-` would be read as one of xdg-open's options
+    if target.as_ref().starts_with('-') {
+        log::warn!("not opening {:?}: it looks like an option", target.as_ref());
+        return;
+    }
+    let xdg_open = crate::tools::path("xdg-open");
+    amane::Launch::argv(&[&xdg_open.to_string_lossy(), target.as_ref()]).activated();
 }

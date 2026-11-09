@@ -41,6 +41,17 @@ pub fn run(command: Command) -> String {
                 );
             }
 
+            // a new server is where the next unlock sends the master password: the shell asks
+            // the user itself, since any program of the session can write to this socket
+            let current = Vault::read()
+                .config()
+                .map(|config| config.base_url.clone())
+                .unwrap_or_default();
+            if current.trim_end_matches('/') != server.trim_end_matches('/') {
+                crate::surfaces::alert::confirm_vault_server(server, email, forget);
+                return String::from("confirm");
+            }
+
             Vault::configure(server, email, forget);
         }
         Command::LockTimeout(seconds) => Vault::set_lock_timeout(seconds),

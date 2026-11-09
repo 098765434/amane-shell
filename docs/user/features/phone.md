@@ -49,6 +49,8 @@ The page:
 - **A phone asking to pair** appears under the list with its code and
   **Decline** / **Pair**. When the page isn't showing, it asks in the shell's
   alert instead (`surfaces/alert/phone.rs`, from `services/phone/pairing.rs`).
+  Any device on the network can ask, under any name it likes: with no code to
+  compare, the alert says so, and Return declines (**Pair** is a click).
 - Without the daemon, the page says so and offers **Turn On**.
 
 A paired phone's page, as far as the phone offers each:
@@ -188,7 +190,8 @@ two work together:
 2. Phone page → the phone → **Set Up Screen Sharing…** shows a QR code. On the
    phone: Wireless debugging → **Pair device with QR code**, and scan it. The
    pairing code works too ("Pair device with pairing code"; type it under the
-   QR code), and so does a USB cable with USB debugging on.
+   QR code), and so does a USB cable with USB debugging on. The code goes to
+   `adb pair` on its standard input, never as an argument other programs see.
 3. The row becomes **Screen**. From then on the screen opens whenever Wireless
    debugging is on; Android turns it off on a reboot or another network.
 
@@ -213,6 +216,20 @@ niri rule is generated with the others).
 - H.264 is decoded on the GPU through VAAPI (`EMAKI_MIRROR_SOFTWARE=1` uses the
   processor), and each frame goes to amane's `Video` as NV12, drawn by the quad
   pipeline.
+
+What the phone sends is another device's data, so `emaki-mirror` holds it in:
+- **The port.** The phone connects back (`adb reverse`) to a port on
+  localhost, which another user's program could reach first: only a
+  connection from a program of this user's (adb) is taken, by its owner in
+  `/proc/net/tcp`.
+- **Sizes.** A video or sound packet is at most 16 MiB, and a clipboard text
+  from the phone at most 1 MiB; a bigger one ends the stream rather than being
+  allocated.
+- **The decoders.** The threads that decode video and sound confine their file
+  access (Landlock) to the store and the system's files, read only, and the
+  GPU's render node (video) or the sound server's settings and shared memory
+  (sound): nothing of yours, whatever a bug in ffmpeg would let the phone
+  do. The rest of the app, and the adb it runs, isn't confined.
 
 ### The phone's apps
 

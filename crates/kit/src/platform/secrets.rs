@@ -1,8 +1,11 @@
 //! Passwords and keys an app keeps, in the Secret Service (GNOME Keyring,
 //! KWallet) through `secret-tool`, under `application <app> account <name>`.
-//! Where no keyring answers, they go in `~/.config/<app>/secrets.json`,
-//! readable only by its owner, and [`kept_in_file`] says so for a page to
-//! warn.
+//! Where no keyring answers, [`store`] keeps nothing and says so
+//! ([`Kept::Nowhere`]); only when the user then agrees does [`store_in_file`]
+//! put it in `~/.config/<app>/secrets.json`, readable only by its owner, as
+//! plain text, and [`kept_in_file`] says so for a page to warn.
+//!
+//! Secrets found come back wiped when dropped ([`Zeroizing`]).
 //!
 //! [`lookup`] and [`store`] wait on `secret-tool`, so they're for a thread
 //! of their own. [`known`] is for drawing: it answers from what was last
@@ -13,6 +16,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::{LazyLock, Mutex};
+
+use zeroize::Zeroizing;
 
 use crate::sync::Locked as _;
 
@@ -27,8 +32,10 @@ crate::marker! {
 pub enum Kept {
     /// The desktop's keyring, through `secret-tool`.
     Keyring,
-    /// The keyring didn't answer: the app's own file, 0600.
+    /// The app's own file, 0600, plain text: only through [`store_in_file`].
     File,
+    /// No keyring answered, so it wasn't kept: ask before [`store_in_file`].
+    Nowhere,
 }
 
 /// Whether each secret is kept, by (app, name), as last found.
@@ -45,23 +52,28 @@ fn remember(app: &str, name: &str, kept: bool) {
 /// The secret `name` of `app`, from the keyring or else the app's file.
 /// One kept under the app's name from before the rename to emaki
 /// ([`crate::migrate::old_id`]) is found too.
-pub fn lookup(app: &str, name: &str) -> Option<String> {
+pub fn lookup(app: &str, name: &str) -> Option<Zeroizing<String>> {
     let found = keyring(app, name)
         .or_else(|| crate::migrate::old_id(app).and_then(|old| keyring(old, name)))
-        .or_else(|| file_secrets(app).remove(name));
+        .or_else(|| file_secrets(app).remove(name).map(Zeroizing::new));
     remember(app, name, found.is_some());
     found
 }
 
-fn keyring(app: &str, name: &str) -> Option<String> {
-    Command::new("secret-tool")
+fn keyring(app: &str, name: &str) -> Option<Zeroizing<String>> {
+    let output = Command::new(crate::tools::path("secret-tool"))
         .args(["lookup", "application", app, "account", name])
         .stderr(Stdio::null())
         .output()
+        .ok()?;
+    // the bytes are wiped whatever comes of them
+    let stdout = Zeroizing::new(output.stdout);
+    if !output.status.success() || stdout.is_empty() {
+        return None;
+    }
+    std::str::from_utf8(&stdout)
         .ok()
-        .filter(|output| output.status.success())
-        .map(|output| String::from_utf8_lossy(&output.stdout).into_owned())
-        .filter(|secret| !secret.is_empty())
+        .map(|secret| Zeroizing::new(secret.to_string()))
 }
 
 /// Keeps `secret` as `name` of `app`, labelled `label` in the keyring;
@@ -71,7 +83,7 @@ pub fn store(app: &str, name: &str, label: &str, secret: &str) -> Kept {
         forget(app, name);
         return Kept::Keyring;
     }
-    let kept = Command::new("secret-tool")
+    let kept = Command::new(crate::tools::path("secret-tool"))
         .args([
             "store",
             "--label",
@@ -91,28 +103,35 @@ pub fn store(app: &str, name: &str, label: &str, secret: &str) -> Kept {
             child.wait().ok().filter(|status| status.success())
         })
         .is_some();
-    let kept = if kept {
-        // a copy left in the file from before would outlive this one
-        let mut file = file_secrets(app);
-        if file.remove(name).is_some() {
-            write_file_secrets(app, &file);
-        }
-        Kept::Keyring
-    } else {
-        let mut file = file_secrets(app);
-        file.insert(name.to_string(), secret.to_string());
+    if !kept {
+        // never a plain-text file without the user's say: the page asks
+        log::warn!("no keyring answered: {app}'s {name} wasn't kept");
+        return Kept::Nowhere;
+    }
+    // a copy left in the file from before would outlive this one
+    let mut file = file_secrets(app);
+    if file.remove(name).is_some() {
         write_file_secrets(app, &file);
-        Kept::File
-    };
+    }
     remember(app, name, true);
-    kept
+    Kept::Keyring
+}
+
+/// Keeps `secret` as `name` of `app` in the app's own file, 0600, as plain text: only once
+/// the user has agreed to, after [`store`] found no keyring.
+pub fn store_in_file(app: &str, name: &str, secret: &str) -> Kept {
+    let mut file = file_secrets(app);
+    file.insert(name.to_string(), secret.to_string());
+    write_file_secrets(app, &file);
+    remember(app, name, true);
+    Kept::File
 }
 
 /// Forgets `name` of `app`, from the keyring and the file.
 pub fn forget(app: &str, name: &str) {
     // and the copy under the name from before the rename, which lookup finds
     for app in std::iter::once(app).chain(crate::migrate::old_id(app)) {
-        if let Err(error) = Command::new("secret-tool")
+        if let Err(error) = Command::new(crate::tools::path("secret-tool"))
             .args(["clear", "application", app, "account", name])
             .stderr(Stdio::null())
             .status()

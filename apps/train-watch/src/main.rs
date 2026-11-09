@@ -10,6 +10,8 @@
 //! start, again after a dropped connection. A copy is kept in
 //! `$XDG_CACHE_HOME/emaki-train-watch/RUN.log`, which Log opens.
 
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 mod run_log;
 
 use std::fs::File;

@@ -26,7 +26,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amane"
 version = "0.1.2"
-source = "git+https://github.com/emaki-desktop/amane?rev=4609ed496e4eeabc43157dd30e7401f882d65c82#4609ed496e4eeabc43157dd30e7401f882d65c82"
+source = "git+https://github.com/emaki-desktop/amane?rev=0f62af6ce9619f6ea4b001078ad4d77d9064fb21#0f62af6ce9619f6ea4b001078ad4d77d9064fb21"
 dependencies = [
  "bitflags",
  "blocking",
@@ -107,9 +107,9 @@ dependencies = [
 
 [[package]]
 name = "async-executor"
-version = "1.14.0"
+version = "1.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c96bf972d85afc50bf5ab8fe2d54d1586b4e0b46c97c50a0c9e71e2f7bcd812a"
+checksum = "f426a31126c735126297bc5ea7a521263c9faff4f63ca415267ee625651c4f37"
 dependencies = [
  "async-task",
  "concurrent-queue",
@@ -602,6 +602,8 @@ dependencies = [
 name = "emaki-base"
 version = "0.1.0"
 dependencies = [
+ "landlock",
+ "libc",
  "log",
  "serde",
  "serde_json",
@@ -619,6 +621,7 @@ dependencies = [
  "emaki-status",
  "log",
  "serde_json",
+ "zeroize",
 ]
 
 [[package]]
@@ -632,6 +635,7 @@ dependencies = [
  "fontconfig",
  "log",
  "serde_json",
+ "zeroize",
 ]
 
 [[package]]
@@ -663,6 +667,7 @@ dependencies = [
  "emaki-log",
  "emaki-phone",
  "ffmpeg-next",
+ "libc",
  "libpulse-binding",
  "libpulse-simple-binding",
  "log",
@@ -726,6 +731,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
+ "zeroize",
 ]
 
 [[package]]
@@ -802,7 +808,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1413,6 +1419,17 @@ dependencies = [
  "euclid",
  "polycool",
  "smallvec",
+]
+
+[[package]]
+name = "landlock"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cca98e95f35b29d469dade6724c6f96cec9236640f745a0e99b0334ec320ab1"
+dependencies = [
+ "enumflags2",
+ "libc",
+ "thiserror",
 ]
 
 [[package]]
@@ -2312,7 +2329,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2638,7 +2655,7 @@ dependencies = [
  "getrandom",
  "once_cell",
  "rustix 1.1.5",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3310,7 +3327,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

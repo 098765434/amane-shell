@@ -80,7 +80,7 @@ The commands, in the words of what they do. Every argument and reply is in
 | `widgets list\|add\|remove\|edit\|done\|reset-layout` | the desktop widgets |
 | `status-bar show\|hide\|toggle <icon>`, `move`, `reset-order`, `tray …`, `apps …`, `activities …` | the bar's items, the tray, programs' items and Activities |
 | `night-light [on\|off\|toggle\|temperature <K>\|schedule …]` | Night Light |
-| `passwords suggest\|status\|unlock\|lock\|sync\|…` | the password fill and the vault |
+| `passwords suggest\|status\|unlock\|lock\|sync\|…` | the password fill and the vault; a new server for `configure` is confirmed in the shell's dialog |
 
 ## Inside the shell
 

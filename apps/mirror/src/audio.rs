@@ -47,6 +47,7 @@ fn opus_decoder() -> Result<ffmpeg::decoder::Audio, String> {
     let mut context = ffmpeg::codec::Context::new_with_codec(codec);
 
     // the server's stream is always this; its Opus header isn't needed for it
+    // SAFETY: the context is ours, allocated and not yet opened, so its fields may be set
     unsafe {
         let raw = context.as_mut_ptr();
         (*raw).sample_rate = RATE as i32;
@@ -118,6 +119,10 @@ pub fn run(mut stream: impl Read, mut started: impl FnMut(Sound)) -> Result<(), 
             continue;
         };
 
+        // the size comes from the other end
+        if size > protocol::MAX_PACKET {
+            break;
+        }
         let mut data = vec![0u8; size as usize];
         if stream.read_exact(&mut data).is_err() {
             break;

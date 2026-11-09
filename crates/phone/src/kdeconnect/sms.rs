@@ -1122,7 +1122,11 @@ fn send(
 
 fn open_file(path: &Path) {
     // opened when the download comes in, often long after the click, so without a token
-    if let Err(error) = amane::Launch::argv(&["xdg-open", &path.display().to_string()]).spawn() {
+    let xdg_open = emaki_base::tools::path("xdg-open")
+        .to_string_lossy()
+        .into_owned();
+    let path = path.display().to_string();
+    if let Err(error) = amane::Launch::argv(&[xdg_open.as_str(), path.as_str()]).spawn() {
         log::warn!("{error}");
     }
 }

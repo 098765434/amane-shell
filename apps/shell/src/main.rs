@@ -32,18 +32,6 @@ fn cli(args: &[String]) -> Option<ExitCode> {
     Some(ExitCode::SUCCESS)
 }
 
-/// No core dumps of this process: it holds a password for a moment while filling a field.
-fn no_core_dumps() {
-    let none = libc::rlimit {
-        rlim_cur: 0,
-        rlim_max: 0,
-    };
-    // SAFETY: setrlimit only reads the struct given
-    unsafe {
-        libc::setrlimit(libc::RLIMIT_CORE, &none);
-    }
-}
-
 /// A sample file menu, nested three levels deep, whose items do nothing:
 /// for trying the context menu with `arm` or `open`. Debug builds only.
 fn sample_menu() -> ContextMenu {
@@ -135,7 +123,8 @@ fn main() -> ExitCode {
 
     // no core dump of the shell, which passes passwords on their way into a field; rbw and
     // its agent are started with none too
-    no_core_dumps();
+    // it holds a password for a moment while filling a field
+    emaki_kit::harden::no_core_dumps();
 
     // the shell answers BlueZ's pairing questions, and warns of a device running low
     amane::Bluetooth::serve_agent();

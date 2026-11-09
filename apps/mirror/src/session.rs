@@ -139,6 +139,7 @@ fn run(options: &Options) -> Result<(), String> {
 
     if let Some(audio) = connection.audio.take() {
         thread::spawn(move || {
+            confine(Media::Sound);
             let result = audio::run(audio, |sound| Mirror::write().sound = Some(sound));
             if let Err(why) = result {
                 log::warn!("sound: {why}");
@@ -153,13 +154,22 @@ fn run(options: &Options) -> Result<(), String> {
 
     let hardware = std::env::var_os("EMAKI_MIRROR_SOFTWARE").is_none();
 
-    let result = decode::run(video, &FEED, hardware, |width, height, on_gpu| {
-        let mut mirror = Mirror::write();
-        mirror.hardware = on_gpu;
-        if width > 0 && height > 0 {
-            mirror.size = Some((width, height));
-            mirror.phase = Phase::Live;
-        }
+    // decoded on a thread of its own, confined; this one goes on to run adb, which mustn't be
+    let result = thread::scope(|scope| {
+        scope
+            .spawn(|| {
+                confine(Media::Video);
+                decode::run(video, &FEED, hardware, |width, height, on_gpu| {
+                    let mut mirror = Mirror::write();
+                    mirror.hardware = on_gpu;
+                    if width > 0 && height > 0 {
+                        mirror.size = Some((width, height));
+                        mirror.phase = Phase::Live;
+                    }
+                })
+            })
+            .join()
+            .unwrap_or_else(|_| Err(String::from("The video decoder stopped.")))
     });
 
     // ended by the phone: say what its server said, if it complained
@@ -170,6 +180,49 @@ fn run(options: &Options) -> Result<(), String> {
         },
         Err(why) => Err(why),
     }
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum Media {
+    Video,
+    Sound,
+}
+
+/*
+ * the phone's stream is decoded by ffmpeg, the biggest parser of another device's data here: the
+ * thread decoding it may only read the store and the system's files, and open the GPU (video)
+ * or the sound server's settings and shared memory (sound); nothing of the user's
+ */
+pub(crate) fn confine(media: Media) {
+    use std::path::{Path, PathBuf};
+
+    let mut readable: Vec<PathBuf> = [
+        "/nix/store",
+        "/run/current-system",
+        "/run/opengl-driver",
+        "/etc",
+        "/sys",
+        "/proc",
+        "/dev",
+    ]
+    .iter()
+    .map(PathBuf::from)
+    .collect();
+    let mut writable: Vec<PathBuf> = Vec::new();
+
+    match media {
+        // VAAPI opens the render node to read and write
+        Media::Video => writable.push(PathBuf::from("/dev/dri")),
+        Media::Sound => {
+            readable.push(emaki_kit::paths::config().join("pulse"));
+            readable.push(emaki_kit::paths::runtime());
+            writable.push(PathBuf::from("/dev/shm"));
+        }
+    }
+
+    let readable: Vec<&Path> = readable.iter().map(PathBuf::as_path).collect();
+    let writable: Vec<&Path> = writable.iter().map(PathBuf::as_path).collect();
+    emaki_kit::harden::confine(&readable, &writable);
 }
 
 fn write_control(mut socket: TcpStream, messages: mpsc::Receiver<Control>) {

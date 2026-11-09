@@ -89,21 +89,11 @@ impl Meta {
     }
 }
 
-/// `pkgs.<attr>` as an attribute path nix reads, each part quoted when it
-/// has more than letters, digits, `_`, `-` and `'` in it.
+/// `pkgs.<attr>` as an attribute path nix reads, each part quoted (and escaped) when it isn't
+/// a plain name, so a search result's name can't splice code into the expression.
 fn attr_path(attr: &str) -> String {
     attr.split('.')
-        .map(|part| {
-            let plain = !part.is_empty()
-                && part
-                    .chars()
-                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '\''));
-            if plain {
-                part.to_string()
-            } else {
-                format!("\"{}\"", part.replace('"', "\\\""))
-            }
-        })
+        .map(emaki_kit::nix::attr_part)
         .collect::<Vec<_>>()
         .join(".")
 }

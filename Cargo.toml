@@ -29,6 +29,8 @@ all = { level = "warn", priority = -1 }
 dbg_macro = "warn"
 todo = "warn"
 unwrap_used = "warn"
+# every unsafe block says why it holds (`// SAFETY: …`)
+undocumented_unsafe_blocks = "warn"
 
 [workspace]
 resolver = "3"
@@ -57,6 +59,8 @@ default-members = ["apps/shell"]
 
 [workspace.package]
 version = "0.1.0"
+# installed from the flake, never from crates.io
+publish = false
 edition = "2024"
 rust-version = "1.89"
 license = "MIT"
@@ -79,6 +83,8 @@ serde_json = "1"
 chrono = "0.4"
 libc = "0.2"
 zeroize = "1.9"
+# a program confining its own file access (Linux 5.13+), with no namespaces or privileges
+landlock = "0.4"
 zbus = "5.19.0"
 libpulse-binding = "2"
 libpulse-simple-binding = "2"
@@ -86,7 +92,7 @@ libpulse-simple-binding = "2"
 # submodule / path dep): reproducible for published builds, while a git-ignored
 # `.cargo/local.toml` with `paths = ["../amane"]` overrides it with a sibling
 # checkout during local co-development. See CONTRIBUTING.
-amane = { git = "https://github.com/emaki-desktop/amane", rev = "4609ed496e4eeabc43157dd30e7401f882d65c82", features = ["polkit-agent"] }
+amane = { git = "https://github.com/emaki-desktop/amane", rev = "0f62af6ce9619f6ea4b001078ad4d77d9064fb21", features = ["polkit-agent"] }
 
 # amane's vello fork: scratch buffers sized for a shell (about 29 MB a set
 # instead of 165, vello_encoding) that are let go when idle (vello). A patch

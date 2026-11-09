@@ -18,6 +18,13 @@ const RBW: &str = match option_env!("EMAKI_RBW") {
     None => "/run/current-system/sw/bin/rbw",
 };
 
+/// The store package of the rbw the shell runs, whose rbw-agent is the only one trusted to
+/// ask for the master password; none when rbw isn't in the store (a checkout's debug build).
+pub fn package() -> Option<std::path::PathBuf> {
+    let rbw = std::fs::canonicalize(RBW).ok()?;
+    emaki_kit::peer::store_package(&rbw).map(std::path::Path::to_path_buf)
+}
+
 /// Where the vault is.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Status {
@@ -280,7 +287,8 @@ pub fn config_set(key: &str, value: &str) -> Result<(), Error> {
         return Err(Error::Failed);
     }
 
-    run(&["config", "set", key, value]).map(drop)
+    // after `--`, so a value starting with `-` is never read as an option
+    run(&["config", "set", "--", key, value]).map(drop)
 }
 
 /// A vault entry's id: a UUID, so an id can never be read as one of rbw's options.

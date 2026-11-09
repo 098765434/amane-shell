@@ -255,7 +255,7 @@ impl Tailscale {
             tailscale.error = None;
         }
         thread::spawn(|| {
-            let child = Command::new(BINARY)
+            let child = Command::new(emaki_kit::tools::path(BINARY))
                 .arg("login")
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
@@ -274,7 +274,13 @@ impl Tailscale {
                     .and_then(|json| parse_status(&json))
                     .and_then(|status| status.auth_url);
                 if let Some(url) = url {
-                    run("xdg-open", vec![url]);
+                    // the login page, from the daemon (or a custom login server): only a web page,
+                    // never a file or another app's link
+                    if url.starts_with("https://") {
+                        run("xdg-open", vec![url]);
+                    } else {
+                        log::warn!("tailscale: not opening a login link that isn't https: {url}");
+                    }
                     break;
                 }
             }
@@ -297,7 +303,7 @@ fn user() -> String {
 /// Runs `tailscale args` and gives its stdout, whatever it exits with (the
 /// JSON reads report ordinary states that way); `None` when it won't start.
 fn capture(args: &[&str]) -> Option<String> {
-    let output = Command::new(BINARY)
+    let output = Command::new(emaki_kit::tools::path(BINARY))
         .args(args)
         .stdin(Stdio::null())
         .stderr(Stdio::null())
@@ -362,7 +368,7 @@ fn watch() -> bool {
         return reader.join().unwrap_or(false);
     }
 
-    let child = Command::new(BINARY)
+    let child = Command::new(emaki_kit::tools::path(BINARY))
         .args(["debug", "watch-ipn"])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -408,7 +414,7 @@ fn settle_and_refresh(changes: &mpsc::Receiver<()>) -> bool {
 /// grant turns the controls read-only, any other failure is shown.
 fn write(args: Vec<String>) {
     thread::spawn(move || {
-        let output = Command::new(BINARY)
+        let output = Command::new(emaki_kit::tools::path(BINARY))
             .args(&args)
             .stdin(Stdio::null())
             .output();

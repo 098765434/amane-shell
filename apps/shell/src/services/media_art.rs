@@ -2,11 +2,17 @@
 //! art it links to on the web, fetched once into
 //! `$XDG_CACHE_HOME/emaki/art/`. Quick Settings' Now Playing card and
 //! the bar's Now Playing activity both show it.
+//!
+//! The URL comes from whatever is playing, a web page among them, so a fetch
+//! goes only to a public address (never this computer or the local network),
+//! checked before and pinned for the fetch, with no redirects, http(s) only,
+//! and at most 10 MB.
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::hash::{DefaultHasher, Hash, Hasher};
-use std::path::PathBuf;
+use std::net::{IpAddr, ToSocketAddrs};
+use std::path::{Path, PathBuf};
 
 emaki_kit::marker! {
     /// Art fetched from the web landed in the cache: what showed none draws
@@ -59,14 +65,29 @@ pub fn path(url: &str) -> Option<String> {
                 // a folder that can't be made fails the fetch below, which is shown as no art
                 let _ = std::fs::create_dir_all(dir);
             }
+            let Some((host, port, address)) = public_address(&url) else {
+                log::info!("not fetching art from {url}: not a public web address");
+                return;
+            };
+            let address = match address {
+                IpAddr::V6(v6) => format!("[{v6}]"),
+                IpAddr::V4(v4) => v4.to_string(),
+            };
             let part = path.with_extension("part");
-            let fetched = std::process::Command::new("curl")
-                .args(["-fsSL", "--max-time", "15", "-o"])
+            let fetched = std::process::Command::new(emaki_kit::tools::path("curl"))
+                .args(["-fsS", "--max-time", "15", "--max-filesize", "10M"])
+                .args(["--proto", "=http,https", "--max-redirs", "0"])
+                // the address checked is the one fetched from, whatever DNS says next
+                .arg("--resolve")
+                .arg(format!("{host}:{port}:{address}"))
+                .arg("-o")
                 .arg(&part)
+                .arg("--")
                 .arg(&url)
                 .status()
                 .is_ok_and(|status| status.success());
             if fetched && std::fs::rename(&part, &path).is_ok() {
+                prune(path.parent());
                 Arrived::changed();
             } else {
                 // a part file that was never written is gone already
@@ -75,6 +96,109 @@ pub fn path(url: &str) -> Option<String> {
         });
     }
     None
+}
+
+/// The host, port and a public address of an http(s) URL; none for a URL with credentials in
+/// it, or a host that is, or resolves to, this computer or a private network.
+fn public_address(url: &str) -> Option<(String, u16, IpAddr)> {
+    let (scheme, rest) = url.split_once("://")?;
+    let default_port = match scheme {
+        "http" => 80,
+        "https" => 443,
+        _ => return None,
+    };
+    let authority = rest.split(['/', '?', '#']).next()?;
+    if authority.contains('@') {
+        return None;
+    }
+    let (host, port) = match authority.strip_prefix('[') {
+        Some(bracketed) => {
+            let (host, after) = bracketed.split_once(']')?;
+            let port = match after.strip_prefix(':') {
+                Some(port) => port.parse().ok()?,
+                None if after.is_empty() => default_port,
+                None => return None,
+            };
+            (host, port)
+        }
+        None => match authority.rsplit_once(':') {
+            Some((host, port)) => (host, port.parse().ok()?),
+            None => (authority, default_port),
+        },
+    };
+    if host.is_empty() {
+        return None;
+    }
+    let addresses: Vec<IpAddr> = (host, port)
+        .to_socket_addrs()
+        .ok()?
+        .map(|address| address.ip())
+        .collect();
+    // every address the name has must be public, so none of them is a way in
+    if addresses.is_empty() || !addresses.iter().all(|address| is_public(*address)) {
+        return None;
+    }
+    Some((host.to_string(), port, addresses[0]))
+}
+
+/// Whether `address` is on the internet: not this computer, a private or link-local network,
+/// or anything else that isn't routed.
+fn is_public(address: IpAddr) -> bool {
+    match address {
+        IpAddr::V4(v4) => {
+            let [a, b, ..] = v4.octets();
+            !(v4.is_loopback()
+                || v4.is_private()
+                || v4.is_link_local()
+                || v4.is_unspecified()
+                || v4.is_broadcast()
+                || v4.is_documentation()
+                || v4.is_multicast()
+                || a == 0
+                // shared address space (carrier NAT, Tailscale)
+                || (a == 100 && (64..128).contains(&b))
+                // benchmarking, and reserved
+                || (a == 198 && (b == 18 || b == 19))
+                || a >= 240)
+        }
+        IpAddr::V6(v6) => {
+            if let Some(v4) = v6.to_ipv4_mapped() {
+                return is_public(IpAddr::V4(v4));
+            }
+            let first = v6.segments()[0];
+            !(v6.is_loopback()
+                || v6.is_unspecified()
+                || v6.is_multicast()
+                // unique local, link-local
+                || (first & 0xfe00) == 0xfc00
+                || (first & 0xffc0) == 0xfe80
+                // documentation
+                || first == 0x2001 && v6.segments()[1] == 0x0db8)
+        }
+    }
+}
+
+// the art cache keeps the newest few hundred, so a long session doesn't fill the disk
+const KEPT: usize = 200;
+
+fn prune(folder: Option<&Path>) {
+    let Some(entries) = folder.and_then(|folder| std::fs::read_dir(folder).ok()) else {
+        return;
+    };
+    let mut files: Vec<(std::time::SystemTime, PathBuf)> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let modified = entry.metadata().ok()?.modified().ok()?;
+            Some((modified, entry.path()))
+        })
+        .collect();
+    if files.len() <= KEPT {
+        return;
+    }
+    files.sort();
+    for (_, old) in &files[..files.len() - KEPT] {
+        let _ = std::fs::remove_file(old);
+    }
 }
 
 /// Where the art at `url` is kept: `$XDG_CACHE_HOME/emaki/art/<hash>`.
@@ -90,6 +214,32 @@ fn cached(url: &str) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_public_addresses_are_fetched_from() {
+        for local in [
+            "http://127.0.0.1/a.jpg",
+            "http://localhost:631/",
+            "https://[::1]/x",
+            "http://192.168.1.1/x",
+            "http://10.0.0.5:8080/x",
+            "http://169.254.169.254/latest/meta-data",
+            "http://100.100.100.100/x",
+            "https://[fd00::1]/x",
+            "https://[::ffff:127.0.0.1]/x",
+            "http://user:pw@1.1.1.1/x",
+            "ftp://1.1.1.1/x",
+        ] {
+            assert!(public_address(local).is_none(), "{local}");
+        }
+        let (host, port, address) = public_address("https://1.1.1.1/art.jpg").unwrap();
+        assert_eq!((host.as_str(), port), ("1.1.1.1", 443));
+        assert!(address.is_ipv4());
+        assert_eq!(
+            public_address("http://8.8.8.8:8080/x").map(|a| a.1),
+            Some(8080)
+        );
+    }
 
     #[test]
     fn web_art_is_cached_by_its_url() {

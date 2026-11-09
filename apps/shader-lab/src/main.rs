@@ -9,6 +9,8 @@
 //! <name>` set what it starts on, `--open <picker>` opens a colour picker;
 //! `--configs <dir>` saves looks elsewhere.
 
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 mod configs;
 mod effects;
 mod gradient;

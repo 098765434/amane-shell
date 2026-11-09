@@ -333,7 +333,7 @@ fn start(kelvin: u32, schedule: Schedule) -> Option<u32> {
     std::thread::sleep(Duration::from_millis(100));
 
     let args = arguments(kelvin, schedule);
-    Command::new("wlsunset")
+    Command::new(emaki_kit::tools::path("wlsunset"))
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())

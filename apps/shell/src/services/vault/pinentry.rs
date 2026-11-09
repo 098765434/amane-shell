@@ -210,7 +210,11 @@ fn trusted(stream: &UnixStream) -> bool {
         return false;
     }
 
-    if !peer::exe(caller.pid).is_some_and(|exe| peer::is_program(&exe, &["emaki-pinentry"])) {
+    // emaki-pinentry from the shell's own build, rbw-agent from the rbw the shell runs
+    let ours = peer::own_package();
+    if !peer::exe(caller.pid)
+        .is_some_and(|exe| peer::is_program(&exe, &["emaki-pinentry"], ours.as_deref()))
+    {
         return false;
     }
 
@@ -218,7 +222,8 @@ fn trusted(stream: &UnixStream) -> bool {
         return false;
     };
 
-    if !peer::exe(agent).is_some_and(|exe| peer::is_program(&exe, &["rbw-agent"])) {
+    let rbw = super::rbw::package();
+    if !peer::exe(agent).is_some_and(|exe| peer::is_program(&exe, &["rbw-agent"], rbw.as_deref())) {
         return false;
     }
 

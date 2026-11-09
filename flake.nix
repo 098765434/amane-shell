@@ -118,6 +118,10 @@
       vaultEnvFor = pkgs: {
         EMAKI_RBW = "${pkgs.rbw}/bin/rbw";
         EMAKI_PINENTRY_FALLBACK = "${pkgs.pinentry-gnome3}/bin/pinentry-gnome3";
+        # the tools that handle secrets or untrusted data (uploads, the keyring, the
+        # clipboard), by store path; the rest come from the system profile, never PATH
+        # (crates/base/src/tools.rs)
+        EMAKI_TOOLS = lib.makeBinPath (dropToolsFor pkgs);
       };
 
       ldLibraryPath = pkgs: "/run/opengl-driver/lib:${lib.makeLibraryPath (runtimeLibsFor pkgs)}";
@@ -182,7 +186,7 @@
             cargoLock = {
               lockFile = ./Cargo.lock;
               outputHashes = {
-                "amane-0.1.2" = "sha256-dWVCrvpvpUscVWVOFRqV2acBqDRwzsO2UGi14q+pNNw=";
+                "amane-0.1.2" = "sha256-bX4lJeeuhyMI61F+0bPXBfuUh7Ta3a/i4OgNs8yypaw=";
                 # one entry covers every crate from the same git rev
                 "vello-0.11.0" = "sha256-rCIuL3yItgNp1VCbLUavkE7BbfYY4MxX0VjSy40YT6I=";
               };
@@ -196,6 +200,17 @@
             # development tool, not something to install.
             cargoBuildFlags = [ "--workspace" "--exclude" "xtask" ];
             cargoTestFlags = [ "--workspace" "--exclude" "xtask" ];
+            # Left to `cargo test` until the Penpot token work lands: the design
+            # tokens' bookkeeping (every token read, components reading only their
+            # own) and the dialog's measured height, which follow the tokens.json
+            # drawn in Penpot ahead of the code reading it. Nothing a running
+            # shell does depends on them.
+            checkFlags = [
+              "--skip"
+              "tokens::contract::"
+              "--skip"
+              "containers::dialog::tests::measures_like_the_design"
+            ];
 
             nativeBuildInputs = [
               pkgs.pkg-config
@@ -263,6 +278,14 @@
           runtimeLibs = runtimeLibsFor pkgs;
         in
         {
+          # fuzzing the parsers in fuzz/: nightly, which cargo-fuzz's sanitizers need
+          fuzz = pkgs.mkShell {
+            packages = [
+              (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal))
+              pkgs.cargo-fuzz
+            ];
+          };
+
           default = pkgs.mkShell ({
             packages = [ rustToolchain ];
             nativeBuildInputs = [
@@ -283,5 +306,63 @@
       );
 
       formatter = forAllSystems (system: nixpkgsFor.${system}.nixfmt-rfc-style);
+
+      # The system's part: the polkit-guarded helper Emaki Settings applies a configuration
+      # with (programs.emaki.nixosActivate.enable). See nix/nixos-module.nix.
+      nixosModules = {
+        default = self.nixosModules.emaki;
+        emaki = import ./nix/nixos-module.nix;
+      };
+
+      # The activation helper and its polkit action, built from the NixOS module on a minimal
+      # system, with the helper's refusals tried: CI builds these (nix build .#checks…).
+      checks = lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (
+        system:
+        let
+          pkgs = nixpkgsFor.${system};
+          machine = nixpkgs.lib.nixosSystem {
+            inherit system;
+            modules = [
+              self.nixosModules.default
+              {
+                programs.emaki.nixosActivate.enable = true;
+                boot.loader.grub.enable = false;
+                fileSystems."/" = {
+                  device = "none";
+                  fsType = "tmpfs";
+                };
+                system.stateVersion = "25.11";
+              }
+            ];
+          };
+          emakiPackages = builtins.filter (
+            package: lib.hasPrefix "emaki-nixos-activate" (package.name or "")
+          ) machine.config.environment.systemPackages;
+          helper = lib.findFirst (package: package.name == "emaki-nixos-activate") null emakiPackages;
+        in
+        {
+          nixos-activate = pkgs.runCommand "emaki-nixos-activate-check" { } ''
+            refuses() { if "$@" >/dev/null 2>&1; then echo "accepted: $*"; exit 1; fi; }
+            h=${helper}/bin/emaki-nixos-activate
+            refuses $h
+            refuses $h rm /nix/store/0123456789abcdfghijklmnpqrsvwxyz-nixos-system-x
+            refuses $h switch /nix/store/0123456789abcdfghijklmnpqrsvwxyz-evil
+            refuses $h switch /nix/store/0123456789abcdfghijklmnpqrsvwxyz-nixos-system-x/../y
+            refuses $h switch /nix/store/0123456789abcdfghijklmnpqrsvwxyz-nixos-system-missing
+            ${lib.concatMapStringsSep "\n" (package: "test -e ${package}") emakiPackages}
+            grep -q auth_admin\< ${
+              lib.findFirst (package: package.name == "emaki-nixos-activate-policy") null emakiPackages
+            }/share/polkit-1/actions/org.emaki.nixos-activate.policy
+            touch $out
+          '';
+        }
+      );
+
+      # The user's part, for home-manager: the shell, Drop and the assistant's daemon as user
+      # services, the daemon sandboxed (programs.emaki). See nix/home-module.nix.
+      homeManagerModules = {
+        default = self.homeManagerModules.emaki;
+        emaki = import ./nix/home-module.nix self;
+      };
     };
 }

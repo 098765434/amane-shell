@@ -116,7 +116,7 @@ pub fn stop_cast(session: u64) {
 
 /// Follows `pw-dump --monitor` until it ends; whether it heard anything.
 fn watch_pipewire() -> bool {
-    let child = Command::new("pw-dump")
+    let child = Command::new(emaki_kit::tools::path("pw-dump"))
         .args(["--monitor", "--no-colors"])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())

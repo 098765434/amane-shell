@@ -21,7 +21,9 @@ paths = ["../amane"]
 
 and build with it: `cargo --config .cargo/local.toml run` (an alias in your shell profile saves
 typing it). Cargo then builds against your local `../amane` checkout instead of the pinned rev.
-`.cargo/config.toml` is tracked and holds only the `xtask` alias.
+`.cargo/config.toml` is tracked and holds only the `xtask` alias. For clippy, put `--config`
+after the subcommand, `cargo clippy --config .cargo/local.toml …`: `cargo-clippy` runs cargo
+again without a `--config` given before it, and quietly lints against the pinned amane.
 
 ### The workspace
 
@@ -62,7 +64,10 @@ cargo test --workspace
 ```
 
 CI runs the same in the devShell (`fmt --check`, and clippy and the tests with `--locked`), then
-shellcheck on `gen-layer-rules.sh` and the scripts, then `nix build`, which runs the tests again.
+`cargo deny check` (`deny.toml`), shellcheck on `gen-layer-rules.sh` and the scripts, a minute of
+each fuzz target (`fuzz/`), then `nix build`, which runs the tests again, and the NixOS module's
+check ([testing.md](docs/developer/testing.md#the-dependencies-and-the-nix-modules)). Its token
+only reads the repository, and every action is pinned by commit.
 
 The workspace lints are in the root `Cargo.toml` (`[workspace.lints]`); `unwrap` is allowed only in
 tests (`clippy.toml`). A public item without a doc comment is an error in the kit, `emaki-status`,
@@ -72,6 +77,13 @@ tests (`clippy.toml`). A public item without a doc comment is an error in the ki
 docs and the compositor: every IPC verb is in `docs/developer/integration/ipc.md`, every layer namespace
 has a niri rule, every material setting is in niri's range, and the service parsers read the
 recorded output in `apps/shell/tests/fixtures/`. When one fails, the message says which side to fix.
+
+`unsafe` lives where it must: syscalls in `emaki-base` (`peer`, `harden`, `fs::space`), FFI in the
+pinentry, the mirror (ffmpeg) and the assistant (Cactus). Every crate and app without any says
+`#![forbid(unsafe_code)]`, and every `unsafe` block says why it holds in a `// SAFETY:` comment
+(`clippy::undocumented_unsafe_blocks`). A program the shell runs is found through
+`emaki_base::tools` (or `Cmd::new`, which uses it), never a bare name on `PATH`; one holding a
+secret turns off its core dumps (`emaki_base::harden`).
 
 `scripts/lint-terms` (also in CI) fails on terms borrowed from another vendor's platform: name a feature for
 what it is ("the launcher", "Quick Settings", "glass"). Names kept on purpose are in

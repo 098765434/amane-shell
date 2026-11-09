@@ -10,6 +10,8 @@
 //!   exists, and every doc under `docs/` is linked from `docs/README.md`.
 //! - `contract`: amane and niri agree at the pinned revisions (contract.rs).
 
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 mod contract;
 mod hygiene;
 

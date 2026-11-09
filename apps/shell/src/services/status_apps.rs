@@ -79,6 +79,16 @@ impl AppItem {
 
 static ITEMS: Mutex<Vec<AppItem>> = Mutex::new(Vec::new());
 
+/*
+ * any program on the session bus may call, so what one can put up is bounded: a spec or an
+ * activity's content is a little JSON, a program has a few items and activities at a time, and
+ * the ids under org.emaki. are for emaki's own programs, so another can't pass for Drop
+ */
+const MAX_JSON: usize = 64 * 1024;
+const MAX_ITEMS_PER_APP: usize = 8;
+const MAX_ACTIVITIES_PER_APP: usize = 8;
+const RESERVED: &str = "org.emaki.";
+
 fn items_now() -> MutexGuard<'static, Vec<AppItem>> {
     ITEMS.locked()
 }
@@ -169,6 +179,10 @@ fn answer(method: &Method) {
         return;
     };
     let arguments = method.arguments();
+    if arguments.iter().any(|value| value.text().len() > MAX_JSON) {
+        method.reply_error(INVALID, "the call is too big");
+        return;
+    }
     let text = |index: usize| arguments.get(index).map(|value| value.text().to_owned());
     let number = |index: usize| arguments.get(index).map(|value| value.number() as u32);
 
@@ -226,6 +240,31 @@ fn answer(method: &Method) {
 
 type Answer<T = ()> = Result<T, (&'static str, String)>;
 
+/// Whether the bus name `sender` is a program from the shell's own build (Drop, train-watch,
+/// …), by its process's executable, as the bus daemon says.
+fn is_ours(sender: &str) -> bool {
+    let pid = Bus::session().try_call(
+        "org.freedesktop.DBus",
+        "/org/freedesktop/DBus",
+        "org.freedesktop.DBus",
+        "GetConnectionUnixProcessID",
+        &[Argument::from(sender)],
+    );
+    let Some(exe) = pid
+        .ok()
+        .map(|pid| pid.number() as u32)
+        .filter(|pid| *pid > 0)
+        .and_then(emaki_kit::peer::exe)
+    else {
+        return false;
+    };
+    match emaki_kit::peer::own_package() {
+        Some(ours) => emaki_kit::peer::store_package(&exe) == Some(ours.as_path()),
+        // a checkout's debug build: its own target folder
+        None => cfg!(debug_assertions) && exe.components().any(|part| part.as_os_str() == "target"),
+    }
+}
+
 fn missing(what: &str) -> (&'static str, String) {
     (INVALID, format!("the call needs {what}"))
 }
@@ -235,8 +274,19 @@ fn register(sender: &str, json: &str, update: bool) -> Answer {
     let spec = ItemSpec::decode(json).map_err(|error| (INVALID, error.to_string()))?;
     let name = spec.title.clone().unwrap_or_else(|| spec.tooltip.clone());
     let id = spec.id.clone();
+    if id.starts_with(RESERVED) && !is_ours(sender) {
+        return Err((TAKEN, format!("{id} is for emaki's own programs")));
+    }
     {
         let mut items = items_now();
+        let new = !items.iter().any(|item| item.spec.id == spec.id);
+        let owned = items.iter().filter(|item| item.owner == sender).count();
+        if new && owned >= MAX_ITEMS_PER_APP {
+            return Err((
+                INVALID,
+                format!("a program has at most {MAX_ITEMS_PER_APP} items"),
+            ));
+        }
         match items.iter_mut().find(|item| item.spec.id == spec.id) {
             Some(item) if item.owner != sender => {
                 return Err((TAKEN, format!("another program has the item {}", spec.id)));
@@ -277,6 +327,12 @@ fn remove(sender: &str, id: &str) -> Answer {
 /// Starts an activity whose buttons and leaving are told to `sender`.
 fn start(sender: &str, json: &str) -> Answer<u32> {
     let content = ActivityContent::decode(json).map_err(|error| (INVALID, error.to_string()))?;
+    if activities::count_of(sender) >= MAX_ACTIVITIES_PER_APP {
+        return Err((
+            INVALID,
+            format!("a program has at most {MAX_ACTIVITIES_PER_APP} activities going"),
+        ));
+    }
     // the handle is only known once it has started
     let numbered = Arc::new(AtomicU32::new(0));
     let owner = sender.to_string();
@@ -308,6 +364,28 @@ fn update(sender: &str, handle: u32, json: &str, alert: bool) -> Answer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_program_has_only_so_many_items() {
+        for n in 0..MAX_ITEMS_PER_APP {
+            let spec = format!(r#"{{"id":"test.many.{n}"}}"#);
+            assert_eq!(register(":9.7", &spec, false), Ok(()));
+        }
+        let one_more = r#"{"id":"test.many.more"}"#;
+        assert_eq!(
+            register(":9.7", one_more, false).map_err(|e| e.0),
+            Err(INVALID)
+        );
+        // changing one it has is fine
+        assert_eq!(register(":9.7", r#"{"id":"test.many.0"}"#, true), Ok(()));
+        forget(":9.7");
+    }
+
+    #[test]
+    fn emakis_own_ids_are_reserved() {
+        let spec = r#"{"id":"org.emaki.drop"}"#;
+        assert_eq!(register(":9.8", spec, false).map_err(|e| e.0), Err(TAKEN));
+    }
 
     #[test]
     fn an_id_belongs_to_the_program_that_registered_it() {

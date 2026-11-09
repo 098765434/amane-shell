@@ -11,6 +11,8 @@
 //! `info`, `debug`, `trace` or `off`).
 
 #![warn(missing_docs)]
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 
 use std::io::Write;
 use std::sync::OnceLock;

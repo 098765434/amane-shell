@@ -17,6 +17,8 @@
 //! through [`Config`], so tests run the pipeline against fake programs.
 
 #![deny(missing_docs)]
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};

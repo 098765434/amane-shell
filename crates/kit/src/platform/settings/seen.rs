@@ -20,14 +20,25 @@ fn keep(name: &str, seen: &impl amane::serde::Serialize) {
     }
 }
 
+// any program can make the shell remember it, so a list only grows so far, and a name only
+// so long
+const MAX_SEEN: usize = 256;
+const MAX_NAME: usize = 256;
+
 /// Remembers `id` with what it calls itself, once; a name it had before is
 /// kept when it now has none.
 fn remember_named(name: &'static str, id: &str, called: &str) {
+    if id.len() > MAX_NAME || called.len() > MAX_NAME {
+        return;
+    }
     let mut seen: BTreeMap<String, String> = seen_cached(name);
     if seen
         .get(id)
         .is_some_and(|known| called.is_empty() || known == called)
     {
+        return;
+    }
+    if !seen.contains_key(id) && seen.len() >= MAX_SEEN {
         return;
     }
     seen.insert(String::from(id), String::from(called));
@@ -88,6 +99,9 @@ pub fn activities_seen() -> std::collections::BTreeSet<String> {
 /// Remembers an app that showed an activity, once.
 pub fn remember_activity(app: &str) {
     let mut seen = activities_seen();
+    if app.len() > MAX_NAME || (seen.len() >= MAX_SEEN && !seen.contains(app)) {
+        return;
+    }
     if !app.is_empty() && seen.insert(String::from(app)) {
         keep(ACTIVITIES, &seen);
     }

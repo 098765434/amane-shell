@@ -295,10 +295,13 @@ fn cstring(text: &str) -> Result<CString, String> {
 
 #[cfg(cactus)]
 fn last_error(what: &str) -> String {
+    // SAFETY: takes nothing; gives a pointer Cactus owns, or null
     let error = unsafe { ffi::cactus_last_error() };
     let error = if error.is_null() {
         String::new()
     } else {
+        // SAFETY: not null, and Cactus's error text is a NUL-ended string it keeps until the
+        // next call, which can't come while this thread reads it
         unsafe { CStr::from_ptr(error) }
             .to_string_lossy()
             .into_owned()
@@ -325,8 +328,14 @@ fn with_out(
             return Err(last_error(what));
         }
         if (written as usize) < size - 1 {
-            let text = unsafe { CStr::from_ptr(out.as_ptr()) };
-            return Ok(text.to_string_lossy().into_owned());
+            // only the bytes Cactus says it wrote, never past them, whether or not it ended
+            // them with a NUL
+            let bytes: Vec<u8> = out[..written as usize]
+                .iter()
+                .map(|letter| *letter as u8)
+                .take_while(|byte| *byte != 0)
+                .collect();
+            return Ok(String::from_utf8_lossy(&bytes).into_owned());
         }
         size *= 8;
     }
@@ -338,6 +347,7 @@ fn load(path: &Path) -> Result<(), String> {
     let bytes = std::fs::read(path).map_err(|error| format!("{}: {error}", path.display()))?;
     // Cactus may keep pointing into it: it lives as long as the process
     let bytes: &'static [u8] = Vec::leak(bytes);
+    // SAFETY: the pointer and length are the leaked buffer's, which lives as long as the process
     let status = unsafe { ffi::cactus_load(bytes.as_ptr(), bytes.len() as u64) };
     if status < 0 {
         return Err(last_error(&format!("loading {}", path.display())));
@@ -347,6 +357,7 @@ fn load(path: &Path) -> Result<(), String> {
 
 #[cfg(cactus)]
 fn models() -> i32 {
+    // SAFETY: takes nothing and only counts
     unsafe { ffi::cactus_models() }
 }
 
@@ -355,6 +366,7 @@ fn init(system: &str, tools: &str, index: &Path) -> Result<(), String> {
     let system = cstring(system)?;
     let tools = cstring(tools)?;
     let index = cstring(&index.to_string_lossy())?;
+    // SAFETY: three NUL-ended strings, alive until the call returns
     let status = unsafe { ffi::cactus_init(system.as_ptr(), tools.as_ptr(), index.as_ptr()) };
     if status < 0 {
         return Err(last_error("setting up the tools"));
@@ -365,6 +377,8 @@ fn init(system: &str, tools: &str, index: &Path) -> Result<(), String> {
 #[cfg(cactus)]
 fn complete(text: &str) -> Result<String, String> {
     let input = cstring(text)?;
+    // SAFETY: a NUL-ended input that outlives the call, no audio (null, 0), and the output
+    // buffer with_out made, `capacity` long
     with_out("answering", |out, capacity| unsafe {
         ffi::cactus_complete(
             input.as_ptr(),
@@ -379,11 +393,14 @@ fn complete(text: &str) -> Result<String, String> {
 
 #[cfg(cactus)]
 fn reset() {
+    // SAFETY: takes nothing
     unsafe { ffi::cactus_reset() }
 }
 
 #[cfg(cactus)]
 fn stream_process(pcm: &[f32], language: &CString, keywords: &CString) -> Result<String, String> {
+    // SAFETY: the samples and their count are the slice's, the strings are NUL-ended and
+    // outlive the call, and the output buffer is with_out's, `capacity` long
     with_out("listening", |out, capacity| unsafe {
         ffi::cactus_stream_transcribe_process(
             pcm.as_ptr(),
@@ -398,6 +415,7 @@ fn stream_process(pcm: &[f32], language: &CString, keywords: &CString) -> Result
 
 #[cfg(cactus)]
 fn stream_stop() -> Result<String, String> {
+    // SAFETY: the output buffer is with_out's, `capacity` long
     with_out("listening", |out, capacity| unsafe {
         ffi::cactus_stream_transcribe_stop(out, capacity)
     })

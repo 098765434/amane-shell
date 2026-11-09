@@ -45,13 +45,19 @@ pub fn sync() {
 
 fn dialog(id: String, name: &str, key: &str) -> Dialog {
     let declined = id.clone();
-    let message = if key.is_empty() {
-        String::from("Pair only with a phone you know.")
-    } else {
-        format!("Make sure “{name}” shows the code {key}.")
-    };
+    // any device on the network can ask, under any name it likes
+    if key.is_empty() {
+        // no code to compare: pairing isn't the answer Return gives
+        return Dialog::new(NAME, format!("Pair with “{name}”?"))
+            .message(
+                "There's no code to check this is your phone, and any device on the network \
+                 can ask. Pair only if you asked from your phone just now.",
+            )
+            .main_button("Decline", move || KdeConnect::cancel_pairing(&declined))
+            .destructive("Pair", move || KdeConnect::accept_pairing(&id));
+    }
     Dialog::new(NAME, format!("Pair with “{name}”?"))
-        .message(message)
+        .message(format!("Make sure “{name}” shows the code {key}."))
         .button("Decline", move || KdeConnect::cancel_pairing(&declined))
         .main_button("Pair", move || KdeConnect::accept_pairing(&id))
 }

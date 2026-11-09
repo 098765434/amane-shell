@@ -21,6 +21,8 @@
 //! prompt and nothing paints its output. Blocking, so never from a view.
 
 #![warn(missing_docs)]
+// no unsafe code: what needs it (syscalls, FFI) lives in emaki-base or amane
+#![forbid(unsafe_code)]
 
 use std::ffi::{OsStr, OsString};
 use std::fmt;
@@ -39,7 +41,10 @@ pub const TAIL_LINES: usize = 12;
 /// A program to run, with its arguments, folder and environment.
 #[derive(Clone, Debug)]
 pub struct Cmd {
+    // what it was asked for by, for messages: `nix`, not its full path
     program: OsString,
+    // what runs: its path from emaki_base::tools
+    resolved: OsString,
     args: Vec<OsString>,
     dir: Option<PathBuf>,
     env: Vec<(OsString, OsString)>,
@@ -93,10 +98,17 @@ impl Failure {
 }
 
 impl Cmd {
-    /// `program`, found on `PATH` unless it's a path.
+    /// `program`, found where only root or the build put programs (see
+    /// [`emaki_base::tools`]) unless it's a path.
     pub fn new(program: impl AsRef<OsStr>) -> Self {
+        let program = program.as_ref().to_os_string();
+        let resolved = match program.to_str() {
+            Some(name) => emaki_base::tools::path(name),
+            None => program.clone(),
+        };
         Self {
-            program: program.as_ref().to_os_string(),
+            program,
+            resolved,
             args: Vec::new(),
             dir: None,
             env: Vec::new(),
@@ -143,7 +155,7 @@ impl Cmd {
     }
 
     fn command(&self) -> Command {
-        let mut command = Command::new(&self.program);
+        let mut command = Command::new(&self.resolved);
         command
             .args(&self.args)
             .stdin(Stdio::null())
