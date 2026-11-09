@@ -11,9 +11,7 @@ use amane::{
 use super::super::grid::Span;
 use super::super::slider_card::{self, SliderRow};
 use super::super::{Page, open};
-use super::settings_link;
-use crate::chrome::panel::close;
-use crate::services::installed;
+use super::emaki_settings_link;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::detail::page_width;
 use crate::surfaces::status_bar::Indicator;
@@ -189,16 +187,8 @@ pub(in crate::surfaces::quick_settings) fn page() -> DetailPage {
                 .height(height),
             )]
         });
-    if installed(SETTINGS) {
-        return page.footer("Sound Settings…", || {
-            close();
-            amane::Launch::argv(&[SETTINGS, "--page", "sound"]).activated();
-        });
-    }
-    settings_link(page, "Sound Settings…", "pavucontrol")
+    emaki_settings_link(page, "Sound Settings…", "sound", "pavucontrol")
 }
-
-const SETTINGS: &str = emaki_kit::app_ids::SETTINGS;
 
 /// One app's level: its icon and name (and what's playing) over a slider
 /// whose glyph mutes it alone.

@@ -93,10 +93,12 @@ Emaki Settings, output/input devices, balance, input level meter, alert sound. N
 `Audio` to expose sink-inputs (pulse/pipewire stream list), which it doesn't yet.
 
 ### 8. Network page in Emaki Settings · M
+
+**Done**: [network.md](../user/features/network.md). IPv6 editing, 802.1X and proxies remain.
 **Gap.** Wi‑Fi and VPN details defer to `nm-connection-editor`. Missing: forget network, saved
 networks list, hidden network, IP/DNS details, VPN import (`.ovpn`, WireGuard `.conf`), hotspot
 setup.
-**Builds on.** `services/connections.rs` (nmcli), amane's `Network`.
+**Builds on.** amane's `Network` (NetworkManager over D-Bus), which `services/connections.rs` wraps.
 
 ### 9. Input page: keyboard, mouse, touchpad, shortcuts · M
 

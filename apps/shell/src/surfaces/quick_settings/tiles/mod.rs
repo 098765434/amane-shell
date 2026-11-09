@@ -443,6 +443,24 @@ pub(super) fn settings_link(
     })
 }
 
+/// `page` with a last row opening Emaki Settings on its page `place`, or
+/// `fallback` (the app with the rest of its settings) without Emaki Settings.
+pub(super) fn emaki_settings_link(
+    page: DetailPage,
+    label: &'static str,
+    place: &'static str,
+    fallback: &'static str,
+) -> DetailPage {
+    let settings = emaki_kit::app_ids::SETTINGS;
+    if !installed(settings) {
+        return settings_link(page, label, fallback);
+    }
+    page.footer(label, move || {
+        close();
+        amane::Launch::argv(&[settings, "--page", place]).activated();
+    })
+}
+
 /// "On" or "Off", the subtitle of a tile with nothing more to say.
 pub(super) fn on_off(on: bool) -> &'static str {
     if on { "On" } else { "Off" }

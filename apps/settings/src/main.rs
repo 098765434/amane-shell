@@ -10,6 +10,7 @@ mod dock;
 mod drop;
 mod input;
 mod launcher;
+mod network;
 mod niri_files;
 mod notifications;
 mod pages;

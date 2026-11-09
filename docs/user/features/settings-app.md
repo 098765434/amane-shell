@@ -113,6 +113,12 @@ mouse's tap to click, natural scrolling, off while typing, speed, acceleration, 
 scroll method, written to niri's `input.kdl`. The layout stays under General. **Keyboard
 Shortcuts** is a sub-page listing every bind in niri's config, read-only. See [input.md](input.md).
 
+### Network
+
+Wi‑Fi (the radio, saved networks, joining a hidden one), Ethernet, VPNs (a switch each, and
+importing WireGuard and OpenVPN files), the hotspot, and a page for each connection with its
+addresses and an IPv4 editor (method, address, gateway, DNS). See [network.md](network.md).
+
 ### Sound
 
 The output and input devices and levels, the output's balance (with a Left/Right test), a meter

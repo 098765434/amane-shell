@@ -59,9 +59,9 @@ the grid, and `quick-settings open` answers with an error for a page the machine
 Now Playing is always there, saying "Not Playing" when nothing is; everything else
 follows GNOME's rule and hides without its hardware.
 
-A page's last row opens the app with the rest of its settings when that app is installed:
-`nm-connection-editor` for Wi‑Fi and VPN, and Emaki Settings' [Sound page](sound.md) for Sound
-(`pavucontrol` without Emaki Settings). Bluetooth has none: its
+A page's last row opens the rest of its settings: Emaki Settings' [Network page](network.md) for
+Wi‑Fi and VPN, and its [Sound page](sound.md) for Sound. Without Emaki Settings, they open
+`nm-connection-editor` and `pavucontrol` when installed. Bluetooth has none: its
 page is the whole manager.
 
 A device that asks to pair while the Bluetooth page isn't showing asks through the shell's alert

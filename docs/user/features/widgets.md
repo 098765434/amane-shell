@@ -15,7 +15,7 @@ with its own settings.
 | CPU | Small, Medium, Large | how busy the processor is, the cores, a graph; Large adds a bar per core | the first of `missioncenter`, `gnome-system-monitor`, `resources` installed | — |
 | Memory | Small, Medium, Large | memory in use, "8.9 GB of 29.1 GB", a graph; Large adds swap | as CPU | — |
 | Temperature | Small, Medium, Large | the processor's sensor (else the hottest), its name, a graph; Large adds the others, hottest first | as CPU | which sensor |
-| Network | Small, Medium, Large | what comes in and goes out a second, a graph of each, the interface's name | `nm-connection-editor` | which interface (the default route's, by default) |
+| Network | Small, Medium, Large | what comes in and goes out a second, a graph of each, the interface's name | Emaki Settings' [Network page](network.md) (`nm-connection-editor` without it) | which interface (the default route's, by default) |
 | Disk | Small, Medium | Small: how full one disk is, in a ring, and what's free; Medium: every disk as a bar | `baobab` or `gnome-disks` | which disk (the root, or the first disk where the root isn't one) |
 | System | Large, Extra Large | CPU, memory and disk rings and the network's rates; Extra Large adds each one's graph | as CPU | — |
 

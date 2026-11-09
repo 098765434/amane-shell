@@ -16,7 +16,7 @@ use amane::{
 };
 
 use super::super::{Page, open};
-use super::{connected_count, settings_link};
+use super::{connected_count, emaki_settings_link};
 use crate::services::network::connections::Connections;
 use crate::services::network::connections::Vpn;
 use crate::services::network::rfkill::Rfkill;
@@ -161,7 +161,7 @@ pub(crate) fn wifi_page() -> DetailPage {
         .switch(enabled, Network::set_wifi)
         .status_bar(Indicator::Network)
         .body(networks);
-    settings_link(page, "Network Settings…", NETWORK_SETTINGS)
+    emaki_settings_link(page, "Network Settings…", "network", NETWORK_SETTINGS)
 }
 
 /// The Wi‑Fi page was left: the next one scans straight away, and a
@@ -407,5 +407,5 @@ pub(crate) fn vpn_page() -> DetailPage {
                 .height(height),
             )]
         });
-    settings_link(page, "VPN Settings…", NETWORK_SETTINGS)
+    emaki_settings_link(page, "VPN Settings…", "network", NETWORK_SETTINGS)
 }

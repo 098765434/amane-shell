@@ -129,6 +129,7 @@ mod tests {
             kind: kind.into(),
             wifi_mode: mode.map(String::from),
             active,
+            ..NetworkProfile::default()
         }
     }
 

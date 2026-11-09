@@ -238,7 +238,10 @@ impl WidgetKind {
             // nothing to open: the time is all it shows
             Self::Clock => {}
             Self::Network => {
-                if let Some(program) = first(&["nm-connection-editor"]) {
+                let settings = emaki_kit::app_ids::SETTINGS;
+                if installed(settings) {
+                    amane::Launch::argv(&[settings, "--page", "network"]).activated();
+                } else if let Some(program) = first(&["nm-connection-editor"]) {
                     crate::services::launch(&[program]);
                 }
             }

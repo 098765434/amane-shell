@@ -9,12 +9,12 @@ use emaki_kit::icons::{
     ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO,
     ICON_KEYBOARD, ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_NOTIFICATIONS, ICON_OPEN_IN_NEW,
     ICON_PACKAGE, ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TRAY, ICON_TUNE, ICON_UPDATE,
-    ICON_VOLUME_UP,
+    ICON_VOLUME_UP, ICON_WIFI,
 };
 
 use crate::{
-    about, appearance, desktop, displays, dock, drop, input, launcher, notifications, passwords,
-    quick_settings, sound, status_bar, system,
+    about, appearance, desktop, displays, dock, drop, input, launcher, network, notifications,
+    passwords, quick_settings, sound, status_bar, system,
 };
 
 /// A page's sub-page by name: its title and body, or none for a name it
@@ -113,7 +113,7 @@ const fn with_toolbar(entry: Entry, toolbar: Toolbar) -> Entry {
 }
 
 /// The sidebar, top to bottom; a page is its place in this list.
-pub const SIDEBAR: [Entry; 24] = [
+pub const SIDEBAR: [Entry; 25] = [
     Entry::Section("Shell"),
     found_by(
         page(
@@ -317,6 +317,28 @@ pub const SIDEBAR: [Entry; 24] = [
             "keyboard",
             "layout",
         ],
+    ),
+    with_subs(
+        aliased(
+            found_by(
+                page("network", "Network", ICON_WIFI, Accent::Blue, network::page),
+                &[
+                    "wifi",
+                    "wi-fi",
+                    "ethernet",
+                    "vpn",
+                    "wireguard",
+                    "openvpn",
+                    "hotspot",
+                    "dns",
+                    "ip address",
+                    "internet",
+                ],
+            ),
+            &["wifi", "vpn", "ethernet", "hotspot"],
+        ),
+        &["saved", "hidden", "connection"],
+        network::sub,
     ),
     aliased(
         found_by(

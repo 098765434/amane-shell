@@ -195,6 +195,43 @@ const INDEX: &[Entry] = &[
         "settings.displays.oled.dark",
         &["burn in"],
     ),
+    // Network
+    row(
+        "network",
+        "Wi‑Fi",
+        "settings.network.wifi",
+        &["wireless", "wifi", "airplane"],
+    ),
+    row(
+        "network/saved",
+        "Saved Networks",
+        "settings.network.saved",
+        &["forget network", "known networks", "remembered"],
+    ),
+    row(
+        "network/hidden",
+        "Join a Hidden Network",
+        "settings.network.hidden.name.row",
+        &["hidden ssid", "unlisted network"],
+    ),
+    row(
+        "network",
+        "Import a VPN",
+        "settings.network.vpn.import",
+        &["wireguard", "openvpn", "ovpn", "vpn file"],
+    ),
+    row(
+        "network",
+        "Hotspot",
+        "settings.network.hotspot",
+        &["share connection", "tethering", "access point"],
+    ),
+    row(
+        "network/connection",
+        "IP address and DNS",
+        "settings.network.ipv4.method",
+        &["ip address", "dns", "gateway", "static ip", "dhcp"],
+    ),
     // Sound
     row(
         "sound",
