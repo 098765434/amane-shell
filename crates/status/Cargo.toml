@@ -3,18 +3,13 @@ name = "emaki-status"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Status apps: a program's own item in emaki's status bar and its activities, over org.emaki.StatusBar1."
+description = "The old name of emaki-extension, kept for one release."
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-emaki-base = { workspace = true }
-log = { workspace = true }
-# the session bus, and the one ordered thread for calls
-amane = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
+emaki-extension = { workspace = true }
 
 [lints]
 workspace = true

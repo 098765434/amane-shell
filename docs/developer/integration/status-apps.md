@@ -9,9 +9,9 @@ the bar draws is in [status-bar.md](../../user/features/status-bar.md#programs-i
 
 Before 2026-11 the bus name was `org.amane.StatusBar1`.
 
-The protocol and its JSON types are one crate, [emaki-status](../../../crates/status/README.md)
-(`crates/status`, with the `StatusItem` and `LiveActivity` clients), so a program and the bar
-share one definition. Depend on it with `emaki-status = { workspace = true }` inside this
+The protocol and its JSON types are one crate, [emaki-extension](../../../crates/extension/README.md)
+(`crates/extension`, with the `StatusItem` and `LiveActivity` clients), so a program and the bar
+share one definition. Depend on it with `emaki-extension = { workspace = true }` inside this
 workspace, or by git from outside it. The server is `apps/shell/src/services/status_apps.rs`.
 
 ## Protocol
@@ -19,7 +19,7 @@ workspace, or by git from outside it. The server is `apps/shell/src/services/sta
 ### From Rust
 
 ```rust
-use emaki_status::{ActivityContent, ItemEvent, ItemIcon, ItemSpec, Trailing};
+use emaki_extension::{ActivityContent, ItemEvent, ItemIcon, ItemSpec, Trailing};
 use amane::{LiveActivity, StatusItem};
 
 let item = StatusItem::register(ItemSpec::new("org.emaki.drop", ItemIcon::Glyph("tray".into())));
@@ -30,7 +30,7 @@ content.trailing = Trailing::Progress(0.4);
 let upload = LiveActivity::start(content);
 ```
 
-The client sends everything again when the bar restarts. `crates/status/examples/status_item.rs` is a
+The client sends everything again when the bar restarts. `crates/extension/examples/status_item.rs` is a
 whole program.
 
 ### From a script
@@ -154,7 +154,7 @@ recorder can show an activity while it records and have no item at all.
 ### 1. Put up an item
 
 ```rust
-use emaki_status::{Accepts, ItemIcon, ItemSpec, MenuEntry, StatusItem};
+use emaki_extension::{Accepts, ItemIcon, ItemSpec, MenuEntry, StatusItem};
 
 let mut spec = ItemSpec::new("org.example.shelf", ItemIcon::Glyph("tray".into()));
 spec.tooltip = "Shelf".into();
@@ -343,8 +343,8 @@ touching the user's clipboard, keyring or phone.
 ```mermaid
 flowchart LR
     subgraph app["a status app (emaki-drop, a script, …)"]
-        client["emaki_status::StatusItem and LiveActivity<br/>crates/status/client.rs: a worker thread, calls in order,<br/>registers again on a new bar"]
-        protocol["the protocol types<br/>crates/status/protocol.rs"]
+        client["emaki_extension::StatusItem and LiveActivity<br/>crates/extension/client.rs: a worker thread, calls in order,<br/>registers again on a new bar"]
+        protocol["the protocol types<br/>crates/extension/protocol.rs"]
         client --- protocol
     end
     subgraph shell["emaki"]
@@ -364,8 +364,8 @@ flowchart LR
 
 | Repo | Files | What |
 |---|---|---|
-| emaki-status | `crates/status/src/protocol.rs` | the JSON types (`ItemSpec`, `ItemEvent`, `ActivityContent`, `Trailing`, `Tint`, `Dismiss`…), `encode`/`decode` with clamping and a version check |
-| emaki-status | `crates/status/src/client.rs` | `StatusItem` and `LiveActivity`: calls in order on amane's control thread (`run_in_order`), events on their own thread, re-registration |
+| emaki-extension | `crates/extension/src/protocol.rs` | the JSON types (`ItemSpec`, `ItemEvent`, `ActivityContent`, `Trailing`, `Tint`, `Dismiss`…), `encode`/`decode` with clamping and a version check |
+| emaki-extension | `crates/extension/src/client.rs` | `StatusItem` and `LiveActivity`: calls in order on amane's control thread (`run_in_order`), events on their own thread, re-registration |
 | amane | `src/dbus/bus.rs` | `Bus::emit_to`: a signal to one destination |
 | amane | `src/wayland/dropped.rs` | drops read off the event loop (`Drags`, `read_later`, `handle_arrived_drags`), so a slow drag source can't stall the bar |
 | emaki-phone | `crates/phone/src/kdeconnect/actions.rs` | `share_files_now`, `share_text_now`: KDE Connect sends that wait and report |
@@ -495,7 +495,7 @@ Make it read a path with `slow` in it slowly, to watch the progress ring and try
 
 | Where | Covers |
 |---|---|
-| emaki-status `protocol.rs` | round trips, clamping, a newer `v` refused, an empty id refused |
+| emaki-extension `protocol.rs` | round trips, clamping, a newer `v` refused, an empty id refused |
 | shell `services/status_apps.rs` | an id belongs to the program that registered it; a bad payload refused |
 | shell `services/desktop/activities.rs` | only the owner changes or ends one; ending later; a program leaving; staleness |
 | shell `surfaces/status_bar/activities.rs` | countdown and trailing text |

@@ -14,7 +14,7 @@ use std::thread;
 
 use amane::{Argument, Bus, Method};
 use emaki_kit::settings::remember_status_app;
-use emaki_status::{
+use emaki_extension::{
     ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH, encode,
 };
 

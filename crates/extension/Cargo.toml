@@ -1,0 +1,20 @@
+[package]
+name = "emaki-extension"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Extensions: a program's own items and activities in emaki's status bar, over org.emaki.StatusBar1; the types, budgets and client."
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+emaki-base = { workspace = true }
+log = { workspace = true }
+# the session bus, and the one ordered thread for calls
+amane = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

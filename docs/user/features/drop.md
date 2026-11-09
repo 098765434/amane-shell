@@ -162,7 +162,7 @@ Mod+Shift+D. A crash restarts it.
 
 | File | What |
 |---|---|
-| `main.rs` | the status item (`emaki_status::StatusItem`) and its events; launches and IPC |
+| `main.rs` | the status item (`emaki_extension::StatusItem`) and its events; launches and IPC |
 | `state.rs` | what the grid shows, shared between the bus thread, tasks and the window; the Drop Bar on disk |
 | `grid.rs` | the window: a clear full-screen Overlay surface frosting only its card (a blur shape, layer rule `emaki.drop`) |
 | `tasks.rs` | jobs on threads of their own, each a `LiveActivity` with Cancel |

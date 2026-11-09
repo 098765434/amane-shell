@@ -1,11 +1,11 @@
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use emaki_status::{
+use emaki_extension::{
     Accepts, ActivityButton, ActivityContent, ActivityEvent, Dismiss, ItemEvent, ItemIcon,
     ItemSpec, MenuEntry, Tint, Trailing,
 };
-use emaki_status::{LiveActivity, StatusItem};
+use emaki_extension::{LiveActivity, StatusItem};
 
 /*
  * an item in the bar and a two-minute countdown activity, with no window

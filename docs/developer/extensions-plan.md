@@ -59,7 +59,7 @@ flowchart LR
 ## 1. What exists, and what each kind needs
 
 The inventory, from the code ([status-apps.md](integration/status-apps.md),
-`crates/status/src/protocol.rs`, the surfaces' tables):
+`crates/extension/src/protocol.rs`, the surfaces' tables):
 
 | Kind | Today | Declarative already | Needs from the protocol |
 |---|---|---|---|

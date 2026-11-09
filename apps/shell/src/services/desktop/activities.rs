@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 
 use emaki_kit::settings::remember_activity;
 use emaki_kit::sync::Locked as _;
-use emaki_status::{ActivityContent, ActivityEvent, Dismiss};
+use emaki_extension::{ActivityContent, ActivityEvent, Dismiss};
 
 emaki_kit::marker! {
     /// An activity started, changed or ended: the bar draws again.
@@ -244,7 +244,7 @@ fn after(wait: Duration, then: impl FnOnce() + Send + 'static) {
 mod tests {
     use std::sync::atomic::{AtomicU32, Ordering};
 
-    use emaki_status::ItemIcon;
+    use emaki_extension::ItemIcon;
 
     use super::*;
 

@@ -561,12 +561,12 @@ dependencies = [
  "amane",
  "chrono",
  "emaki-assistant",
+ "emaki-extension",
  "emaki-kit",
  "emaki-log",
  "emaki-nixos",
  "emaki-phone",
  "emaki-pinentry",
- "emaki-status",
  "libc",
  "log",
  "qrcode",
@@ -612,12 +612,23 @@ name = "emaki-drop"
 version = "0.1.0"
 dependencies = [
  "amane",
+ "emaki-extension",
  "emaki-kit",
  "emaki-log",
  "emaki-phone",
  "emaki-process",
- "emaki-status",
  "log",
+ "serde_json",
+]
+
+[[package]]
+name = "emaki-extension"
+version = "0.1.0"
+dependencies = [
+ "amane",
+ "emaki-base",
+ "log",
+ "serde",
  "serde_json",
 ]
 
@@ -743,11 +754,7 @@ dependencies = [
 name = "emaki-status"
 version = "0.1.0"
 dependencies = [
- "amane",
- "emaki-base",
- "log",
- "serde",
- "serde_json",
+ "emaki-extension",
 ]
 
 [[package]]
@@ -756,9 +763,9 @@ version = "0.1.0"
 dependencies = [
  "amane",
  "emaki-base",
+ "emaki-extension",
  "emaki-log",
  "emaki-process",
- "emaki-status",
  "log",
 ]
 

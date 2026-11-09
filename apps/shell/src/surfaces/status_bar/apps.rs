@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 
 use amane::{Center, Color, Parent, Rectangle, Row, Text, Vertical, Widget};
-use emaki_status::{BarEdge, ItemButton, ItemEvent, ItemSpec, MenuEntry};
+use emaki_extension::{BarEdge, ItemButton, ItemEvent, ItemSpec, MenuEntry};
 
 use crate::services::status_apps;
 use crate::tokens::{Styled, sys};

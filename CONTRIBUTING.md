@@ -65,7 +65,7 @@ CI runs the same in the devShell (`fmt --check`, and clippy and the tests with `
 shellcheck on `gen-layer-rules.sh` and the scripts, then `nix build`, which runs the tests again.
 
 The workspace lints are in the root `Cargo.toml` (`[workspace.lints]`); `unwrap` is allowed only in
-tests (`clippy.toml`). A public item without a doc comment is an error in the kit, `emaki-status`,
+tests (`clippy.toml`). A public item without a doc comment is an error in the kit, `emaki-extension`,
 `emaki-phone` and `emaki-nixos` (`missing_docs` is `deny`), and a warning that clippy's
 `-D warnings` turns into one in `emaki-process`, `emaki-log`, `emaki-assistant` and
 `emaki-pinentry`. Rustdoc's own warnings fail CI too. Some tests check the code against the

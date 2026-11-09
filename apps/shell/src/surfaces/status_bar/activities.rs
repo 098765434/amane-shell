@@ -37,7 +37,7 @@ use emaki_kit::icons::{
     ICON_SKIP_PREVIOUS, ICON_TIMER, named,
 };
 use emaki_kit::settings::{BUILTIN_ACTIVITIES, status_bar};
-use emaki_status::{ActivityButton, ActivityContent, ItemIcon, Tint, Trailing};
+use emaki_extension::{ActivityButton, ActivityContent, ItemIcon, Tint, Trailing};
 
 use crate::services::desktop::activities::{self as registry, Live};
 use crate::services::desktop::privacy::{CastTarget, Privacy, stop_cast};

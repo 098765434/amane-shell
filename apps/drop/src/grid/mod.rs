@@ -30,7 +30,7 @@ use emaki_kit::settings::{
 };
 use emaki_kit::tokens::{Styled, sys};
 use emaki_phone::KdeConnect;
-use emaki_status::BarEdge;
+use emaki_extension::BarEdge;
 
 use crate::state::{self, Changed, Outcome, Prompt, Target};
 use crate::tasks::{self, Job, Payload, name};

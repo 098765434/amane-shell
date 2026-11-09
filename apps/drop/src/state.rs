@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
-use emaki_status::BarEdge;
+use emaki_extension::BarEdge;
 
 use crate::tasks::Job;
 use emaki_kit::sync::Locked as _;

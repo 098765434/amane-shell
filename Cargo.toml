@@ -45,6 +45,7 @@ members = [
     "crates/kit",
     "crates/pinentry",
     "crates/phone",
+    "crates/extension",
     "crates/status",
     "crates/log",
     "crates/process",
@@ -68,6 +69,7 @@ emaki-base = { path = "crates/base" }
 emaki-kit = { path = "crates/kit" }
 emaki-pinentry = { path = "crates/pinentry" }
 emaki-phone = { path = "crates/phone" }
+emaki-extension = { path = "crates/extension" }
 emaki-status = { path = "crates/status" }
 emaki-log = { path = "crates/log" }
 emaki-process = { path = "crates/process" }

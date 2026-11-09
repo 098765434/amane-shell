@@ -11,7 +11,7 @@ flowchart TB
     niri["niri fork<br/>compositor: materials, blur shapes, vibrancy,<br/>HDR, the mat, the desktop layer, IPC additions"]
     vello["vello fork<br/>memory tuning only"]
     amane["amane fork<br/>Wayland, rendering, widgets, text,<br/>the niri client, system services"]
-    crates["crates/*<br/>emaki-kit, emaki-status, emaki-phone,<br/>emaki-nixos, emaki-process, emaki-log, …"]
+    crates["crates/*<br/>emaki-kit, emaki-extension, emaki-phone,<br/>emaki-nixos, emaki-process, emaki-log, …"]
     base["emaki-base<br/>folders, whole files, times and sizes in words,<br/>locks, flags, file types, ids"]
     shell["apps/shell<br/>the surfaces, and state only the shell has"]
     apps["apps/*<br/>Emaki Settings, Messages, Phone Screen,<br/>Drop, Shader Lab, train-watch, the assistant"]
@@ -133,11 +133,11 @@ sequenceDiagram
     App->>Bar: StartActivity(content)
     Bar-->>App: the activity's handle
     Bar-->>App: ItemEvent / ActivityEvent: clicks, menu picks, dropped files, to that app alone
-    Note over Bar,App: when the bar restarts, emaki-status registers the app's items again
+    Note over Bar,App: when the bar restarts, emaki-extension registers the app's items again
 ```
 
 The interface is in [status-apps.md](integration/status-apps.md), and how to write one in
-[its "Writing a status app" section](integration/status-apps.md#writing-a-status-app). Programs use the `emaki-status`
+[its "Writing a status app" section](integration/status-apps.md#writing-a-status-app). Programs use the `emaki-extension`
 crate rather than speaking D-Bus themselves.
 
 ## Where to read next

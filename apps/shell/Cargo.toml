@@ -24,7 +24,7 @@ emaki-log = { workspace = true }
 # pinned in [workspace.dependencies], shared with the kit
 amane = { workspace = true }
 emaki-phone = { workspace = true }
-emaki-status = { workspace = true }
+emaki-extension = { workspace = true }
 emaki-kit = { workspace = true }
 # the assistant's commands, rules and protocol; its daemon (Cactus) is apps/assistant
 emaki-assistant = { workspace = true }

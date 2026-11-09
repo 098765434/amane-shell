@@ -20,7 +20,7 @@ use std::path::PathBuf;
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::time::{Duration, Instant};
 
-use emaki_status::{
+use emaki_extension::{
     ActivityButton, ActivityContent, ActivityEvent, Dismiss, ItemIcon, LiveActivity, Tint, Trailing,
 };
 
