@@ -9,6 +9,8 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
+use crate::ItemIcon;
+
 /// The short name of a type, for a warning.
 fn short<T>() -> &'static str {
     let name = type_name::<T>();
@@ -67,4 +69,19 @@ where
             Vec::new()
         }
     })
+}
+
+/// An icon's list of choices: the ones that can be read, with lists inside it read as one.
+pub(crate) fn first_of<'de, D>(deserializer: D) -> Result<Vec<ItemIcon>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let mut flat = Vec::new();
+    for icon in each::<D, ItemIcon>(deserializer)? {
+        match icon {
+            ItemIcon::FirstOf(more) => flat.extend(more),
+            icon => flat.push(icon),
+        }
+    }
+    Ok(flat)
 }

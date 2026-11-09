@@ -217,16 +217,13 @@ pub(super) fn activity_button(activity: &Shown, button: &ActivityButton, width: 
     } else {
         Style::Tonal
     };
-    let glyph = button.icon.as_ref().and_then(|icon| match icon {
-        ItemIcon::Glyph(name) => Some(match name.as_str() {
-            "skip-previous" => ICON_SKIP_PREVIOUS,
-            "skip-next" => ICON_SKIP_NEXT,
-            "play" => ICON_PLAY,
-            "pause" => ICON_PAUSE,
-            name => named(name).unwrap_or(ICON_RECORD),
-        }),
-        _ => None,
-    });
+    let glyph = button
+        .icon
+        .as_ref()
+        .and_then(|icon| match chip::resolve(icon) {
+            Some(chip::Resolved::Glyph(glyph)) => Some(glyph),
+            _ => None,
+        });
     let press = move || act(&id);
     match (glyph, button.label.is_empty()) {
         (Some(glyph), true) => IconButton::new(key, glyph)

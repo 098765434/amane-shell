@@ -136,6 +136,42 @@ pub(super) fn tick_in(wait: Duration) {
     motion::redraw_after::<Tick>(wait + TICK);
 }
 
+/// One of the bar's own symbols by name, if it has one by that name.
+pub(in crate::surfaces::status_bar) fn glyph(name: &str) -> Option<char> {
+    match name {
+        "music" => Some(ICON_MUSIC),
+        "timer" => Some(ICON_TIMER),
+        "screen-share" => Some(ICON_SCREEN_SHARE),
+        "skip-previous" => Some(ICON_SKIP_PREVIOUS),
+        "skip-next" => Some(ICON_SKIP_NEXT),
+        "play" => Some(ICON_PLAY),
+        "pause" => Some(ICON_PAUSE),
+        name => named(name),
+    }
+}
+
+/// What an icon comes to: a symbol, or a file to show.
+pub(in crate::surfaces::status_bar) enum Resolved {
+    Glyph(char),
+    File(PathBuf),
+}
+
+/// The first part of `icon` the bar can show: a symbol it has, a theme icon it
+/// finds, a file that is there. A lone symbol name it doesn't have is the
+/// record dot, as it always was; in a list it's passed over instead.
+pub(in crate::surfaces::status_bar) fn resolve(icon: &ItemIcon) -> Option<Resolved> {
+    match icon {
+        ItemIcon::Glyph(name) => Some(Resolved::Glyph(glyph(name).unwrap_or(ICON_RECORD))),
+        ItemIcon::Theme(name) => Apps::find_icon(name).map(Resolved::File),
+        ItemIcon::File(path) => Some(Resolved::File(path.clone())),
+        ItemIcon::FirstOf(list) => list.iter().find_map(|icon| match icon {
+            ItemIcon::Glyph(name) => glyph(name).map(Resolved::Glyph),
+            ItemIcon::File(path) => path.is_file().then(|| Resolved::File(path.clone())),
+            icon => resolve(icon),
+        }),
+    }
+}
+
 /// A picture: one of the bar's symbols, a theme icon or a file, at `size`;
 /// a dot while a file is still being read or can't be.
 pub(in crate::surfaces::status_bar) fn picture(
@@ -144,23 +180,11 @@ pub(in crate::surfaces::status_bar) fn picture(
     color: Color,
     dim: bool,
 ) -> Box<dyn Widget> {
-    let file = match icon_of {
-        ItemIcon::Glyph(name) => {
-            let glyph = match name.as_str() {
-                "music" => ICON_MUSIC,
-                "timer" => ICON_TIMER,
-                "screen-share" => ICON_SCREEN_SHARE,
-                name => named(name).unwrap_or(ICON_RECORD),
-            };
-            return boxed(icon(glyph, size * 0.9, color));
-        }
-        ItemIcon::Theme(name) => Apps::find_icon(name),
-        ItemIcon::File(path) => Some(path.clone()),
-    };
-    let Some(path) = file.filter(|path| Image::loaded(path)) else {
-        return boxed(icon(ICON_RECORD, size * 0.5, color));
-    };
-    boxed(image(path, size, dim))
+    match resolve(icon_of) {
+        Some(Resolved::Glyph(glyph)) => boxed(icon(glyph, size * 0.9, color)),
+        Some(Resolved::File(path)) if Image::loaded(&path) => boxed(image(path, size, dim)),
+        _ => boxed(icon(ICON_RECORD, size * 0.5, color)),
+    }
 }
 
 pub(super) fn image(path: PathBuf, size: f32, dim: bool) -> Rectangle {

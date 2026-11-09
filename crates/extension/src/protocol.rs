@@ -54,11 +54,47 @@ pub enum ItemIcon {
 
     /// A png or svg file.
     File(PathBuf),
+
+    /// The first of these the bar can show, in order: a name, then a file to fall back on,
+    /// like `{"first_of":[{"theme":"folder-download"},{"file":"/…/drop.svg"}]}`. Entries this
+    /// bar doesn't know are left out, and a list inside a list is read as one list.
+    #[serde(deserialize_with = "lenient::first_of")]
+    FirstOf(Vec<ItemIcon>),
 }
 
 impl Default for ItemIcon {
     fn default() -> Self {
         Self::Glyph(String::from("dot"))
+    }
+}
+
+impl ItemIcon {
+    /// One of the bar's own symbols, by name.
+    pub fn glyph(name: &str) -> Self {
+        Self::Glyph(String::from(name))
+    }
+
+    /// An icon theme name.
+    pub fn theme(name: &str) -> Self {
+        Self::Theme(String::from(name))
+    }
+
+    /// A png or svg file.
+    pub fn file(path: impl Into<PathBuf>) -> Self {
+        Self::File(path.into())
+    }
+
+    /// This icon, or `next` when the bar can't show it: `ItemIcon::theme("x").or(ItemIcon::file(p))`.
+    pub fn or(self, next: Self) -> Self {
+        let mut list = match self {
+            Self::FirstOf(list) => list,
+            icon => vec![icon],
+        };
+        match next {
+            Self::FirstOf(more) => list.extend(more),
+            icon => list.push(icon),
+        }
+        Self::FirstOf(list)
     }
 }
 
@@ -757,5 +793,29 @@ mod tests {
 
         let content = ActivityContent::decode(&encode(&content)).expect("failed to read");
         assert_eq!(content.buttons.len(), budget::MAX_ACTIVITY_BUTTONS);
+    }
+
+    #[test]
+    fn an_icon_falls_back_in_order() {
+        let icon = ItemIcon::theme("folder-download")
+            .or(ItemIcon::glyph("tray"))
+            .or(ItemIcon::file("/drop.svg"));
+        let spec = ItemSpec::new("demo", icon.clone());
+
+        assert_eq!(
+            ItemSpec::decode(&encode(&spec)).map(|spec| spec.icon),
+            Ok(icon)
+        );
+
+        let spec = ItemSpec::decode(
+            r#"{"id":"demo","icon":{"first_of":[{"pixmap":[]},{"first_of":[{"theme":"a"}]},
+                {"file":"/b.png"}]}}"#,
+        )
+        .expect("failed to read an icon list");
+
+        assert_eq!(
+            spec.icon,
+            ItemIcon::FirstOf(vec![ItemIcon::theme("a"), ItemIcon::file("/b.png")])
+        );
     }
 }

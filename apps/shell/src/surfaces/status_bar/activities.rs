@@ -31,13 +31,13 @@ use amane::{
     Apps, Arc, Canvas, Cap, Center, Color, ConstraintAdjustment, Gravity, Image, Media, Parent,
     Popup, Rectangle, Row, Service, Shape, Start, Text, Widget, window_size,
 };
+use emaki_extension::{ActivityButton, ActivityContent, ItemIcon, Tint, Trailing};
 use emaki_kit::color::Accent;
 use emaki_kit::icons::{
     ICON_MUSIC, ICON_PAUSE, ICON_PLAY, ICON_RECORD, ICON_SCREEN_SHARE, ICON_SKIP_NEXT,
     ICON_SKIP_PREVIOUS, ICON_TIMER, named,
 };
 use emaki_kit::settings::{BUILTIN_ACTIVITIES, status_bar};
-use emaki_extension::{ActivityButton, ActivityContent, ItemIcon, Tint, Trailing};
 
 use crate::services::desktop::activities::{self as registry, Live};
 use crate::services::desktop::privacy::{CastTarget, Privacy, stop_cast};
@@ -183,5 +183,29 @@ mod tests {
         assert!(trailing_text(&Trailing::Text(String::new()), false).is_none());
         assert!(trailing_text(&Trailing::None, false).is_none());
         assert!(trailing_text(&Trailing::Progress(0.5), false).is_none());
+    }
+
+    #[test]
+    fn an_icon_list_shows_the_first_the_bar_has() {
+        let glyph_of = |icon: &ItemIcon| match resolve(icon) {
+            Some(Resolved::Glyph(glyph)) => Some(glyph),
+            _ => None,
+        };
+        let missing = ItemIcon::file("/nonexistent/emaki-test.png");
+
+        assert_eq!(
+            glyph_of(&ItemIcon::glyph("no-such-symbol").or(ItemIcon::glyph("timer"))),
+            Some(ICON_TIMER)
+        );
+        assert_eq!(
+            glyph_of(&missing.clone().or(ItemIcon::glyph("timer"))),
+            Some(ICON_TIMER)
+        );
+        // alone, a symbol it doesn't have is the dot, as it always was
+        assert_eq!(
+            glyph_of(&ItemIcon::glyph("no-such-symbol")),
+            Some(ICON_RECORD)
+        );
+        assert!(resolve(&ItemIcon::FirstOf(vec![missing])).is_none());
     }
 }
