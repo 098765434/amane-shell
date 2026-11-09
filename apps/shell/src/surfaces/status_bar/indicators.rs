@@ -179,6 +179,24 @@ impl Item {
         }
     }
 
+    /// Puts it back in the bar.
+    pub fn show(self) {
+        if self.hideable() {
+            change_status_bar(|now| now.set_shown(self.name(), true));
+        }
+    }
+
+    /// What Emaki Settings calls it: "Volume", "Apps", or a program's item.
+    pub fn label(self) -> &'static str {
+        if self.app_id().is_some() {
+            return "the app's item";
+        }
+        emaki_kit::settings::BAR_ITEMS
+            .iter()
+            .find(|item| item.0 == self.name())
+            .map_or("the item", |item| item.1)
+    }
+
     /// The switch that hides it, for the ones that can be hidden; Quick
     /// Settings and the clock always show.
     pub fn indicator(self) -> Option<Indicator> {

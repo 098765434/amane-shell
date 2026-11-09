@@ -8,15 +8,18 @@
 //! The drag is measured on one still layer over the whole cluster, never
 //! on the item that moves (amane measures a drag against the last frame).
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
 use crate::chrome::per_output::PerOutput;
 
-use amane::{Center, Parent, Point, Rectangle, Row, Stack, Widget};
+use amane::{Animation, Center, End, Parent, Point, Radius, Rectangle, Row, Stack, Start, Widget};
 
 use crate::tokens::sys;
 use emaki_kit::buttons::swallow_click;
-use emaki_kit::layout::{boxed, fixed_width};
+use emaki_kit::icons::ICON_CLOSE;
+use emaki_kit::layout::{boxed, fixed_width, icon};
 
 use super::indicators::{Item, move_item};
 
@@ -28,6 +31,9 @@ const OFF: f32 = 40.0;
 
 /// How see-through an item about to be hidden is.
 const LEAVING: f32 = 0.35;
+
+/// How long the bar offers to bring back an item dragged off it.
+const UNDO_FOR: Duration = Duration::from_secs(5);
 
 /// The item picked up.
 #[derive(Clone, Copy, Debug)]
@@ -56,12 +62,18 @@ struct Laid {
 thread_local! {
     static HELD: RefCell<Option<(String, Held)>> = const { RefCell::new(None) };
     static LAID: PerOutput<Laid> = const { PerOutput::new() };
+
+    // where each item the held one passes is sliding to, so it closes up smoothly
+    static SLIDES: RefCell<HashMap<Item, Animation<f32>>> = RefCell::new(HashMap::new());
+
+    // the item just dragged off the bar, and when, while it can be brought back
+    static HIDDEN: Cell<Option<(Item, Instant)>> = const { Cell::new(None) };
 }
 
 /// The items `built` for the bar on `output`, in a row whose items can be
 /// dragged into another order. `height` is the bar's.
 pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f32) -> Stack {
-    let gap = sys::space::gap::_2xs();
+    let gap = super::metrics().gap;
     let held = HELD.with_borrow(|held| {
         held.as_ref()
             .filter(|(on, held)| on == output && held.moving)
@@ -76,6 +88,11 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
             (item, row, width)
         })
         .collect();
+
+    // nothing held anywhere: the next drag's items start at rest where they are
+    if held.is_none() && HELD.with_borrow(Option::is_none) {
+        SLIDES.with_borrow_mut(HashMap::clear);
+    }
 
     // the held item goes where its middle is now, the rest close up
     if let Some(held) = held
@@ -96,13 +113,48 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
             .width(width)
             .height(Parent)
             .align_child(Center, Center);
-        if let Some(held) = held.filter(|held| held.item == item) {
-            cell = cell.translate(held.at.x - held.grab - left, 0.0);
-            if off(held.at.y, height) && item.hideable() {
-                cell = cell.opacity(LEAVING);
+        let mut leaving = false;
+        match held {
+            Some(held) if held.item == item => {
+                cell = cell.translate(held.at.x - held.grab - left, 0.0);
+                if off(held.at.y, height) && item.hideable() {
+                    cell = cell.opacity(LEAVING);
+                    leaving = true;
+                }
             }
+            // the others slide to their new places rather than jump
+            Some(_) => {
+                let at = SLIDES.with_borrow_mut(|slides| {
+                    let slide = slides
+                        .entry(item)
+                        .or_insert_with(|| emaki_kit::motion::spring(left));
+                    slide.to(left);
+                    slide.value()
+                });
+                cell = cell.translate(at - left, 0.0);
+            }
+            None => {}
         }
-        children.push(boxed(cell.child(row)));
+        let cell = if leaving {
+            // the badge over the item, both the cell's size
+            cell.child(
+                Stack::new(vec![
+                    boxed(
+                        Rectangle::new()
+                            .width(Parent)
+                            .height(Parent)
+                            .align_child(Center, Center)
+                            .child(row),
+                    ),
+                    boxed(removing()),
+                ])
+                .width(width)
+                .height(Parent),
+            )
+        } else {
+            cell.child(row)
+        };
+        children.push(boxed(cell));
         left += width + gap;
     }
     let total = (left - gap).max(0.0);
@@ -130,6 +182,25 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
     Stack::new(vec![boxed(row), boxed(layer)])
         .width(total)
         .height(Parent)
+}
+
+/// The badge on an item let go to be hidden: a small red disc with an X
+/// at its top right.
+fn removing() -> Rectangle {
+    let size = (super::metrics().icon * 0.6).round();
+    Rectangle::new()
+        .width(Parent)
+        .height(Parent)
+        .align_child(End, Start)
+        .child(
+            Rectangle::new()
+                .width(size)
+                .height(size)
+                .radius(Radius::Full)
+                .fill(sys::color::status::critical::bg())
+                .align_child(Center, Center)
+                .child(icon(ICON_CLOSE, size * 0.8, amane::Color::WHITE)),
+        )
 }
 
 /// A monitor whose bar has `item`, for when no pointer says which (IPC).
@@ -226,12 +297,33 @@ fn release(output: &str, at: Point) {
     let laid = LAID.with(|laid| laid.get(output)).unwrap_or_default();
     if off(at.y, laid.height) && held.item.hideable() {
         held.item.hide();
+        HIDDEN.set(Some((held.item, Instant::now())));
+        // the undo button goes again by itself
+        amane::redraw_after(UNDO_FOR);
         return;
     }
 
     // the order the bar showed as it was let go, put among every item
     let shown: Vec<Item> = laid.spans.iter().map(|(item, ..)| *item).collect();
     move_item(held.item, place(&Item::ordered(), &shown, held.item));
+}
+
+/// The item just dragged off the bar, while it can still be brought back.
+pub fn just_hidden() -> Option<Item> {
+    just_hidden_at(HIDDEN.get(), Instant::now())
+}
+
+fn just_hidden_at(hidden: Option<(Item, Instant)>, now: Instant) -> Option<Item> {
+    hidden
+        .filter(|(_, when)| now.duration_since(*when) < UNDO_FOR)
+        .map(|(item, _)| item)
+}
+
+/// Brings back the item just dragged off the bar.
+pub fn undo_hide() {
+    if let Some((item, _)) = HIDDEN.take() {
+        item.show();
+    }
 }
 
 /// Where `item` goes among all of `order`, given the order `shown` on the
@@ -288,6 +380,15 @@ mod tests {
         rest.insert(index, Item::Clock);
         let volume = rest.iter().position(|i| *i == Item::Volume).unwrap();
         assert_eq!(rest[volume - 1], Item::Clock);
+    }
+
+    #[test]
+    fn a_hidden_item_can_be_brought_back_for_a_while() {
+        let then = Instant::now();
+        let hidden = Some((Item::Volume, then));
+        assert_eq!(just_hidden_at(hidden, then), Some(Item::Volume));
+        assert_eq!(just_hidden_at(hidden, then + UNDO_FOR), None);
+        assert_eq!(just_hidden_at(None, then), None);
     }
 
     #[test]

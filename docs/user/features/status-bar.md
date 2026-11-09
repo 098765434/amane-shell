@@ -26,6 +26,8 @@ The bar comes in three sizes (`size`, Emaki Settings' Status Bar → Size), all 
 | Regular | 24 | 16 | 30 | 13 px |
 | Comfortable | 32 | 24 | 40 | 14 px |
 
+The gap between items is `sys.space.gap.2xs`, `xs` at Comfortable (`Metrics::gap`).
+
 All bar text (the clock, the weather, programs' titles, activities' text, the keyboard
 layout) is on a 16 px line, in `sys.type.label`'s weight, or `sys.type.numeric`'s for figures
 (`Metrics::label`, `::numeric`). Tray pictures, activities' leading pictures (a glyph plus 2),
@@ -50,8 +52,11 @@ black (`bar.indicator.active.fg`). It stays that way while what it opens is open
 - the Quick Settings button, while Quick Settings is open;
 - the notification icon and the clock, while the notification center is open.
 
-The glyphs that open Quick Settings' grid (privacy, the "on" glyphs) only light on hover, or
-opening Quick Settings would light them all. The look comes from `ButtonBuilder::highlight` and
+- the keyboard layout, the notification icon (its Do Not Disturb menu), a tray app, the »
+  button, the privacy dots and programs' items, while the menu they opened is open.
+
+The glyphs that open Quick Settings' grid (Airplane Mode) only light on hover, or opening
+Quick Settings would light them all. The look comes from `ButtonBuilder::highlight` and
 `::active` ([controls.md](../../developer/kit/controls.md)); the bar's `item()` helper applies it to every item.
 
 ### Left: workspaces (`workspaces`, `workspace_shape.rs`)
@@ -87,7 +92,9 @@ doesn't know are skipped. Over IPC: `status-bar move <item> <index>` and `status
 keyboard, so it can't see a held key, and a press that moves more than 6 px picks the item up
 instead (a click stays a click). The others close up as it passes, letting go keeps the new order,
 and letting go more than 40 px off the bar hides an item that can be hidden (it dims on the way).
-The drag is measured on one still layer over the whole cluster, never on the item that moves, and
+The items it passes slide aside (`motion::spring`), and one about to be hidden shows a red
+badge. An item hidden that way leaves an undo button (an accent arrow) at the cluster's left
+for 5 s (`drag::just_hidden`). The drag is measured on one still layer over the whole cluster, never on the item that moves, and
 the click that ends a drop is swallowed (`buttons::swallow_click`). The layer takes the items'
 own press, so they don't shrink when pressed. The usual order, left to right:
 
@@ -95,29 +102,35 @@ own press, so they don't shrink when pressed. The usual order, left to right:
 2. **Privacy** (`chips.rs`): a green camera while a camera runs; an orange
    microphone while an app records. Screen sharing is an [activity](#activities). Their tooltips name the apps, and the dots' menu lists them by
    camera and microphone; picking one brings its window up (found by its process, or its parent's,
-   in niri's window list), and Sound Settings… opens Quick Settings' Sound page.
+   in niri's window list), and Sound Settings… opens Quick Settings' Sound page. Their colours
+   are the palette's orange and green.
 3. Glyphs for settings that are **on**: night light, a VPN, a power mode other than Balanced, and
-   airplane mode. Each opens Quick Settings.
+   airplane mode. Each opens its Quick Settings page (Airplane Mode the grid).
 4. **Activities** (`activities.rs`, [below](#activities)): Now Playing, the timer, screen
    sharing and other programs' activities.
 5. The optional **status icons** (see [below](#status-icons)), each opening its Quick Settings page:
    - **Volume**: the glyph shows the default output (built-in speaker, speaker, headphones,
-     headset, TV, car …) and the tooltip shows the level. Scroll to change it, middle-click to
-     mute.
+     headset, TV, car …) and the tooltip shows the level and the output's name. Scroll to change
+     it, middle-click to mute.
    - **Bluetooth**: only with an adapter. Off, on, or connected (accent), with the connected
-     devices' names in the tooltip.
-   - **Network**: signal wedges follow the joined network's strength, a cable when wired. The
-     tooltip shows the SSID, "Wired", "Offline" or "Wi‑Fi off".
+     devices' names, and their charge where they tell it, in the tooltip.
+   - **Network**: signal wedges follow the joined network's strength, a cable when wired, linked
+     boxes for any other link (a VPN alone, a tether). The tooltip shows the SSID and the signal
+     ("Strong", "Good", "Weak"), "Wired", "Connected" (with the VPN's name), "Offline" or
+     "Wi‑Fi off".
    - **Tailscale**: its nine-dot mark, only while connected. Accent while routing through an exit
      node; the tooltip shows the address or the exit node.
    - **Keep Awake**: a cup, accent while it holds anything; the tooltip shows the time left.
    - **Phone**: a phone through KDE Connect, while it's connected and has sent its charge;
      accent while charging, red when low; the tooltip shows its name and charge
      ([phone.md](phone.md)).
-   - **Battery**: accent while charging, red when low; the tooltip shows the charge.
+   - **Battery**: accent while charging (not merely plugged in), red when low; the tooltip
+     shows the charge and Quick Settings' detail: the time left, the time to full, "full" or
+     "on AC".
 6. The **Quick Settings** button (see [quick-settings.md](quick-settings.md)).
-7. The **notification** icon: a moon while Do Not Disturb is on, a bell while something arrived
-   unseen, nothing otherwise. Click it for the center, right-click for Do Not Disturb.
+7. The **notification** icon: a moon while Do Not Disturb is on (its tooltip says until when),
+   a bell while something arrived unseen (its tooltip says how many), nothing otherwise. Click it
+   for the center, right-click for Do Not Disturb.
 8. The **clock**: click it for the notification center (see [notifications.md](notifications.md));
    its tooltip is the date (`Clock::date`).
 
@@ -130,7 +143,8 @@ The first item, **Apps** (`tray.rs`), is the system tray's icons from
 amane's `Tray` (StatusNotifierItem, see amane's `docs/fork/system/tray.md`), for Steam, Discord,
 nm-applet and the like, in the order they came. Each is the app's picture (16 px; a dot for one that
 sent none), ringed in the accent while the app wants attention. Apps whose item is `Passive` (KDE
-Connect's indicator with no phone, say) don't show.
+Connect's indicator with no phone, say) don't show. One that wants attention has an accent dot
+at its picture's corner.
 
 - **Left click**: the app's action (`Activate`), or its menu when it has only a menu.
 - **Right click**: its menu, read over dbusmenu as it opens and shown as the shell's own context
@@ -247,7 +261,7 @@ Bar page), followed live:
 | `flash_separators` | the colons blink each second; a figure space stands in, and the clock keeps the width it has with colons. `Clock` signals each second while on |
 | `media_always` | Now Playing shows with nothing playing too |
 | `activities_compact`, `activities_denied` | how many activities show with their text (1–3), and the apps whose activities stay out, by name |
-| `weather`, `weather_place` | the Weather item (`services/desktop/weather.rs`): Open-Meteo, the place found once by its geocoding, read every half hour and whenever the place changes; nothing is fetched while it's off. Its glyph and temperature, the tooltip the place, the conditions and the day's high and low; a moon on clear nights |
+| `weather`, `weather_place` | the Weather item (`services/desktop/weather.rs`): Open-Meteo, the place found once by its geocoding, read every half hour and whenever the place changes; nothing is fetched while it's off. Its glyph and temperature, the tooltip the place, the conditions and the day's high and low; a moon on clear nights. A click opens the notification center, as the clock does. When Open-Meteo can't be reached it keeps its last reading, dimmed ("Not up to date"), and tries again after 5 minutes. What came of the lookup is `~/.cache/emaki/weather-status.json`, which Emaki Settings' Weather page watches to say "Couldn't find …" or "Couldn't reach Open-Meteo" |
 | `order`, `tray_denied` | the items' order and the apps kept out (above); programs' items are in `order` as `app:<id>`. The older `media` and `timer` read as `activities` |
 | `date_format` | the clock tooltip's day: `long` ("Sunday 25 October"), `short` ("Sun 25 Oct"), `numeric` (the locale's `%x`) |
 | `size` | `compact` (the default), `regular` or `comfortable` (above) |
@@ -263,6 +277,8 @@ shader.
 With two or more layouts, a short code for the one in use ("NO", "US"), from
 `services/desktop/keyboard_layout.rs`, which follows `niri msg --json event-stream`. A click lists
 the layouts with a tick on the current one; picking one runs `niri msg action switch-layout`.
+Scrolling over it goes round them, a step a wheel notch (`workspaces::scroll_steps`, which the
+workspaces share).
 
 ## Shared pieces that live elsewhere
 

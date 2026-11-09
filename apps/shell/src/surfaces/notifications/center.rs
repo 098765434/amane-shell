@@ -81,14 +81,15 @@ fn closed() {
     super::calendar_card::reset();
 }
 
-/// Whether something arrived since the center was last opened; what was
-/// restored from before a restart was there already.
-pub fn unseen() -> bool {
+/// How many arrived since the center was last opened; what was restored
+/// from before a restart was there already.
+pub fn unseen_count() -> usize {
     let seen = SEEN.with(Cell::get);
     Notifications::read()
         .list()
         .iter()
-        .any(|n| n.id() > seen && !n.restored())
+        .filter(|n| n.id() > seen && !n.restored())
+        .count()
 }
 
 // ───── groups ────────────────────────────────────────────────────────────────

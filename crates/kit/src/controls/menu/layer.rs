@@ -14,7 +14,7 @@ use amane::{
 };
 
 pub use super::stack::{
-    arm, close, is_open_under, open_at, open_named, open_under, register, show_under,
+    arm, close, is_open, is_open_under, open_at, open_named, open_under, register, show_under,
 };
 
 use super::keys::{self, Move};

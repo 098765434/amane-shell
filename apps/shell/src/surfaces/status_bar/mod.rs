@@ -60,8 +60,8 @@ use emaki_kit::buttons::{ButtonBuilder, DrawnButton, IconButton, PushButton, Sha
 use emaki_kit::edge_reveal::EdgeReveal;
 use emaki_kit::icons::{
     Glyph, ICON_AIRPLANE, ICON_BLUETOOTH, ICON_BLUETOOTH_CONNECTED, ICON_BLUETOOTH_OFF, ICON_CABLE,
-    ICON_DND, ICON_KEEP_AWAKE, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS, ICON_PHONE, ICON_TUNE,
-    ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
+    ICON_DND, ICON_KEEP_AWAKE, ICON_LAN, ICON_NIGHT_LIGHT, ICON_NOTIFICATIONS, ICON_PHONE,
+    ICON_TUNE, ICON_UNDO, ICON_VOLUME_OFF, ICON_VPN, ICON_WIFI_NONE, ICON_WIFI_OFF, audio_glyph,
     battery_glyph, power_profile_glyph, wifi_glyph,
 };
 use emaki_kit::layout::{boxed, cursor, pad, text_width, track_cursor};
@@ -94,8 +94,15 @@ thread_local! {
     // touchpad scroll over the workspaces not yet made into a step
     static SCROLLED: Cell<f32> = const { Cell::new(0.0) };
 
+    // and over the keyboard layout
+    static LAYOUT_SCROLLED: Cell<f32> = const { Cell::new(0.0) };
+
     // where each monitor's hiding bar is, when it hides
     static REVEALS: PerOutput<EdgeReveal> = const { PerOutput::new() };
+
+    // the menu last opened from the bar, by its key, and the item that opened it
+    static MENU_OF: std::cell::RefCell<Option<(&'static str, String)>> =
+        const { std::cell::RefCell::new(None) };
 }
 
 fn new_reveal() -> EdgeReveal {
@@ -251,8 +258,9 @@ fn hides(output: &str) -> bool {
 
 /// The items on the right that have something to show, in their order,
 /// draggable into another.
-/// Apps' items that don't fit in `room` go behind a » button.
-fn status(output: &str, room: f32) -> amane::Stack {
+/// Apps' items that don't fit in `room` go behind a » button. An item just
+/// dragged off the bar leaves an undo button at its left for a while.
+fn status(output: &str, room: f32) -> Row {
     let apps = if Item::Tray.shown() {
         tray::shown()
     } else {
@@ -271,7 +279,7 @@ fn status(output: &str, room: f32) -> amane::Stack {
             .filter(|(_, widgets)| !widgets.is_empty())
             .collect()
     };
-    let gap = sys::space::gap::_2xs();
+    let gap = metrics().gap;
     let width_of_all = |built: &[(Item, Vec<Box<dyn Widget>>)]| -> f32 {
         built
             .iter()
@@ -279,6 +287,11 @@ fn status(output: &str, room: f32) -> amane::Stack {
             .map(|widget| width_of(widget.as_ref()) + gap)
             .sum()
     };
+    let undo = drag::just_hidden().map(undo_button);
+    let room = room
+        - undo
+            .as_ref()
+            .map_or(0.0, |undo| width_of(undo.as_ref()) + gap);
     let mut dated = true;
     let mut built = build_all(0, dated);
     let mut width = width_of_all(&built);
@@ -298,7 +311,21 @@ fn status(output: &str, room: f32) -> amane::Stack {
         built = build_all(hidden, dated);
     }
 
-    drag::cluster(output, built, height())
+    let cluster = boxed(drag::cluster(output, built, height()));
+    Row::new(undo.into_iter().chain([cluster]).collect())
+        .gap(gap)
+        .align(Center)
+        .height(Parent)
+}
+
+/// Brings back `item`, just dragged off the bar.
+fn undo_button(item: Item) -> Box<dyn Widget> {
+    boxed(
+        bar_icon("emaki.bar.undo-hide", ICON_UNDO, sys::color::accent::bg())
+            .on_press(drag::undo_hide)
+            .tooltip(BAR_NS, format!("Undo · put {} back", item.label()))
+            .build(),
+    )
 }
 
 /// What `item` shows now: nothing, one widget, or a few for the privacy
@@ -374,6 +401,28 @@ fn status_icon(
             }
         })
         .tooltip(BAR_NS, tip)
+}
+
+/// Opens `menu` as `key` under the bar at `point`, for `item` (its button's
+/// id), which stays lit while it's open.
+fn show_menu(item: &str, key: &'static str, menu: emaki_kit::menu::ContextMenu, point: (i32, i32)) {
+    opened_menu(item, key);
+    emaki_kit::menu::layer::show_under(key, menu, BAR_NS, point);
+}
+
+/// Notes that `item` opened the menu `key`, opened some other way.
+fn opened_menu(item: &str, key: &'static str) {
+    MENU_OF.set(Some((key, item.to_string())));
+}
+
+/// Whether the menu `item` opened is still open, so it stays lit as the
+/// panels' items do.
+fn menu_showing(item: &str) -> bool {
+    use emaki_kit::menu::layer;
+    MENU_OF.with_borrow(|menu| {
+        menu.as_ref()
+            .is_some_and(|(key, by)| by == item && layer::is_open(key))
+    }) && emaki_kit::menu::layer::is_open_under(BAR_NS)
 }
 
 /// How wide a boxed widget is, when it says.

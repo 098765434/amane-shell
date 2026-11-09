@@ -16,7 +16,6 @@ use crate::tokens::{Styled, sys};
 use emaki_kit::buttons::DrawnButton;
 use emaki_kit::layout::{boxed, cursor, text_width};
 use emaki_kit::material::{self, Level};
-use emaki_kit::menu::layer as context_menu;
 use emaki_kit::menu::{ContextMenu, MenuItem};
 
 use super::activities::picture;
@@ -104,8 +103,10 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
     let (on, pressed, middled) = (output.to_string(), output.to_string(), output.to_string());
     let (left, right, middle) = (id.clone(), id.clone(), id.clone());
     let menu = spec.menu.clone();
-    let built = item(DrawnButton::new(format!("emaki.bar.app.{id}"), draw))
+    let button = format!("emaki.bar.app.{id}");
+    let built = item(DrawnButton::new(button.clone(), draw))
         .width(width)
+        .active(super::menu_showing(&button))
         .color(material::label(Level::Secondary))
         .on_press(move || activated(&left, ItemButton::Left, name, &pressed))
         .on_secondary(move || {
@@ -195,7 +196,12 @@ fn show_menu(id: &str, entries: &[MenuEntry]) {
     let menu = entries
         .iter()
         .fold(ContextMenu::new(), |menu, entry| add(menu, id, entry));
-    context_menu::show_under(MENU_KEY, menu, BAR_NS, (cursor().0, menu_edge()));
+    super::show_menu(
+        &format!("emaki.bar.app.{id}"),
+        MENU_KEY,
+        menu,
+        (cursor().0, menu_edge()),
+    );
 }
 
 fn add(menu: ContextMenu, id: &str, entry: &MenuEntry) -> ContextMenu {

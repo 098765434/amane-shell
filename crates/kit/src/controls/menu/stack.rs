@@ -139,6 +139,8 @@ fn open_root(
         r.phase = Phase::Open;
     });
     request_frame();
+    // what opened it may light while it's open, on another surface
+    amane::mark_all();
 }
 
 /// Open a menu by its string name (for IPC / dynamic callers); false when
@@ -159,6 +161,12 @@ pub fn close() {
         r.root_parent = None;
     });
     request_frame();
+    amane::mark_all();
+}
+
+/// Whether the menu registered as `key` is the one open.
+pub fn is_open(key: &str) -> bool {
+    with(|r| r.phase == Phase::Open && r.pending.is_some_and(|open| open == key))
 }
 
 /// Whether a menu is open hung under the surface `parent_ns`.

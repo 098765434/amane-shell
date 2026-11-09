@@ -9,7 +9,7 @@ use crate::services::do_not_disturb::{DoNotDisturb, Until, choices};
 use emaki_kit::menu::layer as context_menu;
 use emaki_kit::menu::{ContextMenu, MenuItem};
 
-const MENU_KEY: &str = "emaki.notifications.dnd";
+pub const MENU_KEY: &str = "emaki.notifications.dnd";
 
 /// The menu of timed choices, hung under `parent_ns` at `point`.
 pub fn open(parent_ns: &'static str, point: (i32, i32)) {

@@ -534,15 +534,10 @@ impl StatusBar {
         self.order = items;
     }
 
-    /// Moves the item `name` to `index` among the others.
+    /// Moves the item `name` to `index` among the bar's own items;
+    /// programs' items keep their places in the order.
     pub fn move_item(&mut self, name: &str, index: usize) {
-        let mut items = self.items();
-        let Some(from) = items.iter().position(|item| *item == name) else {
-            return;
-        };
-        let item = items.remove(from);
-        items.insert(index.min(items.len()), item);
-        self.order = items.into_iter().map(String::from).collect();
+        self.move_item_with(name, index, &[]);
     }
 }
 

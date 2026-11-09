@@ -22,7 +22,8 @@ pub mod toasts;
 
 use amane::Notifications;
 
-pub use center::{CENTER_NS, register_panel, side_sheet, unseen};
+pub use center::{CENTER_NS, register_panel, side_sheet, unseen_count};
+pub use dnd_menu::MENU_KEY as DND_MENU_KEY;
 pub use dnd_menu::open as dnd_menu;
 pub use toasts::{TOAST_NS, TOASTS};
 

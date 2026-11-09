@@ -92,6 +92,7 @@ emaki_kit::marker! {
 pub use controls::{ControlId, available as control_available, quick_toggle};
 pub use pages::Page;
 pub(crate) use tiles::keep_awake::status as keep_awake_status;
+pub(crate) use tiles::power::battery_detail;
 
 /// Layer-surface namespace; the niri `layer-rule` matches it for blur, and
 /// the Bluetooth device menu hangs under it.

@@ -36,6 +36,8 @@ pub struct Metrics {
     pub item_width: f32,
     /// Room above and below the items.
     pub padding_y: f32,
+    /// Room between the items, a little more as they grow.
+    pub gap: f32,
     /// The labels' size, in pixels before the text scale.
     label: f32,
 }
@@ -52,6 +54,12 @@ impl Metrics {
             BarSize::Regular => REGULAR,
             BarSize::Comfortable => COMFORTABLE,
         };
+        // TODO(token): `bar.size.comfortable.gap`
+        let gap = if size == BarSize::Comfortable {
+            sys::space::gap::xs()
+        } else {
+            sys::space::gap::_2xs()
+        };
         let label = if size == BarSize::Comfortable {
             LABEL_COMFORTABLE
         } else {
@@ -64,6 +72,7 @@ impl Metrics {
             small_icon: (icon * 0.75).round(),
             item_width,
             padding_y,
+            gap,
             label,
         }
     }
@@ -110,5 +119,6 @@ mod tests {
         assert_eq!((comfortable.height, comfortable.icon), (32.0, 24.0));
         assert!(compact.height < regular.height);
         assert!(compact.icon <= compact.height);
+        assert!(compact.gap <= comfortable.gap);
     }
 }

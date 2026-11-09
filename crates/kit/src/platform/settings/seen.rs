@@ -117,3 +117,52 @@ pub fn remember_notifier(key: &str, name: &str) {
         remember_named(NOTIFIERS, key, name);
     }
 }
+
+const WEATHER: &str = "weather-status.json";
+
+/// What the shell last made of the bar's weather place, for Emaki Settings
+/// to say why no weather shows.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "kebab-case")]
+pub enum WeatherLookup {
+    /// Not looked up yet.
+    #[default]
+    Pending,
+    /// Found, and its weather read.
+    Found,
+    /// Open-Meteo knows no such place.
+    NotFound,
+    /// Open-Meteo couldn't be reached; the shell tries again soon.
+    Unreachable,
+}
+
+/// The place the shell looked up, as typed, and what came of it.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", default)]
+pub struct WeatherSeen {
+    /// The place as `weather_place` had it, trimmed.
+    pub place: String,
+    /// What came of looking it up.
+    pub lookup: WeatherLookup,
+}
+
+/// What came of the last weather lookup.
+pub fn weather_seen() -> WeatherSeen {
+    seen_cached(WEATHER)
+}
+
+/// The file [`weather_seen`] reads, for Emaki Settings to watch.
+pub fn weather_seen_file() -> PathBuf {
+    cache_file(WEATHER)
+}
+
+/// Keeps what came of looking `place` up, when that changed.
+pub fn remember_weather(place: &str, lookup: WeatherLookup) {
+    let seen = WeatherSeen {
+        place: String::from(place),
+        lookup,
+    };
+    if weather_seen() != seen {
+        keep(WEATHER, &seen);
+    }
+}

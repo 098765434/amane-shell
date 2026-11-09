@@ -49,6 +49,30 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   are still found. `scripts/migrate-from-amane` does the moves by hand and renames the niri
   config's markers and sockets ([troubleshooting](docs/user/troubleshooting.md#migrating-from-amane-shell)).
 - Emaki Settings reads back a `displays.kdl` that Shell Settings wrote.
+- Status bar: an item dragged off the bar leaves an undo button for 5 s; the items it passes
+  slide aside, and one about to be hidden shows a red badge.
+- Status bar: an item stays lit while the menu it opened is open (keyboard layout, Do Not
+  Disturb, tray apps, », privacy, programs' items).
+- Status bar: scrolling over the keyboard layout goes round the layouts.
+- Status bar: fuller tooltips: the battery's time left or to full, the sound output's name,
+  the Wi‑Fi signal, Bluetooth devices' charge, how many notifications are new, and when Do Not
+  Disturb ends.
+- Emaki Settings' Weather page says when the place can't be found or Open-Meteo can't be
+  reached (`~/.cache/emaki/weather-status.json`); its Items list has programs' items too.
+
+### Fixed
+
+- Status bar: a full battery on AC no longer reads "charging".
+- Status bar: a link that is neither Wi‑Fi nor a cable no longer shows a Wi‑Fi glyph.
+- Status bar: when Open-Meteo can't be reached, the weather keeps its last reading, dimmed,
+  and tries again after 5 minutes, rather than going.
+- Status bar: Night Light, VPN and power mode open their own Quick Settings pages.
+- Status bar: the weather opens the notification center, like the clock beside it.
+- Status bar: a tray app wanting attention shows an accent dot rather than a ring too big for
+  the Compact bar.
+- Status bar: the camera and microphone colours are the palette's; Comfortable spaces its items
+  wider; the analog clock is drawn finer at 16 px.
+- Emaki Settings: moving a bar item with its arrows no longer loses where programs' items were.
 
 ## [0.1.0] - 2026-11-08
 

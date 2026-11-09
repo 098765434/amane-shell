@@ -282,6 +282,16 @@ mod bar_order_tests {
         now.move_item("clock", 99);
         assert_eq!(now.items().last(), Some(&"clock"));
     }
+
+    #[test]
+    fn moving_the_bars_own_item_keeps_programs_places() {
+        let apps = [String::from("app:org.emaki.drop")];
+        let mut now = bar(&[]);
+        now.move_item_with("app:org.emaki.drop", 5, &apps);
+        now.move_item("clock", 0);
+        assert!(now.order.contains(&apps[0]));
+        assert_eq!(now.items_with(&apps)[0], "clock");
+    }
 }
 
 #[cfg(test)]

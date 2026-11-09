@@ -19,10 +19,9 @@ use crate::tokens::sys;
 use emaki_kit::buttons::DrawnButton;
 use emaki_kit::layout::{boxed, cursor};
 use emaki_kit::material::{self, Level};
-use emaki_kit::menu::layer as context_menu;
 use emaki_kit::menu::{Check, ContextMenu, Icon, MenuItem};
 
-use super::{BAR_NS, bar_icon, item, menu_edge};
+use super::{BAR_NS, bar_icon, item, menu_edge, menu_showing, show_menu};
 use emaki_kit::shell_ipc::Listed;
 
 /// `keyboard_double_arrow_right`: the items that didn't fit.
@@ -95,7 +94,8 @@ pub fn icons(shown: &[Shown], hidden: usize) -> Vec<Box<dyn Widget>> {
 
 /// How wide `count` icons are, gaps after each included.
 pub fn width_of(count: usize) -> f32 {
-    count as f32 * (super::metrics().item_width + sys::space::gap::_2xs())
+    let metrics = super::metrics();
+    count as f32 * (metrics.item_width + metrics.gap)
 }
 
 fn icon(shown: &Shown) -> Rectangle {
@@ -109,11 +109,12 @@ fn icon(shown: &Shown) -> Rectangle {
         shown.key.clone(),
     );
 
-    item(DrawnButton::new(
-        format!("emaki.bar.tray.{}", shown.key),
-        move |color| picture_of(picture, attention, color),
-    ))
+    let id = button_id(&shown.key);
+    item(DrawnButton::new(id.clone(), move |color| {
+        picture_of(picture, attention, color)
+    }))
     .width(super::metrics().item_width)
+    .active(menu_showing(&id))
     .color(material::label(Level::Secondary))
     .on_press(move || press(&pressed))
     .on_secondary(move || ask_menu(&secondary))
@@ -133,8 +134,9 @@ fn icon(shown: &Shown) -> Rectangle {
     .build()
 }
 
-/// The app's picture, or a dot in `color` for one that sent none; ringed
-/// in the accent while it wants attention.
+/// The app's picture, or a dot in `color` for one that sent none; with an
+/// accent dot at its corner while it wants attention, inside the glyph's
+/// square so it fits the Compact bar.
 fn picture_of(picture: Option<PathBuf>, attention: bool, color: Color) -> Rectangle {
     let size = super::metrics().icon;
     let inner = match picture {
@@ -148,18 +150,36 @@ fn picture_of(picture: Option<PathBuf>, attention: bool, color: Color) -> Rectan
             .radius(Radius::Full)
             .fill(color),
     };
-    let ring = if attention {
-        sys::color::accent::bg()
-    } else {
-        Color::TRANSPARENT
-    };
-    Rectangle::new()
-        .width(size + 6.0)
-        .height(size + 6.0)
-        .radius(Radius::Full)
-        .border(1.5, ring)
-        .align_child(Center, Center)
-        .child(inner)
+    let frame = Rectangle::new()
+        .width(size)
+        .height(size)
+        .align_child(Center, Center);
+    if !attention {
+        return frame.child(inner);
+    }
+    let badge = (size * 0.4).round();
+    frame.child(amane::Stack::new(vec![
+        boxed(
+            Rectangle::new()
+                .width(size)
+                .height(size)
+                .align_child(Center, Center)
+                .child(inner),
+        ),
+        boxed(
+            Rectangle::new()
+                .width(size)
+                .height(size)
+                .align_child(amane::End, amane::End)
+                .child(
+                    Rectangle::new()
+                        .width(badge)
+                        .height(badge)
+                        .radius(Radius::Full)
+                        .fill(sys::color::accent::bg()),
+                ),
+        ),
+    ]))
 }
 
 fn press(shown: &Shown) {
@@ -169,6 +189,11 @@ fn press(shown: &Shown) {
         let (x, y) = screen_point();
         Tray::activate(&shown.key, x, y);
     }
+}
+
+/// The bar button of the tray item `key`.
+fn button_id(key: &str) -> String {
+    format!("emaki.bar.tray.{key}")
 }
 
 /// Asks for the item's menu; the bar shows it once it's read. An item
@@ -200,7 +225,7 @@ fn open_asked_menu() {
         return;
     }
     let menu = menu_of(&key, &items);
-    context_menu::show_under(MENU_KEY, menu, BAR_NS, (x, menu_edge()));
+    show_menu(&button_id(&key), MENU_KEY, menu, (x, menu_edge()));
 }
 
 /// The app's menu as the shell's own.
@@ -248,6 +273,7 @@ fn more(hidden: Vec<Shown>) -> Rectangle {
         ICON_MORE,
         material::label(Level::Secondary),
     )
+    .active(menu_showing(MORE_KEY))
     .on_press(move || {
         let mut menu = ContextMenu::new();
         for shown in &hidden {
@@ -263,7 +289,7 @@ fn more(hidden: Vec<Shown>) -> Rectangle {
             row = row.on_select(move || press(&pressed));
             menu = menu.item(row);
         }
-        context_menu::show_under(MORE_KEY, menu, BAR_NS, (cursor().0 as i32, menu_edge()));
+        show_menu(MORE_KEY, MORE_KEY, menu, (cursor().0 as i32, menu_edge()));
     })
     .tooltip(BAR_NS, format!("{count} more"))
     .build()

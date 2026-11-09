@@ -55,24 +55,7 @@ pub(super) fn workspaces(output: &str) -> Rectangle {
 /// A wheel notch, or [`SCROLL_STEP`] lines of touchpad, focuses the next
 /// workspace down or the previous one up.
 pub(super) fn scroll_workspaces(output: &str, scroll: Scroll) {
-    let delta = if scroll.y != 0.0 { scroll.y } else { scroll.x };
-    let step = match scroll.source {
-        ScrollSource::Wheel | ScrollSource::Tilt => direction(delta),
-        ScrollSource::Finger | ScrollSource::Continuous => SCROLLED.with(|scrolled| {
-            let total = if scroll.stop {
-                0.0
-            } else {
-                scrolled.get() + delta
-            };
-            let step = if total.abs() >= SCROLL_STEP {
-                direction(total)
-            } else {
-                0
-            };
-            scrolled.set(if step == 0 { total } else { 0.0 });
-            step
-        }),
-    };
+    let step = SCROLLED.with(|scrolled| scroll_steps(scrolled, &scroll));
     if step == 0 {
         return;
     }
@@ -92,6 +75,30 @@ pub(super) fn scroll_workspaces(output: &str, scroll: Scroll) {
         let id = list[next].id();
         drop(workspaces);
         Workspaces::focus(id);
+    }
+}
+
+/// One step along, back (-1) or on (1), for a wheel notch or for
+/// [`SCROLL_STEP`] lines of touchpad, which gather in `scrolled` till then;
+/// 0 while they're still gathering.
+pub(super) fn scroll_steps(scrolled: &Cell<f32>, scroll: &Scroll) -> i32 {
+    let delta = if scroll.y != 0.0 { scroll.y } else { scroll.x };
+    match scroll.source {
+        ScrollSource::Wheel | ScrollSource::Tilt => direction(delta),
+        ScrollSource::Finger | ScrollSource::Continuous => {
+            let total = if scroll.stop {
+                0.0
+            } else {
+                scrolled.get() + delta
+            };
+            let step = if total.abs() >= SCROLL_STEP {
+                direction(total)
+            } else {
+                0
+            };
+            scrolled.set(if step == 0 { total } else { 0.0 });
+            step
+        }
     }
 }
 

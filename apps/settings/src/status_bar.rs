@@ -2,8 +2,10 @@
 //! its workspaces and which icons it shows. Each control changes
 //! `status-bar.json`, which the shell follows at once.
 
-use amane::TextInput;
+use std::collections::BTreeMap;
+
 use amane::{Center, Column, Rectangle, Row, Size, Widget};
+use amane::{Service, TextInput, watch_file};
 use emaki_kit::app::{Dialog, commit_on_blur, field_box, text_field};
 use emaki_kit::buttons::{IconButton, PushButton, Switch};
 use emaki_kit::dropdown::Dropdown;
@@ -11,8 +13,8 @@ use emaki_kit::form::FormRow;
 use emaki_kit::layout::{boxed, fixed_width};
 use emaki_kit::settings::{
     AutoHide, BAR_ITEMS, BUILTIN_ACTIVITIES, BarPosition, BarSize, BarStyle, ClockStyle,
-    DateFormat, ShowDate, StatusBar, activities_seen, change_status_bar, status_apps_seen,
-    status_bar, tray_seen,
+    DateFormat, ShowDate, StatusBar, WeatherLookup, WeatherSeen, activities_seen,
+    change_status_bar, status_apps_seen, status_bar, tray_seen, weather_seen, weather_seen_file,
 };
 use emaki_kit::style;
 use emaki_kit::thumbnail_picker::ThumbnailPicker;
@@ -22,9 +24,10 @@ use crate::{View, group, groups, previews, switch_row};
 /// The weather place's field.
 const PLACE: &str = "settings.bar.weather-place.field";
 
-/// `expand_less` and `expand_more`, to move an item left or right.
-const ICON_EARLIER: char = '\u{e5ce}';
-const ICON_LATER: char = '\u{e5cf}';
+/// `chevron_left` and `chevron_right`, to move an item left or right: the
+/// bar's items run left to right.
+const ICON_EARLIER: char = emaki_kit::icons::ICON_CHEVRON_LEFT;
+const ICON_LATER: char = emaki_kit::icons::ICON_CHEVRON_RIGHT;
 
 const POSITIONS: [(&str, BarPosition); 2] =
     [("Bottom", BarPosition::Bottom), ("Top", BarPosition::Top)];
@@ -45,7 +48,7 @@ pub fn page() -> Column {
         now.position,
         |position| change_status_bar(|now| now.position = position),
     )
-    .width(200.0)
+    .width(crate::MENU_W)
     .build();
 
     let size = Dropdown::choice(
@@ -54,7 +57,7 @@ pub fn page() -> Column {
         now.size,
         |size| change_status_bar(|now| now.size = size),
     )
-    .width(200.0)
+    .width(crate::MENU_W)
     .build();
 
     let hiding = [
@@ -69,7 +72,7 @@ pub fn page() -> Column {
         now.auto_hide,
         |mode| change_status_bar(|now| now.auto_hide = mode),
     )
-    .width(200.0);
+    .width(crate::MENU_W);
 
     let width = crate::page_width() - 2.0 * style::row_pad_h();
     let mut styles = ThumbnailPicker::new("settings.bar.style", previews::WIDTH, previews::HEIGHT)
@@ -108,6 +111,7 @@ pub fn page() -> Column {
             )
             .footer("Clear draws only the items, light or dark to suit the wallpaper. Solid is black in dark mode and white in light."),
         group()
+            .header("In the bar")
             .row(
                 FormRow::new("settings.bar.clock-link", "Clock")
                     .value(clock_summary(&now))
@@ -127,6 +131,11 @@ pub fn page() -> Column {
                 FormRow::new("settings.bar.activities-link", "Activities")
                     .value(activities_summary(&now))
                     .on_press(|| crate::open(View::Sub("activities"))),
+            )
+            .row(
+                FormRow::new("settings.bar.quick-settings-link", "Quick Settings")
+                    .value(crate::quick_settings::summary())
+                    .on_press(|| crate::open(View::Sub("quick-settings"))),
             ),
         group()
             .header("Workspaces")
@@ -199,6 +208,10 @@ pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
         "weather" => (String::from("Weather"), boxed(weather())),
         "items" => (String::from("Items"), boxed(items())),
         "activities" => (String::from("Activities"), boxed(activities())),
+        "quick-settings" => (
+            String::from("Quick Settings"),
+            boxed(crate::quick_settings::page()),
+        ),
         _ => return None,
     })
 }
@@ -236,7 +249,7 @@ fn clock() -> Column {
         now.show_date,
         |when| change_status_bar(|now| now.show_date = when),
     )
-    .width(200.0);
+    .width(crate::MENU_W);
 
     let dates = [
         "Sunday 25 October",
@@ -249,7 +262,7 @@ fn clock() -> Column {
         now.date_format,
         |format| change_status_bar(|now| now.date_format = format),
     )
-    .width(240.0);
+    .width(crate::MENU_W_WIDE);
 
     groups(vec![
         group().row(
@@ -323,19 +336,12 @@ fn weather() -> Column {
     let place = field_box(
         PLACE,
         text_field(PLACE, "A town or city").on_submit(keep),
-        220.0,
+        crate::FIELD_W,
     );
 
     let typed = TextInput::text(PLACE);
-    let state = if typed.trim() == now.weather_place.trim() {
-        if now.weather_place.trim().is_empty() {
-            String::from("Type a place to show its weather")
-        } else {
-            String::from("Kept")
-        }
-    } else {
-        String::from("Press Return or click away to keep it")
-    };
+    let seen = WeatherWatch::read().seen.clone();
+    let state = place_state(typed.trim(), now.weather_place.trim(), now.weather, &seen);
 
     groups(vec![
         group()
@@ -359,14 +365,84 @@ fn weather() -> Column {
     ])
 }
 
+/// What came of the shell's last weather lookup, followed as the shell
+/// writes it, so the place's row says it at once.
+struct WeatherWatch {
+    seen: WeatherSeen,
+}
+
+impl Service for WeatherWatch {
+    fn new() -> Self {
+        Self {
+            seen: weather_seen(),
+        }
+    }
+
+    fn listen() {
+        let path = weather_seen_file();
+        // the folder is watched, so it has to be there
+        if let Some(folder) = path.parent() {
+            let _ = std::fs::create_dir_all(folder);
+        }
+        for _ in watch_file(&path.to_string_lossy()) {
+            let seen = weather_seen();
+            let mut now = Self::write();
+            if now.seen == seen {
+                now.quiet();
+                continue;
+            }
+            now.seen = seen;
+        }
+    }
+}
+
+/// What the place's row says: what to do, or what came of the shell
+/// looking `kept` up (`seen`), once it's been typed in as `typed`.
+fn place_state(typed: &str, kept: &str, on: bool, seen: &WeatherSeen) -> String {
+    if typed != kept {
+        return String::from("Press Return or click away to keep it");
+    }
+    if kept.is_empty() {
+        return String::from("Type a place to show its weather");
+    }
+    if !on {
+        return String::from("Kept");
+    }
+    // the shell looks a new place up as soon as it's kept
+    if seen.place != kept {
+        return String::from("Looking it up…");
+    }
+    match seen.lookup {
+        WeatherLookup::Pending => String::from("Looking it up…"),
+        WeatherLookup::Found => String::from("Kept"),
+        WeatherLookup::NotFound => {
+            format!("Couldn't find \u{201c}{kept}\u{201d}. Try a nearby town.")
+        }
+        WeatherLookup::Unreachable => {
+            String::from("Couldn't reach Open-Meteo. Trying again in a few minutes.")
+        }
+    }
+}
+
 fn items() -> Column {
     let now = status_bar().clone();
-    let order = now.items();
+    // programs' own items too, each by `app:<id>`, so moving one keeps the rest in place
+    let seen = status_apps_seen();
+    let apps: Vec<String> = seen.keys().map(|id| format!("app:{id}")).collect();
+    let order = now.items_with(&apps);
     let last = order.len().saturating_sub(1);
     let icons: Vec<FormRow> = order
         .iter()
         .enumerate()
-        .map(|(index, name)| item_row(name, index, last, now.shows(name)))
+        .map(|(index, name)| {
+            let row = ItemRow {
+                name: name.clone(),
+                index,
+                last,
+                shown: now.shows(name),
+            };
+            item_row(row, &apps, &seen)
+        })
         .collect();
     let reset = PushButton::new("settings.bar.reset-order", "Reset Order…")
         .disabled(now.order.is_empty())
@@ -393,32 +469,66 @@ fn items() -> Column {
     ])
 }
 
+/// One row of the Items list: the item's name in the order, where it is,
+/// and whether it shows.
+struct ItemRow {
+    name: String,
+    index: usize,
+    last: usize,
+    shown: bool,
+}
+
 /// An item of the bar: its switch, when it can be hidden, and buttons that
-/// move it a place left or right.
-fn item_row(name: &'static str, index: usize, last: usize, shown: bool) -> FormRow {
-    let (_, label, hideable) = BAR_ITEMS
-        .iter()
-        .copied()
-        .find(|item| item.0 == name)
-        .unwrap_or((name, name, false));
+/// move it a place left or right. `apps` are the programs' items among the
+/// order, and `seen` what each program calls itself.
+fn item_row(row: ItemRow, apps: &[String], seen: &BTreeMap<String, String>) -> FormRow {
+    let ItemRow {
+        name,
+        index,
+        last,
+        shown,
+    } = row;
+    let (label, hideable) = match name.strip_prefix("app:") {
+        Some(id) => (
+            seen.get(id)
+                .filter(|title| !title.is_empty())
+                .cloned()
+                .unwrap_or_else(|| id.to_string()),
+            true,
+        ),
+        None => BAR_ITEMS
+            .iter()
+            .find(|item| item.0 == name)
+            .map_or((name.clone(), false), |item| (item.1.to_string(), item.2)),
+    };
     let id = format!("settings.bar.item.{name}");
 
+    let mover = |delta: isize| {
+        let (name, apps) = (name.clone(), apps.to_vec());
+        move || {
+            let to = index.saturating_add_signed(delta);
+            change_status_bar(|now| now.move_item_with(&name, to, &apps));
+        }
+    };
     let mut trailing: Vec<Box<dyn Widget>> = vec![
         boxed(
             IconButton::new(format!("{id}.earlier"), ICON_EARLIER)
+                .tooltip(crate::WINDOW, "Move left")
                 .disabled(index == 0)
-                .on_press(move || change_status_bar(|now| now.move_item(name, index - 1)))
+                .on_press(mover(-1))
                 .build(),
         ),
         boxed(
             IconButton::new(format!("{id}.later"), ICON_LATER)
+                .tooltip(crate::WINDOW, "Move right")
                 .disabled(index == last)
-                .on_press(move || change_status_bar(|now| now.move_item(name, index + 1)))
+                .on_press(mover(1))
                 .build(),
         ),
     ];
+    let toggled = name.clone();
     let switch = Switch::new(format!("{id}.switch"), shown)
-        .on_toggle(move |on| change_status_bar(|now| now.set_shown(name, on)))
+        .on_toggle(move |on| change_status_bar(|now| now.set_shown(&toggled, on)))
         .build();
     if hideable {
         trailing.push(boxed(switch));
@@ -430,10 +540,12 @@ fn item_row(name: &'static str, index: usize, last: usize, shown: bool) -> FormR
                 .height(Size::Fixed(1.0)),
         ));
     }
-    let (glyph, accent) = bar_item_icon(name);
-    FormRow::new(id, label)
-        .icon(glyph, accent)
-        .trailing(Row::new(trailing).gap(4.0).align(Center))
+    let (glyph, accent) = bar_item_icon(&name);
+    FormRow::new(id, label).icon(glyph, accent).trailing(
+        Row::new(trailing)
+            .gap(emaki_kit::tokens::sys::space::gap::xs())
+            .align(Center),
+    )
 }
 
 /// Activities: whether they show, how many with their text, Now
@@ -449,7 +561,7 @@ fn activities() -> Column {
             .to_vec(),
         now.compact_activities().clamp(1, 3) - 1,
     )
-    .width(200.0)
+    .width(crate::MENU_W)
     .on_select(|index| change_status_bar(|now| now.activities_compact = index as u8 + 1))
     .build();
 
@@ -588,4 +700,36 @@ fn bar_item_icon(name: &str) -> (emaki_kit::icons::Glyph, emaki_kit::color::Acce
         _ => (emaki_kit::icons::ICON_APPS, Accent::Gray),
     };
     (Glyph::Font(glyph), accent)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn seen(place: &str, lookup: WeatherLookup) -> WeatherSeen {
+        WeatherSeen {
+            place: String::from(place),
+            lookup,
+        }
+    }
+
+    #[test]
+    fn the_place_says_why_no_weather_shows() {
+        let found = seen("Oslo", WeatherLookup::Found);
+        assert_eq!(
+            place_state("Osl", "Oslo", true, &found),
+            "Press Return or click away to keep it"
+        );
+        assert_eq!(place_state("Oslo", "Oslo", true, &found), "Kept");
+        let missing = seen("Atlantis", WeatherLookup::NotFound);
+        assert!(place_state("Atlantis", "Atlantis", true, &missing).starts_with("Couldn't find"));
+        // the shell's word on another place: it's looking this one up
+        assert_eq!(
+            place_state("Oslo", "Oslo", true, &missing),
+            "Looking it up…"
+        );
+        let down = seen("Oslo", WeatherLookup::Unreachable);
+        assert!(place_state("Oslo", "Oslo", true, &down).starts_with("Couldn't reach"));
+        assert_eq!(place_state("Oslo", "Oslo", false, &down), "Kept");
+    }
 }

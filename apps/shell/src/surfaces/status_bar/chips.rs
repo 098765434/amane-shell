@@ -9,14 +9,18 @@ use crate::surfaces::quick_settings::{self, Page};
 use emaki_kit::buttons::DrawnButton;
 use emaki_kit::icons::{ICON_CAMERA, ICON_MIC};
 use emaki_kit::layout::{boxed, cursor, icon};
-use emaki_kit::menu::layer as context_menu;
 use emaki_kit::menu::{ContextMenu, Icon, MenuItem};
 
-use super::{BAR_NS, item, menu_edge};
+use super::{BAR_NS, item, menu_edge, menu_showing, show_menu};
 
-/// The privacy colours: the microphone and the camera.
-const ORANGE: Color = Color::rgb(0xff, 0x9f, 0x0a);
-const GREEN: Color = Color::rgb(0x30, 0xd1, 0x58);
+/// The privacy colours, the palette's, so they follow light and dark: the
+/// microphone and the camera.
+fn orange() -> Color {
+    emaki_kit::color::Accent::Orange.color()
+}
+fn green() -> Color {
+    emaki_kit::color::Accent::Green.color()
+}
 
 const PRIVACY_KEY: &str = "emaki.bar.privacy";
 
@@ -47,7 +51,7 @@ pub fn privacy() -> Vec<Box<dyn Widget>> {
         widgets.push(boxed(dot(
             "emaki.bar.privacy.camera",
             ICON_CAMERA,
-            GREEN,
+            green(),
             camera_tip,
         )));
     }
@@ -55,7 +59,7 @@ pub fn privacy() -> Vec<Box<dyn Widget>> {
         widgets.push(boxed(dot(
             "emaki.bar.privacy.microphone",
             ICON_MIC,
-            ORANGE,
+            orange(),
             mic_tip,
         )));
     }
@@ -72,6 +76,8 @@ fn dot(id: &'static str, glyph: char, color: Color, tip: String) -> Rectangle {
             .child(icon(glyph, metrics.small_icon, color))
     }))
     .width(metrics.item_width)
+    // both dots open the one menu, and light while it's open
+    .active(menu_showing(PRIVACY_KEY))
     .on_press(privacy_menu)
     .tooltip(BAR_NS, tip)
     .build()
@@ -114,7 +120,12 @@ fn privacy_menu() {
     menu = menu
         .separator()
         .item(MenuItem::label("Sound Settings…").on_select(|| quick_settings::open(Page::Sound)));
-    context_menu::show_under(PRIVACY_KEY, menu, BAR_NS, (cursor().0 as i32, menu_edge()));
+    show_menu(
+        PRIVACY_KEY,
+        PRIVACY_KEY,
+        menu,
+        (cursor().0 as i32, menu_edge()),
+    );
 }
 
 /// Brings up the window of process `pid` (or its parent's, for a browser's

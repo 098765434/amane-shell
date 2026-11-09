@@ -10,14 +10,20 @@ pub(super) fn volume() -> Option<Box<dyn Widget>> {
     let muted = audio.muted();
     let volume = audio.volume();
     let kind = audio.output_kind();
+    let output = audio
+        .outputs()
+        .iter()
+        .find(|device| device.default())
+        .map(|device| device.description().to_string());
     drop(audio);
 
     // what is playing through: speakers, headphones, a headset, the TV …
-    let (glyph, tip) = if muted {
+    let (glyph, title) = if muted {
         (ICON_VOLUME_OFF, String::from("Muted"))
     } else {
         (audio_glyph(kind, false), format!("Volume {volume}%"))
     };
+    let tip = with_detail(title, output.as_deref());
 
     let icon = status_icon(
         "emaki.bar.volume",
@@ -50,7 +56,11 @@ pub(super) fn bluetooth() -> Option<Box<dyn Widget>> {
         .devices()
         .iter()
         .filter(|device| device.connected())
-        .map(|device| BluetoothDevice::name(device).to_string())
+        // with its charge, where it tells
+        .map(|device| match device.battery() {
+            Some(charge) => format!("{} {charge}%", BluetoothDevice::name(device)),
+            None => BluetoothDevice::name(device).to_string(),
+        })
         .collect();
     drop(bluetooth);
 
@@ -74,10 +84,13 @@ pub(super) fn network() -> Option<Box<dyn Widget>> {
     drop(net);
 
     let (glyph, tip) = match link {
-        Link::Wifi => (wifi_glyph(strength), ssid),
+        Link::Wifi => (
+            wifi_glyph(strength),
+            format!("{ssid} · {} signal", signal_word(strength)),
+        ),
         Link::Wired => (ICON_CABLE, String::from("Wired")),
-        // vpn and the rest carry no strength to show
-        Link::Other => (ICON_WIFI, String::from("Connected")),
+        // a VPN, a tether and the rest: no strength to show, and not Wi‑Fi
+        Link::Other => (ICON_LAN, other_link()),
         Link::Offline if wifi_on => (ICON_WIFI_NONE, String::from("Offline")),
         Link::Offline => (ICON_WIFI_OFF, String::from("Wi‑Fi off")),
     };
@@ -92,6 +105,35 @@ pub(super) fn network() -> Option<Box<dyn Widget>> {
         )
         .build(),
     ))
+}
+
+/// A Wi‑Fi signal in a word, by the wedges it fills.
+fn signal_word(strength: u8) -> &'static str {
+    match strength {
+        67.. => "Strong",
+        34..67 => "Good",
+        _ => "Weak",
+    }
+}
+
+/// `title`, then ` · detail` when there's one.
+fn with_detail(title: String, detail: Option<&str>) -> String {
+    match detail.filter(|detail| !detail.is_empty()) {
+        Some(detail) => format!("{title} · {detail}"),
+        None => title,
+    }
+}
+
+/// What a link that's neither Wi‑Fi nor a cable is: the VPN up, if one is.
+fn other_link() -> String {
+    Connections::read()
+        .vpns()
+        .iter()
+        .find(|vpn| vpn.active)
+        .map_or_else(
+            || String::from("Connected"),
+            |vpn| format!("Connected · {}", vpn.name),
+        )
 }
 
 /// Tailscale's mark while connected; accent while routing through an
@@ -143,32 +185,39 @@ pub(super) fn battery() -> Option<Box<dyn Widget>> {
         return None;
     }
     let pct = charge.percent();
-    let on_ac = charge.on_ac();
+    // charging, not merely plugged in: a full battery on AC isn't charging
+    let charging = charge.charging();
     let low = battery::low(&charge);
+    let detail = quick_settings::battery_detail(&charge);
     drop(charge);
 
-    let (color, tip) = if on_ac {
-        (
-            sys::color::accent::bg(),
-            format!("Battery {pct}% · charging"),
-        )
+    let color = if charging {
+        sys::color::accent::bg()
     } else {
-        (
-            battery::tint(low, material::label(Level::Secondary)),
-            format!("Battery {pct}%"),
-        )
+        battery::tint(low, material::label(Level::Secondary))
     };
+    let tip = battery_tip(pct, &detail);
 
     Some(boxed(
         status_icon(
             "emaki.bar.battery",
-            battery_glyph(pct, on_ac),
+            battery_glyph(pct, charging),
             color,
             Page::Power,
             tip,
         )
         .build(),
     ))
+}
+
+/// "Battery 42% · 3 h 5 min left", "Battery 100% · full", or the charge
+/// alone when Quick Settings' detail has nothing to add.
+fn battery_tip(percent: u8, detail: &str) -> String {
+    if detail.is_empty() {
+        format!("Battery {percent}%")
+    } else {
+        format!("Battery {percent}% · {detail}")
+    }
 }
 
 /// The phone KDE Connect has, with its charge, while it's connected:
@@ -219,16 +268,21 @@ pub(super) fn quick_settings_button() -> Box<dyn Widget> {
     )
 }
 
-/// Settings GNOME shows in the bar only while they're on: night light, a
-/// VPN, a power mode other than Balanced, airplane mode.
+/// Settings shown in the bar only while they're on: night light, a VPN, a
+/// power mode other than Balanced, airplane mode; each opens its own page.
 pub(super) fn on_icons() -> Vec<Box<dyn Widget>> {
     let mut glyphs = Vec::new();
 
     if NightLight::read().on() {
-        glyphs.push(("emaki.bar.night-light", ICON_NIGHT_LIGHT, "Night Light"));
+        glyphs.push((
+            "emaki.bar.night-light",
+            ICON_NIGHT_LIGHT,
+            "Night Light",
+            Page::NightLight,
+        ));
     }
     if Connections::read().vpns().iter().any(|vpn| vpn.active) {
-        glyphs.push(("emaki.bar.vpn", ICON_VPN, "VPN"));
+        glyphs.push(("emaki.bar.vpn", ICON_VPN, "VPN", Page::Vpn));
     }
     let profile = PowerProfile::read();
     if profile.present() && profile.active() != "balanced" {
@@ -241,24 +295,24 @@ pub(super) fn on_icons() -> Vec<Box<dyn Widget>> {
             "emaki.bar.power-mode",
             power_profile_glyph(profile.active()),
             tip,
+            Page::PowerMode,
         ));
     }
     drop(profile);
     if Rfkill::read().airplane() {
-        glyphs.push(("emaki.bar.airplane", ICON_AIRPLANE, "Airplane Mode"));
+        // airplane mode has no page of its own: its tile is in the grid
+        glyphs.push((
+            "emaki.bar.airplane",
+            ICON_AIRPLANE,
+            "Airplane Mode",
+            Page::Grid,
+        ));
     }
 
-    grid_icons(glyphs, material::label(Level::Secondary))
-}
-
-/// Status glyphs in `color`, each opening Quick Settings' grid.
-pub(super) fn grid_icons(
-    glyphs: Vec<(&'static str, char, impl Into<String>)>,
-    color: Color,
-) -> Vec<Box<dyn Widget>> {
+    let color = material::label(Level::Secondary);
     glyphs
         .into_iter()
-        .map(|(id, glyph, tip)| boxed(status_icon(id, glyph, color, Page::Grid, tip).build()))
+        .map(|(id, glyph, tip, page)| boxed(status_icon(id, glyph, color, page, tip).build()))
         .collect()
 }
 
@@ -266,27 +320,47 @@ pub(super) fn grid_icons(
 /// unseen; nothing otherwise. Click opens the center, right-click picks
 /// how long Do Not Disturb lasts.
 pub(super) fn notification_icon() -> Option<Box<dyn Widget>> {
-    let dnd = DoNotDisturb::read().on();
-    let unseen = notifications::unseen();
+    let until = DoNotDisturb::read().until();
+    let unseen = notifications::unseen_count();
 
-    let (glyph, color, tip) = match (dnd, unseen) {
-        (true, _) => (ICON_DND, material::label(Level::Primary), "Do Not Disturb"),
-        (false, true) => (
+    let (glyph, color, tip) = match (until, unseen) {
+        (Some(until), _) => (ICON_DND, material::label(Level::Primary), dnd_tip(until)),
+        (None, 0) => return None,
+        (None, 1) => (
             ICON_NOTIFICATIONS,
             sys::color::accent::bg(),
-            "New notifications",
+            String::from("1 new notification"),
         ),
-        (false, false) => return None,
+        (None, many) => (
+            ICON_NOTIFICATIONS,
+            sys::color::accent::bg(),
+            format!("{many} new notifications"),
+        ),
     };
 
     Some(boxed(
         bar_icon("emaki.bar.notifications", glyph, color)
-            .active(is_open(Panel::Notifications))
+            .active(is_open(Panel::Notifications) || menu_showing("emaki.bar.notifications"))
             .on_press(|| panel::toggle(Panel::Notifications))
-            .on_secondary(|| notifications::dnd_menu(BAR_NS, (cursor().0, menu_edge())))
+            .on_secondary(|| {
+                opened_menu("emaki.bar.notifications", notifications::DND_MENU_KEY);
+                notifications::dnd_menu(BAR_NS, (cursor().0, menu_edge()));
+            })
             .tooltip(BAR_NS, tip)
             .build(),
     ))
+}
+
+/// "Do Not Disturb", or "Do Not Disturb · until 14:00" when it ends by itself.
+fn dnd_tip(until: crate::services::do_not_disturb::Until) -> String {
+    use crate::services::do_not_disturb::Until;
+    match until {
+        Until::Forever => String::from("Do Not Disturb"),
+        Until::At(end) => format!(
+            "Do Not Disturb · until {}",
+            crate::services::clock::local(end, "%H:%M")
+        ),
+    }
 }
 
 /// The clock opens the notification center; its tooltip is
@@ -358,6 +432,12 @@ pub(super) fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
     };
     let minutes = minute as f32 * 6.0;
     let hours = (hour % 12) as f32 * 30.0 + minute as f32 * 0.5;
+    // a 16 px face reads clearer in finer lines; a bigger one keeps its weight
+    let (rim, hour_hand, minute_hand) = if face <= 16.0 {
+        (1.0, 1.25, 1.0)
+    } else {
+        (1.5, 1.5, 1.2)
+    };
     Rectangle::new()
         .width(metrics().item_width)
         .height(Parent)
@@ -367,11 +447,11 @@ pub(super) fn analog(hour: u32, minute: u32, color: Color) -> Rectangle {
                 .width(face)
                 .height(face)
                 .radius(face / 2.0)
-                .border(1.5, color)
+                .border(rim, color)
                 .child(amane::Stack::new(vec![
                     // drawn for a 16 px face, and grown with a bigger one
-                    hand(4.0 * face / 16.0, 1.5, hours),
-                    hand(6.0 * face / 16.0, 1.2, minutes),
+                    hand(4.0 * face / 16.0, hour_hand, hours),
+                    hand(6.0 * face / 16.0, minute_hand, minutes),
                 ])),
         )
 }
@@ -392,6 +472,17 @@ pub(super) fn keyboard() -> Option<Box<dyn Widget>> {
         item(PushButton::new("emaki.bar.keyboard", code))
             .text(metrics().label())
             .width(width.max(metrics().item_width))
+            .active(menu_showing("emaki.bar.keyboard"))
+            // scrolling goes round the layouts, as the menu lists them
+            .on_scroll(|scroll: Scroll| {
+                let step = LAYOUT_SCROLLED.with(|scrolled| scroll_steps(scrolled, &scroll));
+                let layouts = KeyboardLayout::read();
+                let next = cycled(layouts.current_index(), layouts.names().len(), step);
+                drop(layouts);
+                if let Some(next) = next {
+                    keyboard_layout::switch(next);
+                }
+            })
             .on_press(|| {
                 let layouts = KeyboardLayout::read();
                 let current = layouts.current_index();
@@ -403,16 +494,26 @@ pub(super) fn keyboard() -> Option<Box<dyn Widget>> {
                     menu = menu.item(row);
                 }
                 drop(layouts);
-                emaki_kit::menu::layer::show_under(
+                show_menu(
+                    "emaki.bar.keyboard",
                     "emaki.bar.keyboard",
                     menu,
-                    BAR_NS,
                     (cursor().0 as i32, menu_edge()),
                 );
             })
             .tooltip(BAR_NS, name)
             .build(),
     ))
+}
+
+/// The index `step` round from `current` among `len`, going round past
+/// either end; nothing when that's where it is.
+fn cycled(current: usize, len: usize, step: i32) -> Option<usize> {
+    if len < 2 || step == 0 {
+        return None;
+    }
+    let len = len as i64;
+    Some((current as i64 + i64::from(step)).rem_euclid(len) as usize)
 }
 
 /// The weather where `weather_place` is, once it's been read: its glyph
@@ -425,8 +526,15 @@ pub(super) fn weather() -> Option<Box<dyn Widget>> {
     let weather = Weather::read();
     let now = weather.now()?.clone();
     let place = weather.place().to_string();
+    let stale = weather.stale();
     drop(weather);
     let (glyph, words) = describe(now.code, now.day);
+    // an old reading, kept while Open-Meteo can't be reached, shows dimmed
+    let (color, note) = if stale {
+        (material::label(Level::Tertiary), " · Not up to date")
+    } else {
+        (material::label(Level::Primary), "")
+    };
     let text = format!("{:.0}°", now.temperature);
     let width =
         text_width(&text, metrics().numeric()) + metrics().item_width + sys::space::inset::s();
@@ -436,10 +544,49 @@ pub(super) fn weather() -> Option<Box<dyn Widget>> {
             .icon_size(metrics().icon)
             .text(metrics().numeric())
             .width(width)
+            .color(color)
+            // beside the clock, it opens what the clock does
+            .active(is_open(Panel::Notifications))
+            .on_press(|| panel::toggle(Panel::Notifications))
             .tooltip(
                 BAR_NS,
-                format!("{place} · {words} · H:{:.0}° L:{:.0}°", now.high, now.low),
+                format!(
+                    "{place} · {words} · H:{:.0}° L:{:.0}°{note}",
+                    now.high, now.low
+                ),
             )
             .build(),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn scrolling_goes_round_the_layouts() {
+        assert_eq!(cycled(0, 3, 1), Some(1));
+        assert_eq!(cycled(2, 3, 1), Some(0));
+        assert_eq!(cycled(0, 3, -1), Some(2));
+        assert_eq!(cycled(0, 1, 1), None);
+        assert_eq!(cycled(1, 3, 0), None);
+    }
+
+    #[test]
+    fn a_tooltip_adds_its_detail_when_there_is_one() {
+        assert_eq!(
+            with_detail(String::from("Muted"), Some("Headphones")),
+            "Muted · Headphones"
+        );
+        assert_eq!(with_detail(String::from("Muted"), Some("")), "Muted");
+        assert_eq!(with_detail(String::from("Muted"), None), "Muted");
+        assert_eq!(
+            battery_tip(42, "3 h 5 min left"),
+            "Battery 42% · 3 h 5 min left"
+        );
+        assert_eq!(battery_tip(80, ""), "Battery 80%");
+        assert_eq!(signal_word(90), "Strong");
+        assert_eq!(signal_word(50), "Good");
+        assert_eq!(signal_word(10), "Weak");
+    }
 }
