@@ -5,7 +5,7 @@ delete, see [penpot-backlog.md](penpot-backlog.md).
 
 Already drawn: the dock, the status bar, Quick Settings (the grid and its states), Emaki
 Settings' Appearance page, the launcher, the OSD, notifications, the desktop widgets and Messages
-(inbox, thread, New Message).
+(inbox, thread, New Message, the empty and no-phone states).
 
 ## Shell surfaces
 
@@ -74,9 +74,10 @@ Only Appearance is drawn. Still to draw:
 
 ### Messages (`apps/messages/`)
 - [ ] Phone Input: the trackpad, the Left/Middle/Right buttons, the keyboard hint
-- [ ] No phone connected, and the inbox's captions (asking the phone, no answer with Try Again,
-      SMS not shared, off the network, no conversations)
-- [ ] An empty thread pane ("Choose a conversation, or start a new one.")
+- [x] No phone connected, and the inbox's captions (asking the phone, no answer with Try Again,
+      SMS not shared, off the network, no conversations): `Messages / Inbox note`, and the
+      "No answer", "SMS not shared" and "No phone" scenes
+- [x] An empty thread pane ("Choose a conversation, or start a new one."): the "Empty thread" scene
 - [ ] Photos and videos, file chips, link chips
 - [ ] Attached-file chips over the reply field, and "may be too big to send"
 - [ ] The floating New Message pill, and Load Earlier Messages
