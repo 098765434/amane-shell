@@ -73,6 +73,9 @@ pub struct Toasts {
     held: HashMap<u32, SystemTime>,
     /// What showed at the last tick.
     shown: Vec<u32>,
+    /// The toasts that have played their sound, so each plays once; a
+    /// sender replacing one stays quiet.
+    sounded: HashSet<u32>,
 }
 
 impl Service for Toasts {
@@ -82,6 +85,7 @@ impl Service for Toasts {
             hovered: false,
             held: HashMap::new(),
             shown: Vec::new(),
+            sounded: HashSet::new(),
         }
     }
 
@@ -118,6 +122,7 @@ impl Service for Toasts {
             let ids: HashSet<u32> = list.iter().map(Notification::id).collect();
             self.hidden.retain(|(id, _)| ids.contains(id));
             self.held.retain(|id, _| ids.contains(id));
+            self.sounded.retain(|id| ids.contains(id));
 
             let shown: Vec<u32> = list
                 .iter()
@@ -138,6 +143,10 @@ impl Service for Toasts {
             Notifications::expire(id);
         }
 
+        if newly_shown(&shown, &mut self.sounded) {
+            play_sound();
+        }
+
         if shown == self.shown {
             return false;
         }
@@ -148,6 +157,26 @@ impl Service for Toasts {
 
 // what the listener's next end is worked out from changed
 static WAKE: Wake = Wake::new();
+
+// a burst of notifications plays one sound
+const SOUND_GAP: Duration = Duration::from_secs(1);
+
+/// Whether any of `shown` is up for the first time, noting each in `sounded`.
+fn newly_shown(shown: &[u32], sounded: &mut HashSet<u32>) -> bool {
+    let mut new = false;
+    for id in shown {
+        new |= sounded.insert(*id);
+    }
+    new
+}
+
+/// The sound `sound.json` names, at its volume; `pw-play` runs on its own.
+fn play_sound() {
+    let sound = emaki_kit::settings::sound().clone();
+    if let Some(name) = sound.notification {
+        emaki_kit::sounds::play(&name, sound.volume, SOUND_GAP);
+    }
+}
 
 impl Toasts {
     /// When the next toast up now goes, if one has a lifetime.
@@ -514,6 +543,15 @@ mod tests {
     use super::*;
 
     const T0: SystemTime = SystemTime::UNIX_EPOCH;
+
+    #[test]
+    fn a_toast_sounds_once() {
+        let mut sounded = HashSet::new();
+        assert!(newly_shown(&[1], &mut sounded));
+        assert!(!newly_shown(&[1], &mut sounded));
+        assert!(newly_shown(&[1, 2], &mut sounded));
+        assert!(!newly_shown(&[], &mut sounded));
+    }
 
     fn toast(id: u32, timeout: Timeout, urgency: Urgency) -> Toast {
         Toast {

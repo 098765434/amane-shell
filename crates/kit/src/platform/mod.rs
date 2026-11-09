@@ -10,3 +10,4 @@ pub mod secrets;
 pub mod service;
 pub mod settings;
 pub mod shell_ipc;
+pub mod sounds;

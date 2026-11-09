@@ -250,8 +250,10 @@ fn apply(nodes: &mut HashMap<u64, Node>, objects: &Value) {
             .unwrap_or_default();
             node.pid = props["application.process.id"].as_u64();
             node.api = text("device.api");
+            // amane's level meter (Settings' Sound page) only measures how loud it is
             node.monitor = props["stream.monitor"].as_bool().unwrap_or(false)
-                || props["stream.capture.sink"].as_bool().unwrap_or(false);
+                || props["stream.capture.sink"].as_bool().unwrap_or(false)
+                || props["amane.level-meter"].as_str() == Some("1");
         }
     }
 }
@@ -301,6 +303,33 @@ mod tests {
             .collect();
         assert_eq!(out.len(), 3, "the fixture holds three batches");
         out
+    }
+
+    #[test]
+    fn amanes_level_meter_isnt_an_app_listening() {
+        let node = |id: u64, app: &str, meter: bool| {
+            let mut props = serde_json::json!({
+                "media.class": "Stream/Input/Audio",
+                "application.name": app,
+                "application.process.id": id,
+            });
+            if meter {
+                props["amane.level-meter"] = Value::from("1");
+            }
+            serde_json::json!({
+                "id": id,
+                "type": "PipeWire:Interface:Node",
+                "info": { "state": "running", "props": props },
+            })
+        };
+        let mut nodes = HashMap::new();
+        apply(
+            &mut nodes,
+            &Value::Array(vec![node(1, "amane", true), node(2, "Zoom", false)]),
+        );
+        let (microphone, _, _) = summary(&nodes, 0);
+        let names: Vec<&str> = microphone.iter().map(|user| user.name.as_str()).collect();
+        assert_eq!(names, ["Zoom"]);
     }
 
     #[test]

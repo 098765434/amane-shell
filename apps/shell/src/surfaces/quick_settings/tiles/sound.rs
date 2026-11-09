@@ -1,22 +1,28 @@
 //! Sound — Quick Settings' Sound card: GNOME's output slider (the glyph
 //! mutes; the chevron opens the page) and its page: the output's and the
 //! microphone's levels, each with the devices to pick from, the default
-//! checked. Read from the fork's `Audio` service, which follows the sound
-//! server live.
+//! checked, and a level for each app playing. Read from the fork's `Audio`
+//! service, which follows the sound server live.
 
-use amane::{Audio, AudioDevice, Column, Parent, ScrollArea, Service, Text, Widget};
+use amane::{
+    Audio, AudioDevice, AudioStream, Center, Column, Parent, Row, ScrollArea, Service, Text, Widget,
+};
 
 use super::super::grid::Span;
 use super::super::slider_card::{self, SliderRow};
 use super::super::{Page, open};
 use super::settings_link;
+use crate::chrome::panel::close;
+use crate::services::installed;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use crate::surfaces::quick_settings::detail::page_width;
 use crate::surfaces::status_bar::Indicator;
 use crate::tokens::{Styled, sys};
+use emaki_kit::app_icon;
 use emaki_kit::buttons::{IconButton, Shape, Style, expect, optimistic};
 use emaki_kit::icons::{
-    ICON_CHEVRON_RIGHT, ICON_MIC, ICON_MIC_OFF, ICON_VOLUME_OFF, audio_glyph, volume_glyph,
+    ICON_CHEVRON_RIGHT, ICON_MIC, ICON_MIC_OFF, ICON_VOLUME_OFF, ICON_VOLUME_UP, audio_glyph,
+    volume_glyph,
 };
 use emaki_kit::layout::{boxed, caption, split_row};
 use emaki_kit::list::{self, List, ListItem};
@@ -154,6 +160,7 @@ pub(in crate::surfaces::quick_settings) fn page() -> DetailPage {
     });
     let outputs = audio.outputs().to_vec();
     let inputs = audio.inputs().to_vec();
+    let streams = audio.streams().to_vec();
     drop(audio);
 
     let page = DetailPage::new("emaki.qs.sound.page", "Sound")
@@ -166,6 +173,7 @@ pub(in crate::surfaces::quick_settings) fn page() -> DetailPage {
         .body(move |height| {
             let mut sections = vec![output.build()];
             sections.extend(device_section(&outputs, false));
+            sections.extend(streams.iter().map(app_level));
             // a machine without a microphone has nothing to set
             if let Some(microphone) = microphone {
                 sections.push(microphone.build());
@@ -181,7 +189,72 @@ pub(in crate::surfaces::quick_settings) fn page() -> DetailPage {
                 .height(height),
             )]
         });
+    if installed(SETTINGS) {
+        return page.footer("Sound Settings…", || {
+            close();
+            amane::Launch::argv(&[SETTINGS, "--page", "sound"]).activated();
+        });
+    }
     settings_link(page, "Sound Settings…", "pavucontrol")
+}
+
+const SETTINGS: &str = emaki_kit::app_ids::SETTINGS;
+
+/// One app's level: its icon and name (and what's playing) over a slider
+/// whose glyph mutes it alone.
+fn app_level(stream: &AudioStream) -> Box<dyn Widget> {
+    let index = stream.index();
+    let name = if stream.app().is_empty() {
+        stream.binary()
+    } else {
+        stream.app()
+    };
+    let label = if stream.media().is_empty() || stream.media() == name {
+        name.to_string()
+    } else {
+        format!("{name} · {}", stream.media())
+    };
+    let key = app_icon::first_known(&[stream.icon(), stream.binary(), stream.app()]);
+    let mute_id = format!("emaki.qs.sound.app.{index}.mute");
+    // a click on mute shows before the server agrees
+    let muted = optimistic(&mute_id, stream.muted());
+    let side = sys::size::icon::s();
+    let percent = Text::new(if muted {
+        String::from("Muted")
+    } else {
+        format!("{}%", stream.volume())
+    })
+    .style(sys::r#type::numeric())
+    .color(material::label(material::Level::Secondary));
+    let head = Row::new(vec![
+        boxed(app_icon::tile(key, name, side)),
+        boxed(caption(label)),
+    ])
+    .gap(sys::space::gap::xs())
+    .align(Center);
+    let pressed = mute_id.clone();
+    boxed(
+        Column::new(vec![
+            boxed(split_row(head, vec![boxed(percent)])),
+            boxed(
+                Slider::new(stream.volume(), page_width())
+                    .large(if muted {
+                        ICON_VOLUME_OFF
+                    } else {
+                        ICON_VOLUME_UP
+                    })
+                    .dimmed(muted)
+                    .on_icon_press(mute_id, move || {
+                        expect(&pressed, !muted);
+                        Audio::set_stream_muted(index, !muted);
+                    })
+                    .on_value_change(move |value| Audio::set_stream_volume(index, value))
+                    .build(),
+            ),
+        ])
+        .gap(sys::space::gap::xs())
+        .width(Parent),
+    )
 }
 
 /// Where sound goes to (or, with `input`, comes from), the default

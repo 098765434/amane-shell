@@ -113,6 +113,12 @@ mouse's tap to click, natural scrolling, off while typing, speed, acceleration, 
 scroll method, written to niri's `input.kdl`. The layout stays under General. **Keyboard
 Shortcuts** is a sub-page listing every bind in niri's config, read-only. See [input.md](input.md).
 
+### Sound
+
+The output and input devices and levels, the output's balance (with a Left/Right test), a meter
+for the microphone while the page is open, a level for each app playing, and the sound a
+notification plays (`sound.json`). See [sound.md](sound.md).
+
 ### Status Bar
 
 Writes `status-bar.json` (`status_bar.rs`); see [status-bar.md](status-bar.md#settings).

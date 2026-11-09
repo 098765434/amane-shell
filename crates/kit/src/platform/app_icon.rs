@@ -71,6 +71,18 @@ pub fn icon_for(app_id: &str) -> Option<PathBuf> {
     Apps::find_icon(&needle).or_else(|| (last != needle).then(|| Apps::find_icon(last)).flatten())
 }
 
+/// The first of `names` that has an icon (a sound stream's icon name, its
+/// program, its app name, say), else the first that isn't empty: what to
+/// give [`tile`] for something known by several names.
+pub fn first_known<'a>(names: &[&'a str]) -> &'a str {
+    names
+        .iter()
+        .find(|name| icon_for(name).is_some())
+        .or_else(|| names.iter().find(|name| !name.is_empty()))
+        .copied()
+        .unwrap_or_default()
+}
+
 /// The name an app with this app_id goes by: its desktop entry's, else the
 /// id's last dotted segment.
 pub fn name_for(app_id: &str) -> Option<String> {

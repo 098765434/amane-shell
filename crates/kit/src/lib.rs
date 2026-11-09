@@ -72,6 +72,7 @@
 //! - [`app`] — an app's window, text fields, dialogs and sidebar.
 //! - [`app_icon`] — an app's icon from its desktop entry, by app_id.
 //! - [`settings`] — the shell's settings file, which a settings app changes.
+//! - [`sounds`] — the sound theme's sounds, and playing one.
 //! - [`mod@marker`] — scoped redraws for state kept outside a service.
 //!
 //! And at the root, [`tokens`] and [`theme`]: the design tokens and the
@@ -100,7 +101,9 @@ pub use controls::{
 };
 pub use foundation::{area, color, fuzzy, icons, layout, symbol};
 pub use look::{glass, glass_region, lab, material, style};
-pub use platform::{app, app_icon, launch, marker, process, secrets, service, settings, shell_ipc};
+pub use platform::{
+    app, app_icon, launch, marker, process, secrets, service, settings, shell_ipc, sounds,
+};
 
 // what's below the UI, from emaki-base, so an app needs only the kit
 pub use emaki_base::{

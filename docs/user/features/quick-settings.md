@@ -39,7 +39,7 @@ when the machine has what it drives, as in GNOME, and the grid packs around what
 | Keep Awake | a tile with a cup, waiting in the window's Suggestions by default; "Off", "No limit", the time left ("1 h 24 min"), "Lid ignored" or "Lid · 1 h 24 min"; lit while anything is held | the disc holds the screen on with no limit, or lets go of everything, the lid too; the tile opens the page | how long (No limit, 15 min, 30 min, 1 h, 2 h; picking one starts it now), Keep screen on and Ignore lid close (hidden without logind; the last one off turns it all off), Turn the screen off now (the monitors go off a second later, nothing is let go, and input brings them back); Show in Status Bar |
 | Dark Style, Night Light | round buttons, white with the glyph in the accent while on | switch; a right click on Night Light opens its page | Night Light: how warm, or "Scheduled" when it follows a schedule set on the [Displays page](displays.md#night-light) |
 | Display | only with a backlight; the brightness slider between a dim and a bright glyph | drag or scroll | — |
-| Sound | the default output's level; the small glyph says how loud (off, down, up) | the small glyph mutes; drag or scroll sets the level; the chevron or a right click opens the page | Sound: the output's level and percentage (its glyph mutes it) and its devices, then the microphone's level and its devices (with a microphone); the default device checked, a click makes another the default |
+| Sound | the default output's level; the small glyph says how loud (off, down, up) | the small glyph mutes; drag or scroll sets the level; the chevron or a right click opens the page | Sound: the output's level and percentage (its glyph mutes it) and its devices, then a level for each app playing (its icon, name and what's playing, a slider whose glyph mutes that app), then the microphone's level and its devices (with a microphone); the default device checked, a click makes another the default |
 | Battery | only with a battery; the charge and how long it lasts, the disc in the critical color when it's low | opens its page | Battery (time left, power mode, peripherals) |
 | Round buttons | Power Mode (on while not Balanced), Keyboard (the backlight), Background Apps (how many, in a tooltip), screenshot, lock, power off | switch; a right click opens the page; screenshot closes the card, then opens niri's screenshot UI; lock locks through logind | Power Mode: the modes; Keyboard: Off/Low/High (a slider for keyboards with many steps); Background Apps: the apps, each with a close button; Power Off: suspend, restart, power off, log out |
 
@@ -60,7 +60,8 @@ Now Playing is always there, saying "Not Playing" when nothing is; everything el
 follows GNOME's rule and hides without its hardware.
 
 A page's last row opens the app with the rest of its settings when that app is installed:
-`nm-connection-editor` for Wi‑Fi and VPN and `pavucontrol` for Sound. Bluetooth has none: its
+`nm-connection-editor` for Wi‑Fi and VPN, and Emaki Settings' [Sound page](sound.md) for Sound
+(`pavucontrol` without Emaki Settings). Bluetooth has none: its
 page is the whole manager.
 
 A device that asks to pair while the Bluetooth page isn't showing asks through the shell's alert

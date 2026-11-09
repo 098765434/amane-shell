@@ -403,6 +403,8 @@ pub struct SliderRow {
     value: String,
     icon: Option<(char, Accent)>,
     glyph: Option<char>,
+    // an app's icon, say, a tile wide
+    leading: Option<Box<dyn Widget>>,
     slider: Box<dyn FnOnce(f32) -> Box<dyn Widget>>,
 }
 
@@ -417,6 +419,7 @@ impl SliderRow {
             value: String::new(),
             icon: None,
             glyph: None,
+            leading: None,
             slider: Box::new(move |width| boxed(slider(width))),
         }
     }
@@ -439,9 +442,15 @@ impl SliderRow {
         self
     }
 
+    /// `widget`, a tile wide (an app's icon), before the title.
+    pub fn leading(mut self, widget: impl Widget + 'static) -> Self {
+        self.leading = Some(boxed(widget));
+        self
+    }
+
     fn text_start(&self) -> f32 {
         pad_h()
-            + if self.icon.is_some() || self.glyph.is_some() {
+            + if self.icon.is_some() || self.glyph.is_some() || self.leading.is_some() {
                 tile_side() + tile_gap()
             } else {
                 0.0
@@ -460,7 +469,15 @@ impl SliderRow {
         let slider_w = (width - start - pad_h()).max(40.0);
 
         let mut parts: Vec<Box<dyn Widget>> = Vec::new();
-        if let Some((glyph, accent)) = self.icon {
+        if let Some(leading) = self.leading {
+            parts.push(boxed(
+                Rectangle::new()
+                    .width(tile_side())
+                    .height(tile_side())
+                    .align_child(Center, Center)
+                    .child(Row::new(vec![leading])),
+            ));
+        } else if let Some((glyph, accent)) = self.icon {
             parts.push(boxed(LeadingIcon::new(glyph).accent(accent).build()));
         } else if let Some(glyph) = self.glyph {
             parts.push(boxed(

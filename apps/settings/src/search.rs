@@ -195,6 +195,43 @@ const INDEX: &[Entry] = &[
         "settings.displays.oled.dark",
         &["burn in"],
     ),
+    // Sound
+    row(
+        "sound",
+        "Output device",
+        "settings.sound.output.device",
+        &["speakers", "headphones", "audio output"],
+    ),
+    row(
+        "sound",
+        "Balance",
+        "settings.sound.output.balance",
+        &["left", "right", "stereo"],
+    ),
+    row(
+        "sound",
+        "Input device",
+        "settings.sound.input.device",
+        &["microphone", "mic", "audio input"],
+    ),
+    row(
+        "sound",
+        "Input level",
+        "settings.sound.input.level",
+        &["microphone", "mic test", "meter"],
+    ),
+    row(
+        "sound",
+        "Play a sound for notifications",
+        "settings.sound.notifications",
+        &["alert sound", "notification sound", "chime"],
+    ),
+    row(
+        "sound",
+        "Notification sound",
+        "settings.sound.notifications.sound",
+        &["alert sound", "chime"],
+    ),
     // Input
     row(
         "input",

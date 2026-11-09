@@ -17,6 +17,7 @@ mod passwords;
 mod previews;
 mod quick_settings;
 mod search;
+mod sound;
 mod status_bar;
 mod system;
 

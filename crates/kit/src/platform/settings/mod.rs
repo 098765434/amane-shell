@@ -1,7 +1,7 @@
 //! The shell's settings that a settings app changes and the shell follows
 //! live: `~/.config/emaki/appearance.json`, `desktop.json`,
-//! `launcher.json`, `status-bar.json`, `dock.json`, `nixos.json` and
-//! `notifications.json`,
+//! `launcher.json`, `status-bar.json`, `dock.json`, `nixos.json`,
+//! `notifications.json` and `sound.json`,
 //! through amane's `Config`. [`theme`](crate::theme) reads the appearance,
 //! between the `EMAKI_*` overrides and what the system says.
 
@@ -49,6 +49,7 @@ mod nixos;
 mod notifications;
 mod passwords;
 mod seen;
+mod sound;
 mod status_bar;
 
 pub use appearance::*;
@@ -61,6 +62,7 @@ pub use nixos::*;
 pub use notifications::*;
 pub use passwords::*;
 pub use seen::*;
+pub use sound::*;
 pub use status_bar::*;
 
 #[cfg(test)]

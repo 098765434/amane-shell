@@ -84,6 +84,9 @@ edits in `niri/config.kdl`. The widgets, dock and bar are already per-monitor.
 include). A drag-to-arrange canvas can reuse `grid/drag.rs` ideas.
 
 ### 7. Sound page in Emaki Settings + per-app volume in Quick Settings · M
+
+**Done**: [sound.md](../user/features/sound.md). Moving a stream to another device, ports and
+profiles remain.
 **Gap.** Sound defers to `pavucontrol`. No per-app levels, no balance, no alert sound.
 **Build.** In Quick Settings' Sound page, a row per playing stream (app icon + slider + mute); in
 Emaki Settings, output/input devices, balance, input level meter, alert sound. Needs amane's
