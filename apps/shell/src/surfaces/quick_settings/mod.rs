@@ -271,10 +271,13 @@ fn hidden() {
     motion::forget(tiles::SCOPE);
 }
 
-// TODO(token): `quick.page.min-rows` once Penpot has it (manual §1.1).
-/// How many rows tall a page is at least: a short grid would leave a
-/// page too little room for its list.
-const MIN_PAGE_ROWS: u8 = 5;
+/// How many rows tall a page is at least (`quick.page.min-rows`): a short
+/// grid would leave a page too little room for its list.
+fn min_page_rows() -> u8 {
+    quick::page::min_rows()
+        .round()
+        .clamp(1.0, f32::from(u8::MAX)) as u8
+}
 
 /// The layout from its file, or packed with what this machine has, for an
 /// IPC call that comes before the card has ever shown.
@@ -285,14 +288,10 @@ fn load_layout() {
 
 // ───── view ──────────────────────────────────────────────────────────────────
 
-// TODO(token): `quick.open.lift`, `quick.page.tile-fade` and
-// `quick.page.grid-fade` once Penpot has them (manual §1.1).
-/// How far below its place the card starts as it rises out of the bar.
-const OPEN_LIFT: f32 = 12.0;
-/// How much of the zoom it takes the tile to fade into its page, and the
-/// rest of the grid to fade under it.
-const TILE_FADE: f32 = 0.25;
-const GRID_FADE: f32 = 0.6;
+// How far below its place the card starts as it rises out of the bar is
+// `quick.open.lift`; how much of the zoom it takes the tile to fade into
+// its page, and the rest of the grid to fade under it, `quick.page.tile-fade`
+// and `quick.page.grid-fade`.
 
 /// Where a page's glass sheet is drawn, in the surface's coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]

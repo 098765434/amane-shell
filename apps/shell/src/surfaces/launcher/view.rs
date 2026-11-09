@@ -113,11 +113,11 @@ pub(super) fn panel(view: &View) -> Column {
     let width = view.inner();
 
     let offset = PAGER.with_borrow_mut(|pager| {
-        pager.settle_stale(pages, &PAGING);
+        pager.settle_stale(pages, &paging_motion());
         if pager.page() >= pages && pages > 0 {
-            pager.jump(pages - 1, &PAGING);
+            pager.jump(pages - 1, &paging_motion());
         }
-        pager.offset(pages, &PAGING)
+        pager.offset(pages, &paging_motion())
     });
 
     // what the body shows: a change starts the list afresh, snapping the
@@ -140,12 +140,12 @@ pub(super) fn panel(view: &View) -> Column {
     let (to_x, to_y) = layout.highlight(selected);
     if switched {
         with(|state| state.selected = 0);
-        HIGHLIGHT_X.with_borrow_mut(|x| *x = motion::fade(to_x, motion::HOVER));
-        HIGHLIGHT_Y.with_borrow_mut(|y| *y = motion::fade(to_y, motion::HOVER));
+        HIGHLIGHT_X.with_borrow_mut(|x| *x = motion::fade(to_x, motion::duration::hover()));
+        HIGHLIGHT_Y.with_borrow_mut(|y| *y = motion::fade(to_y, motion::duration::hover()));
         SCROLL.with_borrow_mut(|scroll| scroll.jump(0.0));
         // into or out of a search, the body fades in; a category slides
         if before.0 != showing.0 {
-            SWITCH.with_borrow_mut(|switch| *switch = motion::fade(0.0, motion::FADE));
+            SWITCH.with_borrow_mut(|switch| *switch = motion::fade(0.0, motion::duration::fade()));
         }
     }
 

@@ -54,18 +54,18 @@ use emaki_kit::text_edit::Field;
 
 pub(super) use catalog::Category;
 
-// TODO(token): `customize.window.{width,height}`, `customize.sidebar.width`,
-// `customize.pane.inset`, `customize.open.scale`, `customize.scroll.wheel-step`
-// and `customize.scrollbar.idle` once Penpot has them (manual §1.1).
-/// The window, as big as the reference; shorter on a short display.
-const WIDTH: f32 = 860.0;
-const HEIGHT: f32 = 960.0;
-/// The sidebar's width, the search field and the rows in it.
-const SIDEBAR: f32 = 300.0;
+/// The window, as big as the reference; shorter on a short display
+/// (`quick.customize.window.*`).
+fn window_width() -> f32 {
+    quick::customize::window::width()
+}
+fn window_height() -> f32 {
+    quick::customize::window::height()
+}
 /// The room between the sheet's edge and what's on it.
-const INSET: f32 = 24.0;
-/// How small the window is as it swells in.
-const OPEN_SCALE: f32 = 0.96;
+fn inset() -> f32 {
+    quick::customize::pane::inset()
+}
 
 pub(super) use emaki_kit::area::Area;
 
@@ -114,7 +114,7 @@ fn with<R>(f: impl FnOnce(&mut State) -> R) -> R {
 pub(super) fn open() {
     if !OPENING.replace(true) {
         OPEN.with_borrow_mut(|open| {
-            open.retime(motion::POP);
+            open.retime(motion::duration::pop());
             open.to(1.0);
         });
         super::QuickSettings::changed();
@@ -126,7 +126,7 @@ pub(super) fn open() {
 pub(super) fn close() {
     if OPENING.replace(false) {
         OPEN.with_borrow_mut(|open| {
-            open.retime(motion::CLOSE);
+            open.retime(motion::duration::close());
             open.to(0.0);
         });
         super::QuickSettings::changed();

@@ -28,11 +28,11 @@ pub(super) fn dimming(output: &str, editing: bool, settled: bool) -> f32 {
     with_desk(output, |desk| {
         // the switch moves the fade itself, which carries on from there once it lands
         if let Some(dim) = switching {
-            desk.dim = motion::fade(dim, motion::FADE);
+            desk.dim = motion::fade(dim, motion::duration::fade());
             return dim;
         }
         if settled {
-            desk.dim = motion::fade(target, motion::FADE);
+            desk.dim = motion::fade(target, motion::duration::fade());
         }
         desk.dim.to(target);
         desk.dim.value().clamp(0.0, 1.0)
@@ -185,7 +185,7 @@ fn arrivals(
         .map(|((key, rect), (_, slot))| {
             let pose = Pose::at(slot.y).moved(slot.x);
             let away = Pose {
-                scale: motion::scale(motion::ENTER_SCALE),
+                scale: motion::scale(motion::enter_scale()),
                 ..pose.faded()
             };
             Item {

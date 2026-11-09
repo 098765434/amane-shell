@@ -55,15 +55,17 @@ pub struct Card {
     pub y: f32,
 }
 
-// TODO(token): `sys.shadow.popover` once Penpot has it (docs/developer/design-system/penpot-backlog.md).
-// The rules are static, so the shadow can't follow the mode: this is the
-// dark one, which also reads in light (the banner design's light shadow is
-// lighter, `#00000040`).
-/// The shadow under every frosted surface: the shell can't draw it, as each
-/// surface is only as big as its card.
-const SHADOW_SOFTNESS: f32 = 16.0;
-const SHADOW_Y: f32 = 8.0;
-const SHADOW_COLOR: &str = "#00000073";
+/// The shadow under every frosted surface (`sys.shadow.popover`): the
+/// shell can't draw it, as each surface is only as big as its card. The
+/// rules are static, so the shadow can't follow the mode: it's the dark
+/// one, which also reads in light (the banner design's light shadow is
+/// lighter, `#00000040`).
+fn shadow() -> emaki_kit::tokens::Shadow {
+    sys::shadow::popover()
+        .into_iter()
+        .next()
+        .expect("sys.shadow.popover has a shadow")
+}
 
 /// A notification banner's shadow spreads wider than a panel's, as in the
 /// banner design (`0 8 48`).
@@ -183,7 +185,7 @@ pub fn rules() -> Vec<LayerRule> {
             card: Some(Card {
                 radius: toast,
                 softness: BANNER_SHADOW_SOFTNESS,
-                y: SHADOW_Y,
+                y: shadow().y,
             }),
             frost: None,
             popups: None,
@@ -200,8 +202,8 @@ pub fn rules() -> Vec<LayerRule> {
             ),
             card: Some(Card {
                 radius: center,
-                softness: SHADOW_SOFTNESS,
-                y: SHADOW_Y,
+                softness: shadow().blur,
+                y: shadow().y,
             }),
             frost: None,
             popups: Some(popover),
@@ -236,7 +238,7 @@ pub fn rules() -> Vec<LayerRule> {
             card: Some(Card {
                 radius: capsule,
                 softness: BANNER_SHADOW_SOFTNESS,
-                y: SHADOW_Y,
+                y: shadow().y,
             }),
             frost: None,
             popups: None,
@@ -325,7 +327,7 @@ pub fn render(rules: &[LayerRule]) -> String {
             out.push_str("    shadow {\n        on\n");
             let _ = writeln!(out, "        softness {}", card.softness);
             let _ = writeln!(out, "        offset x=0 y={}", card.y);
-            let _ = writeln!(out, "        color \"{SHADOW_COLOR}\"");
+            let _ = writeln!(out, "        color \"{}\"", shadow().color.hex());
             out.push_str("    }\n");
         }
         if let Some(radius) = rule.frost {
@@ -413,7 +415,7 @@ fn render_windows(app_ids: &[&str]) -> String {
         out.push_str("    shadow {\n        on\n");
         let _ = writeln!(out, "        softness {ALERT_SHADOW_SOFTNESS}");
         let _ = writeln!(out, "        offset x=0 y={ALERT_SHADOW_Y}");
-        let _ = writeln!(out, "        color \"{SHADOW_COLOR}\"");
+        let _ = writeln!(out, "        color \"{}\"", shadow().color.hex());
         out.push_str("    }\n");
         out.push_str("    background-effect {\n        blur true\n");
         let _ = writeln!(out, "        material \"{}\"", Material::Sheet.niri_name());
@@ -446,7 +448,7 @@ fn render_phone_screen() -> String {
     out.push_str("    shadow {\n        on\n");
     let _ = writeln!(out, "        softness {ALERT_SHADOW_SOFTNESS}");
     let _ = writeln!(out, "        offset x=0 y={ALERT_SHADOW_Y}");
-    let _ = writeln!(out, "        color \"{SHADOW_COLOR}\"");
+    let _ = writeln!(out, "        color \"{}\"", shadow().color.hex());
     out.push_str("    }\n}\n");
     out
 }

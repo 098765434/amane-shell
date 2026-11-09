@@ -368,7 +368,10 @@ routing, the Customize window through `handle`.
 Tokens: `quick.grid.{cell,cols,rows,gap,margin}`, `quick.tile.{pad,gap,disc}`,
 `quick.card.radius`, `quick.media.{art,art-radius,play}`, `quick.slider.track`, `quick.shadow`,
 `quick.type.{title,caption,line}`, `quick.page.recede`, `quick.open.scale`, `quick.press.scale`
-and `quick.drag.scale` (see [penpot-backlog.md](../../developer/design-system/penpot-backlog.md)). Everything else is `sys.*`.
+and `quick.drag.scale`. The motion is `quick.open.{lift,cascade,cascade-scale,cascade-rise}`,
+`quick.page.{tile-fade,grid-fade}`, `quick.page.reveal.*` and `quick.drag.band`; a page is at least
+`quick.page.min-rows` tall, and a placeholder is `quick.placeholder.opacity` faint. The Customize
+window is `quick.customize.*`. Everything else is `sys.*`.
 
 ## The alert
 

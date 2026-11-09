@@ -14,5 +14,9 @@ pub(crate) fn hover_fill(id: &str, fill: Color, content: Color, disabled: bool) 
 
 /// A colour crossfade between `off_color` and `on_color`.
 pub(crate) fn crossfade(key: &str, on: bool, off_color: Color, on_color: Color) -> Color {
-    Color::blend(off_color, on_color, fade(key, on, motion::CROSSFADE))
+    Color::blend(
+        off_color,
+        on_color,
+        fade(key, on, motion::duration::crossfade()),
+    )
 }

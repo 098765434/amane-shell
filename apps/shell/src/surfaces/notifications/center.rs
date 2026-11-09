@@ -366,7 +366,7 @@ fn group_view(
             value: Entry::Card(Box::new(m)),
             pose: *pose,
             enter: Pose {
-                scale: motion::scale(motion::ENTER_SCALE),
+                scale: motion::scale(motion::enter_scale()),
                 ..pose.faded()
             },
             // where motion is reduced it fades where it is

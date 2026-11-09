@@ -17,10 +17,6 @@ use crate::material::{self, FillLevel, Level};
 use crate::text_edit::Field;
 use crate::tokens::{Styled, TextStyle, sys};
 
-// TODO(token): `sys.caret.width` once Penpot has it (manual §1.1).
-/// How wide the caret is; it's as tall as the text.
-const CARET: f32 = 2.0;
-
 /// A search capsule. `id` keys the clear button's hover, so it must be
 /// unique and stable.
 pub struct SearchField<'a> {
@@ -136,9 +132,9 @@ fn query(
     let run = |text: String| Text::new(text).style(style).color(fg);
     let caret = || {
         Rectangle::new()
-            .width(CARET)
+            .width(sys::border::caret())
             .height(caret_h)
-            .radius(CARET / 2.0)
+            .radius(sys::border::caret() / 2.0)
             .fill(if focused {
                 sys::color::accent::bg()
             } else {

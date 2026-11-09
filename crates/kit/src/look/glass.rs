@@ -20,15 +20,9 @@ use amane::{Color, Rectangle, Shadow};
 use crate::theme::Mode;
 use crate::tokens::{Key, sys};
 
-// TODO(token): these become `sys.effect.glass.*` tokens once Penpot has
-// them (docs/developer/design-system/penpot-backlog.md; manual §1.1: no style literals in component
-// code). The rim's and glow's colours are `sys.color.glass.*` already.
-/// The rim's thickness.
-const RIM_WIDTH: f32 = 1.5;
-/// How far in from the lit edge the bloom reaches.
-const BLOOM_WIDTH: f32 = 14.0;
-/// The even glow's blur.
-const GLOW_BLUR: f32 = 5.0;
+// The rim's thickness, how far in from the lit edge the bloom reaches and
+// the even glow's blur are `sys.effect.glass.*`; the rim's and glow's
+// colours are `sys.color.glass.*`.
 /// How many pieces one [`rims`] pass lights at most: what the shader's
 /// values hold (amane gives 64 rows; three carry the light).
 pub const RIMS_PER_PASS: usize = 30;
@@ -67,7 +61,7 @@ const SOURCE: &str = include_str!("glass.wgsl");
 pub fn apply(surface: Rectangle, radius: f32) -> Rectangle {
     let light = &Light::now();
 
-    let surface = surface.shadow(Shadow::inner(light.glow).blur(GLOW_BLUR));
+    let surface = surface.shadow(Shadow::inner(light.glow).blur(sys::effect::glass::glow_blur()));
 
     let Some(shader) = shader() else {
         return surface;
@@ -138,8 +132,18 @@ fn header(light: &Light, count: usize, glow_width: f32) -> Vec<[f32; 4]> {
         0.0
     };
     vec![
-        [count as f32, RIM_WIDTH, channel(rim.alpha()), light.bloom],
-        [BLOOM_WIDTH, light.far, glow, glow_width],
+        [
+            count as f32,
+            sys::effect::glass::rim_width(),
+            channel(rim.alpha()),
+            light.bloom,
+        ],
+        [
+            sys::effect::glass::bloom_width(),
+            light.far,
+            glow,
+            glow_width,
+        ],
         [
             channel(rim.red()),
             channel(rim.green()),

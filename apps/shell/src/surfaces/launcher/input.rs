@@ -69,7 +69,7 @@ pub(super) fn switch_mode(mode: Mode) {
         to
     });
     if to == Mode::Apps {
-        PAGER.with_borrow_mut(|pager| pager.jump(0, &PAGING));
+        PAGER.with_borrow_mut(|pager| pager.jump(0, &paging_motion()));
     }
     SCROLL.with_borrow_mut(|scroll| scroll.jump(0.0));
 }
@@ -198,7 +198,7 @@ pub(super) fn on_body_scroll(scroll: Scroll) {
             moved();
         }
         ScrollSource::Tilt if paging => {
-            PAGER.with_borrow_mut(|pager| pager.step(scroll.x, pages, &PAGING));
+            PAGER.with_borrow_mut(|pager| pager.step(scroll.x, pages, &paging_motion()));
         }
         ScrollSource::Tilt => {}
         ScrollSource::Finger | ScrollSource::Continuous => {
@@ -217,13 +217,15 @@ pub(super) fn on_body_scroll(scroll: Scroll) {
                     moved();
                 }
                 Some((Axis::Horizontal, along)) => PAGER.with_borrow_mut(|pager| {
-                    pager.follow(along, scroll.stop, GRID_W, pages, &PAGING);
+                    pager.follow(along, scroll.stop, GRID_W, pages, &paging_motion());
                 }),
                 // fingers lifting before the gesture picked a way still end
                 // whatever they'd started
                 None if scroll.stop => {
                     SCROLL.with_borrow_mut(|body| body.follow(0.0, true, now));
-                    PAGER.with_borrow_mut(|pager| pager.follow(0.0, true, GRID_W, pages, &PAGING));
+                    PAGER.with_borrow_mut(|pager| {
+                        pager.follow(0.0, true, GRID_W, pages, &paging_motion())
+                    });
                 }
                 None => {}
             }
@@ -242,7 +244,7 @@ pub(super) fn on_pill_scroll(scroll: Scroll) {
             } else {
                 scroll.y
             };
-            let to = pills.target() + lines * emaki_kit::kinetic::WHEEL_STEP;
+            let to = pills.target() + lines * emaki_kit::kinetic::wheel_step();
             pills.go(to);
         }
     });
@@ -284,10 +286,10 @@ pub(super) fn turn_to(page: usize) {
     let pages = with(|state| state.pages);
     PAGER.with_borrow_mut(|pager| {
         if pager.page().abs_diff(page) > 1 {
-            pager.jump(page, &PAGING);
-            SWITCH.with_borrow_mut(|switch| *switch = motion::fade(0.0, motion::FADE));
+            pager.jump(page, &paging_motion());
+            SWITCH.with_borrow_mut(|switch| *switch = motion::fade(0.0, motion::duration::fade()));
         } else {
-            pager.go(page, pages, &PAGING);
+            pager.go(page, pages, &paging_motion());
         }
     });
     Launcher::changed();

@@ -4,228 +4,51 @@ Token work the shell is waiting on. The manual says Penpot is the source of trut
 `tokens.json` is never edited by hand, so these can't be fixed in the repo. Each one is done in the
 Penpot file, exported, and brought in (§10.3).
 
+As of 2026-11-09, Penpot and `tokens.json` hold the same tokens with the same values.
+
 ## Tokens to add
 
-The code holds these as named constants, each marked `TODO(token)`, until Penpot has them:
+The code holds these as named constants, each marked `TODO(token)`, until they can be tokens:
 
 | Token (suggested name) | Value | Where it is now |
 |---|---|---|
-| `sys.motion.duration.spring`, `sys.motion.spring.bounce` | 450 ms, 0.15 | `crates/kit/src/animation/motion.rs` (`SPRING`) |
-| `sys.motion.duration.sheet`, `sys.motion.sheet.bounce` | 500 ms, 0.1 | `crates/kit/src/animation/motion.rs` (`SHEET`) |
-| `sys.motion.duration.fade`, `sys.motion.duration.exit` | 200 ms, 300 ms | `crates/kit/src/animation/motion.rs` (`FADE`, `EXIT`) |
-| `sys.motion.duration.hover`, `.press`, `.close` | 120 ms, 220 ms, 160 ms | `crates/kit/src/animation/motion.rs` (`HOVER`, `PRESS`, `CLOSE`) |
-| `sys.motion.duration.pop`, `sys.motion.pop.bounce` | 380 ms, 0.08 | `crates/kit/src/animation/motion.rs` (`POP`: a popover swelling in) |
-| `sys.motion.zoom.bounce` | 0.05 | `crates/kit/src/animation/motion.rs` (`ZOOM_BOUNCE`: a page growing out of its control) |
-| `sys.motion.enter-scale` | 0.9 | `crates/kit/src/animation/motion.rs` (`ENTER_SCALE`: a card's or control's entrance) |
-| `sys.motion.press-scale` | 0.96 | `crates/kit/src/controls/buttons/mod.rs` (`PRESS_SCALE`; `quick.press.scale` holds the same) |
-| `quick.drag.band` | 0.1 | `quick_settings/edit.rs` (`BAND`: the dead band before a held control changes cell) |
-| `quick.page.min-rows` | 5 | `quick_settings/mod.rs` (`MIN_PAGE_ROWS`) |
-| `quick.open.lift` | 12 | `quick_settings/mod.rs` (`OPEN_LIFT`: how far below its place the card starts) |
-| `quick.open.cascade`, `.cascade-scale`, `.cascade-rise` | 90 ms, 0.9, 10 | `quick_settings/tiles/mod.rs` (`CASCADE*`: the modules arriving in a wave) |
-| `quick.page.tile-fade`, `quick.page.grid-fade` | 0.25, 0.6 | `quick_settings/mod.rs` (`TILE_FADE`, `GRID_FADE`: shares of the zoom) |
-| `quick.page.reveal.*` (header, body, step, span, rise) | 0.35–0.7, 0.45, 0.06, 0.35, 8 | `quick_settings/detail.rs` (`REVEAL_*`: a page's content coming in) |
-| `sys.glass.material` | `glass` | `crates/kit/src/look/glass_region.rs` (`MATERIAL`: the stand-in compositor material where a material's own isn't configured) |
-| `sys.material.inactive` | 0.5 | `crates/kit/src/look/material.rs` (`INACTIVE`: how far an app window's materials go toward opaque while another window has the focus) |
-| `sys.material.small-glass` | 44 | `crates/kit/src/look/material.rs` (`SMALL_GLASS`: the short side at or under which glass is small and frosts with `glass-small`) |
-| `sys.material.untoned` | 0.4 | `crates/kit/src/look/material.rs` (`UNTONED`: how far a tint goes toward opaque where niri doesn't tone the backdrop under it) |
-| `sys.material.clear-fade` | 0.7 | `crates/kit/src/look/material.rs` (`CLEAR_FADE`: how much of its tint Clear glass keeps over a backdrop that isn't bright) |
-| `dock.icon.size`, `dock.icon.least`, `dock.radius`, `dock.reveal.strip` | 44, 20, 18, 2 | `dock/mod.rs` (`ICON`, `LEAST_ICON`, `RADIUS`, `STRIP`) |
-| `dock.running.size` | 4 | `dock/item.rs` (`RUNNING`) |
-| `dock.drag.threshold` | 6 | `dock/drag.rs` (`THRESHOLD`) |
-| `dock.motion.*` (reveal, hide delay, resize, item, magnify scales and lifts, hover, tooltip, spring load) | see `DOCK` | `dock/motion.rs` (`DOCK`) |
-| `bar.workspace.shape.size`, `bar.workspace.shape.area` | 16, a 13 px circle's area | `status_bar/workspace_shape.rs` (`BOX`, `AREA`); `bar.workspace-dot.*` is read by no code now |
-| `launcher.open.scale`, `launcher.mode-button.slide` | 0.96, 12 | `launcher/mod.rs` (`OPEN_SCALE`), `launcher/header.rs` (`MODE_SLIDE`) |
-| `launcher.paging.*` | 450 ms spring 0.08 / flick 1.2 / band 0.3 | `launcher/mod.rs` (`PAGING`) |
-| `sys.scroll.wheel-step`, `sys.scrollbar.idle` | 60, 800 ms | `crates/kit/src/animation/kinetic.rs` (`WHEEL_STEP`), `crates/kit/src/containers/scroll_view.rs` (`ScrollbarFade::IDLE`); the launcher reads them from the kit |
-| `sys.scrollbar.width`, `.thumb-min` | 6, 32 | `crates/kit/src/containers/scroll_view.rs` (`SCROLLBAR`, `THUMB_MIN`) |
-| `sys.caret.width` | 2 | `search_field.rs` (`CARET`) |
-| `customize.window.width`, `.height` | 860, 960 | `quick_settings/customize/mod.rs` (`WIDTH`, `HEIGHT`: the Customize window, shorter on a short display) |
-| `customize.sidebar.width`, `customize.pane.inset` | 300, 24 | `quick_settings/customize/mod.rs` (`SIDEBAR`, `INSET`) |
-| `customize.open.scale`, `customize.scroll.wheel-step`, `customize.scrollbar.idle` | 0.96, 60, 800 ms | `quick_settings/customize/mod.rs` (`OPEN_SCALE`, `WHEEL_STEP`, `SCROLLBAR_IDLE`); add `customize` to `tokens::COMPONENTS` with the first `customize.*` token |
-| `sys.motion.coast.decay`, `.duration`, `.min-fling`, `.held`, `.rubber-band` | 0.325 s, 850 ms, 60 px/s, 80 ms, 0.3 | `crates/kit/src/animation/kinetic.rs` (`DECAY`, `COAST`, `MIN_FLING`, `HELD`, `RUBBER_BAND`) |
-| `sys.opacity.disabled` (also) | 0.38 | `quick_settings/tiles/mod.rs` (`DIMMED`: a placeholder for a control without its hardware) |
-| `sys.opacity.disabled` | 0.38 | `crates/kit/src/controls/buttons/mod.rs` (`DISABLED_OPACITY`) |
-| `sys.effect.glass.far`, `sys.effect.glass.bloom` | light 0.3, 0.08; dark 0.1, 0.01 | `crates/kit/src/look/glass.rs` (`Light::now`). These differ by mode but aren't colors, so §1.4 needs them folded into the rim color or made mode-free first |
-| `sys.effect.glass.rim-width`, `.bloom-width`, `.glow-blur` | 1.5, 14, 5 | `crates/kit/src/look/glass.rs` |
-| `sys.shadow.popover` | `0 8 16 #00000073` | `tokens/layer_rules.rs` (`SHADOW_*`) |
-| `sys.motion.duration.tooltip` | 500 ms | `crates/kit/src/containers/tooltip.rs` (`DELAY`) |
-| `tooltip.*` (text style, inset) | `sys.type.caption`, `sys.space.inset.s` | `crates/kit/src/containers/tooltip.rs` |
-| `bar.scroll.step` | 3 | `status_bar/mod.rs` (`SCROLL_STEP`: lines of touchpad scroll per workspace) |
+| `sys.effect.glass.far`, `sys.effect.glass.bloom` | light 0.3, 0.08; dark 0.1, 0.01 | `crates/kit/src/look/glass.rs` (`Light::now`). These differ by mode but aren't colours, so §1.4 (enforced by `tokens check`) needs them folded into the rim colour or made mode-free first |
+| `sys.glass.material` | `glass` | `crates/kit/src/look/glass_region.rs` (`MATERIAL`: niri's material that glass falls back on). It's a name, and Penpot has no string token type |
+| `sys.glass.adapt.*` | 0.65, 0.35 | `crates/kit/src/look/glass_region.rs` (`TURN_LIGHT`, `TURN_DARK`: where small glass turns light or dark over its backdrop) |
 
-`motion` and `opacity` are already `sys` categories in the vocabulary (§4.2). Add `ref.duration.*`
-primitives for the durations first.
+Durations are numbers of milliseconds (Penpot has no duration type), read through
+`emaki_kit::tokens::ms`. The shared steps are `ref.duration.*`.
 
-The glass `far` and `bloom` strengths differ by mode, so they go in the `sys/color/*` sets beside
-the two colors, though they are numbers. `sys.shadow.popover` is read by the niri rule generator,
-whose output is static: it can't follow the mode, so it holds one value for both.
+## Tokens the code doesn't read yet
 
-## Tokens to recreate or delete
+These were made in Penpot (2026-11-09) while drawing, from values the code still holds raw. Each
+replaces a constant marked `TODO(token)`, `px()` value or plain constant. Until the code reads them,
+`tokens::contract::every_token_is_read_or_listed` fails:
 
-- For drawing Emaki Settings in Penpot (2026-11-09), tokens were made in Penpot and copied into
-  `tokens.json` for values the code still holds raw. The code doesn't read them yet; each
-  replaces a `style::px()` value or a `TODO(token)` in `crates/kit/src/look/style.rs`,
-  `containers/form.rs` and the controls, or a constant in `apps/settings/src/main.rs`:
-  - Colours (light / dark): `sys.color.control.fill`, `sys.color.field.border`,
-    `sys.color.surface.group.bg` and `.border`, `sys.color.separator-soft` (the code's TODO says
-    `separator.soft`, but `sys.color.separator` is a leaf), `sys.color.shadow`, and
-    `sys.color.sidebar.edge`.
-  - The sidebar tiles' accents as `sys.color.tile.*` (`foundation/color.rs`), and the accent wells'
-    colours as `sys.color.swatch.*` (`ACCENTS`).
-  - `sys.radius.window` (`{ref.radius.16}`): the corners niri's catch-all `window-rule` gives app
-    windows (`geometry-corner-radius 16` in the niri config). niri draws them, so no code reads
-    the token; it's there for the designs, and for the config to follow if it's ever generated.
-  - Type roles: `sys.type.subtitle` (11 medium), `sys.type.group-header` (13 bold) and
-    `sys.type.page-title` (15 bold, with `ref.font.size.15`).
-  - `form.*`: rows, groups, the control, the dropdown, the wells, the thumbnail, the leading tile
-    and `form.disabled.opacity`.
-  - `settings.*`: the window, the sidebar, the toolbar, the nav buttons, the menu width and the
-    page limits.
-  - The sizes scale with density, like `px()`; radii, strokes and glyph sizes don't (manual §8.2),
-    although `px()` scales those too. `form` and `settings` are in `tokens::COMPONENTS`, and the
-    tier ceilings rose by 31 (sys) and 43 (component).
-- For drawing the launcher in Penpot (2026-11-09), the `launcher.*` group was made in Penpot and
-  copied into `tokens.json`, under the names this file listed. The code doesn't read them yet;
-  each replaces a `TODO(token)` constant in `apps/shell/src/surfaces/launcher/` (`shape.rs`,
-  `mod.rs`, `header.rs`, `grid.rs`, `results.rs`). They're fixed pixels, as the launcher doesn't
-  follow the density:
-  - `launcher.pill.width` 680, `.height` 52, `launcher.sheet.radius` 26, `launcher.top` 0.2.
-  - `launcher.mode-button.size` 52, `.gap` 12, `.glyph` 24, `.lift` 1.06.
-  - `launcher.panel.inset` 15, `.gap` 10, `.wide` 780 (Applications, Files and Clipboard),
-    `launcher.pills.height` 40, `launcher.empty.height` 200 and `.icon` 40.
-  - `launcher.grid.cols` 5, `.rows` 3, `.cell` 150, `.icon` 64, `.highlight` 84,
-    `launcher.highlight.radius` 14 and `.unfocused` 0.45.
-  - `launcher.result.height` 52, `.gap` 4, `.max-rows` 8, `.icon` 40, `.badge` 16, and
-    `launcher.heading.height` 32 (`HEADING − ROW_GAP`).
-  - `launcher.answer.height` 88, `.size` 30, `.dim` 0.8 (the question's and the hint's alpha), and
-    `launcher.chip.height` 32.
-  - `launcher.search.size` 22, `.inset` 16, `.caret-width` 2, `.caret-height` 26,
-    `launcher.leading.size` 30, `.glyph` 22, and `launcher.keycap.height` 24.
-  - `launcher.token.opacity` 0.18 (the scope token's wash), `launcher.focus-ring.width` 2, `.gap` 2
-    and `.opacity` 0.55, and `launcher.preview.list-width` 420 (`CLIP_LIST_W`).
-  - `launcher` is in `tokens::COMPONENTS`, and the component tier's ceiling rose by these 43.
-- For drawing the notification center in Penpot (2026-11-09), the `calendar.*` group was made in
-  Penpot and copied into `tokens.json`. The code doesn't read them yet; each is a `px()` constant in
-  the kit's `Calendar` (`crates/kit/src/controls/calendar.rs`, `rows`), so they follow the density:
-  `calendar.row.max` 32 (a week's height at most), `calendar.letters.height` 20 (the weekday
-  letters) and `calendar.row.gap` 2. `calendar` is in `tokens::COMPONENTS`, and the component
-  tier's ceiling rose by these 3. (The `notification.*` and `osd.*` tokens the OSD and notification
-  drawings use, and the banner design's, were already in Penpot.)
-- `bar.overview.height` is no longer read: the bar keeps its compact height in the overview, where
-  the [dock](../../user/features/dock.md) rises instead. Delete it in Penpot.
-- `bar.window-item.max-width`, `bar.window-item.radius`, `bar.pill.padding-y` and
-  `bar.volume.width` are no longer read: the [status bar](../../user/features/status-bar.md) has no window title or
-  pills any more. Delete them in Penpot.
-- `bar.indicator.active.bg` (`#ffffff`) and `bar.indicator.active.fg` (`#000000`), the status
-  bar's highlight in both modes, were added to `tokens.json` by hand, and `bar.indicator.width`
-  was raised by hand from 18 to 28 to give the highlight room. Recreate them in Penpot.
-- For the dialog design (2026-10-26), these were added to `tokens.json` by hand, so recreate them
-  in Penpot:
-  - `ref.radius.34`.
-  - The `dialog` component: `width`, `radius`, `padding-top`, `padding-x`, `gap`, `icon-size`,
-    `text.inset`, `text.inset-bottom`, `text.gap`, `button.height`, `button.height-stacked`,
-    `button.gap`, `button.gap-stacked` and `button.inset`, plus the `title`, `message` and
-    `button.label` typographies.
-- `sys.color.glass.thin`, `.thick`, `.rim` and `.glow` were added to `tokens.json` by hand, in
-  both modes: the tints of small and large glass (thin is the panels' old tint; thick is more
-  opaque, for glass that holds text) and the glass edge's light, which `crates/kit/src/look/glass.rs` held
-  as constants. Recreate them in Penpot under the same names. `.thin` and `.thick` are now
-  aliases of `sys.color.material.thin` and `.thick`, and go once nothing reads them.
-- The materials were added to `tokens.json` by hand (see [materials.md](materials.md)), in both
-  modes. Recreate them in Penpot under the same names:
-  - `sys.color.material.ultra-thin`, `.thin`, `.regular`, `.thick`, `.ultra-thick` and `.bar` are
-    the tints, thinnest first. `.bar` is `{sys.color.material.thick}`.
-  - `sys.color.vibrant.label.primary`, `.secondary`, `.tertiary` and `.quaternary`,
-    `sys.color.vibrant.fill.primary`, `.secondary` and `.tertiary`, and
-    `sys.color.vibrant.separator` are the monochrome, translucent labels, fills and separator
-    on every material.
-  - The `material.glass.*`, `material.glass-clear.*` and `material.frost.*` component tokens are
-    niri's material settings (refraction, bevel, dispersion, rim, far-rim, specular, tint,
-    adaptive-tint, report-backdrop). `material` is a new component prefix, read only by the niri
-    config generator (`apps/shell/src/tokens/layer_rules.rs`).
-- The `quick.*` tokens (`quick.grid.cell`, `.cols`, `.rows`, `.gap`, `.margin`, `quick.tile.pad`,
-  `.gap`, `.disc`, `quick.card.radius`, `quick.media.art`, `.art-radius`, `.play`,
-  `quick.slider.track`, `quick.shadow`, `quick.type.title`, `.caption`, `.line`,
-  `quick.page.recede`, `quick.open.scale`, `quick.press.scale`, `quick.drag.scale`,
-  `quick.tile.glyph`, `quick.button.glyph`) and
-  `ref.font.size.14` were added to `tokens.json` by hand too (see
-  [quick-settings.md](../../user/features/quick-settings.md)). Recreate them in Penpot under the same names.
-  `quick.open.scale` has since been retuned by hand from 0.98 to 0.92, so the card's swell reads.
-- `ref.font.family.ui` was reordered by hand to put "Atkinson Hyperlegible Next" first
-  (then "Atkinson Hyperlegible", "Inter", `sans-serif`). Make the same change to the stack in
-  Penpot, or the next export puts the old first family back.
-- The materials replace the glass's surface roles, so these are no longer read. Delete them:
-  `sys.color.surface.panel.*`, `sys.color.surface.notification.*`,
-  `sys.color.surface.popover.*` and `sys.color.surface.raised.bg`. The vibrant labels, fills and
-  separator take their place, and an app window is `Material::Window`. (`sys.color.content.secondary`
-  is gone from `tokens.json` already, and `sys.color.separator` is read again, below.) The hand-added `sys.color.glass.thin` and `.thick` are gone
-  already.
-- The design kit's values were added to `tokens.json` by hand
-  ([spec-system-colour-variables.md](../archive/spec-system-colour-variables.md)). Recreate them in Penpot under the same
-  names:
-  - `sys.color.label.primary` … `.quaternary` (85, 50/55, 25, 10 %), `sys.color.fill.primary` …
-    `.tertiary` (10, 8, 5 %) and `sys.color.separator` (10 %, light raised from 8 %): labels,
-    fills and the separator on opaque surfaces (solid glass, `Material::Content`).
-  - New values for `sys.color.vibrant.label.*` and `.fill.*`, the kit's plus-lighter and
-    plus-darker greys turned into translucent white and black.
-  - `sys.color.status.critical.*` now holds the kit's red, light `#ff383c`, dark `#ff4245`,
-    and `ref.color.red.58` is deleted.
-  - `ref.color.accent.seed` is the kit's blue `#0091ff`, with `dim` `#0064b3` and `bright`
-    `#a9d2ff` derived from it.
-  - `sys.color.window.bg`, `sys.color.sidebar.bg.active`, `.inactive`,
-    `sys.color.sidebar.label.inactive`, `sys.color.scrollbar` (`{sys.color.label.secondary}`),
-    `sys.color.progress.track-stroke` and `sys.color.tooltip.inner-stroke`.
-  - The control sizes, each with a `mini`, `small`, `medium`, `large` and `xl` child:
-    `sys.size.control.<size>`, `sys.size.switch.<size>.width`, `.knob-width`, `.knob-height`,
-    `sys.size.checkbox.<size>`, `sys.size.radio.<size>.dot`, `sys.size.slider.<size>.knob-width`,
-    `.knob-height`, `sys.radius.control.<size>` and `sys.radius.checkbox.<size>`. The sizes are
-    `round(<px> * {sys.density.factor})`; the radii and the radio dot aren't scaled.
-    `sys.size.switch.width` and `.height` are deleted.
-  - `material.glass-small.*`, the same settings as `material.glass`, and
-    `material.glass.blur-passes` (2) and `material.glass.blur-offset` (1.5): big glass frosts
-    more than small ([materials.md](materials.md)).
-  - The frost's blur, saturation and tone ([materials.md](materials.md)): `material.frost.blur-passes`
-    4, `.blur-offset` 2, `.saturation` 1.8, `.tone` 0.6; `material.glass` 3, 2, 1.6, 0.6 with
-    `.bevel` 16, `.refraction` 12, `.adaptive-tint` 0.25; `material.glass-small` 2, 1.5, 1.6, 0.6
-    with `.bevel` 12, `.refraction` 10, `.adaptive-tint` 0.25; `material.glass-clear` 3, 2, 1.6,
-    `.tone` 0.8.
-  - The glass's edge and light: `material.glass` `.refraction` 16, `.bevel` 12, `.dispersion` 0.3,
-    `.rim` 0.12, `.glow` 0.05 (new), `.light-angle` 270, `.far-rim` 0.25, `.specular` 0.1,
-    `.saturation` 1.5; `material.glass-small` the same at `.refraction` 12, `.bevel` 8;
-    `material.glass-clear` `.refraction` 24, `.bevel` 16, `.dispersion` 0.4, `.glow` 0.08,
-    and the same faint edge (`.rim` 0.12, `.far-rim` 0.25, `.specular` 0.1) on every glass,
-    `glass-large` and `glass-clear` included;
-    `material.frost` `.glow` 0, `.light-angle` 270. `quick.shadow` blur 24, y 8, `#00000029`.
-  - Tints, dark / light: `sys.color.material.ultra-thin` `#0000004d` / `#f6f6f633`,
-    `.thin` `#1c1c1e4d` / `#f6f6f61f`, `.regular` `#1c1c1e80` / `#f6f6f680`, `.thick`
-    `#1c1c1e99` / `#f6f6f68c`. New: `sys.color.material.sidebar` `#1e1e1ecc` / `#f6f6f6d6`.
-  - `sys.color.state.on.bg` `#ffffff` and `.fg` `{ref.color.accent.seed}` (both modes): a
-    Quick Settings control that is on, white with its glyph in the accent, as Control
-    Center's are.
-  - `material.glass-large.*`: `material.glass` with `.blur-passes` 4, `.blur-offset` 2,
-    `.saturation` 1.8 and `.tone` 0.9, for thick glass; `material.glass.tone` and
-    `.glass-small.tone` are 1.
-- `menu.label.advance-ratio` is no longer read: menus measure their text now. Delete it.
-- `bar.volume.width` is no longer read: the volume is a glyph button now, its level in a tooltip.
-  Delete it.
-- The bar's Wi‑Fi, Bluetooth, Sound and power panels are gone (Quick Settings has their pages), so
-  `wifi.button.width`, `wifi.icon-button.width`, `sys.size.popover.height` and
-  `sys.size.list.max-height` are no longer read. Delete them, and the `wifi` and `power`
-  component prefixes with them (`tokens::COMPONENTS`, manual §3).
-- `sys.color.accent.text` isn't read by any code yet (the report in
-  `tokens check` lists it). Keep it if something is coming that needs it.
+- `launcher.*` (but `launcher.open.scale`, `.mode-button.slide` and `.paging.*`, which are read):
+  `apps/shell/src/surfaces/launcher/` (`shape.rs`, `mod.rs`, `header.rs`, `grid.rs`, `results.rs`).
+- `form.*`, `settings.*`, the Settings colours (`sys.color.control.fill`, `.field.border`,
+  `.surface.group.*`, `.separator-soft`, `.shadow`, `.sidebar.edge`, `.tile.*`, `.swatch.*`),
+  `sys.radius.window` and the type roles `sys.type.subtitle`, `.group-header` and `.page-title`:
+  `crates/kit/src/look/style.rs`, `containers/form.rs`, the controls and `apps/settings`.
+- `calendar.*`: `crates/kit/src/controls/calendar.rs`.
+- `messages.*`: the Messages app.
+- `dock.icon.size` (the settings' default icon size), `dock.rule.clear` and `dock.section.inset`.
+
+`components_read_only_sys_and_their_own_tokens` also fails: `platform/settings/status_bar.rs`
+reads `bar.*`.
 
 ## Roles to consider
 
 - `sys.color.surface.panel.stroke`: the panel surface has no stroke, though its cards are
   translucent. §1.7 says every surface has `bg`, `fg` and `stroke`, and §11.1 pairs every
   translucent surface with a stroke. The panels draw no edge until it exists.
-- `sys.shadow.*`: there's no shadow role yet, so the shared `Card` has no raised variant.
-  The frosted surfaces' shadow is niri's, from `sys.shadow.popover` above.
 - `sys.color.state.pressed`: the manual's state rule (§6.1) gives it the surface's `fg` at 10 %.
-  Nothing draws a pressed fill today; buttons shrink instead (`PRESS_SCALE`).
+  Nothing draws a pressed fill today; buttons shrink instead (`sys.motion.press-scale`).
 - `sys.color.focus.ring`: a shared keyboard focus outline. Only the launcher draws one, from its
-  own constants (`launcher.focus-ring.*` above).
-- `sys.color.scrim`, `sys.color.shadow`: dimming behind a modal surface and a shadow color.
-  Nothing dims behind the alert today, and the shadows are niri's.
+  own tokens (`launcher.focus-ring.*`).
+- `sys.color.scrim`: dimming behind a modal surface. Nothing dims behind the alert today.
 - `sys.type.body`: the vocabulary has a `body` type role (§4.2), but no text uses one yet;
   [typography.md](typography.md) lists the roles there are.
+- `sys.color.accent.text` isn't read by any code yet. Keep it if something is coming that needs
+  it.

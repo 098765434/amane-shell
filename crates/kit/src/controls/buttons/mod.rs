@@ -51,17 +51,8 @@ use crate::material::{self, FillLevel, Level};
 use crate::tokens::{Styled, TextStyle, sys};
 use crate::{motion, tooltip};
 
-/// How faint a disabled control is, every control alike. TODO(token):
-/// `sys.opacity.disabled` once Penpot has it (manual §1.1).
-pub const DISABLED_OPACITY: f32 = 0.45;
-
 /// How long a click's new state is shown before the service has to agree.
 const PENDING_TIMEOUT: Duration = Duration::from_millis(1500);
-
-/// How far a pressed button shrinks before springing back. TODO(token):
-/// `sys.motion.press-scale` once Penpot has it (manual §1.1); Quick
-/// Settings' `quick.press.scale` holds the same value for its tiles.
-const PRESS_SCALE: f32 = 0.96;
 
 /// How much a button stands out: filled, tonal or text.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -250,7 +241,11 @@ impl<K> ButtonBuilder<K> {
     /// How far the highlight has faded in, 0 to 1.
     fn highlighted(&self) -> f32 {
         let on = !self.disabled && (self.active || hovered(&self.id));
-        fade(&format!("{}.highlight", self.id), on, motion::HOVER)
+        fade(
+            &format!("{}.highlight", self.id),
+            on,
+            motion::duration::hover(),
+        )
     }
 
     /// The button around `content`, `width` wide.
@@ -267,7 +262,7 @@ impl<K> ButtonBuilder<K> {
             .height(self.height)
             .radius(self.shape.radius())
             .fill(self.fill())
-            .scale(press_scale(&self.id, PRESS_SCALE))
+            .scale(press_scale(&self.id, sys::motion::press_scale()))
             .align_child(Center, Center)
             .clip()
             .child(content);
@@ -435,7 +430,7 @@ pub(crate) fn hover_layer(id: &str, fill: Color, layer: Color, disabled: bool) -
     let amount = fade(
         &format!("{id}.hover"),
         !disabled && hovered(id),
-        motion::HOVER,
+        motion::duration::hover(),
     );
     Color::blend(fill, over(layer, fill), amount)
 }
@@ -488,7 +483,7 @@ fn pressed(id: &str) {
         || Press(motion::spring(1.0)),
         |press: &mut Press| {
             let mut pulse = Animation::new(0.0)
-                .duration(motion::PRESS)
+                .duration(motion::duration::press())
                 .easing(amane::Easing::Out);
             pulse.to(1.0);
             press.0 = pulse;
@@ -564,7 +559,7 @@ impl Actions {
 /// takes none of them.
 pub fn interactive(base: Rectangle, id: String, disabled: bool, actions: Actions) -> Rectangle {
     if disabled {
-        return base.opacity(DISABLED_OPACITY);
+        return base.opacity(sys::opacity::disabled());
     }
 
     let Actions {

@@ -13,23 +13,24 @@ use std::time::{Duration, Instant};
 use amane::{Animation, Easing, Scroll, ScrollSource};
 
 use crate::motion;
+use crate::tokens::{ms, sys::motion::coast};
 
 /// A gesture whose fingers haven't been heard of for this long has ended,
 /// for a compositor that doesn't say when they lift.
 pub const STALE: Duration = Duration::from_millis(200);
 
-// TODO(token): `sys.motion.coast.*` once Penpot has them (manual §1.1).
-/// How quickly a fling's momentum dies out: it travels its speed times
-/// this before it stops: a phone's "normal" deceleration.
-const DECAY: f32 = 0.325;
-/// How long a fling coasts for.
-const COAST: Duration = Duration::from_millis(850);
-/// Slower than this, in pixels a second, lifting the fingers just stops.
-const MIN_FLING: f32 = 60.0;
+// The coast (`sys.motion.coast.*`): `decay`, how quickly a fling's
+// momentum dies out (it travels its speed times this before it stops: a
+// phone's "normal" deceleration); `duration`, how long it coasts for;
+// `min-fling`, the speed in pixels a second below which lifting the fingers
+// just stops; `held`, how long fingers resting before they lift leave no
+// momentum behind; `rubber-band`, how far past an end the scroll pulls, as
+// a share of the fingers' travel.
+
 /// Fingers resting this long before they lift leave no momentum behind.
-const HELD: Duration = Duration::from_millis(80);
-/// How far past an end the scroll pulls, as a share of the fingers' travel.
-const RUBBER_BAND: f32 = 0.3;
+fn held() -> Duration {
+    ms(coast::held())
+}
 
 /// How fast fingers are moving, smoothed so a flick is how a swipe ends.
 #[derive(Clone, Copy, Debug)]
@@ -66,7 +67,7 @@ impl Tracker {
 
     /// How fast they're going at `now`: nothing once they've rested.
     pub fn velocity_at(&self, now: Instant) -> f32 {
-        if now.duration_since(self.last) >= HELD {
+        if now.duration_since(self.last) >= held() {
             0.0
         } else {
             self.velocity
@@ -181,8 +182,10 @@ pub fn banded(offset: f32, max: f32, band: Option<f32>) -> f32 {
     }
 }
 
-/// How far a wheel's notch scrolls, in pixels.
-pub const WHEEL_STEP: f32 = 60.0;
+/// How far a wheel's notch scrolls, in pixels (`sys.motion.scroll.wheel-step`).
+pub fn wheel_step() -> f32 {
+    crate::tokens::sys::motion::scroll::wheel_step()
+}
 /// One axis of scrolling, in pixels from `0` to `max`: following fingers
 /// one to one, coasting after a flick, and easing after a wheel or a
 /// [`go`](Kinetic::go).
@@ -217,7 +220,7 @@ impl Kinetic {
     /// rubber band), or settling.
     pub fn value(&self) -> f32 {
         match &self.swipe {
-            Some((offset, _)) => banded(*offset, self.max, Some(RUBBER_BAND)),
+            Some((offset, _)) => banded(*offset, self.max, Some(coast::rubber_band())),
             None => self.motion.value(),
         }
     }
@@ -268,7 +271,7 @@ impl Kinetic {
                 self.follow(axis.pixels(scroll), scroll.stop, Instant::now());
             }
             ScrollSource::Wheel | ScrollSource::Tilt => {
-                let to = self.target() + axis.lines(scroll) * WHEEL_STEP;
+                let to = self.target() + axis.lines(scroll) * wheel_step();
                 self.go(to);
             }
         }
@@ -303,7 +306,7 @@ impl Kinetic {
         let Some((offset, tracker)) = self.swipe.take() else {
             return;
         };
-        let from = banded(offset, self.max, Some(RUBBER_BAND));
+        let from = banded(offset, self.max, Some(coast::rubber_band()));
         let velocity = tracker.velocity_at(now);
 
         if from < 0.0 || from > self.max {
@@ -311,10 +314,12 @@ impl Kinetic {
             self.target = from.clamp(0.0, self.max);
             self.motion = motion::spring(from);
             self.motion.to(self.target);
-        } else if velocity.abs() >= MIN_FLING && !crate::theme::reduced_motion() {
+        } else if velocity.abs() >= coast::min_fling() && !crate::theme::reduced_motion() {
             // where motion is reduced a flick stops where it's let go
             self.target = projected(from, velocity).clamp(0.0, self.max);
-            self.motion = Animation::new(from).duration(COAST).easing(Easing::Out);
+            self.motion = Animation::new(from)
+                .duration(ms(coast::duration()))
+                .easing(Easing::Out);
             self.motion.to(self.target);
         } else {
             self.target = from;
@@ -325,12 +330,12 @@ impl Kinetic {
 
 /// Where a fling from `from` at `velocity` (pixels a second) comes to rest.
 pub fn projected(from: f32, velocity: f32) -> f32 {
-    from + velocity * DECAY
+    from + velocity * coast::decay()
 }
 
 /// The ease a wheel and a `go` take.
 fn eased(value: f32) -> Animation {
-    motion::fade(value, motion::PRESS)
+    motion::fade(value, motion::duration::press())
 }
 
 #[cfg(test)]
@@ -379,7 +384,7 @@ mod tests {
         let mut scroll = kinetic(5000.0);
         let now = Instant::now();
         scroll.follow(30.0, false, now);
-        scroll.follow(0.0, true, now + HELD + Duration::from_millis(5));
+        scroll.follow(0.0, true, now + held() + Duration::from_millis(5));
         assert_eq!(scroll.target(), 30.0);
     }
 
@@ -388,7 +393,7 @@ mod tests {
         let mut scroll = kinetic(100.0);
         let now = Instant::now();
         scroll.follow(-50.0, false, now);
-        assert!((scroll.value() + 50.0 * RUBBER_BAND).abs() < 0.001);
+        assert!((scroll.value() + 50.0 * coast::rubber_band()).abs() < 0.001);
         scroll.follow(0.0, true, now + Duration::from_millis(500));
         assert_eq!(scroll.target(), 0.0);
     }

@@ -15,7 +15,9 @@ use super::model::{Icon, Section, Win};
 
 /// How far the pointer goes with the button down before it's a drag and
 /// not a click.
-pub const THRESHOLD: f32 = 6.0;
+pub fn threshold() -> f32 {
+    crate::tokens::dock::drag::threshold()
+}
 
 /// How long a dropped window is shown where it went before niri has said.
 const SETTLING: Duration = Duration::from_millis(800);
@@ -31,7 +33,7 @@ pub struct Drag {
     /// Where the button went down, and where the pointer is now.
     pub pressed: (f32, f32),
     pub pointer: (f32, f32),
-    /// Whether it has gone past [`THRESHOLD`].
+    /// Whether it has gone past [`threshold`].
     pub moved: bool,
 }
 
@@ -40,7 +42,7 @@ impl Drag {
     pub fn to(&mut self, at: (f32, f32)) {
         self.pointer = at;
         let (dx, dy) = (at.0 - self.pressed.0, at.1 - self.pressed.1);
-        if dx.hypot(dy) >= THRESHOLD {
+        if dx.hypot(dy) >= threshold() {
             self.moved = true;
         }
     }

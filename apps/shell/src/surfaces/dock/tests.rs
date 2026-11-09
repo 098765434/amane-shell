@@ -1,5 +1,5 @@
 use super::*;
-use motion::DOCK;
+use motion::as_shipped;
 
 fn monitor() -> Monitor {
     Monitor {
@@ -11,14 +11,14 @@ fn monitor() -> Monitor {
 
 #[test]
 fn hidden_the_card_sits_wholly_under_the_bottom_edge() {
-    let at = Measures::new(&monitor(), &DOCK, 3, 1);
+    let at = Measures::new(&monitor(), &as_shipped(), 3, 1);
     assert_eq!(at.sunk(1.0), 0.0);
     assert!(at.top + at.sunk(0.0) >= at.height);
 }
 
 #[test]
 fn the_card_is_centred_and_grows_by_a_pitch_an_icon() {
-    let at = Measures::new(&monitor(), &DOCK, 3, 1);
+    let at = Measures::new(&monitor(), &as_shipped(), 3, 1);
     let one = at.card_width(1.0);
     let two = at.card_width(2.0);
     assert!((two - one - at.pitch).abs() < 0.001);
@@ -27,7 +27,7 @@ fn the_card_is_centred_and_grows_by_a_pitch_an_icon() {
 
 #[test]
 fn the_pointer_over_an_icon_is_in_its_slot() {
-    let at = Measures::new(&monitor(), &DOCK, 3, 0);
+    let at = Measures::new(&monitor(), &as_shipped(), 3, 0);
     let width = at.card_width(3.0);
     let first = at.card_left(width) + at.pad;
     // an icon's centre is half way along its slot, its gap counted in
@@ -38,8 +38,8 @@ fn the_pointer_over_an_icon_is_in_its_slot() {
 
 #[test]
 fn too_many_icons_shrink_to_fit_the_monitor_and_the_surface_keeps_its_size() {
-    let few = Measures::new(&monitor(), &DOCK, 5, 1);
-    let many = Measures::new(&monitor(), &DOCK, 60, 4);
+    let few = Measures::new(&monitor(), &as_shipped(), 5, 1);
+    let many = Measures::new(&monitor(), &as_shipped(), 60, 4);
     assert_eq!(few.side, dock_settings().icon());
     assert!(many.side < dock_settings().icon());
     let slots = 60.0 + 4.0 * many.rule;
@@ -96,7 +96,7 @@ fn without_magnification_or_a_name_there_is_no_room_above_for_them() {
     let plain = DockMotion {
         magnify: None,
         tooltip: None,
-        ..DOCK
+        ..as_shipped()
     };
     let at = Measures::new(&monitor(), &plain, 3, 0);
     assert!((at.headroom - sys::space::gap::s()).abs() < 0.001);

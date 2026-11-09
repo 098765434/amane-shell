@@ -70,17 +70,17 @@ pub(super) fn build(
         let glass = Rectangle::new()
             .width(card_w.max(1.0))
             .height(at.card)
-            .radius(RADIUS)
+            .radius(dock::radius())
             .fill(Material::Control.fill());
         layers.push(place(
-            Material::Control.lit(glass, RADIUS),
+            Material::Control.lit(glass, dock::radius()),
             card_x,
             top,
             progress,
         ));
         frost.push(
             Material::Control
-                .shape(card_x, top, card_w, at.card, RADIUS, 1.0)
+                .shape(card_x, top, card_w, at.card, dock::radius(), 1.0)
                 .id(glass_id(output)),
         );
 
@@ -101,7 +101,7 @@ pub(super) fn build(
                     Rectangle::new()
                         .width(x1 - x0 + inset * 2.0)
                         .height(at.card - inset * 2.0)
-                        .radius(RADIUS - inset)
+                        .radius(dock::radius() - inset)
                         .fill(sys::color::state::hover()),
                     start + x0 - inset,
                     top + inset,
@@ -240,9 +240,9 @@ pub(super) fn build(
         width: card_w.ceil().max(1.0) as i32,
         height: at.height as i32,
     };
-    let input = dock
-        .reveal
-        .input_region(at.width, at.height, STRIP, progress, shown);
+    let input =
+        dock.reveal
+            .input_region(at.width, at.height, dock::reveal::strip(), progress, shown);
 
     View {
         root: Stack::new(layers).width(Parent).height(Parent),
@@ -278,9 +278,9 @@ pub(super) fn icon_layers(
 
     let (running, width) = item::running(app);
     if width > 0.0 {
-        let dot_y = top + at.card - at.pad / 2.0 - item::RUNNING / 2.0;
+        let dot_y = top + at.card - at.pad / 2.0 - dock::running::size() / 2.0;
         layers.push(place(
-            item::frame(width, item::RUNNING).child(Row::new(vec![running])),
+            item::frame(width, dock::running::size()).child(Row::new(vec![running])),
             x + icon.side / 2.0 - width / 2.0,
             dot_y,
             shown,

@@ -128,7 +128,7 @@ fn size_at(magnify: &Magnify, distance: f32) -> (f32, f32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::surfaces::dock::motion::DOCK;
+    use crate::surfaces::dock::motion::as_shipped;
 
     fn row(count: usize) -> Vec<Rest> {
         (0..count)
@@ -142,7 +142,7 @@ mod tests {
     fn stepped() -> Magnify {
         Magnify {
             smooth: false,
-            ..DOCK.magnify.expect("magnifies as shipped")
+            ..as_shipped().magnify.expect("magnifies as shipped")
         }
     }
 
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn smooth_it_follows_the_pointer_across_an_icon() {
-        let magnify = DOCK.magnify.expect("magnifies as shipped");
+        let magnify = as_shipped().magnify.expect("magnifies as shipped");
         let centre = size_at(&magnify, 0.0);
         let half = size_at(&magnify, 0.5);
         assert_eq!(centre, (1.5, 10.0));
@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn the_spot_under_the_pointer_stays_put() {
-        let magnify = DOCK.magnify.expect("magnifies as shipped");
+        let magnify = as_shipped().magnify.expect("magnifies as shipped");
         let (side, pitch) = (10.0, 12.0);
         for at in [0.3, 1.7, 2.5, 4.9] {
             let swollen = swell(&row(5), side, pitch, Some(at), 1.0, Some(&magnify));
@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn the_row_grows_at_both_ends_by_all_that_swelled() {
-        let magnify = DOCK.magnify.expect("magnifies as shipped");
+        let magnify = as_shipped().magnify.expect("magnifies as shipped");
         let swollen = swell(&row(5), 10.0, 12.0, Some(2.5), 1.0, Some(&magnify));
         let grown: f32 = swollen.icons.iter().map(|icon| icon.side - 10.0).sum();
         assert!((swollen.before + swollen.after - grown).abs() < 0.001);
@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn without_the_pointer_or_magnification_it_rests() {
-        let magnify = DOCK.magnify.expect("magnifies as shipped");
+        let magnify = as_shipped().magnify.expect("magnifies as shipped");
         let rest = swell(&row(3), 10.0, 12.0, None, 1.0, Some(&magnify));
         let none = swell(&row(3), 10.0, 12.0, Some(1.5), 1.0, None);
         let gone = swell(&row(3), 10.0, 12.0, Some(1.5), 0.0, Some(&magnify));

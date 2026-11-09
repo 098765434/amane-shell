@@ -215,7 +215,7 @@ impl Desk {
             cancelled: false,
             slots: Vec::new(),
             pointer: Point { x: 0.0, y: 0.0 },
-            dim: motion::fade(0.0, motion::FADE),
+            dim: motion::fade(0.0, motion::duration::fade()),
             frozen: false,
         }
     }

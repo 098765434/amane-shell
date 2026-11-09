@@ -23,7 +23,7 @@ pub mod sound;
 pub mod tailscale;
 
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use amane::{Blend, BlurShape, Button, Center, Column, Parent, Stack, Start, Text, Widget};
 
@@ -45,14 +45,10 @@ use emaki_kit::motion::{self, Arrive, Item, Pose};
 /// Every control's motion is kept under this scope.
 pub(super) const SCOPE: &str = "emaki.qs.grid";
 
-// TODO(token): `quick.open.cascade`, `quick.open.cascade-scale` and
-// `quick.open.cascade-rise` once Penpot has them (manual §1.1).
-/// How much later the module farthest from the bar's corner sets off than
-/// the nearest as the card opens.
-const CASCADE: Duration = Duration::from_millis(90);
-/// How small a module is as the cascade brings it in, and how far below.
-const CASCADE_SCALE: f32 = 0.9;
-const CASCADE_RISE: f32 = 10.0;
+// The cascade (`quick.open.cascade*`): how much later, in milliseconds,
+// the module farthest from the bar's corner sets off than the nearest as
+// the card opens, and how small a module is as it comes in, and how far
+// below.
 
 /// How the grid moves this frame, beyond its controls' own motion.
 #[derive(Clone, Copy, Default)]
@@ -74,7 +70,7 @@ impl Motion {
         let Some(opened) = self.opened else {
             return 1.0;
         };
-        let elapsed = opened.elapsed().as_secs_f32() - CASCADE.as_secs_f32() * distance;
+        let elapsed = opened.elapsed().as_secs_f32() - quick::open::cascade() / 1000.0 * distance;
         let progress = elapsed / motion::settle().as_secs_f32();
         if progress < 1.0 {
             amane::request_frame();
@@ -86,8 +82,8 @@ impl Motion {
 /// `pose` as the cascade has it, `arrived` of the way in.
 fn arriving(pose: Pose, arrived: f32) -> Pose {
     Pose {
-        y: pose.y + (1.0 - arrived) * motion::travel(CASCADE_RISE),
-        scale: pose.scale * f32::blend(motion::scale(CASCADE_SCALE), 1.0, arrived),
+        y: pose.y + (1.0 - arrived) * motion::travel(quick::open::cascade_rise()),
+        scale: pose.scale * f32::blend(motion::scale(quick::open::cascade_scale()), 1.0, arrived),
         opacity: pose.opacity * arrived.clamp(0.0, 1.0),
         ..pose
     }
@@ -158,7 +154,7 @@ pub(super) fn grid(look: Motion) -> Grid {
             let pose = Pose::at(slot.y).moved(slot.x);
             // a control added grows into its cells; one removed shrinks away
             let away = Pose {
-                scale: motion::scale(motion::ENTER_SCALE),
+                scale: motion::scale(motion::enter_scale()),
                 ..pose.faded()
             };
             Item {
@@ -407,13 +403,11 @@ pub(super) fn placeholder(id: ControlId, slot: Slot) -> Box<dyn Widget> {
                 .style(quick::r#type::caption())
                 .color(material::label(Level::Secondary)),
         );
-    boxed(module(slot.width, slot.height, radius_of(id, span, slot), inner).opacity(DIMMED))
+    boxed(
+        module(slot.width, slot.height, radius_of(id, span, slot), inner)
+            .opacity(quick::placeholder::opacity()),
+    )
 }
-
-// TODO(token): `sys.opacity.disabled` once Penpot has it (manual §1.1);
-// `buttons/mod.rs` holds the same value.
-/// How faint a placeholder is.
-pub(super) const DIMMED: f32 = 0.38;
 
 /// How round a control's module is: one cell tall it's a capsule, taller
 /// it has the card's corners, and the slider cards (Sound, Display) keep

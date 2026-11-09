@@ -14,13 +14,16 @@ Every control moves on one of these, so the shell moves alike everywhere:
 | `spring(value)` | 450 ms, bounce 0.15 | a knob, a thumb, a card moving |
 | `sheet(value)` | 500 ms, bounce 0.1 | a whole sheet sliding in |
 | `zoom(value)` | 500 ms, bounce 0.05 | a page growing out of the control that opens it |
-| `pop(value)` | 380 ms (`POP`), bounce 0.08 | a popover swelling in over the bar |
-| `fade(value, duration)` | an ease-out | fades and exits: `FADE` 200 ms, `EXIT` 300 ms, `HOVER` 120 ms, `PRESS` 220 ms, `CLOSE` 160 ms (a popover going, quicker than it came) |
+| `pop(value)` | 380 ms (`duration::pop()`), bounce 0.08 | a popover swelling in over the bar |
+| `fade(value, duration)` | an ease-out | fades and exits: `duration::fade()` 200 ms, `::exit()` 300 ms, `::hover()` 120 ms, `::press()` 220 ms, `::crossfade()` 300 ms, `::close()` 160 ms (a popover going, quicker than it came) |
 
-`ENTER_SCALE` (0.9) is how small a card enters. `settle()` and `spring_curve(progress)` give the
+`enter_scale()` (0.9) is how small a card enters. `settle()` and `spring_curve(progress)` give the
 spring's length and curve for motion that runs on its own clock rather than an `Animation`. The
-values are constants until Penpot has `sys.motion.*` tokens
-([penpot-backlog.md](../design-system/penpot-backlog.md)).
+values are the `sys.motion.*` tokens: `sys.motion.duration.*` (milliseconds, on the
+`ref.duration.*` steps), `sys.motion.{spring,sheet,pop,zoom}.bounce`, `sys.motion.enter-scale` and
+`sys.motion.press-scale` (how far a pressed button shrinks). Scrolling's coast is
+`sys.motion.coast.*`, a wheel notch `sys.motion.scroll.wheel-step`, and how long a scrollbar
+stays `sys.motion.scrollbar.idle`.
 
 **Reduced motion.** Where motion is reduced (`reduce_motion` in `appearance.json`, else the
 system's; `emaki_kit::theme::reduced_motion`), every spring is a short fade instead, and what swells

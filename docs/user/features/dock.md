@@ -48,8 +48,9 @@ entry (`app_icon::entry_for`) can be pinned, since that's how it's opened again.
 
 ## Configuring the motion
 
-Every animation is in `DOCK` in `dock/motion.rs`, one `Anim` each (`Anim::spring(ms, bounce)`,
-`Anim::ease(ms)`, `.off()` to switch one off):
+Every animation is in `as_shipped()` in `dock/motion.rs`, one `Anim` each (`Anim::spring(ms, bounce)`,
+`Anim::ease(ms)`, `.off()` to switch one off), with its values from the `dock.motion.*` and
+`dock.magnify.*` tokens:
 
 | Field | Moves |
 |---|---|
@@ -60,7 +61,7 @@ Every animation is in `DOCK` in `dock/motion.rs`, one `Anim` each (`Anim::spring
 | `tooltip` | the name fading in; `None` shows no name |
 | `spring_load` | how long files wait over an icon before its window comes into view; `None` waits for the drop |
 
-`motion::motion()` reads `DOCK` through the dock settings each time
+`motion::motion()` reads `as_shipped()` through the dock settings each time
 (`~/.config/emaki/dock.json`, Emaki Settings' Desktop & Dock page): `magnification` (`off`, `small`,
 `medium` as shipped, `large`) scales the swell and lift, `tooltips` and `rise_with_overview` turn
 the name and `follow_overview` off, and `animations: false` turns every animation off. A dock

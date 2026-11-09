@@ -63,7 +63,7 @@ pub(crate) use actions::profile_name;
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use amane::{
     Animation, Apps, Button, Column, DesktopApp, Easing, Horizontal, Key, Keyboard, LayerWindow,
@@ -140,16 +140,19 @@ const FILE_CHIPS: [FileKind; 4] = [
 const CLIP_LIST_W: f32 = 420.0;
 /// How tall Clipboard is under its search row while it asks to keep copies.
 const EMPTY_H: f32 = 200.0;
-/// How small the glass is as it swells in.
-const OPEN_SCALE: f32 = 0.96;
-/// How the categories turn under the fingers: the dock's paging, a touch
-/// calmer for a page as wide as the panel.
-const PAGING: PagerMotion = PagerMotion {
-    duration: Duration::from_millis(450),
-    easing: Easing::Spring { bounce: 0.08 },
-    flick: 1.2,
-    rubber_band: Some(0.3),
-};
+/// How the categories turn under the fingers (`launcher.paging.*`): the
+/// dock's paging, a touch calmer for a page as wide as the panel.
+fn paging_motion() -> PagerMotion {
+    use crate::tokens::launcher::paging;
+    PagerMotion {
+        duration: emaki_kit::tokens::ms(paging::duration()),
+        easing: Easing::Spring {
+            bounce: paging::bounce(),
+        },
+        flick: paging::flick(),
+        rubber_band: Some(paging::rubber_band()),
+    }
+}
 /// How long the scrollbar stays after the body last moved.
 /// How strongly the highlight shows while the focus is elsewhere.
 const UNFOCUSED: f32 = 0.45;
@@ -268,16 +271,16 @@ thread_local! {
     static PILL_SCROLL: RefCell<Kinetic> = RefCell::new(Kinetic::new());
 
     // the category showing, as an index into the categories shown
-    static PAGER: RefCell<Pager> = RefCell::new(Pager::new(Axis::Horizontal, &PAGING));
+    static PAGER: RefCell<Pager> = RefCell::new(Pager::new(Axis::Horizontal, &paging_motion()));
 
     // where the highlight is gliding to
-    static HIGHLIGHT_X: RefCell<Animation> = RefCell::new(motion::fade(BOX_X, motion::HOVER));
-    static HIGHLIGHT_Y: RefCell<Animation> = RefCell::new(motion::fade(BOX_Y, motion::HOVER));
+    static HIGHLIGHT_X: RefCell<Animation> = RefCell::new(motion::fade(BOX_X, motion::duration::hover()));
+    static HIGHLIGHT_Y: RefCell<Animation> = RefCell::new(motion::fade(BOX_Y, motion::duration::hover()));
     // how strongly it shows: less while the focus is on the search or pills
-    static HIGHLIGHT_ALPHA: RefCell<Animation> = RefCell::new(motion::fade(1.0, motion::HOVER));
+    static HIGHLIGHT_ALPHA: RefCell<Animation> = RefCell::new(motion::fade(1.0, motion::duration::hover()));
 
     // 0 … 1: the body fading in after the list under it changed
-    static SWITCH: RefCell<Animation> = RefCell::new(motion::fade(1.0, motion::FADE));
+    static SWITCH: RefCell<Animation> = RefCell::new(motion::fade(1.0, motion::duration::fade()));
 
     // 0 … 1: the scrollbar, showing while the body moves
     static SCROLLBAR: RefCell<ScrollbarFade> = RefCell::new(ScrollbarFade::new());
@@ -297,8 +300,8 @@ fn hidden() {
     FRESH.set(true);
     SCROLL.with_borrow_mut(|scroll| *scroll = Kinetic::new());
     PILL_SCROLL.with_borrow_mut(|scroll| *scroll = Kinetic::new());
-    PAGER.with_borrow_mut(|pager| pager.jump(0, &PAGING));
-    SWITCH.with_borrow_mut(|switch| *switch = motion::fade(1.0, motion::FADE));
+    PAGER.with_borrow_mut(|pager| pager.jump(0, &paging_motion()));
+    SWITCH.with_borrow_mut(|switch| *switch = motion::fade(1.0, motion::duration::fade()));
     SCROLLBAR.with_borrow_mut(ScrollbarFade::reset);
 }
 
@@ -351,7 +354,7 @@ pub fn surface() -> LayerWindow {
     });
 
     // the glass swells in about the pill's centre, the frost with it
-    let swell = Swell::new(open, unfolded, OPEN_SCALE);
+    let swell = Swell::new(open, unfolded, crate::tokens::launcher::open::scale());
     let (sheet, _) = geometry.drawn();
     let centre = (sheet.x + sheet.width / 2.0, sheet.y + PILL_H / 2.0);
     let frost = swell.frost(geometry.frost(), centre);

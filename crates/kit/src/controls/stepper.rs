@@ -17,12 +17,12 @@ use amane::{
     Center, Color, Column, Point, Pointer, Rectangle, Row, Scroll, Size, TextInput, request_frame,
 };
 
-use crate::buttons::DISABLED_OPACITY;
 use crate::buttons::{hover, with_state};
 use crate::layout::boxed;
 use crate::look::hover::hover_fill;
 use crate::style::{self, px};
 use crate::symbol::{Symbol, symbol};
+use crate::tokens::sys;
 
 /// A half held down: which way, since when, and the value it started at.
 #[derive(Clone, Copy)]
@@ -242,7 +242,7 @@ impl Stepper {
             .child(Row::new(vec![boxed(field), boxed(line), boxed(column)]).align(Center));
 
         if disabled {
-            return base.opacity(DISABLED_OPACITY);
+            return base.opacity(sys::opacity::disabled());
         }
         let wheel = on_change;
         base.on_scroll(move |s: Scroll| {

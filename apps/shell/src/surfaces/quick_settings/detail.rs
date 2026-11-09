@@ -38,15 +38,11 @@ pub(super) fn page_width() -> f32 {
     (px.extent(Canvas::tokens().cols) - quick::tile::pad() * 2.0).max(1.0)
 }
 
-// TODO(token): `quick.page.reveal.*` once Penpot has them (manual §1.1).
-/// Where in the sheet's growth (0 … 1) the header comes in, and the body's
-/// first row; each row after that comes `REVEAL_STEP` later, over
-/// `REVEAL_SPAN`, rising `REVEAL_RISE` into place.
-const REVEAL_HEADER: (f32, f32) = (0.35, 0.7);
-const REVEAL_BODY: f32 = 0.45;
-const REVEAL_STEP: f32 = 0.06;
-const REVEAL_SPAN: f32 = 0.35;
-const REVEAL_RISE: f32 = 8.0;
+// `quick.page.reveal.*`: where in the sheet's growth (0 … 1) the header
+// comes in (`header-start` to `header-end`), and the body's first row
+// (`body`); each row after that comes `step` later, over `span`, rising
+// `rise` into place.
+use quick::page::reveal;
 
 /// `widget` as far in as `shown` (0 … 1): fading in, rising into place.
 fn revealed(widget: impl Widget + 'static, shown: f32) -> Rectangle {
@@ -55,14 +51,14 @@ fn revealed(widget: impl Widget + 'static, shown: f32) -> Rectangle {
         .width(Parent)
         .height(height)
         .opacity(shown)
-        .translate(0.0, (1.0 - shown) * REVEAL_RISE)
+        .translate(0.0, (1.0 - shown) * reveal::rise())
         .child(widget)
 }
 
 /// How far in the `index`th row after the header is at `reveal`.
 fn row_shown(reveal: f32, index: usize) -> f32 {
-    let from = (REVEAL_BODY + REVEAL_STEP * index as f32).min(1.0 - REVEAL_SPAN);
-    ramp(reveal, from, from + REVEAL_SPAN)
+    let from = (reveal::body() + reveal::step() * index as f32).min(1.0 - reveal::span());
+    ramp(reveal, from, from + reveal::span())
 }
 
 /// The header's switch: whether it's on, and what flipping it asks for.
@@ -193,7 +189,7 @@ impl DetailPage {
             .clip()
             .child(Column::new(body).gap(sys::space::gap::l()).width(Parent));
 
-        let header_shown = ramp(reveal, REVEAL_HEADER.0, REVEAL_HEADER.1);
+        let header_shown = ramp(reveal, reveal::header_start(), reveal::header_end());
         let mut rows = vec![
             boxed(revealed(header, header_shown)),
             boxed(revealed(Divider::build(), header_shown)),

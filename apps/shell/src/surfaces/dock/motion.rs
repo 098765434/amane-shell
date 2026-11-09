@@ -1,5 +1,5 @@
 //! The dock's motion, all in one place: every animation it runs is an
-//! [`Anim`] in [`DOCK`], each with its own switch, and the magnification
+//! [`Anim`] in [`as_shipped`], each with its own switch, and the magnification
 //! and tooltip can go altogether. Emaki Settings' dock page
 //! (`~/.config/emaki/dock.json`) sets how much it magnifies, whether
 //! it shows names and rises with the overview, and whether it animates;
@@ -16,25 +16,36 @@ use std::time::Duration;
 use amane::{Animation, Blend, Easing};
 use emaki_kit::settings::{self, dock};
 
-// TODO(token): these become `dock.motion.*` tokens once Penpot has them
-// (manual §1.1; docs/developer/design-system/penpot-backlog.md).
-/// The dock's motion as shipped.
-pub const DOCK: DockMotion = DockMotion {
-    enabled: true,
-    reveal: Anim::spring(380, 0.08),
-    hide_delay: Duration::from_millis(400),
-    follow_overview: true,
-    resize: Anim::spring(450, 0.1),
-    item: Anim::spring(450, 0.15),
-    magnify: Some(Magnify {
-        scales: [1.5, 1.2, 1.1],
-        lifts: [10.0, 6.0, 0.0],
-        smooth: true,
-        hover: Anim::ease(120),
-    }),
-    tooltip: Some(Anim::ease(120)),
-    spring_load: Some(Duration::from_millis(700)),
-};
+/// The dock's motion as shipped, from the `dock.motion.*` and
+/// `dock.magnify.*` tokens.
+pub fn as_shipped() -> DockMotion {
+    use crate::tokens::dock::{magnify, motion};
+    let millis = |ms: f32| ms.max(0.0).round() as u64;
+    DockMotion {
+        enabled: true,
+        reveal: Anim::spring(millis(motion::reveal::duration()), motion::reveal::bounce()),
+        hide_delay: Duration::from_millis(millis(motion::hide_delay())),
+        follow_overview: true,
+        resize: Anim::spring(millis(motion::resize::duration()), motion::resize::bounce()),
+        item: Anim::spring(millis(motion::item::duration()), motion::item::bounce()),
+        magnify: Some(Magnify {
+            scales: [
+                magnify::scale::_1(),
+                magnify::scale::_2(),
+                magnify::scale::_3(),
+            ],
+            lifts: [
+                magnify::lift::_1(),
+                magnify::lift::_2(),
+                magnify::lift::_3(),
+            ],
+            smooth: true,
+            hover: Anim::ease(millis(motion::hover::duration())),
+        }),
+        tooltip: Some(Anim::ease(millis(motion::tooltip::duration()))),
+        spring_load: Some(Duration::from_millis(millis(motion::spring_load()))),
+    }
+}
 
 /// Every animation the dock runs, and whether it runs.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -90,7 +101,7 @@ impl Anim {
         }
     }
 
-    /// The same, switched off: for turning one animation off in [`DOCK`].
+    /// The same, switched off: for turning one animation off in [`as_shipped`].
     #[cfg(test)]
     pub const fn off(self) -> Self {
         Self { on: false, ..self }
@@ -121,14 +132,14 @@ impl Magnify {
     }
 }
 
-/// The dock's motion: [`DOCK`] as the dock settings have it, every
+/// The dock's motion: [`as_shipped`] as the dock settings have it, every
 /// animation off when `EMAKI_DOCK_ANIMATIONS=off` (or `0`, `false`, `no`).
 /// Read afresh each time, so a view that asks redraws when the settings
 /// change.
 pub fn motion() -> DockMotion {
     static VAR: OnceLock<Option<String>> = OnceLock::new();
     let var = VAR.get_or_init(|| std::env::var("EMAKI_DOCK_ANIMATIONS").ok());
-    configured(DOCK, var.as_deref(), &dock())
+    configured(as_shipped(), var.as_deref(), &dock())
 }
 
 /// `motion` as `settings` have it, with every animation off when `var`
@@ -176,17 +187,17 @@ mod tests {
     #[test]
     fn the_variable_turns_every_animation_off() {
         let shipped = settings::Dock::default();
-        assert!(configured(DOCK, None, &shipped).enabled);
-        assert!(configured(DOCK, Some("on"), &shipped).enabled);
-        assert!(!configured(DOCK, Some("off"), &shipped).enabled);
-        assert!(!configured(DOCK, Some(" OFF "), &shipped).enabled);
-        assert!(!configured(DOCK, Some("0"), &shipped).enabled);
+        assert!(configured(as_shipped(), None, &shipped).enabled);
+        assert!(configured(as_shipped(), Some("on"), &shipped).enabled);
+        assert!(!configured(as_shipped(), Some("off"), &shipped).enabled);
+        assert!(!configured(as_shipped(), Some(" OFF "), &shipped).enabled);
+        assert!(!configured(as_shipped(), Some("0"), &shipped).enabled);
     }
 
     #[test]
     fn the_settings_shape_the_motion() {
-        let shipped = configured(DOCK, None, &settings::Dock::default());
-        assert_eq!(shipped, DOCK);
+        let shipped = configured(as_shipped(), None, &settings::Dock::default());
+        assert_eq!(shipped, as_shipped());
 
         let set = settings::Dock {
             magnification: settings::Magnify::Small,
@@ -195,7 +206,7 @@ mod tests {
             rise_with_overview: false,
             ..settings::Dock::default()
         };
-        let motion = configured(DOCK, None, &set);
+        let motion = configured(as_shipped(), None, &set);
         assert!(!motion.enabled);
         assert!(!motion.follow_overview);
         assert_eq!(motion.tooltip, None);
@@ -208,16 +219,16 @@ mod tests {
             magnification: settings::Magnify::Off,
             ..settings::Dock::default()
         };
-        assert_eq!(configured(DOCK, None, &still).magnify, None);
+        assert_eq!(configured(as_shipped(), None, &still).magnify, None);
     }
 
     #[test]
     fn an_animation_that_is_off_arrives_at_once() {
-        let mut off = anim(&DOCK.item.off(), 0.0);
+        let mut off = anim(&as_shipped().item.off(), 0.0);
         off.to(1.0);
         assert_eq!(off.value(), 1.0);
 
-        let mut on = anim(&DOCK.item, 0.0);
+        let mut on = anim(&as_shipped().item, 0.0);
         on.to(1.0);
         if motion().enabled {
             assert!(on.value() < 1.0, "a running one takes its time");
@@ -226,7 +237,7 @@ mod tests {
 
     #[test]
     fn the_most_magnification_makes_room_above() {
-        let magnify = DOCK.magnify.expect("magnifies as shipped");
+        let magnify = as_shipped().magnify.expect("magnifies as shipped");
         assert_eq!(magnify.most(), (1.5, 10.0));
     }
 }

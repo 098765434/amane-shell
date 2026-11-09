@@ -165,27 +165,31 @@ impl Thickness {
     }
 }
 
-// TODO(token): `sys.material.inactive` once Penpot has it.
-/// How far an app window's materials go toward opaque while another window
-/// has the focus: calmer, so the focused one stands out.
-const INACTIVE: f32 = 0.5;
+// The materials' thresholds are `sys.effect.material.*`:
+// - `inactive`: how far an app window's materials go toward opaque while
+//   another window has the focus: calmer, so the focused one stands out.
+// - `small-glass`: glass no bigger than this across its short side, a
+//   control-sized piece, frosts with the small glass material, which
+//   frosts less.
+// - `clear-fade`: how much of its tint Clear glass keeps over a backdrop
+//   that isn't bright. Over a bright one it keeps all of it: a 35% dimming
+//   layer (the ultra-thin tint is darker still).
+// - `untoned`: how far a material's tint goes toward opaque where niri
+//   doesn't tone the backdrop under it (its `tone`): a tint the window
+//   draws itself, or no niri material at all. The thin tints count on the
+//   tone to stay readable.
 
-// TODO(token): `sys.material.small-glass` once Penpot has it.
-/// Glass no bigger than this across its short side, a control-sized piece,
-/// frosts with the small glass material, which frosts less.
-pub const SMALL_GLASS: f32 = 44.0;
+/// Glass no bigger than this across its short side frosts with the small
+/// glass material (`sys.effect.material.small-glass`).
+pub fn small_glass() -> f32 {
+    sys::effect::material::small_glass()
+}
 
-// TODO(token): `sys.material.clear-fade` once Penpot has it.
-/// How much of its tint Clear glass keeps over a backdrop that isn't
-/// bright. Over a bright one it keeps all of it: a 35% dimming layer
-/// (the ultra-thin tint is darker still).
-const CLEAR_FADE: f32 = 0.7;
-
-// TODO(token): `sys.material.untoned` once Penpot has it.
-/// How far a material's tint goes toward opaque where niri doesn't tone the
-/// backdrop under it (its `tone`): a tint the window draws itself, or no
-/// niri material at all. The thin tints count on the tone to stay readable.
-pub const UNTONED: f32 = 0.4;
+/// How far a tint goes toward opaque where niri doesn't tone the backdrop
+/// under it (`sys.effect.material.untoned`).
+pub fn untoned_share() -> f32 {
+    sys::effect::material::untoned()
+}
 
 thread_local! {
     // the material what's being built sits on
@@ -333,7 +337,7 @@ impl Material {
                 if !see_through() || BRIGHT.get() {
                     tint
                 } else {
-                    faded(tint, CLEAR_FADE)
+                    faded(tint, sys::effect::material::clear_fade())
                 }
             }
             Self::Window | Self::Sidebar | Self::Header => {
@@ -346,7 +350,10 @@ impl Material {
                     tint
                 } else {
                     let alpha = opacity(tint);
-                    with_alpha(tint, alpha + (1.0 - alpha) * INACTIVE)
+                    with_alpha(
+                        tint,
+                        alpha + (1.0 - alpha) * sys::effect::material::inactive(),
+                    )
                 }
             }
             // the bar's layer rule frosts it; the bar fills its own tint
@@ -390,7 +397,7 @@ impl Material {
         if !see_through() {
             return shape.alpha(0.0);
         }
-        let small = width.min(height) <= SMALL_GLASS;
+        let small = width.min(height) <= small_glass();
         let name = small
             .then(|| self.niri_small())
             .flatten()
@@ -595,10 +602,10 @@ fn separator_in(high_contrast: bool, content: bool) -> Color {
     }
 }
 
-// a tint thickened for a backdrop niri doesn't tone ([`UNTONED`])
+// a tint thickened for a backdrop niri doesn't tone ([`untoned_share`])
 fn untoned(tint: Color) -> Color {
     let alpha = opacity(tint);
-    with_alpha(tint, alpha + (1.0 - alpha) * UNTONED)
+    with_alpha(tint, alpha + (1.0 - alpha) * untoned_share())
 }
 
 fn opacity(color: Color) -> f32 {

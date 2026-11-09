@@ -91,7 +91,7 @@ thread_local! {
     static UNTIL: Cell<Option<Instant>> = const { Cell::new(None) };
 
     // how far it has faded in
-    static FADE: RefCell<amane::Animation> = RefCell::new(motion::fade(0.0, motion::FADE));
+    static FADE: RefCell<amane::Animation> = RefCell::new(motion::fade(0.0, motion::duration::fade()));
     static OPENING: Cell<bool> = const { Cell::new(false) };
 }
 
@@ -109,7 +109,11 @@ pub fn show(readout: Readout) {
 fn faded_in(open: bool) -> f32 {
     FADE.with_borrow_mut(|anim| {
         if OPENING.replace(open) != open {
-            anim.retime(if open { motion::FADE } else { motion::EXIT });
+            anim.retime(if open {
+                motion::duration::fade()
+            } else {
+                motion::duration::exit()
+            });
             anim.to(if open { 1.0 } else { 0.0 });
         }
         anim.value()

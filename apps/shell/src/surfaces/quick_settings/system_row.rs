@@ -51,7 +51,7 @@ pub(super) fn screenshot_toggle() -> QuickToggle {
         // the card has to have faded away before the screenshot UI
         // freezes the screen, so the card isn't in it
         std::thread::spawn(|| {
-            std::thread::sleep(motion::CLOSE * 2);
+            std::thread::sleep(motion::duration::close() * 2);
             Windows::screenshot();
         });
     })

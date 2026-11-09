@@ -13,7 +13,7 @@ lives in emaki-kit's `tokens` module (`crates/kit/src/tokens`, with the generate
    shell draws is a token in the Penpot file *emaki design system*. Nobody edits
    `crates/kit/design-tokens/tokens.json` by hand.
 2. **Three tiers, one direction.** `ref.*` (raw values) ← `sys.*` (decisions) ← component
-   tokens (`bar.*`, `menu.*`, `notification.*`, `quick.*`, `dialog.*`, `material.*`, `wifi.*`).
+   tokens (`bar.*`, `menu.*`, `notification.*`, `quick.*`, `dialog.*`, `material.*` …).
    References only
    point leftwards.
 3. **Code reads `sys.*` and its own component's tokens. Never `ref.*`.**
@@ -74,7 +74,7 @@ the system), reduced motion, adaptive glass (`EMAKI_ADAPTIVE_GLASS`) and vibrant
 |------|--------|-------|---------------|---------------|--------------------|
 | 1 · Primitives | `ref.` | raw values and scales: palette, spacing steps, font families, sizes, radii, opacities | nothing (literals only) | **no** | no |
 | 2 · Semantic | `sys.` | decisions by role: surfaces, content, accent, status, states, spacing roles, control sizes, typography roles, shadows | `ref.*`, other `sys.*` | yes | colors yes; dimensions via density |
-| 3 · Component | `bar.`, `menu.`, `notification.`, `quick.`, `dialog.`, `material.`, `wifi.` | values unique to one component, or its deliberate departures | `sys.*`; `ref.*` only for non-color values; `sys.density.factor` | only by that component | no |
+| 3 · Component | `bar.`, `menu.`, `notification.`, `quick.`, `dialog.`, `material.` … (`tokens::COMPONENTS`) | values unique to one component, or its deliberate departures | `sys.*`; `ref.*` only for non-color values; `sys.density.factor` | only by that component | no |
  
 ```mermaid
 flowchart LR
@@ -200,11 +200,6 @@ dimension role may follow density.
 | `sys.color.label.primary … .quaternary`, `sys.color.fill.primary … .tertiary`, `sys.color.separator` | the same on opaque surfaces: solid glass, `Material::Content` |
 | `sys.color.window.bg`, `sys.color.sidebar.bg.active / .inactive`, `sys.color.sidebar.label.inactive` | an app window that isn't frosted, and its sidebar |
 | `sys.color.scrollbar`, `sys.color.progress.track-stroke`, `sys.color.tooltip.inner-stroke` | the scroll indicator, a slider track's outline, a dark tooltip's edge |
-| `sys.color.surface.panel.bg / .fg / .stroke` | the bar (no longer read: the materials replace it) |
-| `sys.color.surface.popover.bg / .fg / .stroke` | popovers without a material (no longer read: menus, dropdowns and popovers are `Material::Menu` and `Material::Popover`) |
-| `sys.color.surface.notification.bg / .fg / .fg-secondary / .stroke` | notification toasts (no longer read: `Material::Banner`) |
-| `sys.color.surface.raised.bg` | chips, rows and cards inside any surface (the bar's pill) |
-| `sys.color.surface.popover.fg-secondary` | secondary text in menus (no longer read: menus take `material::label(Level::Secondary)`) |
 | `sys.color.accent.bg / .fg / .text` | accent fill, content on it, accent-colored text |
 | `sys.color.status.critical.bg / .fg / .text` | urgent/destructive (also `warning`, `success` when needed) |
 | `sys.color.status.critical.hover` | hover fill on a destructive row |
@@ -268,8 +263,9 @@ their values, the component typographies and how each member reaches the drawn t
  
 ## 7. Tier 3 — component tokens
  
-The component sets in `tokens.json` are `bar`, `menu`, `notification`, `quick`, `dialog`, `dock`,
-`osd`, `material` and `wifi` (`tokens::COMPONENTS` also allows `power`, which has no tokens).
+The component prefixes in `tokens.json` are the ones `tokens::COMPONENTS` allows: `bar`, `menu`,
+`notification`, `quick`, `dialog`, `dock`, `osd`, `widget`, `form`, `settings`, `launcher`,
+`calendar`, `messages` and `material`.
 The glass components take their surface from a material, not from a `sys.color.surface.*` pair:
 
 | Component | Surface |
@@ -282,7 +278,6 @@ The glass components take their surface from a material, not from a `sys.color.s
 | `dock` | `Material::Control` |
 | `osd` (the on-screen display) | `Material::Control` |
 | `material` | none: niri's material settings, read only by the layer-rule generator ([materials.md](materials.md#tokens)) |
-| `wifi` | none: left from the old Wi-Fi panel, read by no code (§13 reports them) |
  
 **Add a component token only if:**
 1. the value is unique to this component and not part of a shared scale
@@ -349,7 +344,7 @@ Density: component dimensions that should follow density reference
 | `sys/density/comfortable` | `sys.density.factor` |
 | `sys/density/compact` | `sys.density.factor` |
 | `accent/<name>` (optional) | `ref.color.accent.*` |
-| `components` | `bar.*`, `menu.*`, `notification.*`, `quick.*`, `dialog.*`, `dock.*`, `material.*`, `wifi.*` |
+| `components` | `bar.*`, `menu.*`, `notification.*`, `quick.*`, `dialog.*`, `dock.*`, `material.*` … |
  
 Later sets win on name clashes; the only intended clashes are the accent preview sets
 overriding `ref.color.accent.*`.

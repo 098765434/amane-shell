@@ -307,7 +307,8 @@ fn popup(id: &str) -> Popup {
         .collect();
 
     // fading in, with a short slide down from the control
-    let t = (opened.elapsed().as_secs_f32() / crate::motion::FADE.as_secs_f32()).clamp(0.0, 1.0);
+    let t = (opened.elapsed().as_secs_f32() / crate::motion::duration::fade().as_secs_f32())
+        .clamp(0.0, 1.0);
     if t < 1.0 {
         request_frame();
     }

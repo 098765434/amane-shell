@@ -25,8 +25,9 @@ use crate::tokens::{Styled, sys};
 pub const TOOLTIP_NS: &str = "emaki.tooltip";
 
 /// How long the pointer rests on a control before its tooltip shows.
-/// TODO(token): `sys.motion.duration.tooltip` once Penpot has it.
-const DELAY: Duration = Duration::from_millis(500);
+fn delay() -> Duration {
+    crate::tokens::ms(sys::motion::duration::tooltip())
+}
 
 /// The tooltip a control offered.
 struct Shown {
@@ -107,7 +108,7 @@ pub fn popup() -> Popup {
     let now = Instant::now();
     let wanted = STATE.with_borrow(|state| {
         let shown = state.shown.as_ref()?;
-        if now - shown.since < DELAY {
+        if now - shown.since < delay() {
             // nothing else wakes us when the delay is up
             request_frame();
             return None;
@@ -119,8 +120,7 @@ pub fn popup() -> Popup {
         return hidden();
     };
 
-    // TODO(token): `tooltip.*` text style and inset once Penpot has them:
-    // these are the closest `sys` roles
+    // the shared roles, not `tooltip.*` copies of them (manual §4.3)
     let style = sys::r#type::caption();
     let inset = sys::space::inset::s();
     let width = (text_width(&text, style) + inset * 2.0).ceil() as u32;

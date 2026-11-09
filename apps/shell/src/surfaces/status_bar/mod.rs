@@ -84,8 +84,9 @@ pub use workspace_shape::switch_position;
 pub const BAR_NS: &str = "emaki.status-bar";
 
 /// How many lines of touchpad scroll move one workspace along.
-/// TODO(token): `bar.scroll.step` once Penpot has it.
-const SCROLL_STEP: f32 = 3.0;
+fn scroll_step() -> f32 {
+    bar::scroll::step()
+}
 
 /// How tall the strip along the edge is that brings a hidden bar back.
 const STRIP: f32 = 2.0;

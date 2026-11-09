@@ -22,6 +22,8 @@ const OWNERS: &[(&str, &[&str])] = &[
     ("containers/dialog.rs", &["dialog"]),
     ("alert/", &["dialog"]),
     ("osd/", &["osd"]),
+    ("dock/", &["dock"]),
+    ("launcher/", &["launcher"]),
 ];
 
 fn component_sources() -> Vec<(String, String)> {
@@ -117,32 +119,11 @@ fn call_suffix(path: &str) -> String {
 /// never read fails the test below instead of joining this list quietly.
 const UNREAD_ALLOWED: &[&str] = &[
     // not read by code yet: use or remove in the kit consolidation
-    "bar.overview.height",
-    "bar.pill.padding-y",
-    "bar.volume.width",
-    "bar.window-item.max-width",
-    "bar.window-item.radius",
-    "bar.workspace-dot.active-size",
-    "bar.workspace-dot.size",
-    "menu.label.advance-ratio",
     "sys.color.accent.text",
     "sys.color.scrollbar",
-    "sys.color.surface.notification.bg",
-    "sys.color.surface.notification.fg",
-    "sys.color.surface.notification.fg-secondary",
-    "sys.color.surface.notification.stroke",
-    "sys.color.surface.panel.bg",
-    "sys.color.surface.panel.fg",
-    "sys.color.surface.popover.bg",
-    "sys.color.surface.popover.fg",
-    "sys.color.surface.popover.fg-secondary",
-    "sys.color.surface.popover.stroke",
-    // in the Penpot set for a raised surface; nothing draws one yet
-    "sys.color.surface.raised.bg",
-    "sys.size.list.max-height",
-    "sys.size.popover.height",
-    "wifi.button.width",
-    "wifi.icon-button.width",
+    // read by the layer-rule generator (src/tokens/layer_rules.rs), which
+    // gives niri's shadow to the frosted surfaces
+    "sys.shadow.popover",
 ];
 
 /// Every generated token is read by some code, or is on the list above.

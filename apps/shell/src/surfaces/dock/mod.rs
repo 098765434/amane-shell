@@ -57,7 +57,7 @@ use emaki_kit::settings::dock as dock_settings;
 
 use crate::chrome::bar;
 use crate::chrome::per_output::PerOutput;
-use crate::tokens::sys;
+use crate::tokens::{dock, sys};
 use emaki_kit::app_icon;
 use emaki_kit::divider::Divider;
 use emaki_kit::edge_reveal::EdgeReveal;
@@ -84,15 +84,11 @@ emaki_kit::marker! {
 /// under it.
 pub const DOCK_NS: &str = "emaki.dock";
 
-// TODO(token): `dock.icon.least`, `dock.radius` and `dock.reveal.strip`
-// once Penpot has them (manual §1.1). How big an icon is at rest, with room
-// for them all, is the dock settings' `icon_size`.
-/// The least an icon shrinks to, to fit the row on the monitor.
-const LEAST_ICON: f32 = 20.0;
-/// The card's corners.
-const RADIUS: f32 = 18.0;
-/// How tall the strip along the bottom edge that brings the dock up is.
-const STRIP: f32 = 2.0;
+// How big an icon is at rest, with room for them all, is the dock
+// settings' `icon_size`; the least it shrinks to, to fit the row on the
+// monitor, is `dock.icon.least`. The card's corners are `dock.radius`, and
+// the strip along the bottom edge that brings the dock up is
+// `dock.reveal.strip` tall.
 
 /// One monitor's dock, kept across rebuilds.
 struct Dock {
@@ -238,7 +234,7 @@ impl Measures {
         } else {
             (room - pad * 2.0 + gap - rules as f32 * rule_px) / icons as f32 - gap
         };
-        let side = fit.clamp(LEAST_ICON.min(most), most);
+        let side = fit.clamp(dock::icon::least().min(most), most);
 
         let (scale, lift) = motion.magnify.map_or((1.0, 0.0), |magnify| magnify.most());
         let tip = if motion.tooltip.is_some() {
@@ -372,7 +368,7 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
     if view.tucked && !full_while_hidden() {
         return LayerWindow::new()
             .width(Full)
-            .height(STRIP)
+            .height(dock::reveal::strip())
             .anchor_vertical(Vertical::Bottom)
             .layer(Layer::Overlay)
             .space(zone)
@@ -383,7 +379,7 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
                 x: 0,
                 y: 0,
                 width: at.width.max(1.0) as i32,
-                height: STRIP as i32,
+                height: dock::reveal::strip() as i32,
             }])
             .blur_shapes(Vec::new())
             .child(view.root);

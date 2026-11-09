@@ -53,8 +53,6 @@ const KEYCAP: f32 = 24.0;
 /// pointer.
 const MODE_GLYPH: f32 = 24.0;
 const MODE_LIFT: f32 = 1.06;
-/// How far the mode buttons slide in towards the pill as they go.
-const MODE_SLIDE: f32 = 12.0;
 /// The keyboard focus ring round the picked pill: how thick, how far out,
 /// and how strong.
 const RING: f32 = 2.0;
@@ -395,7 +393,8 @@ pub(super) fn mode_buttons(geometry: &Geometry, picked: Mode) -> Vec<Box<dyn Wid
                     MODE_GLYPH,
                     material::label(Level::Primary),
                 ));
-            let slide = (1.0 - shown) * motion::travel(MODE_SLIDE);
+            let slide =
+                (1.0 - shown) * motion::travel(crate::tokens::launcher::mode_button::slide());
             boxed(
                 Material::Control
                     .lit(glass, CIRCLE / 2.0)

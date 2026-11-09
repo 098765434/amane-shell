@@ -17,7 +17,7 @@ The glass setting, reduced motion and higher contrast change every material at o
   content. niri's `glass` material lenses it. Its **Clear** variant (`glass-clear`) is for media
   only: it is dark whatever the theme, keeps 0.7 of its tint, and keeps all of it over a bright
   backdrop, a 35% dimming layer.
-- **Small glass frosts less.** A piece of Regular glass no more than `SMALL_GLASS` (44) across its
+- **Small glass frosts less.** A piece of Regular glass no more than `sys.effect.material.small-glass` (44) across its
   short side, a button or a chip, asks for niri's `glass-small`. It frosts at about 6 (2 passes,
   offset 1.5) with a narrower lens (bevel 12). Larger glass, the modules, menus and sheets, takes
   `glass`: about 16 (3 passes, offset 2) with bevel 16, so a module isn't all lens edge. This is
@@ -32,7 +32,7 @@ The glass setting, reduced motion and higher contrast change every material at o
   under dark glass a white wallpaper reads as 60% grey, and under light glass a black one reads
   as 40%, as a darken or lighten layer would. Where niri doesn't tone the
   backdrop (a tint the surface fills itself, such as the bar's, or no niri material), the tint goes
-  `UNTONED` (0.4) of the way to opaque instead. `adaptive-tint` is 0.25, so glass over a backdrop
+  `sys.effect.material.untoned` (0.4) of the way to opaque instead. `adaptive-tint` is 0.25, so glass over a backdrop
   near its own brightness thickens only a little, not to milky white.
 
 ## Roles
@@ -128,7 +128,7 @@ A piece of glass is built with its material's methods:
   `sys.color.fill.*` instead, a little weaker, as the kit's content area is. The vibrant set is
   one set for every material, and the contrast floors check primary and secondary
   labels on every tint over black and white wallpaper (`tokens::lint`): toned by the niri
-  material that draws the tint, and again untoned and thickened by `UNTONED`, the tint the kit
+  material that draws the tint, and again untoned and thickened by `sys.effect.material.untoned`, the tint the kit
   uses without niri's material.
 - `material.<name>.*` (component tokens) are niri's material settings (niri's
   [`effects/materials.md`](https://github.com/emaki-desktop/niri/blob/emaki/docs/fork/effects/materials.md) says what each does). `cargo xtask layer-rules`

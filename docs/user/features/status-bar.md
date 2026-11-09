@@ -79,7 +79,7 @@ niri last said so nothing jumps when focus leaves.
 It's one closed straight-sided `Path` in a `Canvas`, so it draws as a single quad outline (no
 vello). Clicking it opens niri's overview (`Windows::toggle_overview`); its tooltip is the
 workspace's name or "Workspace N". Scrolling over it focuses the next or previous workspace: one per
-wheel notch, or one per `SCROLL_STEP` lines of touchpad scroll, stopping at either end.
+wheel notch, or one per `bar.scroll.step` lines of touchpad scroll, stopping at either end.
 
 ### Right: the status cluster (`status`)
 

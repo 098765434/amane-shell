@@ -24,7 +24,7 @@ use super::{Actions, Pending, interactive, label_row, state_fill, with_existing,
 use crate::color::faded;
 use crate::layout::{boxed, inner_width, pad};
 use crate::material::{self, FillLevel, Level};
-use crate::motion::{self, FADE};
+use crate::motion;
 use crate::tokens::sys;
 
 /// One button's motion, kept across rebuilds under its id.
@@ -44,7 +44,7 @@ impl Motion {
             thumb: motion::spring(first as f32),
             fades: selected
                 .iter()
-                .map(|&on| motion::fade(if on { 1.0 } else { 0.0 }, FADE))
+                .map(|&on| motion::fade(if on { 1.0 } else { 0.0 }, motion::duration::fade()))
                 .collect(),
             pending: vec![Pending::NONE; selected.len()],
         }

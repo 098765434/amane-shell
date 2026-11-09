@@ -6,7 +6,7 @@
 //! use crate::tokens::{Styled, menu, sys};
 //!
 //! Rectangle::new()
-//!     .fill(sys::color::surface::popover::bg())
+//!     .fill(sys::color::window::bg())
 //!     .radius(sys::radius::popover())
 //!     .height(menu::row::height());
 //! Text::new("Open").style(sys::r#type::label());
@@ -53,8 +53,6 @@ pub const SOURCE: &str = include_str!("../../design-tokens/tokens.json");
 pub const COMPONENTS: &[&str] = &[
     "bar",
     "menu",
-    "wifi",
-    "power",
     "osd",
     "notification",
     "quick",
@@ -235,6 +233,12 @@ mod generated {
     include!(concat!(env!("OUT_DIR"), "/tokens.rs"));
 }
 pub use generated::*;
+
+/// A duration token (a number of milliseconds, as Penpot has no duration
+/// type) as a `Duration`: `ms(sys::motion::duration::fade())`.
+pub fn ms(millis: f32) -> std::time::Duration {
+    std::time::Duration::from_secs_f32(millis.max(0.0) / 1000.0)
+}
 
 /// A `sys.type.*` role, ready for a `Text`: the first installed family of
 /// its stack, and its size and letter spacing times the text scale.

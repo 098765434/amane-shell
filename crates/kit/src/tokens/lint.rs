@@ -534,7 +534,7 @@ pub fn contrast(resolved: &[(Key, Resolved)]) -> Vec<String> {
             };
             // with niri's material: toned; without it, the kit thickens the tint
             let untoned = Rgba {
-                a: bg_c.a + (1.0 - bg_c.a) * f64::from(crate::material::UNTONED),
+                a: bg_c.a + (1.0 - bg_c.a) * f64::from(crate::material::untoned_share()),
                 ..bg_c
             };
             for (content, floor) in [(fg, FG_FLOOR), (secondary, SECONDARY_FLOOR)] {
@@ -734,8 +734,17 @@ mod tests {
     /// `messages.*` (the Messages app's sidebar width, avatars, badge, unread
     /// dot, bubble measures, stamp inset, reply field and pills, constants in
     /// its code until then) and sys by 1 for `sys.color.bubble.received`,
-    /// the received bubble's grey, which differs by mode.
-    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 166), ("component", 304)];
+    /// the received bubble's grey, which differs by mode. Then sys fell by
+    /// 13 and component by 10, the surface roles, `wifi.*` and the bar's
+    /// old pills and window title deleted as no code read them. Then, for
+    /// the constants the backlog held as `TODO(token)`: ref by 11 (the
+    /// `ref.duration.*` steps), sys by 35 (the shared motion, the coast,
+    /// the scrollbar, the caret, the disabled opacity, the glass edge's
+    /// widths, the materials' thresholds and the frosted surfaces' shadow)
+    /// and component by 41 (Quick Settings' and Customize's motion and
+    /// sizes, the dock's motion, strip and threshold, the bar's workspace
+    /// shape and scroll step, the launcher's opening and paging).
+    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 188), ("component", 335)];
 
     #[test]
     fn no_tier_grows_past_its_ceiling() {

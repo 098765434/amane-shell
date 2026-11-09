@@ -17,11 +17,7 @@ use crate::kinetic::Axis;
 use crate::layout::{boxed, frame};
 use crate::material::{self, Level};
 use crate::motion;
-
-// TODO(token): `sys.scrollbar.*` once Penpot has them (manual §1.1).
-/// How wide the scrollbar is, and how short its thumb gets.
-const SCROLLBAR: f32 = 6.0;
-const THUMB_MIN: f32 = 32.0;
+use crate::tokens::{ms, sys};
 
 /// A clipped viewport scrolled along one axis by the caller, with an optional scrollbar.
 pub struct ScrollView {
@@ -127,15 +123,19 @@ impl ScrollView {
             Some(opacity) if max > 0.0 && opacity > 0.001 && self.axis == Axis::Vertical => opacity,
             _ => return viewport,
         };
-        let thumb_height = (self.height * self.height / self.content).max(THUMB_MIN);
+        let thumb_height =
+            (self.height * self.height / self.content).max(sys::size::scrollbar::thumb_min());
         let along = (self.offset / max).clamp(0.0, 1.0);
         let thumb = Rectangle::new()
-            .width(SCROLLBAR)
+            .width(sys::size::scrollbar::width())
             .height(thumb_height)
-            .radius(SCROLLBAR / 2.0)
+            .radius(sys::size::scrollbar::width() / 2.0)
             .fill(material::label(Level::Secondary))
             .opacity(opacity)
-            .translate(self.width - SCROLLBAR, along * (self.height - thumb_height));
+            .translate(
+                self.width - sys::size::scrollbar::width(),
+                along * (self.height - thumb_height),
+            );
         frame(self.width, self.height)
             .align_child(Start, Start)
             .child(Stack::new(vec![boxed(viewport), boxed(thumb)]))
@@ -153,15 +153,18 @@ pub struct ScrollbarFade {
 }
 
 impl ScrollbarFade {
-    /// How long the bar stays after the content stops.
-    pub const IDLE: Duration = Duration::from_millis(800);
+    /// How long the bar stays after the content stops
+    /// (`sys.motion.scrollbar.idle`).
+    pub fn idle() -> Duration {
+        ms(sys::motion::scrollbar::idle())
+    }
 
     /// Hidden, with nothing scrolled yet.
     pub fn new() -> Self {
         Self {
             scrolled: None,
             due: None,
-            shown: motion::fade(0.0, motion::FADE),
+            shown: motion::fade(0.0, motion::duration::fade()),
         }
     }
 
@@ -181,11 +184,11 @@ impl ScrollbarFade {
         let now = Instant::now();
         let showing = self
             .scrolled
-            .is_some_and(|at| now.duration_since(at) < Self::IDLE);
+            .is_some_and(|at| now.duration_since(at) < Self::idle());
         if let Some(at) = self.scrolled.filter(|_| showing)
             && self.due.is_none_or(|due| now >= due)
         {
-            let due = at + Self::IDLE;
+            let due = at + Self::idle();
             self.due = Some(due);
             motion::redraw_after::<M>(due.saturating_duration_since(now));
         }

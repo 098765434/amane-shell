@@ -25,32 +25,56 @@ use std::time::{Duration, Instant};
 use amane::{Animation, Blend, Easing, Service};
 
 use crate::theme;
+use crate::tokens::sys;
 
-// Springy motion. TODO(token): these become `sys.motion.*` tokens once
-// Penpot has them (manual §1.1: no style literals in component code).
-/// How long a spring takes to settle: a knob, a thumb, a card moving.
-const SPRING: Duration = Duration::from_millis(450);
-const SPRING_BOUNCE: f32 = 0.15;
-/// A whole sheet sliding in: longer, and calmer.
-const SHEET: Duration = Duration::from_millis(500);
-const SHEET_BOUNCE: f32 = 0.1;
-/// A popover swelling in over the bar: quick, with a breath of overshoot.
-pub const POP: Duration = Duration::from_millis(380);
-const POP_BOUNCE: f32 = 0.08;
-/// A selection fading in or out.
-pub const FADE: Duration = Duration::from_millis(200);
-/// A card on its way out.
-pub const EXIT: Duration = Duration::from_millis(300);
-/// The hover layer coming and going under the pointer.
-pub const HOVER: Duration = Duration::from_millis(120);
-/// A pressed control swelling back to its size.
-pub const PRESS: Duration = Duration::from_millis(220);
-/// A colour changing between two states, like a mark being ticked.
-pub const CROSSFADE: Duration = Duration::from_millis(300);
-/// A popover going: quicker than it came ([`POP`]).
-pub const CLOSE: Duration = Duration::from_millis(160);
+/// How long each kind of motion takes (`sys.motion.duration.*`).
+pub mod duration {
+    use std::time::Duration;
+
+    use crate::tokens::{ms, sys::motion::duration as d};
+
+    /// How long a spring takes to settle: a knob, a thumb, a card moving.
+    pub fn spring() -> Duration {
+        ms(d::spring())
+    }
+    /// A whole sheet sliding in: longer, and calmer.
+    pub fn sheet() -> Duration {
+        ms(d::sheet())
+    }
+    /// A popover swelling in over the bar: quick, with a breath of overshoot.
+    pub fn pop() -> Duration {
+        ms(d::pop())
+    }
+    /// A selection fading in or out.
+    pub fn fade() -> Duration {
+        ms(d::fade())
+    }
+    /// A card on its way out.
+    pub fn exit() -> Duration {
+        ms(d::exit())
+    }
+    /// The hover layer coming and going under the pointer.
+    pub fn hover() -> Duration {
+        ms(d::hover())
+    }
+    /// A pressed control swelling back to its size.
+    pub fn press() -> Duration {
+        ms(d::press())
+    }
+    /// A colour changing between two states, like a mark being ticked.
+    pub fn crossfade() -> Duration {
+        ms(d::crossfade())
+    }
+    /// A popover going: quicker than it came ([`pop`]).
+    pub fn close() -> Duration {
+        ms(d::close())
+    }
+}
+
 /// How small a card is as it enters, growing to its size.
-pub const ENTER_SCALE: f32 = 0.9;
+pub fn enter_scale() -> f32 {
+    sys::motion::enter_scale()
+}
 
 /// Whether motion is reduced.
 fn reduced() -> bool {
@@ -72,56 +96,55 @@ pub fn travel(distance: f32) -> f32 {
 /// The spring things move on, starting at rest at `value`.
 pub fn spring<T: Blend>(value: T) -> Animation<T> {
     if reduced() {
-        return fade(value, FADE);
+        return fade(value, duration::fade());
     }
     Animation::new(value)
-        .duration(SPRING)
+        .duration(duration::spring())
         .easing(Easing::Spring {
-            bounce: SPRING_BOUNCE,
+            bounce: sys::motion::spring::bounce(),
         })
 }
 
 /// The spring a whole sheet slides in on.
 pub fn sheet<T: Blend>(value: T) -> Animation<T> {
     if reduced() {
-        return fade(value, FADE);
+        return fade(value, duration::fade());
     }
     Animation::new(value)
-        .duration(SHEET)
+        .duration(duration::sheet())
         .easing(Easing::Spring {
-            bounce: SHEET_BOUNCE,
+            bounce: sys::motion::sheet::bounce(),
         })
 }
 
-/// A page growing out of the control that opens it: a sheet's spring
-/// with less overshoot, as the page fills the card it's clipped to.
-const ZOOM_BOUNCE: f32 = 0.05;
-
-/// The spring a page grows out of its control on.
+/// The spring a page grows out of its control on: a sheet's spring with
+/// less overshoot, as the page fills the card it's clipped to.
 pub fn zoom<T: Blend>(value: T) -> Animation<T> {
     if reduced() {
-        return fade(value, FADE);
+        return fade(value, duration::fade());
     }
     Animation::new(value)
-        .duration(SHEET)
+        .duration(duration::sheet())
         .easing(Easing::Spring {
-            bounce: ZOOM_BOUNCE,
+            bounce: sys::motion::zoom::bounce(),
         })
 }
 
 /// The spring a popover swells in on.
 pub fn pop<T: Blend>(value: T) -> Animation<T> {
     if reduced() {
-        return fade(value, FADE);
+        return fade(value, duration::fade());
     }
     Animation::new(value)
-        .duration(POP)
-        .easing(Easing::Spring { bounce: POP_BOUNCE })
+        .duration(duration::pop())
+        .easing(Easing::Spring {
+            bounce: sys::motion::pop::bounce(),
+        })
 }
 
 /// How long a spring takes to settle, for motion that runs on its own clock.
-pub const fn settle() -> Duration {
-    SPRING
+pub fn settle() -> Duration {
+    duration::spring()
 }
 
 /// The spring's curve at `progress` (0 … 1 of [`settle`]), for motion that
@@ -131,7 +154,7 @@ pub fn spring_curve(progress: f32) -> f32 {
         return Easing::Out.apply(progress.clamp(0.0, 1.0));
     }
     Easing::Spring {
-        bounce: SPRING_BOUNCE,
+        bounce: sys::motion::spring::bounce(),
     }
     .apply(progress.clamp(0.0, 1.0))
 }
@@ -315,12 +338,16 @@ pub fn animate<T: Clone + 'static>(
         for track in tracks.iter_mut() {
             if track.left.is_none() && !items.iter().any(|item| item.key == track.key) {
                 let from = track.motion.value();
-                track.motion = fade(from, EXIT);
+                track.motion = fade(from, duration::exit());
                 track.motion.to(track.exit);
                 track.left = Some(Instant::now());
             }
         }
-        tracks.retain(|track| track.left.is_none_or(|left| left.elapsed() < EXIT));
+        tracks.retain(|track| {
+            track
+                .left
+                .is_none_or(|left| left.elapsed() < duration::exit())
+        });
 
         let mut shown: Vec<Shown<T>> = tracks
             .iter()
@@ -448,7 +475,7 @@ mod tests {
         assert!(shown[0].leaving && shown[0].key == 1);
         assert!(!shown[1].leaving);
 
-        std::thread::sleep(EXIT + Duration::from_millis(20));
+        std::thread::sleep(duration::exit() + Duration::from_millis(20));
         let shown = animate("test.exit", vec![item(2, 20.0)], Arrive::Enter);
         assert_eq!(shown.len(), 1);
     }

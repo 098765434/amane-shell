@@ -34,7 +34,7 @@ pub(crate) fn view(screen: (f32, f32), card: Area) -> Option<Built> {
     );
 
     // it swells in about its centre, the frost with it
-    let swell = Swell::new(OPENING.get(), unfolded, OPEN_SCALE);
+    let swell = Swell::new(OPENING.get(), unfolded, quick::customize::open::scale());
     let glass = Material::Sheet.shape(area.x, area.y, area.width, area.height, radius, 1.0);
     let centre = (area.x + area.width / 2.0, area.y + area.height / 2.0);
     let frost = swell.frost(vec![glass], centre);
@@ -56,11 +56,13 @@ pub(crate) fn view(screen: (f32, f32), card: Area) -> Option<Built> {
 }
 
 /// The sheet: the categories beside the controls, over the footer.
-const SHEET: sheet::Sheet = sheet::Sheet {
-    id: "emaki.qs.customize",
-    sidebar: SIDEBAR,
-    inset: INSET,
-};
+fn layout_sheet() -> sheet::Sheet {
+    sheet::Sheet {
+        id: "emaki.qs.customize",
+        sidebar: quick::customize::sidebar::width(),
+        inset: inset(),
+    }
+}
 
 /// What's on the sheet: the sidebar, a hairline, the pane over the footer.
 pub(super) fn content(area: &Area) -> Rectangle {
@@ -92,7 +94,7 @@ pub(super) fn content(area: &Area) -> Rectangle {
         }),
         on_scroll: on_side_scroll,
     };
-    let sidebar = SHEET.sidebar(search, sections, area.height, Some(scrolling));
+    let sidebar = layout_sheet().sidebar(search, sections, area.height, Some(scrolling));
     let footer = sheet::Footer {
         hint: "Drag a control to place it in Quick Settings.".into(),
         reset: "Reset Layout",
@@ -100,7 +102,7 @@ pub(super) fn content(area: &Area) -> Rectangle {
         on_reset: edit::reset,
         on_done: edit::leave,
     };
-    SHEET.build(
+    layout_sheet().build(
         area,
         sidebar,
         |viewport| pane(picked, &query, viewport, !query.trim().is_empty()),
@@ -113,7 +115,7 @@ pub(super) fn content(area: &Area) -> Rectangle {
 pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: bool) -> Rectangle {
     let hidden: Vec<ControlId> = layout::with(|layout| layout.hidden().collect());
     let sections = catalog::sections(category, query, &hidden);
-    let inner_w = (viewport.width - INSET * 2.0).max(1.0);
+    let inner_w = (viewport.width - inset() * 2.0).max(1.0);
     let px = Metrics::tokens();
     let title_style = sys::r#type::title();
     let title_h = text_height(title_style);
@@ -121,7 +123,7 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
     let gap_l = sys::space::gap::l();
 
     // laid out by hand, top to bottom, so every control's place is known
-    let mut y = INSET;
+    let mut y = inset();
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
     // (id, rect in the pane's content)
     let mut placed: Vec<(ControlId, Area)> = Vec::new();
@@ -130,7 +132,7 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
         layers.push(boxed(
             frame(inner_w, title_h)
                 .align_child(Start, Center)
-                .translate(INSET, y)
+                .translate(inset(), y)
                 .child(
                     Text::new(section.title)
                         .style(title_style)
@@ -149,7 +151,7 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
             layers.push(boxed(
                 frame(inner_w, note_h)
                     .align_child(Start, Center)
-                    .translate(INSET, y)
+                    .translate(inset(), y)
                     .child(caption(note)),
             ));
             y += note_h;
@@ -166,14 +168,14 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
                 placed.push((
                     id,
                     Area {
-                        x: INSET + spot.x + (item_w - slot.width) / 2.0,
+                        x: inset() + spot.x + (item_w - slot.width) / 2.0,
                         y: y + spot.y,
                         width: slot.width,
                         height: slot.height,
                     },
                 ));
             }
-            layers.push(boxed(flow.translate(INSET, y)));
+            layers.push(boxed(flow.translate(inset(), y)));
             y += flow_h;
         }
 
@@ -181,13 +183,13 @@ pub(super) fn pane(category: Category, query: &str, viewport: Area, searching: b
             y += gap_l;
             layers.push(boxed(
                 frame(inner_w, Divider::height())
-                    .translate(INSET, y)
+                    .translate(inset(), y)
                     .child(Divider::build()),
             ));
             y += Divider::height() + gap_l;
         }
     }
-    let content_h = y + INSET;
+    let content_h = y + inset();
 
     let scroll = SCROLL.with_borrow_mut(|scroll| {
         scroll.set_max((content_h - viewport.height).max(0.0));

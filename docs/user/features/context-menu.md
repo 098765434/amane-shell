@@ -169,8 +169,6 @@ text measurement (`Text::width`):
 - **Height:** card padding, plus `menu.row.height` per row, plus `Divider::height()` per
   separator (`entry_height`). The submenu anchor adds up the same heights (`row_offset`).
 
-`menu.label.advance-ratio`, which the old estimate used, is no longer read: delete it in Penpot.
-
 ## Internals
 
 All state lives in a thread-local `Runtime` (`runtime.rs`):

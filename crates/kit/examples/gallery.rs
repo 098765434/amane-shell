@@ -176,7 +176,7 @@ fn controls(state: &Gallery) -> Column {
                 boxed(
                     Text::new(state.answer.clone())
                         .style(sys::r#type::label())
-                        .color(sys::color::surface::popover::fg()),
+                        .color(sys::color::label::primary()),
                 ),
             ])
             .gap(sys::space::gap::m())

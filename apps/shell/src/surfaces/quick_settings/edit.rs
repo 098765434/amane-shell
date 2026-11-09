@@ -42,12 +42,6 @@ use emaki_kit::grid::drag::{self, Origin, Session, follow, hit};
 use emaki_kit::layout::{boxed, frame};
 use emaki_kit::motion::{self, Pose};
 
-// TODO(token): `quick.drag.band` once Penpot has it (manual §1.1).
-/// How far past the middle of the next cell a held control goes before it
-/// changes cell, in cells: the dead band that keeps the grid still while
-/// the hand rests on a boundary.
-const BAND: f32 = 0.1;
-
 /// What the pointer holds.
 pub(super) type Drag = drag::Drag<ControlId>;
 
@@ -59,7 +53,7 @@ thread_local! {
     // this frame's placement, which a press reads to find what's under it
     static SLOTS: RefCell<Vec<(ControlId, Slot)>> = const { RefCell::new(Vec::new()) };
     // 0 … 1: the badges, handles and ghost discs fading in
-    static CHROME: RefCell<Animation> = RefCell::new(motion::fade(0.0, motion::FADE));
+    static CHROME: RefCell<Animation> = RefCell::new(motion::fade(0.0, motion::duration::fade()));
     // the layout before the last control was removed, to put it back
     static UNDO: RefCell<Option<Layout>> = const { RefCell::new(None) };
 }
@@ -91,7 +85,7 @@ pub(super) fn toggle() {
 pub(super) fn enter() {
     if !EDITING.replace(true) {
         CHROME.with_borrow_mut(|chrome| {
-            *chrome = motion::fade(0.0, motion::FADE);
+            *chrome = motion::fade(0.0, motion::duration::fade());
             chrome.to(1.0);
         });
         customize::open();
@@ -196,7 +190,7 @@ fn begin(drag: Drag) {
 fn motion(point: Point) {
     SESSION.with_borrow_mut(|session| {
         if let Some(session) = session {
-            session.motion(point, &Metrics::tokens(), BAND);
+            session.motion(point, &Metrics::tokens(), quick::drag::band());
         }
     });
     super::QuickSettings::changed();

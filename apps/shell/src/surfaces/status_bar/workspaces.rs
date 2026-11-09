@@ -52,7 +52,7 @@ pub(super) fn workspaces(output: &str) -> Rectangle {
         .child(indicator)
 }
 
-/// A wheel notch, or [`SCROLL_STEP`] lines of touchpad, focuses the next
+/// A wheel notch, or [`scroll_step`] lines of touchpad, focuses the next
 /// workspace down or the previous one up.
 pub(super) fn scroll_workspaces(output: &str, scroll: Scroll) {
     let step = SCROLLED.with(|scrolled| scroll_steps(scrolled, &scroll));
@@ -79,7 +79,7 @@ pub(super) fn scroll_workspaces(output: &str, scroll: Scroll) {
 }
 
 /// One step along, back (-1) or on (1), for a wheel notch or for
-/// [`SCROLL_STEP`] lines of touchpad, which gather in `scrolled` till then;
+/// [`scroll_step`] lines of touchpad, which gather in `scrolled` till then;
 /// 0 while they're still gathering.
 pub(super) fn scroll_steps(scrolled: &Cell<f32>, scroll: &Scroll) -> i32 {
     let delta = if scroll.y != 0.0 { scroll.y } else { scroll.x };
@@ -91,7 +91,7 @@ pub(super) fn scroll_steps(scrolled: &Cell<f32>, scroll: &Scroll) -> i32 {
             } else {
                 scrolled.get() + delta
             };
-            let step = if total.abs() >= SCROLL_STEP {
+            let step = if total.abs() >= scroll_step() {
                 direction(total)
             } else {
                 0

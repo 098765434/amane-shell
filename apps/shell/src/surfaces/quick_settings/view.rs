@@ -71,8 +71,12 @@ pub fn surface() -> LayerWindow {
     // gives the page its frost.
     let grid = tiles::grid(tiles::Motion {
         opened: OPENED_AT.get(),
-        focus: (zooming && swap == Page::Grid)
-            .then(|| (detail.controls(), 1.0 - ramp(slide, 0.0, TILE_FADE))),
+        focus: (zooming && swap == Page::Grid).then(|| {
+            (
+                detail.controls(),
+                1.0 - ramp(slide, 0.0, quick::page::tile_fade()),
+            )
+        }),
     });
     // in edit mode the Add list beside the canvas widens the card to the left
     let width = grid.width + inset * 2.0;
@@ -80,7 +84,7 @@ pub fn surface() -> LayerWindow {
     // once a page has been on the card, it's at least a page tall, so the
     // surface isn't resized as pages come and go
     let page_min = if page != Page::Grid || DETAIL.get() != Page::Grid {
-        grid::Metrics::tokens().extent(MIN_PAGE_ROWS)
+        grid::Metrics::tokens().extent(min_page_rows())
     } else {
         0.0
     };
@@ -174,7 +178,7 @@ pub fn surface() -> LayerWindow {
             (cx - width / 2.0) * (1.0 - shrink),
             (cy - outer / 2.0) * (1.0 - shrink),
         );
-        let shows = 1.0 - ramp(slide, 0.0, GRID_FADE);
+        let shows = 1.0 - ramp(slide, 0.0, quick::page::grid_fade());
         // the frost sinks and fades with it
         shapes.extend(glass_region::faded(
             glass_region::transformed(frost, shrink, (cx, cy), (0.0, 0.0)),
@@ -231,7 +235,7 @@ pub fn surface() -> LayerWindow {
     } else {
         1.0
     };
-    let lift = down * (1.0 - unfolded) * motion::travel(OPEN_LIFT);
+    let lift = down * (1.0 - unfolded) * motion::travel(quick::open::lift());
     let card = content.opacity(swell.opacity).scale(scale).translate(
         (1.0 - scale) * width / 2.0,
         down * (1.0 - scale) * outer / 2.0 + lift,

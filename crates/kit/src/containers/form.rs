@@ -451,7 +451,7 @@ impl FormRow {
                 self.disabled,
                 Actions::press(move || press()),
             ),
-            None if self.disabled => base.opacity(crate::buttons::DISABLED_OPACITY),
+            None if self.disabled => base.opacity(crate::tokens::sys::opacity::disabled()),
             None => base,
         }
     }

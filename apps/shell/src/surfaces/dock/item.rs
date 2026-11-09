@@ -8,14 +8,11 @@ use amane::{Center, Rectangle, Row, Service, Text, Widget, Windows};
 use emaki_kit::settings::dock;
 
 use super::model::Icon;
-use crate::tokens::{Styled, sys};
+use crate::tokens::{Styled, dock, sys};
 use emaki_kit::app_icon;
 use emaki_kit::layout::{boxed, text_height, text_width};
 use emaki_kit::material::{self, Level, Material};
 
-// TODO(token): `dock.running.size` once Penpot has it (manual §1.1).
-/// How big a running dot is.
-pub const RUNNING: f32 = 4.0;
 /// How much of a window's title its name label shows.
 const TITLE_CHARS: usize = 48;
 
@@ -39,14 +36,14 @@ pub fn running(icon: &Icon) -> (Box<dyn Widget>, f32) {
         .map(|_| {
             boxed(
                 Rectangle::new()
-                    .width(RUNNING)
-                    .height(RUNNING)
-                    .radius(RUNNING / 2.0)
+                    .width(dock::running::size())
+                    .height(dock::running::size())
+                    .radius(dock::running::size() / 2.0)
                     .fill(color),
             )
         })
         .collect();
-    let width = RUNNING * count as f32 + gap * count.saturating_sub(1) as f32;
+    let width = dock::running::size() * count as f32 + gap * count.saturating_sub(1) as f32;
     (boxed(Row::new(dots).gap(gap).align(Center)), width)
 }
 

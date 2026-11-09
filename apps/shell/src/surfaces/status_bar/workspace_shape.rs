@@ -32,10 +32,13 @@ const POINTS: usize = 120;
 /// The box it's drawn in: the bar's text line.
 const BOX: f32 = super::size::LINE_HEIGHT;
 
-/// How much area each shape covers: a circle 13 px across, so a square or
-/// a star looks as heavy as the circle rather than the same width.
-/// TODO(token): `bar.workspace.shape.size` (the box) and `.area`.
-const AREA: f32 = PI * 6.5 * 6.5;
+/// How much area each shape covers: a circle `bar.workspace.shape.size`
+/// across, so a square or a star looks as heavy as the circle rather than
+/// the same width.
+fn shape_area() -> f32 {
+    let radius = crate::tokens::bar::workspace::shape::size() / 2.0;
+    PI * radius * radius
+}
 
 /// How far either way of a point the corners are softened, in points.
 const SOFTEN: usize = 2;
@@ -145,7 +148,7 @@ impl Outline {
         let area: f32 = radii.iter().map(|r| r * r).sum::<f32>() * PI / POINTS as f32;
         let (left, right, top, bottom) = extent(&radii);
         let fit = BOX / (right - left).max(bottom - top);
-        let scale = (AREA / area).sqrt().min(fit);
+        let scale = (shape_area() / area).sqrt().min(fit);
         let centre = (
             BOX / 2.0 - (left + right) / 2.0 * scale,
             BOX / 2.0 - (top + bottom) / 2.0 * scale,

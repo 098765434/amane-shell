@@ -112,8 +112,8 @@ pub(crate) fn ghost(origin: (f32, f32)) -> Option<(Box<dyn Widget>, BlurShape)> 
 /// screen has the room, and no taller than the screen allows.
 pub(crate) fn place(screen: (f32, f32), card: Area) -> Area {
     let margin = sys::space::gap::l();
-    let width = WIDTH.min(screen.0 - margin * 2.0).max(1.0);
-    let height = HEIGHT.min(screen.1 - margin * 2.0).max(1.0);
+    let width = window_width().min(screen.0 - margin * 2.0).max(1.0);
+    let height = window_height().min(screen.1 - margin * 2.0).max(1.0);
     let mut x = (screen.0 - width) / 2.0;
     if x + width + margin > card.x {
         x = (card.x - margin - width).max(margin);

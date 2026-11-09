@@ -97,8 +97,11 @@ impl Reveal {
         if self.open != open {
             self.open = open;
             turned(self.shown.value());
-            self.shown
-                .retime(if open { motion::POP } else { motion::CLOSE });
+            self.shown.retime(if open {
+                motion::duration::pop()
+            } else {
+                motion::duration::close()
+            });
             self.shown.to(if open { 1.0 } else { 0.0 });
         }
         self.shown.value()
