@@ -7,12 +7,12 @@ use emaki_kit::app::Page;
 use emaki_kit::color::Accent;
 use emaki_kit::icons::{
     ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO,
-    ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_NOTIFICATIONS, ICON_OPEN_IN_NEW, ICON_PACKAGE,
-    ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TRAY, ICON_TUNE, ICON_UPDATE,
+    ICON_KEYBOARD, ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_NOTIFICATIONS, ICON_OPEN_IN_NEW,
+    ICON_PACKAGE, ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TRAY, ICON_TUNE, ICON_UPDATE,
 };
 
 use crate::{
-    about, appearance, desktop, displays, dock, drop, launcher, notifications, passwords,
+    about, appearance, desktop, displays, dock, drop, input, launcher, notifications, passwords,
     quick_settings, status_bar, system,
 };
 
@@ -112,7 +112,7 @@ const fn with_toolbar(entry: Entry, toolbar: Toolbar) -> Entry {
 }
 
 /// The sidebar, top to bottom; a page is its place in this list.
-pub const SIDEBAR: [Entry; 22] = [
+pub const SIDEBAR: [Entry; 23] = [
     Entry::Section("Shell"),
     found_by(
         page(
@@ -144,6 +144,27 @@ pub const SIDEBAR: [Entry; 22] = [
         ),
         &["advanced"],
         displays::sub,
+    ),
+    with_subs(
+        aliased(
+            found_by(
+                page("input", "Input", ICON_KEYBOARD, Accent::Gray, input::page),
+                &[
+                    "keyboard",
+                    "mouse",
+                    "touchpad",
+                    "trackpad",
+                    "key repeat",
+                    "scrolling",
+                    "shortcuts",
+                    "keybinds",
+                    "hotkeys",
+                ],
+            ),
+            &["keyboard", "mouse", "touchpad"],
+        ),
+        &["shortcuts"],
+        input::sub,
     ),
     with_subs(
         aliased(

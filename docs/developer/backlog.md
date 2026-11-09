@@ -96,6 +96,8 @@ setup.
 **Builds on.** `services/connections.rs` (nmcli), amane's `Network`.
 
 ### 9. Input page: keyboard, mouse, touchpad, shortcuts · M
+
+**Done**: [input.md](../user/features/input.md), with the shortcuts read-only. Editing them remains.
 **Gap.** Keyboard layout is a NixOS setting (`system/xkb.rs`), but there's no UI for repeat
 rate/delay, touchpad tap/natural scroll/speed, mouse acceleration, or niri's keybinds.
 **Build.** These are all niri `input {}` options. Write them to the niri config (it reloads live),
@@ -166,7 +168,8 @@ From [dock.md](../user/features/dock.md) *Known limits* and what a dock is expec
   per-output namespace or an amane fix.
 
 ### 17. Bar additions · S each
-- Keyboard layout indicator (see 9).
+- Keyboard layout indicator (see 9). **Done**: the bar's keyboard item, shown with two or more
+  layouts.
 - Weather in the clock's tooltip or as a widget (Open-Meteo, no key needed).
 - Media chip: title of what's playing, click for Now Playing (GNOME style).
 - Recording/screen-share chip with a stop button (the privacy icon only shows state today).

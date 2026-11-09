@@ -14,7 +14,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use super::outputs::{Transform, TransformExt};
-use crate::system::nixos::run;
+use crate::niri_files::{braces, node_end, quote, unquote};
 
 pub const FILE: &str = "displays.kdl";
 
@@ -210,18 +210,6 @@ impl Displays {
     }
 }
 
-/// The last line of the node that starts at `start`: where its braces close.
-fn node_end(lines: &[&str], start: usize) -> usize {
-    let mut depth = 0;
-    for (index, line) in lines.iter().enumerate().skip(start) {
-        depth += braces(line.split("//").next().unwrap_or(""));
-        if depth <= 0 {
-            return index;
-        }
-    }
-    lines.len() - 1
-}
-
 /// The apps of a rule this file writes: only `match app-id=` lines and the
 /// one setting. Any other rule is someone else's and kept as it is.
 fn vrr_rule(node: &[&str]) -> Option<Vec<String>> {
@@ -352,15 +340,6 @@ fn number(value: f64) -> String {
     }
 }
 
-fn quote(text: &str) -> String {
-    format!("\"{}\"", text.replace('\\', "\\\\").replace('"', "\\\""))
-}
-
-fn unquote(text: &str) -> Option<String> {
-    let inner = text.trim().strip_prefix('"')?.strip_suffix('"')?;
-    Some(inner.replace("\\\"", "\"").replace("\\\\", "\\"))
-}
-
 fn regex_escape(text: &str) -> String {
     let mut out = String::new();
     for c in text.chars() {
@@ -389,21 +368,11 @@ fn regex_unescape(text: &str) -> String {
 
 // ───── the files ────────────────────────────────────────────────────────────
 
-/// niri's own config, where its symlink leads (into the nixos-config repo
-/// here), so `displays.kdl` lands beside the real file.
-pub fn niri_config() -> PathBuf {
-    let link = emaki_kit::paths::config().join("niri/config.kdl");
-    fs::canonicalize(&link).unwrap_or(link)
-}
+pub use crate::niri_files::niri_config;
+use crate::niri_files::{self, beside_config, commit, dirty, spans, write_atomic};
 
 pub fn displays_file() -> PathBuf {
-    niri_config().with_file_name(FILE)
-}
-
-/// The line `config.kdl` includes the file with. The path is absolute:
-/// niri reads includes beside the config's symlink, not where it leads.
-pub fn include_line(file: &Path) -> String {
-    format!("include optional=true {}", quote(&file.to_string_lossy()))
+    beside_config(FILE)
 }
 
 /// Where the displays' settings stand.
@@ -439,87 +408,36 @@ pub fn setup() -> Setup {
 }
 
 fn includes(config: &str, file: &Path) -> bool {
-    let wanted = include_line(file);
-    config.lines().any(|line| line.trim() == wanted)
+    niri_files::includes(config, file)
 }
 
 /// The top-level `output` blocks that aren't commented out.
 pub fn blocks(config: &str) -> Vec<Block> {
     let lines: Vec<&str> = config.lines().collect();
-    let mut found = Vec::new();
-    let mut depth = 0i32;
-    let mut start: Option<usize> = None;
-    for (index, line) in lines.iter().enumerate() {
-        let code = line.split("//").next().unwrap_or("").trim();
-        if depth == 0 && code.starts_with("output ") {
-            start = Some(index);
-        }
-        depth += braces(code);
-        if depth == 0
-            && let Some(first) = start.take()
-        {
-            let text = lines[first..=index].join("\n");
-            if let Some(output) = Displays::read_kdl(&text).outputs.into_iter().next() {
-                found.push(Block {
-                    first,
-                    last: index,
-                    output,
-                });
-            }
-        }
-    }
-    found
-}
-
-/// How much deeper a line goes, braces in strings aside.
-fn braces(code: &str) -> i32 {
-    let mut depth = 0;
-    let mut in_string = false;
-    let mut escaped = false;
-    for c in code.chars() {
-        match c {
-            _ if escaped => escaped = false,
-            '\\' if in_string => escaped = true,
-            '"' => in_string = !in_string,
-            '{' if !in_string => depth += 1,
-            '}' if !in_string => depth -= 1,
-            _ => {}
-        }
-    }
-    depth
+    spans(config, "output")
+        .into_iter()
+        .filter_map(|(first, last)| {
+            let text = lines[first..=last].join("\n");
+            let output = Displays::read_kdl(&text).outputs.into_iter().next()?;
+            Some(Block {
+                first,
+                last,
+                output,
+            })
+        })
+        .collect()
 }
 
 /// `config.kdl` with its blocks commented out and the include where the
 /// first one was.
 pub fn moved(config: &str, blocks: &[Block], file: &Path) -> String {
-    let mut out = Vec::new();
-    for (index, line) in config.lines().enumerate() {
-        if blocks.first().is_some_and(|block| block.first == index) {
-            out.push(String::from(
-                "// Displays are set in Emaki Settings, which writes this file:",
-            ));
-            out.push(include_line(file));
-        }
-        if blocks
-            .iter()
-            .any(|block| (block.first..=block.last).contains(&index))
-        {
-            out.push(format!("// {line}"));
-        } else {
-            out.push(line.to_string());
-        }
-    }
-    let mut text = out.join("\n");
-    if config.ends_with('\n') {
-        text.push('\n');
-    }
-    if blocks.is_empty() {
-        text.push_str(&format!(
-            "\n// Displays are set in Emaki Settings, which writes this file:\n{}\n",
-            include_line(file)
-        ));
-    }
-    text
+    let spans: Vec<(usize, usize)> = blocks.iter().map(|b| (b.first, b.last)).collect();
+    niri_files::moved(
+        config,
+        &spans,
+        file,
+        "Displays are set in Emaki Settings, which writes this file:",
+    )
 }
 
 /// Moves `config.kdl`'s blocks into `displays.kdl` and includes it, as one
@@ -566,63 +484,6 @@ pub fn save(displays: &Displays, what: &str) -> Result<(), String> {
     write_atomic(&file, &displays.write_kdl())?;
     let folder = file.parent().map(Path::to_path_buf).unwrap_or_default();
     commit(&folder, &[&file], &format!("displays: {what}"))
-}
-
-/// Into place whole and durably, so niri never reads half a file and a
-/// crash can't leave it empty, which would lose every display's settings.
-fn write_atomic(path: &Path, text: &str) -> Result<(), String> {
-    emaki_kit::fs::Whole::new()
-        .durable()
-        .write(path, text)
-        .map_err(|e| format!("{}: {e}", path.display()))
-}
-
-fn in_repo(folder: &Path) -> bool {
-    run("git", &["rev-parse", "--is-inside-work-tree"], Some(folder)).is_ok()
-}
-
-fn dirty(folder: &Path, path: &Path) -> bool {
-    in_repo(folder)
-        && run(
-            "git",
-            &["status", "--porcelain", "--", &path.to_string_lossy()],
-            Some(folder),
-        )
-        .is_ok_and(|out| !out.trim().is_empty())
-}
-
-/// Commits just `paths`, when the folder is in a repo; elsewhere the files
-/// are simply written.
-fn commit(folder: &Path, paths: &[&Path], message: &str) -> Result<(), String> {
-    if !in_repo(folder) {
-        return Ok(());
-    }
-    let paths: Vec<String> = paths
-        .iter()
-        .map(|p| p.to_string_lossy().into_owned())
-        .collect();
-    // git leaves loose objects unsynced by default, and a crash then leaves the
-    // commit as empty files: a broken HEAD
-    let mut add = vec!["-c", "core.fsync=committed", "add", "--"];
-    add.extend(paths.iter().map(String::as_str));
-    run("git", &add, Some(folder))?;
-    // nothing to commit when the files came out the same
-    let mut staged = vec!["diff", "--cached", "--quiet", "--"];
-    staged.extend(paths.iter().map(String::as_str));
-    if run("git", &staged, Some(folder)).is_ok() {
-        return Ok(());
-    }
-    let mut args = vec![
-        "-c",
-        "core.fsync=committed",
-        "commit",
-        "-q",
-        "-m",
-        message,
-        "--",
-    ];
-    args.extend(paths.iter().map(String::as_str));
-    run("git", &args, Some(folder)).map(|_| ())
 }
 
 #[cfg(test)]
@@ -818,31 +679,7 @@ window-rule {
 
     #[test]
     fn this_is_the_files_one_writer() {
-        fn files(dir: &Path, out: &mut Vec<PathBuf>) {
-            for entry in fs::read_dir(dir).into_iter().flatten().flatten() {
-                let path = entry.path();
-                if path.is_dir() && path.file_name().is_some_and(|name| name != "target") {
-                    files(&path, out);
-                } else if path.extension().is_some_and(|ext| ext == "rs") {
-                    out.push(path);
-                }
-            }
-        }
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let mut all = Vec::new();
-        files(&root.join("apps"), &mut all);
-        files(&root.join("crates"), &mut all);
-        let me = Path::new(file!()).file_name();
-        let named: Vec<_> = all
-            .iter()
-            .filter(|file| file.file_name() != me)
-            .filter(|file| {
-                fs::read_to_string(file)
-                    .unwrap()
-                    .lines()
-                    .any(|line| !line.trim_start().starts_with("//") && line.contains(FILE))
-            })
-            .collect();
+        let named = crate::niri_files::others_naming(FILE, Path::new("src/displays/kdl.rs"));
         assert!(named.is_empty(), "only kdl.rs names {FILE}: {named:#?}");
     }
 

@@ -71,6 +71,7 @@ The docs use one name for each thing:
 | Alert | the shell's alert in the middle of the screen, for questions like "Restart now?" | [user/features/quick-settings.md#the-alert](user/features/quick-settings.md#the-alert) |
 | Emaki Settings | the settings app: appearance, the desktop's widgets, the launcher, and the System pages that manage the NixOS configuration | [user/features/settings-app.md](user/features/settings-app.md) |
 | Displays | Emaki Settings' page for the screens: what each can do (OLED, HDR, VRR range), resolution, refresh (lower on battery), scale, rotation, arrangement, HDR, a monitor's brightness over DDC/CI, Night Light's schedule | [user/features/displays.md](user/features/displays.md) |
+| Input | Emaki Settings' page for key repeat, the touchpad and the mouse (niri's `input.kdl`), and a list of niri's keyboard shortcuts | [user/features/input.md](user/features/input.md) |
 | Phone | KDE Connect drawn by the shell: Quick Settings' Phone page, the bar's phone battery, Messages (`emaki-messages`) for texts and remote input, and the phone's screen, sound, apps and camera through scrcpy (`emaki-mirror`) | [user/features/phone.md](user/features/phone.md) |
 | Context menu | nested xdg-popup menus: the dock's, the launcher's, the widgets', Do Not Disturb's and a Bluetooth device's | [user/features/context-menu.md](user/features/context-menu.md) |
 

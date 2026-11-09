@@ -106,6 +106,13 @@ overview's backdrop, what the display reports) is a sub-page. Changes that could
 unreadable, moving one in the arrangement too, are kept only when confirmed. On demand variable
 refresh can add an app that's open from a menu. See [displays.md](displays.md).
 
+### Input
+
+Key repeat (delay and rate, with a field to try it), Num Lock at login, and the touchpad's and
+mouse's tap to click, natural scrolling, off while typing, speed, acceleration, right click and
+scroll method, written to niri's `input.kdl`. The layout stays under General. **Keyboard
+Shortcuts** is a sub-page listing every bind in niri's config, read-only. See [input.md](input.md).
+
 ### Status Bar
 
 Writes `status-bar.json` (`status_bar.rs`); see [status-bar.md](status-bar.md#settings).
