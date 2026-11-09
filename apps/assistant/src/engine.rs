@@ -127,8 +127,8 @@ impl Engine {
         }
         let answer = complete(text)?;
         reset();
-        let mut answer: Value =
-            serde_json::from_str(&answer).map_err(|error| format!("Cactus answered oddly: {error}"))?;
+        let mut answer: Value = serde_json::from_str(&answer)
+            .map_err(|error| format!("Cactus answered oddly: {error}"))?;
         if !self.scored {
             // what Cactus's own Python does for such weights
             answer["confidence"] = Value::Null;
@@ -247,8 +247,12 @@ fn head_manifest(file: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Re
         file.seek(SeekFrom::Start(offset))?;
         let mut codes = vec![0u8; 2 * heads];
         file.read_exact(&mut codes)?;
-        let codes = codes.chunks(2).map(|c| f16_to_f32(u16::from_le_bytes([c[0], c[1]])));
-        return Ok(Some(codes.map(|c| c.round() as u16).any(|c| c == CONFIDENCE)));
+        let codes = codes
+            .chunks(2)
+            .map(|c| f16_to_f32(u16::from_le_bytes([c[0], c[1]])));
+        return Ok(Some(
+            codes.map(|c| c.round() as u16).any(|c| c == CONFIDENCE),
+        ));
     }
     Ok(Some(false))
 }
