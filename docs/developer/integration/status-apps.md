@@ -496,19 +496,22 @@ beside the user's running bar.
 #### A test bar and Drop, isolated
 
 ```sh
-T=$(mktemp -d)
-mkdir -p $T/config $T/state $T/bin
+T=$(mktemp -d)                            # short: socket paths must fit in 108 bytes
+mkdir -p $T/config $T/state $T/cache $T/data $T/bin
 cp -r ~/.config/emaki $T/config/          # then set auto_hide to "never" in status-bar.json
 printf '#!/bin/sh\ncat > %s/copied.txt\n' $T > $T/bin/wl-copy   # links land in a file
 printf '#!/bin/sh\nexit 1\n' > $T/bin/secret-tool              # secrets go to the 0600 file
 chmod +x $T/bin/*
 ENV="PATH=$T/bin:$PATH XDG_RUNTIME_DIR=$T WAYLAND_DISPLAY=/run/user/1000/wayland-1 \
-     XDG_CONFIG_HOME=$T/config XDG_STATE_HOME=$T/state"
+     XDG_CONFIG_HOME=$T/config XDG_STATE_HOME=$T/state XDG_CACHE_HOME=$T/cache XDG_DATA_HOME=$T/data"
 env $ENV PULSE_SERVER=unix:/run/user/1000/pulse/native PIPEWIRE_RUNTIME_DIR=/run/user/1000 \
     ./target/debug/emaki &
 env $ENV ./target/debug/emaki-drop &
 ```
 
+- **Every XDG folder.** Leave out `XDG_CACHE_HOME` and the first start's move from amane-shell
+  renames the real `~/.cache/amane-*` folders under a desktop that still reads them.
+- **Inside `nix develop`.** Outside it, the debug build can't find libwayland.
 - **The bus.** The real shell build in use may not serve `org.emaki.StatusBar1`, so the test bar
   takes the name on the real session bus. Only one copy can own it.
 - **Stopping them.** Find the test processes by the `XDG_RUNTIME_DIR` in `/proc/<pid>/environ`,
