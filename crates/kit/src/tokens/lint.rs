@@ -728,7 +728,10 @@ mod tests {
     /// Then component by 43 for the `launcher.*` group (the launcher's
     /// sizes, held as constants in its code, so it could be drawn in
     /// Penpot; fixed pixels, as the launcher doesn't follow the density).
-    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 165), ("component", 284)];
+    /// Then component by 3 for `calendar.*` (the kit Calendar's row cap,
+    /// weekday-letter height and row gap, `px()` constants in its code), for
+    /// drawing the notification center in Penpot.
+    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 165), ("component", 287)];
 
     #[test]
     fn no_tier_grows_past_its_ceiling() {

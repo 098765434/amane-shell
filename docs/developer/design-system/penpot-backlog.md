@@ -112,6 +112,13 @@ whose output is static: it can't follow the mode, so it holds one value for both
   - `launcher.token.opacity` 0.18 (the scope token's wash), `launcher.focus-ring.width` 2, `.gap` 2
     and `.opacity` 0.55, and `launcher.preview.list-width` 420 (`CLIP_LIST_W`).
   - `launcher` is in `tokens::COMPONENTS`, and the component tier's ceiling rose by these 43.
+- For drawing the notification center in Penpot (2026-11-09), the `calendar.*` group was made in
+  Penpot and copied into `tokens.json`. The code doesn't read them yet; each is a `px()` constant in
+  the kit's `Calendar` (`crates/kit/src/controls/calendar.rs`, `rows`), so they follow the density:
+  `calendar.row.max` 32 (a week's height at most), `calendar.letters.height` 20 (the weekday
+  letters) and `calendar.row.gap` 2. `calendar` is in `tokens::COMPONENTS`, and the component
+  tier's ceiling rose by these 3. (The `notification.*` and `osd.*` tokens the OSD and notification
+  drawings use, and the banner design's, were already in Penpot.)
 - `bar.overview.height` is no longer read: the bar keeps its compact height in the overview, where
   the [dock](../../user/features/dock.md) rises instead. Delete it in Penpot.
 - `bar.window-item.max-width`, `bar.window-item.radius`, `bar.pill.padding-y` and
@@ -120,20 +127,6 @@ whose output is static: it can't follow the mode, so it holds one value for both
 - `bar.indicator.active.bg` (`#ffffff`) and `bar.indicator.active.fg` (`#000000`), the status
   bar's highlight in both modes, were added to `tokens.json` by hand, and `bar.indicator.width`
   was raised by hand from 18 to 28 to give the highlight room. Recreate them in Penpot.
-- The `notification.*` tokens and the `sys.color.surface.notification.*` pair were added to
-  `tokens.json` by hand (see [notifications.md](../../user/features/notifications.md)). Recreate them in Penpot under
-  the same names, or the next export drops them. `notification.center.radius` (now 30: the cards'
-  20 plus the 10 of `sys.space.inset.l` around them, so their corners nest) came later the same
-  way. It's a number, not an expression, because radii mustn't vary with density (§8.2).
-- For the banner design (2026-10-26), these were added to `tokens.json` by hand, so recreate them
-  in Penpot:
-  - `ref.radius.20`, `ref.font.weight.bold` (700) and `ref.font.size.11`.
-  - Under `notification.card`: `icon-frame`, `thumbnail-size`, `thumbnail-radius`,
-    `padding-block`, `padding-start`, `padding-end` and `trailing-gap`, plus the `title`, `body`
-    and `time` typographies, which carry `lineHeights` in px and `letterSpacing`.
-  - `notification.card.radius` went from 16 to 20, `notification.center.radius` from 26 to 30 to
-    keep the corners nested, and `notification.toast.width` from 360 to 344.
-  - `notification.card.badge-size` was removed.
 - For the dialog design (2026-10-26), these were added to `tokens.json` by hand, so recreate them
   in Penpot:
   - `ref.radius.34`.

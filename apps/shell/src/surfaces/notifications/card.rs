@@ -39,8 +39,9 @@ use emaki_kit::material::{self, FillLevel, Level, Material};
 /// The body is cut after this many lines, like a banner's.
 const BODY_LINES: usize = 2;
 
-/// The widest times [`ago`] gives, which the time column is sized to fit.
-const WIDEST_TIMES: [&str; 2] = ["59m ago", "Wed 23:59"];
+/// The widest time [`ago`] gives in each of its forms, which the time
+/// column is sized to fit.
+const WIDEST_TIMES: [&str; 4] = ["just now", "59 min ago", "23 h ago", "Wed 23:59"];
 
 /// Where a card is drawn, which decides its width and material.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -427,5 +428,15 @@ mod tests {
         assert_eq!(ago(before(3 * 3600), now), "3 h ago");
         // a clock that went backwards still reads as now
         assert_eq!(ago(now + Duration::from_secs(5), now), "just now");
+    }
+
+    #[test]
+    fn the_time_column_fits_what_ago_gives() {
+        let now = SystemTime::UNIX_EPOCH + Duration::from_secs(100_000);
+        let before = |secs| now - Duration::from_secs(secs);
+        for secs in [0, 59 * 60 + 59, 23 * 3600 + 3599] {
+            let time = ago(before(secs), now);
+            assert!(WIDEST_TIMES.contains(&time.as_str()), "{time}");
+        }
     }
 }

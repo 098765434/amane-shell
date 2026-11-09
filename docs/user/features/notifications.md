@@ -85,7 +85,7 @@ is dismissed, across restarts of the shell (see [History](#history)).
 - New cards scale and fade in. Dismissed cards slide right and fade, and a group whose last card
   went keeps drawing until it has slid out.
 
-Times read "now", "5m ago", "2h ago", then the day. They tick with the bar's `Clock`.
+Times read "just now", "5 min ago", "2 h ago", then the day and time ("Wed 09:14"). They tick with the bar's `Clock`.
 
 ### Calendar
 
@@ -178,8 +178,8 @@ nest), `card.radius`, `card.icon-size`, `card.icon-frame`, `card.thumbnail-size`
 `max-peek`, `scale-step`, `fade-step`. A toast's shadow is softer than other surfaces' (niri
 softness 48, the design's `0 8 48`; see [layer-rules.md](../../developer/integration/layer-rules.md)).
 
-> These tokens were added to `tokens.json` by hand, before they existed in Penpot. Recreate them
-> there under the same names, or the next export drops them.
+They're in Penpot, which draws the toasts, the center, its calendar and the Do Not Disturb menu
+(the "Notifications" and "Notifications — Components" pages).
 
 ## Not yet
 
