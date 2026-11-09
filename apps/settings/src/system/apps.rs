@@ -494,9 +494,12 @@ fn search_section(
     checking: Option<&str>,
 ) -> Group {
     let placeholder = if catalog.ready {
-        format!("Search {} packages…", thousands(catalog.count))
+        format!(
+            "Search {} packages…",
+            emaki_kit::format::thousands(catalog.count)
+        )
     } else {
-        String::from("Search nixpkgs…")
+        String::from("Search packages…")
     };
     let field = text_field(SEARCH, &placeholder)
         .on_change(Search::typed)
@@ -507,7 +510,7 @@ fn search_section(
             emaki_kit::icons::ICON_SEARCH,
             emaki_kit::color::Accent::Blue,
         )
-        .trailing(field_box(SEARCH, field, 240.0));
+        .trailing(field_box(SEARCH, field, crate::FIELD_W));
     if !catalog.ready {
         search_row = search_row.trailing(
             PushButton::new("settings.apps.search", "Search")
@@ -516,19 +519,25 @@ fn search_section(
                 .build(),
         );
     }
-    let mut group = group().header("Add App").row(search_row);
+    let mut group = group().header("Add an app").row(search_row);
     let mut notes: Vec<String> = Vec::new();
 
+    // the catalog's own state, right under the field it serves
     if let Some(since) = catalog.building {
         let secs = since.elapsed().as_secs();
-        notes.push(format!(
-            "Preparing the app catalog… {}:{:02}. Once per nixpkgs update; the first can take a few minutes.",
-            secs / 60,
-            secs % 60
-        ));
+        group = group.row(
+            crate::loading_row(
+                "settings.apps.catalog",
+                &format!("Preparing the app catalog… {}:{:02}", secs / 60, secs % 60),
+            )
+            .subtitle("Once per package update; the first can take a few minutes"),
+        );
     } else if let Some(error) = &catalog.error {
-        notes.push(format!(
-            "The app catalog couldn't be prepared, so searches ask nix and take longer. {error}"
+        group = group.row(crate::problem_row(
+            "settings.apps.catalog-error",
+            "The app catalog couldn't be prepared",
+            "Searches ask nix instead, and take longer.",
+            error,
         ));
     }
 
@@ -539,7 +548,7 @@ fn search_section(
             FormRow::new(
                 "settings.apps.searching",
                 if slow {
-                    "Building the search index… the first search after an update takes a few minutes"
+                    "Preparing the app catalog… the first search after an update takes a few minutes"
                 } else {
                     "Searching…"
                 },
@@ -547,9 +556,12 @@ fn search_section(
             .loading(),
         );
     } else if let Some(error) = &search.error {
-        group = group.row(
-            FormRow::new("settings.apps.search-error", "The search failed").subtitle(error.clone()),
-        );
+        group = group.row(crate::problem_row(
+            "settings.apps.search-error",
+            "The search failed",
+            "Try again, or another word.",
+            error,
+        ));
     } else if !search.query.is_empty() && search.queued.is_none() {
         let added: Vec<String> = entry
             .map(|e| managed.list(&e.id, &e.value))
@@ -567,18 +579,25 @@ fn search_section(
                 let app = there
                     .then(|| looks.app(&found.pname, &found.version))
                     .flatten();
-                let mut headline = app.as_ref().map_or(found.attr.clone(), |app| {
-                    format!("{} ({})", app.name(), found.attr)
-                });
+                // its name leads; which package it is goes under it
+                let headline = app
+                    .as_ref()
+                    .map_or_else(|| found.pname.clone(), |app| app.name().to_string());
+                let mut which = found.attr.clone();
                 if !found.version.is_empty() {
-                    headline.push_str(&format!(" · {}", found.version));
+                    which.push_str(&format!(" {}", found.version));
                 }
+                let about = if found.description.is_empty() {
+                    which
+                } else {
+                    format!("{which} · {}", found.description)
+                };
                 let mine = checking == Some(found.attr.as_str());
                 let (attr, open) = (found.attr.clone(), found.attr.clone());
                 let e = entry.cloned();
                 FormRow::new(format!("settings.apps.found.{}", found.attr), headline)
                     .leading(leading(app.as_ref()), icon_side())
-                    .subtitle(found.description.clone())
+                    .subtitle(about)
                     .on_press(move || Details::open(&open))
                     .trailing(
                         PushButton::new(
@@ -606,12 +625,12 @@ fn search_section(
             })
             .collect();
         if rows.is_empty() {
-            group = group.row(FormRow::new(
+            group = group.row(crate::empty_row(
                 "settings.apps.nothing",
                 if search.running {
                     String::from("Searching…")
                 } else {
-                    format!("Nothing in nixpkgs matches \"{}\"", search.query)
+                    format!("No package matches \"{}\"", search.query)
                 },
             ));
         }
@@ -628,20 +647,68 @@ fn search_section(
     group.footer(notes.join(" "))
 }
 
-/// 108517 as "108,517".
-fn thousands(n: usize) -> String {
-    let digits = n.to_string();
-    let mut out = String::new();
-    for (i, digit) in digits.chars().enumerate() {
-        if i > 0 && (digits.len() - i).is_multiple_of(3) {
-            out.push(',');
-        }
-        out.push(digit);
-    }
-    out
+pub fn page() -> Column {
+    with_state(|state| {
+        let installed = inventory::count(state.entry, state.managed, state.snapshot, state.looks);
+        let waiting = state.managed.waiting_on("apps", state.snapshot);
+        let summary = if waiting > 0 {
+            format!("{installed} · {waiting} waiting")
+        } else {
+            installed.to_string()
+        };
+        groups(vec![
+            search_section(
+                state.entry,
+                state.managed,
+                state.snapshot,
+                state.search,
+                state.catalog,
+                state.looks,
+                state.checking,
+            ),
+            group().row(
+                FormRow::new("settings.apps.installed-link", "Installed apps")
+                    .icon(ICON_PACKAGE, emaki_kit::color::Accent::Blue)
+                    .value(summary)
+                    .on_press(|| crate::open(crate::View::Sub("installed"))),
+            ),
+        ])
+    })
 }
 
-pub fn page() -> Column {
+/// The page's sub-pages: everything installed.
+pub fn sub(name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
+    if name != "installed" {
+        return None;
+    }
+    let body = with_state(|state| {
+        groups(vec![inventory::section(
+            state.entry,
+            state.managed,
+            state.feedback,
+            state.snapshot,
+            state.looks,
+        )])
+    });
+    Some((
+        String::from("Installed apps"),
+        emaki_kit::layout::boxed(body),
+    ))
+}
+
+/// What the page and its sub-page read, gathered once per drawing.
+struct State<'a> {
+    entry: Option<&'a Entry>,
+    managed: &'a Managed,
+    feedback: &'a Feedback,
+    snapshot: &'a Snapshot,
+    search: &'a Search,
+    catalog: &'a Catalog,
+    looks: &'a Looks<'a>,
+    checking: Option<&'a str>,
+}
+
+fn with_state<T>(draw: impl FnOnce(&State) -> T) -> T {
     let snapshot = Snapshot::read();
     let managed = Managed::read();
     let feedback = Feedback::read();
@@ -662,19 +729,16 @@ pub fn page() -> Column {
         apps: &apps,
         named: &named,
     };
-
-    groups(vec![
-        search_section(
-            entry,
-            &managed,
-            &snapshot,
-            &search,
-            &catalog,
-            &looks,
-            details.checking.as_deref(),
-        ),
-        inventory::section(entry, &managed, &feedback, &snapshot, &looks),
-    ])
+    draw(&State {
+        entry,
+        managed: &managed,
+        feedback: &feedback,
+        snapshot: &snapshot,
+        search: &search,
+        catalog: &catalog,
+        looks: &looks,
+        checking: details.checking.as_deref(),
+    })
 }
 
 #[cfg(test)]
@@ -700,13 +764,6 @@ mod tests {
             &installed
         ));
         assert!(!present("ripgrep", "ripgrep", &[], &installed));
-    }
-
-    #[test]
-    fn thousands_are_grouped() {
-        assert_eq!(thousands(7), "7");
-        assert_eq!(thousands(1000), "1,000");
-        assert_eq!(thousands(108517), "108,517");
     }
 
     #[test]

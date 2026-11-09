@@ -79,6 +79,17 @@ impl Stage {
             Self::Activate => "Applying",
         }
     }
+
+    /// What going wrong at it means, said as an outcome: "Couldn't apply".
+    pub fn failure(self) -> &'static str {
+        match self {
+            Self::Lock => "Couldn't check for updates",
+            Self::Eval => "Couldn't read the configuration",
+            Self::Build => "Couldn't build the system",
+            Self::Compare => "Couldn't compare with the running system",
+            Self::Activate => "Couldn't apply",
+        }
+    }
 }
 
 /// How far a build is, from nix's `builds` activity.

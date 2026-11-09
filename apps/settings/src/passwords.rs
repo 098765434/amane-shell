@@ -14,7 +14,6 @@ use emaki_kit::app::{Dialog, field_box, text_field};
 use emaki_kit::buttons::{IconButton, PushButton, Style};
 use emaki_kit::dropdown::Dropdown;
 use emaki_kit::form::FormRow;
-use emaki_kit::icons::ICON_CLOSE;
 use emaki_kit::layout::boxed;
 use emaki_kit::settings::{change_passwords, passwords};
 
@@ -25,7 +24,7 @@ use emaki_kit::shell_ipc::{Passwords as Ask, ShellCommand};
 const SERVER: &str = "settings.passwords.server";
 const EMAIL: &str = "settings.passwords.email";
 
-const FIELD_WIDTH: f32 = 260.0;
+const FIELD_WIDTH: f32 = crate::FIELD_W;
 
 /// The auto-lock choices, in minutes.
 const LOCK_MINUTES: [u64; 5] = [5, 10, 15, 30, 60];
@@ -105,10 +104,12 @@ pub fn page() -> Column {
 
 fn vault(status: &VaultStatus) -> emaki_kit::form::Group {
     if !status.reached {
-        return group().header("Bitwarden").row(
-            FormRow::new("settings.passwords.no-shell", "The shell isn't answering")
-                .subtitle("Passwords work through emaki; start it, then come back here."),
-        );
+        return group().header("Bitwarden").row(crate::unreachable_row(
+            "settings.passwords.no-shell",
+            "The shell",
+            "Passwords work through emaki; this page follows once it's running.",
+            None,
+        ));
     }
 
     let state = status.get("status");
@@ -151,7 +152,7 @@ fn vault(status: &VaultStatus) -> emaki_kit::form::Group {
 
     match state {
         "Unlocked" => {
-            button("sync", "Sync Now", Ask::Sync);
+            button("sync", "Sync", Ask::Sync);
             button("lock", "Lock", Ask::Lock);
         }
         "Locked" => {
@@ -165,7 +166,11 @@ fn vault(status: &VaultStatus) -> emaki_kit::form::Group {
     let mut shown = group().header("Bitwarden").row(
         FormRow::new("settings.passwords.state", &title)
             .subtitle(subtitle)
-            .trailing(Row::new(buttons).gap(6.0).align(Center)),
+            .trailing(
+                Row::new(buttons)
+                    .gap(emaki_kit::tokens::sys::space::gap::s())
+                    .align(Center),
+            ),
     );
 
     let error = status.get("error");
@@ -273,6 +278,9 @@ fn save(had_account: bool) {
 
             if answer.starts_with("error") {
                 log::warn!("passwords: {answer}");
+                emaki_kit::toast::post("Couldn't save the account");
+            } else {
+                emaki_kit::toast::post("Saved");
             }
         });
     };
@@ -313,7 +321,7 @@ fn security(status: &VaultStatus) -> emaki_kit::form::Group {
             .collect(),
         at,
     )
-    .width(130.0)
+    .width(crate::MENU_W_NARROW)
     .on_select(|index| {
         let seconds = LOCK_MINUTES[index] * 60;
 
@@ -391,13 +399,17 @@ fn fill(status: &VaultStatus) -> emaki_kit::form::Group {
         _ => {}
     }
 
-    shown.footer(
-        "A popup by an app's password field offers that app's entries; a click fills one in, \
-         only if the same field still has the keyboard. Turning fill on or off takes effect \
-         when the shell starts again. Browsers are left to the Bitwarden extension. Chromium \
-         and Electron apps need --enable-wayland-ime --wayland-text-input-version=3. In \
-         the launcher, type pw and a name.",
-    )
+    shown
+        .row(crate::details_row(
+            "settings.passwords.fill-how",
+            "How fill works",
+            "Filling passwords",
+            "A popup by an app's password field offers that app's entries; a click fills one \
+             in, only if the same field still has the keyboard. Browsers are left to the \
+             Bitwarden extension. Chromium and Electron apps need --enable-wayland-ime \
+             --wayland-text-input-version=3. In the launcher, type pw and a name.",
+        ))
+        .footer("Turning fill on or off takes effect when the shell starts again.")
 }
 
 fn apps() -> Vec<emaki_kit::form::Group> {
@@ -418,16 +430,29 @@ fn apps() -> Vec<emaki_kit::form::Group> {
             FormRow::new(id.clone(), &link.entry_name)
                 .subtitle(format!("{} · {}", link.desktop_id, link.package))
                 .trailing(
-                    IconButton::new(format!("{id}.forget"), ICON_CLOSE)
+                    IconButton::new(format!("{id}.forget"), emaki_kit::icons::ICON_DELETE)
+                        .tooltip(crate::WINDOW, "Forget")
                         .style(Style::Destructive)
                         .on_press(move || {
+                            let mut gone = Vec::new();
                             change_passwords(|passwords| {
                                 passwords.app_links.retain(|link| {
-                                    !(link.desktop_id == desktop
+                                    let keep = !(link.desktop_id == desktop
                                         && link.package == package
-                                        && link.entry_id == entry)
+                                        && link.entry_id == entry);
+                                    if !keep {
+                                        gone.push(link.clone());
+                                    }
+                                    keep
                                 });
                             });
+                            // one press brings a forgotten link back
+                            if !gone.is_empty() {
+                                emaki_kit::toast::show_with("Forgotten", "Undo", move || {
+                                    let gone = gone.clone();
+                                    change_passwords(|passwords| passwords.app_links.extend(gone));
+                                });
+                            }
                         })
                         .build(),
                 )
@@ -442,7 +467,9 @@ fn apps() -> Vec<emaki_kit::form::Group> {
             let gone = app.clone();
 
             FormRow::new(id.clone(), app).trailing(
-                IconButton::new(format!("{id}.remove"), ICON_CLOSE)
+                IconButton::new(format!("{id}.remove"), emaki_kit::icons::ICON_DELETE)
+                    .tooltip(crate::WINDOW, "Remove")
+                    .style(Style::Destructive)
                     .on_press(move || {
                         change_passwords(|passwords| {
                             passwords.excluded_apps.retain(|app| *app != gone)
@@ -457,7 +484,7 @@ fn apps() -> Vec<emaki_kit::form::Group> {
 
     if links.is_empty() {
         shown = shown.row(
-            FormRow::new("settings.passwords.no-links", "None yet")
+            crate::empty_row("settings.passwords.no-links", "No apps yet")
                 .subtitle("An entry you fill into an app is remembered for it, if you let it"),
         );
     } else {
@@ -468,10 +495,17 @@ fn apps() -> Vec<emaki_kit::form::Group> {
         "Kept by the app's desktop entry and package, never by the name an app gives itself.",
     );
 
-    let never = group()
-        .header("Never offered in")
-        .rows(excluded)
-        .footer("Browsers by default: their Bitwarden extension checks the website itself.");
+    let never = group().header("Never offered in");
+    let never = if excluded.is_empty() {
+        never.row(crate::empty_row(
+            "settings.passwords.never.none",
+            "Every app is offered fill",
+        ))
+    } else {
+        never.rows(excluded)
+    };
+    let never =
+        never.footer("Browsers by default: their Bitwarden extension checks the website itself.");
 
     vec![remembered, never]
 }

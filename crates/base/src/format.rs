@@ -81,9 +81,32 @@ pub fn count(n: usize, one: &str, many: &str) -> String {
     format!("{n} {}", if n == 1 { one } else { many })
 }
 
+/// `n` with its thousands set apart by commas: "7", "5,139", "108,517".
+pub fn thousands(n: usize) -> String {
+    let digits = n.to_string();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    for (index, digit) in digits.chars().enumerate() {
+        if index > 0 && (digits.len() - index).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(digit);
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn thousands_are_set_apart() {
+        assert_eq!(thousands(7), "7");
+        assert_eq!(thousands(12), "12");
+        assert_eq!(thousands(1000), "1,000");
+        assert_eq!(thousands(5139), "5,139");
+        assert_eq!(thousands(108517), "108,517");
+        assert_eq!(thousands(1234567), "1,234,567");
+    }
 
     fn s(seconds: u64) -> Duration {
         Duration::from_secs(seconds)

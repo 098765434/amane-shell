@@ -10,7 +10,6 @@ use emaki_kit::buttons::{IconButton, PushButton, Style};
 use emaki_kit::dialog::Field;
 use emaki_kit::dropdown::Dropdown;
 use emaki_kit::form::FormRow;
-use emaki_kit::icons::ICON_CLOSE;
 use emaki_kit::layout::boxed;
 use emaki_kit::secrets;
 use emaki_kit::settings::{
@@ -28,13 +27,48 @@ const ICON_LATER: char = '\u{e5cf}';
 /// The rename dialog's field.
 const RENAME: &str = "settings.drop.rename.field";
 
-const FIELD_WIDTH: f32 = 240.0;
+const FIELD_WIDTH: f32 = crate::FIELD_W;
 
 pub fn page() -> Column {
     let sharing = drop_sharing().clone();
-    let mut pages = vec![grids(), after(&sharing)];
-    pages.extend(accounts(&sharing));
-    groups(pages)
+    groups(vec![grids(), after(&sharing), places(&sharing)])
+}
+
+/// Where uploads go: the two that need nothing, and a row for each
+/// account, saying whether it's ready, that opens its own sub-page.
+fn places(sharing: &DropSharing) -> emaki_kit::form::Group {
+    let account = |name: &'static str, title: &str, to: UploadTo| {
+        FormRow::new(format!("settings.drop.{name}-link"), title)
+            .value(status(sharing, to))
+            .on_press(move || crate::open(crate::View::Sub(name)))
+    };
+    group()
+        .header("Where uploads go")
+        .row(
+            FormRow::new("settings.drop.phone", "Send to Phone")
+                .subtitle("Through KDE Connect; pair a phone in Quick Settings › Phone")
+                .value("No setup"),
+        )
+        .row(
+            FormRow::new("settings.drop.0x0", "0x0.st")
+                .subtitle("Anyone with the link sees it; kept 30 days to a year")
+                .value(status(sharing, UploadTo::ZeroX0)),
+        )
+        .row(account("imgur", "Imgur", UploadTo::Imgur))
+        .row(account("sftp", "SFTP", UploadTo::Sftp))
+        .row(account("s3", "S3", UploadTo::S3))
+}
+
+/// The page's sub-pages: an account each.
+pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
+    let sharing = drop_sharing().clone();
+    let (title, group) = match name {
+        "imgur" => ("Imgur", imgur()),
+        "sftp" => ("SFTP", sftp(&sharing)),
+        "s3" => ("S3", s3(&sharing)),
+        _ => return None,
+    };
+    Some((String::from(title), boxed(groups(vec![group]))))
 }
 
 // ───── grids ─────────────────────────────────────────────────────────────────
@@ -57,6 +91,7 @@ fn grids() -> emaki_kit::form::Group {
                 ),
                 boxed(
                     IconButton::new(format!("{id}.earlier"), ICON_EARLIER)
+                        .tooltip(crate::WINDOW, "Move up")
                         .disabled(index == 0)
                         .on_press(move || {
                             change_drop_grids(|grids| grids.grids.swap(index, index - 1));
@@ -65,6 +100,7 @@ fn grids() -> emaki_kit::form::Group {
                 ),
                 boxed(
                     IconButton::new(format!("{id}.later"), ICON_LATER)
+                        .tooltip(crate::WINDOW, "Move down")
                         .disabled(index == last)
                         .on_press(move || {
                             change_drop_grids(|grids| grids.grids.swap(index, index + 1));
@@ -75,16 +111,19 @@ fn grids() -> emaki_kit::form::Group {
             if many {
                 let name = grid.name.clone();
                 trailing.push(boxed(
-                    IconButton::new(format!("{id}.delete"), ICON_CLOSE)
+                    IconButton::new(format!("{id}.delete"), emaki_kit::icons::ICON_DELETE)
+                        .tooltip(crate::WINDOW, "Delete…")
                         .style(Style::Destructive)
                         .on_press(move || delete(index, &name))
                         .build(),
                 ));
             }
             let tiles = emaki_kit::format::count(grid.tiles.len(), "tile", "tiles");
-            FormRow::new(id, &grid.name)
-                .subtitle(tiles)
-                .trailing(Row::new(trailing).gap(4.0).align(Center))
+            FormRow::new(id, &grid.name).subtitle(tiles).trailing(
+                Row::new(trailing)
+                    .gap(emaki_kit::tokens::sys::space::gap::xs())
+                    .align(Center),
+            )
         })
         .collect();
 
@@ -93,7 +132,7 @@ fn grids() -> emaki_kit::form::Group {
         ["3", "4", "5", "6"].map(String::from).to_vec(),
         grids.columns() - 3,
     )
-    .width(80.0)
+    .width(crate::COMPACT_W)
     .on_select(|index| change_drop_grids(|grids| grids.columns = index as u8 + 3));
     let add = PushButton::new("settings.drop.add-grid", "Add Grid")
         .on_press(|| {
@@ -117,7 +156,10 @@ fn grids() -> emaki_kit::form::Group {
         .row(
             FormRow::new("settings.drop.add", "Grids and their tiles")
                 .subtitle("Tiles are added and removed in the grid, with Edit")
-                .trailing(Row::new(vec![boxed(add), boxed(open)]).gap(6.0)),
+                .trailing(
+                    Row::new(vec![boxed(add), boxed(open)])
+                        .gap(emaki_kit::tokens::sys::space::gap::s()),
+                ),
         )
         .footer(
             "Drop's item in the status bar opens its grid, as does Super+Shift+D; files dragged \
@@ -191,7 +233,74 @@ fn after(sharing: &DropSharing) -> emaki_kit::form::Group {
 
 // ───── accounts ──────────────────────────────────────────────────────────────
 
-fn accounts(sharing: &DropSharing) -> Vec<emaki_kit::form::Group> {
+fn imgur() -> emaki_kit::form::Group {
+    group()
+        .row(field(
+            "settings.drop.imgur.id",
+            "Client ID",
+            "From api.imgur.com/oauth2/addclient",
+            |sharing| sharing.imgur_client_id.clone(),
+            |sharing, text| sharing.imgur_client_id = text,
+        ))
+        .footer("Pictures and videos, uploaded without an account.")
+}
+
+fn sftp(sharing: &DropSharing) -> emaki_kit::form::Group {
+    group()
+        .header("Server")
+        .row(field(
+            "settings.drop.sftp.host",
+            "Server",
+            "example.org",
+            |sharing| sharing.sftp.host.clone(),
+            |sharing, text| sharing.sftp.host = text,
+        ))
+        .row(field(
+            "settings.drop.sftp.port",
+            "Port",
+            "22",
+            |sharing| sharing.sftp.port.to_string(),
+            |sharing, text| sharing.sftp.port = text.parse().unwrap_or(22),
+        ))
+        .row(field(
+            "settings.drop.sftp.user",
+            "User name",
+            "",
+            |sharing| sharing.sftp.user.clone(),
+            |sharing, text| sharing.sftp.user = text,
+        ))
+        .row(field(
+            "settings.drop.sftp.folder",
+            "Folder",
+            "public_html/files",
+            |sharing| sharing.sftp.folder.clone(),
+            |sharing, text| sharing.sftp.folder = text,
+        ))
+        .row(field(
+            "settings.drop.sftp.url",
+            "Web address",
+            "https://example.org/files",
+            |sharing| sharing.sftp.url.clone(),
+            |sharing, text| sharing.sftp.url = text,
+        ))
+        .row(key_row(sharing))
+        .row(secret_row(
+            "settings.drop.sftp.password",
+            if sharing.sftp.key.is_some() {
+                "Key passphrase"
+            } else {
+                "Password"
+            },
+            "sftp",
+            "Drop: SFTP",
+        ))
+        .footer(
+            "The server has to be known first: connect once with ssh, so it's in \
+             ~/.ssh/known_hosts. Without a web address an upload gives no link.",
+        )
+}
+
+fn s3(sharing: &DropSharing) -> emaki_kit::form::Group {
     let in_file = secrets::kept_in_file(APP);
     let mut s3_footer = String::from(
         "Any S3-compatible store: give its endpoint (R2's region is “auto”). The web address, \
@@ -203,146 +312,63 @@ fn accounts(sharing: &DropSharing) -> Vec<emaki_kit::form::Group> {
              readable only by you.",
         );
     }
-    vec![
-        group()
-            .header("Phone")
-            .row(
-                FormRow::new("settings.drop.phone", "Send to Phone")
-                    .subtitle("Through KDE Connect; pair a phone in Quick Settings › Phone")
-                    .value("No setup"),
-            )
-            .footer("Files land in the phone's downloads; text and links open on it."),
-        group()
-            .header("0x0.st")
-            .row(
-                FormRow::new("settings.drop.0x0", "0x0.st")
-                    .subtitle(status(sharing, UploadTo::ZeroX0))
-                    .value("No account"),
-            )
-            .footer(
-                "Anyone with the link can see the file. It's kept from 30 days to a year, the \
-                 bigger the shorter.",
-            ),
-        group()
-            .header("Imgur")
-            .row(field(
-                "settings.drop.imgur.id",
-                "Client ID",
-                "From api.imgur.com/oauth2/addclient",
-                |sharing| sharing.imgur_client_id.clone(),
-                |sharing, text| sharing.imgur_client_id = text,
-            ))
-            .footer("Pictures and videos, uploaded without an account."),
-        group()
-            .header("SFTP")
-            .row(field(
-                "settings.drop.sftp.host",
-                "Server",
-                "example.org",
-                |sharing| sharing.sftp.host.clone(),
-                |sharing, text| sharing.sftp.host = text,
-            ))
-            .row(field(
-                "settings.drop.sftp.port",
-                "Port",
-                "22",
-                |sharing| sharing.sftp.port.to_string(),
-                |sharing, text| sharing.sftp.port = text.parse().unwrap_or(22),
-            ))
-            .row(field(
-                "settings.drop.sftp.user",
-                "User name",
-                "",
-                |sharing| sharing.sftp.user.clone(),
-                |sharing, text| sharing.sftp.user = text,
-            ))
-            .row(field(
-                "settings.drop.sftp.folder",
-                "Folder",
-                "public_html/files",
-                |sharing| sharing.sftp.folder.clone(),
-                |sharing, text| sharing.sftp.folder = text,
-            ))
-            .row(field(
-                "settings.drop.sftp.url",
-                "Web address",
-                "https://example.org/files",
-                |sharing| sharing.sftp.url.clone(),
-                |sharing, text| sharing.sftp.url = text,
-            ))
-            .row(key_row(sharing))
-            .row(secret_row(
-                "settings.drop.sftp.password",
-                if sharing.sftp.key.is_some() {
-                    "Key passphrase"
-                } else {
-                    "Password"
-                },
-                "sftp",
-                "Drop: SFTP",
-            ))
-            .footer(
-                "The server has to be known first: connect once with ssh, so it's in \
-                 ~/.ssh/known_hosts. Without a web address an upload gives no link.",
-            ),
-        group()
-            .header("S3")
-            .row(field(
-                "settings.drop.s3.endpoint",
-                "Endpoint",
-                "None for AWS",
-                |sharing| sharing.s3.endpoint.clone(),
-                |sharing, text| sharing.s3.endpoint = text,
-            ))
-            .row(field(
-                "settings.drop.s3.region",
-                "Region",
-                "us-east-1",
-                |sharing| sharing.s3.region.clone(),
-                |sharing, text| sharing.s3.region = text,
-            ))
-            .row(field(
-                "settings.drop.s3.bucket",
-                "Bucket",
-                "",
-                |sharing| sharing.s3.bucket.clone(),
-                |sharing, text| sharing.s3.bucket = text,
-            ))
-            .row(field(
-                "settings.drop.s3.prefix",
-                "Folder",
-                "None",
-                |sharing| sharing.s3.prefix.clone(),
-                |sharing, text| sharing.s3.prefix = text,
-            ))
-            .row(field(
-                "settings.drop.s3.key-id",
-                "Access key ID",
-                "",
-                |sharing| sharing.s3.key_id.clone(),
-                |sharing, text| sharing.s3.key_id = text,
-            ))
-            .row(secret_row(
-                "settings.drop.s3.secret",
-                "Secret access key",
-                "s3",
-                "Drop: S3",
-            ))
-            .row(field(
-                "settings.drop.s3.url",
-                "Web address",
-                "The bucket's own",
-                |sharing| sharing.s3.url.clone(),
-                |sharing, text| sharing.s3.url = text,
-            ))
-            .row(switch_row(
-                "settings.drop.s3.public",
-                "Anyone can read uploads",
-                sharing.s3.public,
-                |on| change_drop_sharing(|sharing| sharing.s3.public = on),
-            ))
-            .footer(s3_footer),
-    ]
+    group()
+        .header("Bucket")
+        .row(field(
+            "settings.drop.s3.endpoint",
+            "Endpoint",
+            "None for AWS",
+            |sharing| sharing.s3.endpoint.clone(),
+            |sharing, text| sharing.s3.endpoint = text,
+        ))
+        .row(field(
+            "settings.drop.s3.region",
+            "Region",
+            "us-east-1",
+            |sharing| sharing.s3.region.clone(),
+            |sharing, text| sharing.s3.region = text,
+        ))
+        .row(field(
+            "settings.drop.s3.bucket",
+            "Bucket",
+            "",
+            |sharing| sharing.s3.bucket.clone(),
+            |sharing, text| sharing.s3.bucket = text,
+        ))
+        .row(field(
+            "settings.drop.s3.prefix",
+            "Folder",
+            "None",
+            |sharing| sharing.s3.prefix.clone(),
+            |sharing, text| sharing.s3.prefix = text,
+        ))
+        .row(field(
+            "settings.drop.s3.key-id",
+            "Access key ID",
+            "",
+            |sharing| sharing.s3.key_id.clone(),
+            |sharing, text| sharing.s3.key_id = text,
+        ))
+        .row(secret_row(
+            "settings.drop.s3.secret",
+            "Secret access key",
+            "s3",
+            "Drop: S3",
+        ))
+        .row(field(
+            "settings.drop.s3.url",
+            "Web address",
+            "The bucket's own",
+            |sharing| sharing.s3.url.clone(),
+            |sharing, text| sharing.s3.url = text,
+        ))
+        .row(switch_row(
+            "settings.drop.s3.public",
+            "Anyone can read uploads",
+            sharing.s3.public,
+            |on| change_drop_sharing(|sharing| sharing.s3.public = on),
+        ))
+        .footer(s3_footer)
 }
 
 /// "Ready", or what `to` still needs.
@@ -415,7 +441,11 @@ fn secret_row(id: &'static str, title: &str, name: &'static str, label: &'static
             Some(true) => "In the keyring",
             _ => "Typed, then kept in the keyring",
         })
-        .trailing(Row::new(trailing).gap(6.0).align(Center))
+        .trailing(
+            Row::new(trailing)
+                .gap(emaki_kit::tokens::sys::space::gap::s())
+                .align(Center),
+        )
 }
 
 /// The private key SFTP logs in with, instead of a password.
@@ -432,9 +462,23 @@ fn key_row(sharing: &DropSharing) -> FormRow {
     let mut trailing: Vec<Box<dyn Widget>> = vec![boxed(choose)];
     if sharing.sftp.key.is_some() {
         trailing.push(boxed(
-            IconButton::new("settings.drop.sftp.key.clear", ICON_CLOSE)
-                .on_press(|| change_drop_sharing(|sharing| sharing.sftp.key = None))
-                .build(),
+            IconButton::new(
+                "settings.drop.sftp.key.clear",
+                emaki_kit::icons::ICON_DELETE,
+            )
+            .tooltip(crate::WINDOW, "Forget the key")
+            .style(Style::Destructive)
+            .on_press(|| {
+                let mut was = None;
+                change_drop_sharing(|sharing| was = sharing.sftp.key.take());
+                if let Some(key) = was {
+                    emaki_kit::toast::show_with("Key forgotten", "Undo", move || {
+                        let key = key.clone();
+                        change_drop_sharing(|sharing| sharing.sftp.key = Some(key));
+                    });
+                }
+            })
+            .build(),
         ));
     }
     FormRow::new("settings.drop.sftp.key", "Private key")
@@ -442,5 +486,9 @@ fn key_row(sharing: &DropSharing) -> FormRow {
             || String::from("None: the password is used"),
             |key| key.display().to_string(),
         ))
-        .trailing(Row::new(trailing).gap(4.0).align(Center))
+        .trailing(
+            Row::new(trailing)
+                .gap(emaki_kit::tokens::sys::space::gap::xs())
+                .align(Center),
+        )
 }

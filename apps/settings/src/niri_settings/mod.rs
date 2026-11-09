@@ -19,7 +19,7 @@ use emaki_kit::app::Dialog;
 use emaki_kit::buttons::PushButton;
 use emaki_kit::color::Accent;
 use emaki_kit::form::{FormRow, Group};
-use emaki_kit::icons::{ICON_INFO, ICON_WARNING};
+use emaki_kit::icons::ICON_INFO;
 
 use crate::{group, switch_row};
 pub use kdl::Key;
@@ -286,7 +286,7 @@ pub fn notices(id: &str) -> Vec<Group> {
         Setup::Missing => out.push(
             group().row(
                 FormRow::new(format!("{id}.missing"), "Changes here can't be kept")
-                    .icon(ICON_INFO, Accent::Orange)
+                    .icon(emaki_kit::icons::ICON_WARNING, Accent::Orange)
                     .subtitle("niri's config.kdl wasn't found"),
             ),
         ),
@@ -294,7 +294,7 @@ pub fn notices(id: &str) -> Vec<Group> {
             group()
                 .row(
                     FormRow::new(format!("{id}.set-up"), "Shown, not changed here")
-                        .icon(ICON_INFO, Accent::Orange)
+                        .icon(ICON_INFO, Accent::Gray)
                         .subtitle("niri's config.kdl doesn't include Emaki Settings' file yet.")
                         .trailing(
                             PushButton::new(format!("{id}.set-up.button"), "Set Up…")
@@ -309,18 +309,12 @@ pub fn notices(id: &str) -> Vec<Group> {
         ),
     }
     if let Some(error) = &now.error {
-        out.push(
-            group().row(
-                FormRow::new(format!("{id}.error"), "Not changed")
-                    .icon(ICON_WARNING, Accent::Orange)
-                    .subtitle(error.as_str())
-                    .trailing(
-                        PushButton::new(format!("{id}.error.dismiss"), "OK")
-                            .on_press(|| NiriSettings::write().error = None)
-                            .build(),
-                    ),
-            ),
-        );
+        out.push(group().row(crate::dismissible_problem_row(
+            &format!("{id}.error"),
+            "Not changed",
+            error,
+            || NiriSettings::write().error = None,
+        )));
     }
     out
 }

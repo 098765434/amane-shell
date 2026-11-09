@@ -92,7 +92,7 @@ pub struct Item {
     pub app: Option<DesktopApp>,
     /// Whether it has an entry in the launcher (`app`, or a Flatpak's).
     pub launcher: bool,
-    /// Added in Settings but not in this nixpkgs: left out of the build,
+    /// Added in Settings but not in this package set: left out of the build,
     /// and what the catalog has by that name instead.
     pub gone: Option<Option<String>>,
 }
@@ -336,9 +336,9 @@ fn supporting(item: &Item) -> String {
         let attr = item.attr.as_deref().unwrap_or(&item.pname);
         return match instead {
             Some(other) => {
-                format!("{attr} · no longer in this nixpkgs, so not installed · try {other}")
+                format!("{attr} · no longer in this package set, so not installed · try {other}")
             }
-            None => format!("{attr} · no longer in this nixpkgs, so not installed"),
+            None => format!("{attr} · no longer in this package set, so not installed"),
         };
     }
     let what = item.attr.as_deref().unwrap_or(&item.pname);
@@ -363,9 +363,16 @@ fn supporting(item: &Item) -> String {
 fn row(item: &Item, entry: Option<&Entry>, managed: &Managed, removal: &Removal) -> FormRow {
     let key = item.attr.clone().unwrap_or_else(|| item.pname.clone());
     let id = |what: &str| format!("settings.apps.installed.{what}.{key}");
-    let mut row = FormRow::new(id("row"), item.name.clone())
-        .leading(leading(item.app.as_ref()), icon_side())
-        .subtitle(supporting(item));
+    let row = FormRow::new(id("row"), item.name.clone()).subtitle(supporting(item));
+    // one the package set no longer has is a problem, said as the others are
+    let mut row = if item.gone.is_some() {
+        row.icon(
+            emaki_kit::icons::ICON_WARNING,
+            emaki_kit::color::Accent::Red,
+        )
+    } else {
+        row.leading(leading(item.app.as_ref()), icon_side())
+    };
     if let Some(attr) = item.attr.clone() {
         row = row.on_press(move || Details::open(&attr));
     }
@@ -374,8 +381,8 @@ fn row(item: &Item, entry: Option<&Entry>, managed: &Managed, removal: &Removal)
         (Source::Settings(standing), Some(entry)) => {
             let (label, add) = match standing {
                 Standing::Installed => ("Remove", false),
-                Standing::Adding => ("Undo", false),
-                Standing::Removing => ("Undo", true),
+                Standing::Adding => ("Undo Add", false),
+                Standing::Removing => ("Undo Remove", true),
             };
             let (e, m, a) = (entry.clone(), managed.clone(), key.clone());
             Some(
@@ -398,7 +405,11 @@ fn row(item: &Item, entry: Option<&Entry>, managed: &Managed, removal: &Removal)
             Some(
                 PushButton::new(
                     id("uninstall"),
-                    if busy { "Removing…" } else { "Uninstall…" },
+                    if busy {
+                        "Uninstalling…"
+                    } else {
+                        "Uninstall…"
+                    },
                 )
                 .disabled(removal.busy.is_some())
                 .on_press(move || {
@@ -421,6 +432,20 @@ fn row(item: &Item, entry: Option<&Entry>, managed: &Managed, removal: &Removal)
         Some(button) => row.trailing(button),
         None => row,
     }
+}
+
+/// How many things are installed, all sources counted, for the Apps
+/// page's row that opens the list.
+pub fn count(
+    entry: Option<&Entry>,
+    managed: &Managed,
+    snapshot: &Snapshot,
+    looks: &Looks,
+) -> usize {
+    static LOOKED: Once = Once::new();
+    LOOKED.call_once(Flatpaks::refresh);
+    let (flatpaks, file_attrs) = (Flatpaks::read(), FileAttrs::read());
+    items(entry, managed, snapshot, &flatpaks, looks, &file_attrs).len()
 }
 
 pub fn section(
@@ -455,7 +480,7 @@ pub fn section(
         .collect();
     let picked = shows.iter().position(|s| *s == show).unwrap_or(0);
     let chips = Dropdown::new("settings.apps.installed.show", labels, picked)
-        .width(170.0)
+        .width(crate::MENU_W_NARROW)
         .on_select(move |index| {
             let shows: Vec<Show> = SHOWS
                 .into_iter()
@@ -476,9 +501,9 @@ pub fn section(
     let filters = FormRow::new("settings.apps.installed.filters", "Show").trailing(
         amane::Row::new(vec![
             boxed(chips.build()),
-            boxed(field_box(FILTER, field, 160.0)),
+            boxed(field_box(FILTER, field, crate::MENU_W_NARROW)),
         ])
-        .gap(8.0)
+        .gap(emaki_kit::tokens::sys::space::gap::m())
         .align(amane::Center),
     );
     let mut group = group().header("Installed").row(filters);
@@ -516,11 +541,7 @@ pub fn section(
     if let Some(error) = removal_error.or_else(|| flatpaks.error.clone()) {
         notes.push(error);
     }
-    notes.push(String::from(
-        "Press an app for its details. Move… hands an app listed in one of your own \
-         configuration files over to Settings. Flatpaks are installed apart from the \
-         configuration.",
-    ));
+    notes.push(String::from("Press an app for its details."));
     group.footer(notes.join(" "))
 }
 
@@ -602,7 +623,7 @@ mod tests {
         gone.gone = Some(Some("pear-desktop".into()));
         assert_eq!(
             supporting(&gone),
-            "youtube-music · no longer in this nixpkgs, so not installed · try pear-desktop"
+            "youtube-music · no longer in this package set, so not installed · try pear-desktop"
         );
     }
 }

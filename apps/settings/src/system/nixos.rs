@@ -110,6 +110,19 @@ impl Snapshot {
     }
 }
 
+/// The page a registry setting is drawn on. The registry names one for each, but Settings
+/// groups by topic: the keyboard layout sits with the keyboard, the boot entries kept with
+/// the versions they keep, and what the registry puts on About (the time zone) with the
+/// computer's name and language, About being facts to read.
+pub fn placed<'a>(id: &str, page: &'a str) -> &'a str {
+    match (id, page) {
+        ("keyboardLayout" | "keyboardVariant", _) => "keyboard",
+        ("bootEntries", _) => "history",
+        (_, "about") => "general",
+        _ => page,
+    }
+}
+
 fn take(take_number: u64) {
     let flake = format!("{}#emakiSettings", repo().display());
     let result = nix(&["eval", "--json", &flake]).and_then(|json| parse_snapshot(&json));
@@ -122,7 +135,10 @@ fn take(take_number: u64) {
     now.loading = false;
     now.taken = Some(Instant::now());
     match result {
-        Ok(parsed) => {
+        Ok(mut parsed) => {
+            for entry in &mut parsed.entries {
+                entry.page = placed(&entry.id, &entry.page).to_string();
+            }
             now.entries = parsed.entries;
             now.revision = parsed.revision;
             now.host = parsed.host;
@@ -214,6 +230,22 @@ impl Managed {
         emaki_nixos::settings::summary(&self.changes(), &snapshot.entries)
     }
 
+    /// How many of the changes waiting are settings on the page `page`
+    /// (the registry's page name, such as `services`).
+    pub fn waiting_on(&self, page: &str, snapshot: &Snapshot) -> u32 {
+        let count = self
+            .changes()
+            .iter()
+            .filter(|change| {
+                snapshot
+                    .entries
+                    .iter()
+                    .any(|entry| entry.id == change.id && entry.page == page)
+            })
+            .count();
+        u32::try_from(count).unwrap_or(u32::MAX)
+    }
+
     /// A setting's list value as strings (empty when it's not a list).
     pub fn list(&self, id: &str, configured: &Value) -> Vec<String> {
         strings(Some(self.value(id, configured)))
@@ -254,5 +286,20 @@ impl Managed {
                 Self::write().error = Some(error);
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::placed;
+
+    #[test]
+    fn settings_sit_with_their_topic() {
+        assert_eq!(placed("keyboardLayout", "general"), "keyboard");
+        assert_eq!(placed("keyboardVariant", "general"), "keyboard");
+        assert_eq!(placed("bootEntries", "storage"), "history");
+        assert_eq!(placed("timeZone", "about"), "general");
+        assert_eq!(placed("hostName", "general"), "general");
+        assert_eq!(placed("tailscale", "services"), "services");
     }
 }

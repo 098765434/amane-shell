@@ -1,5 +1,4 @@
-//! Storage: how full /nix and /boot are, what a clean-up would free, and
-//! the settings the registry puts here (the boot entries kept).
+//! Storage: how full /nix and /boot are, and what a clean-up would free.
 
 use std::ffi::CString;
 use std::thread;
@@ -10,7 +9,6 @@ use emaki_kit::buttons::PushButton;
 use emaki_kit::form::FormRow;
 use emaki_kit::spinner::ProgressBar;
 
-use super::controls;
 use crate::{group, groups};
 
 /// Used and total bytes of the file system at `path`.
@@ -36,6 +34,8 @@ pub struct Garbage {
     pub result: Option<String>,
     /// A check or a clean-up under way.
     pub running: bool,
+    /// What the one under way is doing, in words.
+    pub doing: &'static str,
 }
 
 impl Service for Garbage {
@@ -44,6 +44,7 @@ impl Service for Garbage {
             dead: None,
             result: None,
             running: false,
+            doing: "",
         }
     }
 
@@ -75,19 +76,6 @@ fn freed(text: &str) -> Option<String> {
     Some(emaki_kit::format::bytes(bytes as u64))
 }
 
-/// `n` with thousands apart: 5,139.
-fn grouped(n: usize) -> String {
-    let digits = n.to_string();
-    let mut out = String::new();
-    for (index, digit) in digits.chars().enumerate() {
-        if index > 0 && (digits.len() - index).is_multiple_of(3) {
-            out.push(',');
-        }
-        out.push(digit);
-    }
-    out
-}
-
 /// Runs `args` through nix, which reports on stderr.
 fn nix_said(program: &str, args: &[&str]) -> Result<String, String> {
     match emaki_process::Cmd::new(program).args(args).output() {
@@ -104,7 +92,7 @@ fn nix_said(program: &str, args: &[&str]) -> Result<String, String> {
 
 impl Garbage {
     /// Starts `work` unless something's running, and keeps what it says.
-    fn run(work: impl FnOnce() -> (Option<usize>, String) + Send + 'static) {
+    fn run(doing: &'static str, work: impl FnOnce() -> (Option<usize>, String) + Send + 'static) {
         {
             let mut now = Self::write();
             if now.running {
@@ -112,6 +100,7 @@ impl Garbage {
                 return;
             }
             now.running = true;
+            now.doing = doing;
         }
         thread::spawn(move || {
             let (dead, said) = work();
@@ -123,30 +112,37 @@ impl Garbage {
     }
 
     fn check() {
-        Self::run(|| match nix_said("nix-collect-garbage", &["--dry-run"]) {
-            Ok(text) => match dead_count(&text) {
-                Some(0) | None => (Some(0), String::from("Nothing to clean up")),
-                Some(n) => (
-                    Some(n),
-                    format!("{} unused items can be removed", grouped(n)),
-                ),
-            },
-            Err(why) => (None, format!("Couldn't check: {why}")),
+        Self::run("Looking…", || {
+            match nix_said("nix-collect-garbage", &["--dry-run"]) {
+                Ok(text) => match dead_count(&text) {
+                    Some(0) | None => (Some(0), String::from("Nothing to clean up")),
+                    Some(n) => (
+                        Some(n),
+                        format!(
+                            "{} unused items can be removed",
+                            emaki_kit::format::thousands(n)
+                        ),
+                    ),
+                },
+                Err(why) => (None, format!("Couldn't check: {why}")),
+            }
         });
     }
 
     /// Removes what nothing uses; the system's old versions stay, so
     /// History can still go back to them.
     fn clean() {
-        Self::run(|| match nix_said("nix-store", &["--gc"]) {
-            Ok(text) => (
-                Some(0),
-                match freed(&text) {
-                    Some(size) => format!("Freed {size}"),
-                    None => String::from("Cleaned up"),
-                },
-            ),
-            Err(why) => (None, format!("Couldn't clean up: {why}")),
+        Self::run("Removing unused items…", || {
+            match nix_said("nix-store", &["--gc"]) {
+                Ok(text) => (
+                    Some(0),
+                    match freed(&text) {
+                        Some(size) => format!("Freed {size}"),
+                        None => String::from("Cleaned up"),
+                    },
+                ),
+                Err(why) => (None, format!("Couldn't clean up: {why}")),
+            }
         });
     }
 }
@@ -163,7 +159,7 @@ fn meter(id: &str, title: &str, path: &str) -> FormRow {
                 emaki_kit::format::bytes(total),
                 emaki_kit::format::bytes(total.saturating_sub(used))
             ))
-            .trailing(ProgressBar::new(f32::from(percent) / 100.0, 140.0).build())
+            .trailing(ProgressBar::new(f32::from(percent) / 100.0, crate::MENU_W_NARROW).build())
         }
         None => row.subtitle("Not mounted"),
     }
@@ -173,7 +169,7 @@ pub fn page() -> Column {
     let garbage = Garbage::read();
 
     let found = if garbage.running {
-        String::from("Looking…")
+        String::from(garbage.doing)
     } else {
         garbage
             .result
@@ -187,7 +183,10 @@ pub fn page() -> Column {
             .on_press(move || {
                 Dialog::new(
                     "settings.storage.clean-dialog",
-                    format!("Remove {} unused items?", grouped(dead)),
+                    format!(
+                        "Remove {} unused items?",
+                        emaki_kit::format::thousands(dead)
+                    ),
                 )
                 .message(
                     "Old versions of the system stay, so History can still go back to them. \
@@ -221,7 +220,6 @@ pub fn page() -> Column {
             "Every week, versions of the system older than 14 days are removed along with what \
              only they used.",
         ),
-        group().rows(controls::rows("storage")),
     ])
 }
 
@@ -240,8 +238,5 @@ mod tests {
             freed("5139 store paths deleted, 1000.00 MiB freed").as_deref(),
             Some("1.0 GB")
         );
-        assert_eq!(grouped(5139), "5,139");
-        assert_eq!(grouped(12), "12");
-        assert_eq!(grouped(1234567), "1,234,567");
     }
 }

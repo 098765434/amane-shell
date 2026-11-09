@@ -13,8 +13,8 @@ open `nm-connection-editor`.
 - **Wi‑Fi:**
   - The radio's switch, which can't be turned on while a hardware switch holds it off.
   - The network joined. Its row opens its connection page.
-  - **Saved Networks**: every Wi‑Fi profile, the last used first. Each one opens its connection page.
-  - **Join a Hidden Network**: its name and password (empty for an open network). It shows
+  - **Saved networks**: every Wi‑Fi profile, the last used first. Each one opens its connection page.
+  - **Join a hidden network**: its name and password (empty for an open network). It shows
     Connecting…, Connected, or why it failed.
 - **Ethernet:** shown while a cable is in. It has a switch to connect or disconnect, and Details
   while it's up.
@@ -26,7 +26,7 @@ open `nm-connection-editor`.
   - Its password, with a lock button to show it. An empty password gets one made, and the page then
     shows it.
   - **Share this connection** switch. While it runs, this machine's Wi‑Fi can't join other networks.
-- **More Options** opens `nm-connection-editor` for what the page doesn't set: 802.1X, proxies,
+- **More options** opens `nm-connection-editor` for what the page doesn't set: 802.1X, proxies,
   IPv6, and a VPN's own settings.
 
 ### A connection's page

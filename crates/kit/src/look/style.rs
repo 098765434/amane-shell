@@ -64,11 +64,51 @@ pub fn menu_fill() -> Color {
     }
 }
 
-/// `groupFill`: white @ 0.05, a settings group's card (black @ 0.04 in
-/// light, where the window is already white).
+/// `groupFill`: a settings group's card, set into the window rather than
+/// raised from it: black @ 0.12 in dark mode, @ 0.02 in light.
 // TODO(token): sys.color.surface.group.bg
 pub fn group_fill() -> Color {
-    if dark() { ink(0.05) } else { ink(0.04) }
+    on_window(with_alpha(Color::BLACK, if dark() { 0.12 } else { 0.02 }))
+}
+
+/// `groupBorder`: the card's 1 px edge, black @ 0.15 in dark mode and
+/// @ 0.05 in light.
+// TODO(token): sys.color.surface.group.border
+pub fn group_border() -> Color {
+    on_window(with_alpha(Color::BLACK, if dark() { 0.15 } else { 0.05 }))
+}
+
+/// `shade` laid over the window's background, as one opaque colour. A
+/// vibrant window (amane's split for niri-vibrancy) sends translucent black
+/// to a layer the compositor subtracts from the screen, which takes far
+/// more off than a shade over the window would; a card set into the window
+/// must look the same with vibrancy on or off, so it's drawn opaque.
+fn on_window(shade: Color) -> Color {
+    crate::color::over(shade, sys::color::window::bg())
+}
+
+/// `rowSeparator`: the hairline between a card's rows, softer than
+/// [`divider`]: white @ 0.05 in dark mode, black @ 0.07 in light.
+// TODO(token): sys.color.separator.soft
+pub fn row_separator() -> Color {
+    if dark() { ink(0.05) } else { ink(0.07) }
+}
+
+/// A pressable row's hover layer: 5% of the label colour in dark mode, 6%
+/// in light, lighter than a button's.
+pub fn row_hover() -> Color {
+    with_alpha(
+        material::label(Level::Primary),
+        if dark() { 0.05 } else { 0.06 },
+    )
+}
+
+/// A pressable row while it's held down.
+pub fn row_press() -> Color {
+    with_alpha(
+        material::label(Level::Primary),
+        if dark() { 0.12 } else { 0.14 },
+    )
 }
 
 /// A received message's bubble, as Messages greys it: #3B3B3D in dark
@@ -132,14 +172,24 @@ pub fn field_radius() -> f32 {
     px(6.0)
 }
 
-/// A settings group's corner radius.
+/// A settings group's corner radius: 14.
 pub fn group_radius() -> f32 {
-    px(12.0)
+    px(14.0)
 }
 
 /// The least a settings row is tall.
 pub fn row_min_height() -> f32 {
     px(42.0)
+}
+
+/// The least a settings row with a subtitle is tall.
+pub fn row_two_line_height() -> f32 {
+    px(50.0)
+}
+
+/// From a group's caption down to its card.
+pub fn group_header_gap() -> f32 {
+    px(7.0)
 }
 
 /// A settings row's padding at its sides.
@@ -168,12 +218,27 @@ pub fn subtitle_font() -> TextStyle {
     }
 }
 
-/// `pageTitleFont`: 15 semibold.
+/// `pageTitleFont`: 15 bold, as a header bar's title.
 // TODO(token): a sys.type role
 pub fn page_title_font() -> TextStyle {
     TextStyle {
         size: 15.0,
-        weight: 600,
+        weight: 700,
         ..sys::r#type::title()
     }
+}
+
+/// A group's caption: bold, at the body's size.
+// TODO(token): a sys.type role, once the sys tier has room under its ceiling
+pub fn group_header_font() -> TextStyle {
+    TextStyle {
+        weight: 700,
+        ..sys::r#type::label()
+    }
+}
+
+/// Between a page's groups: 24.
+// TODO(token): sys.space, once the sys tier has room under its ceiling
+pub fn section_gap() -> f32 {
+    px(24.0)
 }

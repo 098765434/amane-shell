@@ -1,5 +1,6 @@
-//! Input: how the keyboard repeats, how the touchpad and mouse move and
-//! scroll, and a list of niri's keyboard shortcuts.
+//! Keyboard, and Mouse & Touchpad: how the keyboard repeats, how the
+//! touchpad and mouse move and scroll, and a list of niri's keyboard
+//! shortcuts.
 //!
 //! These are niri's own `input` settings. They're written to `input.kdl`
 //! ([`kdl`]), which `config.kdl` includes, and niri reads the file again by
@@ -187,63 +188,93 @@ fn settled(what: &'static str, edit: impl FnOnce(&mut InputConfig)) {
 
 // ───── the page ─────────────────────────────────────────────────────────────
 
-pub fn page() -> Column {
-    let (setup, touchpad, error, looked) = {
-        let now = Input::read();
-        (
-            now.setup.clone(),
-            now.touchpad,
-            now.error.clone(),
-            now.looked,
-        )
-    };
-    if !looked {
-        return groups(vec![group().row(FormRow::new(
-            "settings.input.reading",
-            "Reading the input settings…",
-        ))]);
+/// The input settings as read: the config, whether this page may change
+/// it, and whether there's a touchpad; none until they've been read.
+fn read_state() -> Option<(Setup, InputConfig, bool, bool, Option<String>)> {
+    let now = Input::read();
+    if !now.looked {
+        return None;
     }
-    let (config, editable) = match &setup {
+    let (config, editable) = match &now.setup {
         Setup::Ready(config) => (config.clone(), true),
         Setup::Unmoved(config) => (config.clone(), false),
         Setup::Missing => (InputConfig::default(), false),
     };
+    Some((
+        now.setup.clone(),
+        config,
+        editable,
+        now.touchpad,
+        now.error.clone(),
+    ))
+}
 
-    let mut list: Vec<Group> = Vec::new();
-    if let Some(banner) = setup_banner(&setup) {
+/// The page's first groups: niri's notices (what stands in the way of the gestures), the
+/// banner when the input settings can't be changed here, and the last change that didn't take.
+fn notices(id: &str, setup: &Setup, error: Option<String>) -> Vec<Group> {
+    let mut list: Vec<Group> = crate::niri_settings::notices(id);
+    if let Some(banner) = setup_banner(setup) {
         list.push(banner);
     }
     if let Some(error) = error {
-        list.push(
-            group().row(
-                FormRow::new("settings.input.error", "Not changed")
-                    .icon(emaki_kit::icons::ICON_WARNING, Accent::Orange)
-                    .subtitle(error)
-                    .trailing(
-                        PushButton::new("settings.input.error.dismiss", "OK")
-                            .on_press(|| Input::write().error = None)
-                            .build(),
-                    ),
-            ),
-        );
+        list.push(group().row(crate::dismissible_problem_row(
+            "settings.input.error",
+            "Not changed",
+            &error,
+            || Input::write().error = None,
+        )));
     }
+    list
+}
+
+fn reading() -> Column {
+    groups(vec![group().row(crate::loading_row(
+        "settings.input.reading",
+        "Reading the input settings…",
+    ))])
+}
+
+/// Keyboard: key repeat and Num Lock (niri's), the layout (the system's, kept in the NixOS
+/// configuration and applied with it), and the keyboard shortcuts.
+pub fn keyboard_page() -> Column {
+    let Some((setup, config, editable, _, error)) = read_state() else {
+        return reading();
+    };
+    let mut list = notices("settings.input.keyboard", &setup, error);
     list.push(keyboard(&config, editable));
-    if touchpad {
-        list.push(touchpad_group(&config.touchpad, editable));
-    }
-    list.push(mouse_group(&config.mouse, editable));
-    list.push(pointer_group(&config, editable));
-    if touchpad {
-        list.extend(gestures_group());
-    }
+    list.push(
+        group()
+            .header("Layout")
+            .rows(crate::system::controls::rows("keyboard"))
+            .footer(
+                "A layout is a short name like us or no, and a variant one of its kinds, like \
+                 dvorak. The text console uses the same layout. Changes take effect after Apply.",
+            ),
+    );
     list.push(
         group().row(
-            FormRow::new("settings.input.shortcuts-row", "Keyboard Shortcuts")
+            FormRow::new("settings.input.shortcuts-row", "Keyboard shortcuts")
                 .icon(ICON_KEYBOARD, Accent::Gray)
-                .subtitle("Every key niri's config binds, and what it does")
+                .value(format!("{} keys", Input::read().binds.len()))
                 .on_press(|| crate::open(crate::View::Sub("shortcuts"))),
         ),
     );
+    groups(list)
+}
+
+/// Mouse & Touchpad: the pointer, the touchpad (when there is one) and its gestures, and the
+/// mouse.
+pub fn pointer_page() -> Column {
+    let Some((setup, config, editable, touchpad, error)) = read_state() else {
+        return reading();
+    };
+    let mut list = notices("settings.input", &setup, error);
+    list.push(pointer_group(&config, editable));
+    if touchpad {
+        list.push(touchpad_group(&config.touchpad, editable));
+        list.extend(gestures_group());
+    }
+    list.push(mouse_group(&config.mouse, editable));
     groups(list)
 }
 
@@ -253,7 +284,7 @@ fn setup_banner(setup: &Setup) -> Option<Group> {
         Setup::Missing => Some(
             group().row(
                 FormRow::new("settings.input.missing", "Changes here can't be kept")
-                    .icon(ICON_INFO, Accent::Orange)
+                    .icon(emaki_kit::icons::ICON_WARNING, Accent::Orange)
                     .subtitle("niri's config.kdl wasn't found"),
             ),
         ),
@@ -261,7 +292,7 @@ fn setup_banner(setup: &Setup) -> Option<Group> {
             group()
                 .row(
                     FormRow::new("settings.input.unmoved", "Shown, not changed here")
-                        .icon(ICON_INFO, Accent::Orange)
+                        .icon(ICON_INFO, Accent::Gray)
                         .subtitle("niri's config.kdl sets the input itself.")
                         .trailing(
                             PushButton::new("settings.input.move", "Move to Settings…")
@@ -304,42 +335,42 @@ fn keyboard(config: &InputConfig, editable: bool) -> Group {
     let keyboard = &config.keyboard;
     let delay = keyboard.repeat_delay.unwrap_or(REPEAT_DELAY);
     let rate = keyboard.repeat_rate.unwrap_or(REPEAT_RATE);
-    let try_it = field_box(TRY, text_field(TRY, "Hold a key here to try it"), 260.0);
+    let try_it = field_box(
+        TRY,
+        text_field(TRY, "Hold a key here to try it"),
+        crate::MENU_W_WIDE,
+    );
     group()
-        .header("Keyboard")
+        .header("Typing")
         .row(
-            FormRow::new("settings.input.repeat-delay", "Delay before repeat")
-                .value(format!("{delay} ms"))
-                .trailing(
-                    Stepper::new("settings.input.repeat-delay.stepper", f64::from(delay))
-                        .range(150.0, 1000.0)
-                        .step(50.0)
-                        .width(80.0)
-                        .disabled(!editable)
-                        .on_change(|ms| {
-                            settled("repeat delay", |c| {
-                                c.keyboard.repeat_delay = Some(ms.round() as u16)
-                            })
+            FormRow::new("settings.input.repeat-delay", "Delay before repeat (ms)").trailing(
+                Stepper::new("settings.input.repeat-delay.stepper", f64::from(delay))
+                    .range(150.0, 1000.0)
+                    .step(50.0)
+                    .width(crate::COMPACT_W)
+                    .disabled(!editable)
+                    .on_change(|ms| {
+                        settled("repeat delay", |c| {
+                            c.keyboard.repeat_delay = Some(ms.round() as u16)
                         })
-                        .build(),
-                ),
+                    })
+                    .build(),
+            ),
         )
         .row(
-            FormRow::new("settings.input.repeat-rate", "Repeat rate")
-                .value(format!("{rate} a second"))
-                .trailing(
-                    Stepper::new("settings.input.repeat-rate.stepper", f64::from(rate))
-                        .range(10.0, 60.0)
-                        .step(1.0)
-                        .width(80.0)
-                        .disabled(!editable)
-                        .on_change(|per| {
-                            settled("repeat rate", |c| {
-                                c.keyboard.repeat_rate = Some(per.round() as u8)
-                            })
+            FormRow::new("settings.input.repeat-rate", "Repeat rate (a second)").trailing(
+                Stepper::new("settings.input.repeat-rate.stepper", f64::from(rate))
+                    .range(10.0, 60.0)
+                    .step(1.0)
+                    .width(crate::COMPACT_W)
+                    .disabled(!editable)
+                    .on_change(|per| {
+                        settled("repeat rate", |c| {
+                            c.keyboard.repeat_rate = Some(per.round() as u8)
                         })
-                        .build(),
-                ),
+                    })
+                    .build(),
+            ),
         )
         .row(FormRow::new("settings.input.try-row", "Try it").trailing(try_it))
         .row(
@@ -350,11 +381,6 @@ fn keyboard(config: &InputConfig, editable: bool) -> Group {
                 |on| at_once("num lock", move |c| c.keyboard.numlock = on),
             )
             .disabled(!editable),
-        )
-        .row(
-            FormRow::new("settings.input.layout", "Layout")
-                .subtitle("Set under General, with the system's language")
-                .on_press(|| crate::go("general")),
         )
 }
 
@@ -432,7 +458,7 @@ fn words_row(
     let name = what(id);
     FormRow::new(id, title).trailing(
         Dropdown::new(format!("{id}.choice"), labels, at)
-            .width(200.0)
+            .width(crate::MENU_W)
             .disabled(!editable)
             .on_select(move |index| {
                 if index == at {
@@ -637,7 +663,7 @@ fn gestures_group() -> Vec<Group> {
     let swipe = !shown
         .get(MOD_SWIPE)
         .is_some_and(|value| value.contains("off"));
-    let mut list = crate::niri_settings::notices("settings.input.gestures");
+    let mut list = Vec::new();
     list.push(
         group().header("Gestures").row(
             switch_row(
@@ -664,12 +690,12 @@ const SKIP_OVERLAY: crate::niri_settings::Key = ("hotkey-overlay", "skip-at-star
 
 // ───── Keyboard Shortcuts ───────────────────────────────────────────────────
 
-/// The page's sub-pages: Keyboard Shortcuts.
+/// Keyboard's sub-page: the keyboard shortcuts.
 pub fn sub(name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
-    if name != "shortcuts" {
-        return None;
+    match name {
+        "shortcuts" => Some((String::from("Keyboard shortcuts"), boxed(shortcuts()))),
+        _ => None,
     }
-    Some((String::from("Keyboard Shortcuts"), boxed(shortcuts())))
 }
 
 fn shortcuts() -> Column {

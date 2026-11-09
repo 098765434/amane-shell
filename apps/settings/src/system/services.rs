@@ -7,11 +7,11 @@ use std::collections::BTreeMap;
 use std::thread;
 use std::time::Duration;
 
-use amane::{Column, Row, Service};
+use amane::{Column, Service};
 use emaki_kit::app::Dialog;
 use emaki_kit::buttons::PushButton;
 use emaki_kit::form::FormRow;
-use emaki_kit::layout::{boxed, frame};
+use emaki_kit::layout::frame;
 use emaki_kit::style;
 
 use super::busy::Busy;
@@ -241,7 +241,7 @@ pub fn page() -> Column {
         services = services.row(crate::problem_row(
             "settings.services.error",
             "The configuration couldn't be read",
-            "Switches show the last configuration read; Refresh on About This Computer tries again.",
+            "Switches show the last configuration read; Refresh on About › Configuration folder tries again.",
             error,
         ));
     }
@@ -286,13 +286,18 @@ pub fn page() -> Column {
             let running =
                 state.is_some_and(|s| matches!(s.active.as_str(), "active" | "activating"));
             let (verb, label) = if running {
-                ("stop", "Stop")
+                // stopping what a remote session rides on asks first
+                ("stop", if remote(&unit) { "Stop…" } else { "Stop" })
             } else {
                 ("start", "Start")
             };
             let busy = actions.is_busy(&unit);
             if busy {
-                lines.push(String::from("Working…"));
+                lines.push(String::from(if running {
+                    "Stopping…"
+                } else {
+                    "Starting…"
+                }));
             }
             if let Some((failed, why)) = &actions.error
                 && *failed == unit
@@ -327,15 +332,13 @@ pub fn page() -> Column {
                     .build(),
             );
         }
-        row = row
-            .subtitle(join_parts(&lines))
-            .trailing(controls::switch(entry, &managed).build());
-        if let Some(mover) = mover {
-            row = row.detail(
-                Row::new(vec![boxed(mover.build())]),
-                style::control_height(),
-            );
-        }
+        // set by another file and movable: Move to Settings… in the
+        // switch's place
+        row = row.subtitle(join_parts(&lines));
+        row = match mover {
+            Some(mover) => row.trailing(mover.build()),
+            None => row.trailing(controls::switch(entry, &managed).build()),
+        };
         services = services.row(row);
 
         if let Some(link) = entry.on_demand.as_deref().and_then(|id| snapshot.entry(id)) {
@@ -350,21 +353,21 @@ pub fn page() -> Column {
             )
             .subtitle("Starts when something connects, and stops when idle")
             .child()
-            .trailing(
-                controls::switch(link, &managed)
-                    .disabled(!link.managed() || !enabled)
-                    .build(),
-            );
+            .disabled(!enabled);
+            let mut mover = None;
             if pending || refused || !link.managed() {
-                let (summary, mover) = controls::summary(link, &managed, &feedback);
+                let (summary, movable) = controls::summary(link, &managed, &feedback);
                 linked_row = linked_row.subtitle(summary);
-                if let Some(mover) = mover {
-                    linked_row = linked_row.detail(
-                        Row::new(vec![boxed(mover.build())]),
-                        style::control_height(),
-                    );
-                }
+                mover = movable;
             }
+            linked_row = match mover {
+                Some(mover) => linked_row.trailing(mover.build()),
+                None => linked_row.trailing(
+                    controls::switch(link, &managed)
+                        .disabled(!link.managed() || !enabled)
+                        .build(),
+                ),
+            };
             services = services.row(linked_row);
         }
     }

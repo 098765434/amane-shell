@@ -13,7 +13,7 @@ use emaki_kit::slider::Slider;
 use emaki_kit::stepper::Stepper;
 
 use crate::niri_settings::{self, Key, Shown};
-use crate::{group, groups, switch_row};
+use crate::{group, groups};
 
 const GAPS: Key = ("layout", "gaps");
 const WIDTH: Key = ("layout", "default-column-width");
@@ -77,7 +77,7 @@ const HOT_CORNERS: [(&str, &str); 5] = [
 pub fn page() -> Column {
     let shown = niri_settings::shown();
     if !shown.looked {
-        return groups(vec![group().row(FormRow::new(
+        return groups(vec![group().row(crate::loading_row(
             "settings.windows.reading",
             "Reading niri's settings…",
         ))]);
@@ -90,9 +90,23 @@ pub fn page() -> Column {
         list.push(
             group()
                 .row(
-                    FormRow::new("settings.windows.reset", "Reset Windows Settings").trailing(
-                        PushButton::new("settings.windows.reset.button", "Reset")
-                            .on_press(|| niri_settings::reset("windows reset", ALL))
+                    FormRow::new("settings.windows.reset", "Reset the window settings").trailing(
+                        PushButton::new("settings.windows.reset.button", "Reset…")
+                            .on_press(|| {
+                                emaki_kit::app::Dialog::new(
+                                    "settings.windows.reset-dialog",
+                                    "Reset the window settings?",
+                                )
+                                .message(
+                                    "Every setting on this page goes back to what niri's \
+                                     config.kdl sets.",
+                                )
+                                .button("Cancel", || {})
+                                .destructive("Reset", || {
+                                    niri_settings::reset("windows reset", ALL);
+                                })
+                                .open("main");
+                            })
                             .build(),
                     ),
                 )
@@ -119,7 +133,7 @@ fn choice_row(
                 niri_settings::set(what(id), key, *value);
             }
         })
-        .width(200.0)
+        .width(crate::MENU_W)
         .disabled(!shown.editable)
         .build();
     FormRow::new(id, title).trailing(menu)
@@ -210,7 +224,7 @@ fn look(shown: &Shown) -> Group {
     let border = shown.on(BORDER);
     let border_width: u16 = shown.number(BORDER_WIDTH, 4);
     let follows = shown.follows_accent();
-    let mut look = group().header("Windows").row(
+    let mut look = group().header("Decorations").row(
         niri_settings::switch(
             shown,
             "settings.windows.focus-ring",
@@ -221,48 +235,40 @@ fn look(shown: &Shown) -> Group {
         .icon(ICON_RESIZE, Accent::Blue)
         .subtitle("A line around the focused window, outside it"),
     );
-    if ring {
-        look = look
-            .row(
-                width_row(
-                    "settings.windows.focus-ring.width",
-                    ring_width,
-                    editable,
-                    RING_WIDTH,
-                )
-                .child(),
+    // the ring's and border's own settings stay in sight, dimmed while off
+    look = look
+        .row(width_row(
+            "settings.windows.focus-ring.width",
+            ring_width,
+            editable,
+            ring,
+            RING_WIDTH,
+        ))
+        .row(
+            crate::child_switch_row(
+                "settings.windows.focus-ring.accent",
+                "Use the accent color",
+                follows,
+                editable && ring,
+                niri_settings::set_follows_accent,
             )
-            .row(
-                switch_row(
-                    "settings.windows.focus-ring.accent",
-                    "Use the accent color",
-                    follows,
-                    niri_settings::set_follows_accent,
-                )
-                .subtitle(if follows {
-                    String::from("Follows the accent chosen under Appearance")
-                } else {
-                    format!("Now {}", shown.word(RING_COLOR, "#7fc8ff"))
-                })
-                .child()
-                .disabled(!editable),
-            );
-    }
+            .subtitle(if follows {
+                String::from("Follows the accent chosen under Appearance")
+            } else {
+                format!("Now {}", shown.word(RING_COLOR, "#7fc8ff"))
+            }),
+        );
     look = look.row(
         niri_settings::switch(shown, "settings.windows.border", "Border", "border", BORDER)
             .subtitle("A line inside each window's edge, which takes room from it"),
     );
-    if border {
-        look = look.row(
-            width_row(
-                "settings.windows.border.width",
-                border_width,
-                editable,
-                BORDER_WIDTH,
-            )
-            .child(),
-        );
-    }
+    look = look.row(width_row(
+        "settings.windows.border.width",
+        border_width,
+        editable,
+        border,
+        BORDER_WIDTH,
+    ));
     look.row(niri_settings::switch(
         shown,
         "settings.windows.shadow",
@@ -284,15 +290,18 @@ fn look(shown: &Shown) -> Group {
     .footer("Apps take the title bar setting as they start again.")
 }
 
-fn width_row(id: &'static str, width: u16, editable: bool, key: Key) -> FormRow {
-    FormRow::new(id, "Width")
-        .value(format!("{width} px"))
+/// A line's width in px, set in under its switch and dimmed while it's off;
+/// the stepper shows the number itself.
+fn width_row(id: &'static str, width: u16, editable: bool, on: bool, key: Key) -> FormRow {
+    FormRow::new(id, "Width (px)")
+        .child()
+        .disabled(!on)
         .trailing(
             Stepper::new(format!("{id}.stepper"), f64::from(width))
                 .range(1.0, 16.0)
                 .step(1.0)
-                .width(80.0)
-                .disabled(!editable)
+                .width(crate::COMPACT_W)
+                .disabled(!editable || !on)
                 .on_change(move |px| {
                     niri_settings::set_settled(what(id), key, (px.round() as u16).to_string())
                 })

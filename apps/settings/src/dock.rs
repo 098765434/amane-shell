@@ -1,18 +1,17 @@
-//! The dock: how big its icons are and how much they grow, whether it
-//! hides, and what it shows and animates. Each control changes
-//! `dock.json`, which the shell follows at once.
+//! The dock's groups on Desktop & Dock: how big its icons are and how much
+//! they grow, whether it hides, and what it shows and animates. Each
+//! control changes `dock.json`, which the shell follows at once.
 
-use amane::Column;
 use emaki_kit::dropdown::Dropdown;
-use emaki_kit::form::{FormRow, SliderRow};
+use emaki_kit::form::{FormRow, Group, SliderRow};
 use emaki_kit::settings::{DOCK_ICON_SIZES, Dock, Magnify, change_dock, dock};
 use emaki_kit::slider::Slider;
 
-use crate::{group, groups, switch_row};
+use crate::{group, switch_row};
 
 const MAGNIFY: [&str; 4] = ["Off", "Small", "Medium", "Large"];
 
-pub fn page() -> Column {
+pub fn groups() -> Vec<Group> {
     let now = dock().clone();
 
     let (least, most) = DOCK_ICON_SIZES;
@@ -24,16 +23,16 @@ pub fn page() -> Column {
         now.magnification,
         |amount| change_dock(|now| now.magnification = amount),
     )
-    .width(200.0)
+    .width(crate::MENU_W)
     .build();
 
     let switch = |id: &str, title: &str, on: bool, set: fn(&mut Dock, bool)| {
         switch_row(id, title, on, move |on| change_dock(|now| set(now, on)))
     };
 
-    groups(vec![
+    vec![
         group()
-            .header("Size")
+            .header("Dock")
             .slider(
                 SliderRow::new("Icon size", move |width| {
                     Slider::new(at, width)
@@ -43,11 +42,11 @@ pub fn page() -> Column {
                         })
                         .build()
                 })
-                .value(format!("{} pt", now.icon_size.clamp(least, most))),
+                .value(format!("{} px", now.icon_size.clamp(least, most))),
             )
             .row(FormRow::new("settings.dock.magnify", "Magnification").trailing(magnify)),
         group()
-            .header("Hiding")
+            .header("Hiding the dock")
             .row(
                 switch(
                     "settings.dock.auto-hide",
@@ -69,7 +68,7 @@ pub fn page() -> Column {
             )
             .footer("A dock that stays out keeps windows clear of it, above the status bar."),
         group()
-            .header("Icons")
+            .header("Dock icons")
             .row(switch(
                 "settings.dock.dots",
                 "Show dots under open apps",
@@ -88,5 +87,5 @@ pub fn page() -> Column {
                 now.animations,
                 |now, on| now.animations = on,
             )),
-    ])
+    ]
 }

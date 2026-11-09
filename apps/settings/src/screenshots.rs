@@ -50,7 +50,7 @@ pub fn groups() -> Vec<Group> {
     } else {
         folder_of(&crate::niri_files::unquote(&value).unwrap_or_else(|| String::from(DEFAULT)))
     };
-    let mut list = niri_settings::notices("settings.desktop.screenshots");
+    let mut list = Vec::new();
     let mut screenshots = group().header("Screenshots").row(
         niri_settings::switch_with(
             &shown,
@@ -70,9 +70,10 @@ pub fn groups() -> Vec<Group> {
         .icon(ICON_SCREENSHOT, emaki_kit::color::Accent::Gray)
         .subtitle("To the clipboard, without saving a file"),
     );
-    if !clipboard_only {
+    // the folder stays in sight, dimmed while screenshots only go to the clipboard
+    {
         let choose = PushButton::new("settings.desktop.screenshots.folder.choose", "Choose…")
-            .disabled(!shown.editable)
+            .disabled(!shown.editable || clipboard_only)
             .on_press(|| {
                 FileDialog::open("Save Screenshots In")
                     .directory(true)
@@ -86,7 +87,9 @@ pub fn groups() -> Vec<Group> {
         screenshots = screenshots.row(
             FormRow::new("settings.desktop.screenshots.folder", "Save in")
                 .subtitle(folder)
-                .trailing(choose),
+                .trailing(choose)
+                .child()
+                .disabled(clipboard_only),
         );
     }
     list.push(

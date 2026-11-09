@@ -90,7 +90,7 @@ A `config.kdl` with uncommitted edits is refused.
 | Rotation | dropdown: Standard, 90°, 180°, 270°, flipped and flipped turned (counter-clockwise, as niri turns) | `transform`, tried first |
 | High dynamic range | **Use HDR**: Off, Automatic or On (On and Off tried first), with what the screen shows and an ⓘ naming the apps that show HDR; while on, **Brightness** moves SDR white ([below](#hdr)) | `hdr`, `hdr-auto`, `sdr-brightness` |
 | Advanced › (sub-page) | Custom scale (0.5–4, or a percentage), Custom mode (`2560x1600@90`), Overview backdrop (`#rrggbb`), and the raw facts each source gave | `scale`, `mode custom=true`, `backdrop-color` |
-| All Displays | with a battery, **Slower on battery** ([below](#refresh-rate-on-battery)) | `displays.json` |
+| All displays | with a battery, **Slower on battery** ([below](#refresh-rate-on-battery)) | `displays.json` |
 | Night Light | a switch, how warm, and when: All day, Sunset to sunrise, Set hours | the shell's state ([below](#night-light)) |
 | OLED care | on an OLED panel: Dark appearance, hiding the dock, hiding the status bar, and **Screen Sleep Timing…** (Power & Lock) | `appearance.json`, `dock.json`, `status-bar.json` |
 

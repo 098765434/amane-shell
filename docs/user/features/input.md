@@ -1,29 +1,34 @@
 # Input
 
-Emaki Settings' **Input** page (`apps/settings/src/input/`) sets how the keyboard repeats, how the
-touchpad and mouse move and scroll, and lists niri's keyboard shortcuts.
-`emaki-settings --page input` opens it (`keyboard`, `mouse` and `touchpad` open it too), and
-`--page input/shortcuts` opens the shortcuts.
+Two pages of Emaki Settings (`apps/settings/src/input/`) set the input: **Keyboard** sets how the
+keyboard repeats, its layout, and lists niri's keyboard shortcuts; **Mouse & Touchpad** sets how
+the pointer, touchpad and mouse move and scroll. `emaki-settings --page keyboard` opens Keyboard
+(`input` too), `--page keyboard/shortcuts` the shortcuts, and `--page mouse` Mouse & Touchpad
+(`touchpad` and `pointer` too).
 
-## The page
+## The pages
 
-- **Keyboard:**
+- **Keyboard › Typing:**
   - Delay before repeat: 150–1000 ms, niri's default 600.
   - Repeat rate: 10–60 a second, default 25.
   - A **Try it** field to hold a key in.
   - Num Lock on at login.
-  - **Layout**, which opens General: the layout is a NixOS setting there (`keyboardLayout`), so
-    niri reads it from `locale1` and this page doesn't set it.
-- **Touchpad**, shown when udev knows one (`ID_INPUT_TOUCHPAD`, else a device named like one):
+- **Keyboard › Layout:** the keyboard layout and variant, NixOS settings (`keyboardLayout`,
+  `keyboardVariant`) that wait for Apply. niri reads them from `locale1`, so niri's `input.kdl`
+  doesn't hold them.
+- **Mouse & Touchpad › Pointer:** focus follows the pointer, the pointer jumps to the focused
+  window, and left-handed.
+- **Mouse & Touchpad › Touchpad**, shown when udev knows one (`ID_INPUT_TOUCHPAD`, else a device named like one):
   - Tap to click, natural scrolling, and off while typing (`dwt`).
   - Speed: −1 to 1 on the slider, shown as "30% slower".
   - Acceleration: adaptive or flat.
   - Right click: the bottom right corner (`button-areas`) or two fingers (`clickfinger`).
   - Scroll with: two fingers or the edge.
   - Each dropdown also has **Default**, which leaves the setting out so libinput picks it.
-- **Mouse:** natural scrolling, speed and acceleration. It's always shown, since a mouse can be
+- **Mouse & Touchpad › Gestures:** Super and swipe moves windows (niri's `settings.kdl`).
+- **Mouse & Touchpad › Mouse:** natural scrolling, speed and acceleration. It's always shown, since a mouse can be
   plugged in at any time.
-- **Keyboard Shortcuts**, a sub-page listing every bind in niri's config, with a Find field.
+- **Keyboard › Keyboard shortcuts**, a sub-page listing every bind in niri's config, with a Find field.
   - The groups are Shell, Apps, Windows and Columns, Workspaces, Monitors, Screenshots, Media and
     Hardware, and Session.
   - A bind's name is its `hotkey-overlay-title`. Without one, the name is what the bind does: the
@@ -97,7 +102,7 @@ The list is read-only: shortcuts are changed in `config.kdl`.
 - **Gestures**, shown with a touchpad: **Super and swipe moves windows** (`mod-swipe`, the emaki
   fork's). It's niri's `gestures` section, so it's kept in `settings.kdl`
   ([windows.md](windows.md#where-the-settings-go)).
-- On the **Keyboard Shortcuts** sub-page, **Show the shortcuts at login**
+- On the **Keyboard shortcuts** sub-page, **Show the shortcuts at login**
   (`hotkey-overlay skip-at-startup`), also in `settings.kdl`.
 
 ## Not yet

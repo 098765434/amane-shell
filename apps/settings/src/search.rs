@@ -257,25 +257,25 @@ const INDEX: &[Entry] = &[
         &["corner", "overview"],
     ),
     row(
-        "input",
+        "mouse",
         "Focus follows the pointer",
         "settings.input.focus-follows-mouse",
         &["focus follows mouse", "hover focus"],
     ),
     row(
-        "input",
+        "mouse",
         "Left-handed",
         "settings.input.left-handed",
         &["swap buttons", "left hand"],
     ),
     row(
-        "input",
+        "mouse",
         "Middle click by pressing both buttons",
         "settings.input.mouse.middle-emulation",
         &["middle click"],
     ),
     row(
-        "input",
+        "mouse",
         "Super and swipe moves windows",
         "settings.input.mod-swipe",
         &["gesture", "three fingers"],
@@ -307,13 +307,13 @@ const INDEX: &[Entry] = &[
     ),
     row(
         "network/saved",
-        "Saved Networks",
+        "Saved networks",
         "settings.network.saved",
         &["forget network", "known networks", "remembered"],
     ),
     row(
         "network/hidden",
-        "Join a Hidden Network",
+        "Join a hidden network",
         "settings.network.hidden.name.row",
         &["hidden ssid", "unlisted network"],
     ),
@@ -361,87 +361,87 @@ const INDEX: &[Entry] = &[
         &["microphone", "mic test", "meter"],
     ),
     row(
-        "sound",
+        "notifications",
         "Play a sound for notifications",
         "settings.sound.notifications",
         &["alert sound", "notification sound", "chime"],
     ),
     row(
-        "sound",
+        "notifications",
         "Notification sound",
         "settings.sound.notifications.sound",
         &["alert sound", "chime"],
     ),
     // Input
     row(
-        "input",
+        "keyboard",
         "Delay before repeat",
         "settings.input.repeat-delay",
         &["key repeat", "hold a key"],
     ),
     row(
-        "input",
+        "keyboard",
         "Repeat rate",
         "settings.input.repeat-rate",
         &["key repeat", "typematic"],
     ),
     row(
-        "input",
+        "keyboard",
         "Num Lock on at login",
         "settings.input.numlock",
         &["numpad", "number lock"],
     ),
     row(
-        "input",
+        "mouse",
         "Tap to click",
         "settings.input.touchpad.tap",
         &["touchpad", "trackpad", "tap"],
     ),
     row(
-        "input",
+        "mouse",
         "Natural scrolling",
         "settings.input.touchpad.natural-scroll",
         &["reverse scrolling", "scroll direction", "touchpad"],
     ),
     row(
-        "input",
+        "mouse",
         "Off while typing",
         "settings.input.touchpad.dwt",
         &["palm rejection", "disable while typing", "touchpad"],
     ),
     row(
-        "input",
+        "mouse",
         "Touchpad acceleration",
         "settings.input.touchpad.accel-profile",
         &["touchpad speed", "sensitivity", "trackpad"],
     ),
     row(
-        "input",
+        "mouse",
         "Right click",
         "settings.input.touchpad.click-method",
         &["secondary click", "two finger click", "clickfinger"],
     ),
     row(
-        "input",
+        "mouse",
         "Scroll with",
         "settings.input.touchpad.scroll-method",
         &["edge scrolling", "two finger scroll"],
     ),
     row(
-        "input",
+        "mouse",
         "Mouse natural scrolling",
         "settings.input.mouse.natural-scroll",
         &["reverse scrolling", "wheel"],
     ),
     row(
-        "input",
+        "mouse",
         "Mouse acceleration",
         "settings.input.mouse.accel-profile",
         &["mouse speed", "sensitivity", "pointer speed", "flat"],
     ),
     row(
-        "input/shortcuts",
-        "Keyboard Shortcuts",
+        "keyboard/shortcuts",
+        "Keyboard shortcuts",
         "settings.input.shortcuts.filter",
         &["keybinds", "hotkeys", "key bindings", "niri binds"],
     ),
@@ -581,38 +581,43 @@ const INDEX: &[Entry] = &[
     ),
     // Dock
     row(
-        "dock",
+        "desktop",
         "Dock size",
         "settings.dock.magnify",
         &["icon size", "magnification"],
     ),
     row(
-        "dock",
+        "desktop",
         "Hide the dock automatically",
         "settings.dock.auto-hide",
         &["auto hide"],
     ),
     row(
-        "dock",
+        "desktop",
         "Dots under open apps",
         "settings.dock.dots",
         &["indicators"],
     ),
     row(
-        "dock",
+        "desktop",
         "App names over icons",
         "settings.dock.names",
         &["tooltips"],
     ),
     row(
-        "dock",
+        "desktop",
         "Animate the dock",
         "settings.dock.animations",
         &["bounce"],
     ),
     // Quick Settings
+    page(
+        "status-bar/quick-settings",
+        "Quick Settings",
+        &["controls", "toggles", "wifi", "bluetooth", "customize"],
+    ),
     row(
-        "quick-settings",
+        "status-bar/quick-settings",
         "Reset the Quick Settings layout",
         "settings.quick.reset-row",
         &["customize"],
@@ -656,19 +661,19 @@ const INDEX: &[Entry] = &[
         &["kde connect", "phone", "share"],
     ),
     row(
-        "drop",
+        "drop/imgur",
         "Imgur",
         "settings.drop.imgur.id.row",
         &["client id", "upload pictures"],
     ),
     row(
-        "drop",
+        "drop/sftp",
         "SFTP server",
         "settings.drop.sftp.host.row",
         &["ssh", "scp", "upload", "server"],
     ),
     row(
-        "drop",
+        "drop/s3",
         "S3 bucket",
         "settings.drop.s3.bucket.row",
         &["aws", "r2", "minio", "upload", "bucket"],
@@ -693,20 +698,21 @@ const INDEX: &[Entry] = &[
         &["autofill", "input method", "password field"],
     ),
     // About
-    page(
-        "about-shell/files",
-        "Settings files",
-        &["json", "config files"],
-    ),
+    page("about/files", "Settings files", &["json", "config files"]),
     // System
     page(
         "about/advanced",
         "Configuration folder",
         &["flake", "repository", "nixos-config"],
     ),
+    page(
+        "apps/installed",
+        "Installed apps",
+        &["uninstall", "flatpak", "remove", "installed packages"],
+    ),
     row(
         "default-apps/file-types",
-        "File Types",
+        "File types",
         "settings.defaults.type-row",
         &["extension", "kind of file", "reset"],
     ),
@@ -913,7 +919,7 @@ mod tests {
     #[test]
     fn a_few_letters_find_a_page() {
         // initials and letters in order, as in the launcher
-        assert_eq!(find("qs", &[])[0].place, "quick-settings");
+        assert_eq!(find("qs", &[])[0].place, "status-bar/quick-settings");
         assert!(find("dsplys", &[]).iter().any(|f| f.place == "displays"));
     }
 
@@ -931,7 +937,7 @@ mod tests {
         assert!(
             find("wifi", &[])
                 .iter()
-                .any(|f| f.place == "quick-settings")
+                .any(|f| f.place == "status-bar/quick-settings")
         );
         assert!(find("  ", &[]).is_empty());
         let system = vec![(

@@ -27,7 +27,7 @@ the row opens `pavucontrol` instead.
   - a mute button that mutes that app alone.
 
   Event sounds, such as a notification's or a click, aren't listed: they're over before they could be set.
-- **Alerts:**
+- **Notifications › Sound**, on the Notifications page:
   - **Play a sound for notifications.**
   - The sound, chosen from the freedesktop sound theme. Picking one plays it, and ▶ plays it again.
   - The alert volume.

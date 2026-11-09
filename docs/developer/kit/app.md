@@ -26,7 +26,9 @@ fn main_window() -> amane::Window {
 | `window_bg()` | the opaque window background, `sys.color.window.bg`, behind a window's content |
 | `standard_shortcut(key)` | the shortcuts every window has: Ctrl+W closes it. Call it from your own `on_shortcut` and handle what it leaves (`false`) |
 | `text_field(id, placeholder)` | a one-line `TextInput` in the control font (13), its selection in the accent; its text is kept under `id` |
-| `field_box(id, input, width)` | the box a text field sits in, in the form controls' look: 24 px tall, radius 6, `fieldFill` in a 1 px `fieldBorder` that takes the accent while it has the keys |
+| `field_box(id, input, width)` | the box a text field sits in, in the form controls' look: 24 px tall, radius 6, `fieldFill` with no edge at rest, ringed in the accent while it has the keys |
+| `field_box_in(id, input, width, FieldState)` | a `field_box` that says its text is wrong (`Error`) or doubtful (`Warning`): ringed and faintly tinted in that color |
+| `search_box(id, input, width)` | a `field_box` as a full pill, for a search |
 | `Page`, `sidebar(…)`, `sidebar_with(…)` | a settings-style sidebar ([below](#sidebar)) |
 | `commit_on_blur(id, commit)` | runs `commit` with a field's text when it loses the keys (amane has no blur event; call it while drawing) |
 | `sidebar_panel(content)`, `sidebar_label()` | the sidebar's panel around anything else (Messages' inbox), and the color for labels on it |
@@ -38,9 +40,10 @@ settings files a shell app changes are `emaki_kit::settings` ([settings-app.md](
 ## Sidebar
 
 `sidebar(id, &pages, selected, on_select)` lists `Page::new(glyph, name)`s one row each
-(`sys.size.row.height`, a glyph and a `sys.type.label` name; with `.accent(Accent)` the glyph sits
-on a `LeadingIcon` tile of that color), the shown one filled
-`sys.color.state.selected`, with the hover layer; `on_select` gets the index of a row clicked.
+(32 px, radius 10, a glyph and a `sys.type.label` name; with `.accent(Accent)` the glyph sits
+on a `LeadingIcon` tile of that color), the shown one filled a neutral 15% of the label color so
+the tiles keep theirs, with the hover layer; `.badge(Some(n))` puts a count in a grey pill at the
+row's trailing edge (none for 0). `on_select` gets the index of a row clicked.
 Each row is keyed `<id>.<index>`. A `Page::section(name)` is a caption over the pages after it,
 which groups the sidebar; it can't be selected but takes an index like a page, so one array
 still names every row.
@@ -49,7 +52,8 @@ The sidebar is the one part of the window that shows what's behind
 it. Where the compositor frosts behind the window, the sidebar cuts itself out of the window's
 opaque background (a `Mask` fill) and lays `Material::Sidebar`'s tint over the frost; nothing
 between `app_window` and the sidebar may then be a `Rectangle`. Where it doesn't, the sidebar is
-an opaque panel (`sys.color.sidebar.bg.active`), paler with greyer labels
+an opaque floating pane (radius 19, a light 1 px inner edge, a soft shadow;
+`sys.color.sidebar.bg.active`), paler with greyer labels
 (`sys.color.sidebar.bg.inactive`, `sys.color.sidebar.label.inactive`) while another window has the
 focus.
 

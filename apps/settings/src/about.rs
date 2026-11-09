@@ -1,50 +1,28 @@
-//! What's running, and where its settings are kept.
+//! Where the shell's settings are kept: About's Settings files sub-page,
+//! and the card About shows at its top.
 
 use std::path::Path;
 
 use amane::{Center, Color, Column, Config, Rectangle, Row, Size, Text, Widget};
 use emaki_kit::buttons::PushButton;
-use emaki_kit::color::Accent;
 use emaki_kit::form::FormRow;
-use emaki_kit::icons::ICON_TUNE;
 use emaki_kit::layout::{boxed, icon};
 use emaki_kit::settings::{Appearance, Desktop, Dock, Launcher, StatusBar};
 use emaki_kit::style;
 use emaki_kit::tokens::Styled;
 
-use crate::{View, group, groups};
+use crate::{group, groups};
 
-pub fn page() -> Column {
-    let count = files().len();
-    groups(vec![
-        group().custom(hero(), HERO),
-        group().row(
-            FormRow::new("settings.about.files-link", "Settings files")
-                .value(format!("{count} files"))
-                .on_press(|| crate::open(View::Sub("files"))),
-        ),
-    ])
+/// How many settings files the Settings files sub-page lists.
+pub fn file_count() -> usize {
+    files().len()
 }
 
-/// How tall an About page's card is.
+/// How tall About's card is.
 pub const HERO: f32 = 112.0;
 
-/// The app's icon, name and version.
-fn hero() -> Rectangle {
-    card(
-        Accent::Gray.color(),
-        ICON_TUNE,
-        String::from("Emaki Settings"),
-        boxed(
-            Text::new(format!("Version {}", env!("CARGO_PKG_VERSION")))
-                .style(style::subtitle_font())
-                .color(style::label_secondary()),
-        ),
-    )
-}
-
-/// An About page's card: a coloured tile with a glyph, a title, and a
-/// line under it. Both About pages have one.
+/// About's card: a coloured tile with a glyph, a title, and a line under
+/// it.
 pub fn card(fill: Color, glyph: char, title: String, under: Box<dyn Widget>) -> Rectangle {
     let tile = Rectangle::new()
         .width(Size::Fixed(64.0))
@@ -67,9 +45,12 @@ pub fn card(fill: Color, glyph: char, title: String, under: Box<dyn Widget>) -> 
         .child(
             Row::new(vec![
                 boxed(tile),
-                boxed(Column::new(vec![boxed(title), under]).gap(2.0)),
+                boxed(
+                    Column::new(vec![boxed(title), under])
+                        .gap(emaki_kit::tokens::sys::space::gap::_2xs()),
+                ),
             ])
-            .gap(16.0)
+            .gap(emaki_kit::style::px(16.0))
             .align(Center),
         )
 }
@@ -145,7 +126,7 @@ pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
             )
     });
     Some((
-        String::from("Settings Files"),
+        String::from("Settings files"),
         boxed(groups(vec![group().rows(rows).footer(
             "Editing one by hand works the same as changing it here. EMAKI_THEME, \
              EMAKI_DENSITY and EMAKI_TEXT_SCALE, when set, win over these settings.",

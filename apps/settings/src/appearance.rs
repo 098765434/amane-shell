@@ -75,7 +75,7 @@ pub fn page() -> Column {
         vec![String::from("Comfortable"), String::from("Compact")],
         usize::from(density == Density::Compact),
     )
-    .width(180.0)
+    .width(crate::MENU_W)
     .on_select(|index| {
         change_appearance(|now| {
             now.density = if index == 0 {
@@ -128,7 +128,7 @@ pub fn page() -> Column {
         reduce_motion,
         |choice| change_appearance(|now| now.reduce_motion = choice),
     )
-    .width(180.0)
+    .width(crate::MENU_W)
     .build();
 
     let saved = accent.as_deref().map(|hex| {
@@ -175,7 +175,7 @@ pub fn page() -> Column {
             .collect(),
         chosen_size,
     )
-    .width(180.0)
+    .width(crate::MENU_W)
     .on_select(|index| change_appearance(|now| now.text_scale = TEXT_SIZES[index].1));
 
     let solid = glass == Glass::Solid;
@@ -185,7 +185,9 @@ pub fn page() -> Column {
         ""
     };
 
-    let mut list = vec![
+    // what stands in the way of niri's settings on this page, said first
+    let mut list = crate::niri_settings::notices("settings.appearance");
+    list.extend(vec![
         group()
             .row(
                 FormRow::new("settings.appearance.mode", "Appearance")
@@ -201,6 +203,11 @@ pub fn page() -> Column {
                 FormRow::new("settings.appearance.density", "Density")
                     .subtitle("Compact fits more in the bar, panels and lists")
                     .trailing(density_control),
+            )
+            .row(
+                FormRow::new("settings.appearance.motion", "Motion")
+                    .subtitle("Automatic follows the system's setting")
+                    .trailing(motion_control),
             ),
         group()
             .header("Glass")
@@ -223,12 +230,7 @@ pub fn page() -> Column {
                     .disabled(solid),
             )
             .footer(glass_note),
-        group().row(
-            FormRow::new("settings.appearance.motion", "Motion")
-                .subtitle("Automatic follows the system's setting")
-                .trailing(motion_control),
-        ),
-    ];
+    ]);
     list.extend(crate::cursor::groups());
     groups(list)
 }

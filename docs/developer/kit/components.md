@@ -65,15 +65,20 @@ caption, with an `.empty(…)` note while there are none.
 ## Form
 
 `form` lays settings out as grouped rows, and is what Emaki Settings' pages are
-built from. A `Group::new()` is a rounded card (radius 12, `groupFill`) of rows with hairlines
-between them, starting past each row's tile; `.header(text)` is a caption above it and
+built from. A `Group::new()` is a card set into the window (radius 14, `groupFill` drawn opaque
+over the window background so it looks the same under vibrancy, a 1 px `groupBorder`) of rows
+with soft hairlines between them (`rowSeparator`), starting past each row's tile and stopping as
+far from the trailing edge; a hairline gives way beside a hovered, picked or found row.
+`.header(text)` is a bold caption above it, 7 px from the card, and
 `.footer(text)` a note below it, wrapped to its `.width(…)` (504 by default, Emaki Settings'
 page). `.row(FormRow)`, `.rows(…)`, `.slider(SliderRow)` and `.custom(widget, height)` add to it,
 and `.build()` gives a `Column`. Every row knows its height, so a group sizes itself
 (`Group::height()`).
 
-- `FormRow::new(id, title)`: 42 px tall with one line (more with a `.subtitle(…)`, which wraps),
-  12 px in. `.icon(glyph, Accent)` puts a `LeadingIcon` before the title, or `.leading(widget,
+- `FormRow::new(id, title)`: 42 px tall with one line, at least 50 with a `.subtitle(…)` (which
+  wraps), 12 px in; a pressable row lightens on hover and darkens while held.
+  `FormRow::property(id, title, value)` is a fact to read: the title small and grey over the
+  value. `.icon(glyph, Accent)` puts a `LeadingIcon` before the title, or `.leading(widget,
   side)` anything else (an app's icon). `.trailing(widget)` adds a control at the trailing edge
   (several sit side by side), `.value(text)` a grey value. `.detail(widget, height)` puts a block
   under the title, lined up with it (a radio group, a field and its button, tags).
@@ -100,6 +105,22 @@ Pieces that go in rows:
   row's detail. Emaki Settings draws its pictures with flat shapes, so they stay on quads.
 - `color_picker::ColorWells::new(id, colors, chosen)`: colors as dots, `None` for a multicolor
   "System" one; `.shown_name()` is the hovered or chosen one's name, for the row's subtitle.
+
+## StatusPage
+
+`status_page::StatusPage::new(glyph, title)`: what shows in place of a list or a page with
+nothing in it, or that can't be reached: the glyph large and faint (55%), the title bold,
+`.text(…)` a line or two under it, `.action(widget)` one button (**Try Again**). `.compact()` sizes
+it to sit among a page's groups.
+
+## Toast
+
+`toast::show(text)` and `toast::show_with(text, label, action)` say something was done, in a pill
+near the window's bottom edge, for four seconds; a newer one takes its place, and the button
+runs its action and puts the toast away (**Undo**). `toast::post(text)` does the same from another
+thread. The app lays `toast::over(content)` over its window's content; the toast is drawn again
+when it's due to go (`amane::redraw_after`), so nothing draws in between. Use it for what leaves
+no trace on the page: a save, a removal, a reset.
 
 ## Divider and Slider
 
@@ -134,7 +155,8 @@ hangs under the control's surface and is centred above the pointer, sliding inwa
 at a screen edge.
 
 Buttons take one with `.tooltip(parent_ns, text)`, where `parent_ns` is the namespace of the
-surface they're on (the bar's is `BAR_NS`). Moving off the button hides it. Clicking also hides it
+surface they're on (the bar's is `BAR_NS`; an app window's is its name, Emaki Settings' `"main"`,
+which registers `tooltip::popup` too). Moving off the button hides it. Clicking also hides it
 until the pointer leaves. Any other control can use it by calling `tooltip::offer(id, parent_ns,
 text)` every frame it's built while hovered, `tooltip::suppress(id)` on click and
 `tooltip::dismiss(id)` on leave. Only one shows at a time, in the one popup slot `tooltip::popup`,
@@ -190,7 +212,7 @@ items are drawn. The row breaking is `flow::place`, pure and tested.
 `Icon::Symbol(glyph)`, `dialog.icon-size`), a bold title (`dialog.title`), a message
 (`dialog.message`), and its buttons. Each button has a role:
 
-- `.button(label, f)` is **cancel**, tonal. Escape answers with it.
+- `.button(label, f)` is **cancel**, drawn flat. Escape answers with it.
 - `.main_button(label, f)` is the **default**, in the accent. Return answers with it.
 - `.destructive(label, f)` is red on a faint red fill (`Style::Destructive`).
 

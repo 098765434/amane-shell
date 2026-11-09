@@ -53,7 +53,7 @@ use crate::{motion, tooltip};
 
 /// How faint a disabled control is, every control alike. TODO(token):
 /// `sys.opacity.disabled` once Penpot has it (manual §1.1).
-pub const DISABLED_OPACITY: f32 = 0.4;
+pub const DISABLED_OPACITY: f32 = 0.45;
 
 /// How long a click's new state is shown before the service has to agree.
 const PENDING_TIMEOUT: Duration = Duration::from_millis(1500);

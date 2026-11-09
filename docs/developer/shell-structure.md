@@ -96,7 +96,8 @@ A fact written in several places is written once, as a table the rest is derived
 - **Quick Settings' controls:** `quick_settings/controls.rs` `SPECS`, one `Spec` per control (name,
   title, sizes, how it's drawn, whether this machine has it), in `ControlId`'s order.
 - **Emaki Settings' pages:** `apps/settings/src/pages.rs` `SIDEBAR` (the `--page` names, titles,
-  search words, bodies, sub-pages, toolbar buttons).
+  search words, bodies, sub-pages, toolbar buttons, which pages show the Apply bar), with
+  `MOVED` for the places old names still lead to.
 - **Settings files:** `settings_file!` in `crates/kit/src/platform/settings/mod.rs`.
 - **The IPC's keywords:** `words!` in `shell_ipc.rs`, and `handlers![…]` in `ipc.rs`.
 

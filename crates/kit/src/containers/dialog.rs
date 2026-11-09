@@ -46,7 +46,7 @@ use crate::tokens::{Styled, dialog, sys};
 /// What a button does to the question, which decides its look and place.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Role {
-    /// Backs out: Escape answers with it.
+    /// Backs out, drawn flat: Escape answers with it.
     Cancel,
     /// The answer the dialog expects, in the accent: Return answers with it.
     Default,
@@ -57,7 +57,7 @@ pub enum Role {
 impl Role {
     fn style(self) -> Style {
         match self {
-            Role::Cancel => Style::Tonal,
+            Role::Cancel => Style::Plain,
             Role::Default => Style::Filled,
             Role::Destructive => Style::Destructive,
         }

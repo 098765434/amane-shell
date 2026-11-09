@@ -124,6 +124,7 @@ The docs use one name for each thing:
 | Design tokens: tiers, naming, Penpot workflow, CI checks | [developer/design-system/tokens.md](developer/design-system/tokens.md) |
 | Materials: glass by role, its tints, vibrant labels | [developer/design-system/materials.md](developer/design-system/materials.md) |
 | Typography: the type roles, font stacks, text scale | [developer/design-system/typography.md](developer/design-system/typography.md) |
+| Copy: case, ellipses, one verb per action, plain words, how each state is said | [developer/design-system/copy.md](developer/design-system/copy.md) |
 | Tokens still waiting on Penpot | [developer/design-system/penpot-backlog.md](developer/design-system/penpot-backlog.md) |
 
 ### Integration

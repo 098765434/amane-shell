@@ -3,14 +3,12 @@
 //! or a field with Set. A change goes to `managed/settings.json` and waits
 //! for Apply; a setting another file sets is shown locked, with where.
 
-use amane::{Row, Service};
-use emaki_kit::app::{commit_on_blur, field_box, text_field};
+use amane::Service;
+use emaki_kit::app::{FieldState, commit_on_blur, field_box_in, text_field};
 use emaki_kit::buttons::{PushButton, Switch};
 use emaki_kit::dropdown::Dropdown;
 use emaki_kit::form::FormRow;
-use emaki_kit::layout::boxed;
 use emaki_kit::stepper::Stepper;
-use emaki_kit::style;
 use serde_json::Value;
 
 use super::adopt;
@@ -98,7 +96,7 @@ pub fn summary(
                 .collect(),
             at => at
                 .iter()
-                .map(|(file, line)| format!("{file}:{line}"))
+                .map(|(file, line)| format!("{file} (line {line})"))
                 .collect(),
         };
         let movable = adopt::plan(entry).is_ok();
@@ -145,6 +143,18 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
         entry.label.clone(),
     )
     .subtitle(subtitle);
+    // set by another file: a lock says so, and where it can be moved here,
+    // Move to Settings… stands in the control's place
+    let row = if locked {
+        row.icon(emaki_kit::icons::ICON_LOCK, emaki_kit::color::Accent::Gray)
+    } else {
+        row
+    };
+    if !matches!(entry.control, Control::Packages)
+        && let Some(button) = mover
+    {
+        return Some(row.trailing(button.build()));
+    }
 
     let row = match &entry.control {
         // the Apps page draws the list itself
@@ -157,7 +167,7 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
             row.trailing(
                 Stepper::new(format!("settings.system.stepper.{}", entry.id), now as f64)
                     .range(min as f64, max as f64)
-                    .width(80.0)
+                    .width(crate::COMPACT_W)
                     .disabled(locked)
                     .on_change(move |value| set(&e, Value::from(value.round() as i64)))
                     .build(),
@@ -183,6 +193,8 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
                 .build(),
             )
         }
+        // a field would take typing it can't keep: show the value instead
+        Control::TimeZone | Control::Text if locked => row.value(show(&value)),
         Control::TimeZone | Control::Text => {
             let id = field_id(&entry.id);
             let shown = show(&value);
@@ -194,23 +206,27 @@ pub fn row(entry: &Entry, managed: &Managed, feedback: &Feedback) -> Option<Form
             let kept = shown.clone();
             let keep = move |text: String| {
                 let text = text.trim().to_string();
-                if !locked && text != kept.trim() {
+                if text != kept.trim() {
                     set(&e, Value::from(text));
                 }
             };
             commit_on_blur(id, keep.clone());
             let field = text_field(id, &shown).on_submit(keep);
-            row.trailing(field_box(id, field, 200.0))
+            // refused: the field says so, and the subtitle why
+            let refused = feedback
+                .error
+                .as_ref()
+                .is_some_and(|(id, _)| *id == entry.id);
+            let state = if refused {
+                FieldState::Error
+            } else {
+                FieldState::Normal
+            };
+            row.trailing(field_box_in(id, field, crate::FIELD_W, state))
         }
     };
 
-    Some(match mover {
-        Some(button) => row.detail(
-            Row::new(vec![boxed(button.build())]),
-            style::control_height(),
-        ),
-        None => row,
-    })
+    Some(row)
 }
 
 /// A row for each setting the registry lists on `page`.
@@ -240,7 +256,7 @@ pub fn rows(page: &str) -> Vec<FormRow> {
         Some(error) => vec![crate::problem_row(
             &format!("settings.system.{page}.error"),
             "The configuration couldn't be read",
-            "Its settings show here once it can be. Refresh on About This Computer tries again.",
+            "Its settings show here once it can be. Refresh on About › Configuration folder tries again.",
             error,
         )],
         None => rows,

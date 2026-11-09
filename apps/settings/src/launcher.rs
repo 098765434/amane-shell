@@ -82,9 +82,22 @@ pub fn page() -> Column {
             .trailing(
                 PushButton::new(format!("settings.launcher.key.{combo}"), "Remove")
                     .on_press(move || {
-                        change_launcher(|now| {
-                            now.quick_keys.remove(&remove);
-                        })
+                        let mut removed = None;
+                        change_launcher(|now| removed = now.quick_keys.remove(&remove));
+                        // a quick key took typing to set; one press brings it back
+                        if let Some(key) = removed {
+                            let combo = remove.clone();
+                            emaki_kit::toast::show_with(
+                                format!("Removed {}", combo.to_uppercase()),
+                                "Undo",
+                                move || {
+                                    let (combo, key) = (combo.clone(), key.clone());
+                                    change_launcher(|now| {
+                                        now.quick_keys.insert(combo, key);
+                                    });
+                                },
+                            );
+                        }
                     })
                     .build(),
             ),
@@ -92,7 +105,7 @@ pub fn page() -> Column {
     }
     let keys = if quick_keys.is_empty() {
         keys.row(
-            FormRow::new("settings.launcher.keys.none", "None yet")
+            crate::empty_row("settings.launcher.keys.none", "No quick keys yet")
                 .subtitle("Set them from Actions in the launcher"),
         )
     } else {

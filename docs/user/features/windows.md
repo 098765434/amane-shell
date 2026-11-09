@@ -5,10 +5,10 @@ how it marks the focused one and how you switch between them. `emaki-settings --
 opens it (`layout` and `multitasking` open it too).
 
 The same file, `settings.kdl`, also holds:
-- Input's **Super and swipe** gesture, and **Show the shortcuts at login** on the Keyboard
-  Shortcuts sub-page ([input.md](input.md));
-- Appearance's **Pointer** group: the cursor theme and size, hide while typing, hide when still;
-- Desktop's **Screenshots** group: the folder they're saved in, or only copying them.
+- Mouse & Touchpad's **Super and swipe** gesture, and **Show the shortcuts at login** on
+  Keyboard's Keyboard shortcuts sub-page ([input.md](input.md));
+- Appearance's **Cursor** group: the cursor theme and size, hide while typing, hide when still;
+- Desktop & Dock's **Screenshots** group: the folder they're saved in, or only copying them.
 
 ## The page
 

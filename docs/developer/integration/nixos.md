@@ -13,7 +13,7 @@ Three files in the repo, and one flake output, are what Settings reads and write
 | In the repo | What |
 |---|---|
 | `managed/settings.json` | the values Settings owns, `{ "timeZone": "Europe/Oslo", "openssh": true, "sshdOnDemand": true, "dimAfter": 180, "packages": ["ripgrep"], "bootEntries": 10, … }`. The one file Settings writes (whole, through a rename), and the one it commits (with `flake.lock` after an update). Hand edits are fine. |
-| `managed/registry.nix` | which settings may be there: a list of `{ id, path, page, label, control, tier, … }`. `path` is the NixOS option (`[ "services" "tailscale" "enable" ]`), `page` the Settings page that shows it (`about`, `general`, `services`, `power`, `apps`, `storage`, `update`), `control` how (`switch`; `int` with `min`/`max`; `choice` with `choices = [ { label; value; } … ]`; `timezone`; `text`, with `check` naming what Settings checks it against: `hostname`, `xkbLayout`, `xkbVariant` (`localectl list-x11-keymap-*`); `packages`, a list of attribute paths the Apps page draws), `tier` when it takes effect (`rebuild`, `restart`). A service entry may name its `unit` (`"sshd.service"`), `scope = "user"` for a user unit, and `onDemand`, the id of its "only when needed" switch. |
+| `managed/registry.nix` | which settings may be there: a list of `{ id, path, page, label, control, tier, … }`. `path` is the NixOS option (`[ "services" "tailscale" "enable" ]`), `page` the Settings page that shows it (`general`, `keyboard`, `services`, `power`, `apps`, `history`, `update`; Settings itself draws `keyboardLayout` and `keyboardVariant` on `keyboard`, `bootEntries` on `history`, and anything on `about` on `general`, by `system::nixos::placed`), `control` how (`switch`; `int` with `min`/`max`; `choice` with `choices = [ { label; value; } … ]`; `timezone`; `text`, with `check` naming what Settings checks it against: `hostname`, `xkbLayout`, `xkbVariant` (`localectl list-x11-keymap-*`); `packages`, a list of attribute paths the Apps page draws), `tier` when it takes effect (`rebuild`, `restart`). A service entry may name its `unit` (`"sshd.service"`), `scope = "user"` for a user unit, and `onDemand`, the id of its "only when needed" switch. |
 | `modules/managed.nix` | turns each key in the file into an option definition (`lib.mkIf (settings ? id)`), so a missing key leaves the option to the other modules. Also ships the activation helper and its polkit action. |
 | `modules/options.nix` | the repo's own options for what has no option path of its own, so the registry can point at them: `emaki.idle.{dimAfter,lockAfter,screenOffAfter}` (seconds, 0 = never) build hypridle's listener list; `emaki.services.<unit>.onDemand` empties the unit's `wantedBy` (`mkIf` round `mkForce`, so an unset flag leaves the unit alone); `emaki.packages` (dotted nixpkgs attribute paths) adds to `environment.systemPackages`, leaving out (with a NixOS warning) one this nixpkgs doesn't have, or has only as an alias that throws, so a nixpkgs update that drops a package doesn't fail the build; `emaki.missingPackages` (read-only) lists those; `emaki.updates.check` (`daily`, `weekly`, `never`) is the scheduled check's timer (below). |
 | `emakiSettings` (flake output) | `nix eval --json .#emakiSettings`: `{ host, revision, entries, systemPackages }`, each entry the registry's fields plus `value` (effective), `default`, `type`, `description`, `setIn`, the repo files that define the option (`modules/managed.nix` when it's ours; empty when nothing sets it, since an option's default doesn't count), and `setAt`, `[ { file, line } ]` for each other repo file's definition, read off the module with `builtins.unsafeGetAttrPos` (empty when the module's shape hides it). `systemPackages` is what the repo's own files install, `{ name, version, file }` each; `missingPackages` is `emaki.missingPackages`. |
@@ -39,7 +39,7 @@ Settings).`, the attribute joins `packages`, and the commit is `move: foot from
 modules/apps.nix`; `emaki.packages` installs it the same, so nothing changes. `system/adopt.rs`.
 
 The repo's path and the `nixosConfigurations` attribute come from `nixos.json`
-(`repo`, `host`; `~/nixos-config` and `nixos-niri` unless set), editable on About This Computer.
+(`repo`, `host`; `~/nixos-config` and `nixos-niri` unless set), editable on About › Configuration folder.
 
 ## Apply
 
@@ -141,7 +141,7 @@ the configuration's own nixpkgs and fills nix's evaluation cache the first time,
 
 ## "Up to date"
 
-About This Computer says whether the running system is the configuration, from the quick
+Emaki Settings' About page says whether the running system is the configuration, from the quick
 signs to the exact one:
 
 1. `settings.json` differs from HEAD: *n settings changed, not applied*.

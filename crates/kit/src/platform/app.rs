@@ -27,10 +27,12 @@ use amane::{
 use crate::buttons::{Actions, interactive, state_fill};
 use crate::color::{Accent, with_alpha};
 use crate::controls::text_field;
+pub use crate::controls::text_field::FieldState;
 use crate::layout::{boxed, caption, icon, pad, text_height};
 use crate::leading_icon::LeadingIcon;
 use crate::material::{self, Level, Material};
 use crate::style;
+use crate::theme;
 use crate::tokens::{Styled, sys};
 
 pub use crate::dialog::Dialog;
@@ -140,10 +142,27 @@ pub fn commit_on_blur(id: &'static str, commit: impl FnOnce(String)) {
 }
 
 /// The box a [`text_field`] sits in, drawn in the form controls' look:
-/// radius 6, `fieldFill` in a hairline that takes the accent while
+/// radius 6, `fieldFill` with no edge at rest, ringed in the accent while
 /// the field has the keys.
 pub fn field_box(id: &'static str, input: TextInput, width: impl Into<Size>) -> Rectangle {
-    text_field::frame(input, width, text_field::edge(id))
+    field_box_in(id, input, width, FieldState::Normal)
+}
+
+/// A [`field_box`] for a search: a full pill.
+pub fn search_box(id: &'static str, input: TextInput, width: impl Into<Size>) -> Rectangle {
+    field_box(id, input, width).radius(Radius::Full)
+}
+
+/// A [`field_box`] that says its text is wrong or doubtful: ringed and
+/// faintly tinted in `state`'s colour, so the field itself shows what a
+/// note under it would otherwise have to.
+pub fn field_box_in(
+    id: &'static str,
+    input: TextInput,
+    width: impl Into<Size>,
+    state: FieldState,
+) -> Rectangle {
+    text_field::frame(input, width, text_field::edge(id, state), state)
 }
 
 /// One row in a [`sidebar`]: a page, with its glyph and its name, or a
@@ -158,6 +177,8 @@ pub struct Page {
     /// The tile its glyph sits on, as Emaki Settings draws its sidebar;
     /// with none the glyph is drawn bare.
     pub accent: Option<Accent>,
+    /// A count at the trailing edge, such as the changes waiting on a page.
+    pub badge: Option<u32>,
 }
 
 impl Page {
@@ -168,12 +189,19 @@ impl Page {
             name: name.into(),
             section: false,
             accent: None,
+            badge: None,
         }
     }
 
     /// Its glyph on a tile of `accent`.
     pub fn accent(mut self, accent: Accent) -> Self {
         self.accent = Some(accent);
+        self
+    }
+
+    /// `count` at the row's trailing edge, or nothing for none or zero.
+    pub fn badge(mut self, count: Option<u32>) -> Self {
+        self.badge = count.filter(|&n| n > 0);
         self
     }
 
@@ -185,6 +213,7 @@ impl Page {
             name: name.into(),
             section: true,
             accent: None,
+            badge: None,
         }
     }
 }
@@ -264,41 +293,50 @@ pub fn sidebar_with(
 
                 let chosen = index == selected;
 
+                let fg = sidebar_label();
+
+                // the picked page is a neutral fill, not the accent, so the
+                // tiles keep their colour
                 let fill = if chosen {
-                    sys::color::state::selected()
+                    with_alpha(fg, 0.15)
                 } else {
                     Color::TRANSPARENT
                 };
 
-                let fg = sidebar_label();
+                let label = Row::new(vec![
+                    match page.accent {
+                        Some(accent) => boxed(
+                            LeadingIcon::new(page.glyph.unwrap_or(' '))
+                                .accent(accent)
+                                .build(),
+                        ),
+                        None => boxed(icon(page.glyph.unwrap_or(' '), sys::size::icon::s(), fg)),
+                    },
+                    boxed(
+                        Text::new(page.name.clone())
+                            .style(sys::r#type::label())
+                            .color(fg),
+                    ),
+                ])
+                .gap(sys::space::gap::s())
+                .align(Center);
+                let mut parts: Vec<Box<dyn Widget>> = vec![boxed(label)];
+                if let Some(count) = page.badge {
+                    parts.push(boxed(badge(count)));
+                }
 
                 let base = Rectangle::new()
                     .width(Size::Parent)
-                    .height(sys::size::row::height())
-                    .radius(Radius::Fixed(sys::radius::raised()))
+                    .height(sidebar_row_height())
+                    .radius(Radius::Fixed(style::px(10.0)))
                     .fill(state_fill(&key, fill, false))
                     .padding(pad(sys::space::inset::s(), 0.0))
                     .align_child(amane::Start, Center)
                     .child(
-                        Row::new(vec![
-                            match page.accent {
-                                Some(accent) => boxed(
-                                    LeadingIcon::new(page.glyph.unwrap_or(' '))
-                                        .accent(accent)
-                                        .build(),
-                                ),
-                                None => {
-                                    boxed(icon(page.glyph.unwrap_or(' '), sys::size::icon::s(), fg))
-                                }
-                            },
-                            boxed(
-                                Text::new(page.name.clone())
-                                    .style(sys::r#type::label())
-                                    .color(fg),
-                            ),
-                        ])
-                        .gap(sys::space::gap::s())
-                        .align(Center),
+                        Row::new(parts)
+                            .width(Size::Parent)
+                            .justify(amane::SpaceBetween)
+                            .align(Center),
                     );
 
                 let select = on_select.clone();
@@ -314,6 +352,35 @@ pub fn sidebar_with(
             .gap(sys::space::gap::_2xs())
             .width(Size::Parent),
     )
+}
+
+/// A sidebar row's height: 32, so the list reads as a list
+/// rather than a stack of buttons.
+fn sidebar_row_height() -> f32 {
+    style::px(32.0)
+}
+
+/// A count in a small grey pill, at a sidebar row's trailing edge.
+fn badge(count: u32) -> Rectangle {
+    let text = if count > 99 {
+        String::from("99+")
+    } else {
+        count.to_string()
+    };
+    let font = sys::r#type::caption();
+    let height = text_height(font) + style::px(2.0);
+    let width = (crate::layout::text_width(&text, font) + style::px(12.0)).max(height);
+    Rectangle::new()
+        .width(width)
+        .height(height)
+        .radius(Radius::Full)
+        .fill(style::control_fill())
+        .align_child(Center, Center)
+        .child(
+            Text::new(text)
+                .style(font)
+                .color(material::label(Level::Secondary)),
+        )
 }
 
 /// The colour of a label in a [`sidebar_panel`]: primary, or greyer on
@@ -340,17 +407,29 @@ pub fn sidebar_panel(content: impl Widget + 'static) -> Rectangle {
         (true, false) => sys::color::sidebar::bg::inactive(),
     };
 
-    let radius = Radius::Fixed(sys::radius::popover());
+    // a floating pane with a light inner edge and a soft shadow
+    let radius = Radius::Fixed(style::px(19.0));
+    let edge = if theme::mode() == theme::Mode::Dark {
+        with_alpha(Color::WHITE, 0.06)
+    } else {
+        Color::WHITE
+    };
     let sidebar = Rectangle::new()
         .width(Size::Parent)
         .height(Size::Parent)
         .radius(radius)
         .fill(bg)
+        .border(1.0, edge)
         .padding(pad(sys::space::inset::s(), sys::space::inset::s()))
         .child(content);
 
     if opaque {
-        return sidebar;
+        return sidebar.shadow(
+            amane::Shadow::drop(Color::BLACK)
+                .opacity(0.10)
+                .blur(12.0)
+                .offset(2.0, 3.0),
+        );
     }
 
     // a hole in the window's opaque surface, down to the frost behind the

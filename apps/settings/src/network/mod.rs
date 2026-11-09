@@ -23,7 +23,7 @@ use emaki_kit::color::Accent;
 use emaki_kit::dropdown::Dropdown;
 use emaki_kit::form::FormRow;
 use emaki_kit::icons::{
-    ICON_CABLE, ICON_DNS, ICON_HOTSPOT, ICON_LOCK, ICON_VPN, ICON_WIFI, ICON_WIFI_OFF, wifi_glyph,
+    ICON_CABLE, ICON_DNS, ICON_HOTSPOT, ICON_VPN, ICON_WIFI, ICON_WIFI_OFF, wifi_glyph,
 };
 use emaki_kit::layout::boxed;
 use emaki_kit::process::installed;
@@ -272,12 +272,12 @@ pub fn page() -> Column {
         }
         wifi = wifi
             .row(
-                FormRow::new("settings.network.saved", "Saved Networks")
+                FormRow::new("settings.network.saved", "Saved networks")
                     .value(saved.to_string())
                     .on_press(|| crate::open(View::Sub("saved"))),
             )
             .row(
-                FormRow::new("settings.network.hidden", "Join a Hidden Network")
+                FormRow::new("settings.network.hidden", "Join a hidden network")
                     .on_press(|| crate::open(View::Sub("hidden"))),
             );
         all.push(wifi);
@@ -317,7 +317,7 @@ pub fn page() -> Column {
     if installed(EDITOR) {
         all.push(
             group().row(
-                FormRow::new("settings.network.editor", "More Options")
+                FormRow::new("settings.network.editor", "More options")
                     .subtitle("802.1X, proxies, IPv6 and VPN settings, in NetworkManager's editor")
                     .trailing(
                         PushButton::new("settings.network.editor.open", "Open…")
@@ -366,6 +366,7 @@ fn vpn_group(vpns: &[NetworkProfile]) -> emaki_kit::form::Group {
                     format!("settings.network.vpn.{uuid}.details"),
                     emaki_kit::icons::ICON_CHEVRON_RIGHT,
                 )
+                .tooltip(crate::WINDOW, "Details")
                 .on_press(move || select(&uuid))
                 .build(),
             ),
@@ -456,13 +457,28 @@ fn hotspot_group(running: Option<String>, reveal: bool) -> emaki_kit::form::Grou
     if !reveal {
         password = password.password();
     }
-    let reveal_button = IconButton::new("settings.network.hotspot.reveal", ICON_LOCK)
-        .selected(reveal)
-        .on_press(|| {
-            let mut net = Net::write();
-            net.reveal = !net.reveal;
-        })
-        .build();
+    let reveal_button = IconButton::new(
+        "settings.network.hotspot.reveal",
+        if reveal {
+            emaki_kit::icons::ICON_VISIBILITY_OFF
+        } else {
+            emaki_kit::icons::ICON_VISIBILITY
+        },
+    )
+    .tooltip(
+        crate::WINDOW,
+        if reveal {
+            "Hide the password"
+        } else {
+            "Show the password"
+        },
+    )
+    .selected(reveal)
+    .on_press(|| {
+        let mut net = Net::write();
+        net.reveal = !net.reveal;
+    })
+    .build();
     group()
         .header("Hotspot")
         .row(
@@ -529,8 +545,8 @@ fn start_hotspot() {
 /// A sub-page: `saved`, `hidden` or `connection`.
 pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
     match name {
-        "saved" => Some((String::from("Saved Networks"), boxed(saved()))),
-        "hidden" => Some((String::from("Join a Hidden Network"), boxed(hidden()))),
+        "saved" => Some((String::from("Saved networks"), boxed(saved()))),
+        "hidden" => Some((String::from("Join a hidden network"), boxed(hidden()))),
         "connection" => {
             let (title, body) = connection();
             Some((title, boxed(body)))
@@ -568,7 +584,10 @@ fn saved() -> Column {
         .collect();
     let list = group();
     let list = if rows.is_empty() {
-        list.footer("Networks show here once joined.")
+        list.row(crate::empty_row(
+            "settings.network.saved.none",
+            "Networks show here once joined",
+        ))
     } else {
         list.rows(rows)
             .footer("Open one to see its addresses, change its settings or forget it.")
@@ -678,7 +697,13 @@ fn connection() -> (String, Column) {
     let Some(profile) = profile else {
         return (
             String::from("Connection"),
-            groups(vec![group().footer("This connection is gone.")]),
+            crate::status_page(
+                emaki_kit::status_page::StatusPage::new(
+                    emaki_kit::icons::ICON_WIFI,
+                    "This connection is gone",
+                )
+                .text("It was forgotten or removed while this page was open."),
+            ),
         );
     };
     let title = profile.ssid.clone().unwrap_or_else(|| profile.name.clone());
@@ -747,15 +772,30 @@ fn connection() -> (String, Column) {
         } else {
             "Remove This VPN…"
         };
+        // a network is forgotten, a VPN removed: each says what goes with it
+        let wifi = profile.kind == "802-11-wireless";
         let forget = PushButton::new("settings.network.connection.forget", label)
             .style(Style::Destructive)
             .disabled(locked)
             .on_press(move || {
                 let uuid = forgotten.clone();
-                Dialog::new("settings.network.forget", format!("Forget “{name}”?"))
-                    .message("Its password and settings go, so joining it again asks for them.")
+                let (question, message, verb) = if wifi {
+                    (
+                        format!("Forget “{name}”?"),
+                        "Its password and settings go, so joining it again asks for them.",
+                        "Forget",
+                    )
+                } else {
+                    (
+                        format!("Remove “{name}”?"),
+                        "Its keys and settings go; using it again means importing it again.",
+                        "Remove",
+                    )
+                };
+                Dialog::new("settings.network.forget", question)
+                    .message(message)
                     .button("Cancel", || {})
-                    .destructive("Forget", move || {
+                    .destructive(verb, move || {
                         Network::forget(&uuid);
                         crate::back();
                     })
@@ -884,7 +924,7 @@ fn ipv4_group(
     ipv4.row(
         FormRow::new("settings.network.ipv4.buttons", "").trailing(
             Row::new(vec![boxed(revert), boxed(apply)])
-                .gap(8.0)
+                .gap(emaki_kit::tokens::sys::space::gap::m())
                 .align(Center),
         ),
     )

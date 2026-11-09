@@ -4,7 +4,7 @@
 
 use std::thread;
 
-use amane::{Battery, Brightness, Center, Rectangle, Row, Service, Size, Text, TextInput};
+use amane::{Battery, Brightness, Center, Rectangle, Row, Service, Size, TextInput};
 use emaki_kit::app::{Dialog, field_box, text_field};
 use emaki_kit::arrangement::{Arrangement, Screen};
 use emaki_kit::buttons::{IconButton, PushButton, Switch};
@@ -22,7 +22,7 @@ use emaki_kit::slider::Slider;
 use emaki_kit::style;
 use emaki_kit::tag::{Tag, tags};
 use emaki_kit::theme::Mode as Scheme;
-use emaki_kit::tokens::{Styled, sys};
+use emaki_kit::tokens::sys;
 
 use super::caps::Caps;
 use super::ddc::{self, Ddc, Feature, Monitor};
@@ -89,7 +89,7 @@ pub fn setup_banner(setup: &Setup) -> Option<Group> {
         Setup::Missing => Some(
             group().row(
                 FormRow::new("settings.displays.missing", "Changes here can't be kept")
-                    .icon(ICON_INFO, Accent::Orange)
+                    .icon(emaki_kit::icons::ICON_WARNING, Accent::Orange)
                     .subtitle("niri's config.kdl wasn't found"),
             ),
         ),
@@ -104,7 +104,7 @@ pub fn setup_banner(setup: &Setup) -> Option<Group> {
                 group()
                     .row(
                         FormRow::new("settings.displays.unmoved", "Shown, not changed here")
-                            .icon(ICON_INFO, Accent::Orange)
+                            .icon(ICON_INFO, Accent::Gray)
                             .subtitle(what)
                             .trailing(
                                 PushButton::new("settings.displays.move", "Move to Settings…")
@@ -143,34 +143,6 @@ fn confirm_move() {
         });
     })
     .open("main");
-}
-
-/// The last error, in red, with a button to put it away; it goes by itself
-/// after a few seconds.
-pub fn error_line(error: String) -> Row {
-    let width = page_width() - sys::size::control::height() - 8.0;
-    Row::new(vec![
-        boxed(
-            amane::Column::new(vec![boxed(
-                Text::new(error)
-                    .style(sys::r#type::caption())
-                    .color(sys::color::status::critical::text())
-                    .wrap(),
-            )])
-            .width(width),
-        ),
-        boxed(
-            emaki_kit::buttons::IconButton::new(
-                "settings.displays.error.dismiss",
-                emaki_kit::icons::ICON_CLOSE,
-            )
-            .size(sys::size::icon::s())
-            .on_press(Screens::dismiss)
-            .build(),
-        ),
-    ])
-    .gap(8.0)
-    .align(Center)
 }
 
 // ───── which screen ─────────────────────────────────────────────────────────
@@ -252,7 +224,7 @@ pub fn arrangement(ctx: &Ctx) -> Option<Group> {
     let all: Vec<String> = ctx.outputs.iter().map(|o| o.name.clone()).collect();
     let at = all.iter().position(|n| *n == ctx.output.name).unwrap_or(0);
     let picker = Dropdown::new("settings.displays.picker", labels, at)
-        .width(260.0)
+        .width(crate::MENU_W_WIDE)
         .on_select(move |index| {
             if let Some(name) = all.get(index) {
                 Screens::write().selected = Some(name.clone());
@@ -510,7 +482,7 @@ pub fn resolution(ctx: &Ctx) -> FormRow {
         .map(|l| format!("Looks like {} × {}", l.width, l.height));
     let ctx_output = output.clone();
     let dropdown = Dropdown::new("settings.displays.resolution", labels, at)
-        .width(220.0)
+        .width(crate::MENU_W_WIDE)
         .disabled(!ctx.editable() || !output.on())
         .on_select(move |index| {
             let Some(&size) = sizes.get(index) else {
@@ -569,7 +541,7 @@ pub fn refresh_rate(ctx: &Ctx) -> Vec<FormRow> {
     } else {
         row.trailing(
             Dropdown::new("settings.displays.refresh", labels, at.unwrap_or(0))
-                .width(160.0)
+                .width(crate::MENU_W_NARROW)
                 .on_select(pick)
                 .build(),
         )
@@ -591,7 +563,7 @@ pub fn all_displays(ctx: &Ctx) -> Option<Group> {
         .and_then(|rates| rates.first().map(|mode| hz(mode.hz())));
     let here = slowest.map_or(String::new(), |rate| format!(" ({rate} here)"));
     Some(
-        group().header("All Displays").row(
+        group().header("All displays").row(
             switch_row(
                 "settings.displays.battery-refresh",
                 "Slower on battery",
@@ -622,7 +594,7 @@ pub fn variable_refresh(ctx: &Ctx) -> Group {
         ["Off", "On demand", "Always"].map(String::from).to_vec(),
         choices.iter().position(|c| *c == now).unwrap_or(0),
     )
-    .width(160.0)
+    .width(crate::MENU_W_NARROW)
     .disabled(!ctx.editable())
     .on_select(move |index| {
         let vrr = choices[index];
@@ -723,7 +695,7 @@ fn vrr_apps(ctx: &Ctx, group: Group) -> Group {
         })
         .detail(
             Row::new(vec![
-                boxed(field_box(VRR_APP, field, 200.0)),
+                boxed(field_box(VRR_APP, field, crate::FIELD_W)),
                 boxed(
                     PushButton::new("settings.displays.vrr-add", "Add")
                         .on_press(move || add(&TextInput::text(VRR_APP)))
@@ -826,7 +798,7 @@ pub fn scale(ctx: &Ctx) -> FormRow {
         .unwrap_or(0);
     let from = logical.scale;
     let dropdown = Dropdown::new("settings.displays.scale", labels, at)
-        .width(280.0)
+        .width(crate::MENU_W_WIDE)
         .disabled(!ctx.editable())
         .on_select(move |index| {
             if let Some(&to) = scales.get(index)
@@ -958,12 +930,16 @@ pub fn hdr(ctx: &Ctx) -> Group {
         .build();
 
     let apps = IconButton::new("settings.displays.hdr-apps", ICON_INFO)
+        .tooltip(crate::WINDOW, "About HDR")
         .on_press(|| {
-            Dialog::new("settings.displays.hdr-apps-dialog", "Apps that show HDR")
+            Dialog::new("settings.displays.hdr-apps-dialog", "About HDR")
                 .message(
-                    "mpv with --vo=gpu-next, Firefox with gfx.wayland.hdr turned on in \
-                     about:config, and Vulkan games that ask for HDR. Everything else looks \
-                     as it does without HDR.",
+                    "The desktop looks the same; video and games that support HDR show \
+                     brighter highlights: mpv with --vo=gpu-next, Firefox with \
+                     gfx.wayland.hdr turned on in about:config, and Vulkan games that ask for \
+                     it. Automatic turns HDR on a second after one starts and off ten seconds \
+                     after it ends, saving the memory and power HDR takes the rest of the time. \
+                     While HDR is on, Brightness sets how bright white windows and text are.",
                 )
                 .button("OK", || {})
                 .open("main");
@@ -979,21 +955,7 @@ pub fn hdr(ctx: &Ctx) -> Group {
             .trailing(apps)
             .trailing(dropdown),
     );
-    let mut footer = String::from(
-        "The screen blanks for a moment while it switches. The desktop looks the same; video \
-         and games that support HDR show brighter highlights. Automatic turns HDR on a second \
-         after one starts and off ten seconds after it ends, and saves the memory and power \
-         HDR takes the rest of the time.",
-    );
-
-    if on {
-        footer.push_str(
-            " While HDR is on, Brightness sets how bright white windows and text are, from the \
-             keys, Quick Settings and the slider above alike.",
-        );
-    }
-
-    group.footer(footer)
+    group.footer("The screen blanks for a moment while it switches.")
 }
 
 // ───── night light ──────────────────────────────────────────────────────────
@@ -1044,6 +1006,7 @@ pub fn oled_care(ctx: &Ctx) -> Option<Group> {
             ))
             .row(
                 FormRow::new("settings.displays.oled.sleep", "Screen sleep timing")
+                    .value("In Power & Lock")
                     .on_press(|| crate::go("power")),
             )
             .footer(
@@ -1248,7 +1211,7 @@ fn field_row(
         }
     });
     Row::new(vec![
-        boxed(field_box(id, field, 200.0)),
+        boxed(field_box(id, field, crate::FIELD_W)),
         boxed(
             PushButton::new(format!("{id}.set"), "Set")
                 .disabled(!editable)

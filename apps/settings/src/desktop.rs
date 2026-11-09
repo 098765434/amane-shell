@@ -1,6 +1,7 @@
-//! The desktop: whether its widgets show, and how they look while windows
-//! are open over them. Each control changes `desktop.json`, which the
-//! shell follows at once.
+//! Desktop & Dock: whether the desktop's widgets show and how they look
+//! while windows are open over them (`desktop.json`), then the dock
+//! ([`crate::dock`]) and screenshots ([`crate::screenshots`]). The shell
+//! follows each change at once.
 
 use amane::Column;
 use emaki_kit::buttons::PushButton;
@@ -43,8 +44,11 @@ pub fn page() -> Column {
         .on_press(|| ShellCommand::Widgets(Widgets::Edit(None)).tell())
         .build();
 
-    let mut list = vec![
+    // what stands in the way of niri's settings on this page, said first
+    let mut list = crate::niri_settings::notices("settings.desktop");
+    list.extend(vec![
         group()
+            .header("Widgets")
             .row(switch_row(
                 "settings.show-widgets",
                 "Show widgets on the desktop",
@@ -63,7 +67,8 @@ pub fn page() -> Column {
                     .child()
                     .disabled(!show),
             ),
-    ];
+    ]);
+    list.extend(crate::dock::groups());
     list.extend(crate::screenshots::groups());
     groups(list)
 }

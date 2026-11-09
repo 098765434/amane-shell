@@ -1,4 +1,4 @@
-//! Quick Settings: its layout is the shell's own, moved and sized in the
+//! Quick Settings, a sub-page of Status Bar: its layout is the shell's own, moved and sized in the
 //! shell's Customize window, so this page asks the running shell over IPC
 //! (`quick-settings controls | show | hide | customize | reset-layout`)
 //! rather than writing a settings file. It watches the shell's layout file
@@ -117,31 +117,23 @@ pub fn page() -> Column {
         (now.controls.clone(), now.asked)
     };
     if !asked {
-        return groups(vec![
-            group().row(FormRow::new("settings.quick.asking", "Asking the shell…")),
-        ]);
+        return groups(vec![group().row(crate::loading_row(
+            "settings.quick.asking",
+            "Asking the shell…",
+        ))]);
     }
     let Some(controls) = controls else {
-        return groups(vec![
-            group().row(
-                FormRow::new("settings.quick.retry-row", "The shell isn't answering")
-                    .icon(
-                        emaki_kit::icons::ICON_WARNING,
-                        emaki_kit::color::Accent::Orange,
-                    )
-                    .subtitle("Its Quick Settings can't be changed from here until it does")
-                    .trailing(
-                        PushButton::new("settings.quick.retry", "Try Again")
-                            .on_press(|| {
-                                std::thread::spawn(|| {
-                                    let controls = ask();
-                                    QuickControls::write().controls = controls;
-                                });
-                            })
-                            .build(),
-                    ),
-            ),
-        ]);
+        return crate::unreachable_page(
+            "settings.quick",
+            "The shell",
+            "Its Quick Settings can't be changed from here until it does.",
+            || {
+                std::thread::spawn(|| {
+                    let controls = ask();
+                    QuickControls::write().controls = controls;
+                });
+            },
+        );
     };
 
     let reset = PushButton::new("settings.quick.reset", "Reset…")
@@ -175,11 +167,17 @@ pub fn page() -> Column {
         .icon(glyph, accent)
     });
 
+    let customize = PushButton::new("settings.quick.customize", "Customize…")
+        .on_press(|| tell(Ask::Customize))
+        .build();
+
     groups(vec![
         group()
             .header("Layout")
-            .footer(
-                "Customize… in the toolbar opens Quick Settings to move and resize its controls.",
+            .row(
+                FormRow::new("settings.quick.customize-row", "Move and resize controls")
+                    .subtitle("Opens Quick Settings to arrange it")
+                    .trailing(customize),
             )
             .row(
                 FormRow::new("settings.quick.reset-row", "Reset layout")
@@ -190,12 +188,13 @@ pub fn page() -> Column {
     ])
 }
 
-/// Customize…, in the toolbar while the shell answers.
-pub fn toolbar() -> Option<Box<dyn amane::Widget>> {
-    QuickControls::read().controls.as_ref()?;
-    Some(Box::new(
-        PushButton::new("settings.quick.customize", "Customize…")
-            .on_press(|| tell(Ask::Customize))
-            .build(),
-    ))
+/// What the Status Bar's Quick Settings row says: how many controls show.
+pub fn summary() -> String {
+    match &QuickControls::read().controls {
+        Some(controls) => {
+            let shown = controls.iter().filter(|(_, shown)| *shown).count();
+            format!("{shown} shown")
+        }
+        None => String::new(),
+    }
 }

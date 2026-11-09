@@ -61,7 +61,7 @@ Every animation is in `DOCK` in `dock/motion.rs`, one `Anim` each (`Anim::spring
 | `spring_load` | how long files wait over an icon before its window comes into view; `None` waits for the drop |
 
 `motion::motion()` reads `DOCK` through the dock settings each time
-(`~/.config/emaki/dock.json`, Emaki Settings' Dock page): `magnification` (`off`, `small`,
+(`~/.config/emaki/dock.json`, Emaki Settings' Desktop & Dock page): `magnification` (`off`, `small`,
 `medium` as shipped, `large`) scales the swell and lift, `tooltips` and `rise_with_overview` turn
 the name and `follow_overview` off, and `animations: false` turns every animation off. A dock
 whose motion changes is made afresh. `EMAKI_DOCK_ANIMATIONS=off` (or `0`, `false`, `no`) turns

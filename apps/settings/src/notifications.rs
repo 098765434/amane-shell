@@ -1,5 +1,6 @@
-//! Notifications: what each app that has sent one may do. Each choice
-//! changes `notifications.json`, which the shell follows at once.
+//! Notifications: the sound one plays ([`crate::sound::alerts`]), and what
+//! each app that has sent one may do. Each choice changes
+//! `notifications.json`, which the shell follows at once.
 
 use amane::Column;
 use emaki_kit::app_icon;
@@ -32,7 +33,7 @@ pub fn page() -> Column {
                     });
                 },
             )
-            .width(200.0)
+            .width(crate::MENU_W)
             .build();
             FormRow::new(format!("settings.notifications.app.{key}"), &label)
                 .leading(app_icon::tile(&key, &label, icon_side()), icon_side())
@@ -40,14 +41,19 @@ pub fn page() -> Column {
         })
         .collect();
 
-    let apps = group().header("Apps");
     let apps = if rows.is_empty() {
-        apps.footer("Apps show here once they have sent a notification.")
+        group().header("Apps").row(crate::empty_row(
+            "settings.notifications.none",
+            "Apps show here once they've sent a notification, each with its own choice.",
+        ))
     } else {
-        apps.rows(rows).footer(
-            "List Only skips the banner. Off hides them altogether. Critical notifications, \
-             like a low battery, show whatever is chosen.",
-        )
+        group().header("Apps").rows(rows)
     };
-    groups(vec![apps])
+    groups(vec![
+        crate::sound::alerts(),
+        apps.footer(
+            "List Only skips the banner. Off hides them altogether. Critical notifications, \
+         like a low battery, show whatever is chosen.",
+        ),
+    ])
 }

@@ -1,4 +1,5 @@
-//! History: the system generations, and Restore to go back to one.
+//! History: the system generations, Restore to go back to one, and how
+//! many the boot menu keeps.
 
 use amane::{Center, Column, Row, Service};
 use emaki_kit::app::Dialog;
@@ -20,16 +21,16 @@ pub fn page() -> Column {
     let rows = generations.list.iter().map(|g| {
         let mut marks = vec![g.when()];
         if Some(&g.toplevel) == generations.current.as_ref() {
-            marks.push(String::from("current"));
+            marks.push(String::from("running"));
         }
         if Some(&g.toplevel) == generations.booted.as_ref() {
-            marks.push(String::from("booted"));
+            marks.push(String::from("started at boot"));
         }
         let number = g.number;
         let chosen = selected == Some(number);
         let mut row = FormRow::new(format!("settings.history.{number}"), g.title())
             .subtitle(marks.join(" · "))
-            .value(format!("#{number}"))
+            .value(format!("Version {number}"))
             .selected(chosen)
             .on_press(move || {
                 let mut nav = Navigation::write();
@@ -42,13 +43,23 @@ pub fn page() -> Column {
             let is_current = Some(&g.toplevel) == generations.current.as_ref();
             let actions = actions(g.toplevel.clone(), number, running || is_current);
             row = row.detail(actions, style::control_height());
+            // buttons that can't be pressed say why
+            if is_current {
+                row = row.subtitle(format!("{} · nothing to try or restore", marks.join(" · ")));
+            } else if running {
+                row = row.subtitle(format!(
+                    "{} · once the build under way is done",
+                    marks.join(" · ")
+                ));
+            }
         }
         row
     });
 
-    let list = group().header("Generations").rows(rows).footer(
-        "Choose a generation to try it until the next restart, or to go back to it for good.",
-    );
+    let list = group()
+        .header("Versions")
+        .rows(rows)
+        .footer("Choose a version to try it until the next restart, or to go back to it for good.");
     let list = if list.has_rows() {
         list
     } else {
@@ -56,9 +67,9 @@ pub fn page() -> Column {
             let row = FormRow::new(
                 "settings.history.empty",
                 if generations.loading {
-                    "Reading the generations…"
+                    "Reading the versions…"
                 } else {
-                    "No generations found"
+                    "No versions found"
                 },
             );
             if generations.loading {
@@ -69,7 +80,12 @@ pub fn page() -> Column {
         })
     };
 
-    groups(vec![list])
+    groups(vec![
+        list,
+        group()
+            .rows(super::controls::rows("history"))
+            .footer("Each version kept is one more entry to start from in the boot menu."),
+    ])
 }
 
 /// Try and Restore for generation `number`.
@@ -83,7 +99,7 @@ fn actions(toplevel: std::path::PathBuf, number: u32, disabled: bool) -> Row {
                     let toplevel = tried.clone();
                     Dialog::new(
                         "settings.history.try-dialog",
-                        format!("Try generation {number}?"),
+                        format!("Try version {number}?"),
                     )
                     .message(
                         "It runs until the next restart, which starts the current one again. \
@@ -105,11 +121,12 @@ fn actions(toplevel: std::path::PathBuf, number: u32, disabled: bool) -> Row {
                     let toplevel = toplevel.clone();
                     Dialog::new(
                         "settings.history.restore-dialog",
-                        format!("Go back to generation {number}?"),
+                        format!("Go back to version {number}?"),
                     )
                     .message(
-                        "A new generation is made from it, so the boot menu keeps both. Try \
-                         first runs it without recording it.",
+                        "A new version is made from it, so the boot menu keeps both: to come \
+                         back, pick today's version here and restore it. Try runs it without \
+                         recording it.",
                     )
                     .button("Cancel", || {})
                     .main_button("Restore", move || {

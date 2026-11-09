@@ -29,6 +29,8 @@ pub const ICON_CHECK: char = '\u{e5ca}';
 pub const ICON_WARNING: char = '\u{e002}';
 /// An X (`close`).
 pub const ICON_CLOSE: char = '\u{e5cd}';
+/// An arrow curling back (`undo`): put back what was just done.
+pub const ICON_UNDO: char = '\u{e166}';
 /// A minus sign (`remove`).
 pub const ICON_REMOVE: char = '\u{e15b}';
 /// A plus sign (`add`).
@@ -69,6 +71,12 @@ pub const ICON_DND: char = '\u{ef44}';
 pub const ICON_CHEVRON_LEFT: char = '\u{e5cb}';
 /// A chevron pointing right (`chevron_right`): more inside.
 pub const ICON_CHEVRON_RIGHT: char = '\u{e5cc}';
+/// A bin (`delete`): removes something for good.
+pub const ICON_DELETE: char = '\u{e872}';
+/// An open eye (`visibility`): shows a hidden password.
+pub const ICON_VISIBILITY: char = '\u{e8f4}';
+/// A struck-out eye (`visibility_off`): hides it again.
+pub const ICON_VISIBILITY_OFF: char = '\u{e8f5}';
 /// An i in a circle (`info`).
 pub const ICON_INFO: char = '\u{e88e}';
 /// A chevron pointing down (`expand_more`).
@@ -206,6 +214,8 @@ pub const ICON_WIFI_NONE: char = '\u{f0b0}';
 pub const ICON_WIFI_OFF: char = '\u{e1da}';
 /// A plug on a cable (`cable`).
 pub const ICON_CABLE: char = '\u{efe6}';
+/// Three linked boxes (`lan`): a link that is neither Wi‑Fi nor a cable.
+pub const ICON_LAN: char = '\u{eb2f}';
 /// A folder (`folder`).
 pub const ICON_FOLDER: char = '\u{e2c7}';
 /// Stacked sheets (`layers`).

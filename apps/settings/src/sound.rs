@@ -1,6 +1,6 @@
 //! Sound: the output and input, their levels and the output's balance, a
-//! level meter for the microphone, what each app is playing, and the sound
-//! a notification plays.
+//! level meter for the microphone, and what each app is playing. The sound
+//! a notification plays ([`alerts`]) is drawn on Notifications.
 //!
 //! The devices, levels and apps are the sound server's own, through amane's
 //! `Audio`, so a change shows wherever else they're set (Quick Settings,
@@ -46,7 +46,10 @@ pub fn page() -> Column {
 
     let mut output = group().header("Output");
     if outputs.is_empty() {
-        output = output.footer("No speakers or headphones are connected.");
+        output = output.row(crate::empty_row(
+            "settings.sound.output.none",
+            "No speakers or headphones are connected",
+        ));
     } else {
         let names: Vec<String> = outputs.iter().map(|d| d.name().to_string()).collect();
         let now = outputs.iter().position(|d| d.default()).unwrap_or(0);
@@ -60,7 +63,7 @@ pub fn page() -> Column {
                 }
             },
         )
-        .width(260.0)
+        .width(crate::MENU_W_WIDE)
         .build();
         output = output
             .row(
@@ -98,7 +101,10 @@ pub fn page() -> Column {
 
     let mut input = group().header("Input");
     if inputs.is_empty() {
-        input = input.footer("No microphone is connected.");
+        input = input.row(crate::empty_row(
+            "settings.sound.input.none",
+            "No microphone is connected",
+        ));
     } else {
         let names: Vec<String> = inputs.iter().map(|d| d.name().to_string()).collect();
         let now = inputs.iter().position(|d| d.default()).unwrap_or(0);
@@ -112,7 +118,7 @@ pub fn page() -> Column {
                 }
             },
         )
-        .width(260.0)
+        .width(crate::MENU_W_WIDE)
         .build();
         // read each frame, which keeps the meter recording while the page shows
         let peak = AudioLevel::read().peak();
@@ -135,14 +141,17 @@ pub fn page() -> Column {
             ))
             .row(
                 FormRow::new("settings.sound.input.level", "Input level")
-                    .trailing(ProgressBar::new(meter(peak), 200.0).build()),
+                    .trailing(ProgressBar::new(meter(peak), crate::MENU_W).build()),
             )
             .footer("The level shows only while this page is open.");
     }
 
     let mut apps = group().header("Apps");
     if streams.is_empty() {
-        apps = apps.footer("Apps playing sound show here.");
+        apps = apps.row(crate::empty_row(
+            "settings.sound.apps.none",
+            "Apps playing sound show here",
+        ));
     } else {
         for stream in &streams {
             apps = apps.slider(app_row(stream));
@@ -150,7 +159,7 @@ pub fn page() -> Column {
         apps = apps.footer("Each app's level is a share of the output volume.");
     }
 
-    groups(vec![output, input, apps, alerts()])
+    groups(vec![output, input, apps])
 }
 
 /// A level with a mute button before its slider.
@@ -188,6 +197,7 @@ fn muted_slider(
     Row::new(vec![
         boxed(
             IconButton::new(format!("{id}.mute"), glyph)
+                .tooltip(crate::WINDOW, if muted { "Unmute" } else { "Mute" })
                 .selected(muted)
                 .width(MUTE)
                 .on_press(toggle)
@@ -200,7 +210,7 @@ fn muted_slider(
                 .build(),
         ),
     ])
-    .gap(4.0)
+    .gap(emaki_kit::tokens::sys::space::gap::xs())
     .align(Center)
 }
 
@@ -257,11 +267,12 @@ fn test_buttons() -> Row {
             "audio-channel-front-right",
         )),
     ])
-    .gap(8.0)
+    .gap(emaki_kit::tokens::sys::space::gap::m())
     .align(Center)
 }
 
-fn alerts() -> emaki_kit::form::Group {
+/// The notification sound, on Notifications: whether one plays, which, and how loud.
+pub fn alerts() -> emaki_kit::form::Group {
     let now = sound().clone();
     let on = now.notification.is_some();
     let chosen = now
@@ -269,7 +280,7 @@ fn alerts() -> emaki_kit::form::Group {
         .clone()
         .unwrap_or_else(|| String::from(DEFAULT_SOUND));
     let theme = theme();
-    let alerts = group().header("Alerts").row(switch_row(
+    let alerts = group().header("Sound").row(switch_row(
         "settings.sound.notifications",
         "Play a sound for notifications",
         on,
@@ -279,9 +290,7 @@ fn alerts() -> emaki_kit::form::Group {
             });
         },
     ));
-    if !on {
-        return alerts.footer("Do Not Disturb, and apps set to List Only or Off, stay silent.");
-    }
+    // the sound and its volume stay in sight, dimmed while it's off
     let volume = now.volume;
     let names: Vec<String> = theme.iter().map(|(name, _)| name.clone()).collect();
     let at = names.iter().position(|name| *name == chosen).unwrap_or(0);
@@ -297,30 +306,36 @@ fn alerts() -> emaki_kit::form::Group {
             }
         },
     )
-    .width(200.0)
+    .width(crate::MENU_W)
+    .disabled(!on)
     .build();
     let play = IconButton::new("settings.sound.notifications.play", ICON_PLAY)
+        .tooltip(crate::WINDOW, "Play")
+        .disabled(!on)
         .on_press(move || sounds::play(&chosen, volume, Duration::ZERO))
         .build();
     alerts
         .row(
             FormRow::new("settings.sound.notifications.sound", "Sound")
                 .child()
+                .disabled(!on)
                 .trailing(
                     Row::new(vec![boxed(menu), boxed(play)])
-                        .gap(4.0)
+                        .gap(emaki_kit::tokens::sys::space::gap::xs())
                         .align(Center),
                 ),
         )
         .slider(
             SliderRow::new("Alert volume", move |width| {
                 Slider::new(volume, width)
+                    .dimmed(!on)
+                    .inert(!on)
                     .on_value_change(|value| change_sound(|now| now.volume = value))
                     .build()
             })
             .value(format!("{volume}%")),
         )
-        .footer("Do Not Disturb, and apps set to List Only or Off, stay silent.")
+        .footer("Do Not Disturb, and apps set to List Only or Off below, stay silent.")
 }
 
 /// The theme's sounds, read once: they change only with the system.

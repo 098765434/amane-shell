@@ -208,7 +208,7 @@ fn app_dropdown(
         .map(|app| MenuItem::new(String::from(app.name())))
         .collect();
     Dropdown::items(id, items, selected)
-        .width(220.0)
+        .width(crate::MENU_W)
         .fallback(unset)
         .on_select(move |index| {
             if let Some(app) = apps.get(index) {
@@ -240,7 +240,7 @@ fn role_dropdown(role: &'static Role) -> Option<Rectangle> {
 
 pub fn page() -> Column {
     let scanned = !Apps::read().all().is_empty();
-    let mut roles = group().header("Open With");
+    let mut roles = group().header("Open with");
     if !scanned {
         roles = roles.row(FormRow::new("settings.defaults.reading", "Looking for apps…").loading());
     } else {
@@ -265,7 +265,7 @@ pub fn page() -> Column {
     let own = MimeApps::read().own().len();
     list.push(
         group().row(
-            FormRow::new("settings.defaults.file-types", "File Types")
+            FormRow::new("settings.defaults.file-types", "File types")
                 .icon(ICON_FILE_TYPES, Accent::Gray)
                 .subtitle("An app for any kind of file, and the ones you've chosen")
                 .value(if own == 0 {
@@ -282,7 +282,7 @@ pub fn page() -> Column {
 /// The page's sub-page: File Types.
 pub fn sub(name: &str) -> Option<(String, Box<dyn Widget>)> {
     match name {
-        "file-types" => Some((String::from("File Types"), boxed(file_types()))),
+        "file-types" => Some((String::from("File types"), boxed(file_types()))),
         _ => None,
     }
 }
@@ -307,10 +307,14 @@ fn kind_of(typed: &str) -> Option<String> {
 
 fn file_types() -> Column {
     let typed = TextInput::text(TYPE_FIELD);
-    let mut search = group().header("Choose an App").row(
+    let mut search = group().header("Choose an app").row(
         FormRow::new("settings.defaults.type-row", "Kind of file")
             .subtitle("An extension, like md or png, or a type, like text/markdown")
-            .trailing(field_box(TYPE_FIELD, text_field(TYPE_FIELD, "md"), 200.0)),
+            .trailing(field_box(
+                TYPE_FIELD,
+                text_field(TYPE_FIELD, "md"),
+                crate::FIELD_W,
+            )),
     );
     if let Some(kind) = kind_of(&typed) {
         search = search.row(kind_row("settings.defaults.found", &kind).child());
@@ -326,20 +330,35 @@ fn file_types() -> Column {
 
     let own = MimeApps::read().own().to_vec();
     let mut chosen = group()
-        .header("Chosen by You")
+        .header("Chosen by you")
         .footer("Reset gives a kind back to the app the system picks.");
     if own.is_empty() {
-        chosen = chosen.row(FormRow::new(
+        chosen = chosen.row(crate::empty_row(
             "settings.defaults.none-chosen",
             "None yet: every kind opens with the system's choice",
         ));
     }
-    for (kind, _) in own {
-        let reset_kind = kind.clone();
+    for (kind, app) in own {
+        let (reset_kind, was) = (kind.clone(), app.clone());
         let reset = PushButton::new(format!("settings.defaults.reset.{kind}"), "Reset")
             .on_press(move || {
-                if let Err(error) = MimeApps::reset(std::slice::from_ref(&reset_kind)) {
-                    failed(error);
+                let kinds = std::slice::from_ref(&reset_kind);
+                match MimeApps::reset(kinds) {
+                    Ok(()) => {
+                        let (kind, was) = (reset_kind.clone(), was.clone());
+                        emaki_kit::toast::show_with(
+                            format!("{kind} opens with the system's choice"),
+                            "Undo",
+                            move || {
+                                if let Err(error) =
+                                    MimeApps::set_default(std::slice::from_ref(&kind), &was)
+                                {
+                                    failed(error);
+                                }
+                            },
+                        );
+                    }
+                    Err(error) => failed(error),
                 }
             })
             .build();

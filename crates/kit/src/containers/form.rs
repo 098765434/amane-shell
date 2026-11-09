@@ -15,8 +15,10 @@
 //! - [`SliderRow`]: a title and its value over a slider across the row.
 //! - [`Group::custom`]: anything else, at a height of its own.
 //!
-//! Sizes are the form controls' ([`style`](crate::style)): rows 42 tall (52 with a
-//! subtitle), 12 px in, cards radius 12 in `groupFill`.
+//! Sizes are the form controls' ([`style`](crate::style)), tuned for
+//! settings lists: rows 42 tall (50 with a subtitle), 12 px in, cards radius 14
+//! set into the window (`groupFill`) with a 1 px edge, soft hairlines inset at
+//! both ends that give way beside a hovered row, and bold captions.
 
 use std::rc::Rc;
 
@@ -28,7 +30,6 @@ use crate::color::Accent;
 use crate::icons::Glyph;
 use crate::layout::{boxed, icon, text_height, text_width, wrapped_lines};
 use crate::leading_icon::LeadingIcon;
-use crate::look::hover::hover_fill;
 use crate::style::{self, px};
 use crate::symbol::{Symbol, symbol};
 use crate::tokens::{Styled, TextStyle, sys};
@@ -81,6 +82,11 @@ fn note_font() -> TextStyle {
     sys::r#type::caption()
 }
 
+/// A group's caption: bold.
+fn header_font() -> TextStyle {
+    style::group_header_font()
+}
+
 /// A setting: a title, maybe a tile and a subtitle, and its control.
 pub struct FormRow {
     id: String,
@@ -99,6 +105,9 @@ pub struct FormRow {
     loading: bool,
     /// Lit in the accent a moment, as the row a search led to.
     highlight: bool,
+    /// A fact rather than a setting: the title small and grey over the
+    /// subtitle, which reads as the value.
+    property: bool,
 }
 
 impl FormRow {
@@ -119,7 +128,20 @@ impl FormRow {
             child: false,
             loading: false,
             highlight: false,
+            property: false,
         }
+    }
+
+    /// A fact to read, not change ("Kernel", "6.12.4"): `title` small and
+    /// grey over `value` in the body's colour.
+    pub fn property(
+        id: impl Into<String>,
+        title: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Self {
+        let mut row = Self::new(id, title).subtitle(value);
+        row.property = true;
+        row
     }
 
     /// Set in under the row before it, for a setting that only means
@@ -243,18 +265,42 @@ impl FormRow {
             return Vec::new();
         };
         let room = width - self.text_start() - pad_h() - self.trailing_width() - px(12.0);
-        wrapped_lines(subtitle, subtitle_font(), room.max(80.0), 4)
+        wrapped_lines(subtitle, self.second_font(), room.max(80.0), 4)
     }
 
-    /// The top line's height: the title (and subtitle), or the minimum.
+    /// The title's style: a property's is the small grey one.
+    fn first_font(&self) -> TextStyle {
+        if self.property {
+            subtitle_font()
+        } else {
+            title_font()
+        }
+    }
+
+    /// The subtitle's style: a property's value is the body's.
+    fn second_font(&self) -> TextStyle {
+        if self.property {
+            title_font()
+        } else {
+            subtitle_font()
+        }
+    }
+
+    /// The top line's height: the title (and subtitle), or the minimum,
+    /// which is taller for a row of two lines.
     fn head_height(&self, width: f32) -> f32 {
         let lines = self.subtitle_lines(width).len() as f32;
-        let text = text_height(title_font()) + lines * text_height(subtitle_font());
+        let text = text_height(self.first_font()) + lines * text_height(self.second_font());
         let leading = self
             .leading
             .as_ref()
             .map_or(0.0, |(_, side)| side + px(12.0));
-        (text + px(16.0)).max(style::row_min_height()).max(leading)
+        let least = if lines > 0.0 {
+            style::row_two_line_height()
+        } else {
+            style::row_min_height()
+        };
+        (text + px(16.0)).max(least).max(leading)
     }
 
     /// How tall the row is in a group `width` wide.
@@ -267,6 +313,15 @@ impl FormRow {
         self.text_start()
     }
 
+    /// Lit under the pointer, picked or found: the hairlines either side of
+    /// it give way, so the fill reads as one piece.
+    fn lit(&self) -> bool {
+        self.selected
+            || self.highlight
+            || highlighted(&self.id)
+            || (self.on_press.is_some() && !self.disabled && crate::buttons::hovered(&self.id))
+    }
+
     /// The row, [`height`](Self::height) tall in a group `width` wide.
     pub fn build(self, width: f32) -> Rectangle {
         let height = self.height(width);
@@ -277,17 +332,17 @@ impl FormRow {
         // a title too long for the room left is cut short with an ellipsis
         let room = (width - start - pad_h() - self.trailing_width() - px(12.0)).max(60.0);
         let title = Text::new(self.title.clone())
-            .style(title_font())
-            .color(if self.loading {
+            .style(self.first_font())
+            .color(if self.loading || self.property {
                 style::label_secondary()
             } else {
                 style::label_primary()
             });
-        let title: Box<dyn Widget> = if text_width(&self.title, title_font()) > room {
+        let title: Box<dyn Widget> = if text_width(&self.title, self.first_font()) > room {
             boxed(
                 Rectangle::new()
                     .width(room)
-                    .height(text_height(title_font()))
+                    .height(text_height(self.first_font()))
                     .clip()
                     .child(title.elide()),
             )
@@ -295,12 +350,13 @@ impl FormRow {
             boxed(title)
         };
         let mut text: Vec<Box<dyn Widget>> = vec![title];
+        let (second, second_color) = if self.property {
+            (title_font(), style::label_primary())
+        } else {
+            (subtitle_font(), style::label_secondary())
+        };
         for line in lines {
-            text.push(boxed(
-                Text::new(line)
-                    .style(subtitle_font())
-                    .color(style::label_secondary()),
-            ));
+            text.push(boxed(Text::new(line).style(second).color(second_color)));
         }
         let text = Column::new(text);
 
@@ -372,7 +428,12 @@ impl FormRow {
             Color::TRANSPARENT
         };
         let fill = match &self.on_press {
-            Some(_) => hover_fill(&self.id, base_fill, style::label_primary(), self.disabled),
+            Some(_) if !self.disabled && crate::buttons::held(&self.id) => {
+                crate::color::over(style::row_press(), base_fill)
+            }
+            Some(_) => {
+                crate::buttons::hover_layer(&self.id, base_fill, style::row_hover(), self.disabled)
+            }
             None => base_fill,
         };
 
@@ -545,6 +606,13 @@ impl Item {
             Self::Custom(..) => pad_h(),
         }
     }
+
+    fn lit(&self) -> bool {
+        match self {
+            Self::Row(row) => row.lit(),
+            _ => false,
+        }
+    }
 }
 
 /// Rows on one rounded card, with an optional caption above it and a note
@@ -643,10 +711,9 @@ impl Group {
     /// The whole height: caption, card and note.
     pub fn height(&self) -> f32 {
         let gap = px(6.0);
-        let header = self
-            .header
-            .as_ref()
-            .map_or(0.0, |_| text_height(note_font()) + gap);
+        let header = self.header.as_ref().map_or(0.0, |_| {
+            text_height(header_font()) + style::group_header_gap()
+        });
         let lines = self.footer_lines().len() as f32;
         let footer = if lines > 0.0 {
             gap + lines * text_height(note_font())
@@ -664,6 +731,8 @@ impl Group {
         let footer = self.footer_lines();
 
         let count = self.items.len();
+        // a hairline gives way beside a lit row
+        let lit: Vec<bool> = self.items.iter().map(Item::lit).collect();
         let mut rows: Vec<Box<dyn Widget>> = Vec::new();
         for (index, item) in self.items.into_iter().enumerate() {
             let start = item.divider_start();
@@ -678,20 +747,27 @@ impl Group {
                 ),
             });
             if index + 1 < count {
-                // the hairline starts under the title, past the tile
+                // the hairline starts under the title, past the tile, and
+                // stops as far from the trailing edge as the row's padding
+                let shown = !lit[index] && !lit[index + 1];
                 rows.push(boxed(
                     Rectangle::new()
                         .width(Size::Parent)
                         .height(Size::Fixed(1.0))
                         .padding(Padding {
                             left: start,
+                            right: pad_h(),
                             ..Padding::default()
                         })
                         .child(
                             Rectangle::new()
                                 .width(Size::Parent)
                                 .height(Size::Fixed(1.0))
-                                .fill(style::divider()),
+                                .fill(if shown {
+                                    style::row_separator()
+                                } else {
+                                    Color::TRANSPARENT
+                                }),
                         ),
                 ));
             }
@@ -702,28 +778,35 @@ impl Group {
             .height(card_height)
             .radius(style::group_radius())
             .fill(style::group_fill())
+            .border(1.0, style::group_border())
             .clip()
             .child(Column::new(rows).width(Size::Parent));
 
         let mut parts: Vec<Box<dyn Widget>> = Vec::new();
-        if let Some(header) = self.header {
-            parts.push(boxed(
-                Rectangle::new()
-                    .width(width)
-                    .height(text_height(note_font()))
-                    .padding(Padding {
-                        left: pad_h(),
-                        ..Padding::default()
-                    })
-                    .child(
-                        Text::new(header)
-                            .style(note_font())
-                            .color(style::label_secondary()),
-                    ),
-            ));
-        }
         // a group still loading its rows shows only its words
-        if count > 0 {
+        let mut card = (count > 0).then_some(card);
+        if let Some(header) = self.header {
+            let caption = Rectangle::new()
+                .width(width)
+                .height(text_height(header_font()))
+                .padding(Padding {
+                    left: pad_h(),
+                    ..Padding::default()
+                })
+                .child(
+                    Text::new(header)
+                        .style(header_font())
+                        .color(style::label_primary()),
+                );
+            // the caption sits closer to its card than the note does
+            match card.take() {
+                Some(card) => parts.push(boxed(
+                    Column::new(vec![boxed(caption), boxed(card)]).gap(style::group_header_gap()),
+                )),
+                None => parts.push(boxed(caption)),
+            }
+        }
+        if let Some(card) = card {
             parts.push(boxed(card));
         }
         if !footer.is_empty() {
@@ -807,7 +890,8 @@ mod tests {
         assert!(lines > 1, "{lines} lines");
         let line = text_height(note_font());
         let gap = px(6.0);
-        let expected = line + gap + group.card_height() + gap + lines as f32 * line;
+        let header = text_height(header_font()) + style::group_header_gap();
+        let expected = header + group.card_height() + gap + lines as f32 * line;
         assert!((group.height() - expected).abs() < 0.01);
         let _ = group.build();
     }

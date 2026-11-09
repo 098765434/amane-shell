@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::thread;
 
 use amane::{Center, Row, Service, TextInput, watch_file};
-use emaki_kit::app::{field_box, text_field};
+use emaki_kit::app::{FieldState, field_box_in, text_field};
 use emaki_kit::buttons::PushButton;
 use emaki_kit::dropdown::Dropdown;
 use emaki_kit::form::{FormRow, Group, SliderRow};
@@ -213,7 +213,7 @@ pub fn section() -> Group {
         (now.light.clone(), now.asked, now.error.clone())
     };
     if !asked {
-        return group().header("Night Light").row(FormRow::new(
+        return group().header("Night Light").row(crate::loading_row(
             "settings.displays.night.asking",
             "Asking the shell…",
         ));
@@ -223,6 +223,10 @@ pub fn section() -> Group {
             FormRow::new(
                 "settings.displays.night.missing",
                 "Night Light isn't available",
+            )
+            .icon(
+                emaki_kit::icons::ICON_WARNING,
+                emaki_kit::color::Accent::Orange,
             )
             .subtitle("The shell isn't answering, or Night Light isn't installed (wlsunset)")
             .trailing(
@@ -265,7 +269,7 @@ pub fn section() -> Group {
             .to_vec(),
         at,
     )
-    .width(200.0)
+    .width(crate::MENU_W)
     .on_select(move |index| match index {
         _ if index == at => {}
         0 => tell(Ask::Schedule(words(&["manual"]))),
@@ -291,13 +295,20 @@ pub fn section() -> Group {
         ))
         .slider(temperature)
         .row(FormRow::new("settings.displays.night.schedule-row", "Schedule").trailing(schedule));
-    let error = error.map(|why| format!("{why}\n")).unwrap_or_default();
+    // a value that can't be kept marks its fields and says why on their row
+    let state = if error.is_some() {
+        FieldState::Error
+    } else {
+        FieldState::Normal
+    };
+    let why = error.unwrap_or_default();
     match &light.schedule {
-        Schedule::Manual => group.footer(format!("{error}Warm all day while it's on.")),
+        Schedule::Manual => group.footer("Warm all day while it's on."),
         Schedule::Sun(lat, lon) => group
             .row(
-                FormRow::new("settings.displays.night.place", "Place").detail(
+                FormRow::new("settings.displays.night.place", "Place").subtitle(why).detail(
                     pair(
+                        state,
                         (LATITUDE, "Latitude", &format!("{lat:.2}")),
                         (LONGITUDE, "Longitude", &format!("{lon:.2}")),
                         |lat, lon| match place(lat, lon) {
@@ -313,14 +324,14 @@ pub fn section() -> Group {
                     style::control_height(),
                 ),
             )
-            .footer(format!(
-                "{error}Warm from sunset to sunrise here, the screen's own colors by day. The \
-                 place starts at your time zone's."
-            )),
+            .footer(
+                "Warm from sunset to sunrise here, the screen's own colors by day. The place \
+                 starts at your time zone's.",
+            ),
         Schedule::Hours(from, to) => group
             .row(
-                FormRow::new("settings.displays.night.hours", "Hours").detail(
-                    pair((FROM, "From", from), (TO, "To", to), |from, to| {
+                FormRow::new("settings.displays.night.hours", "Hours").subtitle(why).detail(
+                    pair(state, (FROM, "From", from), (TO, "To", to), |from, to| {
                         match (time(from), time(to)) {
                             (Some(from), Some(to)) => {
                                 refuse(None);
@@ -332,15 +343,14 @@ pub fn section() -> Group {
                     style::control_height(),
                 ),
             )
-            .footer(format!(
-                "{error}Warm between these times, overnight when To is earlier."
-            )),
+            .footer("Warm between these times, overnight when To is earlier."),
     }
 }
 
 /// Two short labelled fields and a Set button that sends both; Return in
-/// either sends them too.
+/// either sends them too. `state` marks both when what they hold was refused.
 fn pair(
+    state: FieldState,
     first: (&'static str, &str, &str),
     second: (&'static str, &str, &str),
     set: impl Fn(&str, &str) + Clone + 'static,
@@ -362,12 +372,18 @@ fn pair(
     let submit2 = submit.clone();
     Row::new(vec![
         label(first.1),
-        boxed(field_box(a, text_field(a, first.1).on_submit(submit), 90.0)),
+        boxed(field_box_in(
+            a,
+            text_field(a, first.1).on_submit(submit),
+            90.0,
+            state,
+        )),
         label(second.1),
-        boxed(field_box(
+        boxed(field_box_in(
             b,
             text_field(b, second.1).on_submit(submit2),
             90.0,
+            state,
         )),
         boxed(
             PushButton::new("settings.displays.night.set", "Set")

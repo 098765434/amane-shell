@@ -85,7 +85,7 @@ pub fn group_for(shown: &Shown) -> Group {
                 tell_gtk("cursor-theme", name.clone());
             }
         })
-        .width(200.0)
+        .width(crate::MENU_W)
         .disabled(!editable)
         .build();
 
@@ -104,7 +104,7 @@ pub fn group_for(shown: &Shown) -> Group {
         niri_settings::set("cursor size", SIZE, size.to_string());
         tell_gtk("cursor-size", size.to_string());
     })
-    .width(200.0)
+    .width(crate::MENU_W)
     .disabled(!editable)
     .build();
 
@@ -129,12 +129,12 @@ pub fn group_for(shown: &Shown) -> Group {
             }),
         },
     )
-    .width(200.0)
+    .width(crate::MENU_W)
     .disabled(!editable)
     .build();
 
     group()
-        .header("Pointer")
+        .header("Cursor")
         .row(FormRow::new("settings.appearance.cursor.theme", "Cursor").trailing(theme_menu))
         .row(FormRow::new("settings.appearance.cursor.size", "Size").trailing(size_menu))
         .row(niri_settings::switch(
@@ -154,10 +154,8 @@ pub fn group_for(shown: &Shown) -> Group {
         .footer("Apps already open take a new cursor as they start again.")
 }
 
-/// The Pointer group, with what stands in the way of changing it.
+/// The Pointer group; what stands in the way of changing it is said at
+/// the top of the page it's on ([`niri_settings::notices`]).
 pub fn groups() -> Vec<Group> {
-    let shown = niri_settings::shown();
-    let mut list = niri_settings::notices("settings.appearance.cursor");
-    list.push(group_for(&shown));
-    list
+    vec![group_for(&niri_settings::shown())]
 }

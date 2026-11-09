@@ -126,11 +126,9 @@ fn result_card(job: &BuildJob, check: &Checked) -> Option<FormRow> {
         (Target::Update { changes, .. }, Phase::Built(built)) => (
             ICON_UPDATE,
             format!(
-                "Update ready: {} change{} · {} package{} change{}",
-                changes.len(),
-                if changes.len() == 1 { "" } else { "s" },
-                built.diff.len(),
-                if built.diff.len() == 1 { "" } else { "s" },
+                "Update ready: {} · {}{}",
+                emaki_kit::format::count(changes.len(), "component", "components"),
+                emaki_kit::format::count(built.diff.len(), "package", "packages"),
                 if built.needs_restart {
                     " · needs a restart"
                 } else {

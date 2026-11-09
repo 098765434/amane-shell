@@ -29,9 +29,7 @@ mod windows;
 use amane::{
     Center, Column, Key, Rectangle, Row, ScrollArea, Service, Size, Text, TextInput, Widget, Window,
 };
-use emaki_kit::app::{
-    Dialog, app, app_window, field_box, sidebar_with, standard_shortcut, text_field,
-};
+use emaki_kit::app::{Dialog, app, app_window, sidebar_with, standard_shortcut, text_field};
 use emaki_kit::args::flag;
 use emaki_kit::buttons::Switch;
 use emaki_kit::color::Accent;
@@ -43,6 +41,9 @@ use emaki_kit::tokens::{Styled, sys};
 
 use system::apply_bar;
 use system::job::BuildJob;
+
+/// The window's name, which tooltips and dialogs hang under.
+pub const WINDOW: &str = "main";
 
 /// A view that takes a page's place, reached from it; back returns.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -111,6 +112,15 @@ impl Navigation {
     fn go_to(&mut self, place: Place) {
         if *self.here() == place {
             return;
+        }
+        // a setting's error is about the page it was made on
+        if place.page != self.here().page {
+            let mut feedback = system::controls::Feedback::write();
+            if feedback.error.is_some() {
+                feedback.error = None;
+            } else {
+                feedback.quiet();
+            }
         }
         self.history.truncate(self.at + 1);
         self.history.push(place);
@@ -182,6 +192,7 @@ pub fn page_title(page: usize) -> String {
 
 /// A place by name: a page's name, or `page/sub` for one of its sub-pages.
 pub fn place_named(name: &str) -> Option<Place> {
+    let name = pages::moved(name).unwrap_or(name);
     let (page, sub) = match name.split_once('/') {
         Some((page, sub)) => (page, Some(sub)),
         None => (name, None),
@@ -231,6 +242,8 @@ fn main() {
     package_arg(&args);
     app(emaki_kit::app_ids::SETTINGS)
         .normal_window("main", main_window)
+        // icon-only buttons name themselves on hover
+        .popup(emaki_kit::tooltip::popup)
         // launched again (the launcher, a notification) while running: show that page
         .on_activate(|args| {
             if let Some(place) = page_arg(args) {
@@ -242,10 +255,24 @@ fn main() {
 }
 
 /// Closing while a build runs would end it (nix stops a build whose client
-/// goes away), so ask first.
+/// goes away), so ask first. While the built system is being activated it
+/// can't be stopped halfway, so the window stays until it's done.
 fn may_close() -> bool {
-    if !BuildJob::read().running() {
-        return true;
+    let activating = {
+        let job = BuildJob::read();
+        if !job.running() {
+            return true;
+        }
+        matches!(job.phase, system::job::Phase::Activating { .. })
+    };
+    if activating {
+        Dialog::new("settings.close-dialog", "Applying the system")
+            .message(
+                "Emaki Settings can close once the system is applied. Stopping now could leave it half changed.",
+            )
+            .main_button("OK", || {})
+            .open("main");
+        return false;
     }
     Dialog::new("settings.close-dialog", "Stop the build?")
         .message("Closing Emaki Settings stops the build. Nothing has been applied yet.")
@@ -312,7 +339,7 @@ fn content(page: usize, view: Option<View>) -> (String, Box<dyn Widget>) {
             scrolled("settings.scroll.changes", boxed(apply_bar::changes_view())),
         ),
         // the log scrolls itself
-        Some(View::Log) => (String::from("Build Log"), boxed(apply_bar::log_view())),
+        Some(View::Log) => (String::from("Build log"), boxed(apply_bar::log_view())),
         Some(View::Package) => (
             system::package::title(),
             scrolled("settings.scroll.package", boxed(system::package::view())),
@@ -399,7 +426,12 @@ fn main_window() -> Window {
         )),
         body,
     ];
-    if let Some(bar) = apply_bar::apply_bar() {
+    // what waits for Apply is the NixOS pages' business; a job under way
+    // or just done shows wherever the window is
+    let job_shown = BuildJob::read().busy();
+    if (pages::nixos_page(page) || job_shown)
+        && let Some(bar) = apply_bar::apply_bar()
+    {
         column.push(bar);
     }
 
@@ -420,7 +452,7 @@ fn main_window() -> Window {
     .width(Size::Parent)
     .height(Size::Parent);
 
-    app_window(content)
+    app_window(emaki_kit::toast::over(content))
         .title("Emaki Settings")
         .size(760.0, 760.0)
         .min_size(
@@ -448,7 +480,7 @@ fn search_field() -> Box<dyn Widget> {
             .width(Size::Parent)
             .height(style::control_height() + sys::space::gap::s())
             .align_child(amane::Start, amane::Start)
-            .child(field_box(
+            .child(emaki_kit::app::search_box(
                 search::FIELD,
                 input,
                 SIDEBAR - 2.0 * sys::space::inset::s(),
@@ -494,7 +526,7 @@ fn results(query: &str, found: &[search::Found]) -> Box<dyn Widget> {
     )
 }
 
-/// A page's own button in the toolbar, such as Quick Settings' Customize.
+/// A page's own button in the toolbar, when it has one.
 fn toolbar_action(page: usize, view: Option<View>) -> Option<Box<dyn Widget>> {
     if view.is_some() {
         return None;
@@ -528,7 +560,7 @@ fn header(
                 .elide(),
         ),
     ])
-    .gap(12.0)
+    .gap(sys::space::gap::xl())
     .align(Center);
     let mut parts: Vec<Box<dyn Widget>> = vec![boxed(lead)];
     if let Some(action) = action {
@@ -536,7 +568,7 @@ fn header(
     }
     Rectangle::new()
         .width(Size::Parent)
-        .height(TOOLBAR)
+        .height(toolbar_height())
         .align_child(amane::Start, Center)
         .child(
             Row::new(parts)
@@ -546,11 +578,22 @@ fn header(
         )
 }
 
-/// The toolbar's height.
-const TOOLBAR: f32 = 36.0;
+/// The toolbar's height: a header bar's, 50 at the density's scale.
+fn toolbar_height() -> f32 {
+    style::px(50.0)
+}
 
 /// The sidebar's width.
 const SIDEBAR: f32 = 200.0;
+
+/// The widths a row's control takes, so menus and fields line up from page
+/// to page: a stepper or tiny choice, a short menu, most menus, a menu of
+/// long names (devices, modes), and a text field.
+pub const COMPACT_W: f32 = 80.0;
+pub const MENU_W_NARROW: f32 = 160.0;
+pub const MENU_W: f32 = 200.0;
+pub const MENU_W_WIDE: f32 = 260.0;
+pub const FIELD_W: f32 = 240.0;
 
 /// The narrowest and widest a page's groups get.
 const MIN_PAGE: f32 = 440.0;
@@ -586,7 +629,7 @@ pub fn groups(groups: Vec<Group>) -> Column {
             .map(|group| boxed(group.build()))
             .collect(),
     )
-    .gap(sys::space::gap::l())
+    .gap(style::section_gap())
 }
 
 /// A row with a switch at its trailing edge.
@@ -596,6 +639,27 @@ pub fn switch_row(id: &str, title: &str, on: bool, toggle: impl Fn(bool) + 'stat
             .on_toggle(toggle)
             .build(),
     )
+}
+
+/// A switch that belongs to the row above: set in under it, and dimmed
+/// and unclickable while that one is off (`enabled` false). A dimmed row
+/// doesn't stop its controls taking clicks, so the switch is told too.
+pub fn child_switch_row(
+    id: &str,
+    title: &str,
+    on: bool,
+    enabled: bool,
+    toggle: impl Fn(bool) + 'static,
+) -> FormRow {
+    FormRow::new(id, title)
+        .trailing(
+            Switch::new(format!("{id}.switch"), on)
+                .disabled(!enabled)
+                .on_toggle(toggle)
+                .build(),
+        )
+        .child()
+        .disabled(!enabled)
 }
 
 /// Something that went wrong, said plainly: a warning tile, what it means
@@ -621,9 +685,100 @@ pub fn problem_row(id: &str, title: &str, meaning: &str, details: &str) -> FormR
     row
 }
 
-/// How tall a column of `count` radios is, for a row's detail.
-pub fn radios_height(count: usize) -> f32 {
-    count as f32 * style::control_height()
+/// A change that didn't take: a [`problem_row`] with OK, which runs
+/// `dismiss` to put it away.
+pub fn dismissible_problem_row(
+    id: &str,
+    title: &str,
+    meaning: &str,
+    dismiss: impl Fn() + 'static,
+) -> FormRow {
+    problem_row(id, title, meaning, "").trailing(
+        emaki_kit::buttons::PushButton::new(format!("{id}.dismiss"), "OK")
+            .on_press(dismiss)
+            .build(),
+    )
+}
+
+/// A row whose value is still coming: a small spinner at its trailing
+/// edge and the title in grey, the one way every page says it's reading.
+pub fn loading_row(id: &str, title: &str) -> FormRow {
+    FormRow::new(id, title).loading()
+}
+
+/// A row saying `who` isn't answering, what that means for the page, and
+/// Try Again when `retry` is given: a warning tile, as [`problem_row`]'s.
+pub fn unreachable_row(
+    id: &str,
+    who: &str,
+    meaning: &str,
+    retry: Option<Box<dyn Fn()>>,
+) -> FormRow {
+    let row = FormRow::new(id, format!("{who} isn't answering"))
+        .icon(emaki_kit::icons::ICON_WARNING, Accent::Orange)
+        .subtitle(meaning);
+    match retry {
+        Some(retry) => row.trailing(
+            emaki_kit::buttons::PushButton::new(format!("{id}.retry"), "Try Again")
+                .on_press(retry)
+                .build(),
+        ),
+        None => row,
+    }
+}
+
+/// A whole page that can't show yet, or has nothing to show: a status
+/// page (a large faint glyph, a title, a line saying why, a button) in
+/// the page's place, as wide as its groups.
+pub fn status_page(page: emaki_kit::status_page::StatusPage) -> Column {
+    Column::new(vec![boxed(page.width(page_width()).build())])
+}
+
+/// [`status_page`] for `who` not answering, with Try Again.
+pub fn unreachable_page(id: &str, who: &str, meaning: &str, retry: impl Fn() + 'static) -> Column {
+    status_page(
+        emaki_kit::status_page::StatusPage::new(
+            emaki_kit::icons::ICON_WARNING,
+            format!("{who} isn't answering"),
+        )
+        .text(meaning)
+        .action(
+            emaki_kit::buttons::PushButton::new(format!("{id}.retry"), "Try Again")
+                .on_press(retry)
+                .build(),
+        ),
+    )
+}
+
+/// A list with nothing in it yet, said in one dim row inside its group.
+pub fn empty_row(id: &str, text: impl Into<String>) -> FormRow {
+    FormRow::new(id, text).disabled(true)
+}
+
+/// A row that keeps a long explanation out of a group's note: `title`
+/// with Details…, which shows `text` under `heading` in a dialog.
+pub fn details_row(id: &str, title: &str, heading: &str, text: &str) -> FormRow {
+    let (heading, text) = (heading.to_string(), text.to_string());
+    FormRow::new(id, title)
+        .icon(emaki_kit::icons::ICON_INFO, Accent::Gray)
+        .trailing(
+            emaki_kit::buttons::PushButton::new(format!("{id}.details"), "Details…")
+                .on_press(move || {
+                    Dialog::new("settings.details-dialog", heading.clone())
+                        .message(text.clone())
+                        .button("OK", || {})
+                        .open("main");
+                })
+                .build(),
+        )
+}
+
+/// Something worth knowing that isn't wrong: an info tile in grey, so it
+/// doesn't read as a warning.
+pub fn info_row(id: &str, title: &str, text: &str) -> FormRow {
+    FormRow::new(id, title)
+        .icon(emaki_kit::icons::ICON_INFO, Accent::Gray)
+        .subtitle(text)
 }
 
 #[cfg(test)]

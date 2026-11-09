@@ -71,11 +71,11 @@ impl Meta {
     pub fn problem(&self) -> Option<String> {
         if self.broken {
             Some(String::from(
-                "Marked broken in this nixpkgs: it doesn't build here.",
+                "Marked broken in this package set: it doesn't build here.",
             ))
         } else if !self.vulnerabilities.is_empty() {
             Some(format!(
-                "Has known vulnerabilities, so nixpkgs won't build it: {}",
+                "Has known vulnerabilities, so it won't be built: {}",
                 self.vulnerabilities.join(" ")
             ))
         } else if !self.available {
@@ -178,7 +178,7 @@ pub fn meta(attr: &str) -> Result<Meta, String> {
         .output()
         .map_err(|failure| {
             if failure.output.stderr.contains("does not provide attribute") {
-                format!("{attr} isn't in this nixpkgs.")
+                format!("{attr} isn't in this package set.")
             } else {
                 failure.message
             }
@@ -276,8 +276,10 @@ fn paragraph(text: Text) -> Rectangle {
     frame(page_width(), height).child(text)
 }
 
-fn fact(id: &str, name: &str) -> FormRow {
-    FormRow::new(format!("settings.package.{id}"), name)
+/// A fact about the package, read rather than set: its name small over
+/// its value.
+fn property(id: &str, name: &str, value: impl Into<String>) -> FormRow {
+    FormRow::property(format!("settings.package.{id}"), name, value)
 }
 
 pub fn view() -> Column {
@@ -290,14 +292,18 @@ pub fn view() -> Column {
 
     let meta = match &details.meta {
         None => {
-            return Column::new(vec![boxed(caption("Reading the package…"))])
-                .gap(sys::space::gap::l());
+            return crate::groups(vec![crate::group().row(crate::loading_row(
+                "settings.package.reading",
+                "Reading the package…",
+            ))]);
         }
         Some(Err(error)) => {
-            return Column::new(vec![boxed(paragraph(
-                caption(error.clone()).color(sys::color::status::critical::text()),
-            ))])
-            .gap(sys::space::gap::l());
+            return crate::groups(vec![crate::group().row(crate::problem_row(
+                "settings.package.error",
+                "Couldn't read the package",
+                "Its details can't be shown.",
+                error,
+            ))]);
         }
         Some(Ok(meta)) => meta,
     };
@@ -376,28 +382,26 @@ pub fn view() -> Column {
         (None, None) => String::from("Not installed"),
     };
 
-    let mut facts = vec![fact("status", "Status").value(status)];
+    let mut facts = vec![property("status", "Status", status)];
     if !meta.licenses.is_empty() {
         let mut licence = meta.licenses.join(", ");
         // nixpkgs' own unfree licence already says so
         if !meta.free && !licence.to_lowercase().contains("unfree") {
             licence.push_str(" · Unfree");
         }
-        facts.push(fact("licence", "Licence").value(licence));
+        facts.push(property("licence", "Licence", licence));
     }
     if !meta.main_program.is_empty() {
-        facts.push(fact("command", "Command").value(meta.main_program.clone()));
+        facts.push(property("command", "Command", meta.main_program.clone()));
     }
     if !meta.homepage.is_empty() {
         let url = meta.homepage.clone();
         facts.push(
-            fact("homepage", "Homepage")
-                .trailing(
-                    PushButton::new("settings.package.homepage.open", "Open")
-                        .on_press(move || emaki_kit::launch::open(&url))
-                        .build(),
-                )
-                .subtitle(meta.homepage.clone()),
+            property("homepage", "Homepage", meta.homepage.clone()).trailing(
+                PushButton::new("settings.package.homepage.open", "Open")
+                    .on_press(move || emaki_kit::launch::open(&url))
+                    .build(),
+            ),
         );
     }
 

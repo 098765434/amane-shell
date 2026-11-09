@@ -27,10 +27,8 @@ use std::thread;
 use std::time::Duration;
 
 use amane::{Column, Service};
-use emaki_kit::buttons::PushButton;
 use emaki_kit::form::{FormRow, Group};
 use emaki_kit::layout::boxed;
-use emaki_kit::tokens::sys;
 
 use crate::{group, groups};
 use caps::Caps;
@@ -294,30 +292,21 @@ pub fn page() -> Column {
     let screens = Screens::read();
     if !screens.looked {
         drop(screens);
-        return groups(vec![group().row(FormRow::new(
+        return groups(vec![group().row(crate::loading_row(
             "settings.displays.reading",
             "Reading the displays…",
         ))]);
     }
     let Some(outputs) = screens.outputs.clone() else {
         drop(screens);
-        return groups(vec![
-            group().row(
-                FormRow::new("settings.displays.silent", "The compositor isn't answering")
-                    .icon(
-                        emaki_kit::icons::ICON_WARNING,
-                        emaki_kit::color::Accent::Orange,
-                    )
-                    .subtitle("The displays can't be read until it does")
-                    .trailing(
-                        PushButton::new("settings.displays.retry", "Try Again")
-                            .on_press(|| {
-                                thread::spawn(Screens::refresh);
-                            })
-                            .build(),
-                    ),
-            ),
-        ]);
+        return crate::unreachable_page(
+            "settings.displays",
+            "The compositor",
+            "The displays can't be read until it does.",
+            || {
+                thread::spawn(Screens::refresh);
+            },
+        );
     };
     let Some(output) = screens.selected_output().cloned() else {
         drop(screens);
@@ -345,7 +334,15 @@ pub fn page() -> Column {
     let mut rows: Vec<Box<dyn amane::Widget>> = Vec::new();
     add(&mut rows, sections::setup_banner(&setup));
     if let Some(error) = error {
-        rows.push(boxed(sections::error_line(error)));
+        add(
+            &mut rows,
+            Some(group().row(crate::dismissible_problem_row(
+                "settings.displays.error",
+                "Not changed",
+                &error,
+                Screens::dismiss,
+            ))),
+        );
     }
     add(&mut rows, sections::arrangement(&ctx));
     add(&mut rows, Some(sections::header(&ctx)));
@@ -360,13 +357,14 @@ pub fn page() -> Column {
     add(&mut rows, sections::multiple(&ctx));
     add(&mut rows, Some(sections::variable_refresh(&ctx)));
     add(&mut rows, Some(sections::hdr(&ctx)));
-    add(&mut rows, Some(sections::advanced_link()));
     // what holds for every display
     add(&mut rows, sections::all_displays(&ctx));
     add(&mut rows, Some(sections::night_light()));
     add(&mut rows, sections::oled_care(&ctx));
+    // the rarely needed, last
+    add(&mut rows, Some(sections::advanced_link()));
 
-    Column::new(rows).gap(sys::space::gap::l())
+    Column::new(rows).gap(emaki_kit::style::section_gap())
 }
 
 /// The page's sub-pages: Advanced, for the display picked.
@@ -392,11 +390,19 @@ pub fn sub(name: &str) -> Option<(String, Box<dyn amane::Widget>)> {
     };
     let mut rows: Vec<Box<dyn amane::Widget>> = Vec::new();
     if let Some(error) = error {
-        rows.push(boxed(sections::error_line(error)));
+        add(
+            &mut rows,
+            Some(group().row(crate::dismissible_problem_row(
+                "settings.displays.error",
+                "Not changed",
+                &error,
+                Screens::dismiss,
+            ))),
+        );
     }
     add(&mut rows, Some(sections::advanced(&ctx)));
     Some((
         format!("{} — Advanced", ctx.name()),
-        boxed(Column::new(rows).gap(sys::space::gap::l())),
+        boxed(Column::new(rows).gap(emaki_kit::style::section_gap())),
     ))
 }

@@ -12,7 +12,7 @@ use emaki_kit::material::{self, Level};
 use emaki_kit::spinner::{ProgressBar, Spinner};
 use emaki_kit::tokens::{Styled, sys};
 
-use super::job::{BuildJob, Kind, Mode, Phase, Target};
+use super::job::{BuildJob, Kind, Mode, Phase, Stage, Target};
 use super::nixos::{Managed, Snapshot};
 use super::repo::short;
 use crate::{View, page_width};
@@ -37,6 +37,45 @@ fn sentence(text: &str) -> String {
     match chars.next() {
         Some(first) => first.to_uppercase().chain(chars).collect(),
         None => String::new(),
+    }
+}
+
+/// What the bar says once a job is done: `arrived` names the packages it
+/// installed, if any. An Apply at Restart says so even when it committed,
+/// since nothing runs it until the next start.
+fn done_text(
+    mode: Mode,
+    generation: Option<u32>,
+    commit: Option<&Result<String, String>>,
+    arrived: &str,
+) -> String {
+    let gen_text = generation.map_or(String::new(), |n| format!(" · version {n}"));
+    match (mode, commit) {
+        (Mode::Test, _) => String::from("Tried · Apply to keep it"),
+        (Mode::Boot, Some(Err(why))) => {
+            format!("Applies at the next restart{gen_text}, but not committed: {why}")
+        }
+        (Mode::Boot, _) => format!("Applies at the next restart{gen_text}"),
+        (Mode::Switch, Some(Ok(_)) | None) if !arrived.is_empty() => {
+            format!("Installed {arrived}{gen_text}")
+        }
+        (Mode::Switch, Some(Err(why))) => format!("Applied, but not committed: {why}"),
+        (Mode::Switch, Some(Ok(message))) => format!("Applied{gen_text} · {message}"),
+        (Mode::Switch, None) => format!("Applied{gen_text}"),
+    }
+}
+
+/// What the bar says when a job failed: the outcome, and the tool's last
+/// line when it said anything worth showing.
+fn failed_text(stage: Stage, message: &str) -> String {
+    let last = message
+        .lines()
+        .rev()
+        .map(str::trim)
+        .find(|line| !line.is_empty());
+    match last {
+        Some(last) => format!("{}: {last}", stage.failure()),
+        None => format!("{} · Show Log says why", stage.failure()),
     }
 }
 
@@ -71,17 +110,16 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
                 emaki_kit::format::count(changes.len(), "change", "changes"),
                 changes.join(" · ")
             ))),
+            // the whole list is one press away; trying comes once it's built
             vec![
-                button("discard", "Discard", Style::Plain, || {
+                button("discard", "Discard…", Style::Plain, || {
                     Dialog::new("settings.apply.discard-dialog", "Discard the changes?")
                         .message("The settings go back to what was last applied.")
                         .button("Cancel", || {})
                         .destructive("Discard", Managed::discard)
                         .open("main");
                 }),
-                button("try", "Try", Style::Tonal, || {
-                    BuildJob::start_build(Some(Mode::Test));
-                }),
+                button("review", "Review", Style::Plain, show(View::Changes)),
                 button("apply", "Apply", Style::Filled, || {
                     BuildJob::start_build(None)
                 }),
@@ -107,11 +145,14 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
                     Row::new(vec![
                         if progress.expected > 0 && !progress.evaluating {
                             boxed(
-                                ProgressBar::new(f32::from(progress.percent()) / 100.0, 160.0)
-                                    .build(),
+                                ProgressBar::new(
+                                    f32::from(progress.percent()) / 100.0,
+                                    emaki_kit::style::px(160.0),
+                                )
+                                .build(),
                             )
                         } else {
-                            boxed(Spinner::new(16.0).build())
+                            boxed(Spinner::new(sys::size::icon::m()).build())
                         },
                         boxed(line(what)),
                     ])
@@ -120,7 +161,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
                 ),
                 vec![
                     button("log", "Show Log", Style::Plain, show(View::Log)),
-                    button("cancel", "Cancel", Style::Destructive, || {
+                    button("cancel", "Cancel…", Style::Plain, || {
                         Dialog::new("settings.apply.cancel-dialog", "Stop the build?")
                             .message("Nothing has been applied yet; what's built so far is kept for next time.")
                             .button("Keep Building", || {})
@@ -148,23 +189,30 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
             if built.needs_restart {
                 text.push_str(" · needs a restart");
             }
+            // throwing the build away leads; the one main action ends the row
             let mut buttons = vec![
+                button("drop", "Discard Build", Style::Plain, BuildJob::dismiss),
                 button("changes", "Show Changes", Style::Plain, show(View::Changes)),
-                button("drop", "Cancel", Style::Plain, BuildJob::dismiss),
             ];
-            if job.target.is_ours() {
-                buttons.push(button("try-built", "Try", Style::Tonal, || {
-                    BuildJob::activate(Mode::Test);
-                }));
-            }
             if built.needs_restart {
-                buttons.push(button("boot", "Apply at Restart", Style::Tonal, || {
+                // a new kernel only runs after a restart, so that's the main
+                // action, and a Try (which doesn't restart) would show nothing
+                buttons.push(button("switch", "Apply Now", Style::Tonal, || {
+                    BuildJob::activate(Mode::Switch);
+                }));
+                buttons.push(button("boot", "Apply at Restart", Style::Filled, || {
                     BuildJob::activate(Mode::Boot);
                 }));
+            } else {
+                if job.target.is_ours() {
+                    buttons.push(button("try-built", "Try", Style::Tonal, || {
+                        BuildJob::activate(Mode::Test);
+                    }));
+                }
+                buttons.push(button("switch", "Apply Now", Style::Filled, || {
+                    BuildJob::activate(Mode::Switch);
+                }));
             }
-            buttons.push(button("switch", "Apply Now", Style::Filled, || {
-                BuildJob::activate(Mode::Switch);
-            }));
             (boxed(line(text)), buttons)
         }
         Phase::Activating { .. } => (
@@ -183,23 +231,7 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
             } else {
                 super::package::arrived(installed)
             };
-            let gen_text = generation.map_or(String::new(), |n| format!(" · generation {n}"));
-            let text = match (mode, commit) {
-                (Mode::Test, _) => String::from("Tried · Apply to keep it"),
-                (Mode::Switch, Some(Ok(_)) | None) if !arrived.is_empty() => {
-                    format!("Installed {arrived}{gen_text}")
-                }
-                (_, Some(Err(why))) => format!("Applied, but not committed: {why}"),
-                (_, Some(Ok(message))) => format!(
-                    "Applied{} · {message}",
-                    generation.map_or(String::new(), |n| format!(" · generation {n}"))
-                ),
-                (Mode::Boot, None) => String::from("Applied at the next restart"),
-                (_, None) => format!(
-                    "Applied{}",
-                    generation.map_or(String::new(), |n| format!(" · generation {n}"))
-                ),
-            };
+            let text = done_text(*mode, *generation, commit.as_ref(), &arrived);
             let mut buttons = vec![button("log", "Show Log", Style::Plain, show(View::Log))];
             if let Some(app) = app.filter(|_| *mode == Mode::Switch) {
                 let label = format!("Open {}", app.name());
@@ -213,20 +245,26 @@ pub fn apply_bar() -> Option<Box<dyn Widget>> {
             ));
             (boxed(line(text)), buttons)
         }
-        Phase::Failed { stage, message } => (
-            boxed(
-                line(format!(
-                    "{} failed: {}",
-                    stage.name(),
-                    message.lines().last().unwrap_or("")
-                ))
-                .color(sys::color::status::critical::text()),
-            ),
-            vec![
+        Phase::Failed { stage, message } => {
+            let mut buttons = vec![
                 button("log", "Show Log", Style::Plain, show(View::Log)),
-                button("dismiss", "Dismiss", Style::Tonal, BuildJob::dismiss),
-            ],
-        ),
+                button("dismiss", "Dismiss", Style::Plain, BuildJob::dismiss),
+            ];
+            // a build of the configuration can simply run again; an update
+            // check or a version from History starts from its own page
+            if job.target == Target::Head {
+                buttons.push(button("retry", "Try Again", Style::Tonal, || {
+                    BuildJob::dismiss();
+                    BuildJob::start_build(None);
+                }));
+            }
+            (
+                boxed(
+                    line(failed_text(*stage, message)).color(sys::color::status::critical::text()),
+                ),
+                buttons,
+            )
+        }
     };
 
     // a card fills its parent; the bar is two rows
@@ -283,15 +321,15 @@ fn changes() -> Column {
                         .trailing(trailing_text(
                             format!(
                                 "{} → {}",
-                                change.from.as_deref().map_or(String::from("∅"), short),
-                                change.to.as_deref().map_or(String::from("∅"), short)
+                                change.from.as_deref().map_or(String::from("none"), short),
+                                change.to.as_deref().map_or(String::from("none"), short)
                             ),
                             material::label(Level::Secondary),
                         ))
                     })
                     .collect(),
             )
-            .header("Inputs")
+            .header("Components")
             .build(),
         ));
     }
@@ -402,4 +440,39 @@ pub fn log_view() -> Column {
     .gap(sys::space::gap::m())
     .width(Size::Parent)
     .height(Size::Parent)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_apply_at_restart_says_it_waits_for_the_restart() {
+        let committed = Ok(String::from("settings: Time zone → Europe/Oslo"));
+        let text = done_text(Mode::Boot, Some(80), Some(&committed), "");
+        assert_eq!(text, "Applies at the next restart · version 80");
+        assert_eq!(
+            done_text(Mode::Boot, None, None, ""),
+            "Applies at the next restart"
+        );
+        let failed = Err(String::from("git said no"));
+        assert!(done_text(Mode::Boot, Some(80), Some(&failed), "").contains("not committed"));
+    }
+
+    #[test]
+    fn an_apply_now_says_what_it_did() {
+        let committed = Ok(String::from("settings: Tailscale off"));
+        assert_eq!(
+            done_text(Mode::Switch, Some(67), Some(&committed), ""),
+            "Applied · version 67 · settings: Tailscale off"
+        );
+        assert_eq!(
+            done_text(Mode::Switch, Some(68), Some(&committed), "Zed"),
+            "Installed Zed · version 68"
+        );
+        assert_eq!(
+            done_text(Mode::Test, Some(68), None, "Zed"),
+            "Tried · Apply to keep it"
+        );
+    }
 }

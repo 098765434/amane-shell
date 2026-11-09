@@ -2,7 +2,8 @@
 //!
 //! A capsule track that fills with the accent as it turns on, and a round
 //! `accent.fg` knob that springs from one end to the other; the whole track
-//! takes the press, with a hover layer and a disabled state. Off, the track is the
+//! takes the press, with a hover layer and a disabled state. The knob casts a
+//! soft shadow, and while held turns to clear glass. Off, the track is the
 //! `state.selected` overlay, so it reads on any surface.
 //!
 //! Like the other controls it reflects state: a click moves the knob at
@@ -74,12 +75,25 @@ impl Switch {
             sys::color::accent::bg(),
             progress.clamp(0.0, 1.0),
         );
+        // held down, the knob turns to clear glass with a light edge; at
+        // rest it's solid with a soft shadow under it
+        let held = !self.disabled && super::held(&self.id);
         let knob = Rectangle::new()
             .width(knob_w)
             .height(knob_h)
             .radius(Radius::Full)
-            .fill(sys::color::accent::fg())
             .translate(progress * (size.width - knob_w - inset * 2.0), 0.0);
+        let knob = if held {
+            knob.fill(crate::color::with_alpha(Color::WHITE, 0.25))
+                .border(1.0, crate::color::with_alpha(Color::WHITE, 0.6))
+        } else {
+            knob.fill(sys::color::accent::fg()).shadow(
+                amane::Shadow::drop(Color::BLACK)
+                    .opacity(0.15)
+                    .blur(2.0)
+                    .offset(0.0, 1.0),
+            )
+        };
 
         let base = Rectangle::new()
             .width(size.width)
