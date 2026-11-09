@@ -29,11 +29,14 @@ compositor, a GPU or the network.
 - **Rules about the code.** The shell's structure is held by tests in `surfaces/mod.rs`: no
   surface names another's modules, `services/` and `chrome/` name no surface, no surface file is
   over 650 lines ([shell-structure.md](shell-structure.md)). Emaki Settings' search index is
-  checked against its pages and rows, and `displays.kdl` and `input.kdl` each have a single writer
-  (`apps/settings/src/displays/kdl.rs` and `input/kdl.rs`, which also round-trip the live files'
-  shapes). `cargo test -p emaki-settings write_for_niri_validate -- --ignored` with
-  `EMAKI_TEST_DIR` set writes a moved copy of the live config and an `input.kdl` with every
-  setting changed, for `niri validate -c $EMAKI_TEST_DIR/config.kdl`.
+  checked against its pages and rows, and `displays.kdl`, `input.kdl` and `settings.kdl` each have a
+  single writer (`apps/settings/src/displays/kdl.rs`, `input/kdl.rs` and `niri_settings/kdl.rs`,
+  which also round-trip the live files'
+  shapes). With `EMAKI_TEST_DIR` set, `cargo test -p emaki-settings
+  input::kdl::tests::write_for_niri_validate -- --ignored` writes a moved copy of the live config
+  and an `input.kdl` with every setting changed, and `niri_settings::kdl::tests::write_for_niri_validate`
+  a copy including a `settings.kdl` with every setting changed. Each writes `config.kdl`, so run
+  one at a time, each followed by `niri validate -c $EMAKI_TEST_DIR/config.kdl`.
 - **Fake programs.** `emaki-nixos` runs its jobs (build, compare, activate, update, roll back)
   against stand-in `nix`, `git` and `pkexec` scripts, whose paths come from its `Config`. Write a
   test for a new step the same way rather than calling the real tools.

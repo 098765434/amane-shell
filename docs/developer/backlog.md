@@ -157,6 +157,10 @@ chip like the timer's, which already has the pattern), via `wf-recorder` or the 
 post-capture thumbnail toast with Copy / Open / Annotate (the toast stack is already there).
 
 ### 15. Hot corners and gestures · S–M
+
+**Partly done**: niri's hot corner (which corner opens the overview) is on the
+[Windows page](../user/features/windows.md), and Super-and-swipe on Input. A corner for the
+launcher or notification center, and other finger counts, remain.
 A corner trigger (overview, launcher, notification center, show desktop) needs only a thin
 corner layer surface, like the dock's 2 px edge strip (`EdgeReveal`). The amane fork already has
 `Gestures`; a configurable three-/four-finger mapping (open launcher, notification center) would
@@ -201,7 +205,8 @@ NixOS-managed udev rule, which the System pages can write).
 Orca is toggled by a raw niri bind (`Super+Alt+S`). The shell itself draws its own text, so screen
 readers can't read it. Worth tracking: AT-SPI exposure in amane (large), plus cheap wins in Shell
 Settings: an **Accessibility** page with reduce motion (already a setting), increase contrast
-(`Appearance` reads it), larger text (the text scale), cursor size, sticky keys/slow keys (niri/xkb
+(`Appearance` reads it), larger text (the text scale), cursor size (**done**: Appearance →
+Pointer, [windows.md](../user/features/windows.md#the-cursor)), sticky keys/slow keys (niri/xkb
 options), and a zoom toggle if niri gains one.
 
 ### 21. Users and session · S–M

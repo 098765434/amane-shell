@@ -17,7 +17,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::niri_files::{
-    self, beside_config, braces, code, commit, dirty, niri_config, node_end, spans, write_atomic,
+    self, Child, beside_config, braces, children, code, commit, dirty, niri_config, node_end,
+    spans, write_atomic,
 };
 
 pub const FILE: &str = "input.kdl";
@@ -53,6 +54,13 @@ pub struct Pointer {
     pub click_method: Option<String>,
     /// `two-finger`, `edge`, `on-button-down` or `no-scroll`.
     pub scroll_method: Option<String>,
+    pub left_handed: bool,
+    /// A middle click by pressing left and right together.
+    pub middle_emulation: bool,
+    /// A touchpad off while a mouse is plugged in.
+    pub disabled_on_external_mouse: bool,
+    /// How far a scroll goes, 1 being libinput's; niri takes 0 to 100.
+    pub scroll_factor: Option<f64>,
     pub extra: Vec<String>,
 }
 
@@ -62,44 +70,15 @@ pub struct InputConfig {
     pub keyboard: Keyboard,
     pub touchpad: Pointer,
     pub mouse: Pointer,
+    /// Focus goes to the window under the pointer.
+    pub focus_follows_mouse: bool,
+    /// The pointer jumps to a window focused from the keyboard.
+    pub warp_mouse_to_focus: bool,
     /// The rest of the `input` block (`trackpoint`, `focus-follows-mouse`
     /// and the like), as it was.
     pub extra: Vec<String>,
     /// Lines outside the `input` block, as they were.
     pub outside: Vec<String>,
-}
-
-/// One child of a block: a line, or a block whole.
-enum Child<'a> {
-    Line(&'a str),
-    Block { name: &'a str, lines: &'a [&'a str] },
-}
-
-/// The children of a block's inner lines, blank lines left out.
-fn children<'a>(inner: &'a [&'a str]) -> Vec<Child<'a>> {
-    let mut out = Vec::new();
-    let mut at = 0;
-    while at < inner.len() {
-        let raw = inner[at];
-        let code = code(raw).trim();
-        if code.is_empty() && raw.trim().is_empty() {
-            at += 1;
-            continue;
-        }
-        if braces(code) > 0 && code.ends_with('{') {
-            let end = node_end(inner, at);
-            let name = code.split([' ', '{']).next().unwrap_or("");
-            out.push(Child::Block {
-                name,
-                lines: &inner[at..=end],
-            });
-            at = end + 1;
-        } else {
-            out.push(Child::Line(raw));
-            at += 1;
-        }
-    }
-    out
 }
 
 /// A block's lines without its first and last.
@@ -151,7 +130,20 @@ impl InputConfig {
 
         write_pointer(&mut out, "touchpad", &self.touchpad);
         write_pointer(&mut out, "mouse", &self.mouse);
-        for raw in &self.extra {
+        let flags = [
+            ("focus-follows-mouse", self.focus_follows_mouse),
+            ("warp-mouse-to-focus", self.warp_mouse_to_focus),
+        ];
+        for (key, on) in flags {
+            if on {
+                out.push_str(&format!("    {key}\n"));
+            }
+        }
+        let written: Vec<&str> = flags
+            .iter()
+            .filter_map(|(key, on)| on.then_some(*key))
+            .collect();
+        for raw in kept(&self.extra, &written) {
             out.push_str(raw);
             out.push('\n');
         }
@@ -216,6 +208,13 @@ impl InputConfig {
                 // `touchpad {}` sets nothing, which is what's written for it
                 Child::Line(raw)
                     if matches!(empty_block(raw), Some("keyboard" | "touchpad" | "mouse")) => {}
+                // bare flags only: one with options of its own is kept as it was
+                Child::Line(raw) if raw.trim() == "focus-follows-mouse" => {
+                    self.focus_follows_mouse = true
+                }
+                Child::Line(raw) if raw.trim() == "warp-mouse-to-focus" => {
+                    self.warp_mouse_to_focus = true
+                }
                 Child::Line(raw) => self.extra.push(raw.trim_end().to_string()),
             }
         }
@@ -301,6 +300,16 @@ fn read_setting(pointer: &mut Pointer, line: &str) -> bool {
         "tap" if value.is_empty() => pointer.tap = true,
         "dwt" if value.is_empty() => pointer.dwt = true,
         "natural-scroll" if value.is_empty() => pointer.natural_scroll = true,
+        "left-handed" if value.is_empty() => pointer.left_handed = true,
+        "middle-emulation" if value.is_empty() => pointer.middle_emulation = true,
+        "disabled-on-external-mouse" if value.is_empty() => {
+            pointer.disabled_on_external_mouse = true
+        }
+        // one factor for both directions; one per direction is kept as it was
+        "scroll-factor" => match value.parse::<f64>() {
+            Ok(factor) if (0.0..=100.0).contains(&factor) => pointer.scroll_factor = Some(factor),
+            _ => return false,
+        },
         "accel-speed" => match value.parse::<f64>() {
             Ok(speed) if (-1.0..=1.0).contains(&speed) => pointer.accel_speed = Some(speed),
             _ => return false,
@@ -334,6 +343,18 @@ fn write_pointer(out: &mut String, name: &str, pointer: &Pointer) {
     if pointer.natural_scroll {
         line(String::from("natural-scroll"));
     }
+    if pointer.left_handed {
+        line(String::from("left-handed"));
+    }
+    if pointer.middle_emulation {
+        line(String::from("middle-emulation"));
+    }
+    if pointer.disabled_on_external_mouse {
+        line(String::from("disabled-on-external-mouse"));
+    }
+    if let Some(factor) = pointer.scroll_factor {
+        line(format!("scroll-factor {}", factor_text(factor)));
+    }
     if let Some(speed) = pointer.accel_speed {
         line(format!("accel-speed {}", speed_text(speed)));
     }
@@ -351,6 +372,13 @@ fn write_pointer(out: &mut String, name: &str, pointer: &Pointer) {
         ("tap", pointer.tap),
         ("dwt", pointer.dwt),
         ("natural-scroll", pointer.natural_scroll),
+        ("left-handed", pointer.left_handed),
+        ("middle-emulation", pointer.middle_emulation),
+        (
+            "disabled-on-external-mouse",
+            pointer.disabled_on_external_mouse,
+        ),
+        ("scroll-factor", pointer.scroll_factor.is_some()),
         ("accel-speed", pointer.accel_speed.is_some()),
     ]
     .into_iter()
@@ -362,6 +390,17 @@ fn write_pointer(out: &mut String, name: &str, pointer: &Pointer) {
         out.push('\n');
     }
     out.push_str("    }\n");
+}
+
+/// A scroll factor as niri takes it: `1.0`, `0.25`, `1.75`.
+fn factor_text(factor: f64) -> String {
+    let text = format!("{:.2}", factor.clamp(0.0, 100.0));
+    let text = text.trim_end_matches('0');
+    if text.ends_with('.') {
+        format!("{text}0")
+    } else {
+        text.to_string()
+    }
 }
 
 /// A speed as niri takes it, two places at most: `0.0`, `-0.35`, `1.0`.
@@ -531,7 +570,15 @@ layout {
         input.touchpad.scroll_method = Some(String::from("edge"));
         input.mouse.accel_profile = Some(String::from("flat"));
         input.mouse.accel_speed = Some(1.0);
+        input.mouse.left_handed = true;
+        input.mouse.middle_emulation = true;
+        input.mouse.scroll_factor = Some(0.75);
+        input.touchpad.disabled_on_external_mouse = true;
+        input.focus_follows_mouse = true;
+        input.warp_mouse_to_focus = true;
         let text = input.write_kdl();
+        assert!(text.contains("        scroll-factor 0.75\n"), "{text}");
+        assert!(text.contains("    focus-follows-mouse\n"), "{text}");
         assert!(text.contains("        accel-speed -0.35\n"), "{text}");
         assert!(
             text.contains("        click-method \"clickfinger\"\n"),

@@ -185,7 +185,7 @@ pub fn page() -> Column {
         ""
     };
 
-    groups(vec![
+    let mut list = vec![
         group()
             .row(
                 FormRow::new("settings.appearance.mode", "Appearance")
@@ -228,5 +228,7 @@ pub fn page() -> Column {
                 .subtitle("Automatic follows the system's setting")
                 .trailing(motion_control),
         ),
-    ])
+    ];
+    list.extend(crate::cursor::groups());
+    groups(list)
 }

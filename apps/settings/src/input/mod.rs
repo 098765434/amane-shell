@@ -232,6 +232,10 @@ pub fn page() -> Column {
         list.push(touchpad_group(&config.touchpad, editable));
     }
     list.push(mouse_group(&config.mouse, editable));
+    list.push(pointer_group(&config, editable));
+    if touchpad {
+        list.extend(gestures_group());
+    }
     list.push(
         group().row(
             FormRow::new("settings.input.shortcuts-row", "Keyboard Shortcuts")
@@ -517,6 +521,15 @@ fn touchpad_group(pointer: &Pointer, editable: bool) -> Group {
             editable,
             |p, v| p.scroll_method = v,
         ))
+        .slider(scroll_row(which, pointer, editable))
+        .row(pointer_switch(
+            which,
+            "settings.input.touchpad.off-with-mouse",
+            "Off while a mouse is connected",
+            pointer.disabled_on_external_mouse,
+            editable,
+            |p, on| p.disabled_on_external_mouse = on,
+        ))
         .footer("Natural scrolling moves the content with your fingers, as on a phone.")
 }
 
@@ -542,8 +555,112 @@ fn mouse_group(pointer: &Pointer, editable: bool) -> Group {
             editable,
             |p, v| p.accel_profile = v,
         ))
+        .slider(scroll_row(which, pointer, editable))
+        .row(pointer_switch(
+            which,
+            "settings.input.mouse.middle-emulation",
+            "Middle click by pressing both buttons",
+            pointer.middle_emulation,
+            editable,
+            |p, on| p.middle_emulation = on,
+        ))
         .footer("Flat moves the pointer as far as the mouse moves, however fast; for games.")
 }
+
+/// How far a scroll goes, on a slider's 0 to 100: a quarter to twice.
+fn factor_at(factor: Option<f64>) -> u8 {
+    (((factor.unwrap_or(1.0).clamp(0.25, 2.0) - 0.25) / 1.75) * 100.0).round() as u8
+}
+
+fn factor_of(value: u8) -> f64 {
+    ((0.25 + f64::from(value) / 100.0 * 1.75) * 20.0).round() / 20.0
+}
+
+fn scroll_row(which: Which, pointer: &Pointer, editable: bool) -> SliderRow {
+    let at = factor_at(pointer.scroll_factor);
+    let factor = pointer.scroll_factor.unwrap_or(1.0);
+    SliderRow::new("Scroll speed", move |width| {
+        Slider::new(at, width)
+            .wheel(false)
+            .inert(!editable)
+            .on_value_change(move |value| {
+                settled("scroll speed", move |c| {
+                    let factor = factor_of(value);
+                    which.of(c).scroll_factor = ((factor - 1.0).abs() > 0.01).then_some(factor);
+                })
+            })
+            .build()
+    })
+    .value(format!("{factor:.2}×"))
+}
+
+/// Where focus goes with the pointer, and which hand the buttons suit.
+fn pointer_group(config: &InputConfig, editable: bool) -> Group {
+    let left = config.mouse.left_handed || config.touchpad.left_handed;
+    group()
+        .header("Pointer")
+        .row(
+            switch_row(
+                "settings.input.focus-follows-mouse",
+                "Focus follows the pointer",
+                config.focus_follows_mouse,
+                |on| at_once("focus follows mouse", move |c| c.focus_follows_mouse = on),
+            )
+            .subtitle("The window under the pointer takes the keys")
+            .disabled(!editable),
+        )
+        .row(
+            switch_row(
+                "settings.input.warp-to-focus",
+                "Pointer jumps to the focused window",
+                config.warp_mouse_to_focus,
+                |on| at_once("warp to focus", move |c| c.warp_mouse_to_focus = on),
+            )
+            .subtitle("When a window is focused from the keyboard")
+            .disabled(!editable),
+        )
+        .row(
+            switch_row("settings.input.left-handed", "Left-handed", left, |on| {
+                at_once("left-handed", move |c| {
+                    c.mouse.left_handed = on;
+                    c.touchpad.left_handed = on;
+                })
+            })
+            .subtitle("Swaps the left and right buttons, on the mouse and the touchpad")
+            .disabled(!editable),
+        )
+}
+
+/// Touchpad gestures niri's `gestures` section sets, in `settings.kdl`.
+fn gestures_group() -> Vec<Group> {
+    let shown = crate::niri_settings::shown();
+    let swipe = !shown
+        .get(MOD_SWIPE)
+        .is_some_and(|value| value.contains("off"));
+    let mut list = crate::niri_settings::notices("settings.input.gestures");
+    list.push(
+        group().header("Gestures").row(
+            switch_row(
+                "settings.input.mod-swipe",
+                "Super and swipe moves windows",
+                swipe,
+                |on| {
+                    crate::niri_settings::set(
+                        "mod swipe",
+                        MOD_SWIPE,
+                        if on { "{ }" } else { "{ off; }" },
+                    )
+                },
+            )
+            .subtitle("Holding Super, three fingers move the focused window and workspaces")
+            .disabled(!shown.editable),
+        ),
+    );
+    list
+}
+
+const MOD_SWIPE: crate::niri_settings::Key = ("gestures", "mod-swipe");
+const SKIP_OVERLAY: crate::niri_settings::Key = ("hotkey-overlay", "skip-at-startup");
 
 // ───── Keyboard Shortcuts ───────────────────────────────────────────────────
 
@@ -570,7 +687,27 @@ fn shortcuts() -> Column {
             "Shortcuts are changed in {}; this list follows it.",
             crate::niri_files::niri_config().display()
         ));
-    let mut list = vec![filter];
+    let shown = crate::niri_settings::shown();
+    let mut list = crate::niri_settings::notices("settings.input.overlay");
+    list.push(
+        group().row(
+            switch_row(
+                "settings.input.shortcuts.at-login",
+                "Show the shortcuts at login",
+                !shown.on(SKIP_OVERLAY),
+                |on| {
+                    crate::niri_settings::set(
+                        "shortcuts at login",
+                        SKIP_OVERLAY,
+                        if on { "false" } else { "true" },
+                    )
+                },
+            )
+            .subtitle("niri's overlay of its keys, which Super+Shift+/ also shows")
+            .disabled(!shown.editable),
+        ),
+    );
+    list.push(filter);
     let found: Vec<&Bind> = all
         .iter()
         .filter(|bind| query.is_empty() || bind.matches(&query))

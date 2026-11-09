@@ -4,6 +4,7 @@
 
 mod about;
 mod appearance;
+mod cursor;
 mod desktop;
 mod displays;
 mod dock;
@@ -12,15 +13,18 @@ mod input;
 mod launcher;
 mod network;
 mod niri_files;
+mod niri_settings;
 mod notifications;
 mod pages;
 mod passwords;
 mod previews;
 mod quick_settings;
+mod screenshots;
 mod search;
 mod sound;
 mod status_bar;
 mod system;
+mod windows;
 
 use amane::{
     Center, Column, Key, Rectangle, Row, ScrollArea, Service, Size, Text, TextInput, Widget, Window,

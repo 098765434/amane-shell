@@ -108,6 +108,39 @@ pub fn spans(config: &str, keyword: &str) -> Vec<(usize, usize)> {
     found
 }
 
+/// One child of a block: a line, or a block whole.
+pub enum Child<'a> {
+    Line(&'a str),
+    Block { name: &'a str, lines: &'a [&'a str] },
+}
+
+/// The children of a block's inner lines, blank lines left out.
+pub fn children<'a>(inner: &'a [&'a str]) -> Vec<Child<'a>> {
+    let mut out = Vec::new();
+    let mut at = 0;
+    while at < inner.len() {
+        let raw = inner[at];
+        let code = code(raw).trim();
+        if code.is_empty() && raw.trim().is_empty() {
+            at += 1;
+            continue;
+        }
+        if braces(code) > 0 && code.ends_with('{') {
+            let end = node_end(inner, at);
+            let name = code.split([' ', '{']).next().unwrap_or("");
+            out.push(Child::Block {
+                name,
+                lines: &inner[at..=end],
+            });
+            at = end + 1;
+        } else {
+            out.push(Child::Line(raw));
+            at += 1;
+        }
+    }
+    out
+}
+
 /// `config` with the lines of `spans` commented out and the include of
 /// `file`, under `note`, where the first one was (at the end without any).
 pub fn moved(config: &str, spans: &[(usize, usize)], file: &Path, note: &str) -> String {
@@ -133,6 +166,17 @@ pub fn moved(config: &str, spans: &[(usize, usize)], file: &Path, note: &str) ->
     if spans.is_empty() {
         text.push_str(&format!("\n// {note}\n{}\n", include_line(file)));
     }
+    text
+}
+
+/// `config` with the include of `file`, under `note`, as its last lines;
+/// as it was when it includes `file` already.
+pub fn append_include(config: &str, file: &Path, note: &str) -> String {
+    if includes(config, file) {
+        return config.to_string();
+    }
+    let mut text = config.trim_end().to_string();
+    text.push_str(&format!("\n\n// {note}\n{}\n", include_line(file)));
     text
 }
 
@@ -243,6 +287,14 @@ mod tests {
         assert_eq!(code("tap // on"), "tap ");
         assert_eq!(code(r#"spawn "a//b" // c"#), r#"spawn "a//b" "#);
         assert_eq!(code(r#"x "\"//" y"#), r#"x "\"//" y"#);
+    }
+
+    #[test]
+    fn an_include_goes_last_once() {
+        let file = Path::new("/c/extra.kdl");
+        let once = append_include("layout {\n}\n", file, "note");
+        assert!(once.ends_with("// note\ninclude optional=true \"/c/extra.kdl\"\n"));
+        assert_eq!(append_include(&once, file, "note"), once);
     }
 
     #[test]

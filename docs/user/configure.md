@@ -83,5 +83,6 @@ Two things live in niri's config rather than the shell's files:
 - **The keybinds** that open the launcher, Quick Settings and the rest
   ([keyboard-and-ipc.md](keyboard-and-ipc.md)).
 
-The bar reserves its zone, so niri's `layout { gaps … }` and the workspace mat (a niri fork
-feature) are set in niri, not here.
+The bar reserves its zone, so it needs no struts. niri's gaps, focus ring, mat, cursor and the like
+are set on Emaki Settings' [Windows page](features/windows.md) and its neighbours, which write
+niri's `settings.kdl`, or by hand in `config.kdl`.

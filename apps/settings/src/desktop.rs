@@ -43,7 +43,7 @@ pub fn page() -> Column {
         .on_press(|| ShellCommand::Widgets(Widgets::Edit(None)).tell())
         .build();
 
-    groups(vec![
+    let mut list = vec![
         group()
             .row(switch_row(
                 "settings.show-widgets",
@@ -63,5 +63,7 @@ pub fn page() -> Column {
                     .child()
                     .disabled(!show),
             ),
-    ])
+    ];
+    list.extend(crate::screenshots::groups());
+    groups(list)
 }

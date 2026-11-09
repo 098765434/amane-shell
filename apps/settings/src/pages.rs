@@ -8,13 +8,13 @@ use emaki_kit::color::Accent;
 use emaki_kit::icons::{
     ICON_APPS, ICON_COMPUTER, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO,
     ICON_KEYBOARD, ICON_LAYERS, ICON_LOCK, ICON_MORE_HORIZ, ICON_NOTIFICATIONS, ICON_OPEN_IN_NEW,
-    ICON_PACKAGE, ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TRAY, ICON_TUNE, ICON_UPDATE,
-    ICON_VOLUME_UP, ICON_WIFI,
+    ICON_PACKAGE, ICON_RESIZE, ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TRAY, ICON_TUNE,
+    ICON_UPDATE, ICON_VOLUME_UP, ICON_WIFI,
 };
 
 use crate::{
     about, appearance, desktop, displays, dock, drop, input, launcher, network, notifications,
-    passwords, quick_settings, sound, status_bar, system,
+    passwords, quick_settings, sound, status_bar, system, windows,
 };
 
 /// A page's sub-page by name: its title and body, or none for a name it
@@ -113,7 +113,7 @@ const fn with_toolbar(entry: Entry, toolbar: Toolbar) -> Entry {
 }
 
 /// The sidebar, top to bottom; a page is its place in this list.
-pub const SIDEBAR: [Entry; 25] = [
+pub const SIDEBAR: [Entry; 26] = [
     Entry::Section("Shell"),
     found_by(
         page(
@@ -145,6 +145,31 @@ pub const SIDEBAR: [Entry; 25] = [
         ),
         &["advanced"],
         displays::sub,
+    ),
+    aliased(
+        found_by(
+            page(
+                "windows",
+                "Windows",
+                ICON_RESIZE,
+                Accent::Indigo,
+                windows::page,
+            ),
+            &[
+                "gaps",
+                "focus ring",
+                "border",
+                "shadow",
+                "title bars",
+                "alt tab",
+                "window switcher",
+                "overview",
+                "hot corner",
+                "column width",
+                "tiling",
+            ],
+        ),
+        &["layout", "multitasking"],
     ),
     with_subs(
         aliased(

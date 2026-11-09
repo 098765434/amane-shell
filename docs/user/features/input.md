@@ -84,10 +84,26 @@ niri's IPC doesn't report binds, so `input/binds.rs` reads the `binds` blocks:
 
 The list is read-only: shortcuts are changed in `config.kdl`.
 
+## Pointer and gestures
+
+- **Pointer** group, in `input.kdl`:
+  - focus follows the pointer (`focus-follows-mouse`);
+  - the pointer jumps to a window focused from the keyboard (`warp-mouse-to-focus`);
+  - left-handed, for the mouse and the touchpad together.
+- **Touchpad** and **Mouse** groups:
+  - scroll speed, a quarter to twice (`scroll-factor`);
+  - middle click by pressing both buttons (mouse);
+  - off while a mouse is connected (touchpad).
+- **Gestures**, shown with a touchpad: **Super and swipe moves windows** (`mod-swipe`, the emaki
+  fork's). It's niri's `gestures` section, so it's kept in `settings.kdl`
+  ([windows.md](windows.md#where-the-settings-go)).
+- On the **Keyboard Shortcuts** sub-page, **Show the shortcuts at login**
+  (`hotkey-overlay skip-at-startup`), also in `settings.kdl`.
+
 ## Not yet
 
 - Editing shortcuts.
-- Gestures ([backlog](../../developer/backlog.md) #15).
+- Gestures beyond Super and swipe ([backlog](../../developer/backlog.md) #15).
 - Trackpoint, tablet and touchscreen settings, which are kept as they are.
 - Sticky and slow keys.
 - A per-device setting: niri sets all touchpads alike and all mice alike.

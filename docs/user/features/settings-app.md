@@ -113,6 +113,13 @@ mouse's tap to click, natural scrolling, off while typing, speed, acceleration, 
 scroll method, written to niri's `input.kdl`. The layout stays under General. **Keyboard
 Shortcuts** is a sub-page listing every bind in niri's config, read-only. See [input.md](input.md).
 
+### Windows
+
+niri's layout (gaps, new windows' width, centering), the focus ring (following the accent), border,
+shadows, the mat, title bars, the Alt+Tab switcher, the overview's size and the hot corner, in
+niri's `settings.kdl`. The same file holds Appearance's **Pointer** group (cursor theme and size),
+Desktop's **Screenshots** group, and Input's Super-and-swipe gesture. See [windows.md](windows.md).
+
 ### Network
 
 Wi‑Fi (the radio, saved networks, joining a hidden one), Ethernet, VPNs (a switch each, and
