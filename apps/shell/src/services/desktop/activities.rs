@@ -105,6 +105,14 @@ pub fn start(owner: &str, content: ActivityContent, sink: Option<Sink>) -> u32 {
     handle
 }
 
+/// Whether `owner` has an activity `handle` that hasn't begun to leave.
+pub fn owns(owner: &str, handle: u32) -> bool {
+    registry()
+        .live
+        .iter()
+        .any(|live| live.handle == handle && live.owner == owner && live.leaving.is_none())
+}
+
 /// Changes `owner`'s activity `handle`; `alert` brings its expanded view
 /// up for a moment. False when it has none by that handle.
 pub fn update(owner: &str, handle: u32, content: ActivityContent, alert: bool) -> bool {

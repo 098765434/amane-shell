@@ -8,11 +8,14 @@
 //!
 //! Everything a program put up goes when it leaves the bus.
 
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, LazyLock, Mutex, MutexGuard};
 use std::thread;
+use std::time::Instant;
 
 use amane::{Argument, Bus, Method};
+use emaki_extension::budget::{self, Limiter, Offer};
 use emaki_extension::{
     ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH,
     ProtocolError, encode,
@@ -64,6 +67,7 @@ const TAKEN: &str = "org.emaki.StatusBar1.Error.IdTaken";
 const UNKNOWN: &str = "org.emaki.StatusBar1.Error.Unknown";
 const LEVEL: &str = "org.emaki.StatusBar1.Error.Level";
 const TOO_LARGE: &str = "org.emaki.StatusBar1.Error.TooLarge";
+const BUSY: &str = "org.emaki.StatusBar1.Error.Busy";
 
 /// The error a refused payload is answered with: a level or a size have names
 /// of their own, so a program can tell "needs a newer shell" from a bug.
@@ -175,6 +179,7 @@ fn forget(owner: &str) {
     if gone {
         StatusApps::changed();
     }
+    budgets().remove(owner);
     activities::end_all_of(owner);
 }
 
@@ -223,6 +228,8 @@ fn answer(method: &Method) {
                         Dismiss::decode(&json).map_err(refused)
                     });
                 dismiss.and_then(|dismiss| {
+                    spend(&sender)?;
+                    forget_held(&sender, &Object::Activity(handle));
                     activities::end(&sender, handle, dismiss)
                         .then_some(())
                         .ok_or_else(|| (UNKNOWN, format!("no activity {handle} of yours")))
@@ -244,9 +251,25 @@ fn missing(what: &str) -> (&'static str, String) {
     (INVALID, format!("the call needs {what}"))
 }
 
-/// Puts up (or, `update`, changes) the item a spec describes.
+/// Puts up (or, `update`, changes) the item a spec describes. An update over the
+/// program's budget is held and coalesced; putting one up spends a call.
 fn register(sender: &str, json: &str, update: bool) -> Answer {
     let spec = ItemSpec::decode(json).map_err(refused)?;
+    if !update {
+        spend(sender)?;
+        return put(sender, spec, false);
+    }
+    match item(&spec.id) {
+        Some(item) if item.owner != sender => {
+            Err((TAKEN, format!("another program has the item {}", spec.id)))
+        }
+        Some(_) => offer(sender, Object::Item(spec.id.clone()), Held::Item(spec)),
+        None => Err((UNKNOWN, format!("no item {} of yours", spec.id))),
+    }
+}
+
+/// Puts an item up or changes it, now.
+fn put(sender: &str, spec: ItemSpec, update: bool) -> Answer {
     let name = spec.title.clone().unwrap_or_else(|| spec.tooltip.clone());
     let id = spec.id.clone();
     {
@@ -274,6 +297,8 @@ fn register(sender: &str, json: &str, update: bool) -> Answer {
 }
 
 fn remove(sender: &str, id: &str) -> Answer {
+    spend(sender)?;
+    forget_held(sender, &Object::Item(id.to_string()));
     {
         let mut items = items_now();
         let Some(index) = items
@@ -291,6 +316,7 @@ fn remove(sender: &str, id: &str) -> Answer {
 /// Starts an activity whose buttons and leaving are told to `sender`.
 fn start(sender: &str, json: &str) -> Answer<u32> {
     let content = ActivityContent::decode(json).map_err(refused)?;
+    spend(sender)?;
     // the handle is only known once it has started
     let numbered = Arc::new(AtomicU32::new(0));
     let owner = sender.to_string();
@@ -314,9 +340,160 @@ fn start(sender: &str, json: &str) -> Answer<u32> {
 
 fn update(sender: &str, handle: u32, json: &str, alert: bool) -> Answer {
     let content = ActivityContent::decode(json).map_err(refused)?;
-    activities::update(sender, handle, content, alert)
-        .then_some(())
-        .ok_or_else(|| (UNKNOWN, format!("no activity {handle} of yours")))
+    if !activities::owns(sender, handle) {
+        return Err((UNKNOWN, format!("no activity {handle} of yours")));
+    }
+    offer(
+        sender,
+        Object::Activity(handle),
+        Held::Activity {
+            handle,
+            content,
+            alert,
+        },
+    )
+}
+
+/// What a program's update is to.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+enum Object {
+    Item(String),
+    Activity(u32),
+}
+
+/// An update held until the program's budget allows it.
+#[derive(Debug)]
+enum Held {
+    Item(ItemSpec),
+    Activity {
+        handle: u32,
+        content: ActivityContent,
+        alert: bool,
+    },
+}
+
+/// A program's budget, and when its held updates are next looked at.
+struct Budget {
+    limiter: Limiter<Object, Held>,
+    armed: Option<Instant>,
+}
+
+static BUDGETS: LazyLock<Mutex<HashMap<String, Budget>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+fn budgets() -> MutexGuard<'static, HashMap<String, Budget>> {
+    BUDGETS.locked()
+}
+
+/// `owner`'s budget, full the first time it calls.
+fn budget_of<'a>(budgets: &'a mut HashMap<String, Budget>, owner: &str) -> &'a mut Budget {
+    budgets.entry(owner.to_string()).or_insert_with(|| Budget {
+        limiter: Limiter::new(Instant::now()),
+        armed: None,
+    })
+}
+
+fn busy() -> (&'static str, String) {
+    (
+        BUSY,
+        format!(
+            "over {} calls a second, or {} updates held",
+            budget::OWNER_RATE,
+            budget::QUEUE_DEPTH
+        ),
+    )
+}
+
+/// Spends one of `owner`'s calls on something that can't wait: putting it up or taking it down.
+fn spend(owner: &str) -> Answer {
+    let mut budgets = budgets();
+    if budget_of(&mut budgets, owner).limiter.call(Instant::now()) {
+        Ok(())
+    } else {
+        Err(busy())
+    }
+}
+
+/// Drops an update held for something that went.
+fn forget_held(owner: &str, object: &Object) {
+    if let Some(budget) = budgets().get_mut(owner) {
+        budget.limiter.forget(object);
+    }
+}
+
+/// An update: applied now if `owner`'s budget allows, else held and applied later.
+fn offer(owner: &str, object: Object, held: Held) -> Answer {
+    let offered = {
+        let mut budgets = budgets();
+        let budget = budget_of(&mut budgets, owner);
+        let offered = budget
+            .limiter
+            .update(object, held, Instant::now(), keep_alert);
+        if let Offer::Held(until) = offered {
+            arm(owner, budget, until);
+        }
+        offered
+    };
+    match offered {
+        Offer::Apply(held) => apply(owner, held),
+        Offer::Held(_) => Ok(()),
+        Offer::Busy => Err(busy()),
+    }
+}
+
+/// An alert on an update that was replaced before it showed still alerts.
+fn keep_alert(old: Held, new: &mut Held) {
+    if let (Held::Activity { alert: was, .. }, Held::Activity { alert, .. }) = (old, new) {
+        *alert |= was;
+    }
+}
+
+/// Looks at `owner`'s held updates at `until`, unless that is asked for sooner already.
+fn arm(owner: &str, budget: &mut Budget, until: Instant) {
+    if budget.armed.is_some_and(|armed| armed <= until) {
+        return;
+    }
+    budget.armed = Some(until);
+    let owner = owner.to_string();
+    // applying tells the bar to draw and may call the bus: off the event loop
+    amane::Timer::at(until, move || {
+        thread::spawn(move || flush(&owner));
+    });
+}
+
+/// Applies `owner`'s held updates whose time has come, and looks again for the rest.
+fn flush(owner: &str) {
+    let due = {
+        let mut budgets = budgets();
+        let Some(budget) = budgets.get_mut(owner) else {
+            return;
+        };
+        let now = Instant::now();
+        budget.armed = None;
+        let due = budget.limiter.due(now);
+        if let Some(next) = budget.limiter.next(now) {
+            arm(owner, budget, next);
+        }
+        due
+    };
+    for (_, held) in due {
+        if let Err((_, message)) = apply(owner, held) {
+            log::debug!("a held update from {owner} no longer applies: {message}");
+        }
+    }
+}
+
+fn apply(owner: &str, held: Held) -> Answer {
+    match held {
+        Held::Item(spec) => put(owner, spec, true),
+        Held::Activity {
+            handle,
+            content,
+            alert,
+        } => activities::update(owner, handle, content, alert)
+            .then_some(())
+            .ok_or_else(|| (UNKNOWN, format!("no activity {handle} of yours"))),
+    }
 }
 
 #[cfg(test)]
@@ -336,6 +513,30 @@ mod tests {
         );
         forget(":9.1");
         assert!(item("test.taken").is_none());
+    }
+
+    #[test]
+    fn a_program_over_its_budget_is_busy() {
+        for n in 0..budget::OWNER_RATE {
+            let spec = format!(r#"{{"id":"test.busy.{n}"}}"#);
+            assert_eq!(register(":9.4", &spec, false), Ok(()));
+        }
+        assert_eq!(
+            register(":9.4", r#"{"id":"test.busy.more"}"#, false).map_err(|e| e.0),
+            Err(BUSY)
+        );
+        // updates are held instead, up to the queue
+        for n in 0..budget::QUEUE_DEPTH {
+            let spec = format!(r#"{{"id":"test.busy.{n}","title":"later"}}"#);
+            assert_eq!(register(":9.4", &spec, true), Ok(()));
+        }
+        assert_eq!(
+            register(":9.4", r#"{"id":"test.busy.19","title":"later"}"#, true).map_err(|e| e.0),
+            Err(BUSY)
+        );
+        assert_eq!(item("test.busy.0").and_then(|item| item.spec.title), None);
+        forget(":9.4");
+        assert!(budgets().get(":9.4").is_none());
     }
 
     #[test]
