@@ -61,15 +61,6 @@ whose output is static: it can't follow the mode, so it holds one value for both
 
 ## Tokens to recreate or delete
 
-- The `widget.*` group was added to `tokens.json` by hand on 2026-11-09 (the desktop widgets,
-  [widgets.md](../../user/features/widgets.md)): `widget.card.pad` 16 and `.radius` 22,
-  `widget.dim.opacity` 0.45, `widget.drag.band` 0.1 and `.threshold` 6,
-  `widget.type.figure` 28 and `.figure-large` 40 (font sizes), and
-  `widget.gallery.width` 900, `.height` 420, `.sidebar` 240, `.inset` 20, `.preview` 120 and
-  `.open-scale` 0.96. Recreate them in Penpot under the same names, or the next export drops them.
-  What the widgets share with Quick Settings (the grid's cell, gap and margin, the shadow, the
-  lift of a card in hand) they read from `quick.*`, so there's no `widget.grid` or
-  `widget.shadow`. The component tier's ceiling (`tokens/lint.rs`) rose by these 13.
 - For drawing Emaki Settings in Penpot (2026-11-09), tokens were made in Penpot and copied into
   `tokens.json` for values the code still holds raw. The code doesn't read them yet; each
   replaces a `style::px()` value or a `TODO(token)` in `crates/kit/src/look/style.rs`,

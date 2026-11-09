@@ -219,10 +219,9 @@ same commands.
 Tokens: the widgets' own sizes are the `widget.*` group (the card's padding and corners, the
 dimming, the drag's dead band and threshold, the figures' sizes, the gallery's sizes); what they
 share with Quick Settings, whose grid they're laid out on, is `quick.*` (the grid's cell, gap and
-margin, the shadow, the lift of a card in hand); everything else is `sys.*`. `widget.*` was added
-to `tokens.json` by hand and waits to be recreated in Penpot
-([penpot-backlog.md](../../developer/design-system/penpot-backlog.md)). The grid follows the
-density, as Quick Settings' does.
+margin, the shadow, the lift of a card in hand); everything else is `sys.*`. `widget.*` is in
+Penpot, where the faces and the card's menu are drawn ("Widgets — Components" and "Widgets"). The
+grid follows the density, as Quick Settings' does.
 
 ## Related
 
