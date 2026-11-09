@@ -714,8 +714,21 @@ mod tests {
     /// consolidation brings them down, they may shrink but not grow. The
     /// component tier rose by 13 on 2026-11-09 for the `widget.*` group
     /// (the desktop widgets' own values; what they share with Quick
-    /// Settings they read from `quick.*`).
-    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 133), ("component", 176)];
+    /// Settings they read from `quick.*`). It rose by 11 more the same day
+    /// for the `dock.*` group (the dock's radius, running dot, icon size,
+    /// magnification and the insets its Penpot components lay out with),
+    /// and by 11 more for `bar.size.*` and `bar.label.*` (the status bar's
+    /// Regular and Comfortable sizes, held in code until then). On
+    /// 2026-11-09 too, for drawing Emaki Settings in Penpot: sys rose by 31
+    /// (the colours style.rs named in its TODOs, the sidebar tiles' and the
+    /// accent wells' colours, and three type roles) and component by 43 (the
+    /// `form.*` and `settings.*` groups, the values style.rs and the app
+    /// hold as `px()` constants). Then sys by 1 more for `sys.radius.window`,
+    /// the corners niri's window rule gives app windows.
+    /// Then component by 43 for the `launcher.*` group (the launcher's
+    /// sizes, held as constants in its code, so it could be drawn in
+    /// Penpot; fixed pixels, as the launcher doesn't follow the density).
+    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 165), ("component", 284)];
 
     #[test]
     fn no_tier_grows_past_its_ceiling() {

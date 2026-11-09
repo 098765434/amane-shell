@@ -89,13 +89,14 @@ impl BarSize {
     /// Every size, smallest first.
     pub const ALL: [BarSize; 3] = [Self::Compact, Self::Regular, Self::Comfortable];
 
-    /// How tall the bar is: `sys.size.panel.height` compact.
-    /// TODO(token): `bar.size.regular.height`, `bar.size.comfortable.height`.
+    /// How tall the bar is: `sys.size.panel.height` compact, else
+    /// `bar.size.<size>.height`.
     pub fn height(self) -> f32 {
+        use crate::tokens::{bar, sys};
         match self {
-            Self::Compact => crate::tokens::sys::size::panel::height(),
-            Self::Regular => 24.0,
-            Self::Comfortable => 32.0,
+            Self::Compact => sys::size::panel::height(),
+            Self::Regular => bar::size::regular::height(),
+            Self::Comfortable => bar::size::comfortable::height(),
         }
     }
 

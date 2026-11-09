@@ -1,26 +1,17 @@
 //! The bar's three sizes ([`BarSize`]): how tall it is, how big its glyphs
 //! and items are, and the one text size its labels share.
 //!
-//! Compact is the bar it always was, read from the tokens it always read.
-//! Regular and Comfortable are held here until Penpot has them
-//! (`docs/developer/design-system/penpot-backlog.md`).
+//! Compact is the bar it always was, read from the tokens it always read;
+//! Regular and Comfortable read `bar.size.regular.*` and
+//! `bar.size.comfortable.*`. Their height is [`BarSize::height`], which the
+//! apps read too.
 
 use emaki_kit::settings::{BarSize, status_bar};
 
 use crate::tokens::{TextStyle, bar, sys};
 
-/// The glyph, item width and padding: TODO(token):
-/// `bar.size.regular.{icon,item-width,padding-y}`. Its height is
-/// [`BarSize::height`], which the apps read too.
-const REGULAR: (f32, f32, f32) = (16.0, 30.0, 2.0);
-
-/// TODO(token): `bar.size.comfortable.{icon,item-width,padding-y}`.
-const COMFORTABLE: (f32, f32, f32) = (24.0, 40.0, 3.0);
-
-/// TODO(token): `bar.label` (13 px on a 16 px line) and
-/// `bar.label-comfortable` (14 px).
-const LABEL: f32 = 13.0;
-const LABEL_COMFORTABLE: f32 = 14.0;
+/// The labels' line, whatever their size (`bar.label.size` 13 px,
+/// `bar.label.size-comfortable` 14 px).
 pub const LINE_HEIGHT: f32 = 16.0;
 
 /// What one size of bar is made of.
@@ -51,19 +42,28 @@ impl Metrics {
                 bar::indicator::width(),
                 bar::panel::padding_y(),
             ),
-            BarSize::Regular => REGULAR,
-            BarSize::Comfortable => COMFORTABLE,
+            BarSize::Regular => {
+                use bar::size::regular;
+                (regular::icon(), regular::item_width(), regular::padding_y())
+            }
+            BarSize::Comfortable => {
+                use bar::size::comfortable;
+                (
+                    comfortable::icon(),
+                    comfortable::item_width(),
+                    comfortable::padding_y(),
+                )
+            }
         };
-        // TODO(token): `bar.size.comfortable.gap`
         let gap = if size == BarSize::Comfortable {
-            sys::space::gap::xs()
+            bar::size::comfortable::gap()
         } else {
             sys::space::gap::_2xs()
         };
         let label = if size == BarSize::Comfortable {
-            LABEL_COMFORTABLE
+            bar::label::size_comfortable()
         } else {
-            LABEL
+            bar::label::size()
         };
         Self {
             height,

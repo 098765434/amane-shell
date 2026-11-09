@@ -361,8 +361,8 @@ It's built on the kit's [`ScrollView`, `Kinetic`, `AxisLock`, `Pager` and
 [`workspace_menu`](dock.md#workspace_menu) and
 [`text_edit`](quick-settings.md#searchfield-and-text_edit).
 
-Sizes particular to the launcher are `TODO(token)` constants until Penpot has a `launcher.*` set
-(see [penpot-backlog.md](../../developer/design-system/penpot-backlog.md)). Everything else reads `sys.*`, so the launcher follows the
+Sizes particular to the launcher are `TODO(token)` constants. Penpot now has a `launcher.*` set for
+them, which the code doesn't read yet (see [penpot-backlog.md](../../developer/design-system/penpot-backlog.md)). Everything else reads `sys.*`, so the launcher follows the
 light and dark themes and the density.
 
 ## Known limits

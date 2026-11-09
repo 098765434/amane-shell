@@ -32,21 +32,11 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `dock.icon.size`, `dock.icon.least`, `dock.radius`, `dock.reveal.strip` | 44, 20, 18, 2 | `dock/mod.rs` (`ICON`, `LEAST_ICON`, `RADIUS`, `STRIP`) |
 | `dock.running.size` | 4 | `dock/item.rs` (`RUNNING`) |
 | `dock.drag.threshold` | 6 | `dock/drag.rs` (`THRESHOLD`) |
-| `dock.motion.*` (reveal, hide delay, resize, item, magnify scales and lifts, hover, tooltip, spring load) | see `DOCK` | `dock/motion.rs` (`DOCK`); add `dock` to `tokens::COMPONENTS` with the first `dock.*` token |
-| `bar.size.regular.{height,icon,item-width,padding-y}`, `bar.size.comfortable.{…}` | 24, 16, 30, 2; 32, 24, 40, 3 | `crates/kit/src/platform/settings/status_bar.rs` (`BarSize::height`), `status_bar/size.rs` (`REGULAR`, `COMFORTABLE`); compact keeps `sys.size.panel.height`, `sys.size.icon.m`, `bar.indicator.width`, `bar.panel.padding-y` |
-| `bar.label`, `bar.label-comfortable` (typography) | 13 px and 14 px on a 16 px line | `status_bar/size.rs` (`LABEL`, `LABEL_COMFORTABLE`, `LINE_HEIGHT`) |
+| `dock.motion.*` (reveal, hide delay, resize, item, magnify scales and lifts, hover, tooltip, spring load) | see `DOCK` | `dock/motion.rs` (`DOCK`) |
 | `bar.workspace.shape.size`, `bar.workspace.shape.area` | 16, a 13 px circle's area | `status_bar/workspace_shape.rs` (`BOX`, `AREA`); `bar.workspace-dot.*` is read by no code now |
-| `launcher.grid.cols`, `.rows`, `.cell`, `.icon`, `.highlight` | 5, 3, 150, 64, 84 | `launcher/mod.rs` (`COLS`, `ROWS`, `CELL`, `ICON`, `ICON_BOX`) |
-| `launcher.panel.inset`, `.gap`, `launcher.pills.height`, `launcher.empty.height` | 15, 10, 40, 200 | `launcher/mod.rs` (`INSET`, `GAP`, `PILLS`, `EMPTY_H`) |
-| `launcher.pill.width`, `.height`, `launcher.mode-button.size`, `.gap`, `launcher.sheet.radius`, `launcher.top` | 680, 52, 52, 12, 26, 0.2 | `launcher/shape.rs` (`PILL_W`, `PILL_H`, `CIRCLE`, `CIRCLE_GAP`, `SHEET_RADIUS`, `TOP`) |
-| `launcher.result.height`, `.gap`, `.max-rows`, `.icon`, `.badge` | 52, 4, 8, 40, 16 | `launcher/mod.rs` (`ROW`, `ROW_GAP`, `MAX_ROWS`), `launcher/results.rs` (`RESULT_ICON`, `BADGE`) |
-| `launcher.answer.height`, `.size`, `launcher.chip.height` | 88, 30, 32 | `launcher/mod.rs` (`ANSWER_H`, `CHIP_H`), `launcher/results.rs` (`ANSWER_TEXT`) |
-| `launcher.open.scale`, `launcher.scroll.wheel-step` | 0.96, 60 | `launcher/mod.rs` (`OPEN_SCALE`, `WHEEL_STEP`) |
-| `launcher.search.size`, `.caret`, `.inset`, `launcher.leading.size`, `.glyph`, `launcher.keycap.height` | 22, 2×26, 16, 30, 22, 24 | `launcher/header.rs` (`SEARCH_TEXT`, `CARET`, `ROW_INSET`, `LEADING`, `GLYPH`, `KEYCAP`) |
-| `launcher.mode-button.glyph`, `.lift`, `.slide` | 24, 1.06, 12 | `launcher/header.rs` (`MODE_GLYPH`, `MODE_LIFT`, `MODE_SLIDE`) |
-| `launcher.highlight.radius` | 14 | `launcher/grid.rs` (`HIGHLIGHT_RADIUS`); add `launcher` to `tokens::COMPONENTS` with the first `launcher.*` token |
-| `launcher.highlight.unfocused`, `launcher.scrollbar.idle`, `launcher.paging.*` | 0.45, 800 ms, 450 ms spring 0.08 / flick 1.2 / band 0.3 | `launcher/mod.rs` (`UNFOCUSED`, `SCROLLBAR_IDLE`, `PAGING`) |
-| `launcher.focus-ring.width`, `.gap`, `.opacity`, `launcher.empty.icon` | 2, 2, 0.55, 40 | `launcher/header.rs` (`RING`, `RING_GAP`, `RING_ALPHA`), `launcher/results.rs` (`EMPTY_ICON`) |
+| `launcher.open.scale`, `launcher.mode-button.slide` | 0.96, 12 | `launcher/mod.rs` (`OPEN_SCALE`), `launcher/header.rs` (`MODE_SLIDE`) |
+| `launcher.paging.*` | 450 ms spring 0.08 / flick 1.2 / band 0.3 | `launcher/mod.rs` (`PAGING`) |
+| `sys.scroll.wheel-step`, `sys.scrollbar.idle` | 60, 800 ms | `crates/kit/src/animation/kinetic.rs` (`WHEEL_STEP`), `crates/kit/src/containers/scroll_view.rs` (`ScrollbarFade::IDLE`); the launcher reads them from the kit |
 | `sys.scrollbar.width`, `.thumb-min` | 6, 32 | `crates/kit/src/containers/scroll_view.rs` (`SCROLLBAR`, `THUMB_MIN`) |
 | `sys.caret.width` | 2 | `search_field.rs` (`CARET`) |
 | `customize.window.width`, `.height` | 860, 960 | `quick_settings/customize/mod.rs` (`WIDTH`, `HEIGHT`: the Customize window, shorter on a short display) |
@@ -80,6 +70,48 @@ whose output is static: it can't follow the mode, so it holds one value for both
   What the widgets share with Quick Settings (the grid's cell, gap and margin, the shadow, the
   lift of a card in hand) they read from `quick.*`, so there's no `widget.grid` or
   `widget.shadow`. The component tier's ceiling (`tokens/lint.rs`) rose by these 13.
+- For drawing Emaki Settings in Penpot (2026-11-09), tokens were made in Penpot and copied into
+  `tokens.json` for values the code still holds raw. The code doesn't read them yet; each
+  replaces a `style::px()` value or a `TODO(token)` in `crates/kit/src/look/style.rs`,
+  `containers/form.rs` and the controls, or a constant in `apps/settings/src/main.rs`:
+  - Colours (light / dark): `sys.color.control.fill`, `sys.color.field.border`,
+    `sys.color.surface.group.bg` and `.border`, `sys.color.separator-soft` (the code's TODO says
+    `separator.soft`, but `sys.color.separator` is a leaf), `sys.color.shadow`, and
+    `sys.color.sidebar.edge`.
+  - The sidebar tiles' accents as `sys.color.tile.*` (`foundation/color.rs`), and the accent wells'
+    colours as `sys.color.swatch.*` (`ACCENTS`).
+  - `sys.radius.window` (`{ref.radius.16}`): the corners niri's catch-all `window-rule` gives app
+    windows (`geometry-corner-radius 16` in the niri config). niri draws them, so no code reads
+    the token; it's there for the designs, and for the config to follow if it's ever generated.
+  - Type roles: `sys.type.subtitle` (11 medium), `sys.type.group-header` (13 bold) and
+    `sys.type.page-title` (15 bold, with `ref.font.size.15`).
+  - `form.*`: rows, groups, the control, the dropdown, the wells, the thumbnail, the leading tile
+    and `form.disabled.opacity`.
+  - `settings.*`: the window, the sidebar, the toolbar, the nav buttons, the menu width and the
+    page limits.
+  - The sizes scale with density, like `px()`; radii, strokes and glyph sizes don't (manual §8.2),
+    although `px()` scales those too. `form` and `settings` are in `tokens::COMPONENTS`, and the
+    tier ceilings rose by 31 (sys) and 43 (component).
+- For drawing the launcher in Penpot (2026-11-09), the `launcher.*` group was made in Penpot and
+  copied into `tokens.json`, under the names this file listed. The code doesn't read them yet;
+  each replaces a `TODO(token)` constant in `apps/shell/src/surfaces/launcher/` (`shape.rs`,
+  `mod.rs`, `header.rs`, `grid.rs`, `results.rs`). They're fixed pixels, as the launcher doesn't
+  follow the density:
+  - `launcher.pill.width` 680, `.height` 52, `launcher.sheet.radius` 26, `launcher.top` 0.2.
+  - `launcher.mode-button.size` 52, `.gap` 12, `.glyph` 24, `.lift` 1.06.
+  - `launcher.panel.inset` 15, `.gap` 10, `.wide` 780 (Applications, Files and Clipboard),
+    `launcher.pills.height` 40, `launcher.empty.height` 200 and `.icon` 40.
+  - `launcher.grid.cols` 5, `.rows` 3, `.cell` 150, `.icon` 64, `.highlight` 84,
+    `launcher.highlight.radius` 14 and `.unfocused` 0.45.
+  - `launcher.result.height` 52, `.gap` 4, `.max-rows` 8, `.icon` 40, `.badge` 16, and
+    `launcher.heading.height` 32 (`HEADING − ROW_GAP`).
+  - `launcher.answer.height` 88, `.size` 30, `.dim` 0.8 (the question's and the hint's alpha), and
+    `launcher.chip.height` 32.
+  - `launcher.search.size` 22, `.inset` 16, `.caret-width` 2, `.caret-height` 26,
+    `launcher.leading.size` 30, `.glyph` 22, and `launcher.keycap.height` 24.
+  - `launcher.token.opacity` 0.18 (the scope token's wash), `launcher.focus-ring.width` 2, `.gap` 2
+    and `.opacity` 0.55, and `launcher.preview.list-width` 420 (`CLIP_LIST_W`).
+  - `launcher` is in `tokens::COMPONENTS`, and the component tier's ceiling rose by these 43.
 - `bar.overview.height` is no longer read: the bar keeps its compact height in the overview, where
   the [dock](../../user/features/dock.md) rises instead. Delete it in Penpot.
 - `bar.window-item.max-width`, `bar.window-item.radius`, `bar.pill.padding-y` and

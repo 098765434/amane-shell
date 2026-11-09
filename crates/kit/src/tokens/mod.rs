@@ -59,7 +59,11 @@ pub const COMPONENTS: &[&str] = &[
     "notification",
     "quick",
     "dialog",
+    "dock",
     "widget",
+    "form",
+    "settings",
+    "launcher",
     // niri's materials, for the config generator (src/tokens/layer_rules.rs)
     "material",
 ];
