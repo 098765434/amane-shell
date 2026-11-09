@@ -69,6 +69,11 @@ pub fn run(mut engine: Engine, cases: &str, snapshot: &str, json: bool) -> Resul
     let mut times = Vec::new();
     // `EMAKI_ASSISTANT_NO_RULES=1` scores Needle alone
     let rules_on = std::env::var_os("EMAKI_ASSISTANT_NO_RULES").is_none();
+    // `EMAKI_ASSISTANT_OFFERED=0.2` tries another floor than the shell's
+    let floor = std::env::var("EMAKI_ASSISTANT_OFFERED")
+        .ok()
+        .and_then(|floor| floor.parse().ok())
+        .unwrap_or(OFFERED);
     for case in &cases {
         let started = Instant::now();
         let ruled = rules_on
@@ -84,7 +89,7 @@ pub fn run(mut engine: Engine, cases: &str, snapshot: &str, json: bool) -> Resul
                     eprintln!("   {answer}");
                 }
                 tools::read(&answer, &snapshot)
-                    .filter(|reading| reading.confidence >= OFFERED)
+                    .filter(|reading| reading.confidence >= floor)
                     .map(|reading| (reading.command, reading.confidence, reading.source))
             }
         };

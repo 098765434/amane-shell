@@ -6,7 +6,7 @@
 
 use serde_json::{Value, json};
 
-use crate::command::{Command, Level, Media, Power, State, Target};
+use crate::command::{Command, Level, Media, State, Target};
 use crate::snapshot::Snapshot;
 use crate::{Reading, Source};
 
@@ -61,15 +61,27 @@ pub fn tools(snapshot: &Snapshot) -> String {
     if snapshot.brightness {
         levels.push("brightness");
     }
+    // two narrow tools, every argument required: one optional argument
+    // each, Cactus drops whichever the request doesn't name ("crank up the
+    // volume" lost its direction); increase and decrease are words its
+    // repair knows the synonyms of
     tools.push(tool(
-        "set_level",
-        "Volume (louder, quieter) or screen brightness (brighter, dimmer): a percent, or up or down.",
+        "change_level",
+        "Make the volume louder or quieter, or the screen brighter or dimmer",
         json!({
             "what": {"type": "string", "enum": levels},
-            "percent": {"type": "integer", "description": "0 to 100"},
-            "change": {"type": "string", "enum": ["up", "down"]},
+            "direction": {"type": "string", "enum": ["increase", "decrease"]},
         }),
-        &["what"],
+        &["what", "direction"],
+    ));
+    tools.push(tool(
+        "set_level",
+        "Set the volume or the screen brightness to a percent",
+        json!({
+            "what": {"type": "string", "enum": levels},
+            "percent": {"type": "integer", "minimum": 0, "maximum": 100},
+        }),
+        &["what", "percent"],
     ));
 
     if !snapshot.apps.is_empty() {
@@ -81,7 +93,7 @@ pub fn tools(snapshot: &Snapshot) -> String {
             .collect();
         tools.push(tool(
             "open_app",
-            "Open or launch an application",
+            "Open, launch or start an application",
             json!({"name": {"type": "string", "enum": names}}),
             &["name"],
         ));
@@ -94,15 +106,9 @@ pub fn tools(snapshot: &Snapshot) -> String {
         &["command"],
     ));
 
-    let powers: Vec<&str> = snapshot.powers.iter().map(|power| power.name()).collect();
-    if !powers.is_empty() {
-        tools.push(tool(
-            "session",
-            "Lock the screen, sleep, log out, restart or power off the computer",
-            json!({"action": {"type": "string", "enum": powers}}),
-            &["action"],
-        ));
-    }
+    // no session tool: the session is the rules' alone (a model's guess at
+    // it, "I can't hear anything" as lock, costs too much when it's wrong),
+    // and Needle is best with five tools or fewer
 
     Value::Array(tools).to_string()
 }
@@ -115,11 +121,6 @@ pub fn read(answer: &Value, snapshot: &Snapshot) -> Option<Reading> {
     let name = call.get("name")?.as_str()?;
     let arguments = call.get("arguments")?;
     let command = command(name, arguments, snapshot)?;
-    // the session is the rules' alone: a model's guess at it ("I can't hear
-    // anything" as lock) costs too much when it's wrong
-    if matches!(command, Command::Power { .. }) {
-        return None;
-    }
     // a model fine-tuned here has no confidence head and says null: its
     // calls are offered, as suggestions, on the strength of its eval
     let mut confidence = answer
@@ -161,7 +162,7 @@ fn command(name: &str, arguments: &Value, snapshot: &Snapshot) -> Option<Command
                 state,
             })
         }
-        "set_level" => {
+        "set_level" | "change_level" => {
             let level = match text(arguments, "what")? {
                 "volume" => Level::Volume,
                 "brightness" if snapshot.brightness => Level::Brightness,
@@ -171,10 +172,11 @@ fn command(name: &str, arguments: &Value, snapshot: &Snapshot) -> Option<Command
                 .get("percent")
                 .and_then(Value::as_u64)
                 .filter(|percent| *percent <= 100);
-            let target = match (percent, text(arguments, "change")) {
+            let direction = text(arguments, "direction").or_else(|| text(arguments, "change"));
+            let target = match (percent, direction) {
                 (Some(percent), _) => Target::Percent(percent as u8),
-                (None, Some("up")) => Target::Up,
-                (None, Some("down")) => Target::Down,
+                (None, Some("increase" | "up")) => Target::Up,
+                (None, Some("decrease" | "down")) => Target::Down,
                 _ => return None,
             };
             Some(Command::Level { level, target })
@@ -188,13 +190,6 @@ fn command(name: &str, arguments: &Value, snapshot: &Snapshot) -> Option<Command
         "media" => Some(Command::Media {
             media: Media::named(text(arguments, "command")?)?,
         }),
-        "session" => {
-            let power = Power::named(text(arguments, "action")?)?;
-            snapshot
-                .powers
-                .contains(&power)
-                .then_some(Command::Power { power })
-        }
         _ => None,
     }
 }

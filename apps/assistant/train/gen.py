@@ -620,7 +620,8 @@ def positives(rng, snapshot):
         if what == "brightness" and not snapshot["brightness"]:
             continue
         for q in phrases:
-            out.append((q, q, [{"name": "set_level", "arguments": {"what": what, "change": change}}],
+            direction = {"up": "increase", "down": "decrease"}[change]
+            out.append((q, q, [{"name": "change_level", "arguments": {"what": what, "direction": direction}}],
                         f"{what} {change}"))
     for what, templates in LEVEL_SET.items():
         if what == "brightness" and not snapshot["brightness"]:
@@ -727,7 +728,10 @@ def negatives(rng, snapshot, kind):
 # of every hundred rows, how many of each
 MIX = {
     # the commands, about as often as each is asked
-    "set_switch": 18, "set_level": 14, "open_app": 12, "media": 8, "session": 6,
+    "set_switch": 18, "change_level": 9, "set_level": 5, "open_app": 12, "media": 8,
+    # the session is the rules' alone: no tool is offered for it, so its
+    # words ask for no call (the dev set still expects the rules' command)
+    "session": 6,
     # and what isn't one
     "general": 10, "question": 7, "bare": 4, "negated": 8, "absent": 7,
     # a command whose tool isn't offered
@@ -778,7 +782,9 @@ def expect(answers, snapshot):
                 state = "toggle" if s["on"] is None else args["state"]
                 return {"do": "switch", "control": s["control"], "state": state}
     if name == "set_level":
-        target = {"percent": args["percent"]} if "percent" in args else args["change"]
+        return {"do": "level", "level": args["what"], "target": {"percent": args["percent"]}}
+    if name == "change_level":
+        target = {"increase": "up", "decrease": "down"}[args["direction"]]
         return {"do": "level", "level": args["what"], "target": target}
     if name == "open_app":
         for a in snapshot["apps"]:
@@ -812,9 +818,11 @@ def rows_for(rng, machines, count, dev, held):
         snapshot, tools = machines[index]
         kind = rng.choices(kinds, weights=weights)[0]
         offered = tools
-        if kind in ("set_switch", "set_level", "open_app", "media", "session", "removed"):
+        if kind in ("set_switch", "change_level", "set_level", "open_app", "media", "session",
+                    "removed"):
             found = positives(rng, snapshot)
             if kind == "removed":
+                found = [f for f in found if f[2][0]["name"] != "session"]
                 template, q, answers, _ = rng.choice(found)
                 offered = [t for t in tools if t["name"] != answers[0]["name"]]
                 answers, reasoning = [], f"nothing offered for {answers[0]['name'].replace('_', ' ')}"
@@ -823,6 +831,8 @@ def rows_for(rng, machines, count, dev, held):
                 if not found:
                     continue
                 template, q, answers, reasoning = rng.choice(found)
+                if kind == "session" and not dev:
+                    answers, reasoning = [], "the session isn't offered"
         else:
             got = negatives(rng, snapshot, kind)
             if got is None:

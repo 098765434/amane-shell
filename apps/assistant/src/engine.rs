@@ -54,6 +54,9 @@ pub struct Engine {
     models: PathBuf,
     cache: PathBuf,
     loaded: bool,
+    // whether needle3.cact's confidence head was trained with it: one
+    // fine-tuned here wasn't, and its score means nothing
+    scored: bool,
     // the system facts and tools Needle was last set up with
     session: Option<(String, String)>,
     listening: Option<Listening>,
@@ -76,6 +79,7 @@ impl Engine {
             models,
             cache,
             loaded: false,
+            scored: true,
             session: None,
             listening: None,
         }
@@ -95,6 +99,10 @@ impl Engine {
         let started = Instant::now();
         for name in ["needle3.cact", "whistle.cact"] {
             load(&self.models.join(name))?;
+        }
+        self.scored = scored(&self.models.join("needle3.cact"));
+        if !self.scored {
+            log::info!("needle3.cact has no confidence head of its own: its calls are suggestions");
         }
         self.loaded = true;
         log::info!(
@@ -119,7 +127,13 @@ impl Engine {
         }
         let answer = complete(text)?;
         reset();
-        serde_json::from_str(&answer).map_err(|error| format!("Cactus answered oddly: {error}"))
+        let mut answer: Value =
+            serde_json::from_str(&answer).map_err(|error| format!("Cactus answered oddly: {error}"))?;
+        if !self.scored {
+            // what Cactus's own Python does for such weights
+            answer["confidence"] = Value::Null;
+        }
+        Ok(answer)
     }
 
     pub fn listen_start(
@@ -185,6 +199,68 @@ impl Engine {
             // a stream that already ended stops as well
             let _ = stream_stop();
         }
+    }
+}
+
+/// Whether a Needle 3 archive carries a confidence head trained for it, read
+/// from its head manifest as Cactus's Python reads it
+/// (`cactus.agent.text._confidence_head_present`). `cactus build` of a LoRA
+/// fine-tuned here leaves it out. Unreadable is taken as scored: the
+/// shipped model is.
+pub fn scored(path: &Path) -> bool {
+    std::fs::File::open(path)
+        .and_then(|mut file| head_manifest(&mut file))
+        .unwrap_or(Some(true))
+        .unwrap_or(false)
+}
+
+// the archive: a header of 48 u32s and an f32, a codebook of u32s, then one
+// 44-byte record per tensor (dtype u8, ndim u8, u16, length u32, three u32s,
+// offset u64, u64, two u32s). The last tensor is raw; the head codes are an
+// fp16 vector of one to three, 6 tensors per head before the last two.
+fn head_manifest(file: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Option<bool>> {
+    use std::io::SeekFrom;
+    const FP16: u8 = 1;
+    const RAW: u8 = 4;
+    const CONFIDENCE: u16 = 2;
+    let mut header = [0u8; 48 * 4 + 4];
+    file.read_exact(&mut header)?;
+    let word = |at: usize| u32::from_le_bytes(header[at * 4..at * 4 + 4].try_into().unwrap());
+    let (tensors, codebook) = (word(1) as usize, word(2) as u64);
+    file.seek(SeekFrom::Current(codebook as i64 * 4))?;
+    let mut records = vec![0u8; tensors * 44];
+    file.read_exact(&mut records)?;
+    let record = |index: usize| &records[index * 44..index * 44 + 44];
+    if tensors == 0 || record(tensors - 1)[0] != RAW {
+        return Ok(Some(false));
+    }
+    for heads in 1..=3usize {
+        let Some(index) = tensors.checked_sub(2 + 6 * heads) else {
+            continue;
+        };
+        let r = record(index);
+        let length = u32::from_le_bytes(r[4..8].try_into().unwrap()) as usize;
+        if r[0] != FP16 || r[1] != 1 || length != heads {
+            continue;
+        }
+        let offset = u64::from_le_bytes(r[20..28].try_into().unwrap());
+        file.seek(SeekFrom::Start(offset))?;
+        let mut codes = vec![0u8; 2 * heads];
+        file.read_exact(&mut codes)?;
+        let codes = codes.chunks(2).map(|c| f16_to_f32(u16::from_le_bytes([c[0], c[1]])));
+        return Ok(Some(codes.map(|c| c.round() as u16).any(|c| c == CONFIDENCE)));
+    }
+    Ok(Some(false))
+}
+
+fn f16_to_f32(bits: u16) -> f32 {
+    let sign = if bits & 0x8000 != 0 { -1.0 } else { 1.0 };
+    let exponent = i32::from((bits >> 10) & 0x1f);
+    let fraction = f32::from(bits & 0x3ff);
+    match exponent {
+        0 => sign * fraction * 2f32.powi(-24),
+        31 => f32::NAN,
+        e => sign * (1.0 + fraction / 1024.0) * 2f32.powi(e - 15),
     }
 }
 
@@ -361,4 +437,50 @@ fn stream_process(_: &[f32], _: &CString, _: &CString) -> Result<String, String>
 #[cfg(not(cactus))]
 fn stream_stop() -> Result<String, String> {
     Err(NO_ENGINE.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    // an archive of `tensors` records, the head codes at `offset`
+    fn archive(codes: &[f32]) -> Vec<u8> {
+        let heads = codes.len();
+        let tensors = 2 + 6 * heads + 1;
+        let records = 48 * 4 + 4 + tensors * 44;
+        let mut bytes = vec![0u8; 48 * 4 + 4];
+        bytes[4..8].copy_from_slice(&(tensors as u32).to_le_bytes());
+        let mut table = vec![0u8; tensors * 44];
+        let index = tensors - 2 - 6 * heads;
+        let r = &mut table[index * 44..index * 44 + 44];
+        r[0] = 1;
+        r[1] = 1;
+        r[4..8].copy_from_slice(&(heads as u32).to_le_bytes());
+        r[20..28].copy_from_slice(&(records as u64).to_le_bytes());
+        table[(tensors - 1) * 44] = 4;
+        bytes.extend(table);
+        for code in codes {
+            // small whole numbers as fp16: exponent and fraction
+            let bits: u16 = match *code as u16 {
+                0 => 0,
+                1 => 0x3c00,
+                2 => 0x4000,
+                3 => 0x4200,
+                _ => unreachable!(),
+            };
+            bytes.extend(bits.to_le_bytes());
+        }
+        bytes
+    }
+
+    #[test]
+    fn the_confidence_head_is_found_in_the_manifest() {
+        let read = |codes: &[f32]| head_manifest(&mut Cursor::new(archive(codes))).unwrap();
+        assert_eq!(read(&[1.0, 2.0]), Some(true));
+        assert_eq!(read(&[2.0]), Some(true));
+        assert_eq!(read(&[1.0, 3.0]), Some(false));
+        assert_eq!(f16_to_f32(0x3c00), 1.0);
+        assert_eq!(f16_to_f32(0x4000), 2.0);
+    }
 }
