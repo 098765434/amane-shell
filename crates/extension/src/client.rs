@@ -5,7 +5,8 @@ use std::thread;
 use amane::{Argument, Bus, BusError, run_in_order};
 
 use crate::protocol::{
-    ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH, encode,
+    ActivityContent, ActivityEvent, BUS_NAME, Dismiss, Hello, INTERFACE, ItemEvent, ItemSpec, PATH,
+    ShellInfo, encode,
 };
 use emaki_base::sync::Locked as _;
 
@@ -30,6 +31,10 @@ struct Client {
 
     activities: HashMap<u64, Activity>,
     next: u64,
+
+    // who this program said it is, said again to every new bar, and what that bar answered
+    hello: Option<Hello>,
+    shell: Option<ShellInfo>,
 }
 
 // what this program has in the bar, kept so it can be sent again when the bar restarts
@@ -43,6 +48,48 @@ fn client() -> MutexGuard<'static, Client> {
 
 fn call(method: &str, arguments: &[Argument]) -> Result<amane::Value, BusError> {
     Bus::session().try_call(BUS_NAME, PATH, INTERFACE, method, arguments)
+}
+
+/// Tells the shell who this program is, `id` reverse-DNS like "org.emaki.drop", and gives back
+/// what it serves: its level, the kinds it takes, the user's locale and the bar's size. Said
+/// again to every bar that starts. None while no bar runs; a bar from before `Hello` answers
+/// as [`ShellInfo::default`]. Optional: items and activities work without it.
+pub fn hello(id: &str) -> Option<ShellInfo> {
+    listen();
+    client().hello = Some(Hello::new(id));
+    say_hello()
+}
+
+/// What the shell answered the last [`hello`], if one was said and a bar answered it.
+pub fn shell_info() -> Option<ShellInfo> {
+    client().shell.clone()
+}
+
+fn say_hello() -> Option<ShellInfo> {
+    let hello = client().hello.clone()?;
+    let shell = match call("Hello", &[Argument::Text(encode(&hello))]) {
+        Ok(reply) => ShellInfo::decode(reply.text()).unwrap_or_else(|error| {
+            log::warn!("the shell's answer to hello didn't read: {error}");
+            ShellInfo::default()
+        }),
+        // a bar from before hello: the bus's own answer, or the bar's "no method"
+        Err(error)
+            if error.name() == "org.freedesktop.DBus.Error.UnknownMethod"
+                || error.name().ends_with(".Error.Unknown") =>
+        {
+            ShellInfo::default()
+        }
+        Err(error) if error.name().ends_with(".Error.Level") => {
+            log::warn!(
+                "the shell doesn't serve this program's level: {}",
+                error.message()
+            );
+            return None;
+        }
+        Err(_) => return None,
+    };
+    client().shell = Some(shell.clone());
+    Some(shell)
 }
 
 /// A program's own item in the bar:
@@ -266,6 +313,8 @@ fn start_on_bar(local: u64, content: &ActivityContent) {
 
 // everything this program had in the bar, sent again to a bar that just started
 fn register_again() {
+    say_hello();
+
     let (items, activities) = {
         let mut client = client();
 
@@ -299,6 +348,8 @@ fn register_again() {
 // the bar quit: nothing it numbered means anything now
 fn forget_handles() {
     let mut client = client();
+
+    client.shell = None;
 
     client.activities.retain(|_, activity| !activity.ended);
 

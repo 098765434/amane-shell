@@ -16,6 +16,7 @@ use amane::{
     Key, Keyboard, Layer, LayerWindow, Padding, Parent, Rectangle, Row, Service, Shape, Size,
     Stack, Start, Text, TextInput, Widget, WindowSize, Zone, window_size,
 };
+use emaki_extension::BarEdge;
 use emaki_kit::app::{field_box, text_field};
 use emaki_kit::buttons::{IconButton, PushButton, Style};
 use emaki_kit::icons::{
@@ -30,7 +31,6 @@ use emaki_kit::settings::{
 };
 use emaki_kit::tokens::{Styled, sys};
 use emaki_phone::KdeConnect;
-use emaki_extension::BarEdge;
 
 use crate::state::{self, Changed, Outcome, Prompt, Target};
 use crate::tasks::{self, Job, Payload, name};

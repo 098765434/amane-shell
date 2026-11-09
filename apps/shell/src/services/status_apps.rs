@@ -17,10 +17,10 @@ use std::time::Instant;
 use amane::{Argument, Bus, Method};
 use emaki_extension::budget::{self, Limiter, Offer};
 use emaki_extension::{
-    ActivityContent, ActivityEvent, BUS_NAME, Dismiss, INTERFACE, ItemEvent, ItemSpec, PATH,
-    ProtocolError, encode,
+    ActivityContent, ActivityEvent, BUS_NAME, Dismiss, Hello, INTERFACE, ItemEvent, ItemSpec,
+    LEVEL, OLDEST_LEVEL, PATH, ProtocolError, ShellInfo, encode,
 };
-use emaki_kit::settings::remember_status_app;
+use emaki_kit::settings::{BarSize, remember_status_app};
 
 use super::desktop::activities;
 use emaki_kit::sync::Locked as _;
@@ -36,6 +36,10 @@ const INTROSPECTION: &str = r#"<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS 
  "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
 <node>
   <interface name="org.emaki.StatusBar1">
+    <method name="Hello">
+      <arg name="hello" type="s" direction="in"/>
+      <arg name="shell" type="s" direction="out"/>
+    </method>
     <method name="RegisterItem"><arg name="spec" type="s" direction="in"/></method>
     <method name="UpdateItem"><arg name="spec" type="s" direction="in"/></method>
     <method name="RemoveItem"><arg name="id" type="s" direction="in"/></method>
@@ -65,7 +69,7 @@ const INTROSPECTION: &str = r#"<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS 
 const INVALID: &str = "org.emaki.StatusBar1.Error.Invalid";
 const TAKEN: &str = "org.emaki.StatusBar1.Error.IdTaken";
 const UNKNOWN: &str = "org.emaki.StatusBar1.Error.Unknown";
-const LEVEL: &str = "org.emaki.StatusBar1.Error.Level";
+const LEVEL_ERROR: &str = "org.emaki.StatusBar1.Error.Level";
 const TOO_LARGE: &str = "org.emaki.StatusBar1.Error.TooLarge";
 const BUSY: &str = "org.emaki.StatusBar1.Error.Busy";
 
@@ -73,7 +77,7 @@ const BUSY: &str = "org.emaki.StatusBar1.Error.Busy";
 /// of their own, so a program can tell "needs a newer shell" from a bug.
 fn refused(error: ProtocolError) -> (&'static str, String) {
     let name = match error {
-        ProtocolError::Level(_) => LEVEL,
+        ProtocolError::Level(_) => LEVEL_ERROR,
         ProtocolError::TooLarge(_) => TOO_LARGE,
         ProtocolError::Malformed(_) | ProtocolError::NoId => INVALID,
     };
@@ -180,6 +184,7 @@ fn forget(owner: &str) {
         StatusApps::changed();
     }
     budgets().remove(owner);
+    HELLOS.locked().remove(owner);
     activities::end_all_of(owner);
 }
 
@@ -192,6 +197,16 @@ fn answer(method: &Method) {
     let number = |index: usize| arguments.get(index).map(|value| value.number() as u32);
 
     let answered = match method.name() {
+        "Hello" => match text(0)
+            .ok_or_else(|| missing("a hello"))
+            .and_then(|json| hello(&sender, &json))
+        {
+            Ok(shell) => {
+                method.reply(&[Argument::Text(encode(&shell))]);
+                return;
+            }
+            Err(error) => Err(error),
+        },
         "RegisterItem" => text(0)
             .ok_or_else(|| missing("a spec"))
             .and_then(|json| register(&sender, &json, false)),
@@ -249,6 +264,43 @@ type Answer<T = ()> = Result<T, (&'static str, String)>;
 
 fn missing(what: &str) -> (&'static str, String) {
     (INVALID, format!("the call needs {what}"))
+}
+
+/// Who each program said it is: its id and level, by its bus name.
+static HELLOS: LazyLock<Mutex<HashMap<String, Hello>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// A program says who it is: the shell answers what it serves.
+fn hello(sender: &str, json: &str) -> Answer<ShellInfo> {
+    let hello = Hello::decode(json).map_err(refused)?;
+    let said = HELLOS.locked().insert(sender.to_string(), hello.clone());
+    if said.as_ref() != Some(&hello) {
+        log::info!("{} ({sender}) speaks level {}", hello.id, hello.v);
+    }
+    Ok(shell_info())
+}
+
+/// What this shell serves, and what a program needs to match it.
+fn shell_info() -> ShellInfo {
+    let locale = ["LC_ALL", "LC_MESSAGES", "LANG"]
+        .iter()
+        .filter_map(|name| std::env::var(name).ok())
+        .find(|value| !value.is_empty());
+    let density = match emaki_kit::settings::status_bar().size {
+        BarSize::Compact => "compact",
+        BarSize::Regular => "regular",
+        BarSize::Comfortable => "comfortable",
+    };
+    ShellInfo {
+        v: LEVEL,
+        oldest: OLDEST_LEVEL,
+        kinds: [("activities", LEVEL), ("items", LEVEL)]
+            .into_iter()
+            .map(|(kind, level)| (kind.to_string(), level))
+            .collect(),
+        locale,
+        density: Some(density.to_string()),
+    }
 }
 
 /// Puts up (or, `update`, changes) the item a spec describes. An update over the
@@ -540,9 +592,26 @@ mod tests {
     }
 
     #[test]
+    fn hello_is_answered_and_forgotten_with_the_program() {
+        let shell = hello(":9.5", r#"{"id":"test.hello"}"#).expect("an answer to hello");
+        assert_eq!((shell.v, shell.oldest), (LEVEL, OLDEST_LEVEL));
+        assert!(shell.has("items") && shell.has("activities"));
+        assert_eq!(
+            hello(":9.5", r#"{"v":99,"id":"a"}"#).map_err(|e| e.0),
+            Err(LEVEL_ERROR)
+        );
+        assert!(HELLOS.locked().contains_key(":9.5"));
+        forget(":9.5");
+        assert!(!HELLOS.locked().contains_key(":9.5"));
+    }
+
+    #[test]
     fn a_bad_payload_is_refused() {
         assert_eq!(register(":9.3", "{", false).map_err(|e| e.0), Err(INVALID));
-        assert_eq!(start(":9.3", r#"{"v":99}"#).map_err(|e| e.0), Err(LEVEL));
+        assert_eq!(
+            start(":9.3", r#"{"v":99}"#).map_err(|e| e.0),
+            Err(LEVEL_ERROR)
+        );
         let huge = format!(r#"{{"id":"test.huge","tooltip":"{}"}}"#, "x".repeat(70_000));
         assert_eq!(
             register(":9.3", &huge, false).map_err(|e| e.0),

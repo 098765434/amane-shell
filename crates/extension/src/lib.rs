@@ -15,11 +15,11 @@ mod client;
 mod lenient;
 mod protocol;
 
-pub use client::{LiveActivity, StatusItem};
+pub use client::{LiveActivity, StatusItem, hello, shell_info};
 #[allow(deprecated)]
 pub use protocol::VERSION;
 pub use protocol::{
-    Accepts, ActivityButton, ActivityContent, ActivityEvent, BUS_NAME, BarEdge, Dismiss, INTERFACE,
-    ItemButton, ItemEvent, ItemIcon, ItemSpec, LEVEL, MenuEntry, OLDEST_LEVEL, PATH, ProtocolError,
-    Tint, Trailing, encode,
+    Accepts, ActivityButton, ActivityContent, ActivityEvent, BUS_NAME, BarEdge, Dismiss, Hello,
+    INTERFACE, ItemButton, ItemEvent, ItemIcon, ItemSpec, LEVEL, MenuEntry, OLDEST_LEVEL, PATH,
+    ProtocolError, ShellInfo, Tint, Trailing, encode,
 };

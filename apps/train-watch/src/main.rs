@@ -55,6 +55,9 @@ fn main() {
         eprintln!("emaki-train-watch: {name:?} isn't a run name");
         std::process::exit(2);
     }
+    if !plain {
+        emaki_extension::hello(emaki_base::app_ids::TRAIN_WATCH);
+    }
     let watch = Watch::new(host.clone(), name.clone(), plain);
     std::process::exit(watch.run());
 }

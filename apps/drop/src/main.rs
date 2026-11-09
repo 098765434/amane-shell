@@ -19,9 +19,9 @@ use std::os::unix::net::UnixStream;
 use std::sync::OnceLock;
 
 use amane::App;
-use emaki_kit::settings::drop_grids;
 use emaki_extension::StatusItem;
 use emaki_extension::{Accepts, ItemButton, ItemEvent, ItemIcon, ItemSpec, MenuEntry};
+use emaki_kit::settings::drop_grids;
 
 const APP_ID: &str = emaki_kit::app_ids::DROP;
 const ITEM_ID: &str = "org.emaki.drop";
@@ -35,6 +35,8 @@ fn main() {
     // a copy already running takes this launch: `App::run` hands it over
     let running = UnixStream::connect(amane::ipc_socket_for(APP_ID)).is_ok();
     if !running {
+        // says who it is first, so the shell's log names it; works without a shell too
+        emaki_extension::hello(ITEM_ID);
         let item = StatusItem::register(spec());
         item.on_event(event);
         // set once, here

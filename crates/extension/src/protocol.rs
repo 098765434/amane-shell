@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fmt;
 use std::path::PathBuf;
 
@@ -469,6 +470,93 @@ pub enum ActivityEvent {
     Dismissed,
 }
 
+/// A program saying who it is, as it first calls: `Hello`'s argument. Optional, so a script
+/// with busctl needs none; a program that says it gets [`ShellInfo`] back.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Hello {
+    /// The level the program speaks, [`LEVEL`] when left out.
+    #[serde(default = "level")]
+    pub v: u32,
+
+    /// Its id, reverse-DNS like an item's: "org.emaki.drop".
+    pub id: String,
+}
+
+impl Hello {
+    /// A hello from `id` at this crate's level.
+    pub fn new(id: &str) -> Self {
+        Self {
+            v: LEVEL,
+            id: String::from(id),
+        }
+    }
+
+    /// Reads a hello from the bus, refusing a level this bar doesn't serve or no id.
+    pub fn decode(json: &str) -> Result<Self, ProtocolError> {
+        let hello: Self = read(json)?;
+        served(hello.v)?;
+        if hello.id.trim().is_empty() {
+            return Err(ProtocolError::NoId);
+        }
+        Ok(hello)
+    }
+}
+
+/// What the shell answers `Hello` with: the levels it serves, the kinds of thing it takes and
+/// at which level, and what a program needs to match it (the user's language, the bar's size).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ShellInfo {
+    /// The newest level the shell serves.
+    #[serde(default = "level")]
+    pub v: u32,
+
+    /// The oldest level it still serves.
+    #[serde(default = "level")]
+    pub oldest: u32,
+
+    /// Each kind it takes, like "items" or "activities", and its level.
+    #[serde(default)]
+    pub kinds: BTreeMap<String, u32>,
+
+    /// The user's locale, like "nb_NO.UTF-8", so the program sends words in it.
+    #[serde(default)]
+    pub locale: Option<String>,
+
+    /// How roomy the bar is: "compact", "regular" or "comfortable".
+    #[serde(default)]
+    pub density: Option<String>,
+}
+
+impl Default for ShellInfo {
+    /// What every bar served before `Hello`: items and activities at level 1.
+    fn default() -> Self {
+        Self {
+            v: 1,
+            oldest: 1,
+            kinds: BTreeMap::from([(String::from("activities"), 1), (String::from("items"), 1)]),
+            locale: None,
+            density: None,
+        }
+    }
+}
+
+impl ShellInfo {
+    /// Whether the shell takes this kind of thing.
+    pub fn has(&self, kind: &str) -> bool {
+        self.kinds.contains_key(kind)
+    }
+
+    /// The level it takes this kind at, if it takes it.
+    pub fn level(&self, kind: &str) -> Option<u32> {
+        self.kinds.get(kind).copied()
+    }
+
+    /// Reads the shell's answer from the bus.
+    pub fn decode(json: &str) -> Result<Self, ProtocolError> {
+        read(json)
+    }
+}
+
 /// Why a payload from the bus was refused.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProtocolError {
@@ -817,5 +905,25 @@ mod tests {
             spec.icon,
             ItemIcon::FirstOf(vec![ItemIcon::theme("a"), ItemIcon::file("/b.png")])
         );
+    }
+
+    #[test]
+    fn hello_and_its_answer_come_back_the_same() {
+        let hello = Hello::new("org.emaki.drop");
+        assert_eq!(Hello::decode(&encode(&hello)), Ok(hello));
+        assert_eq!(Hello::decode(r#"{"id":""}"#), Err(ProtocolError::NoId));
+        assert_eq!(
+            Hello::decode(r#"{"v":9,"id":"a"}"#),
+            Err(ProtocolError::Level(9))
+        );
+
+        let info = ShellInfo {
+            locale: Some(String::from("nb_NO.UTF-8")),
+            ..ShellInfo::default()
+        };
+        assert_eq!(ShellInfo::decode(&encode(&info)), Ok(info.clone()));
+        assert!(info.has("items"));
+        assert_eq!(info.level("activities"), Some(1));
+        assert_eq!(info.level("tiles"), None);
     }
 }

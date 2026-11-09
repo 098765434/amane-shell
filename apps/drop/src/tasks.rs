@@ -10,12 +10,12 @@ use std::time::{Duration, Instant};
 
 use std::sync::Mutex;
 
-use emaki_kit::settings::UploadTo;
-use emaki_phone::KdeConnect;
 use emaki_extension::LiveActivity;
 use emaki_extension::{
     ActivityButton, ActivityContent, ActivityEvent, Dismiss, ItemIcon, Tint, Trailing,
 };
+use emaki_kit::settings::UploadTo;
+use emaki_phone::KdeConnect;
 
 use crate::state::{self, Outcome, Prompt};
 use crate::{files, share, shared};
