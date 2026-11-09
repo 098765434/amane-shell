@@ -20,9 +20,13 @@ workspace, or by git from outside it. The server is `apps/shell/src/services/sta
 
 ```rust
 use emaki_extension::{ActivityContent, ItemEvent, ItemIcon, ItemSpec, Trailing};
-use amane::{LiveActivity, StatusItem};
+use emaki_extension::{LiveActivity, StatusItem, hello};
 
-let item = StatusItem::register(ItemSpec::new("org.emaki.drop", ItemIcon::Glyph("tray".into())));
+// optional: says who it is and learns the shell's level, locale and bar size
+let shell = hello("org.emaki.drop");
+
+let icon = ItemIcon::theme("folder-download").or(ItemIcon::glyph("tray"));
+let item = StatusItem::register(ItemSpec::new("org.emaki.drop", icon));
 item.on_event(|event| { /* Activated, MenuSelected, DroppedFiles, DragHover … */ });
 
 let mut content = ActivityContent::new("Drop", ItemIcon::Glyph("upload".into()), "Uploading");
@@ -51,14 +55,71 @@ connection open, for example a Python `dbus-next` client ([below](#from-another-
 
 | Method | In | Out | Errors |
 |---|---|---|---|
-| `RegisterItem` | `s` spec | | `Error.Invalid`, `Error.IdTaken` (another program has the id) |
-| `UpdateItem` | `s` spec | | `Error.Invalid`, `Error.IdTaken`, `Error.Unknown` (no such item of the caller's) |
-| `RemoveItem` | `s` id | | `Error.Unknown` |
-| `StartActivity` | `s` content | `u` handle | `Error.Invalid` |
-| `UpdateActivity` | `u` handle, `s` content, `b` alert | | `Error.Invalid`, `Error.Unknown` |
-| `EndActivity` | `u` handle, `s` dismiss (`"now"`, `{"after":5}`; empty is now) | | `Error.Invalid`, `Error.Unknown` |
+| `Hello` | `s` hello: `{"v":1,"id":"org.emaki.drop"}` | `s` what the shell serves | `Error.Invalid`, `Error.Level` |
+| `RegisterItem` | `s` spec | | `Error.Invalid`, `Error.IdTaken` (another program has the id), `Error.Busy` |
+| `UpdateItem` | `s` spec | | `Error.Invalid`, `Error.IdTaken`, `Error.Unknown` (no such item of the caller's), `Error.Busy` |
+| `RemoveItem` | `s` id | | `Error.Unknown`, `Error.Busy` |
+| `StartActivity` | `s` content | `u` handle | `Error.Invalid`, `Error.Busy` |
+| `UpdateActivity` | `u` handle, `s` content, `b` alert | | `Error.Invalid`, `Error.Unknown`, `Error.Busy` |
+| `EndActivity` | `u` handle, `s` dismiss (`"now"`, `{"after":5}`; empty is now) | | `Error.Invalid`, `Error.Unknown`, `Error.Busy` |
 
-Errors are under `org.emaki.StatusBar1.Error`.
+Errors are under `org.emaki.StatusBar1.Error`. Every payload can also get `Error.Level` (a
+`v` this shell doesn't serve) and `Error.TooLarge` (over 64 KB).
+
+`Hello` is optional, so a `busctl` script needs none. It answers with the levels the shell
+serves, the kinds it takes, the user's locale and the bar's size:
+
+```json
+{"v":1,"oldest":1,"kinds":{"activities":1,"items":1},"locale":"nb_NO.UTF-8","density":"regular"}
+```
+
+The Rust client says it again to every bar that starts, and treats a bar from before `Hello` as
+serving items and activities at level 1.
+
+### Levels and reading rules
+
+`v` in every payload is the protocol's **level**, an integer; left out, it is the client's.
+A shell serves a range, `oldest` to `v` in the `Hello` answer, and refuses a payload outside it
+with `Error.Level`. A level is served for two shell minor releases after the next one ships.
+
+What a shell can't read, it drops, and keeps the rest, as Adaptive Cards renderers do:
+
+- **An unknown property** is ignored.
+- **An unknown element** (an icon, a trailing kind or a tint this shell doesn't know, a menu
+  entry or button it can't read) is dropped, with a warning in the shell's journal. An icon
+  becomes the dot, a trailing kind none, a tint the default; a bad menu entry or button is
+  left out and its neighbours kept.
+- **Too much** is cut where it is read: text to 256 characters, a tooltip to 1024, a menu to
+  64 entries a level and 4 levels deep, an activity to 3 buttons.
+
+### Icons
+
+An icon is `{"glyph":"tray"}` (one of the bar's symbols), `{"theme":"folder-download"}` (an icon
+theme name), `{"file":"/path/a.svg"}`, or a list tried in order:
+
+```json
+{"first_of":[{"theme":"folder-download"},{"file":"/usr/share/drop/drop.svg"},{"glyph":"tray"}]}
+```
+
+The bar shows the first it has: a symbol it knows, a theme icon it finds, a file that is there.
+A lone glyph it doesn't know is the record dot. In Rust it is
+`ItemIcon::theme("folder-download").or(ItemIcon::file(path))`.
+
+### Budgets
+
+Each program is held to these, from `emaki_extension::budget`:
+
+| Budget | Rule |
+|---|---|
+| Payload | 64 KB of JSON per call, refused over it |
+| Updates | one a tenth of a second to each item or activity; more are held and only the latest applied |
+| Calls | 20 a second across everything the program put up, refilling steadily |
+| Held | 10 updates held at once; one more is `Error.Busy`, and so is putting something up or taking it down with no calls left in the second |
+| Activities | 8 hours, then ended; 3 buttons |
+
+A held update answers at once and shows when its time comes; an alert on a replaced update
+still alerts. The bar ticks countdowns, count-ups and progress rings itself, so a program
+need not send them.
 
 The two signals go only to the program concerned (a unicast signal):
 
@@ -81,6 +142,8 @@ The events are JSON in serde's external tagging, in snake case:
 - **Leaving the bus.** The bar follows `NameOwnerChanged` for unique names, and drops a
   program's items and activities when it leaves.
 - **Signals out.** `status_apps::send(id, event)` sends an item's events off the event loop.
+- **Budgets.** Each program has a `budget::Limiter`, kept by its bus name and dropped when it
+  leaves. Held updates are applied by a timer on amane's event loop.
 - **Activities.** These go to `services/desktop/activities.rs`. It keeps their handles and
   owners, ends them after 8 hours or when dismissed, and sends `Dismissed` once one has gone.
 - **Seen lists.** Emaki Settings lists programs once seen: items in
@@ -295,7 +358,8 @@ These are the bar's rules for activities:
 - **Let the bar tick.** For a timer, give `Trailing::Countdown(end_ms)` or `CountUp(start_ms)`,
   times in Unix milliseconds, and send nothing until the next real change.
 - **Don't update too often.** Drop sends progress at most every 150 ms (`TELL_EVERY` in
-  `tasks.rs`).
+  `tasks.rs`). The bar holds anything faster to one update a tenth of a second
+  ([budgets](#budgets)), so sending more only costs the program.
 - **Alert rarely.** `update(content, true)` opens the expanded view for 4 s (not under Do Not
   Disturb). Keep it for what needs the user now: a call, a finished timer. A normal end isn't
   one.
@@ -364,7 +428,8 @@ flowchart LR
 
 | Repo | Files | What |
 |---|---|---|
-| emaki-extension | `crates/extension/src/protocol.rs` | the JSON types (`ItemSpec`, `ItemEvent`, `ActivityContent`, `Trailing`, `Tint`, `Dismiss`…), `encode`/`decode` with clamping and a version check |
+| emaki-extension | `crates/extension/src/protocol.rs` | the JSON types (`ItemSpec`, `ItemEvent`, `ActivityContent`, `Trailing`, `Tint`, `Dismiss`…), `Hello`/`ShellInfo`, `encode`/`decode` with clamping and a level check |
+| emaki-extension | `crates/extension/src/lenient.rs`, `budget.rs` | unknown elements dropped with a warning; the budget constants and `Limiter` |
 | emaki-extension | `crates/extension/src/client.rs` | `StatusItem` and `LiveActivity`: calls in order on amane's control thread (`run_in_order`), events on their own thread, re-registration |
 | amane | `src/dbus/bus.rs` | `Bus::emit_to`: a signal to one destination |
 | amane | `src/wayland/dropped.rs` | drops read off the event loop (`Drags`, `read_later`, `handle_arrived_drags`), so a slow drag source can't stall the bar |
@@ -495,10 +560,11 @@ Make it read a path with `slow` in it slowly, to watch the progress ring and try
 
 | Where | Covers |
 |---|---|
-| emaki-extension `protocol.rs` | round trips, clamping, a newer `v` refused, an empty id refused |
-| shell `services/status_apps.rs` | an id belongs to the program that registered it; a bad payload refused |
+| emaki-extension `protocol.rs` | round trips, clamping and cutting, a level outside the range refused, an empty id refused, unknown elements dropped, 64 KB refused, icon lists, `Hello` |
+| emaki-extension `budget.rs` | updates held and coalesced, merge, busy past the queue, the refill, forgetting |
+| shell `services/status_apps.rs` | an id belongs to the program that registered it; a bad payload refused with its own error; busy over the budget; `Hello` answered and forgotten |
 | shell `services/desktop/activities.rs` | only the owner changes or ends one; ending later; a program leaving; staleness |
-| shell `surfaces/status_bar/activities.rs` | countdown and trailing text |
+| shell `surfaces/status_bar/activities.rs` | countdown and trailing text; an icon list shows the first the bar has |
 | kit `settings.rs` | `items_with`, the migration, the Drop types read as written, `DropSharing::missing` |
 | drop `files.rs` | free names, folders copied whole, no half file after a cancel, replace and keep both, a move on one disk |
 | drop `tasks.rs` | Rename & Move's names, what a job says |

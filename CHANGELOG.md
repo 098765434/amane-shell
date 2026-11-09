@@ -49,6 +49,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   are still found. `scripts/migrate-from-amane` does the moves by hand and renames the niri
   config's markers and sockets ([troubleshooting](docs/user/troubleshooting.md#migrating-from-amane-shell)).
 - Emaki Settings reads back a `displays.kdl` that Shell Settings wrote.
+- **Status apps protocol, pinned** ([status-apps.md](docs/developer/integration/status-apps.md#levels-and-reading-rules)):
+  `Hello` returns the shell's levels, kinds, locale and bar size; `v` is a level with an oldest
+  served; unknown icons, tints, trailing kinds, menu entries and buttons are dropped with a
+  warning instead of refusing the payload; icons can fall back (`first_of`); text and menus are
+  cut where read; each program has a budget (64 KB a payload, one update a tenth of a second to
+  each thing, 20 calls a second, 10 held), answered with `Error.Level`, `Error.TooLarge` and
+  `Error.Busy`. The `emaki-status` crate is `emaki-extension`; the old name re-exports it for a
+  release.
 
 ## [0.1.0] - 2026-11-08
 

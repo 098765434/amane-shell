@@ -91,8 +91,18 @@ At `/org/emaki/StatusBar`, interface `org.emaki.StatusBar1`. The methods, signal
 are listed once, in emaki's
 [status-apps.md](../../docs/developer/integration/status-apps.md#the-interface). What the client relies on:
 
-- **Versions.** Payloads carry `v` (now `1`; left out means `1`). The bar
-  refuses a payload newer than it knows.
+- **Levels.** Payloads carry `v`, the protocol's level (`LEVEL`, now `1`; left out means the
+  client's). A bar serves `OLDEST_LEVEL` to `LEVEL` and refuses others with `Error.Level`. A
+  level is served for two shell minor releases after the next one ships.
+- **Hello.** `hello(id)` says who the program is and returns `ShellInfo`: the levels, the kinds
+  the shell takes, the user's locale and the bar's size. It is optional, and said again to
+  every new bar.
+- **Newer parts.** Unknown properties are ignored; an unknown icon, trailing kind, tint, menu
+  entry or button is dropped with a warning and the rest kept. Text, menus and buttons past
+  the [budget](src/budget.rs) are cut.
+- **Budgets.** 64 KB a payload, one update a tenth of a second to each thing, 20 calls a second,
+  10 updates held; faster updates are coalesced by the bar, and past that it answers
+  `Error.Busy`.
 - **Signals.** These go only to the program that made the item or activity.
 - **Ownership.** Only the program that made an item or activity changes it.
   The bar drops all of a program's items and activities when it leaves the bus.
@@ -106,8 +116,13 @@ are listed once, in emaki's
 - **Events.** Events come in on a thread of their own. A handler that should
   change a window writes a `Service` and lets that redraw.
 - **Bar restarts.** The client keeps every item and activity. When
-  `org.emaki.StatusBar1` gets a new owner (the bar restarted), it registers
+  `org.emaki.StatusBar1` gets a new owner (the bar restarted), it says hello again, registers
   them all again and maps the new handles back.
+
+## The old name
+
+This crate was `emaki-status` until the extensions plan's Phase 0. `crates/status` is still
+there, re-exporting everything under the old name for one release.
 
 ## Related
 

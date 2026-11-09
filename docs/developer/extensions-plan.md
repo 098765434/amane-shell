@@ -89,7 +89,7 @@ spec, and a pid-based bus name sandboxes refuse. Each of those gaps is a rule in
 ## 2. The protocol: `org.emaki.Shell1`
 
 `org.emaki.StatusBar1` is renamed and grown, with the old name kept as an alias for one release.
-Every payload stays **one JSON string with a `v`**, as now (`protocol.rs:557`), so a shell script
+Every payload stays **one JSON string with a `v`**, as now (`ItemSpec::v`), so a shell script
 with `busctl` remains a valid extension.
 
 | Method | Kind | Notes |
@@ -132,7 +132,7 @@ PageAction)`, `WidgetEvent(id, Pressed|SettingsChanged)`, `ProviderEvent(Activat
   |---|---|---|
   | Payload | 64 KB of JSON per call; images never inline (below) | decode, `Error.TooLarge` |
   | Update rate | 1 update per 100 ms per object, 20 per second per owner; extra updates coalesce into the latest | host queue per owner |
-  | Queue depth | 10 pending calls per owner; the 11th gets `Error.Busy` | host queue per owner |
+  | Queue depth | 10 held updates per owner; the 11th gets `Error.Busy`, and so does a call that can't be held (register, remove, start, end) with no calls left in the second | host queue per owner |
   | Activities | 8 hours, then ended; 3 buttons; as today | host timer |
   | Actions | 5 buttons or menu items per tile page, per widget | decode, clamped |
   | Ticking | the host, not the owner, ticks countdowns, progress, sparklines and relative times | host |
@@ -149,8 +149,8 @@ PageAction)`, `WidgetEvent(id, Pressed|SettingsChanged)`, `ProviderEvent(Activat
   `glyph`, `ring`, `bar`, `sparkline`, `image`) at the slots a size offers. That covers 7 of 8
   built-in widgets. Custom drawing is not offered; a feature that needs it is a shell feature.
 - **Words in the user's language.** `Hello` tells the extension the locale; the extension sends
-  translated strings. The host never sees msgids. Strings have length clamps per slot, as the
-  bar's `ItemSpec` has today.
+  translated strings. The host never sees msgids. Strings are cut where they are read: 256
+  characters for a title or label, 1024 for a tooltip (`budget::MAX_TEXT`, `MAX_TOOLTIP`).
 - **Scroll has a sign.** `scroll` events carry a signed step count, positive is up or right, and
   the host says in the spec which axis a slot supports.
 - **No embedding.** An extension that needs a surface of its own (Drop, the assistant's window)
@@ -405,8 +405,8 @@ tile.
 
 | Phase | What | Size |
 |---|---|---|
-| **0. Pin the protocol** | `Hello`, the level and its lifetime, the budget table and the Adaptive Cards drop/keep/fallback rules as code in `emaki-extension` (today's `emaki-status`, with the old name re-exported), icons by name with a file fallback. | S |
-| **1. Tiles and bar items** | `RegisterTile` and the toggle vocabulary, `scroll` and `opens` on items. Move **Software Update** and **Weather** out as the first extensions in this repo's `extensions/` folder (still built by this flake), to prove the path with features that exist. | M |
+| **0. Pin the protocol** ✓ | `Hello`, the level and its lifetime, the budget table and the Adaptive Cards drop/keep rules as code in `emaki-extension` (was `emaki-status`, re-exported under the old name for a release), icons by name with a file fallback (`first_of`). Done on branch `extensions-phase-0`. Left for later phases: a generic per-element `fallback`/`requires` (with the pieces, Phase 3), fd-passed icons and icon files limited to the extension's own dirs (with the manifest, Phase 2). | S |
+| **1. Tiles and bar items** | Serve `org.emaki.Shell1` beside `org.emaki.StatusBar1` (the old name an alias for one release). `RegisterTile` and the toggle vocabulary, `scroll` and `opens` on items. Move **Software Update** and **Weather** out as the first extensions in this repo's `extensions/` folder (still built by this flake), to prove the path with features that exist. | M |
 | **2. Manifest and loader** | `extension.toml`, `services/extensions/`, generated D-Bus service files and units with the baseline hardening and capability directives, crash quarantine, layer rules, `extensions.json`, the Store's *Installed* page. Drop and train-watch gain manifests and lose their hand-written units in home.nix. | M |
 | **3. Widgets and pages** | widget kinds and faces as pieces; the settings schema; `RegisterPage` drawn by Emaki Settings' existing registry renderer (`system/controls.rs`). Move the six readings widgets out. | L |
 | **4. Providers and handlers** | `RegisterProvider` with cached async results; the notification handler hook; the phone's "Open on Phone" becomes the phone extension's. | M |
