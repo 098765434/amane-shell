@@ -225,7 +225,7 @@ fn head_manifest(file: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Re
     const CONFIDENCE: u16 = 2;
     let mut header = [0u8; 48 * 4 + 4];
     file.read_exact(&mut header)?;
-    let word = |at: usize| u32::from_le_bytes(header[at * 4..at * 4 + 4].try_into().unwrap());
+    let word = |at: usize| u32::from_le_bytes(std::array::from_fn(|i| header[at * 4 + i]));
     let (tensors, codebook) = (word(1) as usize, word(2) as u64);
     file.seek(SeekFrom::Current(codebook as i64 * 4))?;
     let mut records = vec![0u8; tensors * 44];
@@ -239,11 +239,11 @@ fn head_manifest(file: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Re
             continue;
         };
         let r = record(index);
-        let length = u32::from_le_bytes(r[4..8].try_into().unwrap()) as usize;
+        let length = u32::from_le_bytes(std::array::from_fn(|i| r[4 + i])) as usize;
         if r[0] != FP16 || r[1] != 1 || length != heads {
             continue;
         }
-        let offset = u64::from_le_bytes(r[20..28].try_into().unwrap());
+        let offset = u64::from_le_bytes(std::array::from_fn(|i| r[20 + i]));
         file.seek(SeekFrom::Start(offset))?;
         let mut codes = vec![0u8; 2 * heads];
         file.read_exact(&mut codes)?;
