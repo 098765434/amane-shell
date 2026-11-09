@@ -77,6 +77,26 @@ pub fn load<T: State>() -> Option<T> {
     legacy
 }
 
+/// When `T`'s file is there but [`load`] couldn't read it (broken, or
+/// from another version), copies it to `<file>.bad` beside it, so the
+/// next [`save`] doesn't lose it; whether there was such a file.
+pub fn keep_unreadable<T: State>() -> bool {
+    let file = state_file(T::FILE);
+    let Ok(text) = std::fs::read_to_string(&file) else {
+        return false;
+    };
+    if parse::<T>(&text).is_ok() {
+        return false;
+    }
+    let mut aside = file.clone().into_os_string();
+    aside.push(".bad");
+    match emaki_kit::fs::write_whole(Path::new(&aside), text) {
+        Ok(()) => log::warn!("{} kept as {}", file.display(), Path::new(&aside).display()),
+        Err(error) => log::warn!("couldn't keep {}: {error}", file.display()),
+    }
+    true
+}
+
 /// Keeps `value` in `T`'s file, saying so on failure.
 pub fn save<T: State>(value: &T) {
     save_to(&state_file(T::FILE), value);

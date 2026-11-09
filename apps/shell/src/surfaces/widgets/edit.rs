@@ -15,15 +15,14 @@
 
 use std::cell::RefCell;
 
-use amane::{Key, Point, Rectangle, Size, Stack, Widget};
+use amane::{Point, Stack, Widget};
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use super::store::{self, Settings};
-use super::{
-    BAND, Geometry, RADIUS, THRESHOLD, changed, commit, current, gallery, shown, with_desk,
-};
+use super::{Geometry, changed, commit, current, gallery, radius, shown, with_desk};
 use crate::chrome::edit_marks as marks;
-use crate::tokens::sys;
+use crate::chrome::grid_edit;
+use crate::tokens::{sys, widget};
 use emaki_kit::control_size::ControlSize;
 use emaki_kit::grid::Layout;
 use emaki_kit::grid::drag::{Drag, Origin, Session, follow};
@@ -46,15 +45,17 @@ struct Press {
     from: Point,
 }
 
-/// The layout before a removal, its monitor, and the removed widgets'
-/// settings, to put them back.
-type Undo = (String, Layout<WidgetKey>, Vec<(u32, Settings)>);
+/// One removal, to be put back: the monitor, and each widget it took off
+/// with where it was and its settings. Only what was removed is kept, not
+/// the whole layout, so putting it back leaves what changed since alone.
+type Removal = (String, Vec<(Entry<WidgetKey>, Settings)>);
 
 thread_local! {
     // the monitor being edited
     static EDITING: RefCell<Option<String>> = const { RefCell::new(None) };
     static PRESS: RefCell<Option<Press>> = const { RefCell::new(None) };
-    static UNDO: RefCell<Option<Undo>> = const { RefCell::new(None) };
+    // the removals Undo Remove puts back, the latest last
+    static UNDO: RefCell<Vec<Removal>> = const { RefCell::new(Vec::new()) };
 }
 
 pub(super) fn editing(output: &str) -> bool {
@@ -65,12 +66,26 @@ pub(super) fn editing_any() -> Option<String> {
     EDITING.with_borrow(Clone::clone)
 }
 
+/// Leaves edit mode when the monitor being edited was unplugged, as it
+/// has no surface left to say Done on.
+pub(super) fn forget_unplugged() {
+    let gone = EDITING.with_borrow(|editing| {
+        editing
+            .as_deref()
+            .is_some_and(|output| !crate::chrome::per_output::connected(output))
+    });
+    if gone {
+        leave_all();
+    }
+}
+
 /// Edits `output`'s desktop (and leaves any other being edited).
 pub(super) fn enter(output: &str) {
     context_menu::close();
     let before = EDITING.replace(Some(output.to_string()));
     if before.as_deref() != Some(output) {
-        UNDO.with_borrow_mut(|undo| *undo = None);
+        UNDO.with_borrow_mut(Vec::clear);
+        super::keys::forget();
         gallery::open();
     }
     changed();
@@ -85,23 +100,10 @@ pub(super) fn leave_all() {
         });
     }
     PRESS.with_borrow_mut(|press| *press = None);
-    UNDO.with_borrow_mut(|undo| *undo = None);
+    UNDO.with_borrow_mut(Vec::clear);
+    super::keys::forget();
     gallery::close();
     changed();
-}
-
-/// A key while editing: Escape lets go of a drag, else clears the search,
-/// else is Done; the rest type into the gallery's search.
-pub(super) fn key(output: &str, key: Key) {
-    if matches!(key, Key::Escape) {
-        let dropped = with_desk(output, |desk| desk.session.take().is_some());
-        if !dropped && !gallery::clear_query() {
-            leave_all();
-        }
-        changed();
-    } else {
-        gallery::key(key);
-    }
 }
 
 /// How big a card's resize handle is: none out of edit mode.
@@ -138,7 +140,7 @@ pub(super) fn drag_at(output: &str, px: &Metrics, geometry: Geometry, point: Poi
             None => gallery::contains(point),
         };
     };
-    if (point.x - press.from.x).hypot(point.y - press.from.y) <= THRESHOLD {
+    if (point.x - press.from.x).hypot(point.y - press.from.y) <= widget::drag::threshold() {
         return true;
     }
     // lifted: on the canvas under a provisional key, at its real size,
@@ -151,7 +153,7 @@ pub(super) fn drag_at(output: &str, px: &Metrics, geometry: Geometry, point: Poi
     let mut base = shown(output, geometry.canvas);
     base.insert(Entry {
         id: key,
-        span: press.kind.default_size().span(),
+        span: gallery::size_of(press.kind).span(),
         at: None,
     });
     let grab = Point {
@@ -170,7 +172,7 @@ pub(super) fn drag_at(output: &str, px: &Metrics, geometry: Geometry, point: Poi
             pointer: at,
         },
     );
-    session.motion(at, px, BAND);
+    session.motion(at, px, widget::drag::band());
     with_desk(output, |desk| desk.session = Some(session));
     true
 }
@@ -179,7 +181,15 @@ pub(super) fn drag_at(output: &str, px: &Metrics, geometry: Geometry, point: Poi
 /// click, which adds it in the first free cells.
 pub(super) fn released(output: &str) {
     if let Some(press) = PRESS.with_borrow_mut(Option::take) {
-        super::add(output, press.kind, press.kind.default_size(), None);
+        add_from_gallery(output, press.kind);
+    }
+}
+
+/// Adds a `kind` from the gallery in the first free cells, at the size
+/// picked under it, or says there's no room.
+pub(super) fn add_from_gallery(output: &str, kind: WidgetKind) {
+    if !super::add(output, kind, gallery::size_of(kind), None) {
+        gallery::note("No room for it on this screen: move or remove a widget first.");
     }
 }
 
@@ -216,46 +226,87 @@ pub(super) fn remove(output: &str, key: WidgetKey) {
         return;
     }
     if let Some(layout) = current(output) {
-        let settings = store::with(|store| store.settings(key.id));
-        UNDO.with_borrow_mut(|undo| {
-            *undo = Some((output.to_string(), layout, vec![(key.id, settings)]))
-        });
+        let removed = removal(&layout, |e| e.id == key);
+        if !removed.is_empty() {
+            UNDO.with_borrow_mut(|undo| undo.push((output.to_string(), removed)));
+        }
     }
     super::remove(output, key);
 }
 
-pub(super) fn can_undo() -> bool {
-    UNDO.with_borrow(Option::is_some)
+/// The entries of `layout` that `take` picks, with their settings.
+fn removal(
+    layout: &Layout<WidgetKey>,
+    take: impl Fn(&Entry<WidgetKey>) -> bool,
+) -> Vec<(Entry<WidgetKey>, Settings)> {
+    layout
+        .entries
+        .iter()
+        .filter(|e| take(e))
+        .map(|e| (*e, store::with(|store| store.settings(e.id.id))))
+        .collect()
 }
 
-/// Puts the last widget removed back where it was, settings and all.
+pub(super) fn can_undo() -> bool {
+    UNDO.with_borrow(|undo| !undo.is_empty())
+}
+
+/// Puts the last removal back, settings and all: each widget where it was
+/// when that's still free, else in the first free cells, else hidden.
+/// What was placed or moved since stays where it is.
 pub(super) fn undo() {
-    if let Some((output, layout, settings)) = UNDO.with_borrow_mut(Option::take) {
-        commit(&output, &layout);
+    if let Some((output, removed)) = UNDO.with_borrow_mut(Vec::pop)
+        && let Some(layout) = current(&output)
+    {
+        commit(&output, &restored(layout, &removed));
         store::with(|store| {
-            for (id, settings) in settings {
-                store.set_settings(id, settings);
+            for (entry, settings) in removed {
+                store.set_settings(entry.id.id, settings);
             }
         });
     }
     changed();
 }
 
-/// An empty desktop on the monitor being edited.
+/// `layout` with `removed` back in it, each where it was if that's free.
+fn restored(
+    mut layout: Layout<WidgetKey>,
+    removed: &[(Entry<WidgetKey>, Settings)],
+) -> Layout<WidgetKey> {
+    for (entry, _) in removed {
+        let free = entry
+            .rect()
+            .filter(|rect| layout.canvas.fits(rect) && layout.occupancy().free(rect, None));
+        layout.insert(Entry {
+            at: free.map(|rect| rect.at),
+            ..*entry
+        });
+        if free.is_none() {
+            layout.show(entry.id);
+        }
+    }
+    layout
+}
+
+/// Remove All: every card on the monitor being edited goes, to be put
+/// back by Undo Remove. Those this screen has no room for (shown on a
+/// bigger one) aren't on it, so they stay.
 pub(super) fn reset() {
     let Some(output) = editing_any() else {
         return;
     };
-    if let Some(layout) = current(&output) {
-        let settings: Vec<(u32, Settings)> = layout
-            .entries
-            .iter()
-            .map(|e| (e.id.id, store::with(|store| store.settings(e.id.id))))
-            .collect();
-        UNDO.with_borrow_mut(|undo| *undo = Some((output.clone(), layout, settings)));
+    let Some(mut layout) = current(&output) else {
+        return;
+    };
+    let removed = removal(&layout, |entry| entry.at.is_some());
+    if removed.is_empty() {
+        return;
     }
-    store::with(|store| store.clear(&output));
-    changed();
+    for (entry, _) in &removed {
+        layout.remove(entry.id);
+    }
+    UNDO.with_borrow_mut(|undo| undo.push((output.clone(), removed)));
+    commit(&output, &layout);
 }
 
 // ───── the layers ───────────────────────────────────────────────────────────
@@ -275,20 +326,15 @@ pub(super) fn drop_outline(
         _ => None,
     });
     let Some(rect) = held.and_then(|id| layout.rect_of(id)) else {
-        return boxed(
-            Rectangle::new()
-                .width(Size::Fixed(0.0))
-                .height(Size::Fixed(0.0)),
-        );
+        return grid_edit::no_outline();
     };
     let slot = px.slot(rect);
-    boxed(
-        Rectangle::new()
-            .width(slot.width)
-            .height(slot.height)
-            .radius(RADIUS)
-            .border(sys::border::hairline(), sys::color::accent::bg())
-            .translate(geometry.origin.0 + slot.x, geometry.origin.1 + slot.y),
+    grid_edit::outline(
+        geometry.origin.0 + slot.x,
+        geometry.origin.1 + slot.y,
+        slot.width,
+        slot.height,
+        radius(),
     )
 }
 
@@ -299,11 +345,36 @@ pub(super) fn dressing(output: &str, key: WidgetKey, slot: Slot, pose: Pose) -> 
     let side = ControlSize::Medium.height();
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
     if key.supported().len() > 1 {
+        // a pull in flight: how far the hand has come, before the card
+        // snaps to the sizes it comes in
+        let pulled = grid_edit::pulling(
+            with_desk(output, |desk| desk.session.as_ref().map(|s| s.drag)),
+            key,
+        );
+        if let Some(pulled) = pulled {
+            layers.push(grid_edit::pull_outline(
+                slot,
+                pulled,
+                &super::metrics(),
+                radius(),
+            ));
+        }
         layers.push(boxed(marks::bottom_right(
             slot.width,
             slot.height,
             marks::resize_handle(side),
         )));
+    }
+    // the card the keyboard has, ringed
+    if super::keys::focused(output) == Some(key) {
+        let ring = sys::space::gap::xs();
+        layers.push(grid_edit::outline(
+            -ring,
+            -ring,
+            slot.width + ring * 2.0,
+            slot.height + ring * 2.0,
+            radius() + ring,
+        ));
     }
     if key.id != PROVISIONAL {
         let on = output.to_string();
@@ -318,7 +389,46 @@ pub(super) fn dressing(output: &str, key: WidgetKey, slot: Slot, pose: Pose) -> 
         frame(slot.width, slot.height)
             .translate(pose.x, pose.y)
             .scale(pose.scale)
-            .opacity(pose.opacity.clamp(0.0, 1.0))
+            // the marks come in with the gallery
+            .opacity((pose.opacity * gallery::opened()).clamp(0.0, 1.0))
             .child(Stack::new(layers)),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use emaki_kit::grid::geometry::{Canvas, Place};
+
+    fn key(id: u32) -> WidgetKey {
+        WidgetKey {
+            id,
+            kind: WidgetKind::Cpu,
+        }
+    }
+
+    fn at(id: u32, col: u8, row: u8) -> Entry<WidgetKey> {
+        Entry {
+            id: key(id),
+            span: WidgetSize::Small.span(),
+            at: Some(Place::new(col, row)),
+        }
+    }
+
+    #[test]
+    fn undo_puts_back_what_was_removed_and_keeps_what_came_since() {
+        let mut layout = Layout::new(Canvas { cols: 6, rows: 2 });
+        // A was removed from (0, 0); B was added since, at (2, 0)
+        layout.insert(at(2, 2, 0));
+        let removed = vec![(at(1, 0, 0), Settings::default())];
+        let back = restored(layout.clone(), &removed);
+        assert_eq!(back.rect_of(key(1)).map(|r| r.at), Some(Place::new(0, 0)));
+        assert_eq!(back.rect_of(key(2)).map(|r| r.at), Some(Place::new(2, 0)));
+        // B landed where A was: A goes to the first free cells instead
+        let mut layout = Layout::new(Canvas { cols: 6, rows: 2 });
+        layout.insert(at(2, 0, 0));
+        let back = restored(layout, &removed);
+        assert_eq!(back.rect_of(key(2)).map(|r| r.at), Some(Place::new(0, 0)));
+        assert_eq!(back.rect_of(key(1)).map(|r| r.at), Some(Place::new(2, 0)));
+    }
 }

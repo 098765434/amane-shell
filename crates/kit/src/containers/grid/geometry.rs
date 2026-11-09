@@ -59,18 +59,23 @@ impl Rect {
         Self { at, span }
     }
 
-    fn right(&self) -> u8 {
-        self.at.col + self.span.cols
+    // widened, so a rect reaching past the last cell a `u8` can count is
+    // past the edge rather than wrapping round to the start
+    fn right(&self) -> u16 {
+        u16::from(self.at.col) + u16::from(self.span.cols)
     }
 
-    fn bottom(&self) -> u8 {
-        self.at.row + self.span.rows
+    fn bottom(&self) -> u16 {
+        u16::from(self.at.row) + u16::from(self.span.rows)
     }
 
-    /// Every cell it covers, row by row.
+    /// Every cell it covers, row by row; only those a `u8` can count, so a
+    /// rect past the edge never wraps round onto the first cells.
     pub fn cells(&self) -> impl Iterator<Item = Place> + '_ {
-        (self.at.row..self.bottom())
-            .flat_map(move |row| (self.at.col..self.right()).map(move |col| Place { col, row }))
+        let bottom = self.bottom().min(u16::from(u8::MAX)) as u8;
+        let right = self.right().min(u16::from(u8::MAX)) as u8;
+        (self.at.row..bottom)
+            .flat_map(move |row| (self.at.col..right).map(move |col| Place { col, row }))
     }
 }
 
@@ -95,7 +100,7 @@ impl Canvas {
 
     /// Whether `rect` lies on the canvas.
     pub fn fits(&self, rect: &Rect) -> bool {
-        rect.right() <= self.cols && rect.bottom() <= self.rows
+        rect.right() <= u16::from(self.cols) && rect.bottom() <= u16::from(self.rows)
     }
 
     /// `span` placed so its top-left is nearest (`col`, `row`) and it fits.
@@ -326,6 +331,18 @@ mod tests {
     const L: Span = Span::new(2, 2);
     const W3: Span = Span::new(3, 1);
     const FULL: Span = Span::new(4, 1);
+
+    #[test]
+    fn a_rect_past_the_last_cell_is_off_the_canvas() {
+        let edge = Canvas {
+            cols: u8::MAX,
+            rows: u8::MAX,
+        };
+        let past = Rect::new(Place::new(250, 0), Span::new(8, 4));
+        assert!(!edge.fits(&past));
+        // its cells stop at the edge rather than wrapping round to column 0
+        assert!(past.cells().all(|cell| cell.col >= 250));
+    }
 
     #[test]
     fn spans_measure_as_the_reference() {

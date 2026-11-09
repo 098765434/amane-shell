@@ -711,8 +711,11 @@ mod tests {
 
     /// Each tier's size on 2026-11-07. The manual's budget (§3, about 60,
     /// 70 and 15) is far below this for sys and component; until the kit
-    /// consolidation brings them down, they may shrink but not grow.
-    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 133), ("component", 163)];
+    /// consolidation brings them down, they may shrink but not grow. The
+    /// component tier rose by 13 on 2026-11-09 for the `widget.*` group
+    /// (the desktop widgets' own values; what they share with Quick
+    /// Settings they read from `quick.*`).
+    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 133), ("component", 176)];
 
     #[test]
     fn no_tier_grows_past_its_ceiling() {

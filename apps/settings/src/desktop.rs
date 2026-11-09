@@ -1,5 +1,6 @@
 //! Desktop & Dock: whether the desktop's widgets show and how they look
-//! while windows are open over them (`desktop.json`), then the dock
+//! while windows are open over them (`desktop.json`), the widgets on each
+//! monitor ([`crate::desktop_widgets`]), then the dock
 //! ([`crate::dock`]) and screenshots ([`crate::screenshots`]). The shell
 //! follows each change at once.
 
@@ -68,6 +69,7 @@ pub fn page() -> Column {
                     .disabled(!show),
             ),
     ]);
+    list.extend(crate::desktop_widgets::groups(show));
     list.extend(crate::dock::groups());
     list.extend(crate::screenshots::groups());
     groups(list)

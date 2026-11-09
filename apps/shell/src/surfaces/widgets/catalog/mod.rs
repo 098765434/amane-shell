@@ -8,26 +8,20 @@ mod battery;
 mod clock;
 mod digits;
 mod system;
+pub mod units;
 
 use amane::{Arc, Canvas, Cap, Color, Path, Rectangle, Shape, Stack, Start, Text, Widget};
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use super::store::Settings;
-use crate::tokens::{Styled, TextStyle, sys};
+use crate::tokens::{Styled, TextStyle, sys, widget};
 use emaki_kit::layout::{boxed, frame, icon, text_height, text_width};
 use emaki_kit::material::{self, FillLevel, Level};
 
 pub use battery::devices;
 pub use clock::settle as settle_clock;
 
-// TODO(token): `widget.card.pad`, `widget.type.figure` and
-// `widget.type.figure-large` once Penpot has them (manual §1.1).
-/// The room inside a card's edge.
-pub const PAD: f32 = 16.0;
-const FIGURE: f32 = 28.0;
-const FIGURE_LARGE: f32 = 40.0;
-
-/// What a face is drawn in: the content box (the card less [`PAD`]) and
+/// What a face is drawn in: the content box (the card less `widget.card.pad`) and
 /// the widget's settings.
 pub struct Face<'a> {
     pub width: f32,
@@ -44,9 +38,11 @@ pub fn build(
     height: f32,
     settings: &Settings,
 ) -> Box<dyn Widget> {
+    // the room inside a card's edge
+    let pad = widget::card::pad();
     let face = Face {
-        width: width - 2.0 * PAD,
-        height: height - 2.0 * PAD,
+        width: width - 2.0 * pad,
+        height: height - 2.0 * pad,
         size,
         settings,
     };
@@ -63,7 +59,7 @@ pub fn build(
     boxed(
         frame(width, height).align_child(Start, Start).child(
             frame(face.width, face.height)
-                .translate(PAD, PAD)
+                .translate(pad, pad)
                 .child(Stack::new(content)),
         ),
     )
@@ -133,6 +129,26 @@ pub fn header(kind: WidgetKind, title: &str, width: f32) -> Vec<Box<dyn Widget>>
     ]
 }
 
+/// A card with nothing to show: its header, and `text` in the middle.
+pub fn empty(face: &Face, kind: WidgetKind, title: &str, text: &str) -> Vec<Box<dyn Widget>> {
+    let mut out = header(kind, title, face.width);
+    let style = label_style();
+    let height = text_height(style);
+    let width = (text_width(text, style) + 1.0).min(face.width);
+    out.push(line(
+        text,
+        style,
+        secondary(),
+        (
+            (face.width - width) / 2.0,
+            (face.height + header_height() - height) / 2.0,
+        ),
+        width,
+        false,
+    ));
+    out
+}
+
 /// How tall [`header`] is.
 pub fn header_height() -> f32 {
     text_height(sys::r#type::caption())
@@ -141,7 +157,11 @@ pub fn header_height() -> f32 {
 /// The large reading's style; `large` for a card with the room.
 pub fn figure_style(large: bool) -> TextStyle {
     TextStyle {
-        size: if large { FIGURE_LARGE } else { FIGURE },
+        size: if large {
+            widget::r#type::figure_large()
+        } else {
+            widget::r#type::figure()
+        },
         weight: 600,
         ..sys::r#type::numeric()
     }
@@ -215,14 +235,27 @@ pub fn ring_with(fraction: f32, diameter: f32, thickness: f32, color: Color, gly
 /// top, with a faint fill under it; the newest at the right edge. Fewer
 /// readings than there's room for start further right.
 pub fn sparkline(values: &[f32], max: f32, width: f32, height: f32, color: Color) -> Canvas {
+    sparkline_between(values, (0.0, max), (width, height), color, true)
+}
+
+/// `values` as a line `size` big, `range.0` at the bottom and `range.1`
+/// at the top, with a faint fill under it when `filled` (a second series
+/// over a first draws as a line alone, so the two don't muddy each other).
+pub fn sparkline_between(
+    values: &[f32],
+    (min, max): (f32, f32),
+    (width, height): (f32, f32),
+    color: Color,
+    filled: bool,
+) -> Canvas {
     let canvas = Canvas::new().width(width.max(1.0)).height(height.max(1.0));
-    if values.len() < 2 || max <= 0.0 {
+    if values.len() < 2 || max <= min {
         return canvas.shapes(Vec::new());
     }
     let step = width / (SPARK_POINTS - 1) as f32;
     let start = width - step * (values.len() - 1) as f32;
     let point = |i: usize, v: f32| {
-        let y = height - (v / max).clamp(0.0, 1.0) * (height - 1.0) - 0.5;
+        let y = height - ((v - min) / (max - min)).clamp(0.0, 1.0) * (height - 1.0) - 0.5;
         (start + step * i as f32, y)
     };
     let mut stroke = Path::new();
@@ -238,10 +271,12 @@ pub fn sparkline(values: &[f32], max: f32, width: f32, height: f32, color: Color
     }
     let fill = fill.line_to(width, height).close();
     let faint = Color::rgba(color.red(), color.green(), color.blue(), 56);
-    canvas.shapes(vec![
-        Box::new(fill.fill(faint)),
-        Box::new(stroke.stroke(1.5, color).cap(Cap::Round)),
-    ])
+    let mut shapes: Vec<Box<dyn Shape>> = Vec::new();
+    if filled {
+        shapes.push(Box::new(fill.fill(faint)));
+    }
+    shapes.push(Box::new(stroke.stroke(1.5, color).cap(Cap::Round)));
+    canvas.shapes(shapes)
 }
 
 /// How many readings a sparkline spans across its width.

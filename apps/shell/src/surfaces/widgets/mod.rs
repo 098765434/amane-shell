@@ -9,7 +9,7 @@
 //! only the grid and room for the cards' shadows. A card is 2 × 2
 //! (Small), 4 × 2 (Medium), 4 × 4 (Large) or 8 × 4 (Extra Large) cells,
 //! and the same kind can sit on the desktop more than once, each with its
-//! own settings. Each monitor keeps its own layout (`store.rs`).
+//! own settings. Each monitor keeps its own layout (`store/`).
 //!
 //! A card is dragged to another place at any time, the others
 //! making way as they do in Quick Settings; a click opens what it watches
@@ -23,36 +23,43 @@
 //! one still layer over the whole surface that comes first, and the cards
 //! take no input of their own. See `docs/user/features/widgets.md`.
 
+// a function over 100 lines is one to split (polish-plan.md, phase 3)
+#![warn(clippy::too_many_lines)]
+
 mod catalog;
 mod edit;
 mod gallery;
 mod input;
 mod ipc;
+mod keys;
 mod kind;
 mod menu;
 mod store;
 #[cfg(test)]
 mod tests;
 mod view;
+mod window;
 
 use input::*;
 pub use ipc::run;
 use menu::*;
 use view::*;
+use window::desk_window;
 
 use std::cell::RefCell;
 use std::collections::HashSet;
 
 use amane::{
-    Animation, BlurShape, Button, Color, Cursor, Desktop, Full, Horizontal, InputArea, Keyboard,
-    Layer, LayerWindow, Margin, Monitor, Point, Rectangle, Service, Shadow, Stack, Vertical,
-    Widget, WindowSize, WorkspaceSwitch, Workspaces, Zone,
+    Animation, BlurShape, Button, Cursor, Desktop, Full, Horizontal, InputArea, Keyboard, Layer,
+    LayerWindow, Margin, Monitor, Point, Rectangle, Service, Shadow, Stack, Vertical, Widget,
+    WindowSize, WorkspaceSwitch, Workspaces, Zone,
 };
 
 use crate::chrome::bar;
 use crate::chrome::per_output::PerOutput;
 use crate::services::desktop::system_stats::SystemStats;
 use crate::surfaces::status_bar;
+use crate::tokens::{quick, widget};
 use emaki_kit::glass::{self, Rim};
 use emaki_kit::glass_region;
 use emaki_kit::grid::Layout;
@@ -63,45 +70,36 @@ use emaki_kit::material::{self, Material};
 use emaki_kit::menu::layer as context_menu;
 use emaki_kit::menu::{ContextMenu, MenuItem};
 use emaki_kit::motion::{self, Arrive, Item, Pose};
-use emaki_kit::settings::{ACCENTS, WidgetStyle, desktop};
+use emaki_kit::settings::{WidgetStyle, desktop};
 use emaki_kit::shell_ipc::Widgets as Command;
 
-use kind::{Category, WidgetKey, WidgetKind, WidgetSize};
-use store::Settings;
+use kind::{Reads, SettingKind, SettingSpec, WidgetKey, WidgetKind, WidgetSize};
 
 /// Every monitor's widget surface is `emaki.widgets.<output>`; the niri
 /// `layer-rule` matches the prefix. Each has its own name, so a card's menu
 /// hangs under the surface on its own monitor.
 pub const WIDGETS_NS: &str = "emaki.widgets.";
 
-// TODO(token): `widget.grid.cell`, `widget.grid.gap` (Quick Settings'
-// `quick.grid.cell` and `.gap`, which code outside it can't read),
-// `widget.canvas.margin`, `widget.card.radius`, `widget.shadow`,
-// `widget.dim.opacity` and `widget.drag.scale` once Penpot has them
-// (manual §1.1).
-const CELL: f32 = 74.0;
-const GAP: f32 = 16.0;
-/// The room kept clear round the canvas, at the screen's edges.
-const MARGIN: f32 = 24.0;
 /// The room the background surface keeps round the canvas for the cards'
-/// shadows (`shadow()`: 24 blurred, 8 down), so the surface is the grid and
-/// no more. A surface costs four or five times its pixels on the GPU (its
-/// swapchain, canvas and vibrant layers), and the screen is mostly not grid.
-const PAD: f32 = 32.0;
+/// shadows (`quick.shadow`: 24 blurred, 8 down), so the surface is the grid
+/// and no more. A surface costs four or five times its pixels on the GPU
+/// (its swapchain, canvas and vibrant layers), and the screen is mostly not
+/// grid.
+const SHADOW_ROOM: f32 = 32.0;
+
+/// The room kept clear round the canvas, at the screen's edges: Quick
+/// Settings' grid margin.
+fn margin() -> f32 {
+    quick::grid::margin()
+}
+
 /// A card's corners.
-const RADIUS: f32 = 22.0;
-/// How far a card fades back while windows are open.
-const DIM: f32 = 0.45;
-/// How much bigger the card in hand is drawn.
-const DRAG_SCALE: f32 = 1.04;
-/// How far a card goes past the middle of the next cell before it changes
-/// cell, in cells (Quick Settings' dead band).
-const BAND: f32 = 0.1;
-/// How far the pointer moves with the button down before a press is a drag.
-const THRESHOLD: f32 = 6.0;
+fn radius() -> f32 {
+    widget::card::radius()
+}
 
 fn metrics() -> Metrics {
-    Metrics::new(CELL, GAP)
+    Metrics::new(quick::grid::cell(), quick::grid::gap())
 }
 
 /// Where a monitor's canvas is: as many whole cells as fit inside the
@@ -122,9 +120,9 @@ pub struct Geometry {
 impl Geometry {
     fn of(width: f32, height: f32) -> Self {
         let px = metrics();
-        let area_w = width - 2.0 * MARGIN;
+        let area_w = width - 2.0 * margin();
         let bar = bar::height();
-        let area_h = height - bar - 2.0 * MARGIN;
+        let area_h = height - bar - 2.0 * margin();
         let canvas = Canvas::fit(&px, area_w, area_h);
         let (x, y) = px.centred_origin(&canvas, area_w, area_h);
         // below a bar along the top, rather than above one along the bottom
@@ -135,7 +133,7 @@ impl Geometry {
         };
         Self {
             canvas,
-            origin: (MARGIN + x, top + MARGIN + y),
+            origin: (margin() + x, top + margin() + y),
             width,
             height,
             surface: (0.0, 0.0, width, height),
@@ -143,15 +141,17 @@ impl Geometry {
     }
 
     /// The same canvas against a surface that covers only `extent` (x, y,
-    /// width, height in the canvas's pixels) and [`PAD`] round it, kept
+    /// width, height in the canvas's pixels) and [`SHADOW_ROOM`] round it, kept
     /// within the monitor: the background surface, which is as big as the
     /// cards on it and no more.
     fn on_surface_around(self, extent: (f32, f32, f32, f32)) -> Self {
         let (x, y, w, h) = extent;
-        let left = (self.origin.0 + x - PAD).max(0.0).floor();
-        let top = (self.origin.1 + y - PAD).max(0.0).floor();
-        let right = (self.origin.0 + x + w + PAD).min(self.width).ceil();
-        let bottom = (self.origin.1 + y + h + PAD).min(self.height).ceil();
+        let left = (self.origin.0 + x - SHADOW_ROOM).max(0.0).floor();
+        let top = (self.origin.1 + y - SHADOW_ROOM).max(0.0).floor();
+        let right = (self.origin.0 + x + w + SHADOW_ROOM).min(self.width).ceil();
+        let bottom = (self.origin.1 + y + h + SHADOW_ROOM)
+            .min(self.height)
+            .ceil();
         let width = (right - left).max(1.0);
         let height = (bottom - top).max(1.0);
         Self {
@@ -192,6 +192,9 @@ struct Desk {
     session: Option<Session<WidgetKey>>,
     /// A drag just ended, so the click that follows isn't one.
     dragged: bool,
+    /// A drag let go of with Escape while the button is still down: the
+    /// pointer takes nothing more until the button comes up.
+    cancelled: bool,
     /// Where each card is this frame, in the canvas's pixels.
     slots: Vec<(WidgetKey, Slot)>,
     /// The pointer on the surface.
@@ -209,6 +212,7 @@ impl Desk {
             press: None,
             session: None,
             dragged: false,
+            cancelled: false,
             slots: Vec::new(),
             pointer: Point { x: 0.0, y: 0.0 },
             dim: motion::fade(0.0, motion::FADE),
@@ -319,158 +323,6 @@ pub fn edit_surface(monitor: &Monitor) -> LayerWindow {
     desk_window(monitor, true)
 }
 
-fn desk_window(monitor: &Monitor, edit_window: bool) -> LayerWindow {
-    // a change to the widgets anywhere redraws this window, hidden or not
-    drop(Desktops::read());
-    let output = monitor.name.clone();
-    let geometry = Geometry::of(monitor.width as f32, monitor.height as f32);
-    let name = if edit_window {
-        namespace(&format!("edit.{output}"))
-    } else {
-        namespace(&output)
-    };
-    let layer = if edit_window {
-        Layer::Overlay
-    } else {
-        Layer::Background
-    };
-    let showing = desktop().show_widgets;
-    if !showing && edit::editing(&output) {
-        edit::leave_all();
-    }
-    let editing = edit::editing(&output);
-    if !showing || (edit_window && !editing) {
-        watching(name, false, false);
-        // hidden, taking nothing
-        return LayerWindow::new()
-            .width(Full)
-            .height(Full)
-            .layer(layer)
-            .space(Zone::Ignore)
-            .keyboard(Keyboard::None)
-            .namespace(name)
-            .visible(false)
-            .click_through()
-            .child(Stack::new(Vec::new()));
-    }
-
-    let layout = shown(&output, geometry.canvas);
-
-    /*
-     * the edit surface covers the monitor (the gallery, and cards dragged
-     * anywhere); the background one covers the cards on it and the room for
-     * their shadows, since a surface costs by its pixels, and the whole
-     * canvas only while a card is dragged across it: the drag's points are
-     * kept in the canvas's pixels, so the surface growing under it is fine
-     */
-    let (window, geometry) = if edit_window {
-        let window = LayerWindow::new().width(Full).height(Full);
-        (window, geometry)
-    } else {
-        let dragging = with_desk(&output, |desk| desk.session.is_some());
-        let extent = if dragging {
-            geometry.whole()
-        } else {
-            cards_extent(&layout)
-        };
-        let geometry = geometry.on_surface_around(extent);
-        let (left, top, width, height) = geometry.surface;
-        let window = LayerWindow::new()
-            .width(WindowSize::Fixed(width))
-            .height(WindowSize::Fixed(height))
-            .anchor_vertical(Vertical::Top)
-            .anchor_horizontal(Horizontal::Left)
-            .margin(Margin {
-                top: top as i32,
-                left: left as i32,
-                ..Margin::default()
-            });
-        (window, geometry)
-    };
-    let full = InputArea {
-        x: 0,
-        y: 0,
-        width: geometry.width.ceil() as i32,
-        height: geometry.height.ceil() as i32,
-    };
-    let window = window
-        .vibrant(material::vibrant())
-        .layer(layer)
-        .space(Zone::Ignore)
-        .namespace(name)
-        .visible(true);
-    if editing && !edit_window {
-        watching(name, false, false);
-        // the edit surface has the cards for now
-        return window
-            .keyboard(Keyboard::None)
-            .click_through()
-            .blur_shapes(Vec::new())
-            .child(Stack::new(Vec::new()));
-    }
-    // the window that shows the cards says where the pointer meets the grid
-    with_desk(&output, |desk| desk.geometry = Some(geometry));
-
-    // the gallery shows every kind live while editing
-    let system = layout
-        .placed()
-        .any(|(key, _)| key.kind.category() == Category::System);
-    let heat = layout
-        .placed()
-        .any(|(key, _)| key.kind == WidgetKind::Temperature);
-    /*
-     * nothing under the windows shows (niri's overview fully open, or windows
-     * over the whole screen): the surface keeps its last frame and draws
-     * nothing, reading only what says when it shows again. The readings pause
-     * too, so a covered desktop costs no wake-ups; the graphs carry on from
-     * where they were when it shows again (EMAKI_STATS_WHILE_HIDDEN=1 keeps
-     * gathering history under the windows, as before)
-     */
-    let hidden = !editing && Desktop::read().obscured(&output);
-    let gather = !hidden || stats_while_hidden();
-    // the gallery and the settings' sensor list read every sensor
-    watching(
-        name,
-        (editing || system) && gather,
-        (editing || heat) && gather,
-    );
-    let thawed = with_desk(&output, |desk| std::mem::replace(&mut desk.frozen, hidden)) && !hidden;
-    if hidden {
-        return window
-            .keyboard(Keyboard::None)
-            .input_region(vec![full])
-            .frozen(true)
-            .child(Stack::new(Vec::new()));
-    }
-    // shown again: the cards come back as they are now, nothing animating
-    if thawed {
-        motion::forget(&scope(&output));
-        for (key, _) in layout.placed() {
-            if key.kind == WidgetKind::Clock {
-                catalog::settle_clock(key.id);
-            }
-        }
-    }
-
-    let dim = dimming(&output, editing, thawed);
-    let view = view(&output, &geometry, &layout, dim, editing);
-    let window = window
-        .keyboard(if editing {
-            Keyboard::Exclusive
-        } else {
-            Keyboard::None
-        })
-        .input_region(vec![full])
-        .blur_shapes(view.frost)
-        .child(view.root);
-    if editing {
-        let on = output.clone();
-        window.on_key(move |key| edit::key(&on, key))
-    } else {
-        window
-    }
-}
-
 struct View {
     root: Stack,
     frost: Vec<BlurShape>,
@@ -480,8 +332,6 @@ struct View {
 
 const WIDGET_MENU_KEY: &str = "emaki.widgets.widget-menu";
 const DESKTOP_MENU_KEY: &str = "emaki.widgets.desktop-menu";
-
-type Field = fn(&mut Settings) -> &mut Option<String>;
 
 /// Whether the system readings go on while the desktop is covered (`EMAKI_STATS_WHILE_HIDDEN=1`).
 fn stats_while_hidden() -> bool {

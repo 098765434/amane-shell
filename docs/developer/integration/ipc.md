@@ -118,19 +118,28 @@ The niri binds fall back to `wpctl` / `brightnessctl` unless the reply is `ok`.
 
 ### `widgets`
 
-`widgets list | add <kind> [size] [output] | remove <id> | reset-layout [output] | edit [output] | done`
+`widgets list [--json] | kinds | add <kind> [size] [output] | remove <id> | set <id> <key> [value] | resize <id> <size> | move <id> <col> <row> | undo | reset-layout [output] | edit [output] | done`
 ([widgets.md](../../user/features/widgets.md)). Without an output, it's the focused workspace's monitor.
 
 | Call | Does |
 |---|---|
-| `list` | one line a widget: monitor, id, kind, size, and its cell (`col,row`) or `hidden` |
-| `add <kind> [size] [output]` | places one in the first free cells; the kinds are `cpu`, `memory`, `temperature`, `network`, `disk`, `system`, `battery`, `clock`, the sizes `small`, `medium`, `large`, `extra-large` (each kind takes some) |
+| `list` | one line a widget: monitor, id, kind, size, its cell (`col,row`) or `hidden`, then each setting it has as `key=value` |
+| `list --json` | the same as a JSON array, one object a widget: `output`, `id`, `kind`, `title`, `glyph`, `category`, `size`, `at` (`[col, row]`, or `null` while the screen has no room for it) and `settings` (`{key: value}`) |
+| `kinds` | every kind this machine has something for, as a JSON array: `kind`, `title`, `blurb`, `sizes`, `default` and `settings`, each a `key` and `title` with either `automatic` and `choices` (`[{value, name}]`, as they are now: the sensors, interfaces, disks) or `toggle` (the value that's on) and `inverted` |
+| `add <kind> [size] [output]` | places one in the first free cells; the kinds are `cpu`, `memory`, `temperature`, `network`, `disk`, `system`, `battery`, `clock`, the sizes `small`, `medium`, `large`, `extra-large` (each kind takes some). A word that's no size is the output, as `add cpu eDP-1`; with an output after it, it's an error |
 | `remove <id>` | removes one, by the id `list` gives |
+| `set <id> <key> [value]` | sets one of a widget's settings (`kinds` says which it has); no value is its automatic choice, or off, as `set 7 sensor` |
+| `resize <id> <size>` | to one of the sizes it comes in, the others making way |
+| `move <id> <col> <row>` | its top-left to that cell, the others making way; a widget the screen had no room for goes on it |
+| `undo` | Undo Remove, while Edit Widgets is open |
 | `reset-layout [output]` | removes every widget from a monitor |
-| `edit [output]` | opens Edit Widgets on a monitor |
+| `edit [output]` | opens Edit Widgets on a monitor (an error while widgets are turned off) |
 | `done` | leaves Edit Widgets |
 
-Errors start with `error:` (`no room for it`, `no monitor`, `no widget <id>`).
+Errors start with `error:` (`no room for it`, `no monitor`, `no monitor <name>` for one that isn't
+connected, `widgets aren't showing on <output>`, `<kind> comes in …` for a size it doesn't, `no
+widget <id>`, `<kind> has …` for a setting it doesn't, `<key> is <value> or nothing` for a switch
+set to something else, `no room there`, `<output> is <cols> by <rows> cells`, `nothing to undo`).
 
 ### `status-bar`
 

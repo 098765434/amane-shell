@@ -25,7 +25,7 @@
 
 use std::cell::{Cell, RefCell};
 
-use amane::{Animation, Color, Cursor, Parent, Point, Radius, Rectangle, Size, Stack, Widget};
+use amane::{Animation, Color, Cursor, Parent, Point, Radius, Rectangle, Stack, Widget};
 
 use super::controls::ControlId;
 use super::customize;
@@ -33,11 +33,12 @@ use super::grid::{Canvas, Metrics, Occupancy, Rect, Slot, Span};
 use super::layout::{self, Layout};
 use super::tiles::{SCOPE, radius_of};
 use crate::chrome::edit_marks as marks;
+use crate::chrome::grid_edit::{self, Landing};
 use crate::surfaces::quick_settings::grid::{FromTokens as _, Sizes as _};
 use crate::surfaces::quick_settings::layout::Stored as _;
 use crate::tokens::{quick, sys};
 use emaki_kit::control_size::ControlSize;
-use emaki_kit::grid::drag::{self, Hit, Origin, Session, follow, hit, off_canvas};
+use emaki_kit::grid::drag::{self, Origin, Session, follow, hit};
 use emaki_kit::layout::{boxed, frame};
 use emaki_kit::motion::{self, Pose};
 
@@ -221,32 +222,9 @@ pub(super) fn drag_at(point: Point) {
         return;
     }
     let handle = handle_side();
-    match SLOTS.with_borrow(|slots| hit(slots, point, handle)) {
-        Some(Hit::Body(id, slot)) => {
-            begin(Drag::Move {
-                id,
-                grab: Point {
-                    x: point.x - slot.x,
-                    y: point.y - slot.y,
-                },
-                at: (slot.x, slot.y),
-                place: None,
-                origin: Origin::Canvas,
-                pointer: point,
-            });
-            motion(point);
-        }
-        Some(Hit::Handle(id, slot)) => {
-            begin(Drag::Resize {
-                id,
-                grab: point,
-                base: slot,
-                pulled: (slot.width, slot.height),
-                span: None,
-            });
-            motion(point);
-        }
-        None => {}
+    if let Some(hit) = SLOTS.with_borrow(|slots| hit(slots, point, handle)) {
+        begin(grid_edit::begin(hit, point, point));
+        motion(point);
     }
 }
 
@@ -254,38 +232,31 @@ pub(super) fn drag_at(point: Point) {
 /// a cell beyond its edge) doesn't land: one from the canvas is removed,
 /// and one from the Customize window goes back to it.
 pub(super) fn release() {
-    match drag() {
-        Some(Drag::Move {
-            id,
-            at,
-            origin,
-            pointer,
-            place,
-            ..
-        }) => {
-            let canvas = SESSION.with_borrow(|session| session.as_ref().map(|s| s.base.canvas));
-            let off = canvas.is_some_and(|canvas| {
-                off_canvas(&Metrics::tokens(), &canvas, pointer) || place.is_none()
-            });
-            if off {
-                cancel();
-                if origin == Origin::Canvas {
-                    hide(id);
-                }
-            } else {
-                // the control springs from where it was let go, lift and all
-                motion::jump(
-                    SCOPE,
-                    id.key(),
-                    Pose {
-                        scale: quick::drag::scale(),
-                        ..Pose::at(at.1).moved(at.0)
-                    },
-                );
-                commit();
+    let landing = SESSION.with_borrow(|session| {
+        session
+            .as_ref()
+            .map(|session| grid_edit::landing(session, &Metrics::tokens()))
+    });
+    match landing {
+        Some(Landing::Off { id, origin }) => {
+            cancel();
+            if origin == Origin::Canvas {
+                hide(id);
             }
         }
-        Some(Drag::Resize { .. }) => commit(),
+        Some(Landing::Moved { id, at, .. }) => {
+            // the control springs from where it was let go, lift and all
+            motion::jump(
+                SCOPE,
+                id.key(),
+                Pose {
+                    scale: quick::drag::scale(),
+                    ..Pose::at(at.1).moved(at.0)
+                },
+            );
+            commit();
+        }
+        Some(Landing::Resized) => commit(),
         None => {}
     }
     super::QuickSettings::changed();
@@ -297,12 +268,7 @@ fn handle_side() -> f32 {
 
 /// The pull a resize in flight has made of `id`, for its ghost.
 fn pulling(id: ControlId) -> Option<(f32, f32)> {
-    match drag() {
-        Some(Drag::Resize {
-            id: held, pulled, ..
-        }) if held == id => Some(pulled),
-        _ => None,
-    }
+    grid_edit::pulling(drag(), id)
 }
 
 // ───── hiding and adding ───────────────────────────────────────────────────
@@ -363,28 +329,20 @@ pub(super) fn dressing(id: ControlId, slot: Slot, pose: Pose) -> Box<dyn Widget>
     let mut layers: Vec<Box<dyn Widget>> = Vec::new();
 
     if id.supported().len() > 1 {
-        if let Some((w, h)) = pulling(id) {
+        if let Some(pulled) = pulling(id) {
             // the pull itself, so the hand sees how far it has come; the
             // control snaps to the sizes it comes in
             let px = Metrics::tokens();
-            let (w, h) = (w.max(px.cell), h.max(px.cell));
-            let ghost = Rectangle::new()
-                .width(w)
-                .height(h)
-                .radius(radius_of(
-                    id,
-                    Span {
-                        cols: 1,
-                        rows: if h > px.cell * 1.5 { 2 } else { 1 },
-                    },
-                    Slot { height: h, ..slot },
-                ))
-                .border(sys::border::hairline(), sys::color::accent::bg());
-            layers.push(boxed(
-                frame(slot.width, slot.height)
-                    .align_child(amane::Start, amane::Start)
-                    .child(ghost),
-            ));
+            let h = pulled.1.max(px.cell);
+            let radius = radius_of(
+                id,
+                Span {
+                    cols: 1,
+                    rows: if h > px.cell * 1.5 { 2 } else { 1 },
+                },
+                Slot { height: h, ..slot },
+            );
+            layers.push(grid_edit::pull_outline(slot, pulled, &px, radius));
         }
         layers.push(boxed(marks::bottom_right(
             slot.width,
@@ -443,19 +401,14 @@ pub(super) fn ghost_grid(
 /// gives it. Always one layer, empty when nothing is held.
 pub(super) fn drop_outline(px: &Metrics, layout: &Layout) -> Box<dyn Widget> {
     let Some((id, rect)) = held().and_then(|id| Some((id, layout.rect_of(id)?))) else {
-        return boxed(
-            Rectangle::new()
-                .width(Size::Fixed(0.0))
-                .height(Size::Fixed(0.0)),
-        );
+        return grid_edit::no_outline();
     };
     let slot = px.slot(rect);
-    boxed(
-        Rectangle::new()
-            .width(slot.width)
-            .height(slot.height)
-            .radius(radius_of(id, rect.span, slot))
-            .border(sys::border::hairline(), sys::color::accent::bg())
-            .translate(slot.x, slot.y),
+    grid_edit::outline(
+        slot.x,
+        slot.y,
+        slot.width,
+        slot.height,
+        radius_of(id, rect.span, slot),
     )
 }

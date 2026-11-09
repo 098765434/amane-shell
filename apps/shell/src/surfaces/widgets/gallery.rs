@@ -8,37 +8,32 @@
 //! It's drawn on the desktop's own surface (see `edit.rs`), which records
 //! where each widget in the pane is for a press to find what's under it.
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
+use std::time::{Duration, Instant};
 
 use amane::{
-    Animation, BlurShape, Center, Key, Rectangle, Stack, Start, Text, Vertical, Widget, modifiers,
+    Animation, BlurShape, Button, Center, Key, Rectangle, Scroll, Stack, Start, Text, Vertical,
+    Widget, modifiers,
 };
 
 use super::catalog;
 use super::edit;
-use super::kind::{Category, WidgetKey, WidgetKind};
+use super::kind::{Category, WidgetKey, WidgetKind, WidgetSize};
 use super::store::Settings;
-use super::{Geometry, MARGIN, RADIUS, changed};
+use super::{Desktops, Geometry, changed, margin, radius};
 use crate::chrome::bar;
 use crate::chrome::catalog as sheet;
+use crate::tokens::widget;
 use crate::tokens::{Styled, sys};
 use emaki_kit::flow::Flow;
+use emaki_kit::kinetic::{Axis, Kinetic};
 use emaki_kit::layout::{boxed, caption, frame, pad, text_height, wrapped_lines};
 use emaki_kit::material::{self, FillLevel, Level, Material};
 use emaki_kit::motion;
+use emaki_kit::scroll_view::{ScrollView, ScrollbarFade};
 use emaki_kit::text_edit::Field;
 
-// TODO(token): `widget.gallery.{width,height,sidebar,inset,preview}` once
-// Penpot has them (manual §1.1).
 use emaki_kit::reveal::Swell;
-const WIDTH: f32 = 900.0;
-const HEIGHT: f32 = 420.0;
-const SIDEBAR: f32 = 240.0;
-const INSET: f32 = 20.0;
-/// The box each widget's preview is scaled to fit.
-const PREVIEW: f32 = 120.0;
-/// How small the sheet is as it swells in.
-const OPEN_SCALE: f32 = 0.96;
 
 pub(super) use emaki_kit::area::Area;
 
@@ -50,12 +45,10 @@ pub(super) enum Section {
 }
 
 impl Section {
-    const ALL: [Section; 4] = [
-        Self::All,
-        Self::Only(Category::Clock),
-        Self::Only(Category::System),
-        Self::Only(Category::Battery),
-    ];
+    /// All Widgets, then each category.
+    fn all() -> impl Iterator<Item = Section> {
+        std::iter::once(Self::All).chain(Category::ALL.into_iter().map(Self::Only))
+    }
 
     fn title(self) -> &'static str {
         match self {
@@ -74,9 +67,7 @@ impl Section {
     fn key(self) -> &'static str {
         match self {
             Self::All => "all",
-            Self::Only(Category::Clock) => "clock",
-            Self::Only(Category::System) => "system",
-            Self::Only(Category::Battery) => "battery",
+            Self::Only(category) => category.name(),
         }
     }
 }
@@ -106,6 +97,8 @@ struct State {
     area: Option<Area>,
     /// The widgets in the pane this frame: what, where drawn, at what scale.
     tiles: Vec<(WidgetKind, Area, f32)>,
+    /// The size each kind is added at, where one was picked under it.
+    sizes: Vec<(WidgetKind, WidgetSize)>,
 }
 
 impl State {
@@ -115,14 +108,25 @@ impl State {
             section: Section::All,
             area: None,
             tiles: Vec::new(),
+            sizes: Vec::new(),
         }
     }
 }
 
+/// How long a note stands in for the footer's hint.
+const NOTE_FOR: Duration = Duration::from_secs(4);
+
+/// How many pixels a cell is in a size's picture under a preview.
+const PICTURE_CELL: f32 = 5.0;
+
 thread_local! {
     static STATE: RefCell<State> = const { RefCell::new(State::new()) };
     static OPEN: RefCell<Animation> = RefCell::new(motion::pop(0.0));
-    static OPENING: Cell<bool> = const { Cell::new(false) };
+    // how far the pane scrolls, and its scrollbar showing while it moves
+    static SCROLL: RefCell<Kinetic> = RefCell::new(Kinetic::new());
+    static SCROLLBAR: RefCell<ScrollbarFade> = RefCell::new(ScrollbarFade::new());
+    // a note standing in for the hint ("No room …"), and since when
+    static NOTE: RefCell<Option<(&'static str, Instant)>> = const { RefCell::new(None) };
 }
 
 fn with<R>(f: impl FnOnce(&mut State) -> R) -> R {
@@ -136,12 +140,81 @@ pub(super) fn open() {
         *open = motion::pop(0.0);
         open.to(1.0);
     });
-    OPENING.set(true);
+    reset_scroll();
+    NOTE.with_borrow_mut(|note| *note = None);
 }
 
 pub(super) fn close() {
-    OPENING.set(false);
     with(|state| *state = State::new());
+    reset_scroll();
+    NOTE.with_borrow_mut(|note| *note = None);
+}
+
+/// How far the sheet has swelled in, 0 to 1: edit mode's marks come in
+/// with it.
+pub(super) fn opened() -> f32 {
+    OPEN.with_borrow_mut(|open| open.value()).clamp(0.0, 1.0)
+}
+
+fn reset_scroll() {
+    SCROLL.with_borrow_mut(|scroll| *scroll = Kinetic::new());
+    SCROLLBAR.with_borrow_mut(ScrollbarFade::reset);
+}
+
+fn on_scroll(scroll: Scroll) {
+    SCROLL.with_borrow_mut(|pane| pane.scroll(&scroll, Axis::Vertical));
+    SCROLLBAR.with_borrow_mut(ScrollbarFade::moved);
+    changed();
+}
+
+/// Says `note` in the footer for a while, in place of the hint.
+pub(super) fn note(note: &'static str) {
+    NOTE.with_borrow_mut(|now| *now = Some((note, Instant::now())));
+    motion::redraw_after::<Desktops>(NOTE_FOR);
+    changed();
+}
+
+/// The note in the footer now, if one is still fresh.
+fn fresh_note() -> Option<&'static str> {
+    NOTE.with_borrow(|note| {
+        note.filter(|(_, at)| at.elapsed() < NOTE_FOR)
+            .map(|(text, _)| text)
+    })
+}
+
+/// The size a `kind` from the gallery is added at: the one picked under
+/// it, else its default.
+pub(super) fn size_of(kind: WidgetKind) -> WidgetSize {
+    with(|state| {
+        state
+            .sizes
+            .iter()
+            .find(|(k, _)| *k == kind)
+            .map(|(_, size)| *size)
+    })
+    .unwrap_or_else(|| kind.default_size())
+}
+
+fn pick_size(kind: WidgetKind, size: WidgetSize) {
+    with(|state| {
+        state.sizes.retain(|(k, _)| *k != kind);
+        state.sizes.push((kind, size));
+    });
+    changed();
+}
+
+/// The first widget the pane shows, for Enter in the search field.
+pub(super) fn first() -> Option<WidgetKind> {
+    let (section, query) = with(|state| (state.section, state.field.text().to_string()));
+    shown_kinds(section, &query).first().copied()
+}
+
+/// What the pane shows: [`kinds`], less those this machine has nothing for.
+fn shown_kinds(section: Section, query: &str) -> Vec<WidgetKind> {
+    kinds(section, query)
+        .into_iter()
+        .filter(|kind| kind.available())
+        .collect()
 }
 
 /// Clears the search; whether there was one.
@@ -160,6 +233,7 @@ pub(super) fn key(key: Key) {
         changed();
     };
     if with(|state| state.field.handle(key, modifiers(), pasted)) {
+        SCROLL.with_borrow_mut(|scroll| scroll.go(0.0));
         changed();
     }
 }
@@ -169,6 +243,7 @@ fn pick(section: Section) {
         state.section = section;
         state.field = Field::new();
     });
+    SCROLL.with_borrow_mut(|scroll| scroll.go(0.0));
     changed();
 }
 
@@ -197,8 +272,12 @@ pub(super) fn tile_at(point: amane::Point) -> Option<(WidgetKind, Area, f32)> {
 /// bar's edge when the bar is there, no wider or taller than the screen
 /// allows.
 fn place(geometry: &Geometry) -> Area {
-    let width = WIDTH.min(geometry.width - 2.0 * MARGIN).max(1.0);
-    let height = HEIGHT.min(geometry.height * 0.5).max(1.0);
+    let width = widget::gallery::width()
+        .min(geometry.width - 2.0 * margin())
+        .max(1.0);
+    let height = widget::gallery::height()
+        .min(geometry.height * 0.5)
+        .max(1.0);
     let bar = if bar::edge() == Vertical::Bottom {
         bar::height()
     } else {
@@ -206,20 +285,20 @@ fn place(geometry: &Geometry) -> Area {
     };
     Area {
         x: ((geometry.width - width) / 2.0).round(),
-        y: (geometry.height - bar - MARGIN - height).round(),
+        y: (geometry.height - bar - margin() - height).round(),
         width,
         height,
     }
 }
 
 /// The sheet over the whole surface, and the frost behind it.
-pub(super) fn sheet(_output: &str, geometry: &Geometry) -> (Box<dyn Widget>, Vec<BlurShape>) {
+pub(super) fn sheet(output: &str, geometry: &Geometry) -> (Box<dyn Widget>, Vec<BlurShape>) {
     let area = place(geometry);
-    let radius = sys::radius::popover().max(RADIUS);
+    let radius = sys::radius::popover().max(radius());
     let opened = OPEN.with_borrow_mut(|open| open.value());
     // its frost always shows: the surface goes once it has closed
-    let swell = Swell::new(true, opened, OPEN_SCALE);
-    let content = content(&area);
+    let swell = Swell::new(true, opened, widget::gallery::open_scale());
+    let content = content(output, &area);
     with(|state| state.area = Some(area));
 
     let surface = Rectangle::new()
@@ -266,7 +345,7 @@ pub(super) fn ghost(
     if placed {
         return None;
     }
-    let size = key.kind.default_size();
+    let size = size_of(key.kind);
     let px = super::metrics();
     let (width, height) = (px.width(size.span()), px.height(size.span()));
     let (x, y) = (geometry.origin.0 + at.0, geometry.origin.1 + at.1);
@@ -275,23 +354,39 @@ pub(super) fn ghost(
         height,
         catalog::build(key, size, width, height, &Settings::default()),
     );
-    let frost = Material::Control.shape(x, y, width, height, RADIUS, 1.0);
+    let frost = Material::Control.shape(x, y, width, height, radius(), 1.0);
     let widget = frame(width, height)
         .translate(x, y)
-        .scale(super::DRAG_SCALE)
+        .scale(crate::tokens::quick::drag::scale())
         .child(card);
     Some((boxed(widget), vec![frost]))
 }
 
 /// The sheet: the sections beside every kind of widget, over the footer.
-const SHEET: sheet::Sheet = sheet::Sheet {
-    id: "emaki.widgets.gallery",
-    sidebar: SIDEBAR,
-    inset: INSET,
-};
+fn chrome() -> sheet::Sheet {
+    sheet::Sheet {
+        id: "emaki.widgets.gallery",
+        sidebar: widget::gallery::sidebar(),
+        inset: widget::gallery::inset(),
+    }
+}
+
+/// What the footer says: a fresh note, else how many widgets this screen
+/// has no room for, else how the gallery works.
+fn hint(output: &str) -> std::borrow::Cow<'static, str> {
+    if let Some(note) = fresh_note() {
+        return note.into();
+    }
+    let hidden = super::current(output).map_or(0, |layout| layout.hidden().count());
+    match hidden {
+        0 => "Drag a widget onto the desktop, or click it to add it.".into(),
+        1 => "1 widget doesn't fit on this screen; it shows on a bigger one.".into(),
+        n => format!("{n} widgets don't fit on this screen; they show on a bigger one.").into(),
+    }
+}
 
 /// The sidebar, a hairline, the pane over the footer.
-fn content(area: &Area) -> Rectangle {
+fn content(output: &str, area: &Area) -> Rectangle {
     let (field, picked) = with(|state| (state.field.clone(), state.section));
     let query = field.text().to_string();
     let search = sheet::Search {
@@ -302,8 +397,7 @@ fn content(area: &Area) -> Rectangle {
             changed();
         },
     };
-    let sections = Section::ALL
-        .into_iter()
+    let sections = Section::all()
         .map(|section| sheet::Section {
             key: section.key(),
             title: section.title(),
@@ -312,91 +406,70 @@ fn content(area: &Area) -> Rectangle {
             pick: Box::new(move || pick(section)),
         })
         .collect();
-    let sidebar = SHEET.sidebar(search, sections, area.height, None);
+    let sidebar = chrome().sidebar(search, sections, area.height, None);
     let footer = sheet::Footer {
-        hint: "Drag a widget onto the desktop, or click it to add it.",
+        hint: hint(output),
         reset: "Remove All",
         undo: edit::can_undo().then_some(edit::undo),
         on_reset: edit::reset,
         on_done: edit::leave_all,
     };
-    SHEET.build(
+    chrome().build(
         area,
         sidebar,
-        |viewport| pane(&kinds(picked, &query), viewport, !query.trim().is_empty()),
+        |viewport| {
+            pane(
+                &shown_kinds(picked, &query),
+                viewport,
+                !query.trim().is_empty(),
+            )
+        },
         footer,
     )
 }
 
-/// Every kind in `kinds`, its preview live at its default size scaled to
-/// fit [`PREVIEW`], named under it. `viewport` is where the pane is on the
-/// surface, for each preview to record where it's drawn.
+/// Every kind in `kinds`, its preview live at the size it's added at,
+/// scaled to fit `widget.gallery.preview`, named under it, over a picture of each size
+/// it comes in (the one it's added at picked). `viewport` is where the pane
+/// is on the surface, for each preview to record where it's drawn. The
+/// pane scrolls when they don't all fit.
 fn pane(kinds: &[WidgetKind], viewport: Area, searching: bool) -> Rectangle {
-    let inner_w = (viewport.width - INSET * 2.0).max(1.0);
-    let px = super::metrics();
-    let style = sys::r#type::caption();
-    let line_h = text_height(style);
-    let gap = sys::space::gap::xs();
-    let item_w = PREVIEW + sys::space::gap::m();
+    let inner_w = (viewport.width - widget::gallery::inset() * 2.0).max(1.0);
+    let item_w = widget::gallery::preview() + sys::space::gap::m();
     let mut flow = Flow::new(inner_w, sys::space::gap::m(), sys::space::gap::l());
     let mut cells = Vec::new();
     for kind in kinds {
-        let size = kind.default_size();
-        let (width, height) = (px.width(size.span()), px.height(size.span()));
-        let scale = (PREVIEW / width.max(height)).min(1.0);
-        let key = WidgetKey { id: 0, kind: *kind };
-        let card = super::card(
-            width,
-            height,
-            catalog::build(key, size, width, height, &Settings::default()),
-        )
-        .fill(material::fill_role(FillLevel::Secondary));
-        let drawn = (width * scale, height * scale);
-        let lines = wrapped_lines(kind.title(), style, item_w, 2);
-        let name_h = lines.len() as f32 * line_h;
-        let names: Vec<Box<dyn Widget>> = lines
-            .into_iter()
-            .map(|line| {
-                boxed(
-                    frame(item_w, line_h).align_child(Center, Center).child(
-                        Text::new(line)
-                            .style(style)
-                            .color(material::label(Level::Primary)),
-                    ),
-                )
-            })
-            .collect();
-        // the card scales about its centre, so it's placed centred in the box
-        let item = frame(item_w, PREVIEW + gap + name_h).child(Stack::new(vec![
-            boxed(
-                frame(width, height)
-                    .translate((item_w - width) / 2.0, (PREVIEW - height) / 2.0)
-                    .scale(scale)
-                    .cursor(amane::Cursor::Grab)
-                    .child(card),
-            ),
-            boxed(
-                frame(item_w, name_h)
-                    .translate(0.0, PREVIEW + gap)
-                    .child(amane::Column::new(names)),
-            ),
-        ]));
-        flow = flow.item(item_w, PREVIEW + gap + name_h, item);
+        let (item, height, drawn, scale) = item(*kind, item_w);
+        flow = flow.item(item_w, height, item);
         cells.push((*kind, drawn, scale));
     }
-    let (flow, _flow_h, spots) = flow.build();
+    let (flow, flow_h, spots) = flow.build();
+    let content_h = flow_h + widget::gallery::inset() * 2.0;
+    let scroll = SCROLL.with_borrow_mut(|scroll| {
+        scroll.set_max((content_h - viewport.height).max(0.0));
+        scroll.settle_stale();
+        if scroll.swiping() {
+            SCROLLBAR.with_borrow_mut(ScrollbarFade::moved);
+        }
+        scroll.value()
+    });
     with(|state| {
         state.tiles = cells
             .into_iter()
             .zip(spots)
-            .map(|((kind, (w, h), scale), spot)| {
+            .filter_map(|((kind, (w, h), scale), spot)| {
                 let area = Area {
-                    x: viewport.x + INSET + spot.x + (item_w - w) / 2.0,
-                    y: viewport.y + INSET + spot.y + (PREVIEW - h) / 2.0,
+                    x: viewport.x + widget::gallery::inset() + spot.x + (item_w - w) / 2.0,
+                    y: viewport.y
+                        + widget::gallery::inset()
+                        + spot.y
+                        + (widget::gallery::preview() - h) / 2.0
+                        - scroll,
                     width: w,
                     height: h,
                 };
-                (kind, area, scale)
+                // a preview scrolled out of the pane can't be taken
+                area.clipped(&viewport).map(|_| (kind, area, scale))
             })
             .collect();
     });
@@ -409,11 +482,138 @@ fn pane(kinds: &[WidgetKind], viewport: Area, searching: bool) -> Rectangle {
     } else {
         boxed(flow)
     };
-    frame(viewport.width, viewport.height)
-        .padding(pad(INSET, INSET))
+    let content = frame(viewport.width, content_h.max(viewport.height))
+        .padding(pad(widget::gallery::inset(), widget::gallery::inset()))
         .align_child(Start, Start)
-        .clip()
-        .child(Stack::new(vec![body]))
+        .child(Stack::new(vec![body]));
+    let bar = SCROLLBAR.with_borrow_mut(ScrollbarFade::opacity::<Desktops>);
+    ScrollView::new(Axis::Vertical, viewport.width, viewport.height)
+        .content(content_h)
+        .offset(scroll)
+        .scrollbar(bar)
+        .on_scroll(on_scroll)
+        .build(content)
+}
+
+/// One kind in the pane, `item_w` wide: its preview, its name, and its
+/// sizes' pictures. Gives the item, how tall it is, and the preview's
+/// drawn size and scale.
+fn item(kind: WidgetKind, item_w: f32) -> (Rectangle, f32, (f32, f32), f32) {
+    let px = super::metrics();
+    let style = sys::r#type::caption();
+    let line_h = text_height(style);
+    let gap = sys::space::gap::xs();
+    let size = size_of(kind);
+    let (width, height) = (px.width(size.span()), px.height(size.span()));
+    let scale = (widget::gallery::preview() / width.max(height)).min(1.0);
+    let key = WidgetKey { id: 0, kind };
+    let card = super::card(
+        width,
+        height,
+        catalog::build(key, size, width, height, &Settings::default()),
+    )
+    .fill(material::fill_role(FillLevel::Secondary));
+    let lines = wrapped_lines(kind.title(), style, item_w, 2);
+    let name_h = lines.len() as f32 * line_h;
+    let names: Vec<Box<dyn Widget>> = lines
+        .into_iter()
+        .map(|line| {
+            boxed(
+                frame(item_w, line_h).align_child(Center, Center).child(
+                    Text::new(line)
+                        .style(style)
+                        .color(material::label(Level::Primary)),
+                ),
+            )
+        })
+        .collect();
+    let (pictures, pictures_h) = size_pictures(kind, size, item_w);
+    let below = widget::gallery::preview() + gap + name_h;
+    let total = below + pictures_h;
+    // the card scales about its centre, so it's placed centred in the box
+    let item = frame(item_w, total).child(Stack::new(vec![
+        boxed(
+            frame(width, height)
+                .translate(
+                    (item_w - width) / 2.0,
+                    (widget::gallery::preview() - height) / 2.0,
+                )
+                .scale(scale)
+                .cursor(amane::Cursor::Grab)
+                .child(card),
+        ),
+        boxed(
+            frame(item_w, name_h)
+                .translate(0.0, widget::gallery::preview() + gap)
+                .child(amane::Column::new(names)),
+        ),
+        boxed(
+            frame(item_w, pictures_h)
+                .translate(0.0, below)
+                .child(pictures),
+        ),
+    ]));
+    (item, total, (width * scale, height * scale), scale)
+}
+
+/// A picture of each size `kind` comes in, its cells drawn small, in a
+/// centred row `width` wide: the one `picked` filled, a click on another
+/// picks it. Nothing (and no room) for a kind of one size.
+fn size_pictures(kind: WidgetKind, picked: WidgetSize, width: f32) -> (Stack, f32) {
+    let sizes: Vec<WidgetSize> = kind.sizes().collect();
+    if sizes.len() < 2 {
+        return (Stack::new(Vec::new()), 0.0);
+    }
+    let gap = sys::space::gap::s();
+    let picture = |size: WidgetSize| {
+        let span = size.span();
+        (
+            f32::from(span.cols) * PICTURE_CELL,
+            f32::from(span.rows) * PICTURE_CELL,
+        )
+    };
+    let tallest = sizes.iter().map(|s| picture(*s).1).fold(0.0, f32::max);
+    let row_w: f32 =
+        sizes.iter().map(|s| picture(*s).0).sum::<f32>() + gap * (sizes.len() - 1) as f32;
+    // a target a little bigger than the picture, so it's easy to hit
+    let target = sys::space::gap::xs();
+    let mut x = (width - row_w) / 2.0;
+    let mut layers: Vec<Box<dyn Widget>> = Vec::new();
+    for size in sizes {
+        let (w, h) = picture(size);
+        let on = size == picked;
+        let shape = Rectangle::new()
+            .width(w)
+            .height(h)
+            .radius(2.0)
+            .fill(if on {
+                sys::color::accent::bg()
+            } else {
+                amane::Color::TRANSPARENT
+            })
+            .border(
+                sys::border::hairline(),
+                if on {
+                    sys::color::accent::bg()
+                } else {
+                    material::label(Level::Secondary)
+                },
+            );
+        layers.push(boxed(
+            frame(w + target * 2.0, tallest + target * 2.0)
+                .align_child(Center, Center)
+                .translate(x - target, gap - target)
+                .cursor(amane::Cursor::Pointer)
+                .on_click(move |button| {
+                    if button == Button::Left {
+                        pick_size(kind, size);
+                    }
+                })
+                .child(shape),
+        ));
+        x += w + gap;
+    }
+    (Stack::new(layers), gap + tallest)
 }
 
 #[cfg(test)]

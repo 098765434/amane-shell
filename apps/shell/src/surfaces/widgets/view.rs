@@ -2,7 +2,9 @@
 //! shadows, the one held.
 
 use super::*;
+use crate::tokens::{Styled, sys};
 use emaki_kit::layout::frame;
+use emaki_kit::material::Level;
 
 /// Whether the cards fade back now, as the widget style says: by default
 /// while a window is open on the monitor's workspace, and part way through
@@ -69,23 +71,27 @@ pub(super) fn switching(output: &str) -> Option<f32> {
     Some(busy(below) * (1.0 - along) + busy(below + 1.0) * along)
 }
 
-/// The soft shadow under every card (Quick Settings' `quick.shadow`).
-pub(super) fn shadow() -> Shadow {
-    Shadow::drop(Color::rgba(0, 0, 0, 0x29))
-        .blur(24.0)
-        .offset(0.0, 8.0)
+/// The soft shadow under every card: Quick Settings' (`quick.shadow`).
+pub(super) fn shadow() -> Option<Shadow> {
+    quick::shadow().first().map(|layer| {
+        Shadow::drop(layer.color.to_color())
+            .blur(layer.blur)
+            .offset(layer.x, layer.y)
+    })
 }
 
 /// A card's glass, `width` by `height`, holding `content`.
 pub(super) fn card(width: f32, height: f32, content: Box<dyn Widget>) -> Rectangle {
-    Rectangle::new()
+    let card = Rectangle::new()
         .width(width)
         .height(height)
-        .radius(RADIUS)
-        .fill(Material::Control.fill())
-        .shadow(shadow())
-        .clip()
-        .child(Stack::new(vec![content]))
+        .radius(radius())
+        .fill(Material::Control.fill());
+    let card = match shadow() {
+        Some(shadow) => card.shadow(shadow),
+        None => card,
+    };
+    card.clip().child(Stack::new(vec![content]))
 }
 
 pub(super) fn view(
@@ -96,113 +102,48 @@ pub(super) fn view(
     editing: bool,
 ) -> View {
     let px = metrics();
-    let (ox, oy) = geometry.origin;
-    let placed: Vec<(WidgetKey, Rect)> = layout.placed().collect();
-    let slots: Vec<(WidgetKey, Slot)> = placed.iter().map(|(k, r)| (*k, px.slot(*r))).collect();
-    with_desk(output, |desk| desk.slots = slots.clone());
     let held = held(output);
-
-    let items: Vec<Item<(WidgetKey, Rect, Slot)>> = placed
-        .iter()
-        .zip(&slots)
-        .map(|((key, rect), (_, slot))| {
-            let pose = Pose::at(slot.y).moved(slot.x);
-            let away = Pose {
-                scale: motion::scale(motion::ENTER_SCALE),
-                ..pose.faded()
-            };
-            Item {
-                key: u64::from(key.id),
-                value: (*key, *rect, *slot),
-                height: slot.height,
-                pose,
-                enter: away,
-                exit: away,
-            }
-        })
-        .collect();
-    let mut shown = motion::animate(&scope(output), items, Arrive::Rest);
-    // the card in hand draws over the rest
-    shown.sort_by_key(|item| held.map(|(k, _)| k) == Some(item.value.0));
+    let shown = arrivals(output, layout, held);
 
     let mut layers: Vec<Box<dyn Widget>> =
         vec![boxed(still_layer(output, *geometry, held.is_some()))];
     if editing {
         layers.push(edit::drop_outline(output, &px, geometry, layout));
+        if layout.placed().next().is_none() && held.is_none() {
+            layers.push(empty_hint(geometry));
+        }
     }
     let mut frost = Vec::new();
     let mut rims: Vec<Rim> = Vec::new();
     let mut dressings = Vec::new();
     // the card in hand, over everything, the gallery too
     let mut over: Vec<Box<dyn Widget>> = Vec::new();
-    let fade = 1.0 - DIM * dim;
+    let fade = 1.0 - widget::dim::opacity() * dim;
     for item in shown {
         let (key, rect, slot) = item.value;
-        let mut pose = item.pose;
-        if let Some((held_key, at)) = held
-            && held_key == key
-            && !item.leaving
-        {
-            pose = Pose {
-                scale: DRAG_SCALE,
-                ..Pose::at(at.1).moved(at.0)
-            };
-        }
-        let opacity = (pose.opacity * fade).clamp(0.0, 1.0);
-        let size = WidgetSize::of(rect.span);
-        let settings = store::with(|store| store.settings(key.id));
-        let glass = glass_id(output, key);
-        let built = Material::Control.adapted(glass, || {
-            card(
-                slot.width,
-                slot.height,
-                catalog::build(key, size, slot.width, slot.height, &settings),
-            )
-        });
-        let x = ox + pose.x;
-        let y = oy + pose.y;
-        let drawn = Rim {
-            x: x + slot.width * (1.0 - pose.scale) / 2.0,
-            y: y + slot.height * (1.0 - pose.scale) / 2.0,
-            width: slot.width * pose.scale,
-            height: slot.height * pose.scale,
-            radius: RADIUS * pose.scale,
-            opacity,
-        };
-        frost.push(
-            Material::Control
-                .adapted(glass, || {
-                    Material::Control.shape(
-                        drawn.x,
-                        drawn.y,
-                        drawn.width,
-                        drawn.height,
-                        drawn.radius,
-                        if amane::blur_fades() {
-                            opacity
-                        } else {
-                            pose.opacity
-                        },
-                    )
-                })
-                .id(glass),
-        );
         let in_hand = held.is_some_and(|(k, _)| k == key) && !item.leaving;
-        let drawn_card = boxed(
-            frame(slot.width, slot.height)
-                .translate(x, y)
-                .scale(pose.scale)
-                .opacity(opacity)
-                .child(built),
-        );
+        let pose = match held {
+            Some((_, at)) if in_hand => Pose {
+                scale: quick::drag::scale(),
+                ..Pose::at(at.1).moved(at.0)
+            },
+            _ => item.pose,
+        };
+        let pose = Pose {
+            x: geometry.origin.0 + pose.x,
+            y: geometry.origin.1 + pose.y,
+            ..pose
+        };
+        let drawn = drawn_card(output, key, rect, slot, pose, fade);
+        frost.push(drawn.frost);
         if in_hand {
-            over.push(drawn_card);
+            over.push(drawn.card);
         } else {
-            rims.push(drawn);
-            layers.push(drawn_card);
+            rims.push(drawn.rim);
+            layers.push(drawn.card);
         }
         if editing && !item.leaving {
-            dressings.push(edit::dressing(output, key, slot, Pose { x, y, ..pose }));
+            dressings.push(edit::dressing(output, key, slot, pose));
         }
     }
     if !Material::Control.compositor_draws() {
@@ -224,6 +165,124 @@ pub(super) fn view(
         root: Stack::new(layers),
         frost,
     }
+}
+
+/// Each card placed in `layout` where its animation has it this frame
+/// (coming in, settling, or leaving), the one `held` drawn last, over the
+/// rest. Keeps where each sits for the pointer.
+fn arrivals(
+    output: &str,
+    layout: &Layout<WidgetKey>,
+    held: Option<(WidgetKey, (f32, f32))>,
+) -> Vec<motion::Shown<(WidgetKey, Rect, Slot)>> {
+    let px = metrics();
+    let placed: Vec<(WidgetKey, Rect)> = layout.placed().collect();
+    let slots: Vec<(WidgetKey, Slot)> = placed.iter().map(|(k, r)| (*k, px.slot(*r))).collect();
+    with_desk(output, |desk| desk.slots = slots.clone());
+    let items: Vec<Item<(WidgetKey, Rect, Slot)>> = placed
+        .iter()
+        .zip(&slots)
+        .map(|((key, rect), (_, slot))| {
+            let pose = Pose::at(slot.y).moved(slot.x);
+            let away = Pose {
+                scale: motion::scale(motion::ENTER_SCALE),
+                ..pose.faded()
+            };
+            Item {
+                key: u64::from(key.id),
+                value: (*key, *rect, *slot),
+                height: slot.height,
+                pose,
+                enter: away,
+                exit: away,
+            }
+        })
+        .collect();
+    let mut shown = motion::animate(&scope(output), items, Arrive::Rest);
+    shown.sort_by_key(|item| held.map(|(k, _)| k) == Some(item.value.0));
+    shown
+}
+
+/// One card as it's drawn: the card, its frost, and the rim lit round it.
+struct Drawn {
+    card: Box<dyn Widget>,
+    frost: BlurShape,
+    rim: Rim,
+}
+
+/// Card `key` (`rect` on the grid, `slot` in pixels) drawn at `pose` on
+/// the surface, faded to `fade` while the desktop dims.
+fn drawn_card(
+    output: &str,
+    key: WidgetKey,
+    rect: Rect,
+    slot: Slot,
+    pose: Pose,
+    fade: f32,
+) -> Drawn {
+    let opacity = (pose.opacity * fade).clamp(0.0, 1.0);
+    let size = WidgetSize::of(rect.span);
+    let settings = store::with(|store| store.settings(key.id));
+    let glass = glass_id(output, key);
+    let built = Material::Control.adapted(glass, || {
+        card(
+            slot.width,
+            slot.height,
+            catalog::build(key, size, slot.width, slot.height, &settings),
+        )
+    });
+    let rim = Rim {
+        x: pose.x + slot.width * (1.0 - pose.scale) / 2.0,
+        y: pose.y + slot.height * (1.0 - pose.scale) / 2.0,
+        width: slot.width * pose.scale,
+        height: slot.height * pose.scale,
+        radius: radius() * pose.scale,
+        opacity,
+    };
+    // where niri can't fade frost, the frost stays whole while the card dims
+    let frost_opacity = if amane::blur_fades() {
+        opacity
+    } else {
+        pose.opacity
+    };
+    let frost = Material::Control
+        .adapted(glass, || {
+            Material::Control.shape(
+                rim.x,
+                rim.y,
+                rim.width,
+                rim.height,
+                rim.radius,
+                frost_opacity,
+            )
+        })
+        .id(glass);
+    let card = boxed(
+        frame(slot.width, slot.height)
+            .translate(pose.x, pose.y)
+            .scale(pose.scale)
+            .opacity(opacity)
+            .child(built),
+    );
+    Drawn { card, frost, rim }
+}
+
+/// What an empty desktop says while it's edited, in the upper part of the
+/// canvas, clear of the gallery at the bottom.
+fn empty_hint(geometry: &Geometry) -> Box<dyn Widget> {
+    let px = metrics();
+    let width = px.extent(geometry.canvas.cols);
+    let height = px.extent(geometry.canvas.rows) / 3.0;
+    boxed(
+        frame(width, height)
+            .align_child(amane::Center, amane::Center)
+            .translate(geometry.origin.0, geometry.origin.1)
+            .child(
+                amane::Text::new("Drag widgets here from the gallery, or click one to add it.")
+                    .style(sys::r#type::title())
+                    .color(material::label(Level::Secondary)),
+            ),
+    )
 }
 
 /// The card in hand on `output`, and where its top-left is in the

@@ -10,26 +10,32 @@ with its own settings.
 
 | Widget | Sizes | Shows | Click | Show (its settings) |
 |---|---|---|---|---|
-| Clock | Small, Medium, Large | the time, each digit one pen stroke; a digit that changes is erased along its line and the next drawn in. Small: hours over minutes; Medium: one row with colons, the date under it; Large: hours over minutes, bigger, the date under them. Seconds, when shown, sit under a stacked clock, smaller, and at the end of Medium's row | nothing | **Color** (the accent, or one of the accent presets), **Line** (Thin, Regular, Bold), **Show Seconds**, **24-Hour Time** (on, by default, like the bar) |
-| Batteries | Small, Medium, Large | Small: one device's charge in a ring with the device in it, the percentage and its name; Medium: up to four rings; Large: a list, the machine's battery with its time left (or "Charged") | Quick Settings' Battery page | which device a Small one shows (the first, by default) |
-| CPU | Small, Medium, Large | how busy the processor is, the cores, a graph; Large adds a bar per core | the first of `missioncenter`, `gnome-system-monitor`, `resources` installed | — |
-| Memory | Small, Medium, Large | memory in use, "8.9 GB of 29.1 GB", a graph; Large adds swap | as CPU | — |
-| Temperature | Small, Medium, Large | the processor's sensor (else the hottest), its name, a graph; Large adds the others, hottest first | as CPU | which sensor |
-| Network | Small, Medium, Large | what comes in and goes out a second, a graph of each, the interface's name | Emaki Settings' [Network page](network.md) (`nm-connection-editor` without it) | which interface (the default route's, by default) |
+| Clock | Small, Medium, Large | the time, each digit one pen stroke; a digit that changes is erased along its line and the next drawn in. Small: hours over minutes; Medium: one row with colons, the date under it; Large: hours over minutes, bigger, the date under them. Seconds, when shown, sit under a stacked clock, smaller, and at the end of Medium's row. With 12-hour time, AM or PM goes under the digits, before the date. The date and AM/PM are in the label colour, whatever the digits' colour | nothing | **Color** (the accent, or one of the accent presets), **Line** (Thin, Regular, Bold), **Show Seconds**, **24-Hour Time** (on, by default, like the bar), **Show Date** (on) |
+| Batteries | Small, Medium, Large | Small: one device's charge in a ring with the device in it, the percentage and its name; Medium: up to four rings (three and "+2" when there are more); Large: a list, the machine's battery with its time left (or "Charged") | Quick Settings' Battery page | which device a Small one shows (the first, by default) |
+| CPU | Small, Medium, Large | how busy the processor is, the cores, a graph; Large adds a bar per core | the first of `missioncenter`, `gnome-system-monitor`, `resources` installed | **Graph** (the last 2 or 15 minutes) |
+| Memory | Small, Medium, Large | memory in use, "8.9 GB of 29.1 GB", a graph; Large adds swap | as CPU | **Graph** |
+| Temperature | Small, Medium, Large | the processor's sensor (else the hottest), its name ("CPU Tctl", "NVMe 2": the driver by what it watches), a graph scaled to what it read; Large adds the others, hottest first | as CPU | which sensor, **Graph**, **Fahrenheit** |
+| Network | Small, Medium, Large | what comes in and goes out a second, a graph of each (what comes in filled, what goes out a line over it), the link's kind and the interface's name ("Wi-Fi · wlp194s0") | Emaki Settings' [Network page](network.md) (`nm-connection-editor` without it) | which interface (the default route's, by default), **Graph**, **Bits per Second** |
 | Disk | Small, Medium | Small: how full one disk is, in a ring, and what's free; Medium: every disk as a bar | `baobab` or `gnome-disks` | which disk (the root, or the first disk where the root isn't one) |
 | System | Large, Extra Large | CPU, memory and disk rings and the network's rates; Extra Large adds each one's graph | as CPU | — |
 
-A reading turns the critical color past a limit: a processor or memory 90% busy, a disk 90% full, a
-sensor at 85 °C, a battery at 15% and not charging. The graphs span the last two minutes, the
-newest at the right edge; a widget placed a moment ago starts its graph at the right and fills
-leftwards.
+A reading turns the critical color past a limit: a processor or memory 90% busy, swap or a disk 90%
+full, a sensor where it says it runs hot (hwmon's `max`, else 10 °C under its `crit`, else 85 °C), a
+battery at 15% and not charging. The graphs span the last two minutes, or with **Graph** set to the
+last 15 minutes, a quarter hour, every 7.5 readings averaged into one point; the newest is at the
+right edge, and a widget placed a moment ago starts its graph at the right and fills leftwards.
+
+A sensor, interface or disk a widget was set to that's gone (a drive taken out, a VPN down) shows
+the automatic one in its place and says so ("NVMe 2 not found", "wg0 not connected", "/mnt/usb not
+mounted") until it's back. A card with nothing to show at all says so in the middle ("No Devices",
+"No disk").
 
 ## Using them
 
 - **Move**: drag a card, at any time; the cell its top-left is nearest takes it and the others
   make way live, as in Quick Settings' edit mode (one card of its size swaps places with it,
   anything else goes to the first free cells; where nothing fits, it stays as it last fit). Let go
-  off the canvas and it goes back.
+  off the canvas (more than half a cell past its edge) and it goes back.
 - **Click** opens what it watches (above).
 - **Right-click a card**: its sizes (the one it is checked, one there's no room for greyed out),
   **Show** (what it shows, for the kinds with a choice; the clock has **Color**, **Line** and its
@@ -48,19 +54,40 @@ fade out in place as the overview opens. Emaki Settings' **Desktop** page has **
 **Edit Widgets…**, or `widgets edit` over IPC, edits one monitor's desktop. Its surface moves over
 the windows (the overlay layer) and takes the keyboard; each
 card gets a remove badge at its top-left and, when it comes in more than one size, a resize handle
-at its bottom-right; and the **gallery** opens at the bottom of the screen:
+at its bottom-right, both fading in with the gallery; and the **gallery** opens at the bottom of
+the screen:
 
 - **The sidebar**: a search field ("Search Widgets") over All Widgets, Clock, System and Batteries.
-- **The pane**: every kind, live, at its default size and scaled to fit, named under it. Typing
-  searches every kind by its name, what it shows and its category.
-- **The footer**: the hint, **Undo Remove** (while there's something to undo), **Remove All**
-  and **Done**.
+- **The pane**: every kind this machine has something for (no Batteries without a battery or a
+  device that reports one), live, scaled to fit, named under it, over a small picture of each size
+  it comes in: the one filled is the size it's added at (its default at first), and a click on
+  another picks that one, the preview with it. Typing searches every kind by its name, what it
+  shows and its category. The pane scrolls when they don't all fit.
+- **The footer**: the hint (or how many widgets this screen has no room for, which show again on
+  a bigger one; or, for a few seconds, that there's no room for one just clicked), **Undo Remove**
+  (while there's something to undo), **Remove All** and **Done**.
 
-Drag a widget from the gallery onto the desktop to place it (the others make way, an accent
-outline shows where it will land), or click it to put it in the first free cells. Drag a card onto
-the gallery, or off the canvas, to remove it; Undo Remove puts it back, settings and all. Drag a
-handle to resize a card between the sizes it comes in. **Done**, or Escape (which first lets go of
-a drag, then clears the search), puts the desktop back under the windows.
+An empty desktop says where widgets go. Drag a widget from the gallery onto the desktop to place it
+(the others make way, an accent outline shows where it will land), or click it to put it in the
+first free cells. Click a card (either button) for its menu, as out of edit mode but without Edit
+Widgets…; its Remove Widget can be undone. Remove All takes every card on the screen, which Undo
+Remove puts back; widgets this screen has no room for stay. Drag a card onto
+the gallery, or off the canvas, to remove it; Undo Remove puts it back, settings and all, where it
+was if that's still free (else in the first free cells), leaving what was placed or moved since as
+it is; pressed again, it puts back the removal before that, and so on, until Done. Escape during a
+drag lets go of it, and the pointer takes nothing more until the button comes up. Drag a
+handle to resize a card between the sizes it comes in; an outline shows how far it has been pulled.
+**Done**, or Escape, puts the desktop back under the windows.
+
+The keyboard: **Tab** (Shift-Tab) takes each card in turn, row by row, ringed in the accent. With
+one taken, the **arrows** move it a cell (the others making way), **Shift** and an arrow steps its
+size (right or down bigger, left or up smaller), **Delete** or **Backspace** removes it, and
+**Enter** opens its menu. With none taken, **Enter** adds the first widget the gallery shows.
+**Ctrl+Z** is Undo Remove. **Escape** lets go of a drag, then of the card taken, then clears the
+search, then is Done. Anything else types into the search.
+
+A card under the gallery can't be reached with the pointer while it's open; take it with Tab and
+move it with the arrows.
 
 The edit view is a surface of its own on the overlay layer, shown only while editing, while the
 desktop's surface leaves its cards out: niri doesn't frost a surface moved between layers, so
@@ -70,7 +97,7 @@ niri, would come out clear.
 
 ## The grid
 
-The canvas is Quick Settings' grid: 74 px cells, 16 px between them (`grid::geometry`), as many
+The canvas is Quick Settings' grid: 74 px cells, 16 px between them at the comfortable density (`quick.grid.cell`, `.gap`; `grid::geometry`), as many
 whole cells as fit on the screen inside a 24 px margin and above the bar, centred in what's left;
 on a 1920 × 1080 screen that's 20 × 11. The sizes on that grid: Small 2 × 2 (164 ×
 164), Medium 4 × 2, Large 4 × 4 and Extra Large 8 × 4.
@@ -122,12 +149,17 @@ shape with `"version": 1` inside, is read when that isn't there:
 ```
 
 The kinds are `clock`, `battery`, `cpu`, `memory`, `temperature`, `network`, `disk` and `system`;
-the settings `device`, `interface`, `mount`, `sensor`, and the clock's `color` (`#rrggbb`), `line`
-(`thin`, `bold`), `seconds` (`on`) and `hours` (`12`). A layout is shown refitted to the screen it's
+the settings `device`, `interface`, `mount`, `sensor`, `range` (`15`, for CPU, memory, temperature
+and network), `unit` (temperature's `f`, network's `bits`), and the clock's `color` (`#rrggbb`),
+`line` (`thin`, `bold`), `seconds` (`on`), `hours` (`12`) and `date` (`off`); a setting the kind
+doesn't have, or a value it doesn't take, is dropped. A layout is shown refitted to the screen it's
 on: a card that no longer fits moves to the first free cells, or hides where there are none. What
 the refit moved is never saved, so a smaller screen or a bigger scale doesn't lose where the cards
-were on the bigger one; a card moved by hand is kept where it went. A file from another version is
-left alone and the default shown; unknown kinds are dropped, and overlaps move to the first free cells. With no file at
+were on the bigger one; a card moved by hand is kept where it went. A file that can't be read (broken,
+or from another version) is copied to `widgets.json.bad` beside it and the default shown; a widget
+that can't be read is dropped with the rest kept, as are unknown kinds; and overlaps move to the first free
+cells. When a card moved by hand lands on the cells another kept (one shown elsewhere on a smaller
+screen), that one moves to the first free cells, so two never share them. With no file at
 all, the first monitor starts with the battery (where there is one) and the CPU.
 
 ## Frost
@@ -144,9 +176,12 @@ overview itself.
 `system_stats` (`apps/shell/src/services/desktop/system_stats.rs`) is one service on one 2 s tick, so a desktop of
 widgets redraws once a tick: `/proc/stat` (the processor and each core), `/proc/meminfo` (memory
 in use is what isn't available, as `free` counts it, and swap), `/proc/net/dev` and
-`/proc/net/route` (each interface's rates, and the default route), `/sys/class/hwmon` (each
-temperature sensor, named by its driver and label; the processor's is the first of `k10temp`,
-`coretemp`, `zenpower` or `cpu_thermal`) and, every 30 s, `statvfs` on the filesystems on a block
+`/proc/net/route` (each interface's rates, and the default route: the one with the lowest metric; an
+interface that comes up starts its graph on its second reading, not with all it ever carried),
+`/sys/class/hwmon` (each temperature sensor, named by its driver and label, with a number after
+a name two share, as two drives' "nvme Composite"; the processor's is the first of `k10temp`,
+`coretemp`, `zenpower` or `cpu_thermal`; one that doesn't answer, as a drive asleep, is left out
+while the rest still show) and, every 30 s, `statvfs` on the filesystems on a block
 device in `/proc/mounts` (a mount whose `statvfs` stalls for a second is skipped for the next few).
 It keeps the last 15 minutes of each, starts the first time a widget reads it, and reads nothing
 while no system card shows (or the gallery is open). The files are read with no lock held, so a
@@ -156,21 +191,38 @@ charge a connected device reports that UPower doesn't know).
 
 ## IPC
 
-`widgets list | add | remove | reset-layout | edit | done` lists, places and removes widgets and
-opens Edit Widgets from a script ([ipc.md](../../developer/integration/ipc.md#widgets)).
+`widgets list [--json] | kinds | add | remove | set | resize | move | undo | reset-layout | edit |
+done` lists, places, sets, moves, resizes and removes widgets and opens Edit Widgets from a script
+([ipc.md](../../developer/integration/ipc.md#widgets)); `kinds` says what each kind can be set to.
+Emaki Settings' Desktop page lists each monitor's widgets with Remove, and Remove All, through the
+same commands.
 
 ## Components
 
-- **`mod.rs`**: the surface, the still layer, moving, the menus, dimming and IPC.
-- **`kind.rs`**: `WidgetSize`, `WidgetKind` (its sizes, category, glyph, what a click opens) and
-  `WidgetKey` (an instance: its id and kind; the grid's `GridKey`).
-- **`store.rs`**: the layouts and settings, the file, refitting and committing.
+- **`mod.rs`**: the geometry, each monitor's desk, and what the others share.
+- **`window.rs`**: a monitor's window each frame: hidden, frozen under the windows, or the cards.
+- **`view.rs`**, **`input.rs`**, **`menu.rs`** and **`ipc.rs`**: drawing and dimming the cards, the
+  pointer, the menus, and IPC.
+- **`kind.rs`**: `WidgetSize`, `WidgetKind` and its `KindSpec` (everything a kind is in one place:
+  its name, sizes, category, glyph, what a click opens, which readings it needs, and its
+  settings, each a `SettingSpec`, from which its menu is built), and `WidgetKey` (an instance: its
+  id and kind; the grid's `GridKey`). A new kind is one more `KindSpec` and its face in `catalog/`;
+  nothing about it falls to a default.
+- **`store/`**: the layouts and settings (a widget's settings are its spec's keys and their
+  values; anything else in the file is dropped), the file, refitting and committing.
 - **`catalog/`**: every face, and the pieces they're drawn with (a header, a figure, a ring, a
   sparkline and a bar on amane's `Canvas`), each laid out by hand for its size.
-- **`edit.rs`** and **`gallery.rs`**: Edit Widgets and the gallery.
+- **`edit.rs`** and **`gallery.rs`**: Edit Widgets and the gallery. How a press becomes a drag,
+  whether a drag let go lands, and the outlines (where a card will land, how far a resize has
+  pulled) are shared with Quick Settings' edit mode (`chrome/grid_edit.rs`).
 
-Tokens: the code holds its sizes as `TODO(token)` constants until Penpot has a `widget.*` group
-(see [penpot-backlog.md](../../developer/design-system/penpot-backlog.md)); everything else is `sys.*`.
+Tokens: the widgets' own sizes are the `widget.*` group (the card's padding and corners, the
+dimming, the drag's dead band and threshold, the figures' sizes, the gallery's sizes); what they
+share with Quick Settings, whose grid they're laid out on, is `quick.*` (the grid's cell, gap and
+margin, the shadow, the lift of a card in hand); everything else is `sys.*`. `widget.*` was added
+to `tokens.json` by hand and waits to be recreated in Penpot
+([penpot-backlog.md](../../developer/design-system/penpot-backlog.md)). The grid follows the
+density, as Quick Settings' does.
 
 ## Related
 

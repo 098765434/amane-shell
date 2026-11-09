@@ -26,148 +26,75 @@ pub(super) fn widget_menu(output: &str, key: WidgetKey, at: (i32, i32)) {
             item.disabled()
         });
     }
-    let choices = choices(key);
-    if !choices.is_empty() {
+    let settings = key.kind.spec().settings;
+    if !settings.is_empty() {
         menu = menu.separator();
     }
-    for (title, submenu) in choices {
-        menu = menu.item(MenuItem::label(title).submenu(submenu));
+    for setting in settings {
+        menu = menu.item(setting_item(key, setting));
     }
-    if key.kind == WidgetKind::Clock {
-        menu = menu
-            .item(toggle(key, "Show Seconds", |s| &mut s.seconds, "on", false))
-            .item(toggle(key, "24-Hour Time", |s| &mut s.hours, "12", true));
-    }
+    let editing = edit::editing(output);
     let (on_edit, on_remove) = (output.to_string(), output.to_string());
+    if !editing {
+        menu = menu
+            .separator()
+            .item(MenuItem::label("Edit Widgets…").on_select(move || edit::enter(&on_edit)));
+    }
     menu = menu
-        .separator()
-        .item(MenuItem::label("Edit Widgets…").on_select(move || edit::enter(&on_edit)))
         .separator()
         .item(
             MenuItem::label("Remove Widget")
                 .destructive()
-                .on_select(move || remove(&on_remove, key)),
+                .on_select(move || {
+                    // while editing, Undo Remove puts it back
+                    if edit::editing(&on_remove) {
+                        edit::remove(&on_remove, key);
+                    } else {
+                        remove(&on_remove, key);
+                    }
+                }),
         );
-    context_menu::show_under(WIDGET_MENU_KEY, menu, namespace(output), at);
+    // while editing, the menu hangs under the edit surface, over the windows
+    let surface = if editing {
+        namespace(&format!("edit.{output}"))
+    } else {
+        namespace(output)
+    };
+    context_menu::show_under(WIDGET_MENU_KEY, menu, surface, at);
 }
 
-/// What a card can be set to, each a submenu with its choice checked:
-/// what it shows, or for the clock its colour and line; none for a kind
-/// with nothing to pick.
-pub(super) fn choices(key: WidgetKey) -> Vec<(&'static str, ContextMenu)> {
-    let named = |options: &[(&str, &str)]| -> Vec<(String, String)> {
-        options
-            .iter()
-            .map(|(id, name)| (id.to_string(), name.to_string()))
-            .collect()
-    };
-    let (options, field, automatic): (Vec<(String, String)>, Field, &str) = match key.kind {
-        WidgetKind::Battery => (
-            catalog::devices()
-                .into_iter()
-                .map(|d| (d.id, d.name))
-                .collect(),
-            |s| &mut s.device,
-            "First Device",
-        ),
-        WidgetKind::Network => (
-            SystemStats::read()
-                .interfaces()
-                .into_iter()
-                .map(|n| (n.to_string(), n.to_string()))
-                .collect(),
-            |s| &mut s.interface,
-            "Default Route",
-        ),
-        WidgetKind::Disk => (
-            SystemStats::read()
-                .disks
-                .iter()
-                .map(|d| (d.mount.clone(), d.mount.clone()))
-                .collect(),
-            |s| &mut s.mount,
-            "Main Disk",
-        ),
-        WidgetKind::Temperature => (
-            SystemStats::read()
-                .sensors
-                .iter()
-                .map(|s| (s.label.clone(), s.label.clone()))
-                .collect(),
-            |s| &mut s.sensor,
-            "Processor",
-        ),
-        WidgetKind::Clock => {
-            let colors = ACCENTS
-                .iter()
-                .filter_map(|(name, hex)| Some((hex.as_ref()?.to_string(), name.to_string())))
-                .collect();
-            return vec![
-                ("Color", pick(key, colors, |s| &mut s.color, "Accent")),
-                (
-                    "Line",
-                    pick(
-                        key,
-                        named(&[("thin", "Thin"), ("bold", "Bold")]),
-                        |s| &mut s.line,
-                        "Regular",
-                    ),
-                ),
-            ];
-        }
-        _ => return Vec::new(),
-    };
-    vec![("Show", pick(key, options, field, automatic))]
-}
-
-/// A submenu setting `field` of `key`'s settings: `automatic` for none,
-/// then each of `options` (its value, its name), the one set checked.
-pub(super) fn pick(
-    key: WidgetKey,
-    options: Vec<(String, String)>,
-    field: Field,
-    automatic: &str,
-) -> ContextMenu {
+/// `setting`'s item in `key`'s menu: a submenu of its choices with the
+/// one set checked, or a switch.
+pub(super) fn setting_item(key: WidgetKey, setting: &'static SettingSpec) -> MenuItem {
     let settings = store::with(|store| store.settings(key.id));
-    let now = field(&mut settings.clone()).clone();
-    let set = |value: Option<String>| {
-        let mut next = settings.clone();
-        *field(&mut next) = value;
+    let now = settings.get(setting.key).map(String::from);
+    let set = move |value: Option<String>| {
+        let next = settings.clone().with(setting.key, value);
         move || {
             store::with(|store| store.set_settings(key.id, next.clone()));
             changed();
         }
     };
-    let mut menu = ContextMenu::new()
-        .item(checked(MenuItem::label(automatic), now.is_none()).on_select(set(None)));
-    if !options.is_empty() {
-        menu = menu.separator();
+    match &setting.kind {
+        SettingKind::Choice { automatic, options } => {
+            let mut menu = ContextMenu::new()
+                .item(checked(MenuItem::label(*automatic), now.is_none()).on_select(set(None)));
+            let options = options();
+            if !options.is_empty() {
+                menu = menu.separator();
+            }
+            for (id, name) in options {
+                let on = now.as_deref() == Some(id.as_str());
+                menu = menu.item(checked(MenuItem::label(name), on).on_select(set(Some(id))));
+            }
+            MenuItem::label(setting.title).submenu(menu)
+        }
+        SettingKind::Toggle { value, inverted } => {
+            let on = now.as_deref() == Some(*value);
+            checked(MenuItem::label(setting.title), on != *inverted)
+                .on_select(set((!on).then(|| (*value).to_string())))
+        }
     }
-    for (id, name) in options {
-        let on = now.as_deref() == Some(id.as_str());
-        menu = menu.item(checked(MenuItem::label(name), on).on_select(set(Some(id))));
-    }
-    menu
-}
-
-/// A menu item that turns `field` of `key`'s settings between `value`
-/// and none, checked while it's `value`, or while it's none when
-/// `inverted` (12-hour time under "24-Hour Time").
-pub(super) fn toggle(
-    key: WidgetKey,
-    title: &str,
-    field: Field,
-    value: &'static str,
-    inverted: bool,
-) -> MenuItem {
-    let settings = store::with(|store| store.settings(key.id));
-    let set = field(&mut settings.clone()).as_deref() == Some(value);
-    checked(MenuItem::label(title), set != inverted).on_select(move || {
-        let mut next = settings.clone();
-        *field(&mut next) = (!set).then(|| value.to_string());
-        store::with(|store| store.set_settings(key.id, next));
-        changed();
-    })
 }
 
 /// The desktop's menu: Edit Widgets….
@@ -202,16 +129,22 @@ pub(super) fn add(output: &str, kind: WidgetKind, size: WidgetSize, at: Option<P
     added
 }
 
-/// The monitor a command means: the one named, else the focused
-/// workspace's, else the first with widgets.
-pub(super) fn output_for(name: Option<&String>) -> Option<String> {
+/// The monitor a command means: the one named (when it's connected), else
+/// the focused workspace's, else the first with widgets; or what's wrong.
+pub(super) fn output_for(name: Option<&String>) -> Result<String, String> {
     if let Some(name) = name {
-        return Some(name.clone());
+        return if crate::chrome::per_output::connected(name) {
+            Ok(name.clone())
+        } else {
+            Err(format!("error: no monitor {name}"))
+        };
     }
     let focused = Workspaces::read()
         .list()
         .iter()
         .find(|ws| ws.focused())
         .and_then(|ws| ws.output().map(String::from));
-    focused.or_else(|| DESKS.with(|desks| desks.all(|desks| desks.keys().next().cloned())))
+    focused
+        .or_else(|| DESKS.with(|desks| desks.all(|desks| desks.keys().next().cloned())))
+        .ok_or_else(|| String::from("error: no monitor"))
 }

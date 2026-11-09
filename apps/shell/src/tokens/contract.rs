@@ -6,19 +6,22 @@ use std::collections::BTreeSet;
 
 use crate::tokens::{COMPONENTS, GENERATED};
 
-/// Source files and the component whose tokens they may read, besides `sys`.
+/// Source files and the components whose tokens they may read, besides `sys`.
 /// The shared components (`buttons/`, `card.rs`, `list.rs`, `layout.rs` …)
 /// are left out on purpose: any component can use them, so they read
 /// `sys` only (manual §10.4).
-const OWNERS: &[(&str, &str)] = &[
-    ("status_bar/", "bar"),
-    ("controls/menu/", "menu"),
-    ("notifications/", "notification"),
-    ("quick_settings/", "quick"),
+const OWNERS: &[(&str, &[&str])] = &[
+    ("status_bar/", &["bar"]),
+    ("controls/menu/", &["menu"]),
+    ("notifications/", &["notification"]),
+    ("quick_settings/", &["quick"]),
+    // the desktop widgets are laid out on Quick Settings' grid, and read
+    // its tokens for what they share (the grid, the shadow, the lift)
+    ("widgets/", &["widget", "quick"]),
     // the kit's dialog, and the shell's alert that shows it
-    ("containers/dialog.rs", "dialog"),
-    ("alert/", "dialog"),
-    ("osd/", "osd"),
+    ("containers/dialog.rs", &["dialog"]),
+    ("alert/", &["dialog"]),
+    ("osd/", &["osd"]),
 ];
 
 fn component_sources() -> Vec<(String, String)> {
@@ -68,7 +71,8 @@ fn components_read_only_sys_and_their_own_tokens() {
         let own = OWNERS
             .iter()
             .find(|(prefix, _)| file.starts_with(prefix))
-            .map(|(_, c)| *c);
+            .map(|(_, c)| *c)
+            .unwrap_or(&[]);
 
         // every `crate::tokens::…` path or import list, by its first segment
         let mut used = BTreeSet::new();
@@ -92,9 +96,8 @@ fn components_read_only_sys_and_their_own_tokens() {
         }
 
         for name in used.iter().filter(|n| COMPONENTS.contains(&n.as_str())) {
-            assert_eq!(
-                Some(name.as_str()),
-                own,
+            assert!(
+                own.contains(&name.as_str()),
                 "manual §3: {file} reads {name}.* tokens; code reads only \
                  sys.* and its own component's tokens"
             );

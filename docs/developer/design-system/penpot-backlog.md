@@ -36,11 +36,6 @@ The code holds these as named constants, each marked `TODO(token)`, until Penpot
 | `bar.size.regular.{height,icon,item-width,padding-y}`, `bar.size.comfortable.{…}` | 24, 16, 30, 2; 32, 24, 40, 3 | `crates/kit/src/platform/settings/status_bar.rs` (`BarSize::height`), `status_bar/size.rs` (`REGULAR`, `COMFORTABLE`); compact keeps `sys.size.panel.height`, `sys.size.icon.m`, `bar.indicator.width`, `bar.panel.padding-y` |
 | `bar.label`, `bar.label-comfortable` (typography) | 13 px and 14 px on a 16 px line | `status_bar/size.rs` (`LABEL`, `LABEL_COMFORTABLE`, `LINE_HEIGHT`) |
 | `bar.workspace.shape.size`, `bar.workspace.shape.area` | 16, a 13 px circle's area | `status_bar/workspace_shape.rs` (`BOX`, `AREA`); `bar.workspace-dot.*` is read by no code now |
-| `widget.grid.cell`, `widget.grid.gap` | 74, 16 | `widgets/mod.rs` (`CELL`, `GAP`: Quick Settings' `quick.grid.cell` and `.gap`, which code outside `quick_settings/` can't read; or promote those to `sys`) |
-| `widget.canvas.margin`, `widget.card.radius`, `widget.shadow` | 24, 22, Quick Settings' shadow | `widgets/mod.rs` (`MARGIN`, `RADIUS`, `shadow`) |
-| `widget.dim.opacity`, `widget.drag.scale`, `widget.drag.band`, `widget.drag.threshold` | 0.45, 1.04, 0.1, 6 | `widgets/mod.rs` (`DIM`, `DRAG_SCALE`, `BAND`, `THRESHOLD`) |
-| `widget.card.pad`, `widget.type.figure`, `widget.type.figure-large` | 16, 28, 40 | `widgets/catalog/mod.rs` (`PAD`, `FIGURE`, `FIGURE_LARGE`); add `widget` to `tokens::COMPONENTS` and `("widgets/", "widget")` to the checker's owners with the first `widget.*` token |
-| `widget.gallery.{width,height,sidebar,inset,preview}`, `widget.gallery.open-scale` | 900, 420, 240, 20, 120, 0.96 | `widgets/gallery.rs` |
 | `launcher.grid.cols`, `.rows`, `.cell`, `.icon`, `.highlight` | 5, 3, 150, 64, 84 | `launcher/mod.rs` (`COLS`, `ROWS`, `CELL`, `ICON`, `ICON_BOX`) |
 | `launcher.panel.inset`, `.gap`, `launcher.pills.height`, `launcher.empty.height` | 15, 10, 40, 200 | `launcher/mod.rs` (`INSET`, `GAP`, `PILLS`, `EMPTY_H`) |
 | `launcher.pill.width`, `.height`, `launcher.mode-button.size`, `.gap`, `launcher.sheet.radius`, `launcher.top` | 680, 52, 52, 12, 26, 0.2 | `launcher/shape.rs` (`PILL_W`, `PILL_H`, `CIRCLE`, `CIRCLE_GAP`, `SHEET_RADIUS`, `TOP`) |
@@ -76,6 +71,15 @@ whose output is static: it can't follow the mode, so it holds one value for both
 
 ## Tokens to recreate or delete
 
+- The `widget.*` group was added to `tokens.json` by hand on 2026-11-09 (the desktop widgets,
+  [widgets.md](../../user/features/widgets.md)): `widget.card.pad` 16 and `.radius` 22,
+  `widget.dim.opacity` 0.45, `widget.drag.band` 0.1 and `.threshold` 6,
+  `widget.type.figure` 28 and `.figure-large` 40 (font sizes), and
+  `widget.gallery.width` 900, `.height` 420, `.sidebar` 240, `.inset` 20, `.preview` 120 and
+  `.open-scale` 0.96. Recreate them in Penpot under the same names, or the next export drops them.
+  What the widgets share with Quick Settings (the grid's cell, gap and margin, the shadow, the
+  lift of a card in hand) they read from `quick.*`, so there's no `widget.grid` or
+  `widget.shadow`. The component tier's ceiling (`tokens/lint.rs`) rose by these 13.
 - `bar.overview.height` is no longer read: the bar keeps its compact height in the overview, where
   the [dock](../../user/features/dock.md) rises instead. Delete it in Penpot.
 - `bar.window-item.max-width`, `bar.window-item.radius`, `bar.pill.padding-y` and

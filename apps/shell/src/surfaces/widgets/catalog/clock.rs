@@ -85,13 +85,12 @@ enum Mark {
 
 pub(super) fn face(id: u32, face: &Face) -> Vec<Box<dyn Widget>> {
     let settings = face.settings;
-    let seconds = settings.seconds.as_deref() == Some("on");
-    let twelve = settings.hours.as_deref() == Some("12");
+    let seconds = settings.get("seconds") == Some("on");
+    let twelve = settings.get("hours") == Some("12");
     let color = settings
-        .color
-        .as_deref()
+        .get("color")
         .map_or_else(|| accent(false), Color::from);
-    let thickness = thickness(settings.line.as_deref());
+    let thickness = thickness(settings.get("line"));
 
     // the minute from the bar's clock, which marks once a minute
     drop(Clock::read());
@@ -105,6 +104,67 @@ pub(super) fn face(id: u32, face: &Face) -> Vec<Box<dyn Widget>> {
         }
     }
 
+    let values = digits_at(&now, twelve, seconds);
+
+    // under the digits: the date (Medium and Large, unless it's turned
+    // off), and with 12-hour time, AM or PM
+    let note = under_digits(
+        &now,
+        face.size != WidgetSize::Small && settings.get("date") != Some("off"),
+        twelve,
+    );
+    let dated = note.is_some();
+    let date_height = if dated {
+        text_height(caption_style()) + 8.0
+    } else {
+        0.0
+    };
+    let room = (face.width, face.height - date_height);
+    let marks = match face.size {
+        WidgetSize::Medium => one_row(values.len(), room),
+        _ => stacked(values.len(), room),
+    };
+
+    let shapes = pen(&strokes(id, &values), &marks, thickness, color);
+
+    let mut content = vec![place(
+        Canvas::new().width(room.0).height(room.1).shapes(shapes),
+        0.0,
+        0.0,
+        room.0,
+        room.1,
+    )];
+    if let Some(text) = note {
+        let style = caption_style();
+        let width = (text_width(&text, style) + 1.0).min(face.width);
+        content.push(line(
+            text,
+            style,
+            // in the label colour, which reads on any card, whatever the
+            // digits' own colour is
+            super::secondary(),
+            ((face.width - width) / 2.0, face.height - text_height(style)),
+            width,
+            false,
+        ));
+    }
+    content
+}
+
+/// What goes under the digits at `now`: the date when `dated`, AM or PM
+/// when `twelve`, both, or nothing.
+fn under_digits(now: &chrono::DateTime<Local>, dated: bool, twelve: bool) -> Option<String> {
+    let date = dated.then(|| now.format("%a, %B %-d").to_string());
+    let half = twelve.then(|| now.format("%p").to_string());
+    match (half, date) {
+        (Some(half), Some(date)) => Some(format!("{half} · {date}")),
+        (half, date) => half.or(date),
+    }
+}
+
+/// The digits a clock shows at `now`: hours (to 12 when `twelve`) and
+/// minutes, and the seconds when `seconds`.
+fn digits_at(now: &chrono::DateTime<Local>, twelve: bool, seconds: bool) -> Vec<u8> {
     let hour = if twelve {
         (now.hour() + 11) % 12 + 1
     } else {
@@ -119,22 +179,14 @@ pub(super) fn face(id: u32, face: &Face) -> Vec<Box<dyn Widget>> {
     if seconds {
         values.extend([(now.second() / 10) as u8, (now.second() % 10) as u8]);
     }
+    values
+}
 
-    let dated = face.size != WidgetSize::Small;
-    let date_height = if dated {
-        text_height(caption_style()) + 8.0
-    } else {
-        0.0
-    };
-    let room = (face.width, face.height - date_height);
-    let marks = match face.size {
-        WidgetSize::Medium => one_row(values.len(), room),
-        _ => stacked(values.len(), room),
-    };
-
+/// Each mark drawn in pen: a digit as it is, or as far as it's got from
+/// being erased to the next being drawn, and a colon's two dots.
+fn pen(strokes: &[Stroke], marks: &[Mark], thickness: f32, color: Color) -> Vec<Box<dyn Shape>> {
     let mut shapes: Vec<Box<dyn Shape>> = Vec::new();
-    let strokes = strokes(id, &values);
-    for mark in &marks {
+    for mark in marks {
         match *mark {
             Mark::Digit { slot, x, y, scale } => {
                 let pen = |digit: u8| {
@@ -172,28 +224,7 @@ pub(super) fn face(id: u32, face: &Face) -> Vec<Box<dyn Widget>> {
             }
         }
     }
-
-    let mut content = vec![place(
-        Canvas::new().width(room.0).height(room.1).shapes(shapes),
-        0.0,
-        0.0,
-        room.0,
-        room.1,
-    )];
-    if dated {
-        let style = caption_style();
-        let text = now.format("%a, %B %-d").to_string();
-        let width = (text_width(&text, style) + 1.0).min(face.width);
-        content.push(line(
-            text,
-            style,
-            color,
-            ((face.width - width) / 2.0, face.height - text_height(style)),
-            width,
-            false,
-        ));
-    }
-    content
+    shapes
 }
 
 /// The digits in one row with colons between each pair, as big as fits

@@ -322,7 +322,7 @@ Each table becomes the single source; parsers, lists, usage text and search are 
 - shell IPC `to_lines` and `parse`: these go in 4a.
 - Quick Settings: `surface()` 315, `tiles/mod.rs` `grid()` 258.
 - launcher: `panel()` 178, `assistant.rs` `proposal()` 176 (a `Proposal` struct drops its `type_complexity` allow), `passwords::find` 154.
-- Quick Settings `media::cell` 149; widgets `desk_window` 144 and `view` 139; notification `card` 136.
+- Quick Settings `media::cell` 149; notification `card` 136. (Widgets `desk_window` and `view` are split, 2026-11-09: `widgets/window.rs` and `view.rs`; `widgets/` has `clippy::too_many_lines` on, at its default 100.)
 - Settings: `apply_bar` 210, `appearance::page` 195, `package::view` 171, `services::page` 155, `drop::accounts` 153, `apps::search_section` 143, `night::section` 130, `status_bar::page` 126.
 - Drop: `share::request` 138, `grid::ask` 136, `tile_cell` 132.
 - Shader Lab `panel` 135.

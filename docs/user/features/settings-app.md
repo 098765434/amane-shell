@@ -134,7 +134,12 @@ the new color. What each setting does to the look is in
 Writes `desktop.json` (`desktop.rs`): under **Widgets**, **Show widgets on the desktop**
 (`show_widgets`, a switch) and, set in under it, **While windows are open** (`widget_style`, as pictures): Dim with windows
 (`automatic`, the default), Always full (`full`) or Always dimmed (`dim`); and **Edit Widgets…**,
-which asks the shell to edit them (`widgets edit`). See [widgets.md](widgets.md).
+which asks the shell to edit them (`widgets edit`). **On the Desktop** (a group a monitor, **On
+eDP-1**, when there are several) lists the widgets the running shell has (`desktop_widgets.rs`,
+`widgets list --json`, read again whenever the shell saves `widgets.json`): each by its name, on
+its kind's glyph, with its size (and "No room on this screen" for one the screen has no room
+for) and **Remove**; and **Remove all widgets**, which asks first (`widgets reset-layout`). While
+the shell doesn't answer, it says so. See [widgets.md](widgets.md).
 
 Then the dock, from `dock.json` (`dock.rs`); see [dock.md](dock.md):
 

@@ -23,57 +23,95 @@ use serde_json::Value;
 
 use super::kind::{WidgetKey, WidgetKind, WidgetSize};
 use crate::services::state::{self, State};
-use emaki_kit::grid::geometry::{Canvas, Place, Rect, Span};
+use emaki_kit::grid::geometry::{Canvas, Occupancy, Place, Rect, Span};
 use emaki_kit::grid::{Entry, GridKey, Layout};
 
 /// The file from before the state files, with the version inside.
 const OLD_FILE: &str = "widgets";
 
-/// What one widget is set to show; each kind reads what's its own.
+/// What one widget is set to show, by its kind's settings' keys
+/// (`kind::SettingSpec`): the batteries' `device`, the network's
+/// `interface`, the disk's `mount`, the temperature's `sensor`, the
+/// graphs' `range` (`15`), the units (`unit`: `f`, `bits`), and the clock's
+/// `color` (`#rrggbb`), `line` (`thin`, `bold`), `seconds` (`on`), `hours`
+/// (`12`) and `date` (`off`). A setting not kept is its automatic choice, or off.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(crate = "amane::serde", default)]
-pub struct Settings {
-    /// Batteries: the one device a Small widget shows (a peripheral's
-    /// model, a Bluetooth device's address, or "system"); none is the
-    /// machine's battery, or the first device there is.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub device: Option<String>,
-    /// Network: the interface; none follows the default route.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub interface: Option<String>,
-    /// Disk: the mount point; none is the root, or the first disk where the root is none.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub mount: Option<String>,
-    /// Temperature: the sensor's label; none is the hottest.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sensor: Option<String>,
-    /// Clock: the line colour as `#rrggbb`; none is the accent.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<String>,
-    /// Clock: how thick the line is, `thin` or `bold`; none is regular.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub line: Option<String>,
-    /// Clock: `on` shows the seconds; none hides them.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub seconds: Option<String>,
-    /// Clock: `12` counts the hours to 12; none to 24, like the bar.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub hours: Option<String>,
-}
+#[serde(crate = "amane::serde", transparent)]
+pub struct Settings(BTreeMap<String, String>);
 
 impl Settings {
+    /// What `key` is set to; none for automatic, or off.
+    pub fn get(&self, key: &str) -> Option<&str> {
+        self.0.get(key).map(String::as_str)
+    }
+
+    /// Sets `key` to `value`, or back to automatic (off) for none.
+    pub fn set(&mut self, key: &str, value: Option<String>) {
+        match value {
+            Some(value) => self.0.insert(key.to_string(), value),
+            None => self.0.remove(key),
+        };
+    }
+
+    /// These settings with `key` set to `value`.
+    #[must_use]
+    pub fn with(mut self, key: &str, value: Option<String>) -> Self {
+        self.set(key, value);
+        self
+    }
+
+    /// Every setting kept, by key.
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.0.iter().map(|(k, v)| (k.as_str(), v.as_str()))
+    }
+
     fn is_empty(&self) -> bool {
-        *self == Self::default()
+        self.0.is_empty()
+    }
+
+    /// Only what `kind` has a setting for, each a value it takes, so a file
+    /// edited by hand (or a kind that lost a setting) keeps nothing stray.
+    fn for_kind(mut self, kind: WidgetKind) -> Self {
+        self.0.retain(|key, value| {
+            kind.setting(key)
+                .is_some_and(|setting| setting.accepts(Some(value)))
+        });
+        self
     }
 }
 
-/// The file's shape. Each field is optional so one bad widget is dropped,
-/// not the whole file.
+/// The file's shape. Each widget is read on its own and each of its fields
+/// is optional, so one bad widget is dropped, not the whole file.
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(crate = "amane::serde", default)]
 struct Kept {
     next_id: u64,
+    #[serde(deserialize_with = "each_widget")]
     outputs: BTreeMap<String, Vec<KeptWidget>>,
+}
+
+/// Every monitor's widgets, leaving out (and logging) any that can't be read.
+fn each_widget<'de, D>(deserializer: D) -> Result<BTreeMap<String, Vec<KeptWidget>>, D::Error>
+where
+    D: amane::serde::Deserializer<'de>,
+{
+    let outputs = BTreeMap::<String, Vec<Value>>::deserialize(deserializer)?;
+    Ok(outputs
+        .into_iter()
+        .map(|(output, widgets)| {
+            let widgets = widgets
+                .into_iter()
+                .filter_map(|widget| {
+                    serde_json::from_value(widget)
+                        .map_err(|error| {
+                            log::warn!("widgets.json: {output}: a widget left out: {error}")
+                        })
+                        .ok()
+                })
+                .collect();
+            (output, widgets)
+        })
+        .collect())
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -147,10 +185,16 @@ impl Store {
         }
     }
 
+    /// What the file keeps. One that can't be read is copied aside first
+    /// (`widgets.json.bad`), so the default shown in its place, and saved
+    /// once anything changes, doesn't lose it.
     fn load() -> Self {
         state::load::<Kept>()
             .map(Self::from_kept)
-            .unwrap_or_else(Self::empty)
+            .unwrap_or_else(|| {
+                state::keep_unreadable::<Kept>();
+                Self::empty()
+            })
     }
 
     fn save(&self) {
@@ -185,14 +229,18 @@ impl Store {
                     (Some(cols), Some(rows)) => key.clamp(Span::new(small(cols), small(rows))),
                     _ => kind.default_size().span(),
                 };
+                // kept on the canvas a u8 counts, so it never reaches past it
                 let at = match (widget.col, widget.row) {
-                    (Some(col), Some(row)) => Some(Place::new(small(col), small(row))),
+                    (Some(col), Some(row)) => Some(Place::new(
+                        small(col).min(u8::MAX - span.cols),
+                        small(row).min(u8::MAX - span.rows),
+                    )),
                     _ => None,
                 };
                 layout.insert(Entry { id: key, span, at });
                 store
                     .settings
-                    .insert(id, widget.settings.unwrap_or_default());
+                    .insert(id, widget.settings.unwrap_or_default().for_kind(kind));
                 highest = highest.max(id);
             }
             layout.repair();
@@ -278,13 +326,37 @@ impl Store {
         let before = self.layout_for(output, shown.canvas);
         let saved = self.outputs.get(output);
         let mut layout = Layout::new(UNBOUNDED);
+        // what the edit placed or moved takes its cells first; one it didn't
+        // touch keeps its saved cells unless they're now taken, when it goes
+        // to the first free ones (or hides, as the screen shows it)
+        let mut taken: Occupancy<WidgetKey> = Occupancy::new(UNBOUNDED);
+        let mut untouched = Vec::new();
         for entry in &shown.entries {
-            let untouched = before.entries.iter().any(|e| e == entry);
-            let kept = saved
-                .filter(|_| untouched)
-                .and_then(|saved| saved.entries.iter().find(|e| e.id == entry.id))
-                .copied()
-                .unwrap_or(*entry);
+            if before.entries.iter().any(|e| e == entry) {
+                let kept = saved
+                    .and_then(|saved| saved.entries.iter().find(|e| e.id == entry.id))
+                    .copied()
+                    .unwrap_or(*entry);
+                untouched.push(kept);
+            } else if let Some(rect) = entry.rect() {
+                taken.put(entry.id, rect);
+            }
+        }
+        for entry in &shown.entries {
+            let Some(kept) = untouched.iter().find(|e| e.id == entry.id) else {
+                layout.insert(*entry);
+                continue;
+            };
+            let kept = match kept.rect() {
+                Some(rect) if !taken.free(&rect, None) => Entry {
+                    at: taken.first_free(kept.span),
+                    ..*kept
+                },
+                _ => *kept,
+            };
+            if let Some(rect) = kept.rect() {
+                taken.put(kept.id, rect);
+            }
             layout.insert(kept);
         }
         let ids: Vec<u32> = self
@@ -363,147 +435,4 @@ impl Store {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    const SCREEN: Canvas = Canvas { cols: 20, rows: 11 };
-
-    fn store() -> Store {
-        let mut store = Store::empty();
-        store.seeded = true;
-        store
-    }
-
-    #[test]
-    fn the_file_round_trips() {
-        let mut store = store();
-        let layout = Layout::new(SCREEN);
-        let cpu = store
-            .add("eDP-1", &layout, WidgetKind::Cpu, WidgetSize::Medium, None)
-            .unwrap();
-        let shown = store.layout_for("eDP-1", SCREEN);
-        let disk = store
-            .add("eDP-1", &shown, WidgetKind::Disk, WidgetSize::Small, None)
-            .unwrap();
-        store.set_settings(
-            disk.id,
-            Settings {
-                mount: Some(String::from("/home")),
-                ..Settings::default()
-            },
-        );
-        let text = serde_json::to_string(&store.to_kept()).unwrap();
-        let parsed = Store::from_kept(serde_json::from_str(&text).unwrap());
-        assert_eq!(parsed, store);
-        let shown = parsed.clone().layout_for("eDP-1", SCREEN);
-        assert_eq!(
-            shown.rect_of(cpu),
-            Some(Rect::new(Place::new(0, 0), Span::new(4, 2)))
-        );
-        assert_eq!(shown.rect_of(disk).map(|r| r.at), Some(Place::new(4, 0)));
-        assert_eq!(parsed.settings(disk.id).mount.as_deref(), Some("/home"));
-        assert!(Kept::from_old(r#"{"version":0,"outputs":{}}"#).is_none());
-        assert!(Kept::from_old("not json").is_none());
-    }
-
-    #[test]
-    fn a_file_is_repaired() {
-        let text = r#"{"version":1,"next_id":2,"outputs":{"DP-1":[
-            {"id":5,"kind":"cpu","cols":2,"rows":2,"col":0,"row":0},
-            {"id":6,"kind":"memory","cols":2,"rows":2,"col":1,"row":1},
-            {"id":7,"kind":"teleport","cols":2,"rows":2,"col":8,"row":0},
-            {"id":5,"kind":"disk","cols":2,"rows":2,"col":8,"row":0},
-            {"id":8,"kind":"disk","cols":8,"rows":4,"col":10,"row":0}
-        ]}}"#;
-        let mut store = Store::from_kept(Kept::from_old(text).expect("an old file"));
-        let layout = store.layout_for("DP-1", SCREEN);
-        assert_eq!(layout.entries.len(), 3);
-        // the overlap moved, a size Disk lacks snapped to one it has
-        let memory = WidgetKey {
-            id: 6,
-            kind: WidgetKind::Memory,
-        };
-        assert_eq!(layout.rect_of(memory).map(|r| r.at), Some(Place::new(2, 0)));
-        let disk = WidgetKey {
-            id: 8,
-            kind: WidgetKind::Disk,
-        };
-        assert_eq!(layout.span_of(disk), Some(WidgetSize::Medium.span()));
-        // ids never repeat
-        assert_eq!(store.next_id, 9);
-    }
-
-    #[test]
-    fn a_smaller_screen_moves_widgets_without_losing_their_place() {
-        let mut store = store();
-        let big = Layout::new(SCREEN);
-        let far = store
-            .add(
-                "eDP-1",
-                &big,
-                WidgetKind::Cpu,
-                WidgetSize::Small,
-                Some(Place::new(18, 9)),
-            )
-            .unwrap();
-        // shown on a small screen it moves to where there's room
-        let small = Canvas { cols: 4, rows: 2 };
-        let shown = store.layout_for("eDP-1", small);
-        assert_eq!(shown.rect_of(far).map(|r| r.at), Some(Place::new(0, 0)));
-        // a widget added there is kept, and the far one keeps its cells
-        let near = store
-            .add("eDP-1", &shown, WidgetKind::Disk, WidgetSize::Small, None)
-            .unwrap();
-        assert_eq!(
-            store.layout_for("eDP-1", small).rect_of(near).map(|r| r.at),
-            Some(Place::new(2, 0))
-        );
-        let back = store.layout_for("eDP-1", SCREEN);
-        assert_eq!(back.rect_of(far).map(|r| r.at), Some(Place::new(18, 9)));
-        assert_eq!(back.rect_of(near).map(|r| r.at), Some(Place::new(2, 0)));
-        // with no room at all a widget hides there, and still comes back
-        let tiny = store.layout_for("eDP-1", Canvas { cols: 2, rows: 2 });
-        assert_eq!(tiny.placed().count(), 1);
-        store.commit("eDP-1", &tiny);
-        assert_eq!(store.layout_for("eDP-1", SCREEN), back);
-        // a widget moved by hand on the small screen is kept where it went
-        let moved = store
-            .layout_for("eDP-1", small)
-            .moved(near, Place::new(0, 0))
-            .unwrap();
-        store.commit("eDP-1", &moved);
-        let back = store.layout_for("eDP-1", SCREEN);
-        assert_eq!(back.rect_of(near).map(|r| r.at), Some(Place::new(0, 0)));
-    }
-
-    #[test]
-    fn removing_a_widget_forgets_its_settings() {
-        let mut store = store();
-        let shown = Layout::new(SCREEN);
-        let key = store
-            .add("eDP-1", &shown, WidgetKind::Disk, WidgetSize::Small, None)
-            .unwrap();
-        assert!(store.settings.contains_key(&key.id));
-        let mut shown = store.layout_for("eDP-1", SCREEN);
-        shown.remove(key);
-        store.commit("eDP-1", &shown);
-        assert!(!store.settings.contains_key(&key.id));
-        assert!(store.all().next().is_none());
-    }
-
-    #[test]
-    fn a_live_old_file_migrates_and_round_trips() {
-        let old = include_str!("../../../tests/fixtures/state/widgets");
-        crate::services::state::tests::in_folder("widgets", &[(OLD_FILE, old)], |_| {
-            let store = Store::from_kept(state::load::<Kept>().expect("the old file"));
-            assert_eq!(store.next_id, 8);
-            assert_eq!(store.all().count(), 7);
-            assert!(store.settings.values().any(|s| s.interface.is_some()));
-            let text = serde_json::to_string(&store.to_kept()).unwrap();
-            assert_eq!(
-                Store::from_kept(serde_json::from_str(&text).unwrap()),
-                store
-            );
-        });
-    }
-}
+mod tests;

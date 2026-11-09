@@ -6,14 +6,14 @@
 use amane::{Battery, BatteryState, Bluetooth, Service, Widget};
 
 use super::{
-    Face, accent, bar, caption_style, figure_style, header, header_height, label_style, line,
-    percent, primary, ring_with, secondary,
+    Face, accent, bar, caption_style, empty, figure_style, header, header_height, label_style,
+    line, percent, primary, ring_with, secondary,
 };
 use crate::chrome::battery::LOW;
 use crate::surfaces::widgets::kind::{WidgetKind, WidgetSize};
 use crate::tokens::sys;
 use emaki_kit::icons::{ICON_COMPUTER, battery_glyph, device_glyph, peripheral_glyph};
-use emaki_kit::layout::text_height;
+use emaki_kit::layout::{text_height, text_width};
 
 /// One thing with a battery.
 #[derive(Clone, Debug, PartialEq)]
@@ -30,6 +30,11 @@ pub struct Device {
 impl Device {
     fn low(&self) -> bool {
         self.percent <= LOW && !self.charging
+    }
+
+    /// How charged it is, 0 … 1.
+    fn fraction(&self) -> f32 {
+        f32::from(self.percent) / 100.0
     }
 }
 
@@ -98,20 +103,11 @@ pub(super) fn face(face: &Face) -> Vec<Box<dyn Widget>> {
 }
 
 fn none(face: &Face) -> Vec<Box<dyn Widget>> {
-    let mut out = header(WidgetKind::Battery, "Batteries", face.width);
-    out.push(line(
-        "No Devices",
-        label_style(),
-        secondary(),
-        (0.0, face.height / 2.0 - text_height(label_style()) / 2.0),
-        face.width,
-        false,
-    ));
-    out
+    empty(face, WidgetKind::Battery, "Batteries", "No Devices")
 }
 
 fn small(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
-    let wanted = face.settings.device.as_deref();
+    let wanted = face.settings.get("device");
     let Some(device) = devices
         .iter()
         .find(|d| Some(d.id.as_str()) == wanted)
@@ -125,7 +121,7 @@ fn small(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
     let diameter = (face.height - figure_h - name_h).min(face.width * 0.6);
     let mut out = vec![super::place(
         ring_with(
-            f32::from(device.percent) / 100.0,
+            device.fraction(),
             diameter,
             diameter * 0.09,
             accent(device.low()),
@@ -147,7 +143,7 @@ fn small(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
         ));
     }
     out.push(line(
-        percent(f32::from(device.percent) / 100.0),
+        percent(device.fraction()),
         figure,
         primary(),
         (0.0, face.height - figure_h - name_h),
@@ -176,11 +172,13 @@ fn medium(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
         (face.height - caption_h - sys::space::gap::s()).min(column - sys::space::gap::m());
     let top = (face.height - diameter - caption_h - sys::space::gap::s()) / 2.0;
     let mut out = Vec::new();
-    for (i, device) in devices.iter().take(4).enumerate() {
+    // more than four: the fourth column says how many more there are
+    let shown = if devices.len() > 4 { 3 } else { 4 };
+    for (i, device) in devices.iter().take(shown).enumerate() {
         let x = column * i as f32 + (column - diameter) / 2.0;
         out.push(super::place(
             ring_with(
-                f32::from(device.percent) / 100.0,
+                device.fraction(),
                 diameter,
                 diameter * 0.09,
                 accent(device.low()),
@@ -191,7 +189,7 @@ fn medium(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
             diameter,
             diameter,
         ));
-        let label = percent(f32::from(device.percent) / 100.0);
+        let label = percent(device.fraction());
         let width = emaki_kit::layout::text_width(&label, caption);
         out.push(line(
             label,
@@ -202,6 +200,22 @@ fn medium(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
                 top + diameter + sys::space::gap::s(),
             ),
             width + 1.0,
+            false,
+        ));
+    }
+    if devices.len() > shown {
+        let more = format!("+{}", devices.len() - shown);
+        let style = figure_style(false);
+        let width = text_width(&more, style) + 1.0;
+        out.push(line(
+            more,
+            style,
+            secondary(),
+            (
+                column * 3.0 + (column - width) / 2.0,
+                top + (diameter - text_height(style)) / 2.0,
+            ),
+            width,
             false,
         ));
     }
@@ -232,13 +246,14 @@ fn large(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
         ));
         let x = side + sys::space::gap::s();
         let text_w = face.width - x;
-        let figure = percent(f32::from(device.percent) / 100.0);
+        let figure = percent(device.fraction());
+        let figure_w = text_width(&figure, label) + 1.0;
         out.push(line(
             device.name.clone(),
             label,
             primary(),
             (x, y),
-            text_w * 0.7,
+            text_w - figure_w - sys::space::gap::s(),
             false,
         ));
         out.push(line(figure, label, primary(), (x, y), text_w, true));
@@ -253,12 +268,7 @@ fn large(face: &Face, devices: &[Device]) -> Vec<Box<dyn Widget>> {
         match below {
             Some(text) => out.push(line(text, caption, secondary(), (x, bar_y), text_w, false)),
             None => out.push(super::place(
-                bar(
-                    f32::from(device.percent) / 100.0,
-                    text_w,
-                    4.0,
-                    accent(device.low()),
-                ),
+                bar(device.fraction(), text_w, 4.0, accent(device.low())),
                 x,
                 bar_y + text_height(caption) / 2.0 - 2.0,
                 text_w,

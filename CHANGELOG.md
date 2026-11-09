@@ -59,6 +59,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Disturb ends.
 - Emaki Settings' Weather page says when the place can't be found or Open-Meteo can't be
   reached (`~/.cache/emaki/weather-status.json`); its Items list has programs' items too.
+- Widgets: Edit Widgets has a size picture under each kind in the gallery, a gallery that
+  scrolls, the keyboard (Tab, the arrows, Shift and an arrow to resize, Delete, Enter, Ctrl+Z), a
+  card's menu on a click, and an Undo Remove that goes back one removal at a time.
+- Widgets: a graph of the last 15 minutes (CPU, memory, temperature, network), °F, bits per
+  second, the clock's AM/PM and **Show Date**; sensors and interfaces by names a person knows
+  ("CPU Tctl", "Wi-Fi · wlp194s0").
+- Widgets: `widgets list --json`, `kinds`, `set`, `resize`, `move` and `undo` over IPC; Emaki
+  Settings' Desktop page lists each monitor's widgets with Remove and Remove All.
 
 ### Fixed
 
@@ -73,6 +81,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Status bar: the camera and microphone colours are the palette's; Comfortable spaces its items
   wider; the analog clock is drawn finer at 16 px.
 - Emaki Settings: moving a bar item with its arrows no longer loses where programs' items were.
+- Widgets: a `widgets.json` that can't be read is kept as `widgets.json.bad` rather than
+  overwritten; one bad widget in it no longer loses the rest.
+- Widgets: an interface that comes up (a VPN, a tether) no longer spikes the network graph; one
+  sensor that doesn't answer no longer blanks every temperature; two drives' sensors of one name
+  are told apart; the default route follows the lowest metric, and IPv6-only networks have one.
+- Widgets: Large Memory's swap no longer draws over its graph; a sensor, interface or disk a
+  widget was set to that's gone shows the automatic one and says so.
+- Widgets: Escape during a drag no longer lets the next motion pick up another card, and Undo
+  Remove no longer loses what was placed since.
 
 ## [0.1.0] - 2026-11-08
 

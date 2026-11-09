@@ -4,39 +4,42 @@
 
 use amane::{Service, Widget};
 
+use super::units::{self, degrees, graph, interface_kind, or_automatic, sensor_name};
 use super::{
-    Face, SPARK_POINTS, accent, bar, caption_style, figure_style, header, header_height,
-    label_style, line, percent, place, primary, ring_with, secondary, sparkline,
+    Face, SPARK_POINTS, accent, bar, caption_style, empty, figure_style, header, header_height,
+    label_style, line, percent, place, primary, ring_with, secondary, sparkline, sparkline_between,
 };
 use crate::services::desktop::system_stats::{Series, SystemStats};
 use crate::surfaces::widgets::kind::{WidgetKind, WidgetSize};
 use crate::tokens::sys;
-use emaki_kit::layout::{icon, text_height};
+use emaki_kit::layout::{icon, text_height, text_width};
 
-/// Hotter than this reads in the critical colour.
+/// Hotter than this reads in the critical colour, for a sensor that
+/// doesn't say where it runs hot.
 const HOT: f32 = 85.0;
 /// A processor this busy, or memory this full, reads in the critical colour.
 const BUSY: f32 = 0.9;
-
-/// "1.2 MB/s".
-pub fn rate(per_second: f32) -> String {
-    format!("{}/s", emaki_kit::format::bytes(per_second.max(0.0) as u64))
-}
+/// The least a network graph's top stands for, in bytes a second, so a
+/// quiet link doesn't fill it with noise.
+const NETWORK_FLOOR: f32 = 64_000.0;
 
 fn recent(series: &Series) -> Vec<f32> {
     series.recent(SPARK_POINTS).collect()
 }
 
 /// What a reading shows: a figure over a caption, and a graph of `series`
-/// (up to `max`), in the warning colour when `warn`.
+/// (up to `max`), in the warning colour when `warn`, ending `below` above
+/// the bottom so a Large face has room for more under it.
 struct Reading<'a> {
     kind: WidgetKind,
     title: &'a str,
     figure: String,
     caption: String,
     series: &'a [f32],
+    min: f32,
     max: f32,
     warn: bool,
+    below: f32,
 }
 
 /// A figure over a caption at the top, and a graph of the series under
@@ -49,8 +52,10 @@ fn reading(face: &Face, reading: Reading) -> Vec<Box<dyn Widget>> {
         figure,
         caption,
         series,
+        min,
         max,
         warn,
+        below,
     } = reading;
     let mut out = header(kind, title, face.width);
     let large = face.size != WidgetSize::Small;
@@ -74,10 +79,16 @@ fn reading(face: &Face, reading: Reading) -> Vec<Box<dyn Widget>> {
         false,
     ));
     y += text_height(caption_style()) + sys::space::gap::s();
-    let graph_h = face.height - y;
+    let graph_h = face.height - y - below;
     if graph_h > 8.0 {
         out.push(place(
-            sparkline(series, max, face.width, graph_h, accent(warn)),
+            sparkline_between(
+                series,
+                (min, max),
+                (face.width, graph_h),
+                accent(warn),
+                true,
+            ),
             0.0,
             y,
             face.width,
@@ -96,6 +107,9 @@ pub(super) fn cpu(face: &Face) -> Vec<Box<dyn Widget>> {
     } else {
         String::new()
     };
+    // a Large one has each core as a thin bar along the bottom
+    let per_core = face.size == WidgetSize::Large && cores > 0;
+    let bars_h = face.height * 0.28;
     let mut out = reading(
         face,
         Reading {
@@ -103,33 +117,18 @@ pub(super) fn cpu(face: &Face) -> Vec<Box<dyn Widget>> {
             title: "CPU",
             figure: percent(now),
             caption,
-            series: &recent(&stats.cpu),
+            series: &graph(&stats.cpu, face.settings),
+            min: 0.0,
             max: 1.0,
             warn: now >= BUSY,
+            below: if per_core {
+                bars_h + sys::space::gap::m()
+            } else {
+                0.0
+            },
         },
     );
-    if face.size == WidgetSize::Large && cores > 0 {
-        // each core as a thin bar along the bottom
-        out.truncate(4);
-        let bars_h = face.height * 0.28;
-        let graph_y = header_height()
-            + text_height(figure_style(true))
-            + text_height(caption_style())
-            + sys::space::gap::s() * 2.0;
-        let graph_h = face.height - graph_y - bars_h - sys::space::gap::m();
-        out.push(place(
-            sparkline(
-                &recent(&stats.cpu),
-                1.0,
-                face.width,
-                graph_h,
-                accent(now >= BUSY),
-            ),
-            0.0,
-            graph_y,
-            face.width,
-            graph_h,
-        ));
+    if per_core {
         let gap = 2.0;
         let width = ((face.width + gap) / cores as f32 - gap).max(1.0);
         for (i, load) in stats.cores.iter().enumerate() {
@@ -158,6 +157,9 @@ pub(super) fn memory(face: &Face) -> Vec<Box<dyn Widget>> {
         emaki_kit::format::bytes(memory.used),
         emaki_kit::format::bytes(memory.total)
     );
+    // a Large one has the swap under the graph: a line over a bar
+    let swap = face.size == WidgetSize::Large && memory.swap_total > 0;
+    let swap_h = text_height(caption_style()) * 2.0 + sys::space::gap::xs();
     let mut out = reading(
         face,
         Reading {
@@ -165,14 +167,20 @@ pub(super) fn memory(face: &Face) -> Vec<Box<dyn Widget>> {
             title: "Memory",
             figure: percent(memory.fraction()),
             caption,
-            series: &recent(&stats.memory_history),
+            series: &graph(&stats.memory_history, face.settings),
+            min: 0.0,
             max: 1.0,
             warn: memory.fraction() >= BUSY,
+            below: if swap {
+                swap_h + sys::space::gap::s()
+            } else {
+                0.0
+            },
         },
     );
-    if face.size == WidgetSize::Large && memory.swap_total > 0 {
+    if swap {
         let caption = caption_style();
-        let y = face.height - text_height(caption) * 2.0 - sys::space::gap::xs();
+        let y = face.height - swap_h;
         out.push(line(
             format!(
                 "Swap {} of {}",
@@ -186,7 +194,12 @@ pub(super) fn memory(face: &Face) -> Vec<Box<dyn Widget>> {
             false,
         ));
         out.push(place(
-            bar(memory.swap_fraction(), face.width, 4.0, accent(false)),
+            bar(
+                memory.swap_fraction(),
+                face.width,
+                4.0,
+                accent(memory.swap_fraction() >= BUSY),
+            ),
             0.0,
             face.height - 4.0,
             face.width,
@@ -198,7 +211,9 @@ pub(super) fn memory(face: &Face) -> Vec<Box<dyn Widget>> {
 
 pub(super) fn temperature(face: &Face) -> Vec<Box<dyn Widget>> {
     let stats = SystemStats::read();
-    let Some(sensor) = stats.sensor(face.settings.sensor.as_deref()) else {
+    let wanted = face.settings.get("sensor");
+    let (sensor, gone) = or_automatic(wanted, |label| stats.sensor(label));
+    let Some(sensor) = sensor else {
         return reading(
             face,
             Reading {
@@ -207,103 +222,130 @@ pub(super) fn temperature(face: &Face) -> Vec<Box<dyn Widget>> {
                 figure: String::from("—"),
                 caption: String::from("No sensor"),
                 series: &[],
+                min: 0.0,
                 max: 1.0,
                 warn: false,
+                below: 0.0,
             },
         );
     };
     let history = stats
         .temperature_history(&sensor.label)
-        .map(recent)
+        .map(|series| graph(series, face.settings))
         .unwrap_or_default();
-    let max = history.iter().copied().fold(HOT, f32::max) + 5.0;
+    // the graph spans what it read, so a change of a few degrees shows
+    let low = history.iter().copied().fold(sensor.celsius, f32::min);
+    let high = history.iter().copied().fold(sensor.celsius, f32::max);
+    let min = (low - 5.0).floor().max(0.0);
+    let max = (high + 5.0).max(min + 20.0);
+    let hot =
+        |s: &crate::services::desktop::system_stats::Sensor| s.celsius >= s.high.unwrap_or(HOT);
+    // a Large one has the other sensors under the graph, hottest first
+    let mut others: Vec<_> = stats
+        .sensors
+        .iter()
+        .filter(|s| s.label != sensor.label)
+        .collect();
+    others.sort_by(|a, b| b.celsius.total_cmp(&a.celsius));
+    let caption = caption_style();
+    let row = text_height(caption) + sys::space::gap::xs();
+    let rows = if face.size == WidgetSize::Large {
+        4.min(others.len())
+    } else {
+        0
+    };
+    let top = face.height - row * rows as f32;
+    let name = sensor_name(&sensor.label);
     let mut out = reading(
         face,
         Reading {
             kind: WidgetKind::Temperature,
             title: "Temperature",
-            figure: format!("{:.0}°", sensor.celsius),
-            caption: sensor.label.clone(),
+            figure: degrees(sensor.celsius, face.settings),
+            // the one it was set to went away: says so, over the automatic one
+            caption: match wanted.filter(|_| gone) {
+                Some(wanted) => format!("{name} · {} not found", sensor_name(wanted)),
+                None => name,
+            },
             series: &history,
+            min,
             max,
-            warn: sensor.celsius >= HOT,
+            warn: hot(sensor),
+            below: if rows > 0 {
+                face.height - top + sys::space::gap::s()
+            } else {
+                0.0
+            },
         },
     );
-    if face.size == WidgetSize::Large {
-        // the other sensors under the graph, hottest first
-        let mut others: Vec<_> = stats
-            .sensors
-            .iter()
-            .filter(|s| s.label != sensor.label)
-            .collect();
-        others.sort_by(|a, b| b.celsius.total_cmp(&a.celsius));
-        let caption = caption_style();
-        let row = text_height(caption) + sys::space::gap::xs();
-        let rows = 4.min(others.len());
-        let top = face.height - row * rows as f32;
-        out.truncate(4);
-        let graph_y = header_height()
-            + text_height(figure_style(true))
-            + text_height(caption)
-            + sys::space::gap::s() * 2.0;
-        out.push(place(
-            sparkline(
-                &history,
-                max,
-                face.width,
-                top - graph_y - sys::space::gap::s(),
-                accent(sensor.celsius >= HOT),
-            ),
-            0.0,
-            graph_y,
-            face.width,
-            top - graph_y - sys::space::gap::s(),
+    for (i, other) in others.iter().take(rows).enumerate() {
+        let y = top + row * i as f32;
+        let value = degrees(other.celsius, face.settings);
+        let value_w = text_width(&value, caption) + 1.0;
+        out.push(line(
+            sensor_name(&other.label),
+            caption,
+            secondary(),
+            (0.0, y),
+            face.width - value_w - sys::space::gap::s(),
+            false,
         ));
-        for (i, other) in others.iter().take(rows).enumerate() {
-            let y = top + row * i as f32;
-            out.push(line(
-                other.label.clone(),
-                caption,
-                secondary(),
-                (0.0, y),
-                face.width * 0.75,
-                false,
-            ));
-            out.push(line(
-                format!("{:.0}°", other.celsius),
-                caption,
-                primary(),
-                (0.0, y),
-                face.width,
-                true,
-            ));
-        }
+        out.push(line(
+            value,
+            caption,
+            accent_if(hot(other)),
+            (0.0, y),
+            face.width,
+            true,
+        ));
     }
     out
 }
 
+/// The primary label colour, or the critical colour when `warn`.
+fn accent_if(warn: bool) -> amane::Color {
+    if warn { accent(true) } else { primary() }
+}
+
 pub(super) fn network(face: &Face) -> Vec<Box<dyn Widget>> {
     let stats = SystemStats::read();
-    let Some((name, traffic)) = stats.interface(face.settings.interface.as_deref()) else {
+    let wanted = face.settings.get("interface");
+    let (found, gone) = or_automatic(wanted, |name| stats.interface(name));
+    let Some((name, traffic)) = found else {
         return reading(
             face,
             Reading {
                 kind: WidgetKind::Network,
                 title: "Network",
                 figure: String::from("—"),
-                caption: String::from("Not connected"),
+                caption: match wanted {
+                    Some(wanted) => format!("{wanted} not connected"),
+                    None => String::from("Not connected"),
+                },
                 series: &[],
+                min: 0.0,
                 max: 1.0,
                 warn: false,
+                below: 0.0,
             },
         );
     };
-    let down: Vec<f32> = recent(&traffic.down);
-    let up: Vec<f32> = recent(&traffic.up);
-    let max = down.iter().chain(&up).copied().fold(64_000.0, f32::max);
+    let bits = units::in_bits(face.settings);
+    let down = graph(&traffic.down, face.settings);
+    let up = graph(&traffic.up, face.settings);
+    let max = down
+        .iter()
+        .chain(&up)
+        .copied()
+        .fold(NETWORK_FLOOR, f32::max);
     let now_down = traffic.down.last().unwrap_or(0.0);
     let now_up = traffic.up.last().unwrap_or(0.0);
-    let mut out = header(WidgetKind::Network, name, face.width);
+    // what kind of link, and the one it was set to when that's gone
+    let title = match wanted.filter(|_| gone) {
+        Some(wanted) => format!("{} · {wanted} not connected", interface_kind(name)),
+        None => format!("{} · {name}", interface_kind(name)),
+    };
+    let mut out = header(WidgetKind::Network, &title, face.width);
     let figure = figure_style(face.size != WidgetSize::Small);
     let figure = crate::tokens::TextStyle {
         size: figure.size * 0.75,
@@ -313,7 +355,7 @@ pub(super) fn network(face: &Face) -> Vec<Box<dyn Widget>> {
     let mut y = header_height() + sys::space::gap::xs();
     for (arrow, value) in [('↓', now_down), ('↑', now_up)] {
         out.push(line(
-            format!("{arrow} {}", rate(value)),
+            format!("{arrow} {}", units::rate(value, bits)),
             figure,
             primary(),
             (0.0, y),
@@ -325,15 +367,17 @@ pub(super) fn network(face: &Face) -> Vec<Box<dyn Widget>> {
     y += sys::space::gap::s();
     let graph_h = face.height - y;
     if graph_h > 8.0 {
+        // what comes in, filled; what goes out, a line over it
+        let size = (face.width, graph_h);
         out.push(place(
-            sparkline(&down, max, face.width, graph_h, accent(false)),
+            sparkline_between(&down, (0.0, max), size, accent(false), true),
             0.0,
             y,
             face.width,
             graph_h,
         ));
         out.push(place(
-            sparkline(&up, max, face.width, graph_h, secondary()),
+            sparkline_between(&up, (0.0, max), size, secondary(), false),
             0.0,
             y,
             face.width,
@@ -345,61 +389,18 @@ pub(super) fn network(face: &Face) -> Vec<Box<dyn Widget>> {
 
 pub(super) fn disk(face: &Face) -> Vec<Box<dyn Widget>> {
     let stats = SystemStats::read();
-    let mut out = header(WidgetKind::Disk, "Disk", face.width);
-    if face.size == WidgetSize::Medium {
-        // every disk as a bar, the root first
-        let label = label_style();
-        let caption = caption_style();
-        let row = text_height(label) + 4.0 + sys::space::gap::m();
-        let mut y = header_height() + sys::space::gap::m();
-        for disk in &stats.disks {
-            if y + row > face.height + sys::space::gap::m() {
-                break;
-            }
-            out.push(line(
-                disk.mount.clone(),
-                label,
-                primary(),
-                (0.0, y),
-                face.width * 0.5,
-                false,
-            ));
-            out.push(line(
-                format!("{} free", emaki_kit::format::bytes(disk.total - disk.used)),
-                caption,
-                secondary(),
-                (0.0, y),
-                face.width,
-                true,
-            ));
-            let bar_y = y + text_height(label) + 2.0;
-            out.push(place(
-                bar(
-                    disk.fraction(),
-                    face.width,
-                    4.0,
-                    accent(disk.fraction() >= BUSY),
-                ),
-                0.0,
-                bar_y,
-                face.width,
-                4.0,
-            ));
-            y += row;
-        }
-        return out;
+    if stats.disks.is_empty() {
+        return empty(face, WidgetKind::Disk, "Disk", "No disk");
     }
-    let Some(disk) = stats.disk(face.settings.mount.as_deref()) else {
-        out.push(line(
-            "No disk",
-            label_style(),
-            secondary(),
-            (0.0, face.height / 2.0),
-            face.width,
-            false,
-        ));
-        return out;
+    if face.size == WidgetSize::Medium {
+        return disks(face, &stats);
+    }
+    let wanted = face.settings.get("mount");
+    let (disk, gone) = or_automatic(wanted, |mount| stats.disk(mount));
+    let Some(disk) = disk else {
+        return empty(face, WidgetKind::Disk, "Disk", "No disk");
     };
+    let mut out = header(WidgetKind::Disk, "Disk", face.width);
     let caption = caption_style();
     let figure = figure_style(false);
     let below = text_height(figure) + text_height(caption);
@@ -426,18 +427,60 @@ pub(super) fn disk(face: &Face) -> Vec<Box<dyn Widget>> {
         face.width,
         false,
     ));
+    let free = emaki_kit::format::bytes(disk.total - disk.used);
     out.push(line(
-        format!(
-            "{} · {} free",
-            disk.mount,
-            emaki_kit::format::bytes(disk.total - disk.used)
-        ),
+        // the one it was set to went away: says so, over the main disk
+        match wanted.filter(|_| gone) {
+            Some(wanted) => format!("{wanted} not mounted"),
+            None => format!("{} · {free} free", disk.mount),
+        },
         caption,
         secondary(),
         (0.0, face.height - text_height(caption)),
         face.width,
         false,
     ));
+    out
+}
+
+/// Every disk as a bar, the root first, its mount at the start and
+/// what's free at the end.
+fn disks(face: &Face, stats: &SystemStats) -> Vec<Box<dyn Widget>> {
+    let mut out = header(WidgetKind::Disk, "Disk", face.width);
+    let label = label_style();
+    let caption = caption_style();
+    let row = text_height(label) + 4.0 + sys::space::gap::m();
+    let mut y = header_height() + sys::space::gap::m();
+    for disk in &stats.disks {
+        if y + row > face.height + sys::space::gap::m() {
+            break;
+        }
+        let free = format!("{} free", emaki_kit::format::bytes(disk.total - disk.used));
+        let free_w = text_width(&free, caption) + 1.0;
+        out.push(line(
+            disk.mount.clone(),
+            label,
+            primary(),
+            (0.0, y),
+            face.width - free_w - sys::space::gap::s(),
+            false,
+        ));
+        out.push(line(free, caption, secondary(), (0.0, y), face.width, true));
+        let bar_y = y + text_height(label) + 2.0;
+        out.push(place(
+            bar(
+                disk.fraction(),
+                face.width,
+                4.0,
+                accent(disk.fraction() >= BUSY),
+            ),
+            0.0,
+            bar_y,
+            face.width,
+            4.0,
+        ));
+        y += row;
+    }
     out
 }
 
@@ -450,58 +493,7 @@ pub(super) fn overview(face: &Face) -> Vec<Box<dyn Widget>> {
     let top = header_height() + sys::space::gap::m();
     let caption = caption_style();
     let label = label_style();
-    let cpu = stats.cpu.last().unwrap_or(0.0);
-    let memory = stats.memory.fraction();
-    let disk = stats.disk(None).map_or(0.0, |d| d.fraction());
-    let traffic = stats.interface(None);
-    // what, its name, how full (none for the network), what it reads, and
-    // its graph
-    type Row<'a> = (WidgetKind, &'a str, f32, String, Option<Vec<f32>>);
-    let rows: [Row; 4] = [
-        (
-            WidgetKind::Cpu,
-            "CPU",
-            cpu,
-            percent(cpu),
-            Some(recent(&stats.cpu)),
-        ),
-        (
-            WidgetKind::Memory,
-            "Memory",
-            memory,
-            format!(
-                "{} of {}",
-                emaki_kit::format::bytes(stats.memory.used),
-                emaki_kit::format::bytes(stats.memory.total)
-            ),
-            Some(recent(&stats.memory_history)),
-        ),
-        (
-            WidgetKind::Disk,
-            "Disk",
-            disk,
-            stats.disk(None).map_or_else(String::new, |d| {
-                format!("{} free", emaki_kit::format::bytes(d.total - d.used))
-            }),
-            None,
-        ),
-        (
-            WidgetKind::Network,
-            "Network",
-            -1.0,
-            traffic.map_or_else(
-                || String::from("Not connected"),
-                |(_, t)| {
-                    format!(
-                        "↓ {}  ↑ {}",
-                        rate(t.down.last().unwrap_or(0.0)),
-                        rate(t.up.last().unwrap_or(0.0))
-                    )
-                },
-            ),
-            traffic.map(|(_, t)| recent(&t.down)),
-        ),
-    ];
+    let rows = overview_rows(&stats);
     let row_h = (face.height - top) / 4.0;
     let diameter = (row_h - sys::space::gap::s()).min(48.0);
     let wide = face.size == WidgetSize::ExtraLarge;
@@ -544,7 +536,7 @@ pub(super) fn overview(face: &Face) -> Vec<Box<dyn Widget>> {
         if wide && let Some(series) = series {
             let graph_x = face.width * 0.4 + sys::space::gap::m();
             let max = if kind == WidgetKind::Network {
-                series.iter().copied().fold(64_000.0, f32::max)
+                series.iter().copied().fold(NETWORK_FLOOR, f32::max)
             } else {
                 1.0
             };
@@ -560,13 +552,61 @@ pub(super) fn overview(face: &Face) -> Vec<Box<dyn Widget>> {
     out
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// One of the System card's rows: what, its name, how full (none for the
+/// network, as -1), what it reads, and its graph.
+type Row = (WidgetKind, &'static str, f32, String, Option<Vec<f32>>);
 
-    #[test]
-    fn rates_read_per_second() {
-        assert_eq!(rate(1_234_567.0), "1.2 MB/s");
-        assert_eq!(rate(-3.0), "0 B/s");
-    }
+/// The System card's rows: the processor, memory, the root disk and the
+/// network.
+fn overview_rows(stats: &SystemStats) -> [Row; 4] {
+    let cpu = stats.cpu.last().unwrap_or(0.0);
+    let memory = stats.memory.fraction();
+    let disk = stats.disk(None).map_or(0.0, |d| d.fraction());
+    let traffic = stats.interface(None);
+    [
+        (
+            WidgetKind::Cpu,
+            "CPU",
+            cpu,
+            percent(cpu),
+            Some(recent(&stats.cpu)),
+        ),
+        (
+            WidgetKind::Memory,
+            "Memory",
+            memory,
+            format!(
+                "{} of {}",
+                emaki_kit::format::bytes(stats.memory.used),
+                emaki_kit::format::bytes(stats.memory.total)
+            ),
+            Some(recent(&stats.memory_history)),
+        ),
+        (
+            WidgetKind::Disk,
+            "Disk",
+            disk,
+            stats.disk(None).map_or_else(
+                || String::from("No disk"),
+                |d| format!("{} free", emaki_kit::format::bytes(d.total - d.used)),
+            ),
+            None,
+        ),
+        (
+            WidgetKind::Network,
+            "Network",
+            -1.0,
+            traffic.map_or_else(
+                || String::from("Not connected"),
+                |(_, t)| {
+                    format!(
+                        "↓ {}  ↑ {}",
+                        units::rate(t.down.last().unwrap_or(0.0), false),
+                        units::rate(t.up.last().unwrap_or(0.0), false)
+                    )
+                },
+            ),
+            traffic.map(|(_, t)| recent(&t.down)),
+        ),
+    ]
 }

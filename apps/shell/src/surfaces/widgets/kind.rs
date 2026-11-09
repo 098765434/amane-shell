@@ -4,11 +4,14 @@
 
 use amane::{Battery, Service};
 
+use super::catalog::{self, units};
+use crate::services::desktop::system_stats::SystemStats;
 use crate::services::installed;
 use crate::surfaces::quick_settings::{self, Page};
 use emaki_kit::grid::GridKey;
 use emaki_kit::grid::geometry::Span;
 use emaki_kit::icons::{ICON_BATTERY_FULL, ICON_COMPUTER};
+use emaki_kit::settings::ACCENTS;
 
 // The icons the font has that the kit doesn't name yet.
 pub const ICON_CPU: char = '\u{e30d}';
@@ -88,6 +91,18 @@ pub enum Category {
 }
 
 impl Category {
+    /// The gallery's sections, in its order.
+    pub const ALL: [Category; 3] = [Self::Clock, Self::System, Self::Battery];
+
+    /// Its key in the gallery's sidebar.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Clock => "clock",
+            Self::System => "system",
+            Self::Battery => "battery",
+        }
+    }
+
     pub fn title(self) -> &'static str {
         match self {
             Self::Clock => "Clock",
@@ -121,6 +136,318 @@ pub enum WidgetKind {
     Clock,
 }
 
+/// What a kind reads from the system's readings (`SystemStats`), which
+/// go on only while a card that reads them shows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Reads {
+    Nothing,
+    /// The processor, memory, network and disks.
+    System,
+    /// Those and the temperature sensors, which cost more to read.
+    Temperatures,
+}
+
+/// Everything a kind is, in one place: a new kind is one more of these
+/// (and its face, in `catalog`), each field said, so nothing about it falls
+/// to a default it didn't choose.
+pub struct KindSpec {
+    /// The name kept in the layout file and used over IPC.
+    pub name: &'static str,
+    pub title: &'static str,
+    /// One line on what it shows, for the gallery.
+    pub blurb: &'static str,
+    pub glyph: char,
+    pub category: Category,
+    /// The sizes it comes in, smallest first.
+    pub sizes: &'static [Span],
+    pub default_size: WidgetSize,
+    /// Whether this machine has what it watches.
+    pub available: fn() -> bool,
+    /// What a click on it opens.
+    pub open: fn(),
+    pub reads: Reads,
+    /// What it can be set to, in its menu's order.
+    pub settings: &'static [SettingSpec],
+}
+
+/// One thing a widget can be set to, kept under `key` in its settings.
+pub struct SettingSpec {
+    pub key: &'static str,
+    /// Its menu item: a submenu's title, or a switch's.
+    pub title: &'static str,
+    pub kind: SettingKind,
+}
+
+pub enum SettingKind {
+    /// One of `options` (each its value and its name), or `automatic`, kept
+    /// as no value: a submenu with the one set checked.
+    Choice {
+        automatic: &'static str,
+        options: fn() -> Vec<(String, String)>,
+    },
+    /// On (kept as `value`) or off (no value); its switch is checked while
+    /// it's on, or while it's off when `inverted` ("24-Hour Time" over
+    /// `hours: 12`).
+    Toggle { value: &'static str, inverted: bool },
+}
+
+impl SettingSpec {
+    /// Whether `value` is one this setting takes: none (automatic, off),
+    /// a toggle's own value, or for a choice anything (a device that comes
+    /// and goes is still the one meant).
+    pub fn accepts(&self, value: Option<&str>) -> bool {
+        match (&self.kind, value) {
+            (_, None) | (SettingKind::Choice { .. }, Some(_)) => true,
+            (SettingKind::Toggle { value: on, .. }, Some(value)) => *on == value,
+        }
+    }
+}
+
+const fn choice(
+    key: &'static str,
+    title: &'static str,
+    automatic: &'static str,
+    options: fn() -> Vec<(String, String)>,
+) -> SettingSpec {
+    SettingSpec {
+        key,
+        title,
+        kind: SettingKind::Choice { automatic, options },
+    }
+}
+
+const fn toggle(
+    key: &'static str,
+    title: &'static str,
+    value: &'static str,
+    inverted: bool,
+) -> SettingSpec {
+    SettingSpec {
+        key,
+        title,
+        kind: SettingKind::Toggle { value, inverted },
+    }
+}
+
+/// The same name as value and title, for lists of what's there.
+fn same(names: impl IntoIterator<Item = String>) -> Vec<(String, String)> {
+    names.into_iter().map(|name| (name.clone(), name)).collect()
+}
+
+fn devices() -> Vec<(String, String)> {
+    catalog::devices()
+        .into_iter()
+        .map(|d| (d.id, d.name))
+        .collect()
+}
+
+fn interfaces() -> Vec<(String, String)> {
+    SystemStats::read()
+        .interfaces()
+        .into_iter()
+        .map(|name| (name.to_string(), units::interface_name(name)))
+        .collect()
+}
+
+fn mounts() -> Vec<(String, String)> {
+    same(SystemStats::read().disks.iter().map(|d| d.mount.clone()))
+}
+
+fn sensors() -> Vec<(String, String)> {
+    SystemStats::read()
+        .sensors
+        .iter()
+        .map(|s| (s.label.clone(), units::sensor_name(&s.label)))
+        .collect()
+}
+
+fn ranges() -> Vec<(String, String)> {
+    vec![(String::from("15"), String::from("Last 15 Minutes"))]
+}
+
+fn colors() -> Vec<(String, String)> {
+    ACCENTS
+        .iter()
+        .filter_map(|(name, hex)| Some((hex.as_ref()?.to_string(), name.to_string())))
+        .collect()
+}
+
+fn lines() -> Vec<(String, String)> {
+    [("thin", "Thin"), ("bold", "Bold")]
+        .into_iter()
+        .map(|(id, name)| (id.to_string(), name.to_string()))
+        .collect()
+}
+
+fn always() -> bool {
+    true
+}
+
+fn has_battery() -> bool {
+    Battery::read().present() || !catalog::devices().is_empty()
+}
+
+fn nothing() {}
+
+/// The first of `programs` installed, launched.
+fn launch_first(programs: &[&'static str]) {
+    if let Some(program) = programs.iter().copied().find(|p| installed(p)) {
+        crate::services::launch(&[program]);
+    }
+}
+
+fn system_monitor() {
+    launch_first(&["missioncenter", "gnome-system-monitor", "resources"]);
+}
+
+fn power_page() {
+    quick_settings::open_alone(Page::Power);
+}
+
+fn network_settings() {
+    let settings = emaki_kit::app_ids::SETTINGS;
+    if installed(settings) {
+        amane::Launch::argv(&[settings, "--page", "network"]).activated();
+    } else {
+        launch_first(&["nm-connection-editor"]);
+    }
+}
+
+fn disk_usage() {
+    launch_first(&["baobab", "gnome-disks"]);
+}
+
+/// The readings every system kind shares but its own.
+const fn reading(
+    name: &'static str,
+    title: &'static str,
+    blurb: &'static str,
+    glyph: char,
+    settings: &'static [SettingSpec],
+) -> KindSpec {
+    KindSpec {
+        name,
+        title,
+        blurb,
+        glyph,
+        category: Category::System,
+        sizes: &SPANS_S_M_L,
+        default_size: WidgetSize::Small,
+        available: always,
+        open: system_monitor,
+        reads: Reads::System,
+        settings,
+    }
+}
+
+/// How far back a graph goes: two minutes, or a quarter hour.
+const RANGE: SettingSpec = choice("range", "Graph", "Last 2 Minutes", ranges);
+
+const CPU: KindSpec = reading(
+    "cpu",
+    "CPU",
+    "How busy the processor is, and lately.",
+    ICON_CPU,
+    &[RANGE],
+);
+
+const MEMORY: KindSpec = reading(
+    "memory",
+    "Memory",
+    "Memory and swap in use.",
+    ICON_MEMORY,
+    &[RANGE],
+);
+
+const TEMPERATURE: KindSpec = KindSpec {
+    reads: Reads::Temperatures,
+    ..reading(
+        "temperature",
+        "Temperature",
+        "How warm the processor is, or the hottest sensor.",
+        ICON_THERMOSTAT,
+        &[
+            choice("sensor", "Show", "Processor", sensors),
+            RANGE,
+            toggle("unit", "Fahrenheit", "f", false),
+        ],
+    )
+};
+
+const NETWORK: KindSpec = KindSpec {
+    open: network_settings,
+    ..reading(
+        "network",
+        "Network",
+        "What comes in and goes out.",
+        ICON_NETWORK,
+        &[
+            choice("interface", "Show", "Default Route", interfaces),
+            RANGE,
+            toggle("unit", "Bits per Second", "bits", false),
+        ],
+    )
+};
+
+const DISK: KindSpec = KindSpec {
+    sizes: &SPANS_S_M,
+    open: disk_usage,
+    ..reading(
+        "disk",
+        "Disk",
+        "How full a disk is.",
+        ICON_DISK,
+        &[choice("mount", "Show", "Main Disk", mounts)],
+    )
+};
+
+const SYSTEM: KindSpec = KindSpec {
+    sizes: &SPANS_L_XL,
+    default_size: WidgetSize::Large,
+    ..reading(
+        "system",
+        "System",
+        "CPU, memory, network and disks at once.",
+        ICON_COMPUTER,
+        &[],
+    )
+};
+
+const BATTERY: KindSpec = KindSpec {
+    name: "battery",
+    title: "Batteries",
+    blurb: "The battery and your devices' charge.",
+    glyph: ICON_BATTERY_FULL,
+    category: Category::Battery,
+    sizes: &SPANS_S_M_L,
+    default_size: WidgetSize::Small,
+    available: has_battery,
+    open: power_page,
+    reads: Reads::Nothing,
+    settings: &[choice("device", "Show", "First Device", devices)],
+};
+
+const CLOCK: KindSpec = KindSpec {
+    name: "clock",
+    title: "Clock",
+    blurb: "The time, each digit drawn like a pen.",
+    glyph: ICON_SCHEDULE,
+    category: Category::Clock,
+    sizes: &SPANS_S_M_L,
+    default_size: WidgetSize::Medium,
+    available: always,
+    // nothing to open: the time is all it shows
+    open: nothing,
+    reads: Reads::Nothing,
+    settings: &[
+        choice("color", "Color", "Accent", colors),
+        choice("line", "Line", "Regular", lines),
+        toggle("seconds", "Show Seconds", "on", false),
+        toggle("hours", "24-Hour Time", "12", true),
+        toggle("date", "Show Date", "off", true),
+    ],
+};
+
 impl WidgetKind {
     /// The gallery's order.
     pub const ALL: [WidgetKind; 8] = [
@@ -134,18 +461,23 @@ impl WidgetKind {
         Self::System,
     ];
 
+    /// Everything this kind is.
+    pub const fn spec(self) -> &'static KindSpec {
+        match self {
+            Self::Cpu => &CPU,
+            Self::Memory => &MEMORY,
+            Self::Temperature => &TEMPERATURE,
+            Self::Network => &NETWORK,
+            Self::Disk => &DISK,
+            Self::System => &SYSTEM,
+            Self::Battery => &BATTERY,
+            Self::Clock => &CLOCK,
+        }
+    }
+
     /// The name kept in the layout file and used over IPC.
     pub fn name(self) -> &'static str {
-        match self {
-            Self::Cpu => "cpu",
-            Self::Memory => "memory",
-            Self::Temperature => "temperature",
-            Self::Network => "network",
-            Self::Disk => "disk",
-            Self::System => "system",
-            Self::Battery => "battery",
-            Self::Clock => "clock",
-        }
+        self.spec().name
     }
 
     pub fn named(name: &str) -> Option<Self> {
@@ -153,60 +485,25 @@ impl WidgetKind {
     }
 
     pub fn title(self) -> &'static str {
-        match self {
-            Self::Cpu => "CPU",
-            Self::Memory => "Memory",
-            Self::Temperature => "Temperature",
-            Self::Network => "Network",
-            Self::Disk => "Disk",
-            Self::System => "System",
-            Self::Battery => "Batteries",
-            Self::Clock => "Clock",
-        }
+        self.spec().title
     }
 
     /// One line on what it shows, for the gallery.
     pub fn blurb(self) -> &'static str {
-        match self {
-            Self::Cpu => "How busy the processor is, and lately.",
-            Self::Memory => "Memory and swap in use.",
-            Self::Temperature => "How warm the hottest sensor is.",
-            Self::Network => "What comes in and goes out.",
-            Self::Disk => "How full a disk is.",
-            Self::System => "CPU, memory, network and disks at once.",
-            Self::Battery => "The battery and your devices' charge.",
-            Self::Clock => "The time, each digit drawn like a pen.",
-        }
+        self.spec().blurb
     }
 
     pub fn glyph(self) -> char {
-        match self {
-            Self::Cpu => ICON_CPU,
-            Self::Memory => ICON_MEMORY,
-            Self::Temperature => ICON_THERMOSTAT,
-            Self::Network => ICON_NETWORK,
-            Self::Disk => ICON_DISK,
-            Self::System => ICON_COMPUTER,
-            Self::Battery => ICON_BATTERY_FULL,
-            Self::Clock => ICON_SCHEDULE,
-        }
+        self.spec().glyph
     }
 
     pub fn category(self) -> Category {
-        match self {
-            Self::Battery => Category::Battery,
-            Self::Clock => Category::Clock,
-            _ => Category::System,
-        }
+        self.spec().category
     }
 
     /// The sizes it comes in, smallest first.
     pub fn supported(self) -> &'static [Span] {
-        match self {
-            Self::Disk => &SPANS_S_M,
-            Self::System => &SPANS_L_XL,
-            _ => &SPANS_S_M_L,
-        }
+        self.spec().sizes
     }
 
     pub fn sizes(self) -> impl Iterator<Item = WidgetSize> {
@@ -214,50 +511,30 @@ impl WidgetKind {
     }
 
     pub fn default_size(self) -> WidgetSize {
-        match self {
-            Self::System => WidgetSize::Large,
-            Self::Clock => WidgetSize::Medium,
-            _ => WidgetSize::Small,
-        }
+        self.spec().default_size
     }
 
     /// Whether this machine has what it watches.
     pub fn available(self) -> bool {
-        match self {
-            Self::Battery => Battery::read().present() || !Battery::read().peripherals().is_empty(),
-            _ => true,
-        }
+        (self.spec().available)()
     }
 
     /// What a click on it opens: its Quick Settings page, or the app that
     /// shows more of what it watches, when one is installed.
     pub fn open(self) {
-        let first = |programs: &[&'static str]| programs.iter().copied().find(|p| installed(p));
-        match self {
-            Self::Battery => quick_settings::open_alone(Page::Power),
-            // nothing to open: the time is all it shows
-            Self::Clock => {}
-            Self::Network => {
-                let settings = emaki_kit::app_ids::SETTINGS;
-                if installed(settings) {
-                    amane::Launch::argv(&[settings, "--page", "network"]).activated();
-                } else if let Some(program) = first(&["nm-connection-editor"]) {
-                    crate::services::launch(&[program]);
-                }
-            }
-            Self::Disk => {
-                if let Some(program) = first(&["baobab", "gnome-disks"]) {
-                    crate::services::launch(&[program]);
-                }
-            }
-            _ => {
-                if let Some(program) =
-                    first(&["missioncenter", "gnome-system-monitor", "resources"])
-                {
-                    crate::services::launch(&[program]);
-                }
-            }
-        }
+        (self.spec().open)();
+    }
+
+    pub fn reads(self) -> Reads {
+        self.spec().reads
+    }
+
+    /// Its setting kept under `key`, if it has one.
+    pub fn setting(self, key: &str) -> Option<&'static SettingSpec> {
+        self.spec()
+            .settings
+            .iter()
+            .find(|setting| setting.key == key)
     }
 }
 
@@ -292,6 +569,23 @@ mod tests {
             );
         }
         assert_eq!(WidgetKind::named("nope"), None);
+    }
+
+    #[test]
+    fn every_setting_has_a_key_of_its_own_and_takes_none() {
+        for kind in WidgetKind::ALL {
+            let keys: Vec<&str> = kind.spec().settings.iter().map(|s| s.key).collect();
+            let mut unique = keys.clone();
+            unique.dedup();
+            assert_eq!(keys, unique, "{kind:?}");
+            for setting in kind.spec().settings {
+                assert!(setting.accepts(None));
+                assert_eq!(kind.setting(setting.key).map(|s| s.key), Some(setting.key));
+            }
+        }
+        let seconds = WidgetKind::Clock.setting("seconds").unwrap();
+        assert!(seconds.accepts(Some("on")) && !seconds.accepts(Some("yes")));
+        assert!(WidgetKind::Cpu.setting("sensor").is_none());
     }
 
     #[test]

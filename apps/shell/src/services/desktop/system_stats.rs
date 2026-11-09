@@ -119,6 +119,9 @@ pub struct Sensor {
     pub celsius: f32,
     /// Whether it's the processor's.
     pub cpu: bool,
+    /// Where it runs hot, by its own say (hwmon's `max`, else 10 under its
+    /// `crit`), when it says.
+    pub high: Option<f32>,
 }
 
 /// A mounted filesystem's size and what's used, in bytes.
@@ -219,7 +222,11 @@ impl SystemStats {
     fn apply(&mut self, reading: Reading) {
         if let Some((total, cores)) = reading.stat {
             if let Some((before, before_cores)) = &self.ticks {
-                self.cpu.push(total.since(*before).unwrap_or(0.0));
+                // counters that went backwards (a resume) say nothing, rather
+                // than a dip to idle in the graph
+                if let Some(busy) = total.since(*before) {
+                    self.cpu.push(busy);
+                }
                 self.cores.clear();
                 self.cores.extend(
                     cores
@@ -244,8 +251,11 @@ impl SystemStats {
         self.traffic
             .retain(|name, _| reading.traffic.iter().any(|(n, _)| n == name));
         for (name, counters) in reading.traffic {
+            // one that just came up (a VPN, a tether) has nothing to measure
+            // its counters against yet: they're everything it ever carried
+            let known = self.traffic.contains_key(&name);
             let traffic = self.traffic.entry(name).or_default();
-            if let Some(seconds) = seconds {
+            if let Some(seconds) = seconds.filter(|_| known) {
                 let rate = |now: u64, then: u64| now.saturating_sub(then) as f32 / seconds;
                 traffic.down.push(rate(counters.0, traffic.counters.0));
                 traffic.up.push(rate(counters.1, traffic.counters.1));
@@ -321,7 +331,11 @@ impl Probe {
             .filter(|(name, _)| name != "lo")
             .collect();
         read_into("/proc/net/route", &mut self.text);
-        let default_route = parse_route(&self.text);
+        // an IPv6-only network has no IPv4 default route
+        let default_route = parse_route(&self.text).or_else(|| {
+            read_into("/proc/net/ipv6_route", &mut self.text);
+            parse_route6(&self.text)
+        });
 
         let sensors = TEMPERATURES.load(Ordering::Relaxed).then(|| self.sensors());
 
@@ -350,14 +364,14 @@ impl Probe {
             self.inputs = scan(Path::new("/sys/class/hwmon"));
             self.scanned = true;
         }
-        match read_sensors(&self.inputs, &mut self.text) {
-            Some(sensors) => sensors,
-            None => {
-                // one went away: look again
-                self.inputs = scan(Path::new("/sys/class/hwmon"));
-                read_sensors(&self.inputs, &mut self.text).unwrap_or_default()
-            }
+        let (sensors, whole) = read_sensors(&self.inputs, &mut self.text);
+        if whole {
+            return sensors;
         }
+        // one went away, or a drive asleep didn't answer: look again, and
+        // show what still reads either way
+        self.inputs = scan(Path::new("/sys/class/hwmon"));
+        read_sensors(&self.inputs, &mut self.text).0
     }
 }
 
@@ -477,23 +491,51 @@ fn parse_net_dev(text: &str) -> Vec<(String, (u64, u64))> {
         .collect()
 }
 
-/// The interface the default route goes out of, from `/proc/net/route`.
+/// The interface the default route goes out of, from `/proc/net/route`:
+/// of several (wired and wireless both up), the one with the lowest metric,
+/// as the kernel picks.
 fn parse_route(text: &str) -> Option<String> {
-    text.lines().skip(1).find_map(|line| {
-        let mut fields = line.split_whitespace();
-        let name = fields.next()?;
-        (fields.next()? == "00000000").then(|| name.to_string())
-    })
+    text.lines()
+        .skip(1)
+        .filter_map(|line| {
+            let fields: Vec<&str> = line.split_whitespace().collect();
+            let metric = fields
+                .get(6)
+                .and_then(|m| m.parse::<u32>().ok())
+                .unwrap_or(0);
+            (*fields.get(1)? == "00000000").then(|| (metric, fields[0]))
+        })
+        .min_by_key(|(metric, _)| *metric)
+        .map(|(_, name)| name.to_string())
+}
+
+/// The interface the IPv6 default route (`::/0`) goes out of, from
+/// `/proc/net/ipv6_route`, the one with the lowest metric; loopback's
+/// unreachable default doesn't count.
+fn parse_route6(text: &str) -> Option<String> {
+    text.lines()
+        .filter_map(|line| {
+            let fields: Vec<&str> = line.split_whitespace().collect();
+            let [dest, len, .., metric, _, _, _, iface] = fields.as_slice() else {
+                return None;
+            };
+            let default = dest.bytes().all(|b| b == b'0') && *len == "00" && *iface != "lo";
+            let metric = u32::from_str_radix(metric, 16).ok()?;
+            default.then(|| (metric, (*iface).to_string()))
+        })
+        .min_by_key(|(metric, _)| *metric)
+        .map(|(_, name)| name)
 }
 
 /// Drivers whose first sensor is the processor's.
 const CPU_SENSORS: [&str; 4] = ["k10temp", "coretemp", "zenpower", "cpu_thermal"];
 
-/// A temperature sensor's file, and what to call it.
+/// A temperature sensor's file, what to call it, and where it runs hot.
 struct Input {
     path: PathBuf,
     label: String,
     cpu: bool,
+    high: Option<f32>,
 }
 
 /// Every temperature sensor under `root` (`/sys/class/hwmon`), named by
@@ -520,10 +562,19 @@ fn scan(root: &Path) -> Vec<Input> {
             let label = read(&format!("temp{n}_label"))
                 .map(|s| s.trim().to_string())
                 .unwrap_or_else(|| format!("temp{n}"));
+            let degrees = |name: &str| {
+                read(&format!("temp{n}_{name}"))
+                    .and_then(|s| s.trim().parse::<i64>().ok())
+                    .map(|millis| millis as f32 / 1000.0)
+                    // a sensor that reports nothing useful says 0, or far too much
+                    .filter(|c| *c > 20.0 && *c < 150.0)
+            };
+            let high = degrees("max").or_else(|| degrees("crit").map(|c| c - 10.0));
             out.push(Input {
                 path,
-                label: format!("{driver} {label}"),
+                label: unique(&out, format!("{driver} {label}")),
                 cpu: cpu && first,
+                high,
             });
             first = false;
         }
@@ -531,23 +582,40 @@ fn scan(root: &Path) -> Vec<Input> {
     out
 }
 
-/// What each sensor reads now; none if one couldn't be read, as when a
-/// drive was taken out.
-fn read_sensors(inputs: &[Input], text: &mut String) -> Option<Vec<Sensor>> {
-    inputs
+/// `label`, or with a number after it when one of `taken` has it already
+/// (two drives of a kind are both "nvme Composite"), so each sensor keeps a
+/// history and a setting of its own.
+fn unique(taken: &[Input], label: String) -> String {
+    let has = |name: &str| taken.iter().any(|input| input.label == name);
+    if !has(&label) {
+        return label;
+    }
+    (2..)
+        .map(|n| format!("{label} {n}"))
+        .find(|name| !has(name))
+        .expect("a free number")
+}
+
+/// What each sensor that reads reads now, and whether they all did (one
+/// that didn't went away, as a drive taken out, or is asleep).
+fn read_sensors(inputs: &[Input], text: &mut String) -> (Vec<Sensor>, bool) {
+    let mut whole = true;
+    let sensors = inputs
         .iter()
-        .map(|input| {
-            if !read_into(&input.path, text) {
-                return None;
-            }
-            let millis = text.trim().parse::<i64>().ok()?;
+        .filter_map(|input| {
+            let millis = read_into(&input.path, text)
+                .then(|| text.trim().parse::<i64>().ok())
+                .flatten();
+            whole &= millis.is_some();
             Some(Sensor {
                 label: input.label.clone(),
-                celsius: millis as f32 / 1000.0,
+                celsius: millis? as f32 / 1000.0,
                 cpu: input.cpu,
+                high: input.high,
             })
         })
-        .collect()
+        .collect();
+    (sensors, whole)
 }
 
 /// The filesystems a person keeps files on, from `/proc/mounts`: those on
@@ -564,17 +632,42 @@ fn mounts(text: &str) -> Vec<String> {
         };
         let real = device.starts_with("/dev/") || KINDS.contains(&kind);
         // a store mounted read-only again (NixOS's /nix/store) is the same disk
-        if !real || mount.starts_with("/nix/store") || mount.starts_with("/boot") {
+        let boot = mount == "/boot" || mount.starts_with("/boot/");
+        if !real || mount.starts_with("/nix/store") || boot {
             continue;
         }
         if seen.contains(&device) {
             continue;
         }
         seen.push(device);
-        // octal escapes for spaces and the like
-        out.push(mount.replace("\\040", " "));
+        out.push(unescape(mount));
     }
     out
+}
+
+/// A mount point as `/proc/mounts` writes it, its space, tab, newline and
+/// backslash each an octal escape (`\040`), back as it is.
+fn unescape(mount: &str) -> String {
+    let bytes = mount.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        let octal = bytes
+            .get(i + 1..i + 4)
+            .filter(|digits| bytes[i] == b'\\' && digits.iter().all(|d| (b'0'..=b'7').contains(d)))
+            .and_then(|digits| u8::from_str_radix(std::str::from_utf8(digits).ok()?, 8).ok());
+        match octal {
+            Some(byte) => {
+                out.push(byte);
+                i += 4;
+            }
+            None => {
+                out.push(bytes[i]);
+                i += 1;
+            }
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
 }
 
 /// How full each of `mounts` is. A mount that stalled is left out for a
@@ -667,6 +760,19 @@ mod tests {
                      wlp194s0\t0001A8C0\t00000000\t0001\n\
                      wlp194s0\t00000000\t0101A8C0\t0003\n";
         assert_eq!(parse_route(route).as_deref(), Some("wlp194s0"));
+        // wired and wireless both up: the lower metric is the default
+        let both = "Iface\tDestination\tGateway\tFlags\tRefCnt\tUse\tMetric\n\
+                    wlp194s0\t00000000\t0101A8C0\t0003\t0\t0\t600\n\
+                    enp5s0\t00000000\t0101A8C0\t0003\t0\t0\t100\n";
+        assert_eq!(parse_route(both).as_deref(), Some("enp5s0"));
+        // IPv6 only: the default (all zeros, length 0) that isn't loopback's
+        let six = "00000000000000000000000000000000 00 00000000000000000000000000000000 00 \
+                   fe800000000000000000000000000001 00000400 00000001 00000000 00000003 wlan0\n\
+                   00000000000000000000000000000000 00 00000000000000000000000000000000 00 \
+                   00000000000000000000000000000000 ffffffff 00000001 00000000 00200200 lo\n\
+                   fd000000000000000000000000000000 40 00000000000000000000000000000000 00 \
+                   00000000000000000000000000000000 00000100 00000001 00000000 00000001 wlan0\n";
+        assert_eq!(parse_route6(six).as_deref(), Some("wlan0"));
         assert_eq!(parse_route("Iface\tDestination\n"), None);
     }
 
@@ -677,6 +783,8 @@ mod tests {
                     /dev/sda1 /mnt/My\\040Disk ext4 rw 0 0\ntmpfs /tmp tmpfs rw 0 0\n\
                     /dev/sda1 /mnt/again ext4 rw 0 0\n";
         assert_eq!(mounts(text), vec!["/", "/mnt/My Disk"]);
+        let text = "/dev/sdb1 /bootleg ext4 rw 0 0\n/dev/sdc1 /mnt/a\\011b\\134c ext4 rw 0 0\n";
+        assert_eq!(mounts(text), vec!["/bootleg", "/mnt/a\tb\\c"]);
     }
 
     #[test]
@@ -693,16 +801,134 @@ mod tests {
         );
     }
 
-    #[test]
-    fn the_sensors_on_this_machine_read() {
-        // whatever the machine has, each reads as a plausible temperature
-        let inputs = scan(Path::new("/sys/class/hwmon"));
-        let mut text = String::new();
-        for sensor in read_sensors(&inputs, &mut text).unwrap_or_default() {
-            assert!(
-                sensor.celsius > -40.0 && sensor.celsius < 150.0,
-                "{sensor:?}"
-            );
+    /// A hwmon tree of its own under the test's folder: (driver, inputs as
+    /// (label, millidegrees, or none for one that can't be read)).
+    /// A chip's inputs: (label, millidegrees, or none for one that can't be read).
+    type Inputs<'a> = &'a [(&'a str, Option<&'a str>)];
+
+    fn hwmon(test: &str, chips: &[(&str, Inputs)]) -> PathBuf {
+        let root = std::env::temp_dir().join(format!("emaki-hwmon-{}-{test}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        for (i, (driver, inputs)) in chips.iter().enumerate() {
+            let dir = root.join(format!("hwmon{i}"));
+            std::fs::create_dir_all(&dir).unwrap();
+            std::fs::write(dir.join("name"), driver).unwrap();
+            for (n, (label, millis)) in inputs.iter().enumerate() {
+                let n = n + 1;
+                std::fs::write(dir.join(format!("temp{n}_label")), label).unwrap();
+                match millis {
+                    Some(millis) => std::fs::write(dir.join(format!("temp{n}_input")), millis),
+                    // a directory where the file is: there, but it can't be read
+                    None => std::fs::create_dir(dir.join(format!("temp{n}_input"))),
+                }
+                .unwrap();
+            }
         }
+        root
+    }
+
+    #[test]
+    fn sensors_read_each_on_its_own_and_keep_names_of_their_own() {
+        let root = hwmon(
+            "sensors",
+            &[
+                ("k10temp", &[("Tctl", Some("52000"))]),
+                ("nvme", &[("Composite", Some("40500"))]),
+                ("nvme", &[("Composite", None)]),
+                ("nvme", &[("Composite", Some("38000"))]),
+            ],
+        );
+        // where each runs hot: its max, else 10 under its crit, else nothing
+        std::fs::write(root.join("hwmon0/temp1_max"), "95000").unwrap();
+        std::fs::write(root.join("hwmon1/temp1_crit"), "84850").unwrap();
+        std::fs::write(root.join("hwmon3/temp1_max"), "0").unwrap();
+        let inputs = scan(&root);
+        let highs: Vec<Option<f32>> = inputs.iter().map(|i| i.high).collect();
+        assert_eq!(highs, [Some(95.0), Some(74.85), None, None]);
+        let labels: Vec<&str> = inputs.iter().map(|i| i.label.as_str()).collect();
+        assert_eq!(
+            labels,
+            [
+                "k10temp Tctl",
+                "nvme Composite",
+                "nvme Composite 2",
+                "nvme Composite 3"
+            ]
+        );
+        assert!(inputs[0].cpu && !inputs[1].cpu);
+        // the one that can't be read is left out, not every one
+        let (sensors, whole) = read_sensors(&inputs, &mut String::new());
+        assert!(!whole);
+        let read: Vec<(&str, f32)> = sensors
+            .iter()
+            .map(|s| (s.label.as_str(), s.celsius))
+            .collect();
+        assert_eq!(
+            read,
+            [
+                ("k10temp Tctl", 52.0),
+                ("nvme Composite", 40.5),
+                ("nvme Composite 3", 38.0)
+            ]
+        );
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    fn reading(at: Instant, traffic: &[(&str, (u64, u64))], busy: u64) -> Reading {
+        let ticks = Ticks {
+            total: busy * 2,
+            busy,
+        };
+        Reading {
+            at,
+            stat: Some((ticks, Vec::new())),
+            memory: None,
+            traffic: traffic
+                .iter()
+                .map(|(n, c)| ((*n).to_string(), *c))
+                .collect(),
+            default_route: None,
+            sensors: None,
+            disks: None,
+        }
+    }
+
+    #[test]
+    fn an_interface_that_comes_up_starts_without_a_spike() {
+        // nothing read from this machine, so its interfaces don't count
+        let mut stats = SystemStats {
+            ticks: None,
+            cpu: Series::default(),
+            cores: Vec::new(),
+            memory: MemoryUse::default(),
+            memory_history: Series::default(),
+            traffic: HashMap::new(),
+            read_at: None,
+            default_route: None,
+            sensors: Vec::new(),
+            temperature: HashMap::new(),
+            disks: Vec::new(),
+        };
+        let start = Instant::now();
+        let later = |s: u64| start + std::time::Duration::from_secs(s);
+        stats.apply(reading(start, &[("wlan0", (1_000, 1_000))], 100));
+        stats.apply(reading(
+            later(2),
+            &[("wlan0", (3_000, 1_000)), ("tun0", (9_000_000, 9_000_000))],
+            200,
+        ));
+        // the tether's lifetime counters aren't a rate
+        assert_eq!(stats.traffic["tun0"].down.last(), None);
+        assert_eq!(stats.traffic["wlan0"].down.last(), Some(1_000.0));
+        stats.apply(reading(
+            later(4),
+            &[("wlan0", (3_000, 1_000)), ("tun0", (9_002_000, 9_000_000))],
+            300,
+        ));
+        assert_eq!(stats.traffic["tun0"].down.last(), Some(1_000.0));
+        // processor counters that went backwards add nothing to the graph
+        let before = stats.cpu.0.len();
+        stats.apply(reading(later(6), &[], 10));
+        assert_eq!(stats.cpu.0.len(), before);
     }
 }

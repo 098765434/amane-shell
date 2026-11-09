@@ -34,6 +34,14 @@ pub fn follow_outputs() {
     });
 }
 
+/// Whether `output` is connected; any is while none are known yet.
+pub fn connected(output: &str) -> bool {
+    NAMES
+        .locked()
+        .as_ref()
+        .is_none_or(|names| names.iter().any(|name| name == output))
+}
+
 /// A `T` for each monitor, made the first time it's asked for.
 pub struct PerOutput<T> {
     map: RefCell<BTreeMap<String, T>>,

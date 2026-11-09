@@ -94,7 +94,7 @@ pub(super) fn content(area: &Area) -> Rectangle {
     };
     let sidebar = SHEET.sidebar(search, sections, area.height, Some(scrolling));
     let footer = sheet::Footer {
-        hint: "Drag a control to place it in Quick Settings.",
+        hint: "Drag a control to place it in Quick Settings.".into(),
         reset: "Reset Layout",
         undo: edit::can_undo().then_some(edit::undo),
         on_reset: edit::reset,

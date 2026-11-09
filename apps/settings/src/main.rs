@@ -6,6 +6,7 @@ mod about;
 mod appearance;
 mod cursor;
 mod desktop;
+mod desktop_widgets;
 mod displays;
 mod dock;
 mod drop;

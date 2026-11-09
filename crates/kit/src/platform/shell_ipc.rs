@@ -234,6 +234,10 @@ pub enum Light {
 pub enum Widgets {
     /// Every widget, a line each.
     List,
+    /// `list --json`: every widget as JSON, its settings and all.
+    ListJson,
+    /// `kinds`: every kind as JSON, its sizes and what it can be set to.
+    Kinds,
     /// `add <kind> [size] [output]`.
     Add {
         /// The kind, as `cpu`.
@@ -245,6 +249,35 @@ pub enum Widgets {
     },
     /// `remove <id>`.
     Remove(u32),
+    /// `set <id> <key> [value]`: one of a widget's settings; no value is
+    /// its automatic choice, or off.
+    Set {
+        /// The widget, by the id `list` gives.
+        id: u32,
+        /// The setting, as `sensor`.
+        key: String,
+        /// What it's set to.
+        value: Option<String>,
+    },
+    /// `resize <id> <size>`.
+    Resize {
+        /// The widget.
+        id: u32,
+        /// The size, as `large`.
+        size: String,
+    },
+    /// `move <id> <col> <row>`: its top-left to that cell, the others
+    /// making way.
+    Move {
+        /// The widget.
+        id: u32,
+        /// The column, from the left.
+        col: u8,
+        /// The row, from the top.
+        row: u8,
+    },
+    /// `undo`: Undo Remove, while editing.
+    Undo,
     /// `reset-layout [output]`.
     ResetLayout(Option<String>),
     /// `edit [output]`.
@@ -466,10 +499,33 @@ impl ShellCommand {
                 })
             }
             "widgets" => {
-                const USAGE: &str = "list | add <kind> [size] [output] | remove <id> | reset-layout [output] | edit [output] | done";
+                const USAGE: &str = "list [--json] | kinds | add <kind> [size] [output] | remove <id> | set <id> <key> [value] | resize <id> <size> | move <id> <col> <row> | undo | reset-layout [output] | edit [output] | done";
                 let at = |i: usize| args.get(i).map(owned);
+                let id = || args.get(1).and_then(|id| id.parse::<u32>().ok());
                 Self::Widgets(match args.first().copied() {
+                    Some("list") if args.get(1) == Some(&"--json") => Widgets::ListJson,
                     Some("list") => Widgets::List,
+                    Some("kinds") => Widgets::Kinds,
+                    Some("set") => match (id(), at(2)) {
+                        (Some(id), Some(key)) => Widgets::Set {
+                            id,
+                            key,
+                            value: at(3),
+                        },
+                        _ => return Err(String::from("error: widgets set <id> <key> [value]")),
+                    },
+                    Some("resize") => match (id(), at(2)) {
+                        (Some(id), Some(size)) => Widgets::Resize { id, size },
+                        _ => return Err(String::from("error: widgets resize <id> <size>")),
+                    },
+                    Some("move") => {
+                        let cell = |i: usize| args.get(i).and_then(|n| n.parse::<u8>().ok());
+                        match (id(), cell(2), cell(3)) {
+                            (Some(id), Some(col), Some(row)) => Widgets::Move { id, col, row },
+                            _ => return Err(String::from("error: widgets move <id> <col> <row>")),
+                        }
+                    }
+                    Some("undo") => Widgets::Undo,
                     Some("add") => match at(1) {
                         Some(kind) => Widgets::Add {
                             kind,
@@ -652,6 +708,18 @@ impl ShellCommand {
                     "widgets",
                     match w {
                         Widgets::List => words(&["list"]),
+                        Widgets::ListJson => words(&["list", "--json"]),
+                        Widgets::Kinds => words(&["kinds"]),
+                        Widgets::Set { id, key, value } => {
+                            let mut lines = words(&["set", &id.to_string(), key]);
+                            lines.extend(value.clone());
+                            lines
+                        }
+                        Widgets::Resize { id, size } => words(&["resize", &id.to_string(), size]),
+                        Widgets::Move { id, col, row } => {
+                            words(&["move", &id.to_string(), &col.to_string(), &row.to_string()])
+                        }
+                        Widgets::Undo => words(&["undo"]),
                         Widgets::Add { kind, size, output } => {
                             let mut lines = words(&["add", kind]);
                             lines.extend(size.clone());
@@ -808,6 +876,13 @@ mod tests {
         &["widgets", "add", "cpu", "medium", "eDP-1"],
         &["widgets", "add", "clock"],
         &["widgets", "remove", "7"],
+        &["widgets", "list", "--json"],
+        &["widgets", "kinds"],
+        &["widgets", "set", "7", "sensor", "k10temp Tctl"],
+        &["widgets", "set", "7", "range"],
+        &["widgets", "resize", "7", "large"],
+        &["widgets", "move", "7", "4", "2"],
+        &["widgets", "undo"],
         &["widgets", "reset-layout"],
         &["widgets", "edit", "eDP-1"],
         &["widgets", "done"],

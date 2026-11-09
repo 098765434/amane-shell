@@ -61,8 +61,9 @@ pub struct Scrolling {
 
 /// The footer's words and what its buttons do.
 pub struct Footer {
-    /// What it says at the start.
-    pub hint: &'static str,
+    /// What it says at the start: the hint, or a note that stands in for
+    /// it for a while.
+    pub hint: std::borrow::Cow<'static, str>,
     /// The reset button's name: "Reset Layout", "Remove All".
     pub reset: &'static str,
     /// Undo Remove, while there's a remove to undo.
@@ -193,6 +194,6 @@ impl Sheet {
         frame(width, height)
             .padding(pad(self.inset, 0.0))
             .align_child(Start, Center)
-            .child(split_row(caption(footer.hint), actions))
+            .child(split_row(caption(footer.hint.as_ref()), actions))
     }
 }
