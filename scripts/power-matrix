@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Step 1 of docs/niri-power-research.md: on a still desktop, what each
-# refresh setting costs. It switches the panel between 120 Hz, 60 Hz and
+# Step 1 of docs/niri-power-research.md: on a still desktop or under a
+# workload, what each refresh setting costs. It switches the panel between 120 Hz, 60 Hz and
 # variable refresh itself, waits for it to settle, and samples each one for
 # the same time. It reports:
 #
@@ -19,6 +19,15 @@
 #   --settle N      wait after each switch before sampling (default 20)
 #   --output NAME   the panel (default eDP-1)
 #   --stay          don't move to an empty workspace while measuring
+#   --workload W    what the screen does while measured (default idle):
+#                     idle      nothing, a still screen
+#                     overview  the overview opened and closed every 1.5 s,
+#                               niri's own animation
+#                     text      a foot window printing 20 lines a second,
+#                               like a busy terminal
+#   --workload-cmd C  a command of your own instead, run through niri's
+#                   spawn-sh (a video in a player, a page scrolling); windows
+#                   it opens are closed at the end
 #
 # It asks for sudo once (debugfs). Unplug the adapter first for the
 # battery's numbers; plugged in it still reports the SoC's. Keep the
@@ -38,6 +47,8 @@ seconds=90
 settle=20
 output=eDP-1
 stay=0
+workload=idle
+workload_cmd=""
 while (($#)); do
     case $1 in
     --runs) runs=$2; shift 2 ;;
@@ -45,10 +56,16 @@ while (($#)); do
     --settle) settle=$2; shift 2 ;;
     --output) output=$2; shift 2 ;;
     --stay) stay=1; shift ;;
-    -h | --help) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --workload) workload=$2; shift 2 ;;
+    --workload-cmd) workload=cmd; workload_cmd=$2; shift 2 ;;
+    -h | --help) awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 0 ;;
     *) echo "unknown option $1 (see --help)" >&2; exit 2 ;;
     esac
 done
+case $workload in
+idle | overview | text | cmd) ;;
+*) echo "unknown workload $workload (idle, overview, text)" >&2; exit 2 ;;
+esac
 for n in "$seconds" "$settle"; do
     [[ $n =~ ^[0-9]+$ ]] || { echo "seconds must be whole numbers" >&2; exit 2; }
 done
@@ -71,6 +88,11 @@ if [[ $EUID -ne 0 ]]; then
     echo "power-matrix needs root for debugfs (Panel Replay, PSR, IPS)."
     args=(--runs "$runs" --seconds "$seconds" --settle "$settle" --output "$output")
     ((stay)) && args+=(--stay)
+    if [[ $workload == cmd ]]; then
+        args+=(--workload-cmd "$workload_cmd")
+    else
+        args+=(--workload "$workload")
+    fi
     exec sudo env PATH="$PATH" NIRI_SOCKET="$NIRI_SOCKET" NIRI_BIN="$niri_bin" \
         VRR_CONFIG="$vrr_config" REPORT_HOME="$HOME" REPORT_USER="$(id -un)" \
         "$(realpath "$0")" "${args[@]}"
@@ -131,8 +153,49 @@ ws = [w for w in json.load(sys.stdin) if w["output"] == sys.argv[1] and w["activ
 print(max(ws, key=lambda w: w["idx"])["idx"] if ws else "")
 ' "$output")
 
+# --- workloads -------------------------------------------------------------------
+
+window_ids() {
+    niri --json windows | python3 -I -c '
+import json, sys
+print(" ".join(str(w["id"]) for w in json.load(sys.stdin)))'
+}
+
+windows_before=""
+overview_pid=""
+start_workload() {
+    windows_before=" $(window_ids) "
+    case $workload in
+    idle) ;;
+    overview)
+        (while :; do niri action toggle-overview >/dev/null; sleep 1.5; done) &
+        overview_pid=$!
+        ;;
+    text)
+        niri action spawn -- foot --app-id=power-matrix sh -c \
+            'while :; do date "+%T.%N  the quick brown fox jumps over the lazy dog"; sleep 0.05; done'
+        ;;
+    cmd) niri action spawn-sh -- "$workload_cmd" ;;
+    esac
+}
+
+stop_workload() {
+    if [[ -n $overview_pid ]]; then
+        kill "$overview_pid" 2>/dev/null || true
+        wait "$overview_pid" 2>/dev/null || true
+        overview_pid=""
+        niri action close-overview >/dev/null || true
+    fi
+    [[ -n $windows_before ]] || return 0
+    for id in $(window_ids); do
+        [[ $windows_before == *" $id "* ]] || niri action close-window --id "$id" || true
+    done
+    windows_before=""
+}
+
 restore() {
     trap - EXIT INT TERM
+    stop_workload
     echo "restoring $output: $orig_mode, VRR $VRR_CONFIG" >&2
     niri output "$output" mode "$orig_mode" || true
     case $VRR_CONFIG in
@@ -305,6 +368,7 @@ total=$(( ${#run_list[@]} * (seconds + settle) ))
 cat <<MSG
 
 Measuring $output: ${run_list[*]}, ${settle} s settle + ${seconds} s each, about $((total / 60 + 1)) min.
+Workload: ${workload_cmd:-$workload}.
 Battery: $( [[ -n $battery && $(cat "$battery/status") == Discharging ]] && echo "discharging, its draw is measured" || echo "not discharging, SoC power only")
 Originals: mode $orig_mode, VRR $orig_vrr (config: $VRR_CONFIG).
 Panel timings: $edid_note
@@ -315,6 +379,7 @@ sleep 10
 if ((!stay)) && [[ -n $empty_ws ]]; then
     niri action focus-workspace "$empty_ws"
 fi
+start_workload
 
 results=()
 for r in "${run_list[@]}"; do
@@ -339,9 +404,9 @@ restore
 # --- the report ----------------------------------------------------------------
 
 stamp=$(date +%Y-%m-%d-%H%M)
-report=$REPORT_HOME/power-matrix-$stamp.md
+report=$REPORT_HOME/power-matrix-$stamp-$workload.md
 {
-    echo "# power-matrix, $(date '+%Y-%m-%d %H:%M')"
+    echo "# power-matrix, $(date '+%Y-%m-%d %H:%M'), workload ${workload_cmd:-$workload}"
     echo
     echo "Kernel $(uname -r); $output; originals $orig_mode, VRR $VRR_CONFIG;"
     echo "brightness $(cat /sys/class/backlight/*/brightness 2>/dev/null | head -n 1)/$(cat /sys/class/backlight/*/max_brightness 2>/dev/null | head -n 1);"
