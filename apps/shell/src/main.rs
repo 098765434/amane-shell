@@ -139,6 +139,8 @@ fn main() -> ExitCode {
     services::power::power_refresh::watch();
     // and keeps the screen's brightness in HDR, which niri only holds until a reload
     services::display::hdr_white::watch();
+    // and has niri dim the wallpaper under the Black appearance
+    services::display::wallpaper_dim::watch();
     // and rbw's pinentry: the master password asked in the shell's own dialog
     services::vault::pinentry::serve();
 

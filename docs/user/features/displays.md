@@ -83,16 +83,15 @@ A `config.kdl` with uncommitted edits is refused.
 | Header | the name, the diagonal, the panel, the connector (for a plugged-in display), the mode, and the [tags](../../developer/kit/components.md#tag) | none |
 | Brightness | slider, on a built-in panel, through amane's `Brightness` (logind); on a monitor, Brightness and Contrast over DDC/CI ([below](#a-monitors-own-brightness)) | none |
 | Resolution | dropdown, largest first, the preferred one marked "(Default)", with what it looks like after scaling | `mode`, tried first |
-| Refresh rate | dropdown, the rates at this resolution | `mode`, tried first |
+| Refresh rate | dropdown, the rates at this resolution, then (when the display can vary it) **Variable, 30–120 Hz** and so on, one for each rate as a cap; on a laptop it's the rate **On power adapter**, with **On battery** under it ([below](#refresh-rate-on-battery)) | `mode` (tried first) and `variable-refresh-rate`; On battery in `displays.json` |
 | This display | with two or more: Use this display (not the last one lit), Main display | `off` (tried first), `focus-at-startup` (one at most) |
-| Variable refresh rate | dropdown: Off, On demand, Always; the range it follows; under On demand, the apps that turn it on (by app id with **Add**, or from a menu of the apps open; **Remove**) | `variable-refresh-rate [on-demand=true]` and the `window-rule`, at once |
+| Variable refresh | only while the adapter's rate is a variable one: Always or For chosen apps; the range it follows; under For chosen apps, the apps that turn it on (by app id with **Add**, or from a menu of the apps open; **Remove**) | `variable-refresh-rate [on-demand=true]` and the `window-rule`, at once |
 | Scale | dropdown, 100–300 % in quarters, each "looks like W × H", and any other scale already in use | `scale`, tried first |
 | Rotation | dropdown: Standard, 90°, 180°, 270°, flipped and flipped turned (counter-clockwise, as niri turns) | `transform`, tried first |
 | High dynamic range | **Use HDR**: Off, Automatic or On (On and Off tried first), with what the screen shows and an ⓘ naming the apps that show HDR; while on, **Brightness** moves SDR white ([below](#hdr)) | `hdr`, `hdr-auto`, `sdr-brightness` |
 | Advanced › (sub-page) | Custom scale (0.5–4, or a percentage), Custom mode (`2560x1600@90`), Overview backdrop (`#rrggbb`), and the raw facts each source gave | `scale`, `mode custom=true`, `backdrop-color` |
-| All displays | with a battery, **Slower on battery** ([below](#refresh-rate-on-battery)) | `displays.json` |
 | Night Light | a switch, how warm, and when: All day, Sunset to sunrise, Set hours | the shell's state ([below](#night-light)) |
-| OLED care | on an OLED panel: Dark appearance, hiding the dock, hiding the status bar, and **Screen Sleep Timing…** (Power & Lock) | `appearance.json`, `dock.json`, `status-bar.json` |
+| OLED care | on an OLED panel: Black appearance (sets `black`, and dark if light), hiding the dock, hiding the status bar, and **Screen Sleep Timing…** (Power & Lock) | `appearance.json`, `dock.json`, `status-bar.json` |
 
 **Trying a change.** A change that could leave a screen unreadable is tried first: resolution,
 refresh rate, scale, rotation, a custom mode, HDR, moving a screen in the arrangement, and
@@ -104,9 +103,9 @@ variable refresh, the place, the main display and the backdrop apply at once. In
 brightness is written by the shell once it rests (see [HDR](#hdr)).
 
 **Variable refresh.** niri's on-demand mode turns VRR on only while a window that a
-`variable-refresh-rate true` rule matches is on the screen, so On demand without any apps does
-nothing. The note says that OLED panels can flicker at low frame rates with VRR on, which is why
-On demand suits them.
+`variable-refresh-rate true` rule matches is on the screen, so For chosen apps without any apps
+does nothing. The note says that OLED panels can flicker at low frame rates with VRR on, which is
+why For chosen apps suits them. A fixed rate in the Refresh rate dropdown turns it off.
 
 ## HDR
 
@@ -153,13 +152,20 @@ NixOS configuration).
 
 ## Refresh rate on battery
 
-**Lower the refresh rate on battery** (`battery_refresh` in `displays.json`) is the shell's
-(`services/power/power_refresh.rs`). Every five seconds it reads amane's `Battery`. On battery, it
-moves each display to its slowest rate at the same resolution (60 Hz on this panel) with niri's
-temporary `niri msg output … mode`, and remembers the rate it had. On AC, or once the switch is
-off, it puts that rate back. `displays.kdl` keeps the AC rate throughout, so a config reload on
-battery brings it back for a moment, until the next check lowers it again. niri is only asked while
-on battery, or while a display is waiting to go back.
+**On battery** (`on_battery` in `displays.json`, by connector for a built-in panel, else
+`make model serial`) is followed by the shell (`services/power/power_refresh.rs`): Same as on
+adapter, a fixed rate, or a variable one capped at a rate (on an OLED laptop panel with 120 and
+60 Hz, **Variable, 30–60 Hz** is the 60 Hz mode with VRR on). An older file's
+`battery_refresh: true` still reads as the slowest rate for any display without a choice.
+
+The shell follows amane's `Battery` (UPower's signals), `Outputs` (niri's `OutputsChanged`) and
+the file, with no polling. On battery it moves each display with niri's temporary
+`niri msg output … mode` / `vrr`; back on AC, or once the choice is Same again, niri reads its
+config again (`load-config-file`), which puts back exactly what `displays.kdl` sets, on-demand
+variable refresh included. `displays.kdl` keeps the adapter's settings throughout: changing the
+adapter's rate on battery only saves it, and a save made on battery keeps the saved rate rather
+than the battery one niri shows. A config reload on battery brings the adapter's rate back for a
+moment, until the check it starts moves it again.
 
 ## Night Light
 

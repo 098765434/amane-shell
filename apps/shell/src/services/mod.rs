@@ -9,7 +9,8 @@
 //! - [`power::session`] — lock, suspend, restart, power off and log out (logind).
 //! - [`power::keep_awake`] — the screen held on and the lid ignored (inhibitors).
 //! - [`power::keyboard_backlight`] — the keyboard's light (sysfs and logind).
-//! - [`power::power_refresh`] — the displays' slowest refresh rate on battery.
+//! - [`power::power_refresh`] — each display's refresh rate on battery.
+//! - [`display::wallpaper_dim`] — the wallpaper dimmed under the Black appearance.
 //!
 //! Network and radios (`network/`):
 //!

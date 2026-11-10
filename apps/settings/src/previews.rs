@@ -56,9 +56,18 @@ fn picture(layers: Vec<Box<dyn Widget>>) -> Rectangle {
         .child(Stack::new(layers))
 }
 
-/// A desktop in `dark` or light: the bar, a window, the dock.
-fn desktop(dark: bool) -> Rectangle {
-    let (bar, window, title, line, dock) = if dark {
+/// A desktop in `dark` or light, or `black` (dark with black surfaces over a
+/// dimmed wallpaper): the bar, a window, the dock.
+fn desktop(dark: bool, black: bool) -> Rectangle {
+    let (bar, window, title, line, dock) = if black {
+        (
+            Color::BLACK,
+            Color::BLACK,
+            Color::from("#141414"),
+            Color::from("#4a4a4e"),
+            Color::BLACK,
+        )
+    } else if dark {
         (
             with_alpha(Color::from("#1c1c1e"), 0.85),
             Color::from("#2c2c2e"),
@@ -76,8 +85,20 @@ fn desktop(dark: bool) -> Rectangle {
         )
     };
     let mut layers = wallpaper();
+    if black {
+        layers.push(boxed(shape(
+            WIDTH,
+            HEIGHT,
+            0.0,
+            with_alpha(Color::BLACK, 0.75),
+        )));
+    }
     layers.push(at(0.0, 0.0, shape(WIDTH, 6.0, 0.0, bar)));
-    layers.push(at(18.0, 13.0, shape(60.0, 36.0, 4.0, window)));
+    let mut body = shape(60.0, 36.0, 4.0, window);
+    if black {
+        body = body.border(1.0, with_alpha(Color::WHITE, 0.12));
+    }
+    layers.push(at(18.0, 13.0, body));
     layers.push(at(18.0, 13.0, shape(60.0, 7.0, 0.0, title).radius(4.0)));
     for (index, red) in ["#ff5f57", "#febc2e", "#28c840"].into_iter().enumerate() {
         layers.push(at(
@@ -93,11 +114,12 @@ fn desktop(dark: bool) -> Rectangle {
     picture(layers)
 }
 
-/// Light, dark, or half of each for following the system.
-pub fn appearance(mode: Option<Mode>) -> Rectangle {
+/// Light, dark (`black` for black surfaces), or half of each for following
+/// the system.
+pub fn appearance(mode: Option<Mode>, black: bool) -> Rectangle {
     match mode {
-        Some(Mode::Light) => desktop(false),
-        Some(Mode::Dark) => desktop(true),
+        Some(Mode::Light) => desktop(false, false),
+        Some(Mode::Dark) => desktop(true, black),
         None => {
             let half = |dark: bool, side: amane::Align| -> Box<dyn Widget> {
                 boxed(
@@ -106,7 +128,7 @@ pub fn appearance(mode: Option<Mode>) -> Rectangle {
                         .height(HEIGHT)
                         .clip()
                         .align_child(side, amane::Start)
-                        .child(desktop(dark)),
+                        .child(desktop(dark, dark && black)),
                 )
             };
             Rectangle::new()

@@ -15,8 +15,8 @@ use emaki_kit::icons::{ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_DISPLAY, 
 use emaki_kit::layout::{boxed, frame};
 use emaki_kit::leading_icon::LeadingIcon;
 use emaki_kit::settings::{
-    appearance, change_appearance, change_displays, change_dock, change_status_bar, displays, dock,
-    status_bar,
+    BatteryRefresh, appearance, change_appearance, change_displays, change_dock, change_status_bar,
+    displays, dock, output_key, status_bar,
 };
 use emaki_kit::slider::Slider;
 use emaki_kit::style;
@@ -512,97 +512,145 @@ pub fn resolution(ctx: &Ctx) -> FormRow {
         .trailing(dropdown)
 }
 
+/// A refresh rate the page offers: a mode, and whether the rate varies up to it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Rate {
+    mode: Mode,
+    variable: bool,
+}
+
+/// The rates at `rates`' resolution, fixed and then variable when the
+/// display can vary its rate.
+fn offered(rates: &[Mode], vrr: bool) -> Vec<Rate> {
+    let fixed = rates.iter().map(|&mode| Rate {
+        mode,
+        variable: false,
+    });
+    let variable = rates.iter().filter(|_| vrr).map(|&mode| Rate {
+        mode,
+        variable: true,
+    });
+    fixed.chain(variable).collect()
+}
+
+/// "120 Hz", or for a varying rate its range when the EDID gives one:
+/// "Variable, 30–60 Hz".
+fn rate_label(rate: Rate, range: Option<(u16, u16)>) -> String {
+    if !rate.variable {
+        return hz(rate.mode.hz());
+    }
+    let top = rate.mode.hz().round() as u16;
+    match range {
+        Some((low, high)) if low < top => format!("Variable, {low}–{} Hz", top.min(high)),
+        _ => format!("Variable up to {}", hz(rate.mode.hz())),
+    }
+}
+
+/// The mode `displays.kdl` keeps for the power adapter: niri's, unless the
+/// shell runs the display at its battery choice now.
+fn adapter_mode(ctx: &Ctx) -> Option<Mode> {
+    let now = ctx.output.mode().copied()?;
+    if !super::moved_for_battery(&ctx.output) {
+        return Some(now);
+    }
+    let saved = ctx
+        .saved
+        .as_ref()
+        .and_then(|saved| saved_block(saved, &ctx.output))
+        .and_then(|block| block.mode);
+    let Some((width, height, rate)) = saved else {
+        return Some(now);
+    };
+    Some(
+        ctx.output
+            .modes
+            .iter()
+            .copied()
+            .find(|m| (m.width, m.height) == (width, height) && (m.hz() - rate).abs() < 0.5)
+            .unwrap_or(now),
+    )
+}
+
+/// The refresh rate on the power adapter (what `displays.kdl` keeps), and
+/// on a laptop what it changes to on battery (`displays.json`, which the
+/// shell follows).
 pub fn refresh_rate(ctx: &Ctx) -> Vec<FormRow> {
-    let Some(now) = ctx.output.mode().copied() else {
+    let Some(now) = adapter_mode(ctx) else {
         return Vec::new();
     };
     let rates = rates(&ctx.output, (now.width, now.height));
-    if rates.len() < 2 {
-        return vec![
-            FormRow::new("settings.displays.refresh-row", "Refresh rate").value(hz(now.hz())),
-        ];
+    let choices = offered(&rates, ctx.output.vrr_supported);
+    let range = ctx.caps.refresh_range();
+    let laptop = Battery::read().present();
+    let title = "Refresh rate";
+
+    let mut row = FormRow::new("settings.displays.refresh-row", title);
+    if laptop {
+        row = row.subtitle("On power adapter");
     }
-    let slowest = hz(rates[0].hz());
-    let at = rates
+    let variable_now = ctx.vrr() != Vrr::Off;
+    let at = choices
         .iter()
-        .position(|m| m.refresh_rate == now.refresh_rate);
-    let labels: Vec<String> = rates.iter().map(|m| hz(m.hz())).collect();
-    let output = ctx.output.clone();
-    let pick = move |index: usize| {
-        if let Some(to) = rates.get(index).copied()
-            && to != now
-        {
-            mode_change(&output, to);
-        }
-    };
-    let row = FormRow::new("settings.displays.refresh-row", "Refresh rate");
-    let row = if !ctx.editable() {
-        row.value(hz(now.hz()))
+        .position(|c| c.mode.refresh_rate == now.refresh_rate && c.variable == variable_now);
+    let row = if choices.len() < 2 || !ctx.editable() {
+        let shown = Rate {
+            mode: now,
+            variable: variable_now && ctx.output.vrr_supported,
+        };
+        row.value(rate_label(shown, range))
     } else {
+        let labels: Vec<String> = choices.iter().map(|&c| rate_label(c, range)).collect();
+        let output = ctx.output.clone();
+        let vrr = ctx.vrr();
         row.trailing(
             Dropdown::new("settings.displays.refresh", labels, at.unwrap_or(0))
-                .width(crate::MENU_W_NARROW)
-                .on_select(pick)
+                .width(crate::MENU_W)
+                .on_select(move |index| {
+                    if let Some(&to) = choices.get(index) {
+                        adapter_change(&output, now, vrr, to);
+                    }
+                })
                 .build(),
         )
     };
-    let _ = slowest;
-    vec![row]
+
+    let mut rows = vec![row];
+    if laptop {
+        rows.push(battery_refresh(ctx, &rates));
+    }
+    rows
 }
 
-/// What holds for every display: a slower rate on battery.
-pub fn all_displays(ctx: &Ctx) -> Option<Group> {
-    if !Battery::read().present() {
-        return None;
+/// Moves the adapter's rate to `to`: at once and asked about, as any mode
+/// change, unless the display runs at its battery choice now, when only
+/// `displays.kdl` changes and the shell puts it on once plugged in.
+fn adapter_change(output: &Output, now: Mode, vrr: Vrr, to: Rate) {
+    let vrr_to = match (to.variable, vrr) {
+        (false, _) => Vrr::Off,
+        (true, Vrr::Off) => Vrr::Always,
+        (true, kept) => kept,
+    };
+    let what = format!(
+        "{} at {}{}",
+        output.name,
+        hz(to.mode.hz()),
+        if to.variable { ", variable" } else { "" }
+    );
+    let keep = move |block: &mut OutputConfig| {
+        block.mode = Some((to.mode.width, to.mode.height, to.mode.hz()));
+        block.custom = false;
+        block.vrr = vrr_to;
+    };
+    if super::moved_for_battery(output) {
+        save(output, what, keep);
+        return;
     }
-    let slowest = ctx
-        .output
-        .mode()
-        .copied()
-        .map(|now| rates(&ctx.output, (now.width, now.height)))
-        .and_then(|rates| rates.first().map(|mode| hz(mode.hz())));
-    let here = slowest.map_or(String::new(), |rate| format!(" ({rate} here)"));
-    Some(
-        group().header("All displays").row(
-            switch_row(
-                "settings.displays.battery-refresh",
-                "Slower on battery",
-                displays().battery_refresh,
-                |on| change_displays(|now| now.battery_refresh = on),
-            )
-            .subtitle(format!(
-                "Every display runs at its slowest rate{here} until it's plugged in again"
-            )),
-        ),
-    )
-}
-
-const VRR_APP: &str = "settings.displays.vrr-app";
-
-pub fn variable_refresh(ctx: &Ctx) -> Group {
-    if !ctx.output.vrr_supported {
-        return group().row(
-            FormRow::new("settings.displays.vrr-row", "Variable refresh rate")
-                .value("Not supported"),
-        );
-    }
-    let now = ctx.vrr();
-    let output = ctx.output.clone();
-    let choices = [Vrr::Off, Vrr::OnDemand, Vrr::Always];
-    let control = Dropdown::new(
-        "settings.displays.vrr",
-        ["Off", "On demand", "Always"].map(String::from).to_vec(),
-        choices.iter().position(|c| *c == now).unwrap_or(0),
-    )
-    .width(crate::MENU_W_NARROW)
-    .disabled(!ctx.editable())
-    .on_select(move |index| {
-        let vrr = choices[index];
+    if vrr_to != vrr {
         let (name, change) = (
             output.name.clone(),
             Change::Vrr {
-                on: vrr != Vrr::Off,
-                on_demand: vrr == Vrr::OnDemand,
+                on: vrr_to != Vrr::Off,
+                on_demand: vrr_to == Vrr::OnDemand,
             },
         );
         thread::spawn(move || {
@@ -610,10 +658,103 @@ pub fn variable_refresh(ctx: &Ctx) -> Group {
                 Screens::fail(error);
             }
         });
+    }
+    if to.mode == now {
+        save(output, what, keep);
+    } else {
+        try_change(output, Change::Mode(to.mode), Change::Mode(now), what, keep);
+    }
+}
+
+/// What the rate does on battery: the same, or one of the rates offered.
+fn battery_refresh(ctx: &Ctx, rates: &[Mode]) -> FormRow {
+    let key = output_key(&ctx.output);
+    let choice = displays().battery(&key);
+    let rates_offered = offered(rates, ctx.output.vrr_supported);
+    let range = ctx.caps.refresh_range();
+
+    let mut labels = vec![String::from("Same as on adapter")];
+    labels.extend(rates_offered.iter().map(|&c| rate_label(c, range)));
+    let near = |mhz: u32, variable: bool| {
+        // the fastest offered that isn't above it, as the shell picks
+        rates_offered
+            .iter()
+            .enumerate()
+            .filter(|(_, c)| c.variable == variable && c.mode.refresh_rate <= mhz + 500)
+            .max_by_key(|(_, c)| c.mode.refresh_rate)
+            .or_else(|| {
+                rates_offered
+                    .iter()
+                    .enumerate()
+                    .find(|(_, c)| c.variable == variable)
+            })
+            .map(|(index, _)| index + 1)
+    };
+    let at = match choice {
+        BatteryRefresh::Same => Some(0),
+        BatteryRefresh::Slowest => near(0, false),
+        BatteryRefresh::Rate { mhz } => near(mhz, false),
+        BatteryRefresh::Variable { mhz } => near(mhz, true).or_else(|| near(mhz, false)),
+    };
+    let control = Dropdown::new("settings.displays.battery-refresh", labels, at.unwrap_or(0))
+        .width(crate::MENU_W)
+        .on_select(move |index| {
+            let choice = match index.checked_sub(1).and_then(|i| rates_offered.get(i)) {
+                None => BatteryRefresh::Same,
+                Some(rate) if rate.variable => BatteryRefresh::Variable {
+                    mhz: rate.mode.refresh_rate,
+                },
+                Some(rate) => BatteryRefresh::Rate {
+                    mhz: rate.mode.refresh_rate,
+                },
+            };
+            let key = key.clone();
+            change_displays(move |now| {
+                now.on_battery.insert(key, choice);
+            });
+        })
+        .build();
+    FormRow::new("settings.displays.battery-refresh-row", "On battery")
+        .child()
+        .trailing(control)
+}
+
+const VRR_APP: &str = "settings.displays.vrr-app";
+
+pub fn variable_refresh(ctx: &Ctx) -> Option<Group> {
+    // a fixed rate on the adapter: nothing varies to set
+    let now = ctx.vrr();
+    if !ctx.output.vrr_supported || now == Vrr::Off {
+        return None;
+    }
+    let output = ctx.output.clone();
+    let choices = [Vrr::Always, Vrr::OnDemand];
+    let control = Dropdown::new(
+        "settings.displays.vrr",
+        ["Always", "For chosen apps"].map(String::from).to_vec(),
+        choices.iter().position(|c| *c == now).unwrap_or(0),
+    )
+    .width(crate::MENU_W)
+    .disabled(!ctx.editable())
+    .on_select(move |index| {
+        let vrr = choices[index];
+        let (name, change) = (
+            output.name.clone(),
+            Change::Vrr {
+                on: true,
+                on_demand: vrr == Vrr::OnDemand,
+            },
+        );
+        if !super::moved_for_battery(&output) {
+            thread::spawn(move || {
+                if let Err(error) = outputs::apply(&name, &change) {
+                    Screens::fail(error);
+                }
+            });
+        }
         let label = match vrr {
-            Vrr::Off => "off",
-            Vrr::OnDemand => "on demand",
-            Vrr::Always => "always",
+            Vrr::OnDemand => "for chosen apps",
+            _ => "always",
         };
         save(
             &output,
@@ -628,22 +769,23 @@ pub fn variable_refresh(ctx: &Ctx) -> Group {
         None => String::new(),
     };
     let flicker = if ctx.caps.oled() {
-        "OLED panels can flicker at low frame rates while it's on, so On demand suits them best."
+        "OLED panels can flicker at low frame rates while it's on, so For chosen apps suits them best."
     } else {
         "Some panels flicker at low frame rates while it's on."
     };
     let on_demand = if now == Vrr::OnDemand {
-        "On demand turns it on only while one of the apps below shows. "
+        "On the power adapter it varies only while one of the apps below shows. "
     } else {
-        "On demand turns it on only while one of the apps you choose shows. "
+        "On the power adapter it varies all the time; For chosen apps varies it only while one \
+         of the apps you choose shows. "
     };
     let mut group = group()
-        .row(FormRow::new("settings.displays.vrr-row", "Variable refresh rate").trailing(control))
+        .row(FormRow::new("settings.displays.vrr-row", "Variable refresh").trailing(control))
         .footer(format!("{range}{on_demand}{flicker}"));
     if now == Vrr::OnDemand {
         group = vrr_apps(ctx, group);
     }
-    group
+    Some(group)
 }
 
 /// The apps that turn on-demand variable refresh on, with a field to add
@@ -970,18 +1112,31 @@ pub fn oled_care(ctx: &Ctx) -> Option<Group> {
     if !ctx.caps.oled() {
         return None;
     }
-    let dark = appearance().mode == Some(Scheme::Dark);
+    let black = {
+        let now = appearance();
+        now.black && now.mode != Some(Scheme::Light)
+    };
     let hidden = dock().auto_hide;
     let bar_hidden = status_bar().auto_hide != emaki_kit::settings::AutoHide::Never;
     Some(
         group()
             .header("OLED care")
-            .row(switch_row(
-                "settings.displays.oled.dark",
-                "Dark appearance",
-                dark,
-                |on| change_appearance(|now| now.mode = on.then_some(Scheme::Dark)),
-            ))
+            .row(
+                switch_row(
+                    "settings.displays.oled.dark",
+                    "Black appearance",
+                    black,
+                    |on| {
+                        change_appearance(|now| {
+                            now.black = on;
+                            if on && now.mode == Some(Scheme::Light) {
+                                now.mode = Some(Scheme::Dark);
+                            }
+                        })
+                    },
+                )
+                .subtitle("Black pixels are off, so they use no power and don't wear"),
+            )
             .row(switch_row(
                 "settings.displays.oled.dock",
                 "Hide the dock automatically",
@@ -1010,8 +1165,9 @@ pub fn oled_care(ctx: &Ctx) -> Option<Group> {
                     .on_press(|| crate::go("power")),
             )
             .footer(
-                "An OLED's pixels wear with what stays lit for hours. Dark colors, a dock that \
-                 hides and a screen that sleeps when idle all spare them.",
+                "An OLED's pixels wear with what stays lit for hours, and every lit pixel costs \
+                 power. Black surfaces, a dock that hides and a screen that sleeps when idle all \
+                 spare them.",
             ),
     )
 }
@@ -1303,6 +1459,32 @@ mod tests {
             Some((1920, 1080, 59.94))
         );
         assert_eq!(parse_mode("1920x1080"), None);
+    }
+
+    #[test]
+    fn variable_rates_follow_the_fixed_ones_with_their_range() {
+        let mode = |hz: u32| Mode {
+            width: 2880,
+            height: 1800,
+            refresh_rate: hz * 1000,
+            is_preferred: false,
+        };
+        let rates = [mode(60), mode(120)];
+        let offered = offered(&rates, true);
+        let range = Some((30, 120));
+        let labels: Vec<String> = offered.iter().map(|&r| rate_label(r, range)).collect();
+        assert_eq!(
+            labels,
+            [
+                "60 Hz",
+                "120 Hz",
+                "Variable, 30–60 Hz",
+                "Variable, 30–120 Hz"
+            ]
+        );
+        assert_eq!(rate_label(offered[3], None), "Variable up to 120 Hz");
+        // without variable refresh, only the fixed ones
+        assert_eq!(super::offered(&rates, false).len(), 2);
     }
 
     #[test]

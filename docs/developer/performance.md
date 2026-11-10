@@ -240,6 +240,24 @@ What a quiet desktop looked like on 2026-10-26 (eDP-1, 30 s idle, system widgets
 - [ ] Does it honor reduced motion?
 - [ ] Idle for 30 s with `AMANE_FRAMES=1`: does your window draw at all?
 
+## Power on battery
+
+`scripts/power-report [seconds] [label]` prints one Markdown table row: the battery's mean draw
+over the window (unplugged; it refuses on the adapter), each output's rate and whether it varies,
+niri's wakeups per second, the brightness and, run with `sudo`, amdgpu's PSR and Panel Replay
+state. Keep the brightness the same between runs: on an OLED it moves the draw more than any
+colour does. What to compare, and what niri does about it, is in the niri fork's
+`docs/fork/display/power.md`:
+
+- Dark against Black (Appearance), and under Black the wallpaper Shown, Dimmed and Hidden;
+- the battery rate (Displays → On battery): 120 Hz, 60 Hz and Variable, 30–60 Hz;
+- niri's `debug { enable-overlay-planes }` off and on, with a fullscreen video.
+
+Results go here, newest first.
+
+| Run | Draw | Outputs | niri | Brightness |
+|---|---|---|---|---|
+
 ## Known remaining costs
 
 What the desktop holds in memory, rather than what it spends per frame, is in

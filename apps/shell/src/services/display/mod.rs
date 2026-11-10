@@ -4,3 +4,4 @@
 pub mod dark_style;
 pub mod hdr_white;
 pub mod night_light;
+pub mod wallpaper_dim;

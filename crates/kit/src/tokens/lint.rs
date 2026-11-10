@@ -247,7 +247,9 @@ pub fn set_contents(lib: &Library) -> Vec<String> {
                     && !name.starts_with("sys.color.")
                     && !name.starts_with("sys.density.")
             }
-            "sys/color/light" | "sys/color/dark" => name.starts_with("sys.color."),
+            "sys/color/light" | "sys/color/dark" | "sys/color/black" => {
+                name.starts_with("sys.color.")
+            }
             "sys/density/comfortable" | "sys/density/compact" => name == "sys.density.factor",
             "components" => tier(name) == Some("component"),
             s if s.starts_with("accent/") => name.starts_with("ref.color.accent."),
@@ -287,6 +289,12 @@ pub fn set_contents(lib: &Library) -> Vec<String> {
             "manual §8.1: {only} is in only one of sys/color/light and sys/color/dark"
         ));
     }
+    // black only changes dark's colours, never adds one
+    for extra in names("sys/color/black").difference(&dark) {
+        out.push(format!(
+            "manual §8.1: {extra} is in sys/color/black but not sys/color/dark"
+        ));
+    }
 
     // each mode needs the primitives, the base, its colours and the
     // components; each density its own set
@@ -305,7 +313,12 @@ pub fn set_contents(lib: &Library) -> Vec<String> {
             vec![format!("sys/density/{}", d.theme())],
         )
     });
-    for (group, theme, needs) in mode_sets.into_iter().chain(density_sets) {
+    let surface_sets = [("surface", "black", vec!["sys/color/black".into()])];
+    for (group, theme, needs) in mode_sets
+        .into_iter()
+        .chain(density_sets)
+        .chain(surface_sets)
+    {
         let Some(t) = lib.theme(group, theme) else {
             continue;
         };

@@ -24,6 +24,14 @@ pub struct Appearance {
     /// Light or dark, or none to follow the system.
     pub mode: Option<Mode>,
 
+    /// Whether dark shows black surfaces (Settings' Black, for OLED panels):
+    /// with `mode` dark it's always Black; with none, Black whenever the
+    /// system is dark.
+    pub black: bool,
+
+    /// What the wallpaper does under Black (niri's `SetWallpaperDim`).
+    pub black_wallpaper: BlackWallpaper,
+
     /// The accent as `#rrggbb`, or none for the system's (else the tokens').
     pub accent: Option<String>,
 
@@ -52,6 +60,8 @@ impl Default for Appearance {
     fn default() -> Self {
         Self {
             mode: None,
+            black: false,
+            black_wallpaper: BlackWallpaper::Dimmed,
             accent: None,
             density: Density::Comfortable,
             text_scale: 1.0,
@@ -59,6 +69,47 @@ impl Default for Appearance {
             reduce_motion: None,
             adaptive_glass: false,
             vibrancy: false,
+        }
+    }
+}
+
+/// The wallpaper under Black: an OLED leaves black pixels off, so the less of
+/// it that's lit, the less power it takes.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum BlackWallpaper {
+    /// As it is.
+    Shown,
+    /// Darkened to a quarter.
+    #[default]
+    Dimmed,
+    /// Not drawn: black.
+    Hidden,
+}
+
+impl BlackWallpaper {
+    /// Every choice, in Settings' order.
+    pub const ALL: [BlackWallpaper; 3] = [
+        BlackWallpaper::Dimmed,
+        BlackWallpaper::Hidden,
+        BlackWallpaper::Shown,
+    ];
+
+    /// How much niri dims the wallpaper, 0–100.
+    pub fn percent(self) -> u8 {
+        match self {
+            BlackWallpaper::Shown => 0,
+            BlackWallpaper::Dimmed => 75,
+            BlackWallpaper::Hidden => 100,
+        }
+    }
+
+    /// The name Settings shows.
+    pub fn label(self) -> &'static str {
+        match self {
+            BlackWallpaper::Shown => "Shown",
+            BlackWallpaper::Dimmed => "Dimmed",
+            BlackWallpaper::Hidden => "Hidden",
         }
     }
 }

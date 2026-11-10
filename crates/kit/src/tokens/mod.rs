@@ -41,7 +41,7 @@ use crate::sync::Locked as _;
 
 use amane::{Case, Decoration, Text};
 
-use crate::theme::{self, Density, Mode};
+use crate::theme::{self, Density, Mode, Surface};
 pub use envelope::{Library, TokenType};
 pub use error::TokenError;
 pub use values::{Shadow, TextCase, TextDecoration, Value};
@@ -95,6 +95,8 @@ pub struct Key {
     pub mode: Mode,
     /// The density theme.
     pub density: Density,
+    /// The surface theme; black applies only over dark.
+    pub surface: Surface,
     /// The system accent as 8-bit RGB, replacing `ref.color.accent.*`.
     pub accent: Option<[u8; 3]>,
     /// Text scale in hundredths.
@@ -115,12 +117,17 @@ pub fn with_key<T>(key: Key, f: impl FnOnce() -> T) -> T {
 }
 
 impl Key {
-    /// Every `mode` × `density` combination, with the default accent and
-    /// text scale.
+    /// Every `mode` × `density` combination, and dark's with black
+    /// surfaces, with the default accent and text scale.
     pub fn all() -> impl Iterator<Item = Key> {
-        Mode::ALL
+        let standard = Mode::ALL
             .into_iter()
-            .flat_map(|m| Density::ALL.into_iter().map(move |d| Key::new(m, d)))
+            .flat_map(|m| Density::ALL.into_iter().map(move |d| Key::new(m, d)));
+        let black = Density::ALL.into_iter().map(|d| Key {
+            surface: Surface::Black,
+            ..Key::new(Mode::Dark, d)
+        });
+        standard.chain(black)
     }
 
     /// The runtime inputs as they are now.
@@ -132,15 +139,17 @@ impl Key {
         Self {
             accent: theme::accent().map(|c| [c.red(), c.green(), c.blue()]),
             text_scale: (theme::text_scale() * 100.0).round() as u16,
+            surface: theme::surface(),
             ..Self::new(theme::mode(), theme::density())
         }
     }
 
-    /// `mode` and `density` with no accent and the text at 100 %.
+    /// `mode` and `density` with standard surfaces, no accent and the text at 100 %.
     pub fn new(mode: Mode, density: Density) -> Self {
         Self {
             mode,
             density,
+            surface: Surface::Standard,
             accent: None,
             text_scale: 100,
         }
@@ -221,7 +230,7 @@ pub fn resolve_key(library: &Library, key: Key) -> Result<Resolved, Vec<TokenErr
         .unwrap_or_default();
 
     let mut resolved = library
-        .select(key.mode, key.density)
+        .select(key.mode, key.density, key.surface)
         .map_err(|e| vec![e])?
         .resolve(&overrides)?;
     resolved.text_scale = key.text_scale as f32 / 100.0;

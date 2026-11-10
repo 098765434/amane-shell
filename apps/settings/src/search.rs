@@ -63,9 +63,24 @@ const INDEX: &[Entry] = &[
     // Appearance
     row(
         "appearance",
-        "Light, dark or auto",
+        "Wallpaper under Black",
+        "settings.appearance.black-wallpaper-row",
+        &["oled", "dim wallpaper", "hide wallpaper", "black"],
+    ),
+    row(
+        "appearance",
+        "Light, dark, black or auto",
         "settings.appearance.mode",
-        &["dark mode", "light mode", "night", "theme"],
+        &[
+            "dark mode",
+            "light mode",
+            "night",
+            "theme",
+            "black",
+            "true black",
+            "oled",
+            "amoled",
+        ],
     ),
     row(
         "appearance",
@@ -139,7 +154,7 @@ const INDEX: &[Entry] = &[
         "displays",
         "Refresh rate",
         "settings.displays.refresh-row",
-        &["hz", "fps"],
+        &["hz", "fps", "power adapter", "plugged in"],
     ),
     row(
         "displays",
@@ -156,8 +171,8 @@ const INDEX: &[Entry] = &[
     row(
         "displays",
         "Variable refresh rate",
-        "settings.displays.vrr-row",
-        &["vrr", "freesync", "adaptive sync", "gsync"],
+        "settings.displays.refresh-row",
+        &["vrr", "freesync", "adaptive sync", "gsync", "variable"],
     ),
     row(
         "displays",
@@ -179,9 +194,14 @@ const INDEX: &[Entry] = &[
     ),
     row(
         "displays",
-        "Slower on battery",
-        "settings.displays.battery-refresh",
-        &["power saving"],
+        "Refresh rate on battery",
+        "settings.displays.battery-refresh-row",
+        &[
+            "power saving",
+            "battery",
+            "hz on battery",
+            "slower on battery",
+        ],
     ),
     row(
         "displays",
@@ -193,7 +213,7 @@ const INDEX: &[Entry] = &[
         "displays",
         "OLED care",
         "settings.displays.oled.dark",
-        &["burn in"],
+        &["burn in", "black", "true black", "amoled"],
     ),
     // niri's settings
     row(

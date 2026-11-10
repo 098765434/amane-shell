@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# What the laptop draws from its battery, averaged, as a Markdown line, to
+# compare one setting with another (Dark and Black, 120 Hz and 60 Hz, the
+# wallpaper shown and hidden, overlay planes on and off).
+#
+# Usage: scripts/power-report [seconds] [label]     (default 300, "")
+#        sudo scripts/power-report [seconds] [label] (adds the panel's
+#                                                     self-refresh state)
+#
+# Unplug first: on the adapter the battery reports what it charges with,
+# not what the laptop uses. Keep the brightness the same between runs (it
+# moves the result more than any colour does) and leave the desktop alone,
+# or do the same thing each run (a video, a page scrolled by a script).
+#
+# It samples /sys/class/power_supply/BAT*/power_now (or current_now ×
+# voltage_now) every 2 s and prints the mean and the spread, the refresh
+# rate and variable refresh niri reports for each output, and how many
+# times a second niri's own process was woken (its context switches). As
+# root it also reads amdgpu's PSR and Panel Replay state from debugfs: a
+# panel in self-refresh doesn't need the GPU to send it frames.
+
+set -euo pipefail
+
+seconds=${1:-300}
+label=${2:-}
+if ! [[ $seconds =~ ^[1-9][0-9]*$ ]]; then
+    echo "seconds must be a whole number above 0" >&2
+    exit 2
+fi
+
+battery=$(find /sys/class/power_supply -maxdepth 1 -name 'BAT*' | head -n 1)
+if [[ -z $battery ]]; then
+    echo "no battery under /sys/class/power_supply" >&2
+    exit 1
+fi
+if [[ $(cat "$battery/status") != Discharging ]]; then
+    echo "the battery isn't discharging: unplug the adapter first" >&2
+    exit 1
+fi
+
+# microwatts now
+watts() {
+    if [[ -r $battery/power_now ]]; then
+        cat "$battery/power_now"
+    else
+        echo $(($(cat "$battery/current_now") * $(cat "$battery/voltage_now") / 1000000))
+    fi
+}
+
+niri_pid=$(pgrep -x niri | head -n 1 || true)
+switches() {
+    [[ -n $niri_pid ]] || { echo 0; return; }
+    awk '/^(non)?voluntary_ctxt_switches/ { s += $2 } END { print s + 0 }' \
+        /proc/"$niri_pid"/task/*/status 2>/dev/null || echo 0
+}
+
+samples=()
+start_switches=$(switches)
+end=$((SECONDS + seconds))
+while ((SECONDS < end)); do
+    samples+=("$(watts)")
+    sleep 2
+done
+end_switches=$(switches)
+
+stats=$(printf '%s\n' "${samples[@]}" | awk '
+    { n++; s += $1; q += $1 * $1 }
+    END {
+        mean = s / n; sd = sqrt(q / n - mean * mean)
+        printf "%.2f W ± %.2f (%d samples)", mean / 1e6, sd / 1e6, n
+    }')
+wakeups=$(((end_switches - start_switches) / seconds))
+
+outputs=$(niri msg --json outputs 2>/dev/null | python3 -I -c '
+import json, sys
+outputs = json.load(sys.stdin)
+parts = []
+for name, o in sorted(outputs.items()):
+    i = o.get("current_mode")
+    if i is None:
+        continue
+    hz = o["modes"][i]["refresh_rate"] / 1000
+    vrr = " VRR" if o.get("vrr_enabled") else ""
+    parts.append(f"{name} {hz:.0f} Hz{vrr}")
+print(", ".join(parts))
+' || echo "niri didn't answer")
+
+panel=""
+if [[ $EUID -eq 0 ]]; then
+    for state in /sys/kernel/debug/dri/*/eDP-*/psr_state /sys/kernel/debug/dri/*/eDP-*/replay_state; do
+        [[ -r $state ]] && panel+=" $(basename "$state"): $(tr -s '\n' ' ' < "$state")"
+    done
+fi
+
+brightness=$(cat /sys/class/backlight/*/brightness 2>/dev/null | head -n 1 || echo '?')
+max=$(cat /sys/class/backlight/*/max_brightness 2>/dev/null | head -n 1 || echo '?')
+
+echo "| ${label:-run} | $stats | $outputs | niri $wakeups wakeups/s | brightness $brightness/$max |${panel:+$panel |}"

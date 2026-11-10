@@ -17,7 +17,8 @@ widgets.
 |---|---|---|
 | `session` | what logind allows (`CanSuspend`, `CanReboot`, `CanPowerOff`), asked once | logind `Suspend`/`Reboot`/`PowerOff`, `Session.Lock`; logging out quits niri (`amane::niri::quit`) |
 | `night_light` | its own state file; a thread waits on the running `wlsunset`, so one that exits turns it off | runs `wlsunset` at one temperature all day or on a schedule; stopping it gives the screens their colors back |
-| `power_refresh` | `displays.json`, amane's `Battery` and `Outputs`, checked when one changes | on battery, each display's slowest refresh rate at its resolution, through niri's temporary output mode (`amane::niri::set_output_mode`); the rate it had back on AC ([displays.md](../../user/features/displays.md#refresh-rate-on-battery)) |
+| `power_refresh` | `displays.json`, amane's `Battery` and `Outputs`, checked when one changes | on battery, each display's choice (a rate, its slowest, or variable refresh up to a rate) through niri's temporary output mode and VRR; back on AC, niri reads its config again (`load-config-file`) for `displays.kdl`'s settings ([displays.md](../../user/features/displays.md#refresh-rate-on-battery)) |
+| `wallpaper_dim` | `appearance.json` and the portal's light/dark, checked when one changes | under Black, niri dims or hides the wallpaper over a black backdrop (fork action `SetWallpaperDim`, feature `wallpaper-dim`); otherwise undimmed |
 | `dark_style` | amane's `Appearance` (the Settings portal) | `dconf write /org/gnome/desktop/interface/color-scheme` |
 | `rfkill` | amane's `Rfkill` (`/dev/rfkill` events) | `Rfkill::set_blocked(None, …)`, as `rfkill block all` |
 | `keyboard_backlight` | the first `*::kbd_backlight` LED, polled once a second (LEDs announce no change) | logind `SetBrightness("leds", …)` |

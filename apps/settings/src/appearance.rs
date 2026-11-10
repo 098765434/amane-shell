@@ -8,7 +8,7 @@ use emaki_kit::buttons::Switch;
 use emaki_kit::color_picker::ColorWells;
 use emaki_kit::dropdown::Dropdown;
 use emaki_kit::form::FormRow;
-use emaki_kit::settings::{ACCENTS, appearance, change_appearance};
+use emaki_kit::settings::{ACCENTS, BlackWallpaper, appearance, change_appearance};
 use emaki_kit::style;
 use emaki_kit::theme::{Density, Glass, Mode};
 use emaki_kit::thumbnail_picker::ThumbnailPicker;
@@ -36,11 +36,12 @@ const TEXT_SIZES: [(&str, f32); 5] = [
 ];
 
 pub fn page() -> Column {
-    let (mode, accent, density, text_scale, glass, reduce_motion, adaptive_glass, vibrancy) = {
+    let (mode, black, accent, density, text_scale, glass, reduce_motion, adaptive_glass, vibrancy) = {
         let now = appearance();
 
         (
             now.mode,
+            now.black,
             now.accent.clone(),
             now.density,
             now.text_scale,
@@ -53,22 +54,35 @@ pub fn page() -> Column {
 
     let width = crate::page_width() - 2.0 * style::row_pad_h();
 
+    // Black is dark with black surfaces; Auto keeps whether dark hours are black
     let modes = [
-        ("Light", Some(Mode::Light)),
-        ("Dark", Some(Mode::Dark)),
-        ("Auto", None),
+        ("Light", Some(Mode::Light), Some(false)),
+        ("Dark", Some(Mode::Dark), Some(false)),
+        ("Black", Some(Mode::Dark), Some(true)),
+        ("Auto", None, None),
     ];
+    let chosen = modes.iter().position(|(_, choice, is_black)| {
+        *choice == mode && (mode != Some(Mode::Dark) || *is_black == Some(black))
+    });
     let mut mode_picker = ThumbnailPicker::new("settings.mode", previews::WIDTH, previews::HEIGHT)
         .width(width)
-        .chosen(modes.iter().position(|(_, choice)| *choice == mode))
+        .chosen(chosen)
         .on_select(move |index| {
-            let choice = modes[index].1;
-            change_appearance(|now| now.mode = choice);
+            let (_, choice, is_black) = modes[index];
+            change_appearance(|now| {
+                now.mode = choice;
+                if let Some(is_black) = is_black {
+                    now.black = is_black;
+                }
+            });
         });
-    for (label, choice) in modes {
-        mode_picker = mode_picker.option(previews::appearance(choice), label);
+    for (label, choice, is_black) in modes {
+        let picture = previews::appearance(choice, is_black.unwrap_or(black));
+        mode_picker = mode_picker.option(picture, label);
     }
     let mode_height = mode_picker.height();
+    // the black surfaces are on: dark now, or picked as dark's look
+    let black_on = black && mode != Some(Mode::Light);
 
     let density_control = Dropdown::new(
         "settings.density",
@@ -95,6 +109,7 @@ pub fn page() -> Column {
     let mut glass_picker =
         ThumbnailPicker::new("settings.glass", previews::WIDTH, previews::HEIGHT)
             .width(width)
+            .disabled(black_on)
             .chosen(glasses.iter().position(|(_, choice)| *choice == glass))
             .on_select(move |index| {
                 let choice = glasses[index].1;
@@ -108,13 +123,13 @@ pub fn page() -> Column {
     // small glass turning light or dark with what's behind it; solid glass
     // has no backdrop to follow
     let adaptive = Switch::new("settings.adaptive-glass", adaptive_glass)
-        .disabled(glass == Glass::Solid)
+        .disabled(glass == Glass::Solid || black_on)
         .on_toggle(|on| change_appearance(|now| now.adaptive_glass = on))
         .build();
 
     // labels blending with the frosted backdrop; solid glass has none
     let vibrant = Switch::new("settings.vibrancy", vibrancy)
-        .disabled(glass == Glass::Solid)
+        .disabled(glass == Glass::Solid || black_on)
         .on_toggle(|on| change_appearance(|now| now.vibrancy = on))
         .build();
 
@@ -178,11 +193,18 @@ pub fn page() -> Column {
     .width(crate::MENU_W)
     .on_select(|index| change_appearance(|now| now.text_scale = TEXT_SIZES[index].1));
 
-    let solid = glass == Glass::Solid;
-    let glass_note = if solid {
+    let solid = glass == Glass::Solid || black_on;
+    let glass_note = if black_on {
+        "Black uses solid surfaces: glass would light pixels black leaves off."
+    } else if solid {
         "Solid glass has no backdrop to follow or blend with."
     } else {
         ""
+    };
+    let accent_subtitle = if black_on {
+        format!("{accent_name}. On an OLED, blue costs the most power and green the least")
+    } else {
+        accent_name
     };
 
     // what stands in the way of niri's settings on this page, said first
@@ -191,11 +213,39 @@ pub fn page() -> Column {
         group()
             .row(
                 FormRow::new("settings.appearance.mode", "Appearance")
+                    .subtitle(if black_on {
+                        "Black turns an OLED's pixels off wherever it's black"
+                    } else {
+                        ""
+                    })
                     .detail(mode_picker.build(), mode_height),
             )
+            .rows(black_on.then(|| {
+                let wallpaper = Dropdown::choice(
+                    "settings.appearance.black-wallpaper",
+                    BlackWallpaper::ALL.map(|choice| (choice.label(), choice)),
+                    appearance().black_wallpaper,
+                    |choice| change_appearance(|now| now.black_wallpaper = choice),
+                )
+                .width(crate::MENU_W)
+                .build();
+                FormRow::new("settings.appearance.black-wallpaper-row", "Wallpaper")
+                    .subtitle("Hidden leaves the whole screen behind windows off")
+                    .trailing(wallpaper)
+                    .child()
+            }))
+            .rows(mode.is_none().then(|| {
+                crate::child_switch_row(
+                    "settings.appearance.black-auto",
+                    "Black when dark",
+                    black,
+                    true,
+                    |on| change_appearance(|now| now.black = on),
+                )
+            }))
             .row(
                 FormRow::new("settings.appearance.accent", "Accent color")
-                    .subtitle(accent_name)
+                    .subtitle(accent_subtitle)
                     .trailing(wells.build()),
             )
             .row(FormRow::new("settings.appearance.text", "Text size").trailing(sizes.build()))

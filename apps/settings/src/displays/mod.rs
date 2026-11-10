@@ -26,7 +26,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 
-use amane::{Column, Service};
+use amane::{Battery, Column, Service};
 use emaki_kit::form::{FormRow, Group};
 use emaki_kit::layout::boxed;
 
@@ -226,7 +226,9 @@ fn saved_block<'a>(saved: &'a Saved, output: &Output) -> Option<&'a OutputConfig
 fn current_block(saved: &Saved, output: &Output) -> OutputConfig {
     let mut block = saved_block(saved, output).cloned().unwrap_or_default();
     block.name = block_name(output);
-    if let Some(mode) = output.mode().copied() {
+    // on battery the shell may run it at another rate: the saved one is the adapter's
+    let moved = moved_for_battery(output) && block.mode.is_some();
+    if let Some(mode) = output.mode().copied().filter(|_| !moved) {
         block.mode = Some((mode.width, mode.height, mode.hz()));
         block.custom = output.is_custom_mode;
     }
@@ -243,6 +245,18 @@ fn current_block(saved: &Saved, output: &Output) -> OutputConfig {
         }
     }
     block
+}
+
+/// Whether the shell runs `output` at its battery choice now
+/// (`services/power/power_refresh.rs`), so the mode niri shows isn't the
+/// one `displays.kdl` keeps for the power adapter.
+pub fn moved_for_battery(output: &Output) -> bool {
+    let battery = Battery::read();
+    let on_battery = battery.present() && !battery.on_ac();
+    drop(battery);
+    on_battery
+        && emaki_kit::settings::displays().battery(&emaki_kit::settings::output_key(output))
+            != emaki_kit::settings::BatteryRefresh::Same
 }
 
 /// Saves `edit` made to `output`'s block, off the UI thread.
@@ -355,10 +369,8 @@ pub fn page() -> Column {
         .row(sections::rotation(&ctx));
     add(&mut rows, Some(picture));
     add(&mut rows, sections::multiple(&ctx));
-    add(&mut rows, Some(sections::variable_refresh(&ctx)));
+    add(&mut rows, sections::variable_refresh(&ctx));
     add(&mut rows, Some(sections::hdr(&ctx)));
-    // what holds for every display
-    add(&mut rows, sections::all_displays(&ctx));
     add(&mut rows, Some(sections::night_light()));
     add(&mut rows, sections::oled_care(&ctx));
     // the rarely needed, last

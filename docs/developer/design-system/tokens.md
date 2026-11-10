@@ -53,6 +53,7 @@ What the running shell may change on top of Penpot, and nothing else:
 | Runtime input | Source | Acts on |
 |---------------|--------|---------|
 | Mode (light/dark) | `EMAKI_THEME`, else `appearance.json`'s `mode`, else the system preference, else dark | selects theme `mode/light` or `mode/dark` |
+| Surface (black) | `EMAKI_THEME=black`, else `appearance.json`'s `black`, only while dark | adds theme `surface/black` |
 | Density | `EMAKI_DENSITY`, else `appearance.json`'s `density` (`comfortable` by default) | selects theme `density/comfortable` or `density/compact` |
 | Accent | `appearance.json`'s `accent`, else the system accent, if published | replaces `ref.color.accent.*` before resolving |
 | Text scale | `EMAKI_TEXT_SCALE`, else `appearance.json`'s `text_scale` (1), kept within 0.5–3 | multiplies font sizes in `sys.type.*` after resolving |
@@ -304,6 +305,12 @@ Density: component dimensions that should follow density reference
 - Sets `sys/color/light` and `sys/color/dark` define **the same names** with different
   values, and contain **only `sys.color.*`**.
 - Theme group `mode`, themes `light` and `dark`. Required.
+- Set `sys/color/black` holds black surfaces for OLED panels: **only `sys.color.*` names that
+  `sys/color/dark` has**, overriding them (`#000` windows, groups and materials, dimmer white,
+  no glass glow). Theme group `surface`, themes `standard` (enables nothing) and `black`
+  (enables `sys/color/black`). The shell applies `black` only over `mode/dark`
+  (`theme::surface()`: `EMAKI_THEME=black`, else `appearance.json`'s `black`), and under it
+  the glass is always Solid.
 ### 8.2 Density
  
 - Sets `sys/density/comfortable` and `sys/density/compact` each define **only
@@ -341,13 +348,14 @@ Density: component dimensions that should follow density reference
 | `sys/base` | `sys.*` except `sys.color.*` and `sys.density.*` |
 | `sys/color/light` | `sys.color.*` |
 | `sys/color/dark` | `sys.color.*` (same names) |
+| `sys/color/black` | `sys.color.*`, only names dark has |
 | `sys/density/comfortable` | `sys.density.factor` |
 | `sys/density/compact` | `sys.density.factor` |
 | `accent/<name>` (optional) | `ref.color.accent.*` |
 | `components` | `bar.*`, `menu.*`, `notification.*`, `quick.*`, `dialog.*`, `dock.*`, `material.*` … |
  
-Later sets win on name clashes; the only intended clashes are the accent preview sets
-overriding `ref.color.accent.*`.
+Later sets win on name clashes; the only intended clashes are `sys/color/black` overriding
+dark's surfaces and the accent preview sets overriding `ref.color.accent.*`.
  
 ### 9.2 Themes
  
@@ -357,6 +365,8 @@ overriding `ref.color.accent.*`.
 | `mode` | `dark` | `ref`, `sys/base`, `sys/color/dark`, `components` |
 | `density` | `comfortable` | `sys/density/comfortable` |
 | `density` | `compact` | `sys/density/compact` |
+| `surface` | `standard` | nothing |
+| `surface` | `black` | `sys/color/black` (applied over `mode/dark` only) |
 | `accent` (optional) | `blue`, `green`, … | `accent/<name>` |
  
 Penpot ignores tokens in disabled sets when resolving, so **every `mode` theme must enable

@@ -71,6 +71,32 @@ impl Mode {
     }
 }
 
+/// The surfaces under dark mode: as the tokens draw them, or true black
+/// for OLED panels, whose black pixels are off. Which of Penpot's `surface`
+/// themes is active; black only ever applies over dark.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Default, Serialize, Deserialize)]
+#[serde(crate = "amane::serde", rename_all = "lowercase")]
+pub enum Surface {
+    /// The dark theme's own greys.
+    #[default]
+    Standard,
+    /// `#000` windows, groups and materials, dimmer white, no glass.
+    Black,
+}
+
+impl Surface {
+    /// Both surfaces, the standard first.
+    pub const ALL: [Surface; 2] = [Surface::Standard, Surface::Black];
+
+    /// The theme name in Penpot's `surface` group.
+    pub fn theme(self) -> &'static str {
+        match self {
+            Surface::Standard => "standard",
+            Surface::Black => "black",
+        }
+    }
+}
+
 impl Density {
     /// Both densities, the default first.
     pub const ALL: [Density; 2] = [Density::Comfortable, Density::Compact];
@@ -84,18 +110,22 @@ impl Density {
     }
 }
 
-/// `EMAKI_THEME=light|dark`, else the settings file's, else the system
-/// preference, else dark.
-pub fn mode() -> Mode {
-    static OVERRIDE: OnceLock<Option<Mode>> = OnceLock::new();
-    let forced = OVERRIDE.get_or_init(|| {
-        let var = std::env::var("EMAKI_THEME").ok();
-        Mode::ALL
-            .into_iter()
-            .find(|m| var.as_deref() == Some(m.theme()))
-    });
+/// `EMAKI_THEME`, read once: `light`, `dark` or `black` (dark with black
+/// surfaces).
+fn forced_theme() -> Option<(Mode, Surface)> {
+    static OVERRIDE: OnceLock<Option<(Mode, Surface)>> = OnceLock::new();
+    *OVERRIDE.get_or_init(|| match std::env::var("EMAKI_THEME").ok()?.as_str() {
+        "light" => Some((Mode::Light, Surface::Standard)),
+        "dark" => Some((Mode::Dark, Surface::Standard)),
+        "black" => Some((Mode::Dark, Surface::Black)),
+        _ => None,
+    })
+}
 
-    if let Some(forced) = *forced {
+/// `EMAKI_THEME=light|dark|black`, else the settings file's, else the
+/// system preference, else dark.
+pub fn mode() -> Mode {
+    if let Some((forced, _)) = forced_theme() {
         return forced;
     }
 
@@ -109,6 +139,22 @@ pub fn mode() -> Mode {
     }
 }
 
+/// `EMAKI_THEME=black`, else the settings file's Black, but only while the
+/// mode is dark: light mode's surfaces stay as they are.
+pub fn surface() -> Surface {
+    if mode() != Mode::Dark {
+        return Surface::Standard;
+    }
+    if let Some((_, forced)) = forced_theme() {
+        return forced;
+    }
+    if settings::appearance().black {
+        Surface::Black
+    } else {
+        Surface::Standard
+    }
+}
+
 /// The accent the settings file picks, else the one the system publishes,
 /// if any (many portals publish none).
 pub fn accent() -> Option<Color> {
@@ -117,8 +163,13 @@ pub fn accent() -> Option<Color> {
         .or_else(|| Appearance::read().accent())
 }
 
-/// `EMAKI_GLASS=clear|tinted|solid`, else the settings file's.
+/// `EMAKI_GLASS=clear|tinted|solid`, else the settings file's; always solid
+/// under black surfaces, where glass would only light pixels black leaves off
+/// and blur would keep the compositor busy.
 pub fn glass() -> Glass {
+    if surface() == Surface::Black {
+        return Glass::Solid;
+    }
     static OVERRIDE: OnceLock<Option<Glass>> = OnceLock::new();
     let forced = OVERRIDE.get_or_init(|| {
         let var = std::env::var("EMAKI_GLASS").ok();

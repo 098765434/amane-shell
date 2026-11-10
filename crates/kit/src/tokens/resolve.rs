@@ -8,7 +8,7 @@ use serde_json::Value as Json;
 use super::envelope::{Library, RawToken, TokenType};
 use super::values::{self, Value};
 use super::{Resolved, ResolvedToken, TokenError};
-use crate::theme::{Density, Mode};
+use crate::theme::{Density, Mode, Surface};
 
 /// Penpot gives up on reference chains this deep.
 const MAX_DEPTH: usize = 16;
@@ -24,10 +24,21 @@ pub struct Selection<'a> {
 impl Library {
     /// The tokens of the sets the `mode` and `density` themes enable, later sets winning; an
     /// error if either theme is missing.
-    pub fn select(&self, mode: Mode, density: Density) -> Result<Selection<'_>, TokenError> {
+    pub fn select(
+        &self,
+        mode: Mode,
+        density: Density,
+        surface: Surface,
+    ) -> Result<Selection<'_>, TokenError> {
         let mut active = HashSet::new();
+        // black only over dark; standard enables nothing, so needn't be in the export
+        let surface = (mode == Mode::Dark && surface != Surface::Standard)
+            .then(|| ("surface", surface.theme()));
 
-        for (group, name) in [("mode", mode.theme()), ("density", density.theme())] {
+        for (group, name) in [("mode", mode.theme()), ("density", density.theme())]
+            .into_iter()
+            .chain(surface)
+        {
             let theme = self.theme(group, name).ok_or_else(|| {
                 TokenError::file(format!("the export has no theme {group}/{name}"))
             })?;
@@ -46,7 +57,14 @@ impl Library {
         }
 
         Ok(Selection {
-            key: format!("mode/{} + density/{}", mode.theme(), density.theme()),
+            key: match surface {
+                Some((_, name)) => format!(
+                    "mode/{} + density/{} + surface/{name}",
+                    mode.theme(),
+                    density.theme()
+                ),
+                None => format!("mode/{} + density/{}", mode.theme(), density.theme()),
+            },
             tokens,
         })
     }
@@ -306,7 +324,7 @@ mod tests {
         for mode in Mode::ALL {
             let key = format!("mode/{}", mode.theme());
             let results = lib
-                .select(mode, Density::Comfortable)
+                .select(mode, Density::Comfortable, Surface::Standard)
                 .unwrap()
                 .resolve_each(&[]);
 
@@ -331,10 +349,39 @@ mod tests {
         assert!(failures.is_empty(), "\n  {}", failures.join("\n  "));
     }
 
+    /// The bundled export's black surfaces override dark's, and only dark's.
+    #[test]
+    fn black_turns_darks_surfaces_black() {
+        let lib = super::super::library();
+        let value = |mode, surface, name: &str| {
+            lib.select(mode, Density::Comfortable, surface)
+                .unwrap()
+                .resolve(&[])
+                .unwrap()
+                .tokens[name]
+                .value
+                .to_json()
+        };
+        let bg = "sys.color.window.bg";
+        assert_eq!(value(Mode::Dark, Surface::Black, bg), "#000000");
+        assert_ne!(value(Mode::Dark, Surface::Standard, bg), "#000000");
+        // light ignores it
+        assert_eq!(
+            value(Mode::Light, Surface::Black, bg),
+            value(Mode::Light, Surface::Standard, bg)
+        );
+        // what black leaves alone stays dark's
+        let accent = "sys.color.status.critical.text";
+        assert_eq!(
+            value(Mode::Dark, Surface::Black, accent),
+            value(Mode::Dark, Surface::Standard, accent)
+        );
+    }
+
     #[test]
     fn a_missing_theme_is_named() {
         let lib = Library::parse(r#"{ "s": {}, "$themes": [] }"#).unwrap();
-        let Err(e) = lib.select(Mode::Dark, Density::Comfortable) else {
+        let Err(e) = lib.select(Mode::Dark, Density::Comfortable, Surface::Standard) else {
             panic!("selected without themes");
         };
         assert!(e.message.contains("mode/dark"), "{e}");

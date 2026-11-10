@@ -115,7 +115,7 @@ Writes `appearance.json` (`apps/settings/src/appearance.rs`).
 
 | Setting | Control | Choices | Field |
 |---|---|---|---|
-| Appearance | pictures | Light, Dark, Auto (follows the system) | `mode`: `"light"`, `"dark"`, `null` |
+| Appearance | pictures | Light, Dark, Black (dark with true-black surfaces for OLED panels: solid glass, no blur), Auto (follows the system; **Black when dark** under it); under Black, **Wallpaper**: Dimmed (75 %), Hidden, Shown, which the shell has niri do (`SetWallpaperDim`) | `mode`: `"light"`, `"dark"`, `null`; `black`; `black_wallpaper` |
 | Accent color | dots, the hovered one named | System (multicolor), Blue, Purple, Pink, Red, Orange, Yellow, Green, Graphite (the design kit's colors) | `accent`: `null` or `#rrggbb` |
 | Density | dropdown | Comfortable, Compact | `density` |
 | Text size | dropdown | Smaller 0.9, Default 1, Larger 1.1, Large 1.25, Largest 1.5 (the nearest one shows for a hand-set value) | `text_scale` |
@@ -157,11 +157,11 @@ Then **Screenshots** (only copy them, or the folder they're saved in).
 Each screen niri drives, with what it can do read from the screen itself (OLED, HDR, the
 variable refresh range, the gamut, the bit depth): resolution, refresh rate, variable refresh,
 scale, rotation and arrangement, written to niri's `displays.kdl`, plus brightness, Night Light's
-schedule and OLED care. The selected display's settings come first, then **All displays**
-(Slower on battery), Night Light and OLED care; **Advanced** (a custom scale or mode, the
+schedule and OLED care. The selected display's settings come first (on a laptop the refresh rate
+On power adapter and On battery), then Night Light and OLED care; **Advanced** (a custom scale or mode, the
 overview's backdrop, what the display reports) is a sub-page. Changes that could leave a screen
-unreadable, moving one in the arrangement too, are kept only when confirmed. On demand variable
-refresh can add an app that's open from a menu. See [displays.md](displays.md).
+unreadable, moving one in the arrangement too, are kept only when confirmed. Variable refresh for chosen
+apps can add an app that's open from a menu. See [displays.md](displays.md).
 
 ### Windows
 
@@ -492,7 +492,7 @@ with back in the toolbar's pill.
 ## The files
 
 `appearance.json`, `desktop.json`, `status-bar.json`, `dock.json`, `launcher.json`, `displays.json`
-(`battery_refresh`) and `nixos.json`
+(`on_battery`: each display's refresh rate on battery) and `nixos.json`
 (`repo`, `host`: where the NixOS configuration is) are JSON in
 `$XDG_CONFIG_HOME/emaki/` (else `~/.config/emaki/`), read and
 written through amane's `Config` by `emaki_kit::settings`. A missing field takes its default, so
