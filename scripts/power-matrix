@@ -1,0 +1,412 @@
+#!/usr/bin/env bash
+# Step 1 of docs/niri-power-research.md: on a still desktop, what each
+# refresh setting costs. It switches the panel between 120 Hz, 60 Hz and
+# variable refresh itself, waits for it to settle, and samples each one for
+# the same time. It reports:
+#
+#   - the SoC's own power (gpu_metrics, so it works on the adapter too) and,
+#     unplugged, the battery's draw, which adds the panel's;
+#   - the memory clock (uclk) and fabric clock (fclk): a 120 Hz timing whose
+#     vblank is too short keeps them from dropping at idle;
+#   - Panel Replay and PSR state (debugfs), and the display idle (IPS)
+#     counters: VRR turns self-refresh off on amdgpu;
+#   - niri's wakeups and CPU use.
+#
+# Usage: scripts/power-matrix [options]
+#   --runs LIST     comma-separated, from 120, 60, 120vrr, 60vrr
+#                   (default 120,60,120vrr)
+#   --seconds N     sampling time per run (default 90)
+#   --settle N      wait after each switch before sampling (default 20)
+#   --output NAME   the panel (default eDP-1)
+#   --stay          don't move to an empty workspace while measuring
+#
+# It asks for sudo once (debugfs). Unplug the adapter first for the
+# battery's numbers; plugged in it still reports the SoC's. Keep the
+# brightness fixed, don't touch the keyboard or mouse, and let the screen
+# stay on: it moves to an empty workspace (and back at the end), restores the
+# mode and VRR it found, and writes a Markdown report to your home directory.
+#
+# The mode and VRR changes go through `niri msg output`, which doesn't touch
+# the config file. If the run is killed hard, `niri msg output eDP-1 mode …`
+# and `… vrr …` put them back by hand (the report's header names the
+# originals).
+
+set -euo pipefail
+
+runs=120,60,120vrr
+seconds=90
+settle=20
+output=eDP-1
+stay=0
+while (($#)); do
+    case $1 in
+    --runs) runs=$2; shift 2 ;;
+    --seconds) seconds=$2; shift 2 ;;
+    --settle) settle=$2; shift 2 ;;
+    --output) output=$2; shift 2 ;;
+    --stay) stay=1; shift ;;
+    -h | --help) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "unknown option $1 (see --help)" >&2; exit 2 ;;
+    esac
+done
+for n in "$seconds" "$settle"; do
+    [[ $n =~ ^[0-9]+$ ]] || { echo "seconds must be whole numbers" >&2; exit 2; }
+done
+
+# --- as the user: find niri, then come back as root -------------------------
+
+if [[ $EUID -ne 0 ]]; then
+    : "${NIRI_SOCKET:?NIRI_SOCKET is not set, run this inside the niri session}"
+    niri_bin=$(command -v niri) || { echo "niri isn't on PATH" >&2; exit 1; }
+    # the config's own VRR setting, to put back: IPC only says on or off
+    vrr_config=off
+    if grep -rhsE '^[[:space:]]*variable-refresh-rate' \
+        "$HOME/.config/niri" "$HOME/nixos-config/niri" 2>/dev/null |
+        grep -q 'on-demand=true'; then
+        vrr_config=on-demand
+    elif grep -rhsE '^[[:space:]]*variable-refresh-rate' \
+        "$HOME/.config/niri" "$HOME/nixos-config/niri" 2>/dev/null | grep -q .; then
+        vrr_config=on
+    fi
+    echo "power-matrix needs root for debugfs (Panel Replay, PSR, IPS)."
+    args=(--runs "$runs" --seconds "$seconds" --settle "$settle" --output "$output")
+    ((stay)) && args+=(--stay)
+    exec sudo env PATH="$PATH" NIRI_SOCKET="$NIRI_SOCKET" NIRI_BIN="$niri_bin" \
+        VRR_CONFIG="$vrr_config" REPORT_HOME="$HOME" REPORT_USER="$(id -un)" \
+        "$(realpath "$0")" "${args[@]}"
+fi
+
+niri() { "$NIRI_BIN" msg "$@"; }
+
+# --- what's there ------------------------------------------------------------
+
+card=$(readlink -f /sys/class/drm/card*-"$output" | head -n 1)
+[[ -d $card ]] || { echo "no DRM connector named $output" >&2; exit 1; }
+# the connector sits under the card (…/drm/card1/card1-eDP-1); the card's device is the GPU
+device=$(readlink -f "${card%/*}/device")
+metrics=$device/gpu_metrics
+[[ -r $metrics ]] || { echo "no $metrics: not an amdgpu APU?" >&2; exit 1; }
+
+mountpoint -q /sys/kernel/debug || mount -t debugfs none /sys/kernel/debug
+debug_dir=""
+for d in /sys/kernel/debug/dri/*/"$output"; do
+    [[ -d $d ]] && { debug_dir=$d; break; }
+done
+dri_dir=${debug_dir%/*}
+[[ -n $debug_dir ]] || echo "warning: no debugfs dir for $output; self-refresh state won't be read" >&2
+
+battery=$(find /sys/class/power_supply -maxdepth 1 -name 'BAT*' | head -n 1)
+niri_pid=$(pgrep -x niri | head -n 1)
+
+read -r orig_mode orig_vrr modes_json < <(niri --json outputs | python3 -I -c '
+import json, sys
+o = json.load(sys.stdin)[sys.argv[1]]
+m = o["modes"][o["current_mode"]]
+w, h, r = m["width"], m["height"], m["refresh_rate"]
+mode = f"{w}x{h}@{r / 1000:.3f}"
+same = [(x["width"], x["height"], x["refresh_rate"]) for x in o["modes"]
+        if (x["width"], x["height"]) == (w, h)]
+print(mode, "on" if o["vrr_enabled"] else "off", json.dumps(same, separators=(",", ":")))
+' "$output")
+
+# the panel's mode closest to `hz` at its current size
+mode_for() {
+    python3 -I -c '
+import json, sys
+modes, hz = json.loads(sys.argv[1]), float(sys.argv[2]) * 1000
+w, h, r = min(modes, key=lambda m: abs(m[2] - hz))
+print(f"{w}x{h}@{r / 1000:.3f}")
+' "$modes_json" "$1"
+}
+
+orig_ws=$(niri --json workspaces | python3 -I -c '
+import json, sys
+for w in json.load(sys.stdin):
+    if w["output"] == sys.argv[1] and w["is_active"]:
+        print(w["idx"])
+' "$output")
+empty_ws=$(niri --json workspaces | python3 -I -c '
+import json, sys
+ws = [w for w in json.load(sys.stdin) if w["output"] == sys.argv[1] and w["active_window_id"] is None]
+print(max(ws, key=lambda w: w["idx"])["idx"] if ws else "")
+' "$output")
+
+restore() {
+    trap - EXIT INT TERM
+    echo "restoring $output: $orig_mode, VRR $VRR_CONFIG" >&2
+    niri output "$output" mode "$orig_mode" || true
+    case $VRR_CONFIG in
+    on-demand) niri output "$output" vrr on --on-demand || true ;;
+    on) niri output "$output" vrr on || true ;;
+    *) niri output "$output" vrr off || true ;;
+    esac
+    if ((!stay)) && [[ -n $orig_ws ]]; then
+        niri action focus-workspace "$orig_ws" || true
+    fi
+}
+trap restore EXIT
+trap 'exit 130' INT TERM
+
+# --- the sampler -------------------------------------------------------------
+
+# Samples every 0.5 s for `seconds` and prints one JSON object. gpu_metrics
+# v3.0 is the APU table (kgd_pp_interface.h, gpu_metrics_v3_0); its size is
+# checked against the header, so another layout reports nothing rather than
+# wrong numbers.
+read -r -d '' SAMPLER <<'EOF' || true
+import ctypes as C, json, os, re, sys, time
+seconds, metrics, battery, debug_dir, dri_dir, pid = sys.argv[1:7]
+seconds = int(seconds)
+
+class M(C.Structure):
+    _fields_ = [("size", C.c_uint16), ("fmt", C.c_uint8), ("cont", C.c_uint8),
+        ("t_gfx", C.c_uint16), ("t_soc", C.c_uint16), ("t_core", C.c_uint16 * 16),
+        ("t_skin", C.c_uint16), ("gfx_act", C.c_uint16), ("vcn_act", C.c_uint16),
+        ("ipu_act", C.c_uint16 * 8), ("c0", C.c_uint16 * 16), ("dram_r", C.c_uint16),
+        ("dram_w", C.c_uint16), ("ipu_r", C.c_uint16), ("ipu_w", C.c_uint16),
+        ("clock", C.c_uint64), ("socket_power", C.c_uint32), ("ipu_power", C.c_uint16),
+        ("apu_power", C.c_uint32), ("gfx_power", C.c_uint32), ("dgpu_power", C.c_uint32),
+        ("all_core_power", C.c_uint32), ("core_power", C.c_uint16 * 16),
+        ("sys_power", C.c_uint16), ("stapm", C.c_uint16), ("cur_stapm", C.c_uint16),
+        ("gfxclk", C.c_uint16), ("socclk", C.c_uint16), ("vpeclk", C.c_uint16),
+        ("ipuclk", C.c_uint16), ("fclk", C.c_uint16), ("vclk", C.c_uint16),
+        ("uclk", C.c_uint16), ("mpipu", C.c_uint16), ("cur_core", C.c_uint16 * 16),
+        ("core_max", C.c_uint16), ("gfx_max", C.c_uint16),
+        ("thr", C.c_uint32 * 7), ("alpha", C.c_uint32)]
+
+def read(path):
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except OSError:
+        return None
+
+def metrics_sample():
+    try:
+        d = open(metrics, "rb").read()
+    except OSError:
+        return None
+    if len(d) < 4 or (d[2], d[3]) != (3, 0) or int.from_bytes(d[:2], "little") != C.sizeof(M):
+        return None
+    m = M.from_buffer_copy(d[:C.sizeof(M)])
+    return {"socket_w": m.socket_power / 1000, "gfx_w": m.gfx_power / 1000,
+            "uclk": m.uclk, "fclk": m.fclk, "gfxclk": m.gfxclk,
+            "gfx_act": m.gfx_act, "dram_r": m.dram_r, "dram_w": m.dram_w}
+
+def battery_w():
+    if not battery or read(f"{battery}/status") != "Discharging":
+        return None
+    p = read(f"{battery}/power_now")
+    if p is not None:
+        return int(p) / 1e6
+    i, v = read(f"{battery}/current_now"), read(f"{battery}/voltage_now")
+    return int(i) * int(v) / 1e12 if i and v else None
+
+def niri_counts():
+    switches = 0
+    for t in os.listdir(f"/proc/{pid}/task"):
+        s = read(f"/proc/{pid}/task/{t}/status") or ""
+        switches += sum(int(x) for x in re.findall(r"ctxt_switches:\s+(\d+)", s))
+    stat = read(f"/proc/{pid}/stat").rsplit(")", 1)[1].split()
+    return switches, int(stat[11]) + int(stat[12])
+
+def counters(text):
+    # "Idle optimization: 0" lines, and "entry counts: rcg=1 ips1=2" ones as "entry counts rcg"
+    out = {}
+    for line in (text or "").splitlines():
+        head, _, rest = line.partition(":")
+        pairs = re.findall(r"(\w+)=(\d+)", rest)
+        if pairs:
+            out.update({f"{head.strip()} {k}": int(v) for k, v in pairs})
+        elif re.fullmatch(r"\s*\d+\s*", rest):
+            out[head.strip()] = int(rest)
+    return out
+
+ips_path = f"{dri_dir}/amdgpu_dm_ips_status" if dri_dir else None
+ips_before = read(ips_path) if ips_path else None
+sw0, cpu0 = niri_counts()
+t0 = time.monotonic()
+samples, bat, replay, psr = [], [], {}, {}
+while time.monotonic() - t0 < seconds:
+    if (s := metrics_sample()) is not None:
+        samples.append(s)
+    if (b := battery_w()) is not None:
+        bat.append(b)
+    if debug_dir:
+        for name, hist in (("replay_state", replay), ("psr_state", psr)):
+            v = read(f"{debug_dir}/{name}")
+            if v is not None:
+                v = " ".join(v.split())
+                hist[v] = hist.get(v, 0) + 1
+    time.sleep(0.5)
+elapsed = time.monotonic() - t0
+sw1, cpu1 = niri_counts()
+ips_after = read(ips_path) if ips_path else None
+
+def stats(xs):
+    if not xs:
+        return None
+    n = len(xs); mean = sum(xs) / n
+    return {"mean": mean, "sd": (sum((x - mean) ** 2 for x in xs) / n) ** 0.5,
+            "min": min(xs), "max": max(xs), "n": n}
+
+before, after = counters(ips_before), counters(ips_after)
+uclk_hist = {}
+# uclk is time-filtered, not a level: residency in 100 MHz bins
+for s in samples:
+    k = round(s["uclk"], -2)
+    uclk_hist[k] = uclk_hist.get(k, 0) + 1
+print(json.dumps({
+    "elapsed": elapsed,
+    "battery_w": stats(bat),
+    **{k: stats([s[k] for s in samples]) for k in
+       ("socket_w", "gfx_w", "uclk", "fclk", "gfxclk", "gfx_act", "dram_r", "dram_w")},
+    "uclk_hist": uclk_hist,
+    "replay": replay, "psr": psr,
+    "ips_delta": {k: after[k] - before.get(k, 0) for k in after if after[k] != before.get(k, 0)},
+    "ips_after": ips_after,
+    "niri_wakeups": (sw1 - sw0) / elapsed,
+    "niri_cpu": (cpu1 - cpu0) / os.sysconf("SC_CLK_TCK") / elapsed * 100,
+}))
+EOF
+
+# --- the runs ------------------------------------------------------------------
+
+IFS=, read -ra run_list <<<"$runs"
+for r in "${run_list[@]}"; do
+    [[ $r =~ ^(120|60)(vrr)?$ ]] || { echo "unknown run $r (120, 60, 120vrr, 60vrr)" >&2; exit 2; }
+done
+
+edid_note=$(python3 -I -c '
+import sys
+d = open(sys.argv[1], "rb").read()
+out = []
+for e in range(1, d[126] + 1 if len(d) > 127 else 1):
+    b = d[128 * e:128 * e + 128]
+    if len(b) < 128 or b[0] != 0x70:
+        continue
+    p, end = 5, 5 + b[2]
+    while p + 3 <= end:
+        tag, ln = b[p], b[p + 2]
+        if tag == 0x22:
+            for q in range(p + 3, p + 3 + ln, 20):
+                t = b[q:q + 20]
+                pc = int.from_bytes(t[0:3], "little") + 1
+                ha, hb = (int.from_bytes(t[i:i + 2], "little") + 1 for i in (4, 6))
+                va, vb = (int.from_bytes(t[i:i + 2], "little") + 1 for i in (12, 14))
+                hz = pc * 1000 / ((ha + hb) * (va + vb))
+                us = vb * (ha + hb) / pc * 1000
+                out.append(f"{ha}x{va}@{hz:.0f}: vblank {vb} lines ({us:.0f} µs)")
+        p += 3 + ln
+print("; ".join(out) or "no DisplayID type VII timings")
+' "$card/edid" 2>/dev/null || echo "EDID not parsed")
+
+total=$(( ${#run_list[@]} * (seconds + settle) ))
+cat <<MSG
+
+Measuring $output: ${run_list[*]}, ${settle} s settle + ${seconds} s each, about $((total / 60 + 1)) min.
+Battery: $( [[ -n $battery && $(cat "$battery/status") == Discharging ]] && echo "discharging, its draw is measured" || echo "not discharging, SoC power only")
+Originals: mode $orig_mode, VRR $orig_vrr (config: $VRR_CONFIG).
+Panel timings: $edid_note
+
+Hands off the keyboard and mouse until it's done. Starting in 10 s.
+MSG
+sleep 10
+if ((!stay)) && [[ -n $empty_ws ]]; then
+    niri action focus-workspace "$empty_ws"
+fi
+
+results=()
+for r in "${run_list[@]}"; do
+    hz=${r%vrr}
+    vrr=off
+    [[ $r == *vrr ]] && vrr=on
+    niri output "$output" mode "$(mode_for "$hz")"
+    niri output "$output" vrr "$vrr"
+    sleep "$settle"
+    json=$(python3 -I -c "$SAMPLER" "$seconds" "$metrics" "$battery" "$debug_dir" "$dri_dir" "$niri_pid")
+    actual=$(niri --json outputs | python3 -I -c '
+import json, sys
+o = json.load(sys.stdin)[sys.argv[1]]
+hz = o["modes"][o["current_mode"]]["refresh_rate"] / 1000
+print(f"{hz:.0f} Hz" + (" VRR" if o["vrr_enabled"] else ""))
+' "$output")
+    results+=("$r"$'\t'"$actual"$'\t'"$json")
+done
+
+restore
+
+# --- the report ----------------------------------------------------------------
+
+stamp=$(date +%Y-%m-%d-%H%M)
+report=$REPORT_HOME/power-matrix-$stamp.md
+{
+    echo "# power-matrix, $(date '+%Y-%m-%d %H:%M')"
+    echo
+    echo "Kernel $(uname -r); $output; originals $orig_mode, VRR $VRR_CONFIG;"
+    echo "brightness $(cat /sys/class/backlight/*/brightness 2>/dev/null | head -n 1)/$(cat /sys/class/backlight/*/max_brightness 2>/dev/null | head -n 1);"
+    echo "profile $(powerprofilesctl get 2>/dev/null || echo '?'); ${settle} s settle, ${seconds} s per run."
+    echo "Panel timings: $edid_note."
+    echo
+    printf '%s\n' "${results[@]}" | python3 -I -c '
+import json, sys
+rows = [l.rstrip("\n").split("\t", 2) for l in sys.stdin if l.strip()]
+def f(s, fmt="{:.2f}"):
+    return "–" if not s else (fmt.format(s["mean"]) + " ± " + fmt.format(s["sd"]))
+def hist(h):
+    n = sum(h.values())
+    return "–" if not n else ", ".join(f"`{k}` {v * 100 // n}%" for k, v in sorted(h.items(), key=lambda kv: -kv[1]))
+print("| Run | Shown as | Battery W | SoC W | GFX W | uclk MHz (min–max) | fclk MHz | GFX busy % | niri wakeups/s | niri CPU % |")
+print("|---|---|---|---|---|---|---|---|---|---|")
+data = []
+for run, actual, js in rows:
+    d = json.loads(js); data.append((run, d))
+    u = d["uclk"]
+    uclk = "–" if not u else "{:.0f} ({}–{})".format(u["mean"], u["min"], u["max"])
+    cells = [run, actual, f(d["battery_w"]), f(d["socket_w"]), f(d["gfx_w"]), uclk,
+             f(d["fclk"], "{:.0f}"), f(d["gfx_act"], "{:.1f}"),
+             "{:.0f}".format(d["niri_wakeups"]), "{:.1f}".format(d["niri_cpu"])]
+    print("| " + " | ".join(cells) + " |")
+print()
+print("## Self-refresh and display idle")
+print()
+print("| Run | replay_state | psr_state | IPS counters that moved |")
+print("|---|---|---|---|")
+for run, d in data:
+    ips = ", ".join(f"{k} +{v}" for k, v in d["ips_delta"].items()) or "none"
+    print("| " + " | ".join([run, hist(d["replay"]), hist(d["psr"]), ips]) + " |")
+print()
+print("## uclk residency")
+print()
+for run, d in data:
+    h = {int(k): v for k, v in d["uclk_hist"].items()}
+    print(f"- **{run}:** " + ", ".join(f"~{k} MHz {v * 100 // sum(h.values())}%" for k, v in sorted(h.items())))
+last = data[-1][1]["ips_after"] if data else None
+if last:
+    print()
+    print("## amdgpu_dm_ips_status after the last run")
+    print()
+    print("```")
+    print(last)
+    print("```")
+'
+    cat <<'NOTES'
+
+## Reading it
+
+- **uclk at 120 vs 60 Hz:** if 120 Hz stays near the top level while 60 Hz drops, the
+  120 Hz timing's vblank is too short for memory clock switching (research doc § 1.1).
+- **replay_state:** on a still screen Panel Replay should sit in its active state (4 on
+  recent kernels). If VRR runs show it off, VRR and self-refresh exclude each other here
+  (§ 1.2), and the SoC and battery columns say which costs less.
+- **Battery W** includes the panel; **SoC W** doesn't, but works plugged in.
+- Each run is one sample of a noisy system: repeat the matrix before trusting a
+  difference under ~0.3 W.
+NOTES
+} >"$report"
+chown "$REPORT_USER" "$report" 2>/dev/null || true
+
+echo
+cat "$report"
+echo
+echo "Saved to $report"

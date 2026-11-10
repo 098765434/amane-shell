@@ -1,4 +1,4 @@
 # The niri fork revision emaki is tested against: `cargo xtask contract` reads
 # niri-ipc and the protocol XMLs there. Keep it at the rev nixos-config builds
 # (docs/developer/integration/contract.md).
-niri = "9d47c8f21f08f674fb8c1cdd9d1860f89a8f2e6f"
+niri = "621a4a93dd1f94ccec01554939c9d3c7d67cf576"
