@@ -318,6 +318,12 @@ impl Entry {
 
 // ───── view ──────────────────────────────────────────────────────────────────
 
+thread_local! {
+    // the monitors whose tucked dock has drawn a frame at the strip's size
+    static TUCKED_DRAWN: std::cell::RefCell<std::collections::BTreeSet<String>> =
+        const { std::cell::RefCell::new(std::collections::BTreeSet::new()) };
+}
+
 /// The dock on `monitor`. Registered with `App::window_per_monitor`.
 pub fn surface(monitor: &Monitor) -> LayerWindow {
     Docks::watch();
@@ -365,7 +371,20 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
      * vibrant surface; touching the strip grows it back before it slides out
      * (EMAKI_DOCK_FULL_WHILE_HIDDEN=1 keeps it full size, as before)
      */
-    if view.tucked && !full_while_hidden() {
+    let tucked = view.tucked && !full_while_hidden();
+    // Tucked, and already drawn once at the strip's size: frozen, so the
+    // windows and workspaces changing don't redraw a strip no one sees. The
+    // strip's hover still runs this view, which thaws it.
+    let frozen = TUCKED_DRAWN.with_borrow_mut(|drawn| {
+        let at_strip = (amane::window_size().1 - dock::reveal::strip()).abs() < 0.5;
+        if tucked && at_strip {
+            !drawn.insert(monitor.name.clone())
+        } else {
+            drawn.remove(&monitor.name);
+            false
+        }
+    });
+    if tucked {
         return LayerWindow::new()
             .width(Full)
             .height(dock::reveal::strip())
@@ -382,6 +401,7 @@ pub fn surface(monitor: &Monitor) -> LayerWindow {
                 height: dock::reveal::strip() as i32,
             }])
             .blur_shapes(Vec::new())
+            .frozen(frozen)
             .child(view.root);
     }
 

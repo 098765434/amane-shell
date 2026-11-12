@@ -113,6 +113,12 @@ fn new_reveal() -> EdgeReveal {
     )
 }
 
+thread_local! {
+    // the outputs whose bar has drawn a frame all the way in
+    static HIDDEN_DRAWN: std::cell::RefCell<std::collections::BTreeSet<String>> =
+        const { std::cell::RefCell::new(std::collections::BTreeSet::new()) };
+}
+
 /// Runs `f` on monitor `output`'s bar's reveal.
 fn with_reveal<R>(output: &str, f: impl FnOnce(&mut EdgeReveal) -> R) -> R {
     REVEALS.with(|reveals| reveals.with(output, new_reveal, f))
@@ -124,23 +130,18 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
     let output = monitor.name.clone();
     let style = status_bar().style;
 
-    // a clear bar's items are light or dark to suit the wallpaper under them
-    let sections = if style == BarStyle::Clear {
-        Material::Control.adapted(clear_id(&output), || sections(&output))
-    } else {
-        sections(&output)
-    };
-
     let metrics = metrics();
     let height = metrics.height;
     let (width, _) = window_size();
 
     // how far it's slid past its edge: 0 in place, `height` gone
     let hiding = hides(&output);
-    let (offset, input) = with_reveal(&output, |reveal| {
+    let (offset, input, gone) = with_reveal(&output, |reveal| {
         reveal.set_top(edge() == Vertical::Top);
         reveal.keep_out(!hiding || is_open(Panel::QuickSettings) || is_open(Panel::Notifications));
         let progress = reveal.progress(0.0);
+        // all the way in, and nothing bringing it out: nothing of it shows
+        let gone = hiding && progress <= 0.0 && !reveal.wanted();
         let shown = InputArea {
             x: 0,
             y: 0,
@@ -153,8 +154,32 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
             Vertical::Top => -away,
             _ => away,
         };
-        (offset, input)
+        (offset, input, gone)
     });
+
+    // the first frame all the way in is still drawn, so what stays up is
+    // the bar fully away, not the last step of its slide
+    let gone = HIDDEN_DRAWN.with_borrow_mut(|drawn| {
+        if !gone {
+            drawn.remove(&output);
+            false
+        } else {
+            !drawn.insert(output.clone())
+        }
+    });
+
+    // Hidden at its edge, the bar is frozen (below), so the clock, the
+    // workspaces and the rest don't redraw a surface no one sees; its items
+    // aren't even read, so their changes don't run this view. The strip's
+    // hover and the panels opening still do, which thaws it.
+    // A clear bar's items are light or dark to suit the wallpaper under them.
+    let sections = if gone {
+        Row::new(Vec::new())
+    } else if style == BarStyle::Clear {
+        Material::Control.adapted(clear_id(&output), || sections(&output))
+    } else {
+        sections(&output)
+    };
 
     let panel = Rectangle::new()
         .width(Parent)
@@ -212,6 +237,7 @@ pub fn bar(monitor: &Monitor) -> LayerWindow {
         .keyboard(Keyboard::None)
         .namespace(BAR_NS)
         .visible(true)
+        .frozen(gone)
         .child(panel)
 }
 
