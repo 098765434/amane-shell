@@ -169,7 +169,20 @@ pub fn shape_id(name: &str) -> u32 {
 /// The mode glass `id` takes, and whether its backdrop is clearly on that
 /// mode's side, past the threshold, rather than in the band between.
 fn adaptation(id: u32) -> (Mode, bool) {
-    adaptation_from(id, Backdrop::read().luminance(id), SMALL)
+    adaptation_from(id, reading(id), SMALL)
+}
+
+/// Whether glass follows its backdrop at all: adaptive glass on, and glass
+/// that shows what's behind it (not Solid).
+fn adapting() -> bool {
+    theme::adaptive_glass() && see_through()
+}
+
+/// The backdrop's reading behind `id`, read only while glass adapts:
+/// reading it is what redraws the window when niri reports a new one, and
+/// glass that won't change with it shouldn't redraw.
+fn reading(id: u32) -> Option<f32> {
+    adapting().then(|| Backdrop::read().luminance(id)).flatten()
 }
 
 /// [`adaptation`] for a reading already taken, at `turns`.
@@ -249,7 +262,8 @@ pub(crate) fn adapted_group<T>(
     f: impl FnOnce() -> T,
 ) -> T {
     let theme = Key::current().mode;
-    let panel = panel_adaptation(group, theme, tint, mean_luminance(members));
+    let luminance = adapting().then(|| mean_luminance(members)).flatten();
+    let panel = panel_adaptation(group, theme, tint, luminance);
     let before = LABELS.replace(panel.labels);
     let out = in_adaptation((panel.tint, panel.backed), f);
     LABELS.set(before);
