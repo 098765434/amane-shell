@@ -1,6 +1,7 @@
 //! Power & Lock: how long the computer waits, idle, before it dims the
-//! screen, locks it and turns it off (`emaki.idle.*` in the registry), and
-//! whether the idle service that does it is running.
+//! screen, locks it, turns it off and (on battery) sleeps (`emaki.idle.*` in
+//! the registry); what changes on battery (`power.json`); the energy-saving
+//! switches (registry page `energy`); and whether the idle service is running.
 
 use amane::{Column, Service};
 use emaki_kit::form::{FormRow, Group};
@@ -65,8 +66,16 @@ pub fn page() -> Column {
         on_battery(),
         group().rows(controls::rows("power")).footer(format!(
             "{warning}After this long without input the screen dims, then locks, then turns \
-             off. Locking when the lid closes and the lock shortcut work as before."
+             off; on battery the computer then goes to sleep. Locking when the lid closes and \
+             the lock shortcut work as before."
         )),
+        group()
+            .header("Energy Saving")
+            .rows(controls::rows("energy"))
+            .footer(
+                "These take effect after Apply; device power saving after a restart. \
+                 Bluetooth can still be switched on from Quick Settings when it's off at startup.",
+            ),
         group().row(idle),
     ])
 }

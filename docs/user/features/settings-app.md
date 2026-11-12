@@ -391,8 +391,9 @@ digits and dashes), **Language** (a dropdown of the registry's locales; needs a 
 
 ### Power & Lock
 
-`system/power.rs`. **Dim the screen after**, **Lock the screen after** and **Turn the screen
-off after**: dropdowns over 1–30 minutes and *Never*, the `emaki.idle.*` options that build
+`system/power.rs`. **Dim the screen after**, **Lock the screen after**, **Turn the screen
+off after** and **Sleep on battery after** (15 minutes by default; it never sleeps on the
+adapter): dropdowns over 1–30 minutes and *Never*, the `emaki.idle.*` options that build
 hypridle's listeners (home-manager restarts hypridle on Apply). A note says when a step is set
 to come before the one it follows ("The screen locks before it dims."). **Idle service** shows
 whether hypridle is running.
@@ -406,6 +407,13 @@ on Performance (the Power Mode page still offers it). HDR off sends `niri msg ou
 which in the niri fork also pauses `hdr-auto`, to each display that can show HDR, and again to
 one a config reload brings back in HDR; plugging in reads niri's config again
 (`load-config-file`), putting back what `displays.kdl` sets.
+
+**Energy Saving** (registry page `energy`, nixos-config `modules/power.nix`, after Apply):
+**Power saving for devices** (PCI runtime power management, PCIe ASPM `powersupersave`, no NMI
+watchdog, writeback every 15 s; after a restart), **Wi-Fi power saving**, **Bluetooth on at
+startup** (off by default; Quick Settings switches it on), **Syncthing only over Tailscale** (no
+discovery, relays or NAT traversal), **Open Bitwarden at login** (off), **Deduplicate the Nix
+store weekly, not on every build**, and how much **the system log keeps** (200 MB).
 
 ### Services
 
