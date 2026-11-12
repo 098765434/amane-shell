@@ -13,8 +13,14 @@
 #   - niri's wakeups and CPU use.
 #
 # Usage: scripts/power-matrix [options]
-#   --runs LIST     comma-separated, from 120, 60, 120vrr, 60vrr
-#                   (default 120,60,120vrr)
+#   --runs LIST     comma-separated, from 120, 60, 120vrr, 60vrr, 60half
+#                   (default 120,60,120vrr). 60half is an experiment: 60 Hz
+#                   with the 120 Hz geometry at half the pixel clock (a
+#                   modeline from this panel's EDID, ATNA40HQ10), to see if
+#                   Panel Replay engages at 60 Hz. The EDID asks for a fixed
+#                   230 kHz line rate, which this halves, so the panel may
+#                   go black: Ctrl+C (or the end of the run) restores the
+#                   original mode.
 #   --seconds N     sampling time per run (default 90)
 #   --settle N      wait after each switch before sampling (default 20)
 #   --output NAME   the panel (default eDP-1)
@@ -337,7 +343,7 @@ EOF
 
 IFS=, read -ra run_list <<<"$runs"
 for r in "${run_list[@]}"; do
-    [[ $r =~ ^(120|60)(vrr)?$ ]] || { echo "unknown run $r (120, 60, 120vrr, 60vrr)" >&2; exit 2; }
+    [[ $r =~ ^(120|60)(vrr)?$ || $r == 60half ]] || { echo "unknown run $r (120, 60, 120vrr, 60vrr, 60half)" >&2; exit 2; }
 done
 
 edid_note=$(python3 -I -c '
@@ -386,15 +392,24 @@ for r in "${run_list[@]}"; do
     hz=${r%vrr}
     vrr=off
     [[ $r == *vrr ]] && vrr=on
-    niri output "$output" mode "$(mode_for "$hz")"
+    if [[ $r == 60half ]]; then
+        # the 120 Hz timing (709.633 MHz, 3080x1920 total, -hsync -vsync) at half the clock
+        niri output "$output" modeline 354.8165 2880 2888 2920 3080 1800 1880 1896 1920 -hsync -vsync
+    else
+        niri output "$output" mode "$(mode_for "$hz")"
+    fi
     niri output "$output" vrr "$vrr"
     sleep "$settle"
     json=$(python3 -I -c "$SAMPLER" "$seconds" "$metrics" "$battery" "$debug_dir" "$dri_dir" "$niri_pid")
     actual=$(niri --json outputs | python3 -I -c '
 import json, sys
 o = json.load(sys.stdin)[sys.argv[1]]
-hz = o["modes"][o["current_mode"]]["refresh_rate"] / 1000
-print(f"{hz:.0f} Hz" + (" VRR" if o["vrr_enabled"] else ""))
+i = o.get("current_mode")
+if i is None or i >= len(o["modes"]):
+    print("custom mode" + (" VRR" if o["vrr_enabled"] else ""))
+else:
+    hz = o["modes"][i]["refresh_rate"] / 1000
+    print(f"{hz:.0f} Hz" + (" VRR" if o["vrr_enabled"] else ""))
 ' "$output")
     results+=("$r"$'\t'"$actual"$'\t'"$json")
 done
