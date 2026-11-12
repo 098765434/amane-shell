@@ -3,13 +3,15 @@
 //! whether the idle service that does it is running.
 
 use amane::{Column, Service};
-use emaki_kit::form::FormRow;
+use emaki_kit::form::{FormRow, Group};
+
+use emaki_kit::settings::{change_power, power};
 
 use super::battery;
 use super::controls;
 use super::nixos::{Managed, Snapshot};
 use super::services::{Units, status_text};
-use crate::{group, groups};
+use crate::{group, groups, switch_row};
 
 /// The waits, in the order they come.
 const STEPS: [(&str, &str); 3] = [
@@ -60,12 +62,38 @@ pub fn page() -> Column {
 
     groups(vec![
         battery::section(),
+        on_battery(),
         group().rows(controls::rows("power")).footer(format!(
             "{warning}After this long without input the screen dims, then locks, then turns \
              off. Locking when the lid closes and the lock shortcut work as before."
         )),
         group().row(idle),
     ])
+}
+
+/// What the shell changes while unplugged (`power.json`), undone when the
+/// adapter is back. Live: no Apply.
+fn on_battery() -> Group {
+    let settings = power().clone();
+    group()
+        .header("On Battery")
+        .row(switch_row(
+            "settings.power.saver-on-battery",
+            "Use Power Saver",
+            settings.saver_on_battery,
+            |on| change_power(|now| now.saver_on_battery = on),
+        ))
+        .row(switch_row(
+            "settings.power.hdr-off-on-battery",
+            "Turn HDR off",
+            settings.hdr_off_on_battery,
+            |on| change_power(|now| now.hdr_off_on_battery = on),
+        ))
+        .footer(
+            "Unplugging switches to Power Saver and keeps displays in SDR; plugging in puts \
+             back the power mode and HDR from before. A power mode picked on battery stays \
+             until you plug in. Each display's refresh rate on battery is on Displays.",
+        )
 }
 
 #[cfg(test)]

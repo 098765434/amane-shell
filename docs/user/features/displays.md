@@ -167,6 +167,9 @@ adapter's rate on battery only saves it, and a save made on battery keeps the sa
 than the battery one niri shows. A config reload on battery brings the adapter's rate back for a
 moment, until the check it starts moves it again.
 
+HDR on battery is Power & Lock's **On Battery → Turn HDR off** ([settings-app.md](settings-app.md#power--lock)):
+on by default, it keeps an `hdr` or `hdr-auto` display in SDR until the adapter is back.
+
 ## Night Light
 
 The shell owns `wlsunset` ([services.md](../../developer/integration/services.md)), so the page drives it over

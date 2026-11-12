@@ -397,6 +397,16 @@ hypridle's listeners (home-manager restarts hypridle on Apply). A note says when
 to come before the one it follows ("The screen locks before it dims."). **Idle service** shows
 whether hypridle is running.
 
+**On Battery** (`power.json`, live, no Apply): **Use Power Saver** and **Turn HDR off**, both on
+by default. The shell follows them (`services/power/battery_mode.rs`): unplugging remembers the
+power mode and switches to Power Saver, and plugging in puts the remembered one back; a mode
+picked by hand on battery stays until the power source changes, and the shell starting on battery
+counts as an unplug. While on battery the Quick Settings button and the power-mode key never land
+on Performance (the Power Mode page still offers it). HDR off sends `niri msg output … hdr off`,
+which in the niri fork also pauses `hdr-auto`, to each display that can show HDR, and again to
+one a config reload brings back in HDR; plugging in reads niri's config again
+(`load-config-file`), putting back what `displays.kdl` sets.
+
 ### Services
 
 `system/services.rs`. A switch per service the registry puts on this page (SSH, Avahi,

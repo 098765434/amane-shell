@@ -253,10 +253,14 @@ fn airplane() {
     show(airplane_readout(!on));
 }
 
-/// The next power mode, round the ones the daemon offers.
+/// The next power mode, round the ones the daemon offers; on battery
+/// without Performance, so the key can't land there by going round.
 fn profile() {
     let profiles = PowerProfile::read();
-    let available = profiles.available().to_vec();
+    let mut available = profiles.available().to_vec();
+    if crate::surfaces::quick_settings::tiles::power::on_battery() {
+        available.retain(|p| p != "performance");
+    }
     let active = profiles.active().to_string();
     drop(profiles);
     if available.is_empty() {

@@ -32,6 +32,12 @@ thread_local! {
     static LAST: RefCell<String> = RefCell::new(String::from("power-saver"));
 }
 
+/// Running on battery, as amane's `Battery` says.
+pub(crate) fn on_battery() -> bool {
+    let battery = Battery::read();
+    battery.present() && !battery.on_ac()
+}
+
 /// GNOME's names for the profiles.
 fn label(name: &str) -> &str {
     match name {
@@ -56,6 +62,13 @@ pub(crate) fn mode_toggle() -> Option<QuickToggle> {
     }
     let checked = active != BALANCED;
     let back_to = LAST.with_borrow(Clone::clone);
+    // on battery the button means saving power, never Performance (that
+    // stays a pick on the page)
+    let back_to = if back_to == "performance" && on_battery() {
+        String::from("power-saver")
+    } else {
+        back_to
+    };
     let back_to = if available.contains(&back_to) {
         back_to
     } else {
