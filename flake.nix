@@ -327,6 +327,7 @@
               {
                 programs.emaki.nixosActivate.enable = true;
                 programs.emaki.chargeThreshold.enable = true;
+                programs.emaki.firmware.enable = true;
                 boot.loader.grub.enable = false;
                 fileSystems."/" = {
                   device = "none";

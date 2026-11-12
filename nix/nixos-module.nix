@@ -26,6 +26,7 @@ let
   activateCfg = config.programs.emaki.nixosActivate;
   chargeCfg = config.programs.emaki.chargeThreshold;
   fprintCfg = config.programs.emaki.fingerprint;
+  firmwareCfg = config.programs.emaki.firmware;
 
   activate = pkgs.writeShellApplication {
     name = "emaki-nixos-activate";
@@ -205,6 +206,14 @@ in
     };
   };
 
+  options.programs.emaki.firmware.enable = lib.mkEnableOption ''
+    fwupd, the firmware updater Emaki Settings' Firmware page reads and runs. Turns on
+    services.fwupd so devices (UEFI, EC, Thunderbolt, docks) can receive LVFS updates; the
+    Settings page shells out to fwupdmgr, which handles its own polkit prompts. Enable the
+    lvfs-testing remote with services.fwupd.extraRemotes in your own configuration if you
+    want firmware in testing
+  '';
+
   config = lib.mkMerge [
     (lib.mkIf activateCfg.enable {
       security.polkit.enable = true;
@@ -226,6 +235,9 @@ in
       # lets the reader stand in for the password. It doesn't disable the password: swaylock
       # still accepts one if the reader is unplugged, mis-reads or is disabled by the user.
       security.pam.services.swaylock.fprintAuth = lib.mkIf fprintCfg.swaylockUnlock true;
+    })
+    (lib.mkIf firmwareCfg.enable {
+      services.fwupd.enable = true;
     })
   ];
 }

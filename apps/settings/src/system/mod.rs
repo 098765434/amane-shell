@@ -8,6 +8,7 @@ pub mod adopt;
 pub mod apply_bar;
 pub mod apps;
 pub mod battery;
+pub mod firmware;
 pub mod busy;
 pub mod catalog;
 pub mod controls;

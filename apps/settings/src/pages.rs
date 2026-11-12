@@ -119,7 +119,7 @@ const fn nixos(entry: Entry) -> Entry {
 /// The sidebar, top to bottom; a page is its place in this list. Pages are grouped by what
 /// they're about, not by where their settings are kept: a page whose settings are the NixOS
 /// configuration's (marked [`nixos`]) shows the Apply bar.
-pub const SIDEBAR: [Entry; 27] = [
+pub const SIDEBAR: [Entry; 28] = [
     aliased(
         found_by(
             page("network", "Network", ICON_WIFI, Accent::Blue, network::page),
@@ -496,6 +496,24 @@ pub const SIDEBAR: [Entry; 27] = [
         ),
         &["updates"],
     )),
+    found_by(
+        page(
+            "firmware",
+            "Firmware",
+            ICON_UPDATE,
+            Accent::Orange,
+            system::firmware::page,
+        ),
+        &[
+            "fwupd",
+            "LVFS",
+            "BIOS",
+            "UEFI",
+            "EC firmware",
+            "Thunderbolt firmware",
+            "device firmware",
+        ],
+    ),
     nixos(
         aliased(
             found_by(
