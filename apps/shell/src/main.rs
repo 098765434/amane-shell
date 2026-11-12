@@ -137,6 +137,8 @@ fn main() -> ExitCode {
     services::network::bt_battery::watch();
     // and lowers the displays' refresh rate on battery, when asked to
     services::power::power_refresh::watch();
+    // and keeps the mic-mute LED in step with PipeWire, not just the F4 key
+    services::power::mic_led::start();
     // and keeps the screen's brightness in HDR, which niri only holds until a reload
     services::display::hdr_white::watch();
     // and has niri dim the wallpaper under the Black appearance

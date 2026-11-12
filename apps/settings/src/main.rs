@@ -21,6 +21,7 @@ mod notifications;
 mod pages;
 mod passwords;
 mod previews;
+mod privacy;
 mod quick_settings;
 mod screenshots;
 mod search;

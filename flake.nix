@@ -328,6 +328,7 @@
                 programs.emaki.nixosActivate.enable = true;
                 programs.emaki.chargeThreshold.enable = true;
                 programs.emaki.firmware.enable = true;
+                programs.emaki.cameraBlock.enable = true;
                 boot.loader.grub.enable = false;
                 fileSystems."/" = {
                   device = "none";
@@ -341,9 +342,11 @@
             package:
             lib.hasPrefix "emaki-nixos-activate" (package.name or "")
             || lib.hasPrefix "emaki-charge-threshold" (package.name or "")
+            || lib.hasPrefix "emaki-camera-block" (package.name or "")
           ) machine.config.environment.systemPackages;
           helper = lib.findFirst (package: package.name == "emaki-nixos-activate") null emakiPackages;
           charge = lib.findFirst (package: package.name == "emaki-charge-threshold") null emakiPackages;
+          camera = lib.findFirst (package: package.name == "emaki-camera-block") null emakiPackages;
         in
         {
           nixos-activate = pkgs.runCommand "emaki-nixos-activate-check" { } ''
@@ -358,6 +361,29 @@
             grep -q auth_admin\< ${
               lib.findFirst (package: package.name == "emaki-nixos-activate-policy") null emakiPackages
             }/share/polkit-1/actions/org.emaki.nixos-activate.policy
+            touch $out
+          '';
+
+          camera-block = pkgs.runCommand "emaki-camera-block-check" { } ''
+            refuses() { if "$@" >/dev/null 2>&1; then echo "accepted: $*"; exit 1; fi; }
+            h=${camera}/bin/emaki-camera-block
+            # argv shape
+            refuses $h
+            refuses $h on off
+            refuses $h blue
+            refuses $h ""
+            # shell-metacharacter argv
+            refuses $h ';rm -rf /'
+            refuses $h '$(id)'
+            # on a sandbox with no /dev/video*, a valid arg still exits non-zero (nothing to block)
+            if $h on >/dev/null 2>&1; then
+              echo "accepted 'on' with no camera nodes"
+              exit 1
+            fi
+            # the policy allows the active session so toggling doesn't prompt every tick
+            grep -q 'allow_active>yes<' ${
+              lib.findFirst (package: package.name == "emaki-camera-block-policy") null emakiPackages
+            }/share/polkit-1/actions/org.emaki.camera-block.policy
             touch $out
           '';
 

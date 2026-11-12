@@ -27,6 +27,7 @@ let
   chargeCfg = config.programs.emaki.chargeThreshold;
   fprintCfg = config.programs.emaki.fingerprint;
   firmwareCfg = config.programs.emaki.firmware;
+  cameraCfg = config.programs.emaki.cameraBlock;
 
   activate = pkgs.writeShellApplication {
     name = "emaki-nixos-activate";
@@ -152,6 +153,77 @@ let
     '';
   };
 
+  # Flips every real camera node (/dev/video* that isn't a v4l2loopback) from mode 660 to
+  # 000 or back. Argv is a single word "on" or "off"; the helper never builds a path from
+  # argv, only iterates the strict glob, so no planted name can redirect the chmod.
+  cameraBlock = pkgs.writeShellApplication {
+    name = "emaki-camera-block";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      # emaki-camera-block <on|off>
+      umask 077
+
+      if [[ $# -ne 1 ]]; then
+        echo "usage: emaki-camera-block <on|off>" >&2
+        exit 2
+      fi
+
+      case $1 in
+        on)  mode=000 ;;
+        off) mode=660 ;;
+        *)   echo "bad mode" >&2; exit 2 ;;
+      esac
+
+      shopt -s nullglob
+      touched=0
+      for node in /dev/video*; do
+        [[ -c $node ]] || continue
+        # v4l2loopback devices (the phone-camera path) are not what the kill switch is for;
+        # the sysfs name reads "v4l2loopback" or "Phone Camera" for these.
+        base=''${node##*/}
+        name_file=/sys/class/video4linux/$base/name
+        if [[ -r $name_file ]]; then
+          name=$(<"$name_file")
+          lower=''${name,,}
+          case $lower in
+            *v4l2loopback*|"phone camera"*) continue ;;
+          esac
+        fi
+        chmod "$mode" "$node"
+        touched=1
+      done
+
+      if (( touched == 0 )); then
+        echo "no camera to block on this machine" >&2
+        exit 3
+      fi
+    '';
+  };
+
+  cameraBlockPolicy = pkgs.writeTextFile {
+    name = "emaki-camera-block-policy";
+    destination = "/share/polkit-1/actions/org.emaki.camera-block.policy";
+    text = ''
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+        "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+      <policyconfig>
+        <vendor>emaki</vendor>
+        <action id="org.emaki.camera-block">
+          <description>Block or unblock the camera</description>
+          <message>Emaki Settings wants to change the camera's kill switch.</message>
+          <icon_name>camera-web</icon_name>
+          <defaults>
+            <allow_any>no</allow_any>
+            <allow_inactive>no</allow_inactive>
+            <allow_active>yes</allow_active>
+          </defaults>
+          <annotate key="org.freedesktop.policykit.exec.path">${cameraBlock}/bin/emaki-camera-block</annotate>
+        </action>
+      </policyconfig>
+    '';
+  };
+
   chargeThresholdPolicy = pkgs.writeTextFile {
     name = "emaki-charge-threshold-policy";
     destination = "/share/polkit-1/actions/org.emaki.charge-threshold.policy";
@@ -214,6 +286,13 @@ in
     want firmware in testing
   '';
 
+  options.programs.emaki.cameraBlock.enable = lib.mkEnableOption ''
+    emaki-camera-block, the polkit-guarded helper Emaki Settings' Privacy page flips the
+    camera's kill switch through. Chmods /dev/video* between 660 and 000 to stop every app
+    opening the camera; phone-camera (v4l2loopback) devices are skipped so they stay
+    reachable
+  '';
+
   config = lib.mkMerge [
     (lib.mkIf activateCfg.enable {
       security.polkit.enable = true;
@@ -238,6 +317,13 @@ in
     })
     (lib.mkIf firmwareCfg.enable {
       services.fwupd.enable = true;
+    })
+    (lib.mkIf cameraCfg.enable {
+      security.polkit.enable = true;
+      environment.systemPackages = [
+        cameraBlock
+        cameraBlockPolicy
+      ];
     })
   ];
 }
