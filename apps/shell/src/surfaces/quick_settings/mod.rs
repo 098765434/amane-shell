@@ -255,9 +255,13 @@ fn closed() {
 /// Gone from the screen: the next opening starts on the grid, out of edit
 /// mode.
 fn hidden() {
-    if PAGE.replace(Page::Grid) != Page::Grid {
-        // what the page drew while fading away may have started a search again
-        pages::left(DETAIL.get());
+    PAGE.set(Page::Grid);
+    // What the last page drew while it slid out or faded away may have
+    // started a search again, even after Back already left it: end it now,
+    // or the radio keeps scanning with nothing on screen.
+    let detail = DETAIL.get();
+    if detail != Page::Grid {
+        pages::left(detail);
     }
     DETAIL.set(Page::Grid);
     ALONE.set(false);

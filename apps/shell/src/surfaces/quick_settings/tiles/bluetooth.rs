@@ -234,11 +234,15 @@ fn devices(height: f32) -> Vec<Box<dyn Widget>> {
         VISIBLE.set(false);
         return vec![boxed(caption(off_note(power, adapter_failure)))];
     }
-    if !SEARCHING.replace(true) {
-        Bluetooth::start_scan();
-    }
-    if !VISIBLE.replace(true) {
-        Bluetooth::set_discoverable(true);
+    // Only while this is the page shown: the view is also built while the
+    // page slides out after Back, and a scan started then would outlive it.
+    if super::super::showing(Page::Bluetooth) {
+        if !SEARCHING.replace(true) {
+            Bluetooth::start_scan();
+        }
+        if !VISIBLE.replace(true) {
+            Bluetooth::set_discoverable(true);
+        }
     }
 
     let sheet = request.map(|request| {
