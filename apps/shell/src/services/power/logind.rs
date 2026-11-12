@@ -20,6 +20,7 @@ const SESSION: &str = "org.freedesktop.login1.Session";
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
     Suspend,
+    Hibernate,
     Reboot,
     PowerOff,
 }
@@ -28,6 +29,7 @@ impl Action {
     fn method(self) -> &'static str {
         match self {
             Action::Suspend => "Suspend",
+            Action::Hibernate => "Hibernate",
             Action::Reboot => "Reboot",
             Action::PowerOff => "PowerOff",
         }

@@ -19,8 +19,8 @@ use crate::surfaces::osd;
 use crate::surfaces::quick_settings::{self, ControlId};
 use emaki_kit::dialog::Dialog;
 use emaki_kit::icons::{
-    Glyph, ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_LOCK, ICON_LOG_OUT, ICON_POWER,
-    ICON_RESTART, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS, ICON_SLEEP, ICON_TIMER, ICON_TUNE,
+    Glyph, ICON_BRIGHTNESS_HIGH, ICON_BRIGHTNESS_LOW, ICON_HIBERNATE, ICON_LOCK, ICON_LOG_OUT,
+    ICON_POWER, ICON_RESTART, ICON_SKIP_NEXT, ICON_SKIP_PREVIOUS, ICON_SLEEP, ICON_TIMER, ICON_TUNE,
     ICON_VOLUME_DOWN, ICON_VOLUME_OFF, ICON_VOLUME_UP, ICON_VPN,
 };
 
@@ -88,6 +88,7 @@ pub(super) fn snapshot(apps: &[DesktopApp]) -> Snapshot {
         .into_iter()
         .filter(|power| match power {
             Power::Sleep => session.can_suspend(),
+            Power::Hibernate => session.can_hibernate(),
             Power::Restart => session.can_reboot(),
             Power::PowerOff => session.can_power_off(),
             Power::Lock | Power::LogOut => true,
@@ -256,6 +257,7 @@ fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<Proposal> {
                 Power::Lock => SessionAction::Lock,
                 Power::LogOut => SessionAction::LogOut,
                 Power::Sleep => SessionAction::Suspend,
+                Power::Hibernate => SessionAction::Hibernate,
                 Power::Restart => SessionAction::Restart,
                 Power::PowerOff => SessionAction::PowerOff,
             };
@@ -263,6 +265,7 @@ fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<Proposal> {
                 Power::Lock => ICON_LOCK,
                 Power::LogOut => ICON_LOG_OUT,
                 Power::Sleep => ICON_SLEEP,
+                Power::Hibernate => ICON_HIBERNATE,
                 Power::Restart => ICON_RESTART,
                 Power::PowerOff => ICON_POWER,
             };
@@ -273,6 +276,7 @@ fn proposal(command: &Command, apps: &[DesktopApp]) -> Option<Proposal> {
                     SessionAction::Lock => Session::lock(),
                     SessionAction::LogOut => Session::log_out(),
                     SessionAction::Suspend => Session::suspend(),
+                    SessionAction::Hibernate => Session::hibernate(),
                     SessionAction::Restart => Session::reboot(),
                     SessionAction::PowerOff => Session::power_off(),
                 })),

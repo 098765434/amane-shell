@@ -12,6 +12,7 @@ use super::logind::{self, Action};
 
 pub struct Session {
     suspend: bool,
+    hibernate: bool,
     reboot: bool,
     power_off: bool,
 }
@@ -20,6 +21,7 @@ impl Service for Session {
     fn new() -> Self {
         Self {
             suspend: logind::can(Action::Suspend),
+            hibernate: logind::can(Action::Hibernate),
             reboot: logind::can(Action::Reboot),
             power_off: logind::can(Action::PowerOff),
         }
@@ -31,6 +33,10 @@ impl Service for Session {
 impl Session {
     pub fn can_suspend(&self) -> bool {
         self.suspend
+    }
+
+    pub fn can_hibernate(&self) -> bool {
+        self.hibernate
     }
 
     pub fn can_reboot(&self) -> bool {
@@ -47,6 +53,10 @@ impl Session {
 
     pub fn suspend() {
         logind::power(Action::Suspend);
+    }
+
+    pub fn hibernate() {
+        logind::power(Action::Hibernate);
     }
 
     pub fn reboot() {

@@ -117,6 +117,8 @@ pub enum Power {
     LogOut,
     /// Suspends the computer.
     Sleep,
+    /// Hibernates the computer (saves RAM to disk, powers off).
+    Hibernate,
     /// Restarts the computer.
     Restart,
     /// Shuts the computer down.
@@ -154,10 +156,11 @@ impl Command {
 
 impl Power {
     /// Every one, in the order the tool offers them.
-    pub const ALL: [Power; 5] = [
+    pub const ALL: [Power; 6] = [
         Self::Lock,
         Self::LogOut,
         Self::Sleep,
+        Self::Hibernate,
         Self::Restart,
         Self::PowerOff,
     ];
@@ -168,6 +171,7 @@ impl Power {
             Self::Lock => "lock",
             Self::LogOut => "log out",
             Self::Sleep => "sleep",
+            Self::Hibernate => "hibernate",
             Self::Restart => "restart",
             Self::PowerOff => "power off",
         }

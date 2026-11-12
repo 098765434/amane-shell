@@ -11,13 +11,14 @@ use crate::services::power::session::Session;
 use crate::surfaces::alert;
 use crate::surfaces::quick_settings::detail::DetailPage;
 use emaki_kit::dialog::Dialog;
-use emaki_kit::icons::{ICON_LOG_OUT, ICON_POWER, ICON_RESTART, ICON_SLEEP};
+use emaki_kit::icons::{ICON_HIBERNATE, ICON_LOG_OUT, ICON_POWER, ICON_RESTART, ICON_SLEEP};
 use emaki_kit::layout::boxed;
 use emaki_kit::list::{List, ListItem};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Action {
     Suspend,
+    Hibernate,
     Restart,
     PowerOff,
     LogOut,
@@ -27,6 +28,7 @@ impl Action {
     fn label(self) -> &'static str {
         match self {
             Self::Suspend => "Suspend",
+            Self::Hibernate => "Hibernate…",
             Self::Restart => "Restart…",
             Self::PowerOff => "Power Off…",
             Self::LogOut => "Log Out…",
@@ -36,6 +38,7 @@ impl Action {
     fn glyph(self) -> char {
         match self {
             Self::Suspend => ICON_SLEEP,
+            Self::Hibernate => ICON_HIBERNATE,
             Self::Restart => ICON_RESTART,
             Self::PowerOff => ICON_POWER,
             Self::LogOut => ICON_LOG_OUT,
@@ -48,6 +51,12 @@ impl Action {
         let unsaved = "Apps that are open may lose unsaved changes.";
         match self {
             Self::Suspend => None,
+            Self::Hibernate => Some((
+                "Hibernate this computer?",
+                "Your open apps are saved to disk; the machine turns off, and starts up where \
+                 you left off.",
+                "Hibernate",
+            )),
             Self::Restart => Some((
                 "Are you sure you want to restart your computer now?",
                 unsaved,
@@ -69,6 +78,7 @@ impl Action {
     fn run(self) {
         match self {
             Self::Suspend => Session::suspend(),
+            Self::Hibernate => Session::hibernate(),
             Self::Restart => Session::reboot(),
             Self::PowerOff => Session::power_off(),
             Self::LogOut => Session::log_out(),
@@ -100,6 +110,7 @@ pub(crate) fn page() -> DetailPage {
     let session = Session::read();
     let actions: Vec<Action> = [
         (Action::Suspend, session.can_suspend()),
+        (Action::Hibernate, session.can_hibernate()),
         (Action::Restart, session.can_reboot()),
         (Action::PowerOff, session.can_power_off()),
         (Action::LogOut, true),
@@ -127,9 +138,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn only_ending_the_session_asks_first() {
+    fn only_suspend_doesnt_ask_first() {
         assert!(Action::Suspend.question().is_none());
-        for action in [Action::Restart, Action::PowerOff, Action::LogOut] {
+        for action in [
+            Action::Hibernate,
+            Action::Restart,
+            Action::PowerOff,
+            Action::LogOut,
+        ] {
             let (_, _, answer) = action.question().expect("it asks");
             // the answer repeats the row's label, without its ellipsis
             assert_eq!(format!("{answer}…"), action.label());

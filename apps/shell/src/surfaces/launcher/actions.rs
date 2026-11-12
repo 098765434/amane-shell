@@ -20,7 +20,7 @@ use crate::services::power::session::Session;
 use crate::surfaces::quick_settings::{self, ControlId};
 use emaki_kit::icons::{
     Glyph, ICON_KEEP_AWAKE, ICON_LOCK, ICON_LOG_OUT, ICON_PACKAGE, ICON_POWER, ICON_RESTART,
-    ICON_SLEEP, ICON_TIMER, ICON_TUNE, ICON_UPDATE, ICON_VPN,
+    ICON_HIBERNATE, ICON_SLEEP, ICON_TIMER, ICON_TUNE, ICON_UPDATE, ICON_VPN,
 };
 
 use super::entries::Icon;
@@ -277,6 +277,7 @@ fn session(specs: &mut Vec<Spec>) {
     for power in SessionAction::ALL {
         let allowed = match power {
             SessionAction::Suspend => session.can_suspend(),
+            SessionAction::Hibernate => session.can_hibernate(),
             SessionAction::Restart => session.can_reboot(),
             SessionAction::PowerOff => session.can_power_off(),
             SessionAction::Lock | SessionAction::LogOut => true,
@@ -288,6 +289,7 @@ fn session(specs: &mut Vec<Spec>) {
             SessionAction::Lock => ICON_LOCK,
             SessionAction::LogOut => ICON_LOG_OUT,
             SessionAction::Suspend => ICON_SLEEP,
+            SessionAction::Hibernate => ICON_HIBERNATE,
             SessionAction::Restart => ICON_RESTART,
             SessionAction::PowerOff => ICON_POWER,
         };
@@ -303,6 +305,7 @@ fn session(specs: &mut Vec<Spec>) {
                 SessionAction::Lock => Session::lock(),
                 SessionAction::LogOut => Session::log_out(),
                 SessionAction::Suspend => Session::suspend(),
+                SessionAction::Hibernate => Session::hibernate(),
                 SessionAction::Restart => Session::reboot(),
                 SessionAction::PowerOff => Session::power_off(),
             }),

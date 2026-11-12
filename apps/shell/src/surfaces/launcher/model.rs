@@ -90,15 +90,17 @@ pub(super) enum SessionAction {
     Lock,
     LogOut,
     Suspend,
+    Hibernate,
     Restart,
     PowerOff,
 }
 
 impl SessionAction {
-    pub(super) const ALL: [Self; 5] = [
+    pub(super) const ALL: [Self; 6] = [
         Self::Lock,
         Self::LogOut,
         Self::Suspend,
+        Self::Hibernate,
         Self::Restart,
         Self::PowerOff,
     ];
@@ -109,6 +111,7 @@ impl SessionAction {
             Self::Lock => "Lock Screen",
             Self::LogOut => "Log Out",
             Self::Suspend => "Suspend",
+            Self::Hibernate => "Hibernate",
             Self::Restart => "Restart",
             Self::PowerOff => "Power Off",
         }
@@ -120,6 +123,7 @@ impl SessionAction {
             Self::Lock => "lock",
             Self::LogOut => "log-out",
             Self::Suspend => "suspend",
+            Self::Hibernate => "hibernate",
             Self::Restart => "restart",
             Self::PowerOff => "power-off",
         }
@@ -131,6 +135,7 @@ impl SessionAction {
             Self::Lock => &["lock"],
             Self::LogOut => &["logout", "sign out", "quit"],
             Self::Suspend => &["sleep"],
+            Self::Hibernate => &["suspend to disk", "deep sleep"],
             Self::Restart => &["reboot"],
             Self::PowerOff => &["shut down", "shutdown", "poweroff", "turn off"],
         }
