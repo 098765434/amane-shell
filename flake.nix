@@ -326,6 +326,7 @@
               self.nixosModules.default
               {
                 programs.emaki.nixosActivate.enable = true;
+                programs.emaki.chargeThreshold.enable = true;
                 boot.loader.grub.enable = false;
                 fileSystems."/" = {
                   device = "none";
@@ -336,9 +337,12 @@
             ];
           };
           emakiPackages = builtins.filter (
-            package: lib.hasPrefix "emaki-nixos-activate" (package.name or "")
+            package:
+            lib.hasPrefix "emaki-nixos-activate" (package.name or "")
+            || lib.hasPrefix "emaki-charge-threshold" (package.name or "")
           ) machine.config.environment.systemPackages;
           helper = lib.findFirst (package: package.name == "emaki-nixos-activate") null emakiPackages;
+          charge = lib.findFirst (package: package.name == "emaki-charge-threshold") null emakiPackages;
         in
         {
           nixos-activate = pkgs.runCommand "emaki-nixos-activate-check" { } ''
@@ -353,6 +357,32 @@
             grep -q auth_admin\< ${
               lib.findFirst (package: package.name == "emaki-nixos-activate-policy") null emakiPackages
             }/share/polkit-1/actions/org.emaki.nixos-activate.policy
+            touch $out
+          '';
+
+          charge-threshold = pkgs.runCommand "emaki-charge-threshold-check" { } ''
+            refuses() { if "$@" >/dev/null 2>&1; then echo "accepted: $*"; exit 1; fi; }
+            h=${charge}/bin/emaki-charge-threshold
+            # argv shape
+            refuses $h
+            refuses $h 80
+            refuses $h 80 90 100
+            # out of range
+            refuses $h -1 80
+            refuses $h 80 101
+            refuses $h 80 999
+            refuses $h abc 80
+            refuses $h 80 abc
+            # start > end
+            refuses $h 90 80
+            # path-traversal / shell-metacharacter argv (treated as integers, so refused)
+            refuses $h "../etc/passwd" 80
+            refuses $h '$(echo pwned)' 80
+            refuses $h '80;rm -rf /' 80
+            # the policy allows the active session, so the slider doesn't prompt on every tick
+            grep -q 'allow_active>yes<' ${
+              lib.findFirst (package: package.name == "emaki-charge-threshold-policy") null emakiPackages
+            }/share/polkit-1/actions/org.emaki.charge-threshold.policy
             touch $out
           '';
         }

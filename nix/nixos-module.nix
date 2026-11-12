@@ -1,12 +1,18 @@
-# The system half of emaki: the helper Emaki Settings' System pages apply a built
-# configuration with, as root, through polkit. Import it from your configuration's flake
-# (`emaki.nixosModules.default`) and set `programs.emaki.nixosActivate.enable = true;`.
+# The system half of emaki: the root-run helpers Emaki Settings uses from the session, through
+# polkit. Import it from your configuration's flake (`emaki.nixosModules.default`) and set:
 #
-# Settings builds the configuration as you and only hands the helper a store path; root never
-# evaluates the repo. Anything that runs as you can call `pkexec emaki-nixos-activate` too,
+#   programs.emaki.nixosActivate.enable = true;      # applies built NixOS configurations
+#   programs.emaki.chargeThreshold.enable = true;    # sets BAT*/charge_control_*_threshold
+#
+# Settings builds the configuration as you and only hands the activate helper a store path; root
+# never evaluates the repo. Anything that runs as you can call `pkexec emaki-nixos-activate` too,
 # so the helper is strict about what it activates, every call asks for the password (no
-# auth_admin_keep), and the prompt shows the store path it's for. Look at it before you
-# type your password: a path you didn't just build in Settings is not yours.
+# auth_admin_keep), and the prompt shows the store path it's for. Look at it before you type
+# your password: a path you didn't just build in Settings is not yours.
+#
+# The charge-threshold helper is low-risk (two integers 0-100 that firmware clamps to safe
+# ranges) and runs without a password for the active session; the helper still validates argv
+# and writes to a strict glob, so it can't be redirected elsewhere.
 #
 # Replaces the helper `modules/managed.nix` used to define; remove that one when you enable
 # this, or the two collide.
@@ -17,7 +23,8 @@
   ...
 }:
 let
-  cfg = config.programs.emaki.nixosActivate;
+  activateCfg = config.programs.emaki.nixosActivate;
+  chargeCfg = config.programs.emaki.chargeThreshold;
 
   activate = pkgs.writeShellApplication {
     name = "emaki-nixos-activate";
@@ -65,7 +72,7 @@ let
 
   # the polkit action naming the helper's own store path, so pkexec runs exactly it; its
   # message carries the command line, so any polkit agent shows which system it's for
-  policy = pkgs.writeTextFile {
+  activatePolicy = pkgs.writeTextFile {
     name = "emaki-nixos-activate-policy";
     destination = "/share/polkit-1/actions/org.emaki.nixos-activate.policy";
     text = ''
@@ -88,6 +95,84 @@ let
       </policyconfig>
     '';
   };
+
+  # Writes BAT*/charge_control_{start,end}_threshold on ThinkPads and compatible firmware that
+  # expose them. Argv is two integers 0-100 with start <= end; the helper never builds a path
+  # from argv, only iterates the sysfs glob, so a planted "../" or absolute path is impossible.
+  chargeThreshold = pkgs.writeShellApplication {
+    name = "emaki-charge-threshold";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      # emaki-charge-threshold <start:0-100> <end:0-100>
+      umask 077
+
+      if [[ $# -ne 2 ]]; then
+        echo "usage: emaki-charge-threshold <start:0-100> <end:0-100>" >&2
+        exit 2
+      fi
+
+      start=$1
+      end=$2
+
+      [[ $start =~ ^(0|[1-9][0-9]?|100)$ ]] || { echo "start not in 0-100" >&2; exit 2; }
+      [[ $end =~ ^(0|[1-9][0-9]?|100)$ ]]   || { echo "end not in 0-100"   >&2; exit 2; }
+      if (( start > end )); then
+        echo "start > end" >&2
+        exit 2
+      fi
+
+      # a strict glob with no argv interpolation; a battery that lacks either file is skipped
+      # (not every battery supports both thresholds), and finding none is itself a refusal
+      wrote=0
+      shopt -s nullglob
+      for start_file in /sys/class/power_supply/BAT*/charge_control_start_threshold; do
+        end_file=''${start_file%start_threshold}end_threshold
+        [[ -f $end_file ]] || continue
+
+        # Ordering matters: when the new start is above the current end the kernel rejects it,
+        # and the other way round. Write end-then-start when raising, start-then-end when
+        # lowering, so a mid-range change goes through on the first try.
+        current_end=$(<"$end_file")
+        if (( end >= current_end )); then
+          printf %s "$end"   > "$end_file"
+          printf %s "$start" > "$start_file"
+        else
+          printf %s "$start" > "$start_file"
+          printf %s "$end"   > "$end_file"
+        fi
+        wrote=1
+      done
+
+      if (( wrote == 0 )); then
+        echo "no battery supports charge thresholds on this machine" >&2
+        exit 3
+      fi
+    '';
+  };
+
+  chargeThresholdPolicy = pkgs.writeTextFile {
+    name = "emaki-charge-threshold-policy";
+    destination = "/share/polkit-1/actions/org.emaki.charge-threshold.policy";
+    text = ''
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+        "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+      <policyconfig>
+        <vendor>emaki</vendor>
+        <action id="org.emaki.charge-threshold">
+          <description>Set the battery's charge thresholds</description>
+          <message>Emaki Settings wants to change when the battery charges.</message>
+          <icon_name>battery</icon_name>
+          <defaults>
+            <allow_any>no</allow_any>
+            <allow_inactive>no</allow_inactive>
+            <allow_active>yes</allow_active>
+          </defaults>
+          <annotate key="org.freedesktop.policykit.exec.path">${chargeThreshold}/bin/emaki-charge-threshold</annotate>
+        </action>
+      </policyconfig>
+    '';
+  };
 in
 {
   options.programs.emaki.nixosActivate.enable = lib.mkEnableOption ''
@@ -95,11 +180,26 @@ in
     configuration with
   '';
 
-  config = lib.mkIf cfg.enable {
-    security.polkit.enable = true;
-    environment.systemPackages = [
-      activate
-      policy
-    ];
-  };
+  options.programs.emaki.chargeThreshold.enable = lib.mkEnableOption ''
+    emaki-charge-threshold, the polkit-guarded helper Emaki Settings writes the battery's
+    charge_control_{start,end}_threshold through. Enable on laptops whose firmware exposes
+    these (ThinkPad, most Framework and Dell models)
+  '';
+
+  config = lib.mkMerge [
+    (lib.mkIf activateCfg.enable {
+      security.polkit.enable = true;
+      environment.systemPackages = [
+        activate
+        activatePolicy
+      ];
+    })
+    (lib.mkIf chargeCfg.enable {
+      security.polkit.enable = true;
+      environment.systemPackages = [
+        chargeThreshold
+        chargeThresholdPolicy
+      ];
+    })
+  ];
 }

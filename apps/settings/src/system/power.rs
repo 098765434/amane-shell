@@ -5,6 +5,7 @@
 use amane::{Column, Service};
 use emaki_kit::form::FormRow;
 
+use super::battery;
 use super::controls;
 use super::nixos::{Managed, Snapshot};
 use super::services::{Units, status_text};
@@ -58,6 +59,7 @@ pub fn page() -> Column {
     };
 
     groups(vec![
+        battery::section(),
         group().rows(controls::rows("power")).footer(format!(
             "{warning}After this long without input the screen dims, then locks, then turns \
              off. Locking when the lid closes and the lock shortcut work as before."
