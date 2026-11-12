@@ -25,6 +25,10 @@ pub const ICON_LOCK: char = '\u{e897}';
 pub const ICON_FINGERPRINT: char = '\u{e90d}';
 /// A crescent moon (`bedtime`): hibernation.
 pub const ICON_HIBERNATE: char = '\u{ea40}';
+/// A thermometer (`thermostat`): a temperature readout.
+pub const ICON_THERMOSTAT: char = '\u{f076}';
+/// A three-blade fan (`mode_fan`): fan speed.
+pub const ICON_FAN: char = '\u{ec17}';
 /// The gear (`settings`).
 pub const ICON_SETTINGS: char = '\u{e8b8}';
 /// A check mark (`check`).

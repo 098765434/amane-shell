@@ -159,6 +159,7 @@ pub fn page() -> Column {
                     FormRow::property(id, "Latest saved change", head)
                 }
             }),
+        super::thermals::section(),
         group().row(
             FormRow::new("settings.about.advanced-row", "Configuration folder")
                 .value(tidy_path(std::path::Path::new(&settings_repo())))

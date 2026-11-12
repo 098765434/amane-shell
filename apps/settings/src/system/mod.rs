@@ -25,6 +25,7 @@ pub mod power;
 pub mod repo;
 pub mod services;
 pub mod storage;
+pub mod thermals;
 pub mod update;
 
 use std::path::PathBuf;
