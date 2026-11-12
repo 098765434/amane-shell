@@ -24,6 +24,7 @@ mod previews;
 mod quick_settings;
 mod screenshots;
 mod search;
+mod security;
 mod sound;
 mod status_bar;
 mod system;

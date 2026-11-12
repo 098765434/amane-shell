@@ -21,6 +21,8 @@ pub const ICON_VOLUME_OFF: char = '\u{e04f}';
 pub const ICON_VOLUME_DOWN: char = '\u{e04d}';
 /// A padlock (`lock`).
 pub const ICON_LOCK: char = '\u{e897}';
+/// A fingerprint (`fingerprint`).
+pub const ICON_FINGERPRINT: char = '\u{e90d}';
 /// The gear (`settings`).
 pub const ICON_SETTINGS: char = '\u{e8b8}';
 /// A check mark (`check`).

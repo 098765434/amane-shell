@@ -6,15 +6,15 @@ use amane::{Column, Widget};
 use emaki_kit::app::Page;
 use emaki_kit::color::Accent;
 use emaki_kit::icons::{
-    ICON_APPS, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_HISTORY, ICON_INFO, ICON_KEYBOARD,
-    ICON_LOCK, ICON_MORE_HORIZ, ICON_MOUSE, ICON_NOTIFICATIONS, ICON_OPEN_IN_NEW, ICON_PACKAGE,
-    ICON_RESIZE, ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TRAY, ICON_UPDATE, ICON_VOLUME_UP,
-    ICON_WIFI,
+    ICON_APPS, ICON_DARK_MODE, ICON_DISPLAY, ICON_DNS, ICON_FINGERPRINT, ICON_HISTORY, ICON_INFO,
+    ICON_KEYBOARD, ICON_LOCK, ICON_MORE_HORIZ, ICON_MOUSE, ICON_NOTIFICATIONS, ICON_OPEN_IN_NEW,
+    ICON_PACKAGE, ICON_RESIZE, ICON_SEARCH, ICON_SETTINGS, ICON_STORAGE, ICON_TRAY, ICON_UPDATE,
+    ICON_VOLUME_UP, ICON_WIFI,
 };
 
 use crate::{
-    appearance, desktop, displays, drop, input, launcher, network, notifications, passwords, sound,
-    status_bar, system, windows,
+    appearance, desktop, displays, drop, input, launcher, network, notifications, passwords,
+    security, sound, status_bar, system, windows,
 };
 
 /// A page's sub-page by name: its title and body, or none for a name it
@@ -119,7 +119,7 @@ const fn nixos(entry: Entry) -> Entry {
 /// The sidebar, top to bottom; a page is its place in this list. Pages are grouped by what
 /// they're about, not by where their settings are kept: a page whose settings are the NixOS
 /// configuration's (marked [`nixos`]) shows the Apply bar.
-pub const SIDEBAR: [Entry; 26] = [
+pub const SIDEBAR: [Entry; 27] = [
     aliased(
         found_by(
             page("network", "Network", ICON_WIFI, Accent::Blue, network::page),
@@ -399,6 +399,23 @@ pub const SIDEBAR: [Entry; 26] = [
             ],
         ),
         &["bitwarden"],
+    ),
+    found_by(
+        page(
+            "security",
+            "Security",
+            ICON_FINGERPRINT,
+            Accent::Teal,
+            security::page,
+        ),
+        &[
+            "fingerprint",
+            "finger",
+            "biometric",
+            "fprintd",
+            "touch id",
+            "unlock",
+        ],
     ),
     Entry::Section("System"),
     nixos(found_by(

@@ -25,6 +25,7 @@
 let
   activateCfg = config.programs.emaki.nixosActivate;
   chargeCfg = config.programs.emaki.chargeThreshold;
+  fprintCfg = config.programs.emaki.fingerprint;
 
   activate = pkgs.writeShellApplication {
     name = "emaki-nixos-activate";
@@ -186,6 +187,24 @@ in
     these (ThinkPad, most Framework and Dell models)
   '';
 
+  options.programs.emaki.fingerprint = {
+    enable = lib.mkEnableOption ''
+      fprintd and the PAM wiring Emaki Settings' Security page needs to enrol, delete and
+      verify fingerprints. Turns on services.fprintd and asks swaylock to accept a finger
+      instead of a password at the lock screen
+    '';
+
+    swaylockUnlock = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Wires pam_fprintd into swaylock, so touching the reader unlocks the screen. Leave on
+        unless you want the enrol UI without the unlock path (for example, if some other PAM
+        stack already asks for the finger).
+      '';
+    };
+  };
+
   config = lib.mkMerge [
     (lib.mkIf activateCfg.enable {
       security.polkit.enable = true;
@@ -200,6 +219,13 @@ in
         chargeThreshold
         chargeThresholdPolicy
       ];
+    })
+    (lib.mkIf fprintCfg.enable {
+      services.fprintd.enable = true;
+      # swaylock's PAM stack is used by the shell's lock-session path; adding fprintAuth
+      # lets the reader stand in for the password. It doesn't disable the password: swaylock
+      # still accepts one if the reader is unplugged, mis-reads or is disabled by the user.
+      security.pam.services.swaylock.fprintAuth = lib.mkIf fprintCfg.swaylockUnlock true;
     })
   ];
 }
