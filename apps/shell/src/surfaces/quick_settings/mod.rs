@@ -93,6 +93,15 @@ pub use controls::{ControlId, available as control_available, quick_toggle};
 pub use pages::Page;
 pub(crate) use tiles::keep_awake::status as keep_awake_status;
 pub(crate) use tiles::power::battery_detail;
+// joining networks and pairing devices, which the launcher's lists of them share
+pub(crate) use tiles::bluetooth::{
+    act as bluetooth_act, nearby as bluetooth_nearby, operation_label as bluetooth_operation,
+};
+pub(crate) use tiles::bluetooth_text::label as bluetooth_failure;
+pub(crate) use tiles::failure::recent as recent_failure;
+pub(crate) use tiles::network::{
+    failure_label as wifi_failure, needs_password, refused as password_refused, wifi_available,
+};
 
 /// Layer-surface namespace; the niri `layer-rule` matches it for blur, and
 /// the Bluetooth device menu hangs under it.

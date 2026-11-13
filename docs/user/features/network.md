@@ -8,6 +8,9 @@ Emaki Settings' **Network** page (`apps/settings/src/network/`) covers:
 Settings' Wi‑Fi and VPN pages and the Network widget open it as well. Without Emaki Settings they
 open `nm-connection-editor`.
 
+Joining a network in range is in Quick Settings' Wi‑Fi page and in the launcher's **Wi‑Fi
+Networks** ([launcher.md](launcher.md#wi-fi-and-bluetooth)).
+
 ## The page
 
 - **Wi‑Fi:**

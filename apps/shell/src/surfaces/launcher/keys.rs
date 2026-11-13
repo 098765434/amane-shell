@@ -12,6 +12,8 @@ pub(super) fn on_key(key: Key) {
     let view = View::new(apps.list());
     let held = modifiers();
     let typed = !view.field.text().is_empty();
+    // a password isn't copied out of the field
+    let copyable = typed && !view.scope.as_ref().is_some_and(Scope::secret);
     let listing = !view.grid();
 
     // a chord isn't text: the editing ones edit, Ctrl+1 … 4 pick a mode,
@@ -21,8 +23,8 @@ pub(super) fn on_key(key: Key) {
     {
         match letter.to_ascii_lowercase() {
             'a' if typed => with(|state| state.field.select_all()),
-            'c' if typed => text_edit::copy(&view.field.selected()),
-            'x' if typed => {
+            'c' if copyable => text_edit::copy(&view.field.selected()),
+            'x' if copyable => {
                 text_edit::copy(&view.field.selected());
                 type_into(Field::delete_selection);
             }

@@ -216,6 +216,7 @@ fn ap_list(height: f32) -> ScrollArea {
             let state = Joining {
                 connecting: net.operation(ap.ssid()) == Some(NetworkOperation::Connecting),
                 failed: super::failure::recent(net.failure(ap.ssid())).map(failure_label),
+                wrong_password: refused(net.failure(ap.ssid())),
             };
             ap_item(ap, &state)
         })
@@ -235,10 +236,24 @@ struct Joining {
     connecting: bool,
     /// The last try failed lately: a few words why.
     failed: Option<&'static str>,
+    /// The last try failed on its password, however long ago.
+    wrong_password: bool,
+}
+
+/// Whether joining `ap` asks for a password first: a secured network with
+/// none saved, or one whose saved password was refused, as NetworkManager
+/// keeps a new network's profile even when its password is wrong.
+pub(crate) fn needs_password(ap: &AccessPoint, wrong_password: bool) -> bool {
+    ap.secured() && (!ap.saved() || wrong_password)
+}
+
+/// Whether `failure` is a refused password.
+pub(crate) fn refused(failure: Option<&ServiceError>) -> bool {
+    failure.is_some_and(|failure| failure.kind == ErrorKind::AuthenticationFailed)
 }
 
 /// A few words for why joining a network failed.
-fn failure_label(failure: &ServiceError) -> &'static str {
+pub(crate) fn failure_label(failure: &ServiceError) -> &'static str {
     match failure.kind {
         ErrorKind::AuthenticationFailed => "Wrong password",
         ErrorKind::Unreachable | ErrorKind::Gone => "Not in range",
@@ -251,7 +266,6 @@ fn ap_item(ap: &AccessPoint, joining: &Joining) -> ListItem {
     let ssid = ap.ssid().to_string();
     let secured = ap.secured();
     let active = ap.active();
-    let saved = ap.saved();
 
     let mut item = ListItem::new(format!("emaki.qs.wifi.ap.{ssid}"), ssid.clone())
         .leading(wifi_glyph(ap.strength()))
@@ -275,8 +289,9 @@ fn ap_item(ap: &AccessPoint, joining: &Joining) -> ListItem {
         item = item.trailing(list::check());
     }
 
+    let asks = needs_password(ap, joining.wrong_password);
     item.on_press(move || {
-        if secured && !saved {
+        if asks {
             begin_password(ssid.clone());
         } else {
             Network::connect(&ssid, None);

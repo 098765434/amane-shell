@@ -12,18 +12,18 @@
 use std::rc::Rc;
 use std::time::Duration;
 
-use amane::{DesktopApp, PowerProfile, Service};
+use amane::{Bluetooth, DesktopApp, PowerProfile, Service};
 
 use crate::services::launcher::timer;
 use crate::services::power::keep_awake::KeepAwake;
 use crate::services::power::session::Session;
 use crate::surfaces::quick_settings::{self, ControlId};
 use emaki_kit::icons::{
-    Glyph, ICON_HIBERNATE, ICON_KEEP_AWAKE, ICON_LOCK, ICON_LOG_OUT, ICON_PACKAGE, ICON_POWER,
-    ICON_RESTART, ICON_SLEEP, ICON_TIMER, ICON_TUNE, ICON_UPDATE, ICON_VPN,
+    Glyph, ICON_BLUETOOTH, ICON_HIBERNATE, ICON_KEEP_AWAKE, ICON_LOCK, ICON_LOG_OUT, ICON_PACKAGE,
+    ICON_POWER, ICON_RESTART, ICON_SLEEP, ICON_TIMER, ICON_TUNE, ICON_UPDATE, ICON_VPN, ICON_WIFI,
 };
 
-use super::entries::Icon;
+use super::entries::{Icon, Scope};
 use super::model::{self, SessionAction};
 
 /// What an action asks for before it runs.
@@ -57,6 +57,8 @@ pub(super) struct Spec {
     pub(super) placeholder: &'static str,
     /// For a choice: what each option is called, and what it gives.
     pub(super) choices: Vec<(String, String)>,
+    /// A list it opens rather than running, like the Wi‑Fi networks.
+    pub(super) opens: Option<Scope>,
     pub(super) run: Rc<dyn Fn(Value)>,
 }
 
@@ -71,6 +73,7 @@ impl Spec {
             param: None,
             placeholder: "",
             choices: Vec::new(),
+            opens: None,
             run: Rc::new(|_| {}),
         }
     }
@@ -83,6 +86,11 @@ impl Spec {
     fn asks(mut self, param: Param, placeholder: &'static str) -> Self {
         self.param = Some(param);
         self.placeholder = placeholder;
+        self
+    }
+
+    fn opens(mut self, scope: Scope) -> Self {
+        self.opens = Some(scope);
         self
     }
 
@@ -137,6 +145,7 @@ const CLOCK: &str = "Clock";
 pub(super) fn registry(apps: &[DesktopApp]) -> Vec<Spec> {
     let mut specs = Vec::new();
     controls(&mut specs);
+    wireless(&mut specs);
     power_mode(&mut specs);
     keep_awake(&mut specs);
     session(&mut specs);
@@ -201,6 +210,35 @@ fn controls(specs: &mut Vec<Spec>) {
             )
             .keywords(&[&name])
             .run(move |_| toggle.fire()),
+        );
+    }
+}
+
+/// The Wi‑Fi networks and the Bluetooth devices, each a list to pick from,
+/// on a machine that has the radio.
+fn wireless(specs: &mut Vec<Spec>) {
+    if quick_settings::wifi_available() {
+        specs.push(
+            Spec::new(
+                "action:wifi-networks",
+                "Wi‑Fi Networks",
+                CONTROL_CENTER,
+                Icon::Glyph(ICON_WIFI),
+            )
+            .keywords(&["wifi", "wi-fi", "networks", "join network", "internet"])
+            .opens(Scope::Wifi),
+        );
+    }
+    if Bluetooth::read().available() {
+        specs.push(
+            Spec::new(
+                "action:bluetooth-devices",
+                "Bluetooth Devices",
+                CONTROL_CENTER,
+                Icon::Glyph(ICON_BLUETOOTH),
+            )
+            .keywords(&["bluetooth", "pair", "devices", "headphones", "speaker"])
+            .opens(Scope::Bluetooth),
         );
     }
 }

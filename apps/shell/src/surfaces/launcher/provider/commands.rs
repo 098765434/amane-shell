@@ -35,6 +35,11 @@ pub(super) fn action_entry(
     value: Option<Value>,
     quick: &BTreeMap<String, QuickKey>,
 ) -> Entry {
+    if let Some(scope) = &spec.opens {
+        let mut entry = runs(spec, spec.title.clone(), quick).scope(scope.clone());
+        entry.action = Action::Ask(scope.clone());
+        return entry;
+    }
     let action = match (spec.param, value) {
         (Some(_), None) => Action::Ask(Scope::Action {
             key: spec.key.clone(),

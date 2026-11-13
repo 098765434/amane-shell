@@ -119,9 +119,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   activity's expanded view fades in as the menus do.
 - Emaki Settings: the Status Bar's position and size are pictures of the bar; search finds the
   weather's place, the tooltip's date, scrolling over the workspaces and more words.
+- Launcher: **Wi‑Fi Networks** and **Bluetooth Devices** open a list to join a network or
+  connect or pair a device. A network's password is typed hidden in the field and never kept.
+  From the pill, saved networks and paired devices are found by name.
 
 ### Fixed
 
+- Wi‑Fi: a network joined with a wrong password asks for it again, in Quick Settings and the
+  launcher, and the new password replaces the one saved. Before, the network had to be
+  forgotten first.
 - Status bar: a full battery on AC no longer reads "charging".
 - Status bar: a link that is neither Wi‑Fi nor a cable no longer shows a Wi‑Fi glyph.
 - Status bar: when Open-Meteo can't be reached, the weather keeps its last reading, dimmed,

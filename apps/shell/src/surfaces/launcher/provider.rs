@@ -9,10 +9,13 @@ mod clipboard;
 mod commands;
 mod files;
 mod passwords;
+mod wireless;
 
 use commands::*;
 pub(super) use files::shows_as_image;
 use files::*;
+use wireless::Wireless;
+pub(super) use wireless::{left_devices, left_networks};
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -47,6 +50,8 @@ const SUGGESTIONS: &str = "Suggestions";
 /// What's being searched for.
 pub(super) struct Query<'a> {
     pub(super) text: &'a str,
+    /// The text as typed, untrimmed: a password.
+    pub(super) raw: &'a str,
     /// The text trimmed and lowercased.
     pub(super) needle: String,
     pub(super) mode: Mode,
@@ -57,6 +62,7 @@ impl<'a> Query<'a> {
     pub(super) fn new(text: &'a str, mode: Mode, apps: &'a [DesktopApp]) -> Self {
         Self {
             text: text.trim(),
+            raw: text,
             needle: text.trim().to_lowercase(),
             mode,
             apps,
@@ -104,13 +110,14 @@ pub(super) struct Found {
 
 /// Every provider, in the order their fallbacks list. The assistant comes
 /// after what it might stand aside for.
-fn providers() -> [&'static dyn Provider; 10] {
+fn providers() -> [&'static dyn Provider; 11] {
     [
         &Passwords,
         &Answers,
         &Apps,
         &super::phone_apps::PhoneApps,
         &Actions,
+        &Wireless,
         &Files,
         &Clipboard,
         &Assistant,
@@ -132,6 +139,9 @@ pub(super) fn search(query: &Query, scope: Option<&Scope>, excluded: &[String]) 
                 asking(&spec, query, &mut found);
             }
         }
+        Some(Scope::Wifi) => wireless::networks(query, &mut found),
+        Some(Scope::Bluetooth) => wireless::devices(query, &mut found),
+        Some(Scope::WifiPassword { ssid }) => wireless::password(ssid, query, &mut found),
         None => {
             for provider in providers() {
                 if provider.modes().contains(&query.mode)

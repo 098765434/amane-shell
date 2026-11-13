@@ -210,6 +210,29 @@ pill, or open the mode with `launcher open passwords`; it has no button.
 - **Not remembered:** what was searched and which entry was picked aren't kept with the
   launcher's usage.
 
+## Wi‑Fi and Bluetooth
+
+Two actions, under Quick Settings, open a list. Type "wifi" or "bluetooth" and press Return,
+or press Tab on either:
+- **Wi‑Fi Networks**: the networks in range, the strongest first, rescanned every
+  15 seconds while the list shows.
+  - Return joins a network, or disconnects the one joined.
+  - A secured network with no saved password, or one whose password was refused, asks
+    for it first. Its name shows as the token, and what's typed shows as dots. Return
+    joins with it.
+  - The password isn't copied out of the field, Up doesn't fill in an old search, and
+    nothing typed or picked is kept with the launcher's usage.
+- **Bluetooth Devices**: My Devices, then Nearby. BlueZ searches while the list shows.
+  - Return connects or disconnects a paired device, or pairs and connects a nearby one.
+  - A pairing code shows in the shell's alert once the launcher closes, as from
+    Quick Settings.
+  - The launcher never makes this machine discoverable; Quick Settings' Bluetooth page
+    does.
+
+With the radio off, each list offers to turn it on and stays open. From the pill, two letters
+or more find **saved** networks in range and **paired** devices by name: "Connect to Home",
+"Disconnect Headphones". Unknown networks and devices are only in the lists.
+
 ## Using it
 
 | Do | What happens |
@@ -303,7 +326,8 @@ fuller lines.
   followed live:
   - `apps_layout`: `grid` or `list`.
   - `excluded_providers`: the sources the search leaves out, by id: `answers`, `apps`,
-    `actions`, `files`, `clipboard`, `assistant`, `url`, `web`.
+    `actions`, `wireless` (networks and devices by name from the pill), `files`,
+    `clipboard`, `assistant`, `url`, `web`.
   - `quick_keys`: each action's quick keys, with its key and name.
   - `clipboard`: whether the history is on, how many copies it keeps, whether images too,
     and the apps it leaves out.
@@ -352,7 +376,7 @@ never blocks anything.
 | `ipc.rs` | `launcher …` and `assistant …` |
 | `shape.rs` | where the glass is: the pill, the panel and the buttons (`Geometry`, which blends), and its frost (pure, tested) |
 | `mode.rs` | the modes, their glyphs, names and keys (pure, tested) |
-| `provider.rs` | the sources a search draws on (`Provider`) and how their finds are arranged (`search`; tested); the bigger sources in `provider/` (files, commands, passwords, clipboard) |
+| `provider.rs` | the sources a search draws on (`Provider`) and how their finds are arranged (`search`; tested); the bigger sources in `provider/` (files, commands, passwords, clipboard, wireless: Wi‑Fi and Bluetooth) |
 | `services/launcher/file_search.rs` | file searches through LocalSearch or `fd`, the kinds, and the SPARQL (tested) |
 | `actions.rs` | the actions (`Spec`), what they ask for, and an argument typed after a name (tested) |
 | `rank.rs` | the fuzzy match and the frecency score (pure, tested) |

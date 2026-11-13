@@ -180,7 +180,7 @@ pub(crate) fn left() {
 }
 
 /// What a click on a device's row asks for.
-fn act(device: &BluetoothDevice) {
+pub(crate) fn act(device: &BluetoothDevice) {
     let path = device.path();
     if device.connected() {
         Bluetooth::disconnect(path);
@@ -322,7 +322,7 @@ fn device_list(
 
 /// The devices worth offering to pair: named ones (a bare address means
 /// nothing to anyone), the strongest signal first.
-fn nearby(mut devices: Vec<BluetoothDevice>) -> Vec<BluetoothDevice> {
+pub(crate) fn nearby(mut devices: Vec<BluetoothDevice>) -> Vec<BluetoothDevice> {
     devices.retain(BluetoothDevice::named);
     devices.sort_by(|a, b| {
         b.signal()
@@ -337,7 +337,7 @@ fn device_section(title: &str, devices: &[BluetoothDevice]) -> List {
 }
 
 /// What a row says about `device`'s operation, in place of its battery.
-fn operation_label(operation: Operation) -> &'static str {
+pub(crate) fn operation_label(operation: Operation) -> &'static str {
     match operation {
         Operation::Connecting => "Connecting…",
         Operation::Disconnecting => "Disconnecting…",

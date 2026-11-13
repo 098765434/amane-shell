@@ -52,6 +52,13 @@ pub(super) enum Scope {
         title: String,
         placeholder: &'static str,
     },
+    /// The Wi‑Fi networks in range.
+    Wifi,
+    /// The Bluetooth devices paired and near.
+    Bluetooth,
+    /// A network's password: the field hides what's typed, and nothing
+    /// typed is kept.
+    WifiPassword { ssid: String },
 }
 
 impl Scope {
@@ -65,7 +72,16 @@ impl Scope {
                 .unwrap_or("/"),
             Self::Kind(kind) => kind.label(),
             Self::Action { title, .. } => title,
+            Self::Wifi => "Wi‑Fi",
+            Self::Bluetooth => "Bluetooth",
+            Self::WifiPassword { ssid } => ssid,
         }
+    }
+
+    /// Whether what's typed is a secret: drawn as dots, not copied, and
+    /// not kept with the searches run before.
+    pub(super) fn secret(&self) -> bool {
+        matches!(self, Self::WifiPassword { .. })
     }
 
     /// What the empty field says while narrowed to it, if not the mode's
@@ -75,6 +91,9 @@ impl Scope {
             Self::App(_) => None,
             Self::Folder(_) | Self::Kind(_) => Some("Search Files"),
             Self::Action { placeholder, .. } => Some(placeholder),
+            Self::Wifi => Some("Search Networks"),
+            Self::Bluetooth => Some("Search Devices"),
+            Self::WifiPassword { .. } => Some("Password"),
         }
     }
 }
@@ -94,6 +113,9 @@ pub(super) enum Action {
     RunFirst(Rc<dyn Fn()>),
     /// An action that asks for something first: narrows the search to it.
     Ask(Scope),
+    /// Runs and leaves the launcher open on what it changed, like turning
+    /// Wi‑Fi on over the networks it then finds. Its use isn't remembered.
+    Stay(Rc<dyn Fn()>),
     /// A row that only says something, like what to type.
     Hint,
     /// A copy from the clipboard's history, pasted into the window the
@@ -192,6 +214,10 @@ impl Entry {
 /// What a password row's key starts with; their use isn't remembered.
 pub(super) const VAULT_KEY: &str = "vault:";
 
+/// What a row run with a secret typed starts with, like joining a network
+/// with its password; neither its use nor the secret is remembered.
+pub(super) const SECRET_KEY: &str = "secret:";
+
 /// How much of an app's description its row shows.
 const DESCRIPTION_CHARS: usize = 64;
 
@@ -220,10 +246,15 @@ pub(super) fn run(entry: &Entry, query: &str) {
             close();
             return;
         }
+        Action::Stay(run) => {
+            run();
+            super::Launcher::changed();
+            return;
+        }
         _ => {}
     }
     // what was searched for a password, and which entry, isn't kept with the launcher's usage
-    if !entry.key.starts_with(VAULT_KEY) {
+    if !entry.key.starts_with(VAULT_KEY) && !entry.key.starts_with(SECRET_KEY) {
         usage::record(&entry.key, query);
     }
     close();
@@ -238,7 +269,11 @@ pub(super) fn run(entry: &Entry, query: &str) {
         Action::Copy(value) => text_edit::copy(value),
         Action::Run(run) => run(),
         Action::OpenFile(path) => file_search::open(path),
-        Action::Ask(_) | Action::Hint | Action::Paste(_) | Action::RunFirst(_) => {}
+        Action::Ask(_)
+        | Action::Hint
+        | Action::Paste(_)
+        | Action::RunFirst(_)
+        | Action::Stay(_) => {}
     }
 }
 

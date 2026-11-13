@@ -132,7 +132,14 @@ pub(super) fn search_row(
 ) -> Rectangle {
     let gap = sys::space::gap::m();
     let width = view.width() - ROW_INSET * 2.0;
-    let field = &view.field;
+    // a password shows as dots, the caret and selection where they are
+    let masked;
+    let field = if view.scope.as_ref().is_some_and(Scope::secret) {
+        masked = mask(&view.field);
+        &masked
+    } else {
+        &view.field
+    };
     let typed = !field.text().is_empty();
 
     // listening for a command: the microphone for the magnifier, and what's
@@ -379,6 +386,21 @@ fn clipboard_menu() {
     context_menu::show_under(MORE_MENU_KEY, menu, LAUNCHER_NS, cursor());
 }
 
+/// `field` with each character a dot, its caret and selection kept.
+fn mask(field: &Field) -> Field {
+    let mut masked = Field::new();
+    masked.insert(&"•".repeat(field.len()));
+    let (from, to) = field.selection();
+    let caret = field.caret();
+    if from == to {
+        masked.move_to(caret, false);
+    } else {
+        masked.move_to(if caret == to { from } else { to }, false);
+        masked.move_to(caret, true);
+    }
+    masked
+}
+
 /// The query as runs of text with the caret between them and the
 /// selection washed behind its run, or `placeholder` while it's empty:
 /// its words, crossfading from the ones before them (`placeholder_words`).
@@ -586,4 +608,26 @@ pub(super) fn pill_bar(buckets: &[usize], offset: f32, focused: bool, width: f32
 
 fn pill_width(name: &str) -> f32 {
     text_width(name, sys::r#type::caption()) + sys::space::inset::m() * 2.0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_secret_shows_as_dots_with_its_caret_and_selection() {
+        let mut field = Field::new();
+        field.insert("hunter2");
+        field.move_to(2, false);
+        field.move_to(5, true);
+        let masked = mask(&field);
+        assert_eq!(masked.text(), "•••••••");
+        assert_eq!(masked.caret(), 5);
+        assert_eq!(masked.selection(), (2, 5));
+
+        field.move_to(4, false);
+        let masked = mask(&field);
+        assert_eq!(masked.caret(), 4);
+        assert_eq!(masked.selection(), (4, 4));
+    }
 }

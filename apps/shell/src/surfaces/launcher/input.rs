@@ -52,11 +52,11 @@ pub(super) fn heard() {
 /// Switches to `mode`, from a fresh search; the one showing again goes
 /// back to the pill.
 pub(super) fn switch_mode(mode: Mode) {
-    let to = with(|state| {
+    let (to, left) = with(|state| {
         let to = if state.mode == mode { Mode::Home } else { mode };
         state.mode = to;
         state.field = Field::new();
-        state.scope = None;
+        let left = state.scope.take();
         state.selected = 0;
         state.history_at = None;
         state.hover_mode = None;
@@ -66,8 +66,9 @@ pub(super) fn switch_mode(mode: Mode) {
         } else {
             Zone::Search
         };
-        to
+        (to, left)
     });
+    left_scope(left);
     if to == Mode::Apps {
         PAGER.with_borrow_mut(|pager| pager.jump(0, &paging_motion()));
     }
@@ -76,13 +77,15 @@ pub(super) fn switch_mode(mode: Mode) {
 
 /// Narrows the search to `scope`, from an empty query.
 pub(super) fn enter_scope(scope: Scope) {
-    with(|state| {
-        state.scope = Some(scope);
+    let left = with(|state| {
+        let left = state.scope.replace(scope);
         state.field = Field::new();
         state.selected = 0;
         state.history_at = None;
         state.focus = Zone::Search;
+        left
     });
+    left_scope(left);
     SCROLL.with_borrow_mut(|scroll| scroll.jump(0.0));
     Launcher::changed();
 }
@@ -103,15 +106,30 @@ pub(super) fn back() {
             true
         });
     } else if scoped {
-        with(|state| {
-            state.scope = None;
+        let left = with(|state| {
             state.selected = 0;
+            state.scope.take()
         });
+        left_scope(left);
     } else if mode != Mode::Home {
         switch_mode(Mode::Home);
     } else {
         close();
     }
+}
+
+/// `left` was the scope until now: a list that searches stops searching.
+pub(super) fn left_scope(left: Option<Scope>) {
+    match left {
+        Some(Scope::Bluetooth) => super::provider::left_devices(),
+        Some(Scope::Wifi) => super::provider::left_networks(),
+        _ => {}
+    }
+}
+
+/// Whether what's typed now is a secret, like a network's password.
+pub(super) fn secret() -> bool {
+    with(|state| state.scope.as_ref().is_some_and(Scope::secret))
 }
 
 /// Starts typing quick keys for the action `action`, named `title`, from
@@ -317,6 +335,10 @@ pub(super) fn type_into(edit: impl FnOnce(&mut Field) -> bool) {
 /// or holds one of them: `older` goes back one, else forward to the empty
 /// field. Whether there was one to go to.
 pub(super) fn walk_history(older: bool) -> bool {
+    // a password's field never fills with a search
+    if secret() {
+        return false;
+    }
     let history: Vec<String> = usage::read(|usage| usage.history().iter().cloned().collect());
     with(|state| {
         let Some(to) = model::history_step(state.history_at, older, history.len()) else {

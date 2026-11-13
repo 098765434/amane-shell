@@ -310,7 +310,8 @@ fn with<R>(change: impl FnOnce(&mut State) -> R) -> R {
 fn hidden() {
     // listening ends with the launcher
     assistant_service::listen_cancel();
-    with(|state| *state = State::new());
+    let left = with(|state| std::mem::replace(state, State::new()).scope);
+    left_scope(left);
     FRESH.set(true);
     choreo::reset();
     header::reset();
