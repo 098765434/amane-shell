@@ -7,7 +7,10 @@
 //! turning to is drawn beside it, both sliding under the fingers. All
 //! Applications leads with the apps used most, a hairline under them.
 
-use amane::{Center, Column, DesktopApp, Padding, Rectangle, Row, Stack, Start, Text, Widget};
+use amane::{
+    Blend, Center, Column, DesktopApp, Padding, Rectangle, Row, Stack, Start, Text, Widget,
+};
+use emaki_kit::stagger::Stagger;
 
 use crate::tokens::{Styled, sys};
 use emaki_kit::app_icon;
@@ -15,6 +18,7 @@ use emaki_kit::kinetic::Axis;
 use emaki_kit::layout::{boxed, frame, text_height, text_width};
 use emaki_kit::scroll_view::ScrollView;
 
+use super::choreo;
 use super::results::{self, Empty};
 use super::{
     BODY, CELL, COLS, GRID_W, ICON, ICON_BOX, Layout, View, apps_on, hover, on_app_click,
@@ -28,15 +32,15 @@ pub(super) const HIGHLIGHT_RADIUS: f32 = 14.0;
 
 /// Where this frame draws things: the body scrolled by `scroll`, the
 /// highlight at `x`, `y` on item `selected` and as strong as `highlight`,
-/// the whole body at `fade`, and the scrollbar at `scrollbar`; `reveal`
-/// while Super shows the rows' fuller lines.
+/// its rows rising in on `enter`, and the scrollbar at `scrollbar`;
+/// `reveal` while Super shows the rows' fuller lines.
 #[derive(Clone, Copy)]
 pub(super) struct At {
     pub(super) scroll: f32,
     pub(super) x: f32,
     pub(super) y: f32,
     pub(super) highlight: f32,
-    pub(super) fade: f32,
+    pub(super) enter: Stagger,
     pub(super) scrollbar: f32,
     pub(super) selected: usize,
     pub(super) reveal: bool,
@@ -74,7 +78,6 @@ pub(super) fn pages(view: &View, offset: f32, at: At) -> Rectangle {
         // under the fingers mustn't take the gesture with it
         .on_scroll(on_body_scroll)
         .align_child(Start, Start)
-        .opacity(at.fade)
         .child(Stack::new(layers))
 }
 
@@ -91,7 +94,7 @@ fn page_of(apps: &[&DesktopApp], at: Option<At>, suggested: bool) -> Rectangle {
         x: 0.0,
         y: 0.0,
         highlight: 0.0,
-        fade: 1.0,
+        enter: Stagger::new(),
         scrollbar: 0.0,
         selected: 0,
         reveal: false,
@@ -102,17 +105,21 @@ fn page_of(apps: &[&DesktopApp], at: Option<At>, suggested: bool) -> Rectangle {
         .height(ICON_BOX)
         .radius(HIGHLIGHT_RADIUS)
         .fill(sys::color::state::selected())
-        .opacity(at.highlight)
+        .opacity(at.highlight * choreo::entered(at.enter, 1))
         .translate(at.x, at.y);
 
+    // each row of apps rises in after the one over it (the pill bar first),
+    // its icons swelling to their size; rows out of view arrive with the last
+    let first = (at.scroll / CELL).max(0.0) as usize;
     let lines: Vec<Box<dyn Widget>> = apps
         .chunks(COLS)
         .enumerate()
         .map(|(row, line)| {
+            let entered = choreo::entered(at.enter, 1 + row.saturating_sub(first));
             let cells = line
                 .iter()
                 .enumerate()
-                .map(|(col, app)| boxed(cell(app, row * COLS + col, live)))
+                .map(|(col, app)| boxed(rise(cell(app, row * COLS + col, live), entered)))
                 .collect();
             boxed(Row::new(cells))
         })
@@ -134,6 +141,17 @@ fn page_of(apps: &[&DesktopApp], at: Option<At>, suggested: bool) -> Rectangle {
         .offset(at.scroll)
         .scrollbar(at.scrollbar)
         .build(Stack::new(layers))
+}
+
+/// `cell` rising in `entered` far (0 … 1), swelling to its size.
+fn rise(cell: Rectangle, entered: f32) -> Rectangle {
+    if entered >= 1.0 {
+        return cell;
+    }
+    let from = emaki_kit::motion::scale(choreo::ENTER_SCALE);
+    cell.opacity(entered.clamp(0.0, 1.0))
+        .scale(f32::blend(from, 1.0, entered))
+        .translate(0.0, choreo::rise(entered))
 }
 
 /// One app: its icon in the highlight's box, its name under it on one

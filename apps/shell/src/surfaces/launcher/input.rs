@@ -287,7 +287,7 @@ pub(super) fn turn_to(page: usize) {
     PAGER.with_borrow_mut(|pager| {
         if pager.page().abs_diff(page) > 1 {
             pager.jump(page, &paging_motion());
-            SWITCH.with_borrow_mut(|switch| *switch = motion::fade(0.0, motion::duration::fade()));
+            super::choreo::enter();
         } else {
             pager.go(page, pages, &paging_motion());
         }

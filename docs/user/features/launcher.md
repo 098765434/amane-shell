@@ -20,6 +20,15 @@ glass, so a click anywhere but the glass closes it.
   - On a screen too narrow for them beside the pill, they sit under it.
 - **The panel.** Typing, or picking a mode, grows the pill down into a panel. The buttons
   slide in under it and fade. One spring carries the glass and its frost between the two.
+  What's under the search row rises in row by row when it first shows (a search's results, a
+  mode's list or grid), not again with each key typed.
+- **Opening and closing** ([`choreo.rs`](../../../apps/shell/src/surfaces/launcher/choreo.rs)).
+  The glass starts as a round drop at the pill's centre and stretches out sideways into the
+  pill. The mode buttons bud off its end one after another, and the search row's text comes in
+  last. Opened on a mode, it holds as the pill for a moment, then grows into the panel.
+  Closing runs the other way and quicker: the text goes first, the buttons tuck back in from
+  the far end, and the pill draws back to its centre as it fades. With Reduce Motion on, each
+  part only fades.
 
 ### Searching
 
@@ -313,7 +322,9 @@ The pill, the panel and the round buttons are the same glass as Quick Settings a
   (`Material::Sheet`) and each button (`Material::Control`) (`shape::Geometry::frost`).
 - The geometry blends, so the frost follows the spring as the pill grows and shrinks, and the
   buttons' frost fades with them.
-- Opening, the glass swells in about the pill's centre, the frost with it.
+- Opening, the sheet stretches out from a drop and the buttons bud off it
+  (`shape::seed`, `Geometry::buds`). The frost follows each of them, and the whole glass
+  swells in a touch about the pill's centre.
 - Where the compositor has no glass material of its own, the sheet and buttons draw the
   shader's lit edge (`Material::lit`).
 

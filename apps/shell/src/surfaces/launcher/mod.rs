@@ -34,6 +34,8 @@ mod actions;
 mod answers;
 mod app_menu;
 mod assistant;
+mod buttons;
+mod choreo;
 mod entries;
 mod grid;
 mod header;
@@ -266,6 +268,9 @@ thread_local! {
     static GEOMETRY: RefCell<Animation<Geometry>> = RefCell::new(motion::sheet(Geometry::default()));
     static FRESH: Cell<bool> = const { Cell::new(true) };
 
+    // each mode button's lift under the pointer
+    static LIFT: RefCell<[Animation; 4]> = RefCell::new(std::array::from_fn(|_| motion::spring(1.0)));
+
     // the body's scroll, and the pill bar's sideways
     static SCROLL: RefCell<Kinetic> = RefCell::new(Kinetic::new());
     static PILL_SCROLL: RefCell<Kinetic> = RefCell::new(Kinetic::new());
@@ -274,16 +279,25 @@ thread_local! {
     static PAGER: RefCell<Pager> = RefCell::new(Pager::new(Axis::Horizontal, &paging_motion()));
 
     // where the highlight is gliding to
-    static HIGHLIGHT_X: RefCell<Animation> = RefCell::new(motion::fade(BOX_X, motion::duration::hover()));
-    static HIGHLIGHT_Y: RefCell<Animation> = RefCell::new(motion::fade(BOX_Y, motion::duration::hover()));
+    static HIGHLIGHT_X: RefCell<Animation> = RefCell::new(glide(BOX_X));
+    static HIGHLIGHT_Y: RefCell<Animation> = RefCell::new(glide(BOX_Y));
     // how strongly it shows: less while the focus is on the search or pills
     static HIGHLIGHT_ALPHA: RefCell<Animation> = RefCell::new(motion::fade(1.0, motion::duration::hover()));
 
-    // 0 … 1: the body fading in after the list under it changed
-    static SWITCH: RefCell<Animation> = RefCell::new(motion::fade(1.0, motion::duration::fade()));
-
     // 0 … 1: the scrollbar, showing while the body moves
     static SCROLLBAR: RefCell<ScrollbarFade> = RefCell::new(ScrollbarFade::new());
+}
+
+/// How the highlight moves between rows or apps: quickly, settling with
+/// a breath of overshoot, so holding an arrow key keeps up.
+fn glide(value: f32) -> Animation {
+    motion::eased(
+        value,
+        motion::duration::press(),
+        Easing::Spring {
+            bounce: crate::tokens::sys::motion::pop::bounce(),
+        },
+    )
 }
 
 fn with<R>(change: impl FnOnce(&mut State) -> R) -> R {
@@ -298,10 +312,12 @@ fn hidden() {
     assistant_service::listen_cancel();
     with(|state| *state = State::new());
     FRESH.set(true);
+    choreo::reset();
+    header::reset();
+    LIFT.with_borrow_mut(|lifts| *lifts = std::array::from_fn(|_| motion::spring(1.0)));
     SCROLL.with_borrow_mut(|scroll| *scroll = Kinetic::new());
     PILL_SCROLL.with_borrow_mut(|scroll| *scroll = Kinetic::new());
     PAGER.with_borrow_mut(|pager| pager.jump(0, &paging_motion()));
-    SWITCH.with_borrow_mut(|switch| *switch = motion::fade(1.0, motion::duration::fade()));
     SCROLLBAR.with_borrow_mut(ScrollbarFade::reset);
 }
 
@@ -336,33 +352,46 @@ pub fn surface() -> LayerWindow {
     let apps = Apps::read();
     let view = View::new(apps.list());
 
-    // the glass heads for where this moment's view puts it, starting there
-    // when the launcher has just opened
+    // the glass heads for where this moment's view puts it: opening, from
+    // a drop at the pill's centre that stretches into the pill, holding as
+    // the pill a moment before growing into a mode's panel; closing, the
+    // pill draws back towards its centre
     let screen = window_size();
-    let target = shape::target(
-        screen,
-        (view.width(), view.height()),
-        view.kind == Kind::Idle,
-    );
+    let pill = shape::target(screen, (0.0, 0.0), true);
+    let compact = view.kind == Kind::Idle || choreo::holding();
+    let mut target = shape::target(screen, (view.width(), view.height()), compact);
+    if !open && view.kind == Kind::Idle {
+        target = shape::seed(pill);
+    }
     let geometry = GEOMETRY.with_borrow_mut(|anim| {
         if FRESH.replace(false) {
-            *anim = motion::sheet(target);
-        } else {
-            anim.to(target);
+            *anim = motion::sheet(if choreo::from_drop() {
+                shape::seed(pill)
+            } else {
+                target
+            });
         }
+        anim.to(target);
         anim.value()
     });
+
+    // the mode buttons bud off the pill's end one after another
+    let budded = std::array::from_fn(|index| choreo::bud(index, open));
+    let buds = geometry.buds(
+        budded,
+        motion::scale(choreo::BUD_SCALE),
+        motion::travel(crate::tokens::launcher::mode_button::slide()),
+        !emaki_kit::theme::reduced_motion(),
+    );
 
     // the glass swells in about the pill's centre, the frost with it
     let swell = Swell::new(open, unfolded, crate::tokens::launcher::open::scale());
     let (sheet, _) = geometry.drawn();
     let centre = (sheet.x + sheet.width / 2.0, sheet.y + PILL_H / 2.0);
-    let frost = swell.frost(geometry.frost(), centre);
+    let frost = swell.frost(geometry.frost(&buds), centre);
 
-    let mut layers: Vec<Box<dyn Widget>> = vec![boxed(glass(&view, geometry))];
-    if geometry.shown() > 0.01 {
-        layers.extend(header::mode_buttons(&geometry, view.mode));
-    }
+    let mut layers: Vec<Box<dyn Widget>> = vec![boxed(glass(&view, geometry, open))];
+    layers.extend(buttons::mode_buttons(&buds, view.mode));
     drop(view);
     drop(apps);
 

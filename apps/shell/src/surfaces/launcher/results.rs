@@ -38,6 +38,7 @@ use super::{
     ANSWER_H, CHIP_H, Capture, HEADING, Layout, ROW, ROW_GAP, app_menu, enter_scope, header,
     headings, hover, on_body_scroll, start_capture, with,
 };
+use super::{choreo, rise_in};
 
 // TODO(token): `launcher.result.icon`, `launcher.result.badge`,
 // `launcher.answer.*` and `launcher.empty.icon` once Penpot has them
@@ -78,25 +79,36 @@ pub(super) fn list(
         .height(ROW)
         .radius(sys::radius::popover())
         .fill(sys::color::state::selected())
-        .opacity(if on_row { at.highlight } else { 0.0 })
+        .opacity(if on_row {
+            at.highlight * choreo::entered(at.enter, 0)
+        } else {
+            0.0
+        })
         .translate(0.0, at.y);
     let capture = with(|state| state.capture.clone());
     let starts = headings(entries);
+    // the rows rise in one after another, a heading with the row under it;
+    // those out of view arrive with the last
+    let first = (at.scroll / (ROW + ROW_GAP)).max(0.0) as usize;
     let mut rows: Vec<Box<dyn Widget>> = Vec::new();
     for (index, entry) in entries.iter().enumerate() {
+        let entered = choreo::entered(at.enter, index.saturating_sub(first));
         if starts.contains(&index)
             && let Some(section) = &entry.section
         {
-            rows.push(boxed(heading(section, width)));
+            rows.push(boxed(rise_in(
+                heading(section, width),
+                width,
+                HEADING - ROW_GAP,
+                entered,
+            )));
         }
         let trailing = trailing(entry, assign, capture.as_ref());
-        rows.push(boxed(row(
-            entry,
-            index + skip,
+        rows.push(boxed(rise_in(
+            row(entry, index + skip, width, at.reveal, query, trailing),
             width,
-            at.reveal,
-            query,
-            trailing,
+            ROW,
+            entered,
         )));
     }
 
@@ -109,7 +121,6 @@ pub(super) fn list(
             boxed(highlight),
             boxed(Column::new(rows).gap(ROW_GAP)),
         ]))
-        .opacity(at.fade)
 }
 
 /// A section's name over its rows, a hairline under it.

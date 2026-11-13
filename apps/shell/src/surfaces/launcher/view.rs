@@ -70,7 +70,7 @@ pub(super) fn under(apps: &[DesktopApp], bucket: usize) -> Vec<&DesktopApp> {
 /// Steps the glass's opening towards `open` and gives how far it is, a
 /// little past 1 on the spring. Closing is quicker than opening.
 pub(super) fn unfold(open: bool) -> f32 {
-    OPEN.with_borrow_mut(|reveal| reveal.step(open))
+    OPEN.with_borrow_mut(|reveal| reveal.step_then(open, |was| super::choreo::turned(open, was)))
 }
 
 /// Steps `anim` towards `to` and gives where it is.
@@ -83,12 +83,13 @@ pub(super) fn ease(anim: &'static std::thread::LocalKey<RefCell<Animation>>, to:
 
 /// The sheet at `geometry`, and what's on it: laid out for the size it's
 /// heading to and clipped to the size it is, so growing reveals the rows
-/// rather than squeezing them.
-pub(super) fn glass(view: &View, geometry: Geometry) -> Rectangle {
+/// rather than squeezing them. The search row's text comes in last as the
+/// glass opens and goes first as it closes (`open`).
+pub(super) fn glass(view: &View, geometry: Geometry, open: bool) -> Rectangle {
     let (sheet, radius) = geometry.drawn();
     let content = frame(view.width(), view.height().max(sheet.height))
         .align_child(Start, Start)
-        .child(panel(view));
+        .child(panel(view, super::choreo::text(open)));
     let glass = Rectangle::new()
         .width(sheet.width)
         .height(sheet.height)
@@ -105,8 +106,9 @@ pub(super) fn glass(view: &View, geometry: Geometry) -> Rectangle {
         .translate(sheet.x, sheet.y)
 }
 
-/// The search row and, under it, what this moment shows.
-pub(super) fn panel(view: &View) -> Column {
+/// The search row, its text `text` shown, and, under it, what this moment
+/// shows.
+pub(super) fn panel(view: &View, text: f32) -> Column {
     let layout = view.layout();
     let count = view.count();
     let pages = view.buckets.len();
@@ -140,12 +142,12 @@ pub(super) fn panel(view: &View) -> Column {
     let (to_x, to_y) = layout.highlight(selected);
     if switched {
         with(|state| state.selected = 0);
-        HIGHLIGHT_X.with_borrow_mut(|x| *x = motion::fade(to_x, motion::duration::hover()));
-        HIGHLIGHT_Y.with_borrow_mut(|y| *y = motion::fade(to_y, motion::duration::hover()));
+        HIGHLIGHT_X.with_borrow_mut(|x| *x = glide(to_x));
+        HIGHLIGHT_Y.with_borrow_mut(|y| *y = glide(to_y));
         SCROLL.with_borrow_mut(|scroll| scroll.jump(0.0));
-        // into or out of a search, the body fades in; a category slides
+        // into or out of a search, the body rises in; a category slides
         if before.0 != showing.0 {
-            SWITCH.with_borrow_mut(|switch| *switch = motion::fade(0.0, motion::duration::fade()));
+            super::choreo::enter();
         }
     }
 
@@ -176,38 +178,42 @@ pub(super) fn panel(view: &View) -> Column {
         x: ease(&HIGHLIGHT_X, to_x),
         y: ease(&HIGHLIGHT_Y, to_y),
         highlight: ease(&HIGHLIGHT_ALPHA, if focused { 1.0 } else { UNFOCUSED }),
-        fade: ease(&SWITCH, 1.0),
+        enter: super::choreo::entering(),
         scrollbar: scrollbar(),
         selected,
         reveal,
     };
 
     let (hover_mode, back_hover) = with(|state| (state.hover_mode, state.back_hover));
-    let mut parts: Vec<Box<dyn Widget>> = vec![boxed(header::search_row(
-        view,
-        view.focus == Zone::Search,
-        hover_mode,
-        back_hover,
-    ))];
+    let mut parts: Vec<Box<dyn Widget>> = vec![boxed(
+        header::search_row(view, view.focus == Zone::Search, hover_mode, back_hover)
+            .opacity(text)
+            .translate(super::choreo::text_slide(text), 0.0),
+    )];
     if view.kind == Kind::Idle {
         return Column::new(parts).width(view.width());
     }
     parts.push(boxed(Divider::build()));
+
+    // what leads the body (a card, the chips, a note) rises in first
+    let first = super::choreo::entered(at.enter, 0);
+    let risen = |child: Rectangle, height: f32| boxed(rise_in(child, width, height, first));
 
     let query = view.field.text().to_string();
     let mut body: Vec<Box<dyn Widget>> = Vec::new();
     match view.kind {
         Kind::Results => {
             if let Some(answer) = &view.found.answer {
-                body.push(boxed(results::answer_card(
-                    answer,
-                    width,
-                    selected == 0,
-                    &query,
-                )));
+                body.push(risen(
+                    results::answer_card(answer, width, selected == 0, &query),
+                    ANSWER_H,
+                ));
             }
             if !view.found.scopes.is_empty() {
-                body.push(boxed(results::scope_chips(&view.found.scopes, width)));
+                body.push(risen(
+                    results::scope_chips(&view.found.scopes, width),
+                    CHIP_H,
+                ));
             }
             let list_w = view.list_width();
             let nothing = match view.mode {
@@ -218,7 +224,7 @@ pub(super) fn panel(view: &View) -> Column {
             }
             .filter(|_| view.found.rows.is_empty());
             let list: Box<dyn Widget> = if let Some(nothing) = nothing {
-                boxed(results::empty(nothing, width, body_height))
+                risen(results::empty(nothing, width, body_height), body_height)
             } else {
                 boxed(results::list(
                     &view.found.rows,
@@ -236,10 +242,11 @@ pub(super) fn panel(view: &View) -> Column {
                 body.push(boxed(
                     Row::new(vec![
                         list,
-                        boxed(results::preview(
-                            preview.as_ref(),
+                        boxed(rise_in(
+                            results::preview(preview.as_ref(), width - list_w - GAP, body_height),
                             width - list_w - GAP,
                             body_height,
+                            first,
                         )),
                     ])
                     .gap(GAP),
@@ -248,16 +255,17 @@ pub(super) fn panel(view: &View) -> Column {
                 body.push(list);
             }
         }
-        Kind::Ask => body.push(boxed(results::ask_clipboard(width, EMPTY_H - INSET * 2.0))),
+        Kind::Ask => body.push(risen(
+            results::ask_clipboard(width, EMPTY_H - INSET * 2.0),
+            EMPTY_H - INSET * 2.0,
+        )),
         Kind::Apps => {
-            body.push(boxed(header::pill_bar(
-                &view.buckets,
-                offset,
-                view.focus == Zone::Pills,
-                width,
-            )));
+            body.push(risen(
+                header::pill_bar(&view.buckets, offset, view.focus == Zone::Pills, width),
+                PILLS,
+            ));
             body.push(if view.all.is_empty() {
-                boxed(results::empty(results::Empty::Loading, width, BODY))
+                risen(results::empty(results::Empty::Loading, width, BODY), BODY)
             } else if view.grid() {
                 boxed(grid::pages(view, offset, at))
             } else {
@@ -281,6 +289,15 @@ pub(super) fn panel(view: &View) -> Column {
             .child(Column::new(body).gap(GAP)),
     ));
     Column::new(parts).width(view.width())
+}
+
+/// `child`, `width` by `height`, rising in `entered` far (0 … 1).
+pub(super) fn rise_in(child: Rectangle, width: f32, height: f32, entered: f32) -> Rectangle {
+    frame(width, height)
+        .align_child(Start, Start)
+        .child(child)
+        .opacity(entered.clamp(0.0, 1.0))
+        .translate(0.0, super::choreo::rise(entered))
 }
 
 /// How much the scrollbar shows: while the body moves, and a little after.

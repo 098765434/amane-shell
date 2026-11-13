@@ -6,3 +6,4 @@ pub mod kinetic;
 pub mod motion;
 pub mod pager;
 pub mod reveal;
+pub mod stagger;

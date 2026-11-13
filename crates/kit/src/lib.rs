@@ -57,6 +57,7 @@
 //! - [`kinetic`] — following fingers, and the momentum a flick leaves.
 //! - [`pager`] — turning pages with the fingers, a flick or a wheel.
 //! - [`reveal`] — a surface opening on a spring and closing quicker.
+//! - [`stagger`] — motion in parts, one after another, on one clock.
 //! - [`edge_reveal`] — a surface hiding at a screen edge until the pointer
 //!   touches it.
 //!
@@ -94,7 +95,7 @@ mod platform;
 pub mod theme;
 pub mod tokens;
 
-pub use animation::{edge_reveal, kinetic, motion, pager, reveal};
+pub use animation::{edge_reveal, kinetic, motion, pager, reveal, stagger};
 pub use containers::{
     app_bar, arrangement, card, dialog, divider, flow, form, grid, list, scroll_view, status_page,
     toast, tooltip,

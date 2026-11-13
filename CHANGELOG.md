@@ -40,6 +40,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     action `org.amane.nixos-activate` are `emaki-nixos-activate` and `org.emaki.nixos-activate`,
     the units `amane-shell.service`, `amane-drop.service` and `amane-update-check` are
     `emaki.service`, `emaki-drop.service` and `emaki-update-check`
+- Launcher: it opens from a drop that stretches into the pill, the mode buttons budding off its
+  end one after another and the text coming in last; it closes the other way, quicker. Opened
+  on a mode, it holds as the pill a moment before growing into the panel. Results and the app
+  grid rise in row by row when they first show. The mode buttons lift on a spring, the mode's
+  glyph crossfades into the back button, the empty field's words crossfade, the clear button
+  swells in and the highlight glides. With Reduce Motion on, each part only fades.
 
 ### Security
 

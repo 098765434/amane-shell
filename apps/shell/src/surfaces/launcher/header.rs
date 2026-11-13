@@ -1,5 +1,5 @@
-//! The search row along the top of the glass, the round mode buttons
-//! beside the pill, and Applications' bar of category pills.
+//! The search row along the top of the glass, and Applications' bar of
+//! category pills (the round mode buttons are [`buttons`](super::buttons)).
 //!
 //! The search row's text, caret and selection's wash are drawn by hand.
 //! It leads with the mode's glyph, which turns into a back button under
@@ -11,7 +11,9 @@
 //! follows the fingers as they turn the category; the pills' names take
 //! the accent's colour as it reaches them.
 
-use amane::{Blend, Center, Color, Rectangle, Row, Stack, Start, Text, Widget};
+use std::cell::RefCell;
+
+use amane::{Animation, Blend, Center, Color, Rectangle, Row, Stack, Start, Text, Widget};
 use emaki_kit::settings::{AppsLayout, change_launcher};
 
 use crate::services::assistant as assistant_service;
@@ -20,8 +22,8 @@ use crate::tokens::{Styled, TextStyle, sys};
 use emaki_kit::color::with_alpha;
 use emaki_kit::icons::{ICON_CHEVRON_LEFT, ICON_CLOSE, ICON_MIC, ICON_MORE_HORIZ, ICON_SEARCH};
 use emaki_kit::kinetic::Axis;
-use emaki_kit::layout::{boxed, cursor, frame, icon, pad, slot, text_width};
-use emaki_kit::material::{self, FillLevel, Level, Material};
+use emaki_kit::layout::{boxed, cursor, frame, icon, pad, slot, text_height, text_width};
+use emaki_kit::material::{self, FillLevel, Level};
 use emaki_kit::menu::layer as context_menu;
 use emaki_kit::menu::{ContextMenu, MenuItem};
 use emaki_kit::motion;
@@ -30,7 +32,7 @@ use emaki_kit::text_edit::Field;
 
 use super::entries::Scope;
 use super::mode::Mode;
-use super::shape::{CIRCLE, Geometry, PILL_H};
+use super::shape::PILL_H;
 use super::{
     LAUNCHER_NS, PILL_SCROLL, PILLS, View, back, model, on_pill_scroll, switch_mode, turn_to,
     type_into, with,
@@ -49,15 +51,64 @@ const GLYPH: f32 = 22.0;
 const ROW_INSET: f32 = 16.0;
 /// How tall a keycap or the scope's token is.
 const KEYCAP: f32 = 24.0;
-/// How big a mode button's glyph is, and how much it lifts under the
-/// pointer.
-const MODE_GLYPH: f32 = 24.0;
-const MODE_LIFT: f32 = 1.06;
 /// The keyboard focus ring round the picked pill: how thick, how far out,
 /// and how strong.
 const RING: f32 = 2.0;
 const RING_GAP: f32 = 2.0;
 const RING_ALPHA: f32 = 0.55;
+
+thread_local! {
+    // 0 … 1: a mode's glyph turning into the back button under the pointer
+    static BACK: RefCell<Animation> = RefCell::new(motion::fade(0.0, motion::duration::crossfade()));
+    // the empty field's words, the ones before them, and how far the one
+    // has faded into the other
+    static PLACEHOLDER: RefCell<Words> = RefCell::new(Words::new());
+    // 0 … 1: the button that clears the query, swelling in
+    static CLEAR: RefCell<Animation> = RefCell::new(motion::pop(0.0));
+}
+
+/// Gone from the screen: the next opening starts with nothing mid-fade.
+pub(super) fn reset() {
+    BACK.with_borrow_mut(|back| *back = motion::fade(0.0, motion::duration::crossfade()));
+    PLACEHOLDER.with_borrow_mut(|words| *words = Words::new());
+    CLEAR.with_borrow_mut(|clear| *clear = motion::pop(0.0));
+}
+
+/// What the empty field says, crossfading from what it said before.
+struct Words {
+    now: String,
+    before: String,
+    fade: Animation,
+}
+
+impl Words {
+    fn new() -> Self {
+        Self {
+            now: String::new(),
+            before: String::new(),
+            fade: motion::fade(1.0, motion::duration::crossfade()),
+        }
+    }
+}
+
+/// `text`, what the empty field says this frame, as the words before it,
+/// if they're still fading out, and how far `text` has faded in. `fade`
+/// false changes it at once, as for words heard while listening.
+fn placeholder_words(text: &str, fade: bool) -> (Option<String>, f32) {
+    PLACEHOLDER.with_borrow_mut(|words| {
+        if words.now != text {
+            words.before = std::mem::replace(&mut words.now, text.to_string());
+            words.fade = motion::fade(0.0, motion::duration::crossfade());
+            if fade && !words.before.is_empty() {
+                words.fade.to(1.0);
+            } else {
+                words.fade = motion::fade(1.0, motion::duration::crossfade());
+            }
+        }
+        let shown = words.fade.value();
+        ((shown < 1.0).then(|| words.before.clone()), shown)
+    })
+}
 
 /// Registry key for a mode's ⋯ menu.
 const MORE_MENU_KEY: &str = "emaki.launcher.more-menu";
@@ -115,25 +166,47 @@ pub(super) fn search_row(
             .unwrap_or(view.mode.title())
             .to_string(),
     };
+    let words = placeholder_words(&placeholder, !hearing);
+
+    // the clear button swells in with the first letter typed
+    let clear = CLEAR.with_borrow_mut(|clear| {
+        if typed {
+            clear.to(1.0);
+        } else {
+            *clear = motion::pop(0.0);
+        }
+        clear.value()
+    });
     let trailing: Option<Box<dyn Widget>> = if typed {
         used += LEADING + gap;
-        Some(boxed(round_button(ICON_CLOSE, || {
-            type_into(|field| {
-                *field = Field::new();
-                true
-            });
-            super::Launcher::changed();
-        })))
+        Some(boxed(
+            round_button(ICON_CLOSE, || {
+                type_into(|field| {
+                    *field = Field::new();
+                    true
+                });
+                super::Launcher::changed();
+            })
+            .opacity(clear.clamp(0.0, 1.0))
+            .scale(f32::blend(motion::scale(0.6), 1.0, clear)),
+        ))
     } else if let Some(digit) = hover_mode
         .and_then(Mode::digit)
         .filter(|_| view.mode == Mode::Home)
     {
         let digit = digit.to_string();
-        used += keycap_width("Ctrl") + keycap_width(&digit) + sys::space::gap::_2xs() + gap;
+        let caps_w = keycap_width("Ctrl") + keycap_width(&digit) + sys::space::gap::_2xs();
+        used += caps_w + gap;
+        // the keys come in with the mode's name
         Some(boxed(
-            Row::new(vec![boxed(keycap("Ctrl")), boxed(keycap(&digit))])
-                .gap(sys::space::gap::_2xs())
-                .align(Center),
+            frame(caps_w, KEYCAP)
+                .align_child(Start, Center)
+                .opacity(words.1)
+                .child(
+                    Row::new(vec![boxed(keycap("Ctrl")), boxed(keycap(&digit))])
+                        .gap(sys::space::gap::_2xs())
+                        .align(Center),
+                ),
         ))
     } else if view.mode == Mode::Apps {
         used += LEADING + gap;
@@ -149,7 +222,7 @@ pub(super) fn search_row(
     parts.push(boxed(search_field(
         field,
         focused,
-        &placeholder,
+        (&placeholder, words),
         (width - used).max(0.0),
     )));
     if let Some(trailing) = trailing {
@@ -176,16 +249,30 @@ fn listening_glyph(level: f32) -> Rectangle {
 fn leading_glyph(mode: Mode, hovered: bool) -> Rectangle {
     let label = material::label(Level::Secondary);
     if mode == Mode::Home {
+        BACK.with_borrow_mut(|back| *back = motion::fade(0.0, motion::duration::crossfade()));
         return slot(LEADING).child(icon(ICON_SEARCH, GLYPH, label));
     }
-    let (glyph, fill) = if hovered {
-        (ICON_CHEVRON_LEFT, material::fill_role(FillLevel::Secondary))
-    } else {
-        (mode.glyph(), Color::TRANSPARENT)
-    };
+    // the mode's glyph crossfades into the chevron, its square filling in
+    let back = BACK.with_borrow_mut(|back| {
+        back.to(if hovered { 1.0 } else { 0.0 });
+        back.value()
+    });
+    let fill = material::fill_role(FillLevel::Secondary);
+    let glyphs = Stack::new(vec![
+        boxed(
+            slot(LEADING)
+                .opacity(1.0 - back)
+                .child(icon(mode.glyph(), GLYPH, label)),
+        ),
+        boxed(
+            slot(LEADING)
+                .opacity(back)
+                .child(icon(ICON_CHEVRON_LEFT, GLYPH, label)),
+        ),
+    ]);
     slot(LEADING)
         .radius(sys::radius::raised())
-        .fill(fill)
+        .fill(with_alpha(fill, f32::from(fill.alpha()) / 255.0 * back))
         .on_hover(|inside| {
             if with(|state| std::mem::replace(&mut state.back_hover, inside)) != inside {
                 super::Launcher::changed();
@@ -195,7 +282,7 @@ fn leading_glyph(mode: Mode, hovered: bool) -> Rectangle {
             back_to_pill();
             super::Launcher::changed();
         })
-        .child(icon(glyph, GLYPH, label))
+        .child(glyphs)
 }
 
 /// The back button: out of the scope, else out of the mode.
@@ -293,8 +380,14 @@ fn clipboard_menu() {
 }
 
 /// The query as runs of text with the caret between them and the
-/// selection washed behind its run, or `placeholder` while it's empty.
-fn search_field(field: &Field, focused: bool, placeholder: &str, width: f32) -> Rectangle {
+/// selection washed behind its run, or `placeholder` while it's empty:
+/// its words, crossfading from the ones before them (`placeholder_words`).
+fn search_field(
+    field: &Field,
+    focused: bool,
+    placeholder: (&str, (Option<String>, f32)),
+    width: f32,
+) -> Rectangle {
     let style = search_style();
     let fg = material::label(Level::Primary);
     let run = |text: String| Text::new(text).style(style).color(fg);
@@ -313,11 +406,25 @@ fn search_field(field: &Field, focused: bool, placeholder: &str, width: f32) -> 
     let mut parts: Vec<Box<dyn Widget>> = Vec::new();
     if field.text().is_empty() {
         parts.push(boxed(caret()));
-        parts.push(boxed(
-            Text::new(placeholder)
-                .style(style)
-                .color(material::label(Level::Tertiary)),
-        ));
+        let (now, (before, shown)) = placeholder;
+        let words = |text: &str, opacity: f32| {
+            boxed(
+                frame(text_width(text, style), text_height(style))
+                    .align_child(Start, Center)
+                    .opacity(opacity)
+                    .child(
+                        Text::new(text)
+                            .style(style)
+                            .color(material::label(Level::Tertiary)),
+                    ),
+            )
+        };
+        let mut layers = Vec::new();
+        if let Some(before) = before {
+            layers.push(words(&before, 1.0 - shown));
+        }
+        layers.push(words(now, shown));
+        parts.push(boxed(Stack::new(layers)));
     } else {
         let len = field.len();
         let caret_at = field.caret();
@@ -352,62 +459,6 @@ fn search_field(field: &Field, focused: bool, placeholder: &str, width: f32) -> 
         .clip()
         .align_child(Start, Center)
         .child(Row::new(parts).gap(sys::space::gap::_2xs()).align(Center))
-}
-
-/// The round mode buttons where `geometry` puts them, `picked` the mode
-/// showing: they fade and slide in under the pill as it grows.
-pub(super) fn mode_buttons(geometry: &Geometry, picked: Mode) -> Vec<Box<dyn Widget>> {
-    let shown = geometry.shown();
-    let hovered = with(|state| state.hover_mode);
-    Mode::PICKED
-        .iter()
-        .zip(geometry.circles)
-        .map(|(&mode, circle)| {
-            let lifted = hovered == Some(mode) || picked == mode;
-            let glass = Rectangle::new()
-                .width(CIRCLE)
-                .height(CIRCLE)
-                .radius(CIRCLE / 2.0)
-                .fill(Material::Control.fill())
-                .align_child(Center, Center)
-                .on_hover(move |inside| {
-                    let changed = with(|state| {
-                        let before = state.hover_mode;
-                        if inside {
-                            state.hover_mode = Some(mode);
-                        } else if before == Some(mode) {
-                            state.hover_mode = None;
-                        }
-                        before != state.hover_mode
-                    });
-                    if changed {
-                        super::Launcher::changed();
-                    }
-                })
-                .on_click(move |_| {
-                    switch_mode(mode);
-                    super::Launcher::changed();
-                })
-                .child(icon(
-                    mode.glyph(),
-                    MODE_GLYPH,
-                    material::label(Level::Primary),
-                ));
-            let slide =
-                (1.0 - shown) * motion::travel(crate::tokens::launcher::mode_button::slide());
-            boxed(
-                Material::Control
-                    .lit(glass, CIRCLE / 2.0)
-                    .opacity(shown)
-                    .scale(if lifted {
-                        MODE_LIFT
-                    } else {
-                        f32::blend(0.85, 1.0, shown)
-                    })
-                    .translate(circle.x - slide, circle.y),
-            )
-        })
-        .collect()
 }
 
 /// The pills worth showing (`buckets`, indices into the categories), the

@@ -23,6 +23,8 @@ pub(super) const SHEET_RADIUS: f32 = 26.0;
 const TOP: f32 = 0.2;
 /// The least room between the glass and the screen's edges.
 const MARGIN: f32 = 16.0;
+/// How small the mode buttons get as they slide in under the panel.
+const PANEL_SCALE: f32 = 0.85;
 
 pub(super) use emaki_kit::area::Area;
 
@@ -34,6 +36,8 @@ pub(super) struct Geometry {
     pub(super) circles: [Area; 4],
     /// How much the mode buttons show: 1 beside the pill, 0 gone.
     pub(super) circles_shown: f32,
+    /// Whether the mode buttons sit beside the pill, else under it.
+    pub(super) beside: bool,
 }
 
 impl Blend for Geometry {
@@ -47,6 +51,7 @@ impl Blend for Geometry {
             radius: f32::blend(from.radius, to.radius, amount),
             circles,
             circles_shown: f32::blend(from.circles_shown, to.circles_shown, amount),
+            beside: to.beside,
         }
     }
 }
@@ -103,6 +108,47 @@ pub(super) fn target(screen: (f32, f32), size: (f32, f32), compact: bool) -> Geo
         radius: if compact { PILL_H / 2.0 } else { SHEET_RADIUS },
         circles,
         circles_shown: if compact { 1.0 } else { 0.0 },
+        beside,
+    }
+}
+
+/// Where the glass starts as it opens from closed: the sheet a drop, as
+/// round as it is tall, at the centre of where it rests (`target`, the
+/// pill), from which it stretches out sideways. The buttons bud off it on
+/// their own clock ([`Geometry::buds`]).
+pub(super) fn seed(target: Geometry) -> Geometry {
+    let (centre_x, centre_y) = target.sheet.centre();
+    Geometry {
+        sheet: Area {
+            x: centre_x - PILL_H / 2.0,
+            y: centre_y - PILL_H / 2.0,
+            width: PILL_H,
+            height: PILL_H,
+        },
+        radius: PILL_H / 2.0,
+        ..target
+    }
+}
+
+/// A mode button as it's drawn this frame: where its centre is, how big it
+/// is (1 its size) and how strongly it shows.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct Bud {
+    pub(super) centre: (f32, f32),
+    pub(super) scale: f32,
+    pub(super) shown: f32,
+}
+
+impl Bud {
+    /// Where it's drawn, scaled about its centre.
+    pub(super) fn area(self) -> Area {
+        let side = CIRCLE * self.scale;
+        Area {
+            x: self.centre.0 - side / 2.0,
+            y: self.centre.1 - side / 2.0,
+            width: side,
+            height: side,
+        }
     }
 }
 
@@ -122,24 +168,71 @@ impl Geometry {
         self.circles_shown.clamp(0.0, 1.0)
     }
 
-    /// Where the compositor frosts: behind the sheet, and the buttons as
-    /// much as they show.
-    pub(super) fn frost(self) -> Vec<BlurShape> {
+    /// The mode buttons, each `budded` this far off the sheet's end (0
+    /// tucked into it … 1 at rest, a little past on the spring), growing
+    /// from `from_scale`; as the sheet grows into the panel they slide in
+    /// under it by `slide` and fade. Unless they `travel` (where motion is
+    /// reduced), they fade in where they rest rather than move out.
+    pub(super) fn buds(
+        self,
+        budded: [f32; 4],
+        from_scale: f32,
+        slide: f32,
+        travel: bool,
+    ) -> [Bud; 4] {
+        let (sheet, _) = self.drawn();
+        // the end of the sheet they bud from: its right end beside the
+        // pill, its middle under it
+        let tucked = if self.beside {
+            (
+                sheet.x + sheet.width - CIRCLE / 2.0,
+                sheet.y + sheet.height / 2.0,
+            )
+        } else {
+            (
+                sheet.x + sheet.width / 2.0,
+                sheet.y + sheet.height - CIRCLE / 2.0,
+            )
+        };
+        let shown = self.shown();
+        let mut buds = [Bud {
+            centre: tucked,
+            scale: 1.0,
+            shown: 0.0,
+        }; 4];
+        for (bud, (circle, amount)) in buds.iter_mut().zip(self.circles.iter().zip(budded)) {
+            let (rest_x, rest_y) = circle.centre();
+            let rest = (rest_x - (1.0 - shown) * slide, rest_y);
+            let out = if travel { amount } else { 1.0 };
+            *bud = Bud {
+                centre: (
+                    f32::blend(tucked.0, rest.0, out),
+                    f32::blend(tucked.1, rest.1, out),
+                ),
+                scale: f32::blend(from_scale, 1.0, amount.min(1.0))
+                    * f32::blend(PANEL_SCALE, 1.0, shown),
+                shown: shown * amount.clamp(0.0, 1.0),
+            };
+        }
+        buds
+    }
+
+    /// Where the compositor frosts: behind the sheet, and the buttons
+    /// (`buds`) as much as they show.
+    pub(super) fn frost(self, buds: &[Bud]) -> Vec<BlurShape> {
         let (sheet, radius) = self.drawn();
         let mut shapes =
             vec![Material::Sheet.shape(sheet.x, sheet.y, sheet.width, sheet.height, radius, 1.0)];
-        let shown = self.shown();
-        if shown > 0.01 {
-            for circle in self.circles {
-                shapes.push(Material::Control.shape(
-                    circle.x,
-                    circle.y,
-                    circle.width,
-                    circle.height,
-                    CIRCLE / 2.0,
-                    shown,
-                ));
-            }
+        for bud in buds.iter().filter(|bud| bud.shown > 0.01) {
+            let area = bud.area();
+            shapes.push(Material::Control.shape(
+                area.x,
+                area.y,
+                area.width,
+                area.height,
+                area.width / 2.0,
+                bud.shown,
+            ));
         }
         shapes
     }
@@ -206,5 +299,45 @@ mod tests {
         let (sheet, radius) = squashed.drawn();
         assert_eq!(sheet.height, PILL_H);
         assert_eq!(radius, PILL_H / 2.0);
+    }
+
+    #[test]
+    fn the_glass_opens_from_a_drop_at_the_pills_centre() {
+        let pill = target(SCREEN, (0.0, 0.0), true);
+        let drop = seed(pill);
+        assert_eq!(drop.sheet.width, PILL_H);
+        assert_eq!(drop.sheet.height, PILL_H);
+        assert_eq!(drop.radius, PILL_H / 2.0);
+        assert_eq!(drop.sheet.centre(), pill.sheet.centre());
+        assert_eq!(drop.circles, pill.circles);
+        assert_eq!(Geometry::blend(drop, pill, 1.0), pill);
+    }
+
+    #[test]
+    fn the_buttons_bud_off_the_pills_end() {
+        let pill = target(SCREEN, (0.0, 0.0), true);
+        let tucked = pill.buds([0.0; 4], 0.5, 12.0, true);
+        for bud in tucked {
+            assert_eq!(bud.centre.0, pill.sheet.x + PILL_W - CIRCLE / 2.0);
+            assert_eq!(bud.shown, 0.0);
+            assert_eq!(bud.scale, 0.5);
+        }
+        let rest = pill.buds([1.0; 4], 0.5, 12.0, true);
+        for (bud, circle) in rest.iter().zip(pill.circles) {
+            assert_eq!(bud.centre, circle.centre());
+            assert_eq!(bud.scale, 1.0);
+            assert_eq!(bud.shown, 1.0);
+            assert_eq!(bud.area(), circle);
+        }
+        // only what shows is frosted
+        assert_eq!(pill.frost(&tucked).len(), 1);
+        assert_eq!(pill.frost(&rest).len(), 5);
+    }
+
+    #[test]
+    fn under_the_pill_they_bud_from_its_middle() {
+        let pill = target((900.0, 800.0), (0.0, 0.0), true);
+        let bud = pill.buds([0.0; 4], 0.5, 0.0, true)[2];
+        assert_eq!(bud.centre.0, pill.sheet.x + PILL_W / 2.0);
     }
 }

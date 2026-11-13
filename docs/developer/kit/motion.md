@@ -81,6 +81,17 @@ without the spring. `offset(count, &motion)` is the fractional page to draw, rub
 the ends. `PagerMotion` holds the settle's duration and easing, the flick speed and the rubber
 band. The launcher turns it sideways through its categories.
 
+## Stagger (`stagger.rs`)
+
+Motion in parts on one clock, one part after another: `Stagger` is `Copy`, so a view can keep
+it in a `Cell`. Call `start()` (or `start_in(delay)`), then ask each part
+`progress(delay, length, easing)`, or `nth(index, delay, step, length, easing)` for a run of
+parts `step` apart. A clock that hasn't been started has every part arrived. It asks for frames
+while a part it was asked about is still moving, so nothing else needs to keep the window
+drawing. `within(length)` holds something back at the start of the run. Where motion is
+reduced, every part fades at once. The launcher opens and closes on it, and its rows rise in on
+it.
+
 ## The dock's `Anim`
 
 The dock keeps every animation it runs in one table, `DOCK` in `apps/shell/src/surfaces/dock/motion.rs`
