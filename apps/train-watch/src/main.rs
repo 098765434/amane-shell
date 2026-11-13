@@ -70,7 +70,16 @@ struct Watch {
     asking: bool,
     // what the terminal was last told
     printed: String,
+    // what the activity was last sent, and when: an update goes out only when it changes, and
+    // at most once a SEND_EVERY, so a log printing many lines a second doesn't redraw the bar
+    // for each
+    sent: Option<(ActivityContent, Instant)>,
+    // a change held back until SEND_EVERY has passed
+    held: Option<ActivityContent>,
 }
+
+/// The least time between two activity updates that aren't alerts.
+const SEND_EVERY: Duration = Duration::from_secs(1);
 
 impl Watch {
     fn new(host: String, name: String, plain: bool) -> Self {
@@ -85,6 +94,8 @@ impl Watch {
             activity: None,
             asking: false,
             printed: String::new(),
+            sent: None,
+            held: None,
         };
         if !plain {
             watch.activity = Some(LiveActivity::start(watch.content(&Run::default())));
@@ -121,7 +132,9 @@ impl Watch {
                 Some(at) => SCORE_WAIT.saturating_sub(at.elapsed()),
                 None => QUIET,
             };
-            match rx.recv_timeout(wait) {
+            // a change held back may be due before the rest
+            let held = self.send_held().filter(|held| *held < wait);
+            match rx.recv_timeout(held.unwrap_or(wait)) {
                 Ok(Message::Line(line)) => {
                     heard = Instant::now();
                     backoff = Duration::from_secs(2);
@@ -186,6 +199,8 @@ impl Watch {
                     }
                     _ => {}
                 },
+                // a held change's time came: it goes out at the top of the loop
+                Err(RecvTimeoutError::Timeout) if held.is_some() => {}
                 Err(RecvTimeoutError::Timeout) if ended.is_some() => return self.end(&run),
                 Err(RecvTimeoutError::Timeout) => {
                     if heard.elapsed() >= QUIET && !self.going() && !run.finished() {
@@ -249,7 +264,21 @@ impl Watch {
 
     fn show(&mut self, run: &Run, alert: bool) {
         match &self.activity {
-            Some(activity) => activity.update(self.content(run), alert),
+            Some(_) => {
+                let content = self.content(run);
+                let same = self.sent.as_ref().is_some_and(|(sent, _)| *sent == content);
+                let soon = self
+                    .sent
+                    .as_ref()
+                    .is_some_and(|(_, at)| at.elapsed() < SEND_EVERY);
+                if alert || (!same && !soon) {
+                    self.send(content, alert);
+                } else if !same {
+                    self.held = Some(content);
+                } else {
+                    self.held = None;
+                }
+            }
             None => {
                 let line = format!("{}  {}", self.title(run), run.summary());
                 if line != self.printed {
@@ -260,7 +289,35 @@ impl Watch {
         }
     }
 
+    fn send(&mut self, content: ActivityContent, alert: bool) {
+        if let Some(activity) = &self.activity {
+            activity.update(content.clone(), alert);
+        }
+        self.sent = Some((content, Instant::now()));
+        self.held = None;
+    }
+
+    /// Sends a held-back change once its time has come; how long until then otherwise.
+    fn send_held(&mut self) -> Option<Duration> {
+        self.held.as_ref()?;
+        let since = self
+            .sent
+            .as_ref()
+            .map_or(SEND_EVERY, |(_, at)| at.elapsed());
+        if since >= SEND_EVERY {
+            if let Some(content) = self.held.take() {
+                self.send(content, false);
+            }
+            return None;
+        }
+        Some(SEND_EVERY - since)
+    }
+
     fn end(&mut self, run: &Run) -> i32 {
+        // the last state goes out before the end
+        if let Some(content) = self.held.take() {
+            self.send(content, false);
+        }
         if let Some(activity) = self.activity.take() {
             let lasts = if run.phase == Phase::Done { 30 } else { 12 };
             activity.end(Dismiss::After(lasts));
