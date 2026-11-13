@@ -19,7 +19,7 @@ Settings' Appearance page, the launcher, the OSD, notifications, the desktop wid
 ### Dock (`apps/shell/src/surfaces/dock/`)
 - [x] Window and app menus (`window_menu.rs`): focus, fullscreen, float, move to workspace, pin,
       close; a pinned app's open, open on another workspace, unpin: `Dock / Window menu` (Kind =
-      Window, Pinned window, Submenu open, Pin), `Dock / Workspace submenu`, and the "Dock — Window
+      Window, Pinned window, Submenu open, Pin), `Bar / Workspace submenu` (Kind = All), and the "Dock — Window
       menu", "Dock — Workspace submenu" and "Dock — Pinned app menu" boards. Not drawn: "Pin to
       Dock" greyed out for an app with no desktop entry
 - [x] Drag states: an icon in hand, the gap opening, dropping off the dock: the "Dock — Dragging"
@@ -28,8 +28,9 @@ Settings' Appearance page, the launcher, the OSD, notifications, the desktop wid
 
 ### Status bar (`apps/shell/src/chrome/`)
 - [x] The workspace menu (`workspace_menu.rs`): it's the workspace submenu the dock and the
-      launcher open, not a menu of the bar's own. Drawn as `Dock / Workspace submenu` and
-      `Launcher / Workspace submenu` (the focused monitor's, ending in "New Workspace")
+      launcher open, not a menu of the bar's own. Drawn as `Bar / Workspace submenu`: Kind = All
+      (`workspace_menu::all`, the dock's) and Focused monitor (`on_focused_output`, the launcher's,
+      ending in "New Workspace")
 - [x] Activities in the bar (Drop's work, train-watch's run): `Bar / Activity` (Kind = Ring,
       Countdown, Text, Minimal × State = Rest, Active), `Bar / Activity card` (Drop, Timer,
       Training's stop question), and the "Status Bar — Activities", "Activity open" and
@@ -40,7 +41,7 @@ Settings' Appearance page, the launcher, the OSD, notifications, the desktop wid
 
 ### Launcher (`apps/shell/src/surfaces/launcher/`)
 - [x] An app's and a file's menu (`app_menu.rs`): `Launcher / App menu` (Kind = App, File, each
-      with its submenu open), `Launcher / Workspace submenu`, `Launcher / Open With submenu`, and the
+      with its submenu open), `Bar / Workspace submenu` (Kind = Focused monitor), `Launcher / Open With submenu`, and the
       "Launcher — App menu" and "Launcher — File menu" scenes
 - [x] The assistant's command card (`assistant.rs`), e.g. "Turn On Night Light": it's the answer
       card with "Assistant" over the command and "Return to run" (or "Return to confirm"). Drawn in
@@ -140,8 +141,34 @@ Only Appearance is drawn. Still to draw:
       mismatches in the code show as drawn: the toast's 30 px button in a 34 px pill, and the status
       page's 28 px button slot under a 30 px button
 - [ ] Dialog (see Alerts)
-- [ ] One shared button set (push, icon, round) in place of the copies under Launcher and
-      Notifications
+- [x] One shared button set: `Kit / Push button` (Style = Filled, Tonal, Plain, Destructive ×
+      Shape = Square, Round × State = Rest, Disabled) and `Kit / Icon button` (Style = Plain, Tonal,
+      Filled × Size = Regular, Small × State = Rest, Selected, Disabled). The copies under Launcher
+      and Notifications are gone. A capsule's radius stays raw: `Radius::Full` has no token
+- [ ] `Widget / Card` is unused: each reading's main is the card itself. Building the readings on
+      a card copy would mean moving glass, shadow and fill into a copy across 37 variants
+- [ ] A form group (header, card of rows, footer) can't be a component: a copy can't take new
+      rows. The rows and separators are components; the card is token-bound
+
+## Scenes are built from slot components
+Each surface's repeated frame is a component whose body is a nested variant set, switched per
+scene (`h.slot(copy.children[i], 'Kind', …)`):
+- `Launcher / Sheet` with `Launcher / Body` (Kind = Results, Phone apps, Answer, Applications,
+  Applications list, Actions, Files, Clipboard, Clipboard ask, Scoped, No files). The pill scenes
+  hide the divider and body
+- `Messages / Window` with `Messages / Sidebar` (Conversations, Note) and `Messages / Pane`
+  (Thread, Group thread, Attachments, Earlier, New Message, Empty, Phone Input, No phone, SMS not
+  shared)
+- `Notifications / Center` with `Notifications / Center body` (List, Group open, Empty)
+- `Settings / Window` (Material = Glass, Solid) with `Settings / Page`; a second Settings page
+  joins `Settings / Page` as a variant (a one-variant set can't be made)
+- `Bar / Bar`'s status row holds a hidden app item and three activities (Drop, Timer, Training)
+  that the bar strips show and switch
+- `Dock / Dock` has State = Rest, Dragging, Unpinning
+
+## Leftovers to confirm with the user
+- A `Glyph item` board (not a component) on "Status Bar — Components"
+- A collapsed `Icon` text on "Messages — Components"
 
 ## Across the file
 - [ ] Light-mode boards: switching the theme recolours the file, but no board is kept in light
