@@ -64,6 +64,17 @@ const RIPPLES: usize = 2;
 const RIPPLE_TIME: Duration = Duration::from_millis(560);
 const RIPPLE_GAP: Duration = Duration::from_millis(240);
 
+/// How long it springs to the workspace shown on a monitor niri doesn't
+/// report a switch for: about as long as niri's own critically damped
+/// switch takes.
+const FOLLOW_TIME: Duration = Duration::from_millis(280);
+
+/// The fill's spring as the first window opens (plopping past the edge
+/// and back) and as the last one goes (draining calmly).
+const FILL_TIME: Duration = Duration::from_millis(420);
+const FILL_BOUNCE: f32 = 0.3;
+const DRAIN_TIME: Duration = Duration::from_millis(260);
+
 /// How thick an empty workspace's outline is.
 fn stroke() -> f32 {
     crate::tokens::bar::workspace::shape::stroke()
@@ -135,19 +146,18 @@ pub fn fullness(at: f32, full: &[bool]) -> f32 {
 }
 
 fn spring(value: f32) -> Animation<f32> {
-    // about as long as niri's own critically damped switch takes
-    motion::eased(
-        value,
-        Duration::from_millis(280),
-        Easing::Spring { bounce: 0.0 },
-    )
+    motion::eased(value, FOLLOW_TIME, Easing::Spring { bounce: 0.0 })
 }
 
 /// The fill on its way to `full`: plopping in past the edge and back as
 /// the first window opens, draining calmly as the last one goes.
 fn filling(from: f32, full: bool) -> Animation<f32> {
-    let (time, bounce) = if full { (420, 0.3) } else { (260, 0.0) };
-    let mut fill = motion::eased(from, Duration::from_millis(time), Easing::Spring { bounce });
+    let (time, bounce) = if full {
+        (FILL_TIME, FILL_BOUNCE)
+    } else {
+        (DRAIN_TIME, 0.0)
+    };
+    let mut fill = motion::eased(from, time, Easing::Spring { bounce });
     fill.to(if full { 1.0 } else { 0.0 });
     fill
 }
@@ -188,7 +198,8 @@ fn ripples_time() -> Duration {
 
 /// What a monitor's shape looks like this frame.
 struct Look {
-    at: f32,
+    /// The shape, or the two mixed, where the switch is.
+    outline: Outline,
     filled: f32,
     color: Color,
     pose: Pose,
@@ -271,7 +282,7 @@ fn look(output: &str, full: &[bool], shown: usize, urgent: bool) -> Look {
                 }
                 live.urgent = urgent;
 
-                let (_, mut pose) = shape_at(at, reduced);
+                let (outline, mut pose) = shape_at(at, reduced);
                 if !reduced {
                     let squash = squashed(past);
                     let bump = 1.0 + LANDING * (PI * live.landing.value()).sin();
@@ -292,7 +303,7 @@ fn look(output: &str, full: &[bool], shown: usize, urgent: bool) -> Look {
                 };
 
                 Look {
-                    at,
+                    outline,
                     filled,
                     color: live.color.value(),
                     pose,
@@ -383,7 +394,6 @@ pub fn indicator(output: &str, workspaces: &[&Workspace], width: f32) -> Rectang
     let presence = presence(&id, reduced);
 
     super::item(DrawnButton::new(id, move |color| {
-        let (outline, _) = shape_at(look.at, reduced);
         let pose = Pose {
             scale_x: look.pose.scale_x * presence,
             scale_y: look.pose.scale_y * presence,
@@ -394,7 +404,7 @@ pub fn indicator(output: &str, workspaces: &[&Workspace], width: f32) -> Rectang
             .height(Size::Parent)
             .align_child(Center, Center)
             .child(Canvas::new().width(CANVAS).height(CANVAS).shapes(paths(
-                &outline,
+                &look.outline,
                 pose,
                 look.filled,
                 color,

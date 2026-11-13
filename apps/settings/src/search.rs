@@ -506,19 +506,32 @@ const INDEX: &[Entry] = &[
         "status-bar",
         "Hide the bar automatically",
         "settings.bar.auto-hide",
-        &["auto hide", "full screen"],
+        &["auto hide", "full screen", "fullscreen", "desktop", "never"],
     ),
     row(
         "status-bar",
         "Bar material",
         "settings.bar.material",
-        &["transparent bar", "clear", "solid"],
+        &[
+            "transparent bar",
+            "clear",
+            "solid",
+            "frosted",
+            "glass",
+            "blur",
+        ],
     ),
     row(
         "status-bar",
         "Workspaces in the bar",
         "settings.bar.workspaces",
         &["pips", "workspace shape"],
+    ),
+    row(
+        "status-bar",
+        "Scroll to switch workspaces",
+        "settings.bar.scroll-workspaces",
+        &["scroll", "wheel", "workspaces"],
     ),
     row(
         "status-bar/activities",
@@ -541,8 +554,14 @@ const INDEX: &[Entry] = &[
     ),
     row(
         "status-bar/activities",
-        "Allow Activities",
+        "Activities with their text",
         "settings.bar.activities-compact",
+        &["compact", "how many"],
+    ),
+    // the apps' rows are listed as they're seen: the sub-page itself
+    page(
+        "status-bar/activities",
+        "Allow Activities",
         &["apps", "permission"],
     ),
     row(
@@ -573,7 +592,13 @@ const INDEX: &[Entry] = &[
         "status-bar/clock",
         "Show the date",
         "settings.bar.show-date",
-        &["day"],
+        &["day", "when space allows"],
+    ),
+    row(
+        "status-bar/clock",
+        "Date in the tooltip",
+        "settings.bar.date",
+        &["tooltip", "date format", "long date", "short date"],
     ),
     row(
         "status-bar/clock",
@@ -585,7 +610,13 @@ const INDEX: &[Entry] = &[
         "status-bar/weather",
         "Weather",
         "settings.bar.weather",
-        &["temperature", "forecast"],
+        &["temperature", "forecast", "open-meteo"],
+    ),
+    row(
+        "status-bar/weather",
+        "Weather place",
+        "settings.bar.weather-place",
+        &["place", "city", "town", "location"],
     ),
     row(
         "status-bar/items",
@@ -593,10 +624,10 @@ const INDEX: &[Entry] = &[
         "settings.bar.order",
         &["icons", "order", "reorder"],
     ),
-    row(
+    // the apps' rows are listed as they're seen: the sub-page itself
+    page(
         "status-bar/items",
         "Allow in the Status Bar",
-        "settings.bar.order",
         &["tray", "system tray", "app icons"],
     ),
     // Dock

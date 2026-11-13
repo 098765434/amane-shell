@@ -36,12 +36,15 @@ pub(super) fn chip(activity: Shown, compact: bool) -> Rectangle {
         _ => None,
     };
 
-    let inset = sys::space::inset::s();
-    let leading_size = leading();
+    let metrics = super::super::metrics();
+    let leading_size = metrics.picture();
+    let gap = metrics.inner_gap;
     let width = match (&trailing, ring) {
-        (Some((text, style)), _) => inset * 2.0 + leading_size + 6.0 + text_width(text, *style),
-        (None, Some(_)) => inset * 2.0 + leading_size + 6.0 + leading_size,
-        (None, None) => super::super::metrics().item_width,
+        (Some((text, style)), _) => {
+            metrics.item_width_for(leading_size + gap + text_width(text, *style))
+        }
+        (None, Some(_)) => metrics.item_width_for(leading_size + gap + leading_size),
+        (None, None) => metrics.item_width,
     };
     let tip = match content.subtitle.is_empty() {
         true => content.title.clone(),
@@ -75,7 +78,7 @@ pub(super) fn chip(activity: Shown, compact: bool) -> Rectangle {
                 .width(width)
                 .height(Parent)
                 .align_child(Center, Center)
-                .child(Row::new(parts).gap(6.0).align(Center))
+                .child(Row::new(parts).gap(gap).align(Center))
         },
     ))
     .width(width)
@@ -99,8 +102,9 @@ pub(super) fn trailing_text(
         Trailing::None | Trailing::Progress(_) => None,
         Trailing::Text(text) if text.is_empty() => None,
         Trailing::Text(text) => {
-            let style = super::super::metrics().label();
-            Some((clip(text, style, if long { TITLE } else { TEXT }), style))
+            let metrics = super::super::metrics();
+            let cap = metrics.text_cap(if long { TITLE } else { TEXT });
+            Some((clip(text, metrics.label(), cap), metrics.label()))
         }
         Trailing::Countdown(until) => {
             let left = Duration::from_millis(
@@ -152,7 +156,8 @@ pub(in crate::surfaces::status_bar) fn picture(
                 "screen-share" => ICON_SCREEN_SHARE,
                 name => named(name).unwrap_or(ICON_RECORD),
             };
-            return boxed(icon(glyph, size * 0.9, color));
+            // a symbol in a picture's place is a glyph's size
+            return boxed(icon(glyph, size - super::super::PICTURE_OVER, color));
         }
         ItemIcon::Theme(name) => Apps::find_icon(name),
         ItemIcon::File(path) => Some(path.clone()),
@@ -163,13 +168,16 @@ pub(in crate::surfaces::status_bar) fn picture(
     boxed(image(path, size, dim))
 }
 
+/// How see-through an out-of-date activity's picture is.
+const DIM: f32 = 0.6;
+
 pub(super) fn image(path: PathBuf, size: f32, dim: bool) -> Rectangle {
     let picture = Rectangle::new()
         .width(size)
         .height(size)
         .radius((size / 4.5).round())
         .fill(Image::cover(path));
-    if dim { picture.opacity(0.6) } else { picture }
+    if dim { picture.opacity(DIM) } else { picture }
 }
 
 /// A ring `diameter` across, filled `done` of the way round from the top.

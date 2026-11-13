@@ -9,19 +9,22 @@
 //! on the item that moves (amane measures a drag against the last frame).
 
 use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use crate::chrome::per_output::PerOutput;
 
-use amane::{Animation, Center, End, Parent, Point, Radius, Rectangle, Row, Stack, Start, Widget};
+use amane::{
+    Animation, Blend, Center, End, Parent, Point, Radius, Rectangle, Row, Stack, Start, Widget,
+};
 
 use crate::tokens::sys;
 use emaki_kit::buttons::swallow_click;
 use emaki_kit::icons::ICON_CLOSE;
 use emaki_kit::layout::{boxed, fixed_width, icon};
+use emaki_kit::motion::{self, duration};
 
 use super::indicators::{Item, move_item};
+use super::width_of;
 
 /// How far a press moves before it picks the item up.
 const SLOP: f32 = 6.0;
@@ -59,20 +62,86 @@ struct Laid {
     start: f32,
 }
 
+/// What the cluster lays out: the bar's items, and the undo button before
+/// them while there's something to bring back.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Key {
+    Undo,
+    Item(Item),
+}
+
+/// One cell's motion, kept across frames under its key.
+struct Track {
+    key: Key,
+    /// How far its right edge is from the cluster's right end. The
+    /// cluster ends at the bar's right inset, so this is what stays put
+    /// as cells to its left come, go or change width.
+    right: Animation<f32>,
+    /// How far in it has come: 0 as it appears, 1 once it's there.
+    shown: Animation<f32>,
+    /// Its opacity: [`LEAVING`] while it's held off the bar to be hidden.
+    dim: Animation<f32>,
+}
+
+impl Track {
+    fn new(key: Key, right: f32, arrived: bool) -> Self {
+        let mut shown = motion::fade(if arrived { 1.0 } else { 0.0 }, duration::fade());
+        shown.to(1.0);
+        Self {
+            key,
+            right: motion::spring(right),
+            shown,
+            dim: motion::fade(1.0, duration::hover()),
+        }
+    }
+}
+
 thread_local! {
     static HELD: RefCell<Option<(String, Held)>> = const { RefCell::new(None) };
     static LAID: PerOutput<Laid> = const { PerOutput::new() };
 
-    // where each item the held one passes is sliding to, so it closes up smoothly
-    static SLIDES: RefCell<HashMap<Item, Animation<f32>>> = RefCell::new(HashMap::new());
+    // each bar's cells, sliding to their places and fading in
+    static TRACKS: PerOutput<Vec<Track>> = const { PerOutput::new() };
 
     // the item just dragged off the bar, and when, while it can be brought back
     static HIDDEN: Cell<Option<(Item, Instant)>> = const { Cell::new(None) };
 }
 
+/// Steps `tracks` towards `rests`, each key and where its right edge rests,
+/// keeping only those keys. On a bar seen for the first time (`fresh`)
+/// everything is simply there; a key that turns up later comes in.
+fn step(tracks: &mut Vec<Track>, rests: &[(Key, f32)], fresh: bool) {
+    tracks.retain(|track| rests.iter().any(|(key, _)| *key == track.key));
+    for (key, right) in rests {
+        match tracks.iter_mut().find(|track| track.key == *key) {
+            Some(track) => track.right.to(*right),
+            None => tracks.push(Track::new(*key, *right, fresh)),
+        }
+    }
+}
+
+/// Where each of cells `widths` wide rests, as its right edge's distance
+/// from the end of a row `gap` apart.
+fn rests(widths: &[f32], gap: f32) -> Vec<f32> {
+    let mut right = 0.0;
+    let mut rests = vec![0.0; widths.len()];
+    for (rest, width) in rests.iter_mut().zip(widths).rev() {
+        *rest = right;
+        right += width + gap;
+    }
+    rests
+}
+
 /// The items `built` for the bar on `output`, in a row whose items can be
-/// dragged into another order. `height` is the bar's.
-pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f32) -> Stack {
+/// dragged into another order, after `undo` if there is one. `height` is
+/// the bar's. Every cell slides to its place as others come, go or change
+/// width, and one that appears fades in.
+pub fn cluster(
+    output: &str,
+    built: Vec<(Item, Vec<Box<dyn Widget>>)>,
+    undo: Option<Box<dyn Widget>>,
+    height: f32,
+) -> Stack {
     let gap = super::metrics().gap;
     let held = HELD.with_borrow(|held| {
         held.as_ref()
@@ -80,23 +149,20 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
             .map(|(_, held)| *held)
     });
 
-    let mut groups: Vec<(Item, Row, f32)> = built
+    let mut groups: Vec<(Key, Box<dyn Widget>, f32)> = built
         .into_iter()
         .map(|(item, widgets)| {
             let row = Row::new(widgets).gap(gap).align(Center);
             let width = fixed_width(&row);
-            (item, row, width)
+            (Key::Item(item), boxed(row), width)
         })
         .collect();
 
-    // nothing held anywhere: the next drag's items start at rest where they are
-    if held.is_none() && HELD.with_borrow(Option::is_none) {
-        SLIDES.with_borrow_mut(HashMap::clear);
-    }
-
     // the held item goes where its middle is now, the rest close up
     if let Some(held) = held
-        && let Some(from) = groups.iter().position(|(item, ..)| *item == held.item)
+        && let Some(from) = groups
+            .iter()
+            .position(|(key, ..)| *key == Key::Item(held.item))
     {
         let group = groups.remove(from);
         let middle = held.at.x - held.grab + group.2 / 2.0;
@@ -104,60 +170,64 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
         groups.insert(slot(&widths, gap, middle), group);
     }
 
+    let widths: Vec<f32> = groups.iter().map(|(.., width)| *width).collect();
+    let items = (widths.iter().map(|width| width + gap).sum::<f32>() - gap).max(0.0);
     let mut spans = Vec::with_capacity(groups.len());
-    let mut children: Vec<Box<dyn Widget>> = Vec::with_capacity(groups.len());
     let mut left = 0.0;
-    for (item, row, width) in groups {
-        spans.push((item, left, width));
-        let mut cell = Rectangle::new()
-            .width(width)
-            .height(Parent)
-            .align_child(Center, Center);
-        let mut leaving = false;
-        match held {
-            Some(held) if held.item == item => {
-                cell = cell.translate(held.at.x - held.grab - left, 0.0);
-                if off(held.at.y, height) && item.hideable() {
-                    cell = cell.opacity(LEAVING);
-                    leaving = true;
-                }
-            }
-            // the others slide to their new places rather than jump
-            Some(_) => {
-                let at = SLIDES.with_borrow_mut(|slides| {
-                    let slide = slides
-                        .entry(item)
-                        .or_insert_with(|| emaki_kit::motion::spring(left));
-                    slide.to(left);
-                    slide.value()
-                });
-                cell = cell.translate(at - left, 0.0);
-            }
-            None => {}
+    for ((key, ..), width) in groups.iter().zip(&widths) {
+        if let Key::Item(item) = key {
+            spans.push((*item, left, *width));
         }
-        let cell = if leaving {
-            // the badge over the item, both the cell's size
-            cell.child(
-                Stack::new(vec![
-                    boxed(
-                        Rectangle::new()
-                            .width(Parent)
-                            .height(Parent)
-                            .align_child(Center, Center)
-                            .child(row),
-                    ),
-                    boxed(removing()),
-                ])
-                .width(width)
-                .height(Parent),
-            )
-        } else {
-            cell.child(row)
-        };
-        children.push(boxed(cell));
         left += width + gap;
     }
-    let total = (left - gap).max(0.0);
+
+    // the undo button before the items, outside what can be dragged
+    let lead = undo
+        .as_ref()
+        .map_or(0.0, |undo| width_of(undo.as_ref()) + gap);
+    if let Some(undo) = undo {
+        let width = lead - gap;
+        groups.insert(0, (Key::Undo, undo, width));
+    }
+    let total = lead + items;
+    let widths: Vec<f32> = groups.iter().map(|(.., width)| *width).collect();
+    let rest = rests(&widths, gap);
+    let keys: Vec<(Key, f32)> = groups.iter().map(|(key, ..)| *key).zip(rest).collect();
+
+    let cells = TRACKS.with(|tracks| {
+        let fresh = tracks.all(|tracks| !tracks.contains_key(output));
+        tracks.with(output, Vec::new, |tracks| {
+            step(tracks, &keys, fresh);
+            groups
+                .into_iter()
+                .zip(widths)
+                .map(|((key, content, width), _)| {
+                    let track = tracks
+                        .iter_mut()
+                        .find(|track| track.key == key)
+                        .expect("stepped above");
+                    let leaving = match (key, held) {
+                        (Key::Item(item), Some(held)) if held.item == item => {
+                            // it follows the pointer, and springs from there when let go
+                            let at = lead + held.at.x - held.grab;
+                            track.right = motion::spring(total - at - width);
+                            off(held.at.y, height) && item.hideable()
+                        }
+                        _ => false,
+                    };
+                    track.dim.to(if leaving { LEAVING } else { 1.0 });
+                    cell(
+                        content,
+                        width,
+                        total - track.right.value() - width,
+                        track.shown.value(),
+                        track.dim.value(),
+                    )
+                })
+                .collect::<Vec<_>>()
+        })
+    });
+
     LAID.with(|laid| {
         laid.all(|laid| {
             laid.insert(
@@ -165,23 +235,54 @@ pub fn cluster(output: &str, built: Vec<(Item, Vec<Box<dyn Widget>>)>, height: f
                 Laid {
                     spans,
                     height,
-                    start: amane::window_size().0 - sys::space::inset::m() - total,
+                    start: amane::window_size().0 - sys::space::inset::m() - items,
                 },
             );
         })
     });
 
-    let row = Row::new(children).gap(gap).align(Center).height(Parent);
     let (dragged, released) = (output.to_string(), output.to_string());
     let layer = Rectangle::new()
-        .width(Parent)
+        .width(items)
         .height(Parent)
+        .translate(lead, 0.0)
         .on_drag(move |at| drag(&dragged, at))
         .on_release(move |at| release(&released, at));
 
-    Stack::new(vec![boxed(row), boxed(layer)])
-        .width(total)
+    let mut children = cells;
+    children.push(boxed(layer));
+    Stack::new(children).width(total).height(Parent)
+}
+
+/// A cell `width` wide at `left`, `shown` of the way in, with `dim` its
+/// opacity: below 1 it's on its way off the bar, and wears the badge.
+fn cell(content: Box<dyn Widget>, width: f32, left: f32, shown: f32, dim: f32) -> Box<dyn Widget> {
+    let content = Rectangle::new()
+        .width(Parent)
         .height(Parent)
+        .align_child(Center, Center)
+        .child(Row::new(vec![content]).align(Center));
+    let content: Box<dyn Widget> = if dim < 1.0 {
+        // the badge fades in as the item dims
+        let badge = removing().opacity(((1.0 - dim) / (1.0 - LEAVING)).clamp(0.0, 1.0));
+        boxed(
+            Stack::new(vec![boxed(content.opacity(dim)), boxed(badge)])
+                .width(width)
+                .height(Parent),
+        )
+    } else {
+        boxed(content)
+    };
+    let scale = f32::blend(motion::scale(motion::enter_scale()), 1.0, shown);
+    boxed(
+        Rectangle::new()
+            .width(width)
+            .height(Parent)
+            .translate(left, 0.0)
+            .opacity(shown)
+            .scale(scale)
+            .child(Row::new(vec![content]).height(Parent)),
+    )
 }
 
 /// The badge on an item let go to be hidden: a small red disc with an X
@@ -199,7 +300,7 @@ fn removing() -> Rectangle {
                 .radius(Radius::Full)
                 .fill(sys::color::status::critical::bg())
                 .align_child(Center, Center)
-                .child(icon(ICON_CLOSE, size * 0.8, amane::Color::WHITE)),
+                .child(icon(ICON_CLOSE, size * 0.8, sys::color::accent::fg())),
         )
 }
 
@@ -389,6 +490,47 @@ mod tests {
         assert_eq!(just_hidden_at(hidden, then), Some(Item::Volume));
         assert_eq!(just_hidden_at(hidden, then + UNDO_FOR), None);
         assert_eq!(just_hidden_at(None, then), None);
+    }
+
+    #[test]
+    fn cells_rest_from_the_right_end() {
+        assert_eq!(rests(&[10.0, 20.0, 5.0], 4.0), vec![33.0, 9.0, 0.0]);
+        assert!(rests(&[], 4.0).is_empty());
+    }
+
+    #[test]
+    fn a_new_bar_rests_and_a_later_item_comes_in() {
+        let (volume, clock) = (Key::Item(Item::Volume), Key::Item(Item::Clock));
+        let mut tracks = Vec::new();
+        step(&mut tracks, &[(volume, 30.0), (clock, 0.0)], true);
+        assert!(tracks.iter().all(|track| track.shown.value() == 1.0));
+
+        let battery = Key::Item(Item::Battery);
+        step(
+            &mut tracks,
+            &[(volume, 60.0), (battery, 30.0), (clock, 0.0)],
+            false,
+        );
+        let shown = |key| {
+            tracks
+                .iter()
+                .find(|t: &&Track| t.key == key)
+                .unwrap()
+                .shown
+                .value()
+        };
+        assert!(shown(battery) < 0.1, "it fades in from nothing");
+        assert_eq!(shown(volume), 1.0);
+    }
+
+    #[test]
+    fn an_item_that_goes_is_forgotten() {
+        let (volume, clock) = (Key::Item(Item::Volume), Key::Item(Item::Clock));
+        let mut tracks = Vec::new();
+        step(&mut tracks, &[(volume, 30.0), (clock, 0.0)], true);
+        step(&mut tracks, &[(clock, 0.0)], false);
+        assert_eq!(tracks.len(), 1);
+        assert_eq!(tracks[0].key, clock);
     }
 
     #[test]

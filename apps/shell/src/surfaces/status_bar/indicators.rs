@@ -24,7 +24,8 @@ pub enum Indicator {
     /// A phone through KDE Connect, with its charge, while it's connected.
     Phone,
     KeepAwake,
-    /// Screen sharing, camera and microphone, while in use.
+    /// The camera and microphone, while in use (screen sharing is an
+    /// activity).
     Privacy,
     /// Night Light, VPN, power mode and Airplane, while on.
     StatusIcons,

@@ -21,11 +21,9 @@ use emaki_kit::layout::{boxed, cursor};
 use emaki_kit::material::{self, Level};
 use emaki_kit::menu::{Check, ContextMenu, Icon, MenuItem};
 
-use super::{BAR_NS, bar_icon, item, menu_edge, menu_showing, show_menu};
+use super::{BAR_NS, bar_icon, item, menu_edge, menu_point, menu_showing, show_menu};
+use emaki_kit::icons::ICON_MORE;
 use emaki_kit::shell_ipc::Listed;
-
-/// `keyboard_double_arrow_right`: the items that didn't fit.
-const ICON_MORE: char = '\u{eac9}';
 
 const MENU_KEY: &str = "emaki.bar.tray";
 const MORE_KEY: &str = "emaki.bar.tray.more";
@@ -119,7 +117,7 @@ fn icon(shown: &Shown) -> Rectangle {
     .on_press(move || press(&pressed))
     .on_secondary(move || ask_menu(&secondary))
     .on_middle(move || {
-        let (x, y) = screen_point();
+        let (x, y) = menu_point();
         Tray::secondary_activate(&middle, x, y);
     })
     .on_scroll(move |scroll: Scroll| {
@@ -186,7 +184,7 @@ fn press(shown: &Shown) {
     if shown.menu_only && shown.has_menu {
         ask_menu(&shown.key);
     } else {
-        let (x, y) = screen_point();
+        let (x, y) = menu_point();
         Tray::activate(&shown.key, x, y);
     }
 }
@@ -204,11 +202,11 @@ fn ask_menu(key: &str) {
         .iter()
         .any(|item| item.key() == key && item.has_menu());
     if !has_menu {
-        let (x, y) = screen_point();
+        let (x, y) = menu_point();
         Tray::context_menu(key, x, y);
         return;
     }
-    ASKED.set(Some((key.to_string(), cursor().0 as i32)));
+    ASKED.set(Some((key.to_string(), cursor().0)));
     Tray::open_menu(key);
 }
 
@@ -289,16 +287,10 @@ fn more(hidden: Vec<Shown>) -> Rectangle {
             row = row.on_select(move || press(&pressed));
             menu = menu.item(row);
         }
-        show_menu(MORE_KEY, MORE_KEY, menu, (cursor().0 as i32, menu_edge()));
+        show_menu(MORE_KEY, MORE_KEY, menu, menu_point());
     })
     .tooltip(BAR_NS, format!("{count} more"))
     .build()
-}
-
-/// Roughly where on the screen the pointer is, for the apps that open a
-/// window there: along the bar, at its edge.
-fn screen_point() -> (i32, i32) {
-    (cursor().0 as i32, menu_edge())
 }
 
 /// `status-bar tray list | activate <id> | menu <id>`: the apps in the
@@ -320,7 +312,7 @@ pub fn run(command: Listed) -> String {
             .join("\n"),
         Listed::Activate(id) => match find(&id) {
             Some((key, _)) => {
-                let (x, y) = screen_point();
+                let (x, y) = menu_point();
                 Tray::activate(&key, x, y);
                 String::from("ok")
             }

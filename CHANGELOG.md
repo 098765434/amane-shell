@@ -108,6 +108,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ("CPU Tctl", "Wi-Fi · wlp194s0").
 - Widgets: `widgets list --json`, `kinds`, `set`, `resize`, `move` and `undo` over IPC; Emaki
   Settings' Desktop page lists each monitor's widgets with Remove and Remove All.
+- Status bar: items slide aside as others come, go or change width (a chip turning compact, the
+  date dropping for room), new ones fade in, a dropped item settles into its place, and an
+  activity's expanded view fades in as the menus do.
+- Emaki Settings: the Status Bar's position and size are pictures of the bar; search finds the
+  weather's place, the tooltip's date, scrolling over the workspaces and more words.
 
 ### Fixed
 
@@ -121,6 +126,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the Compact bar.
 - Status bar: the camera and microphone colours are the palette's; Comfortable spaces its items
   wider; the analog clock is drawn finer at 16 px.
+- Status bar: the hover tile fills the Compact bar's height rather than being shorter than its
+  glyph; items with text all pad and space their parts alike, programs' titles are in the
+  primary label colour as the clock's are, and text caps grow at Comfortable.
+- Emaki Settings: searching "Allow Activities" or "Allow in the Status Bar" opens their page
+  rather than lighting an unrelated row.
 - Emaki Settings: moving a bar item with its arrows no longer loses where programs' items were.
 - Widgets: a `widgets.json` that can't be read is kept as `widgets.json.bad` rather than
   overwritten; one bad widget in it no longer loses the rest.

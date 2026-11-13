@@ -11,20 +11,6 @@ pub(super) fn shown_workspace(output: &str) -> Option<(i64, u32)> {
         .map(|workspace| (workspace.id(), workspace.windows()))
 }
 
-/// What the strip is painted with: the bar's tint over niri's frost, the
-/// glass's own (none where niri draws it), black or white, or nothing.
-pub(super) fn fill(style: BarStyle) -> Color {
-    match style {
-        BarStyle::Clear => Color::TRANSPARENT,
-        BarStyle::Frosted => Material::Bar.tint(),
-        BarStyle::Glass => Material::Control.fill(),
-        BarStyle::Solid => match theme::mode() {
-            Mode::Dark => Color::BLACK,
-            Mode::Light => Color::WHITE,
-        },
-    }
-}
-
 /// The one shape that says which of monitor `output`'s workspaces shows
 /// ([`workspace_shape`]); scrolling over it moves between them.
 pub(super) fn workspaces(output: &str) -> Rectangle {

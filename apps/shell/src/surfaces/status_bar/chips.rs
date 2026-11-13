@@ -8,10 +8,10 @@ use crate::services::desktop::privacy::{Privacy, User};
 use crate::surfaces::quick_settings::{self, Page};
 use emaki_kit::buttons::DrawnButton;
 use emaki_kit::icons::{ICON_CAMERA, ICON_MIC};
-use emaki_kit::layout::{boxed, cursor, icon};
+use emaki_kit::layout::{boxed, icon};
 use emaki_kit::menu::{ContextMenu, Icon, MenuItem};
 
-use super::{BAR_NS, item, menu_edge, menu_showing, show_menu};
+use super::{BAR_NS, item, menu_point, menu_showing, show_menu};
 
 /// The privacy colours, the palette's, so they follow light and dark: the
 /// microphone and the camera.
@@ -26,8 +26,8 @@ const PRIVACY_KEY: &str = "emaki.bar.privacy";
 
 // ───── privacy ───────────────────────────────────────────────────────────────
 
-/// The screen-sharing chip and the camera and microphone dots, while in
-/// use.
+/// The camera and microphone dots, while in use. Screen sharing is an
+/// activity.
 pub fn privacy() -> Vec<Box<dyn Widget>> {
     let privacy = Privacy::read();
     let camera = privacy.camera();
@@ -120,12 +120,7 @@ fn privacy_menu() {
     menu = menu
         .separator()
         .item(MenuItem::label("Sound Settings…").on_select(|| quick_settings::open(Page::Sound)));
-    show_menu(
-        PRIVACY_KEY,
-        PRIVACY_KEY,
-        menu,
-        (cursor().0 as i32, menu_edge()),
-    );
+    show_menu(PRIVACY_KEY, PRIVACY_KEY, menu, menu_point());
 }
 
 /// Brings up the window of process `pid` (or its parent's, for a browser's

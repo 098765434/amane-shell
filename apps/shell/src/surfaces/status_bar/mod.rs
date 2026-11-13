@@ -6,9 +6,11 @@
 //! apps are the [`dock`](crate::surfaces::dock)'s, which rises over the
 //! bar from the bottom edge and while niri's overview is open.
 //!
-//! Every item is a lone glyph (or the workspace's shape) that turns into a white
-//! rounded tile with a black glyph while hovered, and stays one while what
-//! it opens is open. Everything is driven by the Penpot tokens in
+//! Every item (a glyph, the clock, an activity, a program's item, the
+//! workspace's shape) turns into a white rounded tile the bar's height while
+//! hovered, and stays one while what it opens is open. Items slide aside as
+//! others come, go or change width, and fade in as they appear
+//! ([`drag::cluster`]). Everything is driven by the Penpot tokens in
 //! `design-tokens/tokens.json` via [`tokens`](crate::tokens).
 //!
 //! Where it sits, what it's made of, its clock and which icons it shows
@@ -33,7 +35,6 @@ use items::*;
 use workspaces::*;
 
 use std::cell::Cell;
-use std::time::Duration;
 
 use amane::{
     Audio, Battery, Bluetooth, BluetoothDevice, Center, Color, Easing, Full, InputArea, Justify,
@@ -68,7 +69,7 @@ use emaki_kit::layout::{boxed, cursor, pad, text_width, track_cursor};
 use emaki_kit::material::{self, Level, Material};
 use emaki_kit::slider;
 
-use crate::tokens::{bar, sys};
+use crate::tokens::{bar, ms, sys};
 
 pub(crate) use indicators::{Indicator, Item};
 
@@ -76,7 +77,7 @@ use crate::chrome::bar::{edge, height};
 use crate::chrome::per_output::PerOutput;
 pub use activities::popup as activity_popup;
 pub use indicators::run;
-pub use size::metrics;
+pub use size::{PICTURE_OVER, metrics};
 pub use workspace_shape::switch_position;
 
 /// The status bar's layer-surface namespace. The niri `layer-rule` matches
@@ -108,8 +109,8 @@ thread_local! {
 
 fn new_reveal() -> EdgeReveal {
     EdgeReveal::new(
-        emaki_kit::motion::eased(0.0, Duration::from_millis(220), Easing::Out),
-        Duration::from_millis(400),
+        emaki_kit::motion::eased(0.0, ms(bar::motion::reveal()), Easing::Out),
+        ms(bar::motion::hide_delay()),
     )
 }
 
@@ -297,12 +298,7 @@ fn status(output: &str, room: f32) -> Row {
         Item::ordered()
             .into_iter()
             .filter(|item| item.shown())
-            .map(|item| match item {
-                Item::Tray => (item, tray::icons(&apps, hidden)),
-                Item::Clock => (item, vec![clock(dated)]),
-                Item::App(name) => (item, apps::widgets(name, output)),
-                _ => (item, build(item)),
-            })
+            .map(|item| (item, build(item, output, &apps, hidden, dated)))
             .filter(|(_, widgets)| !widgets.is_empty())
             .collect()
     };
@@ -338,9 +334,7 @@ fn status(output: &str, room: f32) -> Row {
         built = build_all(hidden, dated);
     }
 
-    let cluster = boxed(drag::cluster(output, built, height()));
-    Row::new(undo.into_iter().chain([cluster]).collect())
-        .gap(gap)
+    Row::new(vec![boxed(drag::cluster(output, built, undo, height()))])
         .align(Center)
         .height(Parent)
 }
@@ -355,11 +349,19 @@ fn undo_button(item: Item) -> Box<dyn Widget> {
     )
 }
 
-/// What `item` shows now: nothing, one widget, or a few for the privacy
-/// and "on" icons.
-fn build(item: Item) -> Vec<Box<dyn Widget>> {
+/// What `item` shows now on the bar on `output`: nothing, one widget, or a
+/// few for the tray's `apps` (all but the last `hidden`), the privacy and
+/// the "on" icons. The clock shows the date if `dated`.
+fn build(
+    item: Item,
+    output: &str,
+    apps: &[tray::Shown],
+    hidden: usize,
+    dated: bool,
+) -> Vec<Box<dyn Widget>> {
     match item {
-        Item::Tray | Item::App(_) => Vec::new(),
+        Item::Tray => tray::icons(apps, hidden),
+        Item::App(name) => apps::widgets(name, output),
         Item::Privacy => chips::privacy(),
         Item::Activities => activities::widgets(),
         Item::StatusIcons => on_icons(),
@@ -372,10 +374,16 @@ fn build(item: Item) -> Vec<Box<dyn Widget>> {
         Item::Battery => battery().into_iter().collect(),
         Item::QuickSettings => vec![quick_settings_button()],
         Item::Notifications => notification_icon().into_iter().collect(),
-        Item::Clock => vec![clock(true)],
+        Item::Clock => vec![clock(dated)],
         Item::Keyboard => keyboard().into_iter().collect(),
         Item::Weather => weather().into_iter().collect(),
     }
+}
+
+/// Where a menu opened under the pointer hangs from: the pointer's place
+/// along the bar, at the bar's edge facing the screen.
+pub(super) fn menu_point() -> (i32, i32) {
+    (cursor().0, menu_edge())
 }
 
 /// The bar's edge facing the screen, for a menu to open from: its top
@@ -388,6 +396,20 @@ fn menu_edge() -> i32 {
 }
 
 // ───── helpers ───────────────────────────────────────────────────────────────
+
+/// What the strip is painted with: the bar's tint over niri's frost, the
+/// glass's own (none where niri draws it), black or white, or nothing.
+fn fill(style: BarStyle) -> Color {
+    match style {
+        BarStyle::Clear => Color::TRANSPARENT,
+        BarStyle::Frosted => Material::Bar.tint(),
+        BarStyle::Glass => Material::Control.fill(),
+        BarStyle::Solid => match theme::mode() {
+            Mode::Dark => Color::BLACK,
+            Mode::Light => Color::WHITE,
+        },
+    }
+}
 
 /// Any bar item: unfilled until hovered, then a white rounded tile with
 /// its content black, the bar's height.
@@ -453,7 +475,7 @@ fn menu_showing(item: &str) -> bool {
 }
 
 /// How wide a boxed widget is, when it says.
-fn width_of(widget: &dyn Widget) -> f32 {
+pub(super) fn width_of(widget: &dyn Widget) -> f32 {
     match widget.width() {
         Size::Fixed(width) => width,
         Size::Parent => 0.0,

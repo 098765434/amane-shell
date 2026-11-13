@@ -5,7 +5,7 @@
 use amane::{Color, Column, Rectangle, Stack, Widget};
 use emaki_kit::color::with_alpha;
 use emaki_kit::layout::{boxed, frame};
-use emaki_kit::settings::{BarSize, BarStyle, WidgetStyle};
+use emaki_kit::settings::{BarPosition, BarSize, BarStyle, WidgetStyle};
 use emaki_kit::theme::{Glass, Mode};
 
 /// Every picture's size.
@@ -189,8 +189,8 @@ pub fn glass(glass: Glass) -> Rectangle {
     picture(layers)
 }
 
-/// The bar along the top in `style`, with a few items in it.
-pub fn bar(style: BarStyle, size: BarSize) -> Rectangle {
+/// The bar at `position`, `size` tall, in `style`, with a few items in it.
+pub fn bar(style: BarStyle, size: BarSize, position: BarPosition) -> Rectangle {
     let dark = dark_now();
     let strip = match style {
         BarStyle::Clear => None,
@@ -210,14 +210,18 @@ pub fn bar(style: BarStyle, size: BarSize) -> Rectangle {
     } else {
         1.0
     };
-    let middle = |tall: f32| (height - tall) / 2.0;
+    let top = match position {
+        BarPosition::Top => 0.0,
+        BarPosition::Bottom => HEIGHT - height,
+    };
+    let middle = |tall: f32| top + (height - tall) / 2.0;
     let mut layers = wallpaper();
     if let Some(strip) = strip {
         let mut bar = shape(WIDTH, height, 0.0, strip);
         if style == BarStyle::Glass {
             bar = bar.border(1.0, with_alpha(Color::WHITE, 0.4));
         }
-        layers.push(at(0.0, 0.0, bar));
+        layers.push(at(0.0, top, bar));
     }
     // the workspace's shape at the left, icons and the clock at the right
     layers.push(at(5.0, middle(5.0), shape(5.0, 5.0, 2.5, ink)));

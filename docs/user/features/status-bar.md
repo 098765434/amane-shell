@@ -45,8 +45,9 @@ overview opens, in step with its zoom. niri's own keybind (Mod+O) toggles the ov
 ## Items
 
 Every item is a bar-height button (the size's item width) with a tooltip. While hovered, it
-turns into a white rounded tile (`bar.indicator.active.bg`, `sys.radius.raised`) with its glyph
-black (`bar.indicator.active.fg`). It stays that way while what it opens is open:
+turns into a white rounded tile (`bar.indicator.active.bg`, `Shape::Square`'s radius) with its
+glyph black (`bar.indicator.active.fg`). At Compact the tile is the bar's full 18 px
+(`bar.panel.padding-y` 0), so it never comes out shorter than its 16 px glyph. It stays that way while what it opens is open:
 
 - each status icon, while Quick Settings shows its page;
 - the Quick Settings button, while Quick Settings is open;
@@ -139,7 +140,8 @@ own press, so they don't shrink when pressed. The usual order, left to right:
    airplane mode. Each opens its Quick Settings page (Airplane Mode the grid).
 4. **Activities** (`activities.rs`, [below](#activities)): Now Playing, the timer, screen
    sharing and other programs' activities.
-5. The optional **status icons** (see [below](#status-icons)), each opening its Quick Settings page:
+5. The **Weather** (`weather` in [Settings](#settings)): its glyph and temperature.
+6. The optional **status icons** (see [below](#status-icons)), each opening its Quick Settings page:
    - **Volume**: the glyph shows the default output (built-in speaker, speaker, headphones,
      headset, TV, car …) and the tooltip shows the level and the output's name. Scroll to change
      it, middle-click to mute.
@@ -152,30 +154,48 @@ own press, so they don't shrink when pressed. The usual order, left to right:
    - **Tailscale**: its nine-dot mark, only while connected. Accent while routing through an exit
      node; the tooltip shows the address or the exit node.
    - **Keep Awake**: a cup, accent while it holds anything; the tooltip shows the time left.
+   - **Keyboard layout**: the layout in use, with two or more ([below](#keyboard-layout)).
    - **Phone**: a phone through KDE Connect, while it's connected and has sent its charge;
      accent while charging, red when low; the tooltip shows its name and charge
      ([phone.md](phone.md)).
    - **Battery**: accent while charging (not merely plugged in), red when low; the tooltip
      shows the charge and Quick Settings' detail: the time left, the time to full, "full" or
      "on AC".
-6. The **Quick Settings** button (see [quick-settings.md](quick-settings.md)).
-7. The **notification** icon: a moon while Do Not Disturb is on (its tooltip says until when),
+7. The **Quick Settings** button (see [quick-settings.md](quick-settings.md)).
+8. The **notification** icon: a moon while Do Not Disturb is on (its tooltip says until when),
    a bell while something arrived unseen (its tooltip says how many), nothing otherwise. Click it
    for the center, right-click for Do Not Disturb.
-8. The **clock**: click it for the notification center (see [notifications.md](notifications.md));
+9. The **clock**: click it for the notification center (see [notifications.md](notifications.md));
    its tooltip is the date (`Clock::date`).
 
 Hidden items take no space: each section yields `Option`s that are flattened, so the row's gaps
 stay even.
 
+**Sizing.** An item with text (the clock, the weather, the keyboard layout, an activity, a
+program's item) is its parts plus `sys.space.inset.s` each side, never narrower than a lone
+glyph's item, with `sys.space.gap.xs` between its picture, text and badge, as a push button's
+icon and label (`Metrics::item_width_for`, `::inner_gap`). A picture (an app's icon, a song's
+art) is 2 px over a glyph (`Metrics::picture`), and a symbol in its place is a glyph's size.
+Text with an item's glyph is in the primary label colour; glyphs alone are secondary. Text caps
+(120 px for a title or an activity's text, 160 for Now Playing's) grow with Comfortable's text.
+
+**Motion** (`drag::cluster`). Each item's place is kept per monitor as its distance from the
+cluster's right end, which stays put, and springs (`motion::spring`) whenever it changes: as
+an item comes or goes, as a chip turns compact or minimal, as a countdown's text narrows, as
+the date drops for room, and as the undo button comes and goes. An item that appears fades
+and scales in (`motion::enter_scale`, `duration::fade`); one that goes leaves at once and the
+others close up. A dragged item springs from where it was let go into its place, and the dim
+and red badge of one about to be hidden fade (`duration::hover`). A bar seen for the first
+time shows everything in place. Where motion is reduced, the springs are short fades.
+
 ## Apps (the tray)
 
 The first item, **Apps** (`tray.rs`), is the system tray's icons from
 amane's `Tray` (StatusNotifierItem, see amane's `docs/fork/system/tray.md`), for Steam, Discord,
-nm-applet and the like, in the order they came. Each is the app's picture (16 px; a dot for one that
-sent none), ringed in the accent while the app wants attention. Apps whose item is `Passive` (KDE
-Connect's indicator with no phone, say) don't show. One that wants attention has an accent dot
-at its picture's corner.
+nm-applet and the like, in the order they came. Each is the app's picture (a glyph's size, growing with the
+bar; a dot for one that sent none). Apps whose item is `Passive` (KDE Connect's indicator with
+no phone, say) don't show. One that wants attention has an accent dot at its picture's
+corner.
 
 - **Left click**: the app's action (`Activate`), or its menu when it has only a menu.
 - **Right click**: its menu, read over dbusmenu as it opens and shown as the shell's own context
@@ -239,8 +259,8 @@ What's going on now, shown in the bar until it ends (`activities.rs`).
 - **Ranking.** Each activity has a relevance: Sharing 0.9, the timer 0.7, Now Playing 0.3, and
   other programs say their own. The most relevant `activities_compact` (1–3, 2 by default) show
   **compact**: the picture and the trailing text, countdown, count-up or progress ring.
-- **Minimal.** The rest show their picture alone. The bar's overflow takes the tray's apps
-  first.
+- **Minimal.** The rest show their picture alone. Only the tray's apps go behind the bar's
+  overflow (»); activities never do.
 - **Ticking.** A countdown or count-up is ticked by the bar, a frame just after each second
   turns over (`motion::redraw_after`). Its program sends nothing in between.
 - **Dimming.** An activity is dimmed once it is out of date (`stale_after` without an update),
@@ -251,7 +271,8 @@ What's going on now, shown in the bar until it ends (`activities.rs`).
 - A click opens the expanded view under the bar, an xdg-popup of the bar
   (`emaki.status-bar.activity`, frosted by the bar's layer rule). It shows the title and
   subtitle, the trailing part large, a progress bar, and up to three buttons, whose presses go
-  back to the program.
+  back to the program. It fades in with a 4 px slide from the bar, as the bar's menus do, and
+  closes at once.
 - An update that alerts brings the view up for 4 s, without a grab, but not under Do Not
   Disturb.
 
@@ -268,7 +289,8 @@ Every piece is rectangles, glyphs and arcs (the quad pipeline): `AMANE_FRAMES=1`
 
 ## Status icons
 
-Volume, Bluetooth, network, Tailscale, Keep Awake, the phone and battery are optional, and so are four
+Volume, Bluetooth, network, Tailscale, Keep Awake, the keyboard layout, the phone, battery and
+the weather are optional, and so are four
 groups: `activities` (the activities), `privacy` (camera, microphone), `status-icons` (Night
 Light, VPN, power mode, Airplane Mode) and `notifications` (the bell or the moon). Each Quick Settings page that has
 one ends in a **Show in Status Bar** switch; Emaki Settings' Status Bar page has a switch for

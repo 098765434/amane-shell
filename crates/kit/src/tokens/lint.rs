@@ -758,8 +758,9 @@ mod tests {
     /// sizes, the dock's motion, strip and threshold, the bar's workspace
     /// shape and scroll step, the launcher's opening and paging). Then
     /// component by 2 for the bar's workspace shape: its corners' rounding
-    /// and an empty workspace's outline.
-    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 188), ("component", 337)];
+    /// and an empty workspace's outline. Then component by 2 for the bar's
+    /// auto-hide motion (`bar.motion.reveal`, `bar.motion.hide-delay`).
+    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 188), ("component", 339)];
 
     #[test]
     fn no_tier_grows_past_its_ceiling() {

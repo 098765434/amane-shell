@@ -344,7 +344,7 @@ pub(super) fn notification_icon() -> Option<Box<dyn Widget>> {
             .on_press(|| panel::toggle(Panel::Notifications))
             .on_secondary(|| {
                 opened_menu("emaki.bar.notifications", notifications::DND_MENU_KEY);
-                notifications::dnd_menu(BAR_NS, (cursor().0, menu_edge()));
+                notifications::dnd_menu(BAR_NS, menu_point());
             })
             .tooltip(BAR_NS, tip)
             .build(),
@@ -389,8 +389,7 @@ pub(super) fn clock(dated: bool) -> Box<dyn Widget> {
     }
 
     // as wide as the time with its colons, so flashing them never moves it
-    let widest = clock_width(&time);
-    let width = widest + sys::space::inset::s() * 2.0;
+    let width = metrics().item_width_for(clock_width(&time));
 
     boxed(
         item(PushButton::new("emaki.bar.clock", time))
@@ -467,11 +466,11 @@ pub(super) fn keyboard() -> Option<Box<dyn Widget>> {
     let name = layouts.current().unwrap_or_default().to_string();
     drop(layouts);
     let code = short(&name);
-    let width = text_width(&code, metrics().label()) + sys::space::inset::s() * 2.0;
+    let width = metrics().item_width_for(text_width(&code, metrics().label()));
     Some(boxed(
         item(PushButton::new("emaki.bar.keyboard", code))
             .text(metrics().label())
-            .width(width.max(metrics().item_width))
+            .width(width)
             .active(menu_showing("emaki.bar.keyboard"))
             // scrolling goes round the layouts, as the menu lists them
             .on_scroll(|scroll: Scroll| {
@@ -498,7 +497,7 @@ pub(super) fn keyboard() -> Option<Box<dyn Widget>> {
                     "emaki.bar.keyboard",
                     "emaki.bar.keyboard",
                     menu,
-                    (cursor().0 as i32, menu_edge()),
+                    menu_point(),
                 );
             })
             .tooltip(BAR_NS, name)
@@ -536,13 +535,14 @@ pub(super) fn weather() -> Option<Box<dyn Widget>> {
         (material::label(Level::Primary), "")
     };
     let text = format!("{:.0}°", now.temperature);
-    let width =
-        text_width(&text, metrics().numeric()) + metrics().item_width + sys::space::inset::s();
+    let metrics = metrics();
+    let width = metrics
+        .item_width_for(metrics.icon + metrics.inner_gap + text_width(&text, metrics.numeric()));
     Some(boxed(
         item(PushButton::new("emaki.bar.weather", text))
             .icon(glyph)
-            .icon_size(metrics().icon)
-            .text(metrics().numeric())
+            .icon_size(metrics.icon)
+            .text(metrics.numeric())
             .width(width)
             .color(color)
             // beside the clock, it opens what the clock does

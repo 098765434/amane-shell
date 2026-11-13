@@ -39,6 +39,9 @@ pub const ICON_WARNING: char = '\u{e002}';
 pub const ICON_CLOSE: char = '\u{e5cd}';
 /// An arrow curling back (`undo`): put back what was just done.
 pub const ICON_UNDO: char = '\u{e166}';
+/// Two chevrons pointing right (`keyboard_double_arrow_right`): more that
+/// didn't fit.
+pub const ICON_MORE: char = '\u{eac9}';
 /// A minus sign (`remove`).
 pub const ICON_REMOVE: char = '\u{e15b}';
 /// A plus sign (`add`).

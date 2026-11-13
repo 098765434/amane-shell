@@ -61,17 +61,14 @@ pub const POPUP_NS: &str = "emaki.status-bar.activity";
 /// How long a paused player keeps its activity.
 const PAUSED_FOR: Duration = Duration::from_secs(5 * 60);
 
-/// How wide a compact activity's text may be, and Now Playing's title.
+/// How wide a compact activity's text may be, and Now Playing's title, at
+/// Compact; they grow with the text.
 const TEXT: f32 = 120.0;
 const TITLE: f32 = 160.0;
 
-/// The leading picture's size expanded; compact, it's [`leading`].
+/// The leading picture's size expanded; compact, it's the bar's picture
+/// size (`Metrics::picture`).
 const LEADING_BIG: f32 = 36.0;
-
-/// The leading picture's size in the bar: a little over a glyph.
-fn leading() -> f32 {
-    super::metrics().icon + 2.0
-}
 
 /// The expanded view's width, and its rows' heights.
 const CARD_WIDTH: f32 = 320.0;
@@ -115,6 +112,8 @@ struct Open {
     x: i32,
     /// Opened by a click, so it takes a grab; an alert's doesn't.
     clicked: bool,
+    /// When it opened: it fades in as the bar's menus do.
+    opened: Instant,
 }
 
 thread_local! {

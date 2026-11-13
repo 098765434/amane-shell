@@ -42,24 +42,6 @@ const STYLES: [(&str, BarStyle); 4] = [
 pub fn page() -> Column {
     let now = status_bar().clone();
 
-    let position = Dropdown::choice(
-        "settings.bar.position",
-        POSITIONS,
-        now.position,
-        |position| change_status_bar(|now| now.position = position),
-    )
-    .width(crate::MENU_W)
-    .build();
-
-    let size = Dropdown::choice(
-        "settings.bar.size",
-        BarSize::ALL.map(|size| (size.label(), size)),
-        now.size,
-        |size| change_status_bar(|now| now.size = size),
-    )
-    .width(crate::MENU_W)
-    .build();
-
     let hiding = [
         "Never",
         "Always",
@@ -75,12 +57,30 @@ pub fn page() -> Column {
     .width(crate::MENU_W);
 
     let width = crate::page_width() - 2.0 * style::row_pad_h();
-    let mut styles = ThumbnailPicker::new("settings.bar.style", previews::WIDTH, previews::HEIGHT)
-        .width(width)
+    let picker =
+        |id: &'static str| ThumbnailPicker::new(id, previews::WIDTH, previews::HEIGHT).width(width);
+
+    let mut positions = picker("settings.bar.position.picker")
+        .chosen(POSITIONS.iter().position(|(_, at)| *at == now.position))
+        .on_select(|index| change_status_bar(|now| now.position = POSITIONS[index].1));
+    for (label, at) in POSITIONS {
+        positions = positions.option(previews::bar(now.style, now.size, at), label);
+    }
+    let positions_height = positions.height();
+
+    let mut sizes = picker("settings.bar.size.picker")
+        .chosen(BarSize::ALL.iter().position(|size| *size == now.size))
+        .on_select(|index| change_status_bar(|now| now.size = BarSize::ALL[index]));
+    for size in BarSize::ALL {
+        sizes = sizes.option(previews::bar(now.style, size, now.position), size.label());
+    }
+    let sizes_height = sizes.height();
+
+    let mut styles = picker("settings.bar.style")
         .chosen(STYLES.iter().position(|(_, style)| *style == now.style))
         .on_select(|index| change_status_bar(|now| now.style = STYLES[index].1));
     for (label, style) in STYLES {
-        styles = styles.option(previews::bar(style, now.size), label);
+        styles = styles.option(previews::bar(style, now.size, now.position), label);
     }
     let styles_height = styles.height();
 
@@ -88,11 +88,15 @@ pub fn page() -> Column {
 
     groups(vec![
         group()
-            .row(FormRow::new("settings.bar.position", "Position").trailing(position))
+            .header("Position and size")
+            .row(
+                FormRow::new("settings.bar.position", "Position")
+                    .detail(positions.build(), positions_height),
+            )
             .row(
                 FormRow::new("settings.bar.size", "Size")
                     .subtitle("How tall it is, and how big its icons are")
-                    .trailing(size),
+                    .detail(sizes.build(), sizes_height),
             )
             .row(
                 FormRow::new("settings.bar.auto-hide", "Hide automatically")
@@ -104,9 +108,9 @@ pub fn page() -> Column {
                  notification center too. At the bottom, a hiding dock takes the edge first.",
             ),
         group()
-            .header("Material")
+            .header("Look")
             .row(
-                FormRow::new("settings.bar.material", "Look")
+                FormRow::new("settings.bar.material", "Material")
                     .detail(styles.build(), styles_height),
             )
             .footer("Clear draws only the items, light or dark to suit the wallpaper. Solid is black in dark mode and white in light."),
@@ -317,6 +321,9 @@ fn clock() -> Column {
             ))
             .row(
                 FormRow::new("settings.bar.date", "Date in the tooltip")
+                    .subtitle(
+                        "How the clock's tooltip writes the day; the bar's date is always short",
+                    )
                     .trailing(date_format.build()),
             ),
     ])
@@ -591,7 +598,7 @@ fn activities() -> Column {
         group()
             .row(switch_row(
                 "settings.bar.activities",
-                "Show Activities",
+                "Show activities",
                 on,
                 |on| change_status_bar(|now| now.set_shown("activities", on)),
             ))
@@ -613,7 +620,7 @@ fn activities() -> Column {
                 now.media_always,
                 |on| change_status_bar(|now| now.media_always = on),
             )
-            .subtitle("Else only while something plays, or was paused in the last few minutes"),
+            .subtitle("Show Now Playing even when nothing is playing. Off, it shows while something plays or was paused in the last few minutes"),
         ),
         group()
             .header("Allow Activities")

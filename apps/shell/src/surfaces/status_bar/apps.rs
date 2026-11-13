@@ -20,10 +20,10 @@ use emaki_kit::menu::{ContextMenu, MenuItem};
 
 use super::activities::picture;
 use super::indicators::Item;
-use super::{BAR_NS, drag, edge, item, menu_edge};
+use super::{BAR_NS, drag, edge, item, menu_point};
 use emaki_kit::shell_ipc::Listed;
 
-/// How wide an item's title may be.
+/// How wide an item's title may be at Compact; it grows with the text.
 const TITLE: f32 = 120.0;
 
 const MENU_KEY: &str = "emaki.bar.app";
@@ -55,21 +55,26 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
         .title
         .as_deref()
         .filter(|title| !title.is_empty())
-        .map(|title| super::activities::clip(title, style, TITLE));
+        .map(|title| super::activities::clip(title, style, metrics.text_cap(TITLE)));
     let badge = spec.badge.clone().filter(|badge| !badge.is_empty());
-    let inset = sys::space::inset::s();
-    let mut width = metrics.icon + inset * 2.0;
+    let mut content = metrics.picture();
     if let Some(title) = &title {
-        width += 6.0 + text_width(title, style);
+        content += metrics.inner_gap + text_width(title, style);
     }
     if let Some(badge) = &badge {
-        width += 4.0 + text_width(badge, style);
+        content += metrics.inner_gap + text_width(badge, style);
     }
-    let width = width.max(metrics.item_width);
+    let width = metrics.item_width_for(content);
 
     let id = spec.id.clone();
     let icon = spec.icon.clone();
     let attention = spec.attention;
+    // like the bar's other items with text, one with a title is in the primary label colour
+    let level = if title.is_some() {
+        Level::Primary
+    } else {
+        Level::Secondary
+    };
     let tooltip = if spec.tooltip.is_empty() {
         title.clone().unwrap_or_else(|| id.clone())
     } else {
@@ -82,7 +87,7 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
         } else {
             color
         };
-        let mut parts = vec![picture(&icon, metrics.icon, tint, false)];
+        let mut parts = vec![picture(&icon, metrics.picture(), tint, false)];
         if let Some(title) = title {
             parts.push(boxed(Text::new(title).style(style).color(color)));
         }
@@ -97,7 +102,7 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
             .width(width)
             .height(Parent)
             .align_child(Center, Center)
-            .child(Row::new(parts).gap(4.0).align(Center))
+            .child(Row::new(parts).gap(metrics.inner_gap).align(Center))
     };
 
     let (on, pressed, middled) = (output.to_string(), output.to_string(), output.to_string());
@@ -107,7 +112,7 @@ fn button(spec: ItemSpec, name: &'static str, output: &str) -> Rectangle {
     let built = item(DrawnButton::new(button.clone(), draw))
         .width(width)
         .active(super::menu_showing(&button))
-        .color(material::label(Level::Secondary))
+        .color(material::label(level))
         .on_press(move || activated(&left, ItemButton::Left, name, &pressed))
         .on_secondary(move || {
             if menu.is_empty() {
@@ -196,12 +201,7 @@ fn show_menu(id: &str, entries: &[MenuEntry]) {
     let menu = entries
         .iter()
         .fold(ContextMenu::new(), |menu, entry| add(menu, id, entry));
-    super::show_menu(
-        &format!("emaki.bar.app.{id}"),
-        MENU_KEY,
-        menu,
-        (cursor().0, menu_edge()),
-    );
+    super::show_menu(&format!("emaki.bar.app.{id}"), MENU_KEY, menu, menu_point());
 }
 
 fn add(menu: ContextMenu, id: &str, entry: &MenuEntry) -> ContextMenu {

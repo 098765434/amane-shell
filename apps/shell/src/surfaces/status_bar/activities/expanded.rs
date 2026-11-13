@@ -14,6 +14,7 @@ pub(super) fn toggle(key: &str) {
         key: key.to_string(),
         x: cursor().0,
         clicked: true,
+        opened: Instant::now(),
     }));
     Tick::changed();
 }
@@ -53,6 +54,7 @@ pub(super) fn alert(shown: &[Shown]) {
                     // the activities sit towards the bar's right
                     x: (window_size().0 - CARD_WIDTH) as i32,
                     clicked: false,
+                    opened: Instant::now(),
                 }));
                 Tick::changed();
             }
@@ -87,6 +89,7 @@ pub fn popup() -> Popup {
     };
 
     let (card, height) = expanded(&activity);
+    let card = opening(card, height, open.opened);
     let mut popup = Popup::new(POPUP_NS)
         .size(CARD_WIDTH as u32, height as u32)
         .anchor_rect(open.x, menu_edge(), 1, 1)
@@ -106,6 +109,28 @@ pub fn popup() -> Popup {
         popup = popup.grab();
     }
     popup
+}
+
+/// `card`, `height` tall, fading in since `opened` with a short slide away
+/// from the bar, as the bar's menus open.
+fn opening(card: Rectangle, height: f32, opened: Instant) -> Rectangle {
+    let t =
+        (opened.elapsed().as_secs_f32() / motion::duration::fade().as_secs_f32()).clamp(0.0, 1.0);
+    if t < 1.0 {
+        amane::request_frame();
+    }
+    let eased = 1.0 - (1.0 - t).powi(3);
+    // it starts a little towards the bar
+    let towards = match crate::chrome::bar::edge() {
+        amane::Vertical::Top => -1.0,
+        _ => 1.0,
+    };
+    Rectangle::new()
+        .width(CARD_WIDTH)
+        .height(height)
+        .opacity(eased)
+        .translate(0.0, (1.0 - eased) * motion::travel(4.0) * towards)
+        .child(card)
 }
 
 /// The expanded card and its height: the picture, title and subtitle and
