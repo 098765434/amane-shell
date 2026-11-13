@@ -271,10 +271,25 @@ What the desktop holds in memory, rather than what it spends per frame, is in
   widget dim stays a group per card.
 - **The launcher rebuilds** its search, actions and suggestions on every frame of its animations.
   It should memoize on the query.
-- **The keyboard light** is read once a second while anything reads it, the hidden OSD
-  included: the LED sends no event, and the OSD shows a change the firmware's own key made.
+- **The keyboard light** is read once a second for as long as the shell runs
+  (`services/power/keyboard_backlight.rs`, no `idle_stop`), whatever reads it. Kept on purpose:
+  a ThinkPad's LED has no `brightness_hw_changed`, so the kernel announces no change, and the
+  OSD shows a change the firmware's own key (Fn+Space) made. One sysfs read a second costs
+  microwatts; dropping it would lose that readout. Revisit if a machine's LED gains the event.
+- **No buffer damage.** A changed frame is presented whole, and niri and the panel's selective
+  update see the whole surface change: wgpu's present damages everything, so amane can't say
+  less yet. The design is in amane's `docs/fork/internals/damage.md`.
 
-Since gone: toasts, privacy, media and Bluetooth no longer poll (the roadmap's Phase 7), and
+Since gone, from the energy audit (2026-11-13): a Bluetooth search left running after Quick
+Settings' page slid out (60–80 wakeups a second, and the radio scanning); the auto-hidden bar and
+a tucked dock redrawing while away (now frozen); identical frames committing; glass reading the
+backdrop when it can't adapt, and every small change in the reading redrawing; the Apps and
+MimeApps folder looks every 30 s (now inotify); Settings' System pages polling once left; the
+network resync every 60 s while unwatched; vello's idle timer for life; cancelled timers waking
+the loop; train-watch updating the bar for every log line. `screen off` (IPC) pauses every window
+while the monitors are off.
+
+Before that: toasts, privacy, media and Bluetooth no longer poll (the roadmap's Phase 7), and
 on 2026-11-08 the idle wakeups fell again, from 14.6 to 6.9 a second on a second shell with
 nothing happening and from 1,758 to 339 during workspace switching (amane: niri events sent
 only to the listeners that read them, a change nobody reads waking nothing, the blocking

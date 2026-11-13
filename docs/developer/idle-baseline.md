@@ -1,5 +1,11 @@
 # Idle report
 
+> **Out of date.** This is the 2026-11-07 baseline. The polling it blames (`nmcli`, `niri msg`,
+> `rbw` spawns) is gone, and on 2026-11-12 the shell started no programs in 280 s idle and woke
+> about 5.5 times a second, apart from a Bluetooth search left running (since fixed). Measure
+> again with `scripts/idle-report` after deploying the 2026-11-13 energy changes
+> ([performance.md](performance.md#known-remaining-costs)).
+
 - Date: 2026-11-07T01:39+01:00
 - Shell: `/nix/store/4dpwcs2f9cxf7jj4m3mls4p2nm3bagdz-emaki-0.1.0`, pid 1778
 - Window: 60s, the desktop left alone, then 60s more to count programs under strace
