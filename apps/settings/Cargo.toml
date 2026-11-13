@@ -23,7 +23,7 @@ chrono = { workspace = true }
 # statvfs, for how full /nix and /boot are
 libc = { workspace = true }
 # the display connector's properties (panel type, VRR, colour), read-only
-drm = "0.14"
+drm = "0.15"
 
 [lints]
 workspace = true
