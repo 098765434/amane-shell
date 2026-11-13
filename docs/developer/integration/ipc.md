@@ -202,6 +202,17 @@ page. Every call but `status` answers `ok`, except a `configure` that changes th
 | `configure <server> <email> [forget]` | sets the server (`https://`, or `http://localhost`) and the account; with `forget`, a change also removes the old server's copy of the vault. A server other than the current one isn't set at once: the shell asks in its own dialog, naming the host, and the call answers `confirm` |
 | `lock-timeout <seconds>` | how long the vault stays unlocked |
 
+### `screen`
+
+`screen off | on`, for the idle service's screen-off step (hypridle's listener in nixos-config
+`modules/options.nix`, falling back to `niri msg action power-off-monitors` when the shell
+doesn't answer). Both answer `ok`, or `error: …` when niri can't be reached.
+
+| Call | Does |
+|---|---|
+| `off` | turns the monitors off (`PowerOffMonitors`), and pauses the shell's windows with them (`amane::set_screen_off`): nothing draws, and services only the windows read stop polling. The first input wakes both, even without `screen on` |
+| `on` | turns the monitors on again and every window draws afresh |
+
 ### Context menus
 
 See [context-menu.md](../../user/features/context-menu.md#why-arming) for why a menu opened from outside is armed first.

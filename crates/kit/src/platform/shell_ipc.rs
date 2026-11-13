@@ -85,6 +85,12 @@ pub enum ShellCommand {
     NightLight(NightLight),
     /// `passwords …`.
     Passwords(Passwords),
+    /// `screen off` / `screen on`: the monitors off (and the shell's windows paused, see
+    /// `amane::set_screen_off`), or on again. For the idle service's screen-off step.
+    Screen {
+        /// Off, or on again.
+        off: bool,
+    },
     /// `alert-test [stacked]`: a sample alert, in debug builds.
     AlertTest {
         /// Two alerts, one over the other.
@@ -391,7 +397,7 @@ const NOTIFICATIONS_USAGE: &str = "[toggle | clear | dnd [on|off|toggle]]";
 const ASSISTANT_USAGE: &str = "listen start|stop|toggle|cancel | status";
 
 /// The verbs the shell answers, as their names.
-pub const VERBS: [&str; 13] = [
+pub const VERBS: [&str; 14] = [
     "arm",
     "open",
     "close",
@@ -404,6 +410,7 @@ pub const VERBS: [&str; 13] = [
     "status-bar",
     "night-light",
     "passwords",
+    "screen",
     "alert-test",
 ];
 
@@ -620,6 +627,11 @@ impl ShellCommand {
                     );
                 }
             }),
+            "screen" => match args.as_slice() {
+                ["off"] => Self::Screen { off: true },
+                ["on"] => Self::Screen { off: false },
+                _ => return usage("off | on"),
+            },
             "alert-test" => Self::AlertTest {
                 stacked: args.first() == Some(&"stacked"),
             },
@@ -802,6 +814,7 @@ impl ShellCommand {
                     }
                 },
             ),
+            Self::Screen { off } => ("screen", words(&[if *off { "off" } else { "on" }])),
             Self::AlertTest { stacked } => (
                 "alert-test",
                 if *stacked {
@@ -910,6 +923,8 @@ mod tests {
             "forget",
         ],
         &["passwords", "lock-timeout", "900"],
+        &["screen", "off"],
+        &["screen", "on"],
         &["alert-test", "stacked"],
     ];
 

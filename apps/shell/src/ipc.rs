@@ -23,7 +23,7 @@ macro_rules! handlers {
 }
 
 /// Every verb and its handler, which reads the lines and runs them.
-const HANDLERS: [(&str, Handler); 13] = handlers![
+const HANDLERS: [(&str, Handler); 14] = handlers![
     // the next right-click opens a menu with a working grab:
     // `printf 'arm\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "arm",
@@ -49,6 +49,9 @@ const HANDLERS: [(&str, Handler); 13] = handlers![
     "night-light",
     // a niri keybind: `printf 'passwords\nsuggest\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
     "passwords",
+    // the idle service turning the screen off, and on at the first input:
+    // `printf 'screen\noff\n' | nc -U -N $XDG_RUNTIME_DIR/emaki.sock`
+    "screen",
     // a sample alert, in debug builds: `printf 'alert-test\nstacked\n' | nc -U -N …`
     "alert-test",
 ];
@@ -101,7 +104,27 @@ pub fn run(command: ShellCommand) -> String {
         ShellCommand::StatusBar(command) => status_bar::run(command),
         ShellCommand::NightLight(command) => night_light::run(command),
         ShellCommand::Passwords(command) => fill::run(command),
+        ShellCommand::Screen { off } => screen(off),
         ShellCommand::AlertTest { stacked } => alert_test(stacked),
+    }
+}
+
+/// The monitors off, and the windows with them: nothing draws, and the
+/// services only the windows read stop polling (`amane::set_screen_off`),
+/// until this turns them on again or, by itself, the first input does. A
+/// failure to reach niri leaves the windows as they were.
+fn screen(off: bool) -> String {
+    let done = if off {
+        amane::niri::power_off_monitors()
+    } else {
+        amane::niri::power_on_monitors()
+    };
+    match done {
+        Ok(()) => {
+            amane::set_screen_off(off);
+            String::from("ok")
+        }
+        Err(err) => format!("error: {err}"),
     }
 }
 
