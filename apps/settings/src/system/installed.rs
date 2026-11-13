@@ -13,6 +13,10 @@ use std::time::Duration;
 use amane::{Apps, DesktopApp, Service};
 use emaki_kit::service::ServiceExt as _;
 
+/// How long polling goes on after a page last read it; reading again
+/// looks at once.
+const IDLE_STOP: Duration = Duration::from_secs(30);
+
 const APPLICATIONS: &str = "/run/current-system/sw/share/applications";
 
 /// A store path's name (`zed-editor-1.3.6`) to the desktop entries it puts in
@@ -60,6 +64,10 @@ impl Service for Launchers {
     // an Apply changes the profile
     fn interval() -> Duration {
         Duration::from_secs(30)
+    }
+
+    fn idle_stop() -> Option<Duration> {
+        Some(IDLE_STOP)
     }
 
     fn update(&mut self) -> bool {

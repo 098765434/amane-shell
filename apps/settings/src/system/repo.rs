@@ -15,6 +15,10 @@ use super::nixos::{SETTINGS_FILE, git, host, nix, repo};
 use super::state_dir;
 use emaki_kit::service::ServiceExt as _;
 
+/// How long polling goes on after a page last read it; reading again
+/// looks at once.
+const IDLE_STOP: Duration = Duration::from_secs(30);
+
 /// Git, as of the last look: polled every few seconds, since any editor
 /// may change it.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -67,6 +71,11 @@ impl Service for Repo {
 
     fn interval() -> Duration {
         Duration::from_secs(3)
+    }
+
+    // three git runs a look: only while a page shows the repo
+    fn idle_stop() -> Option<Duration> {
+        Some(IDLE_STOP)
     }
 
     fn update(&mut self) -> bool {
@@ -160,6 +169,10 @@ impl Service for Running {
 
     fn interval() -> Duration {
         Duration::from_secs(5)
+    }
+
+    fn idle_stop() -> Option<Duration> {
+        Some(IDLE_STOP)
     }
 
     // only a switch moves the link; nixos-version runs again then

@@ -22,6 +22,10 @@ use crate::{group, groups};
 use emaki_kit::color::Accent;
 use emaki_kit::service::ServiceExt as _;
 
+/// How long polling goes on after a page last read it; reading again
+/// looks at once.
+const IDLE_STOP: Duration = Duration::from_secs(30);
+
 /// A unit as systemd reports it.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct UnitState {
@@ -116,6 +120,11 @@ impl Service for Units {
 
     fn interval() -> Duration {
         Duration::from_secs(5)
+    }
+
+    // two systemctl runs a look: only while a page shows the units
+    fn idle_stop() -> Option<Duration> {
+        Some(IDLE_STOP)
     }
 
     fn update(&mut self) -> bool {

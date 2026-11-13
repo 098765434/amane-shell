@@ -33,6 +33,10 @@ use crate::{group, groups};
 use emaki_kit::service::ServiceExt as _;
 use emaki_kit::sync::Locked as _;
 
+/// How long polling goes on after a page last read it; reading again
+/// looks at once.
+const IDLE_STOP: Duration = Duration::from_secs(30);
+
 /// The registry id of the list of added packages.
 pub const PACKAGES: &str = "packages";
 
@@ -338,6 +342,10 @@ impl Service for Flatpaks {
 
     fn interval() -> Duration {
         Duration::from_secs(30)
+    }
+
+    fn idle_stop() -> Option<Duration> {
+        Some(IDLE_STOP)
     }
 
     fn update(&mut self) -> bool {
