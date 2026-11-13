@@ -95,8 +95,7 @@ fn is_loopback(video_node: &str) -> bool {
     let name = fs::read_to_string(Path::new(V4L_SYS).join(video_node).join("name"))
         .map(|s| s.trim().to_string())
         .unwrap_or_default();
-    name.eq_ignore_ascii_case("Phone Camera")
-        || name.to_ascii_lowercase().contains("v4l2loopback")
+    name.eq_ignore_ascii_case("Phone Camera") || name.to_ascii_lowercase().contains("v4l2loopback")
 }
 
 fn mode_is_blocked(path: &Path) -> bool {
@@ -133,12 +132,7 @@ fn set_blocked(on: bool) {
 pub fn page() -> amane::Column {
     let (nodes, blocked, asked, camera_error) = {
         let now = CameraBlock::read();
-        (
-            now.nodes.clone(),
-            now.blocked,
-            now.asked,
-            now.error.clone(),
-        )
+        (now.nodes.clone(), now.blocked, now.asked, now.error.clone())
     };
 
     let audio = Audio::read();
@@ -187,9 +181,9 @@ pub fn page() -> amane::Column {
     }
 
     let camera_footer = match (nodes.is_empty(), camera_error) {
-        (true, _) => String::from(
-            "The phone-camera loopback stays reachable regardless of this toggle.",
-        ),
+        (true, _) => {
+            String::from("The phone-camera loopback stays reachable regardless of this toggle.")
+        }
         (false, Some(error)) => format!(
             "{error}. The toggle blocks every app on this computer: it chmods \
              /dev/video* to 000 until unblocked."

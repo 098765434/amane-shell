@@ -236,7 +236,8 @@ fn start_enroll(device_path: String, finger: String) {
             &[Argument::from(user.as_str())],
         ) {
             let mut now = Fprint::write();
-            now.stage = EnrollStage::Failed(format!("Couldn't claim the reader: {}", error.message()));
+            now.stage =
+                EnrollStage::Failed(format!("Couldn't claim the reader: {}", error.message()));
             schedule_clear();
             return;
         }
@@ -249,7 +250,8 @@ fn start_enroll(device_path: String, finger: String) {
         ) {
             let _ = bus.try_call(FPRINT, &device_path, DEVICE, "Release", &[]);
             let mut now = Fprint::write();
-            now.stage = EnrollStage::Failed(format!("Couldn't start enrolment: {}", error.message()));
+            now.stage =
+                EnrollStage::Failed(format!("Couldn't start enrolment: {}", error.message()));
             schedule_clear();
             return;
         }
@@ -257,7 +259,11 @@ fn start_enroll(device_path: String, finger: String) {
         // wait for EnrollStatus { result, done } until the terminal signal
         for signal in bus.signals_at(&device_path, DEVICE, "EnrollStatus") {
             let args = signal.arguments();
-            let result = args.first().map(Value::text).unwrap_or_default().to_string();
+            let result = args
+                .first()
+                .map(Value::text)
+                .unwrap_or_default()
+                .to_string();
             let done = args.get(1).map(Value::bool).unwrap_or_default();
             {
                 let mut now = Fprint::write();
@@ -373,7 +379,9 @@ pub fn page() -> amane::Column {
         .filter(|(name, _)| !enrolled.iter().any(|f| f == name))
         .collect();
 
-    let picked = PICKED.load(Ordering::Relaxed).min(free.len().saturating_sub(1));
+    let picked = PICKED
+        .load(Ordering::Relaxed)
+        .min(free.len().saturating_sub(1));
     let device_for_add = device_path.clone();
     let free_for_add = free.clone();
 
@@ -395,7 +403,9 @@ pub fn page() -> amane::Column {
     let add_button = PushButton::new("settings.security.add.button", "Add Finger")
         .style(Style::Filled)
         .on_press(move || {
-            let index = PICKED.load(Ordering::Relaxed).min(free_for_add.len().saturating_sub(1));
+            let index = PICKED
+                .load(Ordering::Relaxed)
+                .min(free_for_add.len().saturating_sub(1));
             let Some((name, _)) = free_for_add.get(index) else {
                 return;
             };

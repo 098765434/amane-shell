@@ -204,4 +204,3 @@ mod tests {
         assert_eq!(10_u8.min(end.saturating_sub(5)), 10);
     }
 }
-

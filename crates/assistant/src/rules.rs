@@ -318,10 +318,7 @@ fn power(q: &str, snapshot: &Snapshot) -> Option<Command> {
         | "put laptop to sleep"
         | "suspend computer"
         | "suspend laptop" => Power::Sleep,
-        "hibernate"
-        | "hibernate computer"
-        | "hibernate laptop"
-        | "suspend to disk"
+        "hibernate" | "hibernate computer" | "hibernate laptop" | "suspend to disk"
         | "deep sleep" => Power::Hibernate,
         "restart" | "reboot" | "restart computer" | "reboot computer" | "restart laptop"
         | "reboot laptop" => Power::Restart,

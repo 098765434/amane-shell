@@ -259,12 +259,7 @@ fn reboot() {
 pub fn page() -> amane::Column {
     let (devices, asked, reached, job) = {
         let now = Firmware::read();
-        (
-            now.devices.clone(),
-            now.asked,
-            now.reached,
-            now.job.clone(),
-        )
+        (now.devices.clone(), now.asked, now.reached, now.job.clone())
     };
 
     if !asked {
@@ -341,13 +336,10 @@ pub fn page() -> amane::Column {
                     )
                     .icon(ICON_UPDATE, Accent::Orange)
                     .trailing(
-                        PushButton::new(
-                            "settings.system.firmware.reboot.button",
-                            "Restart Now",
-                        )
-                        .style(Style::Filled)
-                        .on_press(reboot)
-                        .build(),
+                        PushButton::new("settings.system.firmware.reboot.button", "Restart Now")
+                            .style(Style::Filled)
+                            .on_press(reboot)
+                            .build(),
                     ),
                 )
                 .footer(
@@ -422,9 +414,7 @@ fn job_banner(job: &Job) -> Option<FormRow> {
                 .icon(ICON_CHECK, Accent::Green)
                 .subtitle("Nothing more to install."),
         ),
-        Job::JustFinished {
-            needs_reboot: true,
-        } => None, // the reboot card below is enough
+        Job::JustFinished { needs_reboot: true } => None, // the reboot card below is enough
         Job::Failed(why) => Some(crate::problem_row(
             "settings.system.firmware.failed",
             "The last firmware command failed",
@@ -437,7 +427,11 @@ fn job_banner(job: &Job) -> Option<FormRow> {
 /// Last 8 chars of a fwupd device id, used in subtitles — the full id is a
 /// 40-char sha-sum.
 fn short_id(id: &str) -> &str {
-    if id.len() > 8 { &id[id.len() - 8..] } else { id }
+    if id.len() > 8 {
+        &id[id.len() - 8..]
+    } else {
+        id
+    }
 }
 
 /// Keeps a device id usable as a kit widget id (alnum + dots only).
