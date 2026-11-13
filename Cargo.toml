@@ -85,7 +85,7 @@ libc = "0.2"
 zeroize = "1.9"
 # a program confining its own file access (Linux 5.13+), with no namespaces or privileges
 landlock = "0.4"
-zbus = "5.19.0"
+zbus = "6.2.1"
 libpulse-binding = "2"
 libpulse-simple-binding = "2"
 # amane is consumed as a pinned git-dependency on the maintained fork (not a
