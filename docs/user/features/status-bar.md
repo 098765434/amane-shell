@@ -59,25 +59,56 @@ The glyphs that open Quick Settings' grid (Airplane Mode) only light on hover, o
 Quick Settings would light them all. The look comes from `ButtonBuilder::highlight` and
 `::active` ([controls.md](../../developer/kit/controls.md)); the bar's `item()` helper applies it to every item.
 
-### Left: workspaces (`workspaces`, `workspace_shape.rs`)
+### Left: workspaces (`workspaces`, `workspace_shape.rs`, `workspace_shape/geometry.rs`)
 
 One **shape** says which of the monitor's workspaces shows: the first a circle, then a square, a
 triangle, a diamond, a pentagon, a hexagon and a five-point star; after those a heptagon, an
-octagon, and stars with 6, 7, 8… points. It sits in a 16 px box, the text's line, whatever the
-bar's size, and turns red while any workspace there is urgent.
+octagon, and stars with 6, 7, 8… points. It rests in a 16 px box, the text's line, whatever the
+bar's size. A workspace with no windows shows as an outline (`bar.workspace.shape.stroke`, 1.5 px);
+once a window opens, the fill grows from the middle, plopping just past the edge and back, and it
+drains away calmly when the last window closes.
 
-It morphs as niri moves: each shape is its edge's distance from its middle at 120 even angles,
-corners softened by averaging neighbours, scaled to cover the area of a 13 px circle (or as much
-as fits) and centred. Part way between two workspaces it's the two mixed (smoothstep-eased, so it
-rests near the true shapes) and turned up to 15°. The position is niri's fork's
-`WorkspaceSwitchProgress` (`WorkspaceSwitch`), so it follows a swipe's finger, a cancelled swipe and
-the keyboard's spring; `switch_position` keeps a rubber band at the end shape and settles within
-0.01 of a landing (the widgets' fade shares it). niri reports only the focused monitor, so on the
-others the shape springs (280 ms, no bounce) to the workspace shown, and that spring is kept where
-niri last said so nothing jumps when focus leaves.
+**Geometry.** Each form is a polygon whose every corner is rounded with a true arc,
+`bar.workspace.shape.corner` (0.18) of its size across. A corner turning in, between a star's
+points, gets half that, and no arc takes more than 45% of a side. The rounded outline is stored as
+its edge's distance from its middle at 120 even angles. It is scaled to cover the area of a 13 px
+circle (`bar.workspace.shape.size`, a little more for the triangle and stars, which look lighter),
+or as much as fits. It is centred halfway between its bounds and its area's centroid, so the
+triangle looks centred, and its edges are put on whole pixels so it's sharp at rest. Each shape is
+made once and cached.
 
-It's one closed straight-sided `Path` in a `Canvas`, so it draws as a single quad outline (no
-vello). Clicking it opens niri's overview (`Windows::toggle_overview`); its tooltip is the
+**Morph.** It morphs as niri moves. The position is niri's fork's `WorkspaceSwitchProgress`
+(`WorkspaceSwitch`), so it follows a swipe's finger, a cancelled swipe and the keyboard's spring.
+`switch_position` keeps a rubber band at the end shape and settles within 0.01 of a landing (the
+widgets' fade shares it).
+- Between two workspaces it's the two mixed, smoothstep-eased so it rests near the true shapes.
+- The next shape is first turned to sit closest to this one: the turn within one of its symmetries
+  that differs least. That way corners travel to the nearest corners instead of blobbing.
+- On the way, it rolls clockwise by the turn nearest 45° that lands the next shape on one of its
+  symmetries, so it rests upright, like a die rolling onto its next face. Going up plays the same
+  frames backward, so it rolls the other way.
+- Halfway between two shapes it breathes in by 6%.
+- The fill follows the switch too: swiping from an empty workspace to a full one fills the shape
+  along with the finger.
+
+niri reports only the focused monitor, so on the others the shape springs (280 ms, no bounce) to the
+workspace shown, and that spring is kept where niri last said so nothing jumps when focus leaves.
+
+**Responses.** It reacts to what's done to it, and is still otherwise:
+- It bumps 5% as it comes to rest on another workspace.
+- It squashes against the end a swipe rubber-bands past: up to 12% shorter and as much wider, so
+  it keeps its area.
+- It shrinks 15% with the overview's progress (`Overview`), so it follows a gesture too.
+- It swells 8% under the pointer, as well as getting the button's press pulse.
+- When a workspace there turns urgent, its colour fades to the critical colour and it sends two
+  ripples out, rings spreading to 1.6× and fading. After that it stays red.
+
+Where motion is reduced, it only changes shape and fill: no roll, breath, bump, squash, swell,
+plop or ripples.
+
+Every path is one closed straight-sided outline, either a fill or a stroke with round joins, in
+a `Canvas` 1.5× the box. So it draws with the quads (no vello). Clicking it opens niri's overview
+(`Windows::toggle_overview`); its tooltip is the
 workspace's name or "Workspace N". Scrolling over it focuses the next or previous workspace: one per
 wheel notch, or one per `bar.scroll.step` lines of touchpad scroll, stopping at either end.
 

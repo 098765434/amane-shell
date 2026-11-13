@@ -158,7 +158,8 @@ pub fn page() -> Column {
             )
             .footer(
                 "One shape per workspace: a circle, then a square, a triangle and on, changing \
-                 as you move between them. Click it for the overview.",
+                 as you move between them. An empty workspace shows as an outline. Click it \
+                 for the overview.",
             ),
     ])
 }

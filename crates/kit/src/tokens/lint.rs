@@ -756,8 +756,10 @@ mod tests {
     /// widths, the materials' thresholds and the frosted surfaces' shadow)
     /// and component by 41 (Quick Settings' and Customize's motion and
     /// sizes, the dock's motion, strip and threshold, the bar's workspace
-    /// shape and scroll step, the launcher's opening and paging).
-    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 188), ("component", 335)];
+    /// shape and scroll step, the launcher's opening and paging). Then
+    /// component by 2 for the bar's workspace shape: its corners' rounding
+    /// and an empty workspace's outline.
+    const TIER_CEILING: [(&str, usize); 3] = [("ref", 60), ("sys", 188), ("component", 337)];
 
     #[test]
     fn no_tier_grows_past_its_ceiling() {
