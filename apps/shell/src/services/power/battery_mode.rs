@@ -29,6 +29,14 @@ const BALANCED: &str = "balanced";
 
 static WAKE: Wake = Wake::new();
 
+/// Running on battery, as amane's `Battery` says: for views that act
+/// differently unplugged (the power-mode button and key never land on
+/// Performance then). A read in a view redraws it when that changes.
+pub fn on_battery() -> bool {
+    let battery = Battery::read();
+    battery.present() && !battery.on_ac()
+}
+
 /// Starts watching, once.
 pub fn watch() {
     static WATCH: Once = Once::new();
@@ -63,9 +71,7 @@ struct State {
 }
 
 fn check(state: &mut State) {
-    let battery = Battery::read();
-    let on_battery = battery.present() && !battery.on_ac();
-    drop(battery);
+    let on_battery = on_battery();
     let settings = power().clone();
 
     let unplugged = on_battery && state.on_battery != Some(true);

@@ -258,7 +258,7 @@ fn airplane() {
 fn profile() {
     let profiles = PowerProfile::read();
     let mut available = profiles.available().to_vec();
-    if crate::surfaces::quick_settings::tiles::power::on_battery() {
+    if crate::services::power::battery_mode::on_battery() {
         available.retain(|p| p != "performance");
     }
     let active = profiles.active().to_string();

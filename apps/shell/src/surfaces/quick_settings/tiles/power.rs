@@ -23,6 +23,8 @@ use emaki_kit::buttons::{Segment, SegmentedButton};
 use emaki_kit::icons::{peripheral_glyph, power_profile_glyph};
 use emaki_kit::layout::{boxed, caption};
 use emaki_kit::list::{self, List, ListItem};
+
+use crate::services::power::battery_mode;
 use emaki_kit::material::{self, Level};
 
 const BALANCED: &str = "balanced";
@@ -30,12 +32,6 @@ const BALANCED: &str = "balanced";
 thread_local! {
     // what a click on the button goes back to from Balanced
     static LAST: RefCell<String> = RefCell::new(String::from("power-saver"));
-}
-
-/// Running on battery, as amane's `Battery` says.
-pub(crate) fn on_battery() -> bool {
-    let battery = Battery::read();
-    battery.present() && !battery.on_ac()
 }
 
 /// GNOME's names for the profiles.
@@ -64,7 +60,7 @@ pub(crate) fn mode_toggle() -> Option<QuickToggle> {
     let back_to = LAST.with_borrow(Clone::clone);
     // on battery the button means saving power, never Performance (that
     // stays a pick on the page)
-    let back_to = if back_to == "performance" && on_battery() {
+    let back_to = if back_to == "performance" && battery_mode::on_battery() {
         String::from("power-saver")
     } else {
         back_to
