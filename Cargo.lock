@@ -26,7 +26,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "amane"
 version = "0.1.2"
-source = "git+https://github.com/emaki-desktop/amane?rev=5942c906756b66bba45f5c0855dcc71450f2b696#5942c906756b66bba45f5c0855dcc71450f2b696"
+source = "git+https://github.com/emaki-desktop/amane?rev=b527f8381b234b5f3cd8ec4e4cc190938c71a426#b527f8381b234b5f3cd8ec4e4cc190938c71a426"
 dependencies = [
  "bitflags",
  "blocking",
